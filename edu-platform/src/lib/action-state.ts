@@ -1,0 +1,18 @@
+/** الشكل الموحد لنتيجة Server Actions (يُستخدم مع useActionState) */
+export type ActionState = {
+  ok?: boolean;
+  message?: string;
+  error?: string;
+  fieldErrors?: Record<string, string>;
+  /** قيم الحقول لإعادة تعبئة النموذج عند الخطأ */
+  values?: Record<string, string>;
+} | null;
+
+export function formValues(fd: FormData, keys: string[]): Record<string, string> {
+  const out: Record<string, string> = {};
+  for (const k of keys) {
+    const v = fd.get(k);
+    if (typeof v === "string") out[k] = v;
+  }
+  return out;
+}

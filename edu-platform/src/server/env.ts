@@ -1,0 +1,82 @@
+import "server-only";
+import { z } from "zod";
+
+/**
+ * متغيرات البيئة — تُقرأ وتُتحقق منها مرة واحدة على الخادم فقط.
+ * لا تضع أي مفتاح سري في متغير يبدأ بـ NEXT_PUBLIC_.
+ */
+const schema = z.object({
+  NODE_ENV: z.enum(["development", "production", "test"]).default("development"),
+  APP_URL: z.string().url().default("http://localhost:3000"),
+  DATABASE_URL: z.string().min(1, "DATABASE_URL مطلوب"),
+  DATABASE_POOL_MAX: z.coerce.number().int().min(1).max(50).default(5),
+  /** true عند الاتصال عبر Supabase pooler (وضع transaction) */
+  DATABASE_PGBOUNCER: z
+    .enum(["true", "false"])
+    .default("false")
+    .transform((v) => v === "true"),
+  /** سر لتوقيع الروابط المؤقتة (رفع الملفات المحلي) — 32 حرفًا على الأقل */
+  APP_SECRET: z.string().min(32, "APP_SECRET يجب أن يكون 32 حرفًا على الأقل"),
+
+  STORAGE_DRIVER: z.enum(["local", "supabase"]).default("local"),
+  LOCAL_STORAGE_DIR: z.string().default("./storage"),
+  SUPABASE_URL: z.string().url().optional(),
+  SUPABASE_SERVICE_ROLE_KEY: z.string().optional(),
+  SUPABASE_PRIVATE_BUCKET: z.string().default("private-content"),
+  SUPABASE_PUBLIC_BUCKET: z.string().default("public-media"),
+
+  /** disabled: لا دفع إلكتروني | sandbox: بيئة اختبار MyFatoorah | live: إنتاج */
+  PAYMENTS_MODE: z.enum(["disabled", "sandbox", "live"]).default("disabled"),
+  MYFATOORAH_API_KEY: z.string().optional(),
+  MYFATOORAH_BASE_URL: z.string().url().optional(),
+  MYFATOORAH_WEBHOOK_SECRET: z.string().optional(),
+  /** يجب ضبطه صراحةً على true لتفعيل وضع الإنتاج (حماية من التفعيل الخاطئ) */
+  MYFATOORAH_LIVE_CONFIRMED: z
+    .enum(["true", "false"])
+    .default("false")
+    .transform((v) => v === "true"),
+
+  MAIL_DRIVER: z.enum(["log", "smtp"]).default("log"),
+  SMTP_HOST: z.string().optional(),
+  SMTP_PORT: z.coerce.number().int().optional(),
+  SMTP_USER: z.string().optional(),
+  SMTP_PASSWORD: z.string().optional(),
+  SMTP_SECURE: z
+    .enum(["true", "false"])
+    .default("false")
+    .transform((v) => v === "true"),
+  MAIL_FROM: z.string().default("المنصة التعليمية <no-reply@example.com>"),
+
+  BUNNY_STREAM_LIBRARY_ID: z.string().optional(),
+  BUNNY_STREAM_TOKEN_KEY: z.string().optional(),
+
+  /** يُفعَّل فقط عند تشغيل الخادم خلف وكيل موثوق (Vercel) لقراءة IP العميل */
+  TRUST_PROXY: z
+    .enum(["true", "false"])
+    .default("true")
+    .transform((v) => v === "true"),
+});
+
+export type Env = z.infer<typeof schema>;
+
+let cached: Env | null = null;
+
+export function env(): Env {
+  if (cached) return cached;
+  const parsed = schema.safeParse(process.env);
+  if (!parsed.success) {
+    const issues = parsed.error.issues.map((i) => `${i.path.join(".")}: ${i.message}`).join("\n");
+    throw new Error(`إعدادات البيئة غير صحيحة:\n${issues}`);
+  }
+  const e = parsed.data;
+  if (e.STORAGE_DRIVER === "supabase" && (!e.SUPABASE_URL || !e.SUPABASE_SERVICE_ROLE_KEY)) {
+    throw new Error("STORAGE_DRIVER=supabase يتطلب SUPABASE_URL و SUPABASE_SERVICE_ROLE_KEY");
+  }
+  cached = e;
+  return e;
+}
+
+/** لإعادة القراءة في الاختبارات */
+export function resetEnvCache() {
+  cached = null;
+}
