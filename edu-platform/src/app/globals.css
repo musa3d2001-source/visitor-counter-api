@@ -5,19 +5,22 @@
 @import "@fontsource/ibm-plex-sans-arabic/arabic-700.css";
 @import "@fontsource/ibm-plex-sans-arabic/latin-400.css";
 @import "@fontsource/ibm-plex-sans-arabic/latin-600.css";
+@import "@fontsource-variable/markazi-text";
 
 /*
- * نظام التصميم (Design System)
- * --brand و --accent قابلان للتغيير من إعدادات المنصة (يُحقنان في <html>)
- * بقية الدرجات تُشتق تلقائيًا بـ color-mix
+ * نظام التصميم «جدول الحصص» (انظر docs/design/DIRECTIONS.md)
+ * - --brand (أخضر الخليج) و --accent (أصفر الاختبار) قابلان للتغيير من إعدادات المنصة
+ * - العناوين والأرقام: Markazi Text — الواجهة والنصوص: IBM Plex Sans Arabic
+ * - زوايا صغيرة متدرجة، بلا ظلال تقريبًا: الحدود والخلفيات تبني البنية
  */
 :root {
-  --brand: #0f5257;
-  --accent: #d4973b;
+  --brand: #0c6b66;
+  --accent: #f2c230;
 }
 
 @theme inline {
   --font-sans: "IBM Plex Sans Arabic", ui-sans-serif, system-ui, "Segoe UI", Tahoma, sans-serif;
+  --font-display: "Markazi Text Variable", "Markazi Text", "Noto Naskh Arabic", serif;
 
   --color-brand: var(--brand);
   --color-brand-50: color-mix(in oklab, var(--brand) 6%, white);
@@ -40,26 +43,32 @@
 }
 
 @theme {
-  --color-ink: #1b2425;
-  --color-ink-soft: #3c4a4b;
-  --color-muted: #5d6c6d;
-  --color-line: #e2e7e5;
-  --color-line-strong: #cdd6d3;
-  --color-canvas: #f7f6f1;
+  --color-ink: #16212b;
+  --color-ink-soft: #3a4752;
+  --color-muted: #5b6670;
+  --color-line: #d9e0e1;
+  --color-line-strong: #c3cdcf;
+  --color-canvas: #f4f6f6;
+  --color-mist: #edf1f1;
   --color-surface: #ffffff;
   --color-success: #1d7a4f;
-  --color-success-50: #ebf7f0;
+  --color-success-50: #eaf6ef;
   --color-danger: #b4342c;
   --color-danger-50: #fcefee;
-  --color-warning: #9a6a00;
-  --color-warning-50: #fff7e0;
+  --color-warning: #8a5d00;
+  --color-warning-50: #fff6dc;
 
-  --radius-xl: 0.875rem;
-  --radius-2xl: 1.125rem;
-  --radius-3xl: 1.5rem;
+  /* زوايا متدرجة حسب الأهمية — لا زاوية واحدة لكل شيء */
+  --radius-sm: 0.25rem;
+  --radius-md: 0.375rem;
+  --radius-lg: 0.5rem;
+  --radius-xl: 0.5rem;
+  --radius-2xl: 0.625rem;
+  --radius-3xl: 0.875rem;
 
-  --shadow-card: 0 1px 2px rgb(16 40 42 / 0.04), 0 4px 16px -6px rgb(16 40 42 / 0.08);
-  --shadow-lift: 0 2px 4px rgb(16 40 42 / 0.05), 0 16px 32px -12px rgb(16 40 42 / 0.18);
+  /* ظل خفيف جدًا للعناصر الطافية فقط */
+  --shadow-card: 0 1px 0 rgb(22 33 43 / 0.04);
+  --shadow-lift: 0 12px 28px -16px rgb(22 33 43 / 0.28);
 
   --animate-fade-up: fade-up 0.35s ease-out both;
   @keyframes fade-up {
@@ -80,7 +89,7 @@
     scroll-behavior: smooth;
   }
   body {
-    @apply bg-canvas text-ink antialiased;
+    @apply bg-surface text-ink antialiased;
     font-feature-settings: "kern";
     text-rendering: optimizeLegibility;
   }
@@ -90,6 +99,21 @@
   }
   ::selection {
     background: color-mix(in oklab, var(--accent) 35%, white);
+  }
+  /* العناوين الرئيسية بخط العرض التحريري */
+  h1,
+  h2 {
+    font-family: var(--font-display);
+    font-weight: 600;
+    letter-spacing: 0;
+    line-height: 1.2;
+    text-wrap: balance;
+  }
+  h1 {
+    font-size: 1.15em;
+  }
+  p {
+    text-wrap: pretty;
   }
   /* الأرقام والأسعار باتجاه ثابت */
   .num {

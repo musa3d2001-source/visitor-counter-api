@@ -1,18 +1,13 @@
 import Image from "next/image";
 import Link from "next/link";
-import { GraduationCap } from "lucide-react";
+import { cn } from "@/lib/utils";
 
+/** الشعار: صورة الشعار من الإعدادات إن وُجدت، مع اسم المنصة بخط العرض */
 export function Logo({ name, logoUrl, tone = "dark" }: { name: string; logoUrl: string | null; tone?: "dark" | "light" }) {
   return (
-    <Link href="/" className="flex items-center gap-2.5 rounded-lg" aria-label={`${name} — الصفحة الرئيسية`}>
-      {logoUrl ? (
-        <Image src={logoUrl} alt="" width={40} height={40} className="size-10 rounded-xl object-contain" />
-      ) : (
-        <span className="grid size-10 place-items-center rounded-xl bg-brand-600 text-white shadow-sm">
-          <GraduationCap className="size-5.5" aria-hidden />
-        </span>
-      )}
-      <span className={tone === "dark" ? "text-lg font-bold whitespace-nowrap text-ink" : "text-lg font-bold whitespace-nowrap text-white"}>{name}</span>
+    <Link href="/" className="flex items-center gap-2.5 rounded-md" aria-label={`${name}، الصفحة الرئيسية`}>
+      {logoUrl ? <Image src={logoUrl} alt="" width={36} height={36} className="size-9 rounded-md object-contain" /> : null}
+      <span className={cn("font-display text-[1.75rem] leading-none font-bold", tone === "dark" ? "text-ink" : "text-white")}>{name}</span>
     </Link>
   );
 }

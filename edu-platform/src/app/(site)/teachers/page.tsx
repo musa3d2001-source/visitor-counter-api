@@ -22,18 +22,17 @@ export default async function TeachersPage({ searchParams }: { searchParams: Pro
   const teachers = await listTeachers({ gradeId: grade?.id, subjectId: subject?.id });
 
   const chip = (active: boolean) =>
-    cn(
-      "rounded-full border px-4 py-2 text-sm font-semibold whitespace-nowrap transition",
-      active ? "border-brand-600 bg-brand-600 text-white" : "border-line bg-surface text-ink-soft hover:border-brand-300",
-    );
+    cn("min-h-10 rounded-md px-3.5 py-2 text-sm font-semibold whitespace-nowrap transition-colors", active ? "bg-ink text-white" : "text-ink-soft hover:bg-mist");
 
   return (
-    <div className="mx-auto max-w-6xl px-4 py-8">
+    <div className="mx-auto max-w-6xl px-4 pt-6 pb-8">
       <Breadcrumbs items={[{ label: "الرئيسية", href: "/" }, { label: "المعلمون" }]} />
-      <h1 className="mt-4 text-3xl font-bold">المعلمون</h1>
-      <p className="mt-2 text-muted">اختر صفك ومادتك لتصل إلى معلمك مباشرة</p>
+      <header className="mt-6 border-b-2 border-ink pb-6">
+        <h1 className="text-[clamp(2.4rem,6vw,4.2rem)] leading-[1.05]">المعلمون</h1>
+        <p className="mt-3 max-w-xl leading-8 text-ink-soft">اختر صفك ومادتك لتصل إلى معلمك مباشرة، ثم شاهد أول درس من شرحه مجانًا.</p>
+      </header>
 
-      <nav aria-label="تصفية حسب الصف" className="mt-6 flex gap-2 overflow-x-auto pb-1">
+      <nav aria-label="تصفية حسب الصف" className="mt-6 flex gap-1 overflow-x-auto pb-1">
         <Link href="/teachers" className={chip(!grade)} aria-current={!grade ? "page" : undefined}>
           كل الصفوف
         </Link>
@@ -44,7 +43,7 @@ export default async function TeachersPage({ searchParams }: { searchParams: Pro
         ))}
       </nav>
       {grade && subjects.length ? (
-        <nav aria-label="تصفية حسب المادة" className="mt-2 flex gap-2 overflow-x-auto pb-1">
+        <nav aria-label="تصفية حسب المادة" className="mt-2 flex gap-1 overflow-x-auto border-t border-line pt-2 pb-1">
           <Link href={`/teachers?grade=${grade.slug}`} className={chip(!subject)} aria-current={!subject ? "page" : undefined}>
             كل المواد
           </Link>
@@ -60,7 +59,7 @@ export default async function TeachersPage({ searchParams }: { searchParams: Pro
         {teachers.length ? (
           <TeacherGrid teachers={teachers} />
         ) : (
-          <EmptyState icon={<GraduationCap />} title="لا يوجد معلمون لهذا الاختيار حاليًا" description="جرّب صفًا أو مادة أخرى، أو تصفح كل المعلمين." />
+          <EmptyState icon={<GraduationCap />} title="لا يوجد معلمون لهذا الاختيار بعد" description="اختر صفًا أو مادة أخرى، أو اعرض كل المعلمين." />
         )}
       </div>
     </div>

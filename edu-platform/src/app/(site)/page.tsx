@@ -1,247 +1,223 @@
 import Link from "next/link";
-import { ArrowLeft, BadgePercent, CircleCheck, Eye, Layers, Lock, PlayCircle, Smartphone, Zap } from "lucide-react";
-import { gradeStats, latestVideoProducts, listProducts, listStages, listTeachers } from "@/server/catalog/queries";
+import { Play } from "lucide-react";
+import { gradeStats, latestVideoProducts, listProducts, listStages, listTeachers, type ProductCard } from "@/server/catalog/queries";
 import { getSettings } from "@/server/platform/settings";
 import { getCurrentUser } from "@/server/auth/session";
 import { accessibleProductIds } from "@/server/access/entitlements";
-import { ProductGrid } from "@/components/site/product-card";
-import { VideoGrid } from "@/components/site/video-card";
+import { ProductList, productMeta } from "@/components/site/product-card";
 import { TeacherGrid } from "@/components/site/teacher-card";
-import { ProductCover } from "@/components/site/product-cover";
-import { Button } from "@/components/ui/button";
+import { posterTone } from "@/components/site/product-cover";
+import { TeacherAvatar } from "@/components/site/teacher-avatar";
 import { EmptyState } from "@/components/ui/empty-state";
+import { PRODUCT_TYPE_LABELS, isPdfType } from "@/lib/labels";
+import { filsToKwdString } from "@/lib/money";
 
+const arabicDigits = (n: number | string) => String(n).replace(/\d/g, (d) => "٠١٢٣٤٥٦٧٨٩"[Number(d)]);
+
+/**
+ * الصفحة الرئيسية «جدول الحصص»:
+ * البطل هو أداة الاختيار نفسها (أرقام الصفوف)، ثم «قبل الاختبار» كأهم لحظة في عام الطالب،
+ * ثم المعلمون، فالجديد، فالباقات، فالمذكرات. المحتوى صفوف قابلة للمقارنة لا شبكات بطاقات.
+ */
 export default async function HomePage() {
-  const [stages, stats, latestAll, bundles, settings, user, videos, teachers] = await Promise.all([
+  const [stages, stats, settings, user, videos, teachers, bundles, examReviews, quizReviews, latest] = await Promise.all([
     listStages(),
     gradeStats(),
-    listProducts({ excludeType: "bundle", order: "latest", limit: 24 }),
-    listProducts({ type: "bundle", limit: 4 }),
     getSettings(),
     getCurrentUser(),
     latestVideoProducts(8),
-    listTeachers({ limit: 8 }),
+    listTeachers({ limit: 6 }),
+    listProducts({ type: "bundle", limit: 4 }),
+    listProducts({ type: "exam_review", limit: 4 }),
+    listProducts({ type: "quiz_review", limit: 4 }),
+    listProducts({ excludeType: "bundle", order: "latest", limit: 24 }),
   ]);
-  // قسم المذكرات يعرض ملفات PDF فقط (الفيديو له قسمه الخاص في الأعلى)
-  const latest = latestAll.filter((p) => !p.isVideo).slice(0, 8);
   const owned = user ? await accessibleProductIds(user.id) : undefined;
-  const visibleStages = stages.filter((s) => s.grades.length > 0);
-  const showcase = (videos.length >= 3 ? videos : latest).slice(0, 3);
+  const grades = stages.flatMap((s) => s.grades);
+  const reviews = [...examReviews, ...quizReviews].slice(0, 5);
+  const feature = reviews.find((r) => r.previewLessonId) ?? videos.find((v) => v.previewLessonId) ?? null;
+  const reviewRows = reviews.filter((r) => r.id !== feature?.id);
+  const newVideos = videos.filter((v) => !reviews.some((r) => r.id === v.id)).slice(0, 5);
+  const notes = latest.filter((p) => isPdfType(p.type)).slice(0, 6);
 
   return (
     <>
-      {/* البطل */}
-      <section className="relative overflow-hidden border-b border-line bg-gradient-to-b from-brand-50 to-canvas">
-        <div className="pointer-events-none absolute -start-32 -top-32 size-96 rounded-full bg-brand-100/60 blur-3xl" />
-        <div className="pointer-events-none absolute -end-24 bottom-0 size-80 rounded-full bg-accent-100/60 blur-3xl" />
-        <div className="relative mx-auto grid max-w-6xl items-center gap-10 px-4 py-12 md:grid-cols-[1.15fr_1fr] md:py-20">
-          <div className="animate-fade-up">
-            <p className="mb-4 inline-flex items-center gap-2 rounded-full border border-brand-200 bg-surface px-3 py-1 text-xs font-semibold text-brand-700">
-              <span className="size-1.5 rounded-full bg-accent-600" /> {settings.tagline}
-            </p>
-            <h1 className="text-3xl leading-[1.35] font-bold text-balance text-ink sm:text-4xl md:text-[2.75rem]">{settings.hero_title}</h1>
-            <p className="mt-5 max-w-xl text-base leading-8 text-ink-soft sm:text-lg">{settings.hero_subtitle}</p>
-            <div className="mt-8 flex flex-wrap gap-3">
-              <Button asChild size="lg">
-                <a href="#grades">
-                  ابدأ المذاكرة <ArrowLeft aria-hidden />
-                </a>
-              </Button>
-              {user ? (
-                <Button asChild size="lg" variant="outline">
-                  <Link href="/library">مكتبتي</Link>
-                </Button>
-              ) : (
-                <Button asChild size="lg" variant="outline">
-                  <Link href="/bundles">تصفح الباقات</Link>
-                </Button>
-              )}
-            </div>
-            <ul className="mt-8 flex flex-wrap gap-x-6 gap-y-2 text-sm text-ink-soft">
-              <li className="flex items-center gap-1.5"><CircleCheck className="size-4 text-success" aria-hidden /> شروحات فيديو ومذكرات</li>
-              <li className="flex items-center gap-1.5"><CircleCheck className="size-4 text-success" aria-hidden /> معاينة مجانية قبل الشراء</li>
-              <li className="flex items-center gap-1.5"><CircleCheck className="size-4 text-success" aria-hidden /> وصول فوري بعد الدفع</li>
-              <li className="flex items-center gap-1.5"><CircleCheck className="size-4 text-success" aria-hidden /> دفع آمن بكي نت</li>
-            </ul>
-          </div>
-          {showcase.length ? (
-            <div className="relative mx-auto hidden h-[360px] w-full max-w-sm md:block" aria-hidden>
-              {showcase.map((p, i) => (
-                <div
-                  key={p.id}
-                  className="absolute w-52 overflow-hidden rounded-2xl border-4 border-surface shadow-lift"
-                  style={{
-                    insetInlineStart: `${i * 70}px`,
-                    top: `${[40, 0, 60][i]}px`,
-                    transform: `rotate(${[-6, 2, 8][i]}deg)`,
-                    zIndex: [2, 3, 1][i],
-                  }}
-                >
-                  <ProductCover coverUrl={p.coverUrl} title={p.title} type={p.type} subjectName={p.subjectName} gradeName={p.gradeName} sizes="208px" />
-                </div>
-              ))}
-            </div>
-          ) : null}
-        </div>
+      {/* البطل: العنوان + أرقام الصفوف كأداة اختيار */}
+      <section className="mx-auto max-w-6xl px-4 pt-12 sm:pt-20" aria-labelledby="hero-title">
+        <h1 id="hero-title" className="max-w-4xl text-[clamp(2.6rem,6.4vw,4.75rem)] leading-[1.1]">
+          {settings.hero_title}
+        </h1>
+        <p className="mt-5 max-w-2xl text-[1.05rem] leading-8 text-ink-soft sm:text-lg sm:leading-9">{settings.hero_subtitle}</p>
+        {user ? (
+          <p className="mt-4 text-sm">
+            <Link href="/library" className="font-semibold text-brand-700 underline decoration-brand-300 underline-offset-4">
+              افتح مكتبتك
+            </Link>
+          </p>
+        ) : null}
       </section>
 
-      {/* الدروس المرئية — عنصر أساسي في المنصة */}
-      {videos.length ? (
-        <section className="mx-auto max-w-6xl px-4 pt-14" aria-labelledby="videos-title">
-          <div className="mb-6 flex items-end justify-between gap-4">
-            <div>
-              <h2 id="videos-title" className="flex items-center gap-2 text-2xl font-bold">
-                <PlayCircle className="size-6 text-accent-600" aria-hidden /> أحدث الدروس المرئية
-              </h2>
-              <p className="mt-1.5 text-sm text-muted">شرح الوحدات ومراجعات الاختبارات بالفيديو — شاهد المعاينة مجانًا</p>
-            </div>
-          </div>
-          <VideoGrid products={videos} ownedIds={owned} scroller />
-        </section>
-      ) : null}
-
-      {/* اختيار الصف */}
-      <section id="grades" className="mx-auto max-w-6xl scroll-mt-20 px-4 pt-14">
-        <SectionTitle title="اختر صفك الدراسي" subtitle="كل المذكرات والنماذج مرتبة حسب الصف والمادة" />
-        {visibleStages.length === 0 ? (
-          <EmptyState icon={<Layers />} title="المحتوى قيد التجهيز" description="نعمل حاليًا على تجهيز المذكرات، تابعنا قريبًا." />
+      <section id="grades" className="mx-auto mt-10 max-w-6xl scroll-mt-24 px-4 sm:mt-14" aria-label="اختر صفك الدراسي">
+        {grades.length === 0 ? (
+          <EmptyState title="المحتوى قيد التجهيز" description="نجهّز الشروحات والمذكرات الآن." />
         ) : (
-          <div className="space-y-10">
-            {visibleStages.map((stage) => (
-              <div key={stage.id}>
-                <div className="mb-4 flex items-baseline justify-between gap-3">
-                  <h3 className="text-lg font-bold text-brand-800">{stage.name}</h3>
-                  <span className="text-sm text-muted">{stage.description}</span>
-                </div>
-                <div className="grid grid-cols-2 gap-3 sm:gap-4 lg:grid-cols-4">
-                  {stage.grades.map((g) => {
-                    const st = stats.get(g.id);
-                    return (
-                      <Link
-                        key={g.id}
-                        href={`/grades/${g.slug}`}
-                        className="group relative overflow-hidden rounded-2xl border border-line bg-surface p-5 shadow-card transition-all hover:-translate-y-0.5 hover:border-brand-300 hover:shadow-lift"
-                      >
-                        <span className="num absolute -end-3 -top-6 text-[6.5rem] leading-none font-bold text-brand-50 transition-colors group-hover:text-brand-100" aria-hidden>
-                          {g.level}
-                        </span>
-                        <div className="relative">
-                          <p className="text-xl font-bold">{g.name}</p>
-                          <p className="mt-1 text-sm text-muted">
-                            {st ? (
-                              <>
-                                <span className="num">{st.subjects}</span> مواد · <span className="num">{st.products}</span> منتج
-                              </>
-                            ) : (
-                              "قريبًا"
-                            )}
-                          </p>
-                          <span className="mt-5 inline-flex items-center gap-1 text-sm font-semibold text-brand-700">
-                            تصفح المواد <ArrowLeft className="size-4 transition-transform group-hover:-translate-x-1" aria-hidden />
-                          </span>
-                        </div>
-                      </Link>
-                    );
-                  })}
-                </div>
-              </div>
-            ))}
-          </div>
+          <ul className="grid grid-cols-2 border-t-2 border-ink md:grid-cols-4" data-testid="grade-picker">
+            {grades.map((g) => {
+              const st = stats.get(g.id);
+              return (
+                <li key={g.id} className="border-b border-line odd:border-e md:border-b-0 md:border-e md:last:border-e-0">
+                  <Link href={`/grades/${g.slug}`} className="group flex h-full flex-col justify-between gap-4 px-3 pt-4 pb-5 transition-colors hover:bg-mist sm:px-5">
+                    <span className="font-display text-[clamp(5rem,13vw,9.5rem)] leading-[0.85] font-medium text-ink transition-colors group-hover:text-brand-700" aria-hidden>
+                      {arabicDigits(g.level)}
+                    </span>
+                    <span>
+                      <span className="block text-[1.05rem] font-semibold">{g.name}</span>
+                      {st ? <span className="text-sm text-muted">{arabicDigits(st.subjects)} مواد، {arabicDigits(st.products)} درسًا ومذكرة</span> : null}
+                    </span>
+                  </Link>
+                </li>
+              );
+            })}
+          </ul>
         )}
       </section>
 
-      {/* المعلمون */}
-      {teachers.length ? (
-        <section className="mx-auto max-w-6xl px-4 pt-16" aria-labelledby="teachers-title">
-          <div className="mb-6 flex items-end justify-between gap-4">
-            <div>
-              <h2 id="teachers-title" className="text-2xl font-bold">تعلّم مع نخبة المعلمين</h2>
-              <p className="mt-1.5 text-sm text-muted">اختر معلمك وتابع شروحاته ومراجعاته لكل اختبار</p>
+      {/* قبل الاختبار: درس مميز + جدول المراجعات */}
+      {feature || reviewRows.length ? (
+        <section className="mt-16 bg-ink text-white sm:mt-20" aria-labelledby="before-exam">
+          <div className="mx-auto max-w-6xl px-4 py-14 sm:py-16">
+            <div className="grid items-end gap-6 md:grid-cols-[1fr_auto]">
+              <div>
+                <h2 id="before-exam" className="text-[clamp(2rem,4vw,2.9rem)] text-white">
+                  قبل الاختبار
+                </h2>
+                <p className="mt-2 max-w-xl leading-8 text-white/75">مراجعات مركزة للاختبارات القصيرة وليلة الاختبار. شاهد أول درس منها مجانًا قبل أن تقرر.</p>
+              </div>
             </div>
-            <Link href="/teachers" className="shrink-0 text-sm font-semibold text-brand-700 hover:underline">
-              كل المعلمين
-            </Link>
+            <div className="mt-8 grid gap-8 lg:grid-cols-[1.15fr_1fr] lg:gap-12">
+              {feature ? <FeaturePanel p={feature} /> : null}
+              {reviewRows.length ? (
+                <ul className="border-t border-white/15">
+                  {reviewRows.map((p) => (
+                    <li key={p.id} className="border-b border-white/15">
+                      <Link href={`/products/${p.slug}`} className="group grid grid-cols-[1fr_auto] items-center gap-4 py-4">
+                        <span className="min-w-0">
+                          <span className="block text-xs font-semibold text-accent-600">{PRODUCT_TYPE_LABELS[p.type]}</span>
+                          <span className="mt-0.5 block leading-7 font-semibold group-hover:underline group-hover:underline-offset-4">{p.title}</span>
+                          <span className="block text-sm text-white/65">{productMeta(p, { grade: true })}</span>
+                        </span>
+                        <span className="text-[1.05rem] font-bold whitespace-nowrap">
+                          <span className="num">{filsToKwdString(p.priceFils)}</span> <span className="text-xs font-semibold text-white/65">د.ك</span>
+                        </span>
+                      </Link>
+                    </li>
+                  ))}
+                </ul>
+              ) : null}
+            </div>
           </div>
-          <TeacherGrid teachers={teachers} />
         </section>
       ) : null}
 
-      {/* أحدث المذكرات */}
-      {latest.length ? (
-        <section className="mx-auto max-w-6xl px-4 pt-16">
-          <SectionTitle title="أحدث المذكرات والنماذج" subtitle="ملفات PDF منظمة لكل مادة" />
-          <ProductGrid products={latest} ownedIds={owned} />
+      {/* المعلمون */}
+      {teachers.length ? (
+        <section className="mx-auto mt-16 grid max-w-6xl gap-8 px-4 sm:mt-20 lg:grid-cols-[17rem_1fr] lg:gap-12" aria-labelledby="teachers-title">
+          <div>
+            <h2 id="teachers-title" className="text-[clamp(1.9rem,3.2vw,2.6rem)]">
+              المعلمون
+            </h2>
+            <p className="mt-2 leading-8 text-muted">لكل معلم صفحة تجمع شرحه للوحدات ومراجعاته ومذكراته.</p>
+            <Link href="/teachers" className="mt-4 inline-block text-sm font-semibold text-brand-700 underline decoration-brand-300 underline-offset-4">
+              كل المعلمين
+            </Link>
+          </div>
+          <TeacherGrid teachers={teachers} columns={2} />
+        </section>
+      ) : null}
+
+      {/* أضيف حديثًا */}
+      {newVideos.length ? (
+        <section className="mx-auto mt-16 max-w-6xl px-4 sm:mt-20" aria-labelledby="new-title">
+          <h2 id="new-title" className="mb-2 text-[clamp(1.9rem,3.2vw,2.6rem)]">
+            دروس أضيفت حديثًا
+          </h2>
+          <p className="mb-6 text-muted">شرح الوحدات والدورات الكاملة، مرتبة من الأحدث.</p>
+          <ProductList products={newVideos} ownedIds={owned} showGrade />
         </section>
       ) : null}
 
       {/* الباقات */}
       {bundles.length ? (
-        <section className="mx-auto max-w-6xl px-4 pt-16">
-          <SectionTitle
-            title="الباقات والعروض"
-            subtitle="وفّر أكثر عند شراء المذكرات معًا"
-            action={
-              <Link href="/bundles" className="text-sm font-semibold text-brand-700 hover:underline">
-                كل الباقات
-              </Link>
-            }
-          />
-          <ProductGrid products={bundles} ownedIds={owned} />
+        <section className="mx-auto mt-16 max-w-6xl px-4 sm:mt-20" aria-labelledby="bundles-title">
+          <div className="mb-6 flex flex-wrap items-end justify-between gap-3">
+            <div>
+              <h2 id="bundles-title" className="text-[clamp(1.9rem,3.2vw,2.6rem)]">
+                الباقات
+              </h2>
+              <p className="mt-2 text-muted">السعر الظاهر هو المبلغ الذي تدفعه، والتوفير محسوب من أسعار محتوياتها منفردة.</p>
+            </div>
+            <Link href="/bundles" className="text-sm font-semibold text-brand-700 underline decoration-brand-300 underline-offset-4">
+              كل الباقات
+            </Link>
+          </div>
+          <ul className="grid gap-3">
+            {bundles.slice(0, 3).map((b) => (
+              <li key={b.id}>
+                <BundleRow b={b} owned={owned?.has(b.id)} />
+              </li>
+            ))}
+          </ul>
         </section>
       ) : null}
 
-      {/* المزايا */}
-      <section className="mx-auto max-w-6xl px-4 pt-16">
-        <SectionTitle title="لماذا تختار منصتنا؟" subtitle="صممنا المنصة لتكون أسهل طريق لمذكرتك" />
-        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-          {[
-            { Icon: PlayCircle, t: "شرح بالفيديو", d: "دروس مسجلة لكل وحدة ومراجعات قبل كل اختبار، تكمل من حيث توقفت." },
-            { Icon: Eye, t: "عاين قبل أن تشتري", d: "شاهد درسًا مجانيًا أو افتح صفحات من المذكرة وتأكد أنها تناسبك." },
-            { Icon: Zap, t: "وصول فوري", d: "بعد تأكيد الدفع تظهر المذكرة مباشرة في مكتبتك." },
-            { Icon: Lock, t: "دفع آمن", d: "الدفع عبر بوابة MyFatoorah المعتمدة، ولا نخزن بيانات بطاقتك." },
-            { Icon: Smartphone, t: "على أي جهاز", d: "شاهد دروسك واقرأ مذكراتك من الجوال أو الآيباد أو الكمبيوتر." },
-            { Icon: BadgePercent, t: "باقات توفّر عليك", d: "اشترِ الوحدة أو الدورة أو باقة المادة كاملة بسعر أقل." },
-          ].map(({ Icon, t, d }) => (
-            <div key={t} className="rounded-2xl border border-line bg-surface p-5">
-              <span className="grid size-11 place-items-center rounded-xl bg-brand-50 text-brand-700">
-                <Icon className="size-5.5" aria-hidden />
-              </span>
-              <h3 className="mt-4 font-bold">{t}</h3>
-              <p className="mt-1.5 text-sm leading-7 text-muted">{d}</p>
-            </div>
-          ))}
-        </div>
-      </section>
+      {/* المذكرات */}
+      {notes.length ? (
+        <section className="mx-auto mt-16 max-w-6xl px-4 sm:mt-20" aria-labelledby="notes-title">
+          <h2 id="notes-title" className="mb-2 text-[clamp(1.9rem,3.2vw,2.6rem)]">
+            مذكرات للطباعة والمراجعة
+          </h2>
+          <p className="mb-6 text-muted">مذكرات نهائية ونماذج اختبارات، مع معاينة لأول صفحاتها.</p>
+          <ProductList products={notes} ownedIds={owned} columns={2} showGrade showTeacher={false} />
+        </section>
+      ) : null}
 
-      {/* طريقة الاستخدام */}
-      <section className="mx-auto max-w-6xl px-4 pt-16">
-        <div className="rounded-3xl bg-brand-800 px-6 py-10 text-white sm:px-10">
-          <h2 className="text-2xl font-bold">أربع خطوات وتبدأ</h2>
-          <ol className="mt-8 grid gap-6 sm:grid-cols-2 lg:grid-cols-4">
-            {["اختر صفك الدراسي", "اختر المادة والمعلم", "عاين مجانًا وادفع بأمان", "شاهد وذاكر من مكتبتك"].map((s, i) => (
-              <li key={s} className="flex items-center gap-3">
-                <span className="num grid size-10 shrink-0 place-items-center rounded-full bg-accent-600 font-bold text-ink">{i + 1}</span>
-                <span className="font-semibold">{s}</span>
-              </li>
-            ))}
-          </ol>
-        </div>
+      {/* كيف تعمل — خطوات متتابعة فعلًا */}
+      <section className="mx-auto mt-16 max-w-6xl px-4 sm:mt-20" aria-labelledby="how-title">
+        <h2 id="how-title" className="mb-6 text-[clamp(1.9rem,3.2vw,2.6rem)]">
+          كيف تبدأ
+        </h2>
+        <ol className="grid border-t-2 border-ink sm:grid-cols-2 lg:grid-cols-4">
+          {[
+            { t: "اختر صفك ومادتك", d: "أو ابدأ من صفحة معلمك مباشرة." },
+            { t: "شاهد المعاينة", d: "أول درس أو صفحات من المذكرة مجانًا، بلا حساب." },
+            { t: "ادفع بكي نت أو بالبطاقة", d: "عبر بوابة دفع معتمدة، ولا نحتفظ ببيانات بطاقتك." },
+            { t: "ذاكر من مكتبتك", d: "على الجوال أو الآيباد أو الكمبيوتر، وتكمل من حيث توقفت." },
+          ].map((step, i) => (
+            <li key={step.t} className="border-b border-line py-5 sm:pe-6">
+              <span className="font-display text-4xl leading-none text-brand-700">{arabicDigits(i + 1)}</span>
+              <p className="mt-3 font-semibold">{step.t}</p>
+              <p className="mt-1 text-sm leading-7 text-muted">{step.d}</p>
+            </li>
+          ))}
+        </ol>
       </section>
 
       {/* الأسئلة الشائعة */}
       {settings.faq.length ? (
-        <section id="faq" className="mx-auto max-w-3xl scroll-mt-20 px-4 pt-16">
-          <SectionTitle title="الأسئلة الشائعة" />
-          <div className="divide-y divide-line overflow-hidden rounded-2xl border border-line bg-surface">
+        <section id="faq" className="mx-auto mt-16 max-w-3xl scroll-mt-24 px-4 sm:mt-20" aria-labelledby="faq-title">
+          <h2 id="faq-title" className="mb-4 text-[clamp(1.9rem,3.2vw,2.6rem)]">
+            الأسئلة الشائعة
+          </h2>
+          <div className="border-t border-line">
             {settings.faq.map((f, i) => (
-              <details key={i} className="group p-5 [&_summary::-webkit-details-marker]:hidden">
-                <summary className="flex cursor-pointer list-none items-center justify-between gap-4 font-semibold">
+              <details key={i} className="group border-b border-line py-4 [&_summary::-webkit-details-marker]:hidden">
+                <summary className="flex min-h-11 cursor-pointer list-none items-center justify-between gap-4 font-semibold">
                   {f.q}
-                  <span className="grid size-7 shrink-0 place-items-center rounded-full bg-brand-50 text-brand-700 transition-transform group-open:rotate-45" aria-hidden>
+                  <span className="font-display text-2xl leading-none text-brand-700 transition-transform group-open:rotate-45" aria-hidden>
                     +
                   </span>
                 </summary>
-                <p className="mt-3 text-sm leading-7 text-ink-soft">{f.a}</p>
+                <p className="mt-2 max-w-2xl leading-8 text-ink-soft">{f.a}</p>
               </details>
             ))}
           </div>
@@ -251,14 +227,59 @@ export default async function HomePage() {
   );
 }
 
-function SectionTitle({ title, subtitle, action }: { title: string; subtitle?: string; action?: React.ReactNode }) {
+/** لوحة الدرس المميز: معاينة كبيرة بزر واضح، والمعلم والعنوان أسفلها */
+function FeaturePanel({ p }: { p: ProductCard }) {
+  const href = p.previewLessonId ? `/watch/${p.id}?lesson=${p.previewLessonId}` : `/products/${p.slug}`;
   return (
-    <div className="mb-6 flex items-end justify-between gap-4">
-      <div>
-        <h2 className="text-2xl font-bold">{title}</h2>
-        {subtitle ? <p className="mt-1.5 text-sm text-muted">{subtitle}</p> : null}
+    <div>
+      <Link href={href} className="group relative block aspect-[16/10] overflow-hidden rounded-lg" style={{ backgroundColor: posterTone(p.subjectName, p.gradeName) }} data-testid="feature-lesson">
+        {p.thumbnailUrl ? (
+          // eslint-disable-next-line @next/next/no-img-element
+          <img src={p.thumbnailUrl} alt="" className="absolute inset-0 size-full object-cover opacity-80" />
+        ) : (
+          <span className="absolute inset-0 grid place-items-center font-display text-[clamp(3rem,8vw,5.5rem)] font-semibold text-white/95">{p.subjectName}</span>
+        )}
+        <span className="absolute start-4 bottom-4 inline-flex min-h-12 items-center gap-2 rounded-full bg-accent-600 px-5 font-semibold text-ink transition-transform group-hover:scale-[1.03]">
+          <Play className="size-4 fill-current" aria-hidden /> {p.previewLessonId ? "شاهد المعاينة" : "تفاصيل المراجعة"}
+        </span>
+      </Link>
+      <div className="mt-4 flex items-start gap-3">
+        {p.teacherName ? <TeacherAvatar name={p.teacherName} photoUrl={p.teacherPhotoUrl} size={44} className="bg-white/10 text-white" /> : null}
+        <div>
+          <Link href={`/products/${p.slug}`} className="text-lg leading-7 font-semibold hover:underline hover:underline-offset-4">
+            {p.title}
+          </Link>
+          <p className="text-sm text-white/65">{productMeta(p, { grade: true })}</p>
+        </div>
       </div>
-      {action}
     </div>
+  );
+}
+
+function BundleRow({ b, owned }: { b: ProductCard; owned?: boolean }) {
+  const saving = b.compareAtPriceFils && b.compareAtPriceFils > b.priceFils ? b.compareAtPriceFils - b.priceFils : 0;
+  return (
+    <Link href={`/products/${b.slug}`} className="grid gap-4 rounded-lg bg-mist p-5 transition-colors hover:bg-brand-50 sm:grid-cols-[1fr_auto] sm:items-center sm:p-6">
+      <span>
+        <span className="block text-[1.1rem] leading-7 font-semibold">{b.title}</span>
+        <span className="mt-1 block text-sm leading-6 text-muted">{b.summary || productMeta(b, { grade: true })}</span>
+      </span>
+      <span className="sm:text-end">
+        {owned ? (
+          <span className="font-semibold text-success">في مكتبتك</span>
+        ) : (
+          <>
+            <span className="block text-xl font-bold">
+              <span className="num">{filsToKwdString(b.priceFils)}</span> <span className="text-sm font-semibold text-muted">د.ك</span>
+            </span>
+            {saving ? (
+              <span className="text-sm text-brand-800">
+                توفّر <span className="num">{filsToKwdString(saving)}</span> د.ك
+              </span>
+            ) : null}
+          </>
+        )}
+      </span>
+    </Link>
   );
 }

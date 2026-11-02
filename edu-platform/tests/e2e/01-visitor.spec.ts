@@ -30,7 +30,7 @@ test.describe("الزائر", () => {
     await expect(page.getByRole("navigation", { name: "مسار التنقل" })).toContainText("الصف الثامن");
     await expect(page.getByRole("heading", { name: "المذكرات النهائية" })).toBeVisible();
     await expectNoHorizontalOverflow(page);
-    await page.getByRole("link", { name: "المذكرة النهائية — العلوم" }).first().click();
+    await page.getByRole("link", { name: "المذكرة النهائية لمادة العلوم" }).first().click();
     await expect(page).toHaveURL(/\/products\//);
     await expect(page.getByRole("heading", { level: 1 })).toContainText("المذكرة النهائية");
     await expect(page.getByText("3.000").first()).toBeVisible();

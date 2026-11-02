@@ -42,3 +42,11 @@ export function initials(name: string): string {
     .map((p) => p.replace(/^ال/u, "")[0] ?? "")
     .join(" ");
 }
+
+/** صيغة العدد العربية: 1 مفرد، 2 مثنى، 3–10 جمع، 11+ مفرد منصوب */
+export function arabicCount(n: number, forms: { one: string; two: string; few: string; many: string }): string {
+  if (n === 1) return `${forms.one} واحد`.replace(/ة واحد$/, "ة واحدة");
+  if (n === 2) return forms.two;
+  if (n >= 3 && n <= 10) return `${n} ${forms.few}`;
+  return `${n} ${forms.many}`;
+}

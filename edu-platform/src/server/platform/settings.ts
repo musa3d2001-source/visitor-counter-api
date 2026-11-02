@@ -36,12 +36,12 @@ export type PlatformSettings = z.infer<typeof settingsSchema>;
 export const DEFAULT_SETTINGS: PlatformSettings = {
   site_name: "منصة درب",
   tagline: "شروحات فيديو ومذكرات لطلاب الكويت",
-  hero_title: "ذاكر بذكاء… شروحات فيديو ومذكرات في مكان واحد",
+  hero_title: "اختر صفك، وابدأ من الدرس الذي تحتاجه اليوم.",
   hero_subtitle:
-    "شروحات فيديو لكل وحدة ومراجعات قبل كل اختبار، مذكرات نهائية ونماذج اختبارات — مع نخبة من المعلمين، مرتبة حسب صفك ومادتك، وتصلك فورًا بعد الدفع.",
+    "شرح بالفيديو لكل وحدة، ومراجعات قبل الاختبارات القصيرة وليلة الاختبار، ومذكرات جاهزة للطباعة. ادفع مرة واحدة، والمحتوى في مكتبتك فورًا.",
   logo_key: null,
-  primary_color: "#0f5257",
-  accent_color: "#d4973b",
+  primary_color: "#0c6b66",
+  accent_color: "#f2c230",
   whatsapp_number: "",
   contact_email: "",
   contact_phone: "",

@@ -1,23 +1,23 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import { CalendarDays } from "lucide-react";
-import { bestSellers, getGradeBySlug, listProducts, listSubjects } from "@/server/catalog/queries";
+import { bestSellers, getGradeBySlug, listProducts, listSubjects, teachersForSubject } from "@/server/catalog/queries";
 import { getCurrentUser } from "@/server/auth/session";
 import { accessibleProductIds } from "@/server/access/entitlements";
 import { Breadcrumbs } from "@/components/ui/breadcrumbs";
-import { Badge } from "@/components/ui/badge";
 import { EmptyState } from "@/components/ui/empty-state";
-import { ProductGrid } from "@/components/site/product-card";
-import { SubjectIcon } from "@/components/site/subject-icon";
+import { ProductList } from "@/components/site/product-card";
 import { termLabel } from "@/lib/labels";
+import { arabicCount } from "@/components/site/format";
+
+const arabicDigits = (n: number | string) => String(n).replace(/\d/g, (d) => "٠١٢٣٤٥٦٧٨٩"[Number(d)]);
 
 export async function generateMetadata({ params }: { params: Promise<{ gradeSlug: string }> }): Promise<Metadata> {
   const grade = await getGradeBySlug((await params).gradeSlug);
   if (!grade) return {};
   return {
-    title: `مذكرات ${grade.name}`,
-    description: `المذكرات النهائية ومراجعات ليلة الاختبار ونماذج الاختبارات لـ${grade.name} — ${grade.stageName} في الكويت.`,
+    title: `شروحات ومذكرات ${grade.name}`,
+    description: `شرح الوحدات بالفيديو ومراجعات الاختبارات والمذكرات النهائية لطلاب ${grade.name}، ${grade.stageName} في الكويت.`,
     alternates: { canonical: `/grades/${grade.slug}` },
   };
 }
@@ -25,71 +25,96 @@ export async function generateMetadata({ params }: { params: Promise<{ gradeSlug
 export default async function GradePage({ params }: { params: Promise<{ gradeSlug: string }> }) {
   const grade = await getGradeBySlug((await params).gradeSlug);
   if (!grade) notFound();
-  const [subjects, bundles, popular, latest, user] = await Promise.all([
+  const [subjects, bundles, popular, latest, reviewsExam, reviewsQuiz, user] = await Promise.all([
     listSubjects(grade.id),
-    listProducts({ gradeId: grade.id, type: "bundle", limit: 8 }),
+    listProducts({ gradeId: grade.id, type: "bundle", limit: 6 }),
     bestSellers({ gradeId: grade.id, limit: 4 }),
-    listProducts({ gradeId: grade.id, excludeType: "bundle", order: "latest", limit: 8 }),
+    listProducts({ gradeId: grade.id, excludeType: "bundle", order: "latest", limit: 6 }),
+    listProducts({ gradeId: grade.id, type: "exam_review", limit: 4 }),
+    listProducts({ gradeId: grade.id, type: "quiz_review", limit: 4 }),
     getCurrentUser(),
   ]);
   const owned = user ? await accessibleProductIds(user.id) : undefined;
+  const teachersBySubject = new Map(await Promise.all(subjects.map(async (s) => [s.id, await teachersForSubject(s.id)] as const)));
+  const reviews = [...reviewsExam, ...reviewsQuiz];
 
   return (
-    <div className="mx-auto max-w-6xl px-4 py-8">
+    <div className="mx-auto max-w-6xl px-4 pt-6 pb-8">
       <Breadcrumbs items={[{ label: "الرئيسية", href: "/" }, { label: grade.stageName, href: `/stages/${grade.stageSlug}` }, { label: grade.name }]} />
-      <div className="mt-4 flex flex-wrap items-end justify-between gap-3">
-        <div>
-          <h1 className="text-3xl font-bold">{grade.name}</h1>
-          <p className="mt-2 text-muted">اختر المادة لعرض مذكراتها ونماذجها</p>
-        </div>
-        <Badge tone="accent" className="px-3 py-1 text-sm">
-          <CalendarDays className="size-4" aria-hidden /> {termLabel(grade.currentTerm)}
-        </Badge>
-      </div>
 
-      <section className="mt-8" aria-labelledby="subjects">
-        <h2 id="subjects" className="sr-only">المواد الدراسية</h2>
+      <header className="mt-6 grid grid-cols-[auto_1fr] items-end gap-x-5 border-b-2 border-ink pb-6 sm:gap-x-8">
+        <span className="font-display text-[clamp(6rem,16vw,11rem)] leading-[0.8] font-medium text-brand-700" aria-hidden>
+          {arabicDigits(grade.level)}
+        </span>
+        <div className="pb-1">
+          <h1 className="text-[clamp(2.2rem,5vw,3.6rem)]">{grade.name}</h1>
+          <p className="mt-2 text-muted">
+            {grade.stageName}، {termLabel(grade.currentTerm)}
+          </p>
+        </div>
+      </header>
+
+      <section className="mt-10" aria-labelledby="subjects">
+        <h2 id="subjects" className="mb-1 text-[clamp(1.7rem,3vw,2.3rem)]">
+          المواد
+        </h2>
+        <p className="mb-5 text-muted">اختر المادة لترى شرح وحداتها ومراجعاتها ومذكراتها.</p>
         {subjects.length === 0 ? (
-          <EmptyState title="لا توجد مواد متاحة حاليًا" description="نجهز محتوى هذا الصف، تابعنا قريبًا." />
+          <EmptyState title="لا توجد مواد منشورة لهذا الصف بعد" description="نجهّز المحتوى الآن، وتظهر المواد هنا فور نشرها." />
         ) : (
-          <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-6">
-            {subjects.map((s) => (
-              <Link
-                key={s.id}
-                href={`/grades/${grade.slug}/${s.slug}`}
-                className="group flex flex-col items-center gap-3 rounded-2xl border border-line bg-surface px-3 py-6 text-center shadow-card transition hover:-translate-y-0.5 hover:border-brand-300 hover:shadow-lift"
-              >
-                <span className="grid size-14 place-items-center rounded-2xl bg-brand-50 text-brand-700 transition-colors group-hover:bg-brand-600 group-hover:text-white">
-                  <SubjectIcon name={s.icon} className="size-7" />
-                </span>
-                <span className="font-bold">{s.name}</span>
-                <span className="text-xs text-muted">
-                  <span className="num">{s.productCount}</span> منتج
-                </span>
-              </Link>
-            ))}
-          </div>
+          <ul className="grid border-t border-line sm:grid-cols-2 sm:gap-x-12">
+            {subjects.map((s) => {
+              const teachers = teachersBySubject.get(s.id) ?? [];
+              return (
+                <li key={s.id} className="border-b border-line">
+                  <Link href={`/grades/${grade.slug}/${s.slug}`} className="group flex min-h-20 items-center justify-between gap-4 py-4">
+                    <span>
+                      <span className="block font-display text-[1.9rem] leading-tight font-semibold group-hover:text-brand-700">{s.name}</span>
+                      {teachers.length ? <span className="text-sm text-muted">مع {teachers.slice(0, 2).map((t) => t.name).join(" و")}</span> : null}
+                    </span>
+                    <span className="shrink-0 text-sm text-muted">{arabicCount(s.productCount, { one: "عنصر", two: "عنصران", few: "عناصر", many: "عنصرًا" })}</span>
+                  </Link>
+                </li>
+              );
+            })}
+          </ul>
         )}
       </section>
 
+      {reviews.length ? (
+        <section className="mt-14" aria-labelledby="reviews">
+          <h2 id="reviews" className="mb-1 text-[clamp(1.7rem,3vw,2.3rem)]">
+            قبل الاختبار
+          </h2>
+          <p className="mb-5 text-muted">مراجعات مركزة لاختبارات {grade.name} القصيرة والنهائية.</p>
+          <ProductList products={reviews} ownedIds={owned} />
+        </section>
+      ) : null}
+
       {bundles.length ? (
-        <section className="mt-14">
-          <h2 className="mb-5 text-2xl font-bold">باقات {grade.name}</h2>
-          <ProductGrid products={bundles} ownedIds={owned} />
+        <section className="mt-14" aria-labelledby="bundles">
+          <h2 id="bundles" className="mb-5 text-[clamp(1.7rem,3vw,2.3rem)]">
+            باقات {grade.name}
+          </h2>
+          <ProductList products={bundles} ownedIds={owned} />
         </section>
       ) : null}
 
       {popular.length ? (
-        <section className="mt-14">
-          <h2 className="mb-5 text-2xl font-bold">الأكثر طلبًا</h2>
-          <ProductGrid products={popular} ownedIds={owned} />
+        <section className="mt-14" aria-labelledby="popular">
+          <h2 id="popular" className="mb-5 text-[clamp(1.7rem,3vw,2.3rem)]">
+            الأكثر طلبًا
+          </h2>
+          <ProductList products={popular} ownedIds={owned} columns={2} />
         </section>
       ) : null}
 
       {latest.length ? (
-        <section className="mt-14">
-          <h2 className="mb-5 text-2xl font-bold">أحدث الإضافات</h2>
-          <ProductGrid products={latest} ownedIds={owned} />
+        <section className="mt-14" aria-labelledby="latest">
+          <h2 id="latest" className="mb-5 text-[clamp(1.7rem,3vw,2.3rem)]">
+            أضيف حديثًا
+          </h2>
+          <ProductList products={latest} ownedIds={owned} columns={2} />
         </section>
       ) : null}
     </div>
