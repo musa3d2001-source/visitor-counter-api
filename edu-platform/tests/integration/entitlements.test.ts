@@ -74,13 +74,21 @@ describe("bundles", () => {
     expect(await hasProductAccess(u.id, direct.id)).toBe(true);
   });
 
-  it("nested bundles and non-bundle containers are rejected by the database", async () => {
+  it("containers may nest (bundle ← course) but cycles and PDF containers are rejected by the database", async () => {
     const p = await createProduct();
     const inner = await createBundle({ items: [p.id] });
     const outer = await createBundle({ items: [] });
-    await expect(sql`insert into bundle_items (bundle_id, product_id) values (${outer.id}, ${inner.id})`).rejects.toThrow(/nested bundles/);
+    // التداخل مسموح الآن (باقة شاملة تضم باقة/دورة)
+    await sql`insert into bundle_items (bundle_id, product_id) values (${outer.id}, ${inner.id})`;
+    // الحلقات ممنوعة
+    await expect(sql`insert into bundle_items (bundle_id, product_id) values (${inner.id}, ${outer.id})`).rejects.toThrow(/cycle/);
+    // منتج PDF لا يكون حاوية
     const other = await createProduct();
-    await expect(sql`insert into bundle_items (bundle_id, product_id) values (${other.id}, ${p.id})`).rejects.toThrow(/bundle product/);
+    await expect(sql`insert into bundle_items (bundle_id, product_id) values (${other.id}, ${p.id})`).rejects.toThrow(/container must be/);
+    // المشتري للباقة الخارجية يصل للمحتوى المتداخل
+    const u = await createUser();
+    await sql.begin((tx) => grantProduct(tx, { userId: u.id, productId: outer.id, source: "purchase" }));
+    expect(await hasProductAccess(u.id, p.id)).toBe(true);
   });
 });
 

@@ -148,7 +148,7 @@ export async function setStatusAction(_prev: ActionState, fd: FormData): Promise
     revalidatePath("/admin/products");
     revalidatePath("/admin/bundles");
     revalidatePath("/", "layout");
-    const msg = { published: "تم نشر المنتج وأصبح ظاهرًا للطلاب", hidden: "تم إخفاء المنتج عن الطلاب", draft: "أُعيد المنتج إلى المسودات", archived: "تمت أرشفة المنتج" }[status.data];
+    const msg = { published: "تم نشر المنتج وأصبح ظاهرًا للطلاب", hidden: "تم إخفاء المنتج عن الطلاب", draft: "أُعيد المنتج إلى المسودات", in_review: "أُرسل المنتج للمراجعة", archived: "تمت أرشفة المنتج" }[status.data];
     return { ok: true, message: msg };
   });
 }

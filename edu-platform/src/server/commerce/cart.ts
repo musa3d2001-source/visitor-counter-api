@@ -4,6 +4,7 @@ import { sql } from "../db";
 import { env } from "../env";
 import { getPublishedProductsByIds, type ProductCard } from "../catalog/queries";
 import { accessibleProductIds } from "../access/entitlements";
+import { isContainerType } from "@/lib/labels";
 
 /**
  * السلة: قائمة معرفات منتجات في كوكي (تعمل للزائر قبل تسجيل الدخول).
@@ -50,14 +51,19 @@ export type CartView = {
   notices: string[];
 };
 
-/** عناصر الباقات الموجودة في السلة: map productId -> bundleId */
-async function bundleCoverage(bundleIds: string[]): Promise<Map<string, string>> {
+/** محتويات الحاويات (باقة/دورة/وحدة) الموجودة في السلة بأي عمق: map productId -> containerId */
+export async function containerCoverage(containerIds: string[]): Promise<Map<string, string>> {
   const map = new Map<string, string>();
-  if (bundleIds.length === 0) return map;
-  const rows = await sql<{ bundle_id: string; product_id: string }[]>`
-    select bundle_id, product_id from bundle_items where bundle_id = any(${bundleIds}::uuid[])
+  if (containerIds.length === 0) return map;
+  const rows = await sql<{ root: string; product_id: string }[]>`
+    with recursive c(root, product_id) as (
+      select bi.bundle_id, bi.product_id from bundle_items bi where bi.bundle_id = any(${containerIds}::uuid[])
+      union
+      select c.root, bi.product_id from c join bundle_items bi on bi.bundle_id = c.product_id
+    )
+    select root, product_id from c
   `;
-  for (const r of rows) if (!map.has(r.product_id)) map.set(r.product_id, r.bundle_id);
+  for (const r of rows) if (!map.has(r.product_id) && r.product_id !== r.root) map.set(r.product_id, r.root);
   return map;
 }
 
@@ -68,12 +74,12 @@ async function bundleCoverage(bundleIds: string[]): Promise<Map<string, string>>
 export async function computeCart(ids: string[], userId: string | null): Promise<CartView> {
   const products = await getPublishedProductsByIds(ids);
   const owned = userId ? await accessibleProductIds(userId) : new Set<string>();
-  const coverage = await bundleCoverage(products.filter((p) => p.type === "bundle").map((p) => p.id));
+  const coverage = await containerCoverage(products.filter((p) => isContainerType(p.type)).map((p) => p.id));
   const notices: string[] = [];
   const lines: CartLine[] = products.map((p) => ({
     ...p,
     owned: owned.has(p.id),
-    coveredByBundleId: p.type !== "bundle" ? (coverage.get(p.id) ?? null) : null,
+    coveredByBundleId: coverage.get(p.id) ?? null,
   }));
   if (products.length < ids.length) notices.push("تمت إزالة منتج لم يعد متاحًا من سلتك.");
   for (const l of lines) {

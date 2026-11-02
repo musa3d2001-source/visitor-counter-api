@@ -19,7 +19,7 @@ export type SessionUser = {
   email: string;
   fullName: string;
   phone: string | null;
-  role: "student" | "admin";
+  role: "student" | "admin" | "teacher";
   gradeId: string | null;
   isActive: boolean;
 };
@@ -72,7 +72,7 @@ export async function validateSessionToken(token: string): Promise<{ user: Sessi
       email: string;
       full_name: string;
       phone: string | null;
-      role: "student" | "admin";
+      role: "student" | "admin" | "teacher";
       grade_id: string | null;
       is_active: boolean;
     }[]

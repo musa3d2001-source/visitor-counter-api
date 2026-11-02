@@ -5,6 +5,20 @@ import { revalidatePath } from "next/cache";
 import { getCartIds, writeCartIds } from "@/server/commerce/cart";
 import { getPublishedProductsByIds } from "@/server/catalog/queries";
 import { sql } from "@/server/db";
+import { containerCoverage } from "@/server/commerce/cart";
+import { isContainerType } from "@/lib/labels";
+
+async function containerItems(id: string): Promise<string[]> {
+  const rows = await sql<{ product_id: string }[]>`
+    with recursive c(product_id) as (
+      select product_id from bundle_items where bundle_id = ${id}
+      union
+      select bi.product_id from c join bundle_items bi on bi.bundle_id = c.product_id
+    )
+    select product_id from c
+  `;
+  return rows.map((r) => r.product_id);
+}
 import { uuidSchema } from "@/lib/validation";
 import type { ActionState } from "@/lib/action-state";
 
@@ -17,19 +31,19 @@ async function addProduct(productId: string): Promise<{ ok: boolean; message: st
   const ids = await getCartIds();
   if (ids.includes(product.id)) return { ok: true, message: "المنتج موجود في سلتك" };
 
-  if (product.type === "bundle") {
-    // إزالة عناصر الباقة الموجودة في السلة لأنها مضمّنة فيها
-    const items = await sql<{ product_id: string }[]>`select product_id from bundle_items where bundle_id = ${product.id}`;
-    const inBundle = new Set(items.map((i) => i.product_id));
-    const kept = ids.filter((x) => !inBundle.has(x));
+  if (isContainerType(product.type)) {
+    // إزالة المحتويات المضمّنة في الحاوية (بأي عمق) من السلة
+    const inside = new Set(await containerItems(product.id));
+    const kept = ids.filter((x) => !inside.has(x));
+    // وإن كانت الحاوية نفسها مضمّنة في حاوية موجودة في السلة نرفض
+    const cover = await containerCoverage(kept.filter((x) => x !== product.id));
+    if (cover.has(product.id)) return { ok: false, message: "هذا المحتوى مضمّن في باقة موجودة في سلتك" };
     await writeCartIds([...kept, product.id]);
-    return { ok: true, message: kept.length < ids.length ? "أضيفت الباقة وأزلنا المذكرات المضمّنة فيها من السلة" : "أضيفت الباقة إلى السلة" };
+    return { ok: true, message: kept.length < ids.length ? "أضيفت إلى السلة وأزلنا المحتويات المضمّنة فيها" : "أضيفت إلى السلة" };
   }
   if (ids.length) {
-    const covering = await sql<{ bundle_id: string }[]>`
-      select bundle_id from bundle_items where product_id = ${product.id} and bundle_id = any(${ids}::uuid[]) limit 1
-    `;
-    if (covering.length) return { ok: false, message: "هذه المذكرة مضمّنة في باقة موجودة في سلتك" };
+    const cover = await containerCoverage(ids);
+    if (cover.has(product.id)) return { ok: false, message: "هذا المحتوى مضمّن في باقة موجودة في سلتك" };
   }
   await writeCartIds([...ids, product.id]);
   return { ok: true, message: "أضيفت إلى السلة" };

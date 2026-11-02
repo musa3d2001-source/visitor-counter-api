@@ -15,14 +15,24 @@ function buildCsp(nonce: string) {
   } catch {
     supabase = "";
   }
-  const bunny = "https://iframe.mediadelivery.net";
+  const origin = (u: string | undefined, fallback: string) => {
+    try {
+      return new URL(u || fallback).origin;
+    } catch {
+      return new URL(fallback).origin;
+    }
+  };
+  // Bunny Stream: مشغل التضمين، الرفع المباشر TUS، صور المعاينة
+  const bunny = origin(process.env.BUNNY_STREAM_EMBED_BASE, "https://iframe.mediadelivery.net");
+  const bunnyTus = origin(process.env.BUNNY_STREAM_TUS_ENDPOINT, "https://video.bunnycdn.com/tusupload");
+  const bunnyCdn = process.env.BUNNY_STREAM_CDN_HOSTNAME ? `https://${process.env.BUNNY_STREAM_CDN_HOSTNAME}` : "";
   return [
     `default-src 'self'`,
     `script-src 'self' 'nonce-${nonce}' 'strict-dynamic' 'wasm-unsafe-eval'${isDev ? " 'unsafe-eval'" : ""}`,
     `style-src 'self' 'unsafe-inline'`,
-    `img-src 'self' blob: data: https://*.myfatoorah.com ${supabase}`.trim(),
+    `img-src 'self' blob: data: https://*.myfatoorah.com ${supabase} ${bunnyCdn}`.trim(),
     `font-src 'self' data:`,
-    `connect-src 'self' ${supabase}`.trim(),
+    `connect-src 'self' ${supabase} ${bunnyTus}`.trim(),
     `media-src 'self' blob: ${supabase}`.trim(),
     `worker-src 'self' blob:`,
     `frame-src ${bunny}`,

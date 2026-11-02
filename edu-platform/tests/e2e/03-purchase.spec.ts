@@ -117,7 +117,7 @@ test.describe("الشراء والدفع", () => {
     await expect(page.getByText("أضيفت إلى السلة").first()).toBeVisible();
     await page.goto(`/products/${bundle.slug}`);
     await page.getByTestId("add-to-cart").first().click();
-    await expect(page.getByText("أزلنا المذكرات المضمّنة فيها").first()).toBeVisible();
+    await expect(page.getByText("أزلنا المحتويات المضمّنة فيها").first()).toBeVisible();
     await page.goto("/checkout");
     await expect(page.getByTestId("checkout-total")).toContainText((bundle.price_fils / 1000).toFixed(3));
     await checkoutAndPay(page, "success");

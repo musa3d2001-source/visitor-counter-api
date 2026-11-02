@@ -4,6 +4,7 @@ import { computeCart } from "./cart";
 import { evaluateCoupon } from "./coupons";
 import { grantProduct, revokeProduct } from "../access/entitlements";
 import { audit } from "../platform/audit";
+import { recordEarnings, reverseEarnings } from "./earnings";
 import type { SessionUser } from "../auth/session";
 
 export type OrderRow = {
@@ -68,10 +69,18 @@ export async function createOrder(input: {
               ${input.user.fullName}, ${input.user.email}, ${input.user.phone})
       returning *
     `;
+    // لقطة هوية المعلم وقت الشراء — لا تتغير بتعديل ملفه لاحقًا
+    const teachers = await tx<{ id: string; teacher_id: string | null; teacher_name: string | null }[]>`
+      select p.id, p.teacher_id, t.display_name as teacher_name
+      from products p left join teachers t on t.id = p.teacher_id
+      where p.id = any(${cart.payableLines.map((l) => l.id)}::uuid[])
+    `;
+    const byId = new Map(teachers.map((t) => [t.id, t]));
     for (const line of cart.payableLines) {
+      const t = byId.get(line.id);
       await tx`
-        insert into order_items (order_id, product_id, title, product_type, unit_price_fils)
-        values (${order.id}, ${line.id}, ${line.title}, ${line.type}, ${line.priceFils})
+        insert into order_items (order_id, product_id, title, product_type, unit_price_fils, teacher_id, teacher_name)
+        values (${order.id}, ${line.id}, ${line.title}, ${line.type}, ${line.priceFils}, ${t?.teacher_id ?? null}, ${t?.teacher_name ?? null})
       `;
     }
     return order;
@@ -125,6 +134,7 @@ export async function markOrderPaid(
   for (const it of items) {
     await grantProduct(db, { userId: order.user_id, productId: it.product_id, source: order.total_fils === 0 ? "free" : "purchase", orderId: order.id });
   }
+  await recordEarnings(db, updated);
   if (order.coupon_id) {
     await db`
       insert into coupon_redemptions (coupon_id, order_id, user_id)
@@ -177,8 +187,9 @@ export async function refundOrder(input: { orderId: string; adminId: string; rea
       `;
       if (rows.length) revoked += await revokeProduct(tx, { userId: order.user_id, productId: it.product_id, revokedBy: input.adminId, reason: `استرداد: ${input.reason}` });
     }
+    const reversedEarnings = await reverseEarnings(tx, order.id, input.reason);
     await audit(
-      { actorId: input.adminId, action: "order.refund", entityType: "order", entityId: order.id, reason: input.reason, metadata: { amountFils: amount, revoked, refundId: refund.id }, ip: input.ip },
+      { actorId: input.adminId, action: "order.refund", entityType: "order", entityId: order.id, reason: input.reason, metadata: { amountFils: amount, revoked, refundId: refund.id, reversedEarnings }, ip: input.ip },
       tx,
     );
     return { refundId: refund.id, paymentId: payment?.id ?? null, revoked, amountFils: amount };

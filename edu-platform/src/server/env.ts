@@ -47,8 +47,20 @@ const schema = z.object({
     .transform((v) => v === "true"),
   MAIL_FROM: z.string().default("المنصة التعليمية <no-reply@example.com>"),
 
+  /** مزود الفيديو للرفع الجديد: file (التخزين الخاص للمنصة) أو bunny (Bunny Stream — موصى به للإنتاج) */
+  VIDEO_PROVIDER: z.enum(["file", "bunny"]).default("file"),
   BUNNY_STREAM_LIBRARY_ID: z.string().optional(),
+  /** مفتاح API للمكتبة (AccessKey) — سري، على الخادم فقط */
+  BUNNY_STREAM_API_KEY: z.string().optional(),
+  /** مفتاح توقيع روابط التضمين (Embed Token Authentication) */
   BUNNY_STREAM_TOKEN_KEY: z.string().optional(),
+  /** مفتاح القراءة فقط للمكتبة — يُستخدم للتحقق من توقيع Webhook حسب وثائق Bunny */
+  BUNNY_STREAM_READONLY_API_KEY: z.string().optional(),
+  /** نطاق CDN الخاص بالمكتبة لصور المعاينة (مثل vz-xxxx.b-cdn.net) */
+  BUNNY_STREAM_CDN_HOSTNAME: z.string().optional(),
+  BUNNY_STREAM_API_BASE: z.string().url().default("https://video.bunnycdn.com"),
+  BUNNY_STREAM_TUS_ENDPOINT: z.string().url().default("https://video.bunnycdn.com/tusupload"),
+  BUNNY_STREAM_EMBED_BASE: z.string().url().default("https://iframe.mediadelivery.net"),
 
   /** يُفعَّل فقط عند تشغيل الخادم خلف وكيل موثوق (Vercel) لقراءة IP العميل */
   TRUST_PROXY: z
@@ -69,6 +81,9 @@ export function env(): Env {
     throw new Error(`إعدادات البيئة غير صحيحة:\n${issues}`);
   }
   const e = parsed.data;
+  if (e.VIDEO_PROVIDER === "bunny" && (!e.BUNNY_STREAM_LIBRARY_ID || !e.BUNNY_STREAM_API_KEY || !e.BUNNY_STREAM_TOKEN_KEY)) {
+    throw new Error("VIDEO_PROVIDER=bunny يتطلب BUNNY_STREAM_LIBRARY_ID و BUNNY_STREAM_API_KEY و BUNNY_STREAM_TOKEN_KEY");
+  }
   if (e.STORAGE_DRIVER === "supabase" && (!e.SUPABASE_URL || !e.SUPABASE_SERVICE_ROLE_KEY)) {
     throw new Error("STORAGE_DRIVER=supabase يتطلب SUPABASE_URL و SUPABASE_SERVICE_ROLE_KEY");
   }

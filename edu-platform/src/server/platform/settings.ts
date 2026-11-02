@@ -26,6 +26,9 @@ export const settingsSchema = z.object({
   watermark_enabled: z.boolean(),
   faq: z.array(faqItem).max(30),
   footer_note: z.string().max(300),
+  /** الرسوم المعتمدة لحساب صافي أرباح المعلمين: نسبة (نقاط أساس 100 = 1%) + مبلغ ثابت لكل طلب بالفلس */
+  fee_percent_bps: z.number().int().min(0).max(2000),
+  fee_fixed_fils: z.number().int().min(0).max(10000),
 });
 
 export type PlatformSettings = z.infer<typeof settingsSchema>;
@@ -44,7 +47,7 @@ export const DEFAULT_SETTINGS: PlatformSettings = {
   contact_phone: "",
   instagram_url: "",
   academic_year: "2026-2027",
-  videos_enabled: false,
+  videos_enabled: true,
   watermark_enabled: true,
   faq: [
     {
@@ -65,6 +68,8 @@ export const DEFAULT_SETTINGS: PlatformSettings = {
     },
   ],
   footer_note: "جميع الحقوق محفوظة. المحتوى مخصص للاستخدام الشخصي للطالب فقط.",
+  fee_percent_bps: 0,
+  fee_fixed_fils: 0,
 };
 
 export const getSettings = cache(async (): Promise<PlatformSettings> => {
