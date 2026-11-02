@@ -70,10 +70,10 @@ function NextOverlay({ nextHref, nextTitle, onCancel }: { nextHref: string; next
         <p className="text-sm text-white/75">الدرس التالي خلال <span className="num font-bold">{left}</span> ثوانٍ</p>
         {nextTitle ? <p className="mt-1 text-lg font-bold">{nextTitle}</p> : null}
         <div className="mt-4 flex justify-center gap-2">
-          <button className="rounded-xl bg-accent-600 px-4 py-2 font-semibold text-ink" onClick={() => router.push(nextHref)} data-testid="next-lesson-now">
+          <button className="rounded-lg bg-accent-600 px-4 py-2 font-semibold text-ink" onClick={() => router.push(nextHref)} data-testid="next-lesson-now">
             شاهد الآن
           </button>
-          <button className="rounded-xl border border-white/40 px-4 py-2 font-semibold" onClick={onCancel}>
+          <button className="rounded-lg border border-white/40 px-4 py-2 font-semibold" onClick={onCancel}>
             إلغاء
           </button>
         </div>
@@ -218,7 +218,7 @@ function FilePlayer({ lessonId, src, startAt, trackProgress, watermark, nextHref
       ref={containerRef}
       data-testid="watch-player"
       data-kind="file"
-      className={cn("group/player relative aspect-video w-full overflow-hidden bg-black select-none", fullscreen ? "" : "rounded-2xl", !showControls && playing ? "cursor-none" : "")}
+      className={cn("group/player relative aspect-video w-full overflow-hidden bg-black select-none", fullscreen ? "" : "rounded-lg", !showControls && playing ? "cursor-none" : "")}
       onContextMenu={(e) => e.preventDefault()}
       onMouseMove={poke}
       onTouchStart={poke}
@@ -292,7 +292,7 @@ function FilePlayer({ lessonId, src, startAt, trackProgress, watermark, nextHref
 
       {!playing && !ended && !error && !waiting ? (
         <button className="absolute inset-0 z-10 grid place-items-center" onClick={toggle} aria-label="تشغيل">
-          <span className="grid size-16 place-items-center rounded-full bg-white/90 text-brand-700 shadow-lift transition hover:scale-105">
+          <span className="grid size-16 place-items-center rounded-full bg-white text-ink transition-colors hover:bg-accent-200">
             <Play className="size-8 translate-x-0.5" fill="currentColor" aria-hidden />
           </span>
         </button>
@@ -301,7 +301,7 @@ function FilePlayer({ lessonId, src, startAt, trackProgress, watermark, nextHref
       {ended && nextHref ? <NextOverlay nextHref={nextHref} nextTitle={nextTitle ?? null} onCancel={() => setEnded(false)} /> : null}
       {ended && !nextHref ? (
         <div className="absolute inset-0 z-20 grid place-items-center bg-black/70 text-white">
-          <button className="flex items-center gap-2 rounded-xl bg-white/15 px-4 py-2 font-semibold" onClick={() => videoRef.current && ((videoRef.current.currentTime = 0), void videoRef.current.play())}>
+          <button className="flex items-center gap-2 rounded-lg bg-white/15 px-4 py-2 font-semibold" onClick={() => videoRef.current && ((videoRef.current.currentTime = 0), void videoRef.current.play())}>
             <SkipBack className="size-5" aria-hidden /> إعادة المشاهدة
           </button>
         </div>
@@ -386,7 +386,7 @@ function FilePlayer({ lessonId, src, startAt, trackProgress, watermark, nextHref
                 <Gauge className="size-4.5" aria-hidden /> <span className="num">{speed}x</span>
               </button>
               {speedOpen ? (
-                <div role="menu" className="absolute end-0 bottom-11 min-w-28 overflow-hidden rounded-xl bg-[#1f2526] py-1 shadow-lift" dir="rtl">
+                <div role="menu" className="absolute end-0 bottom-11 min-w-28 overflow-hidden rounded-lg bg-ink py-1 ring-1 ring-white/10" dir="rtl">
                   {SPEEDS.map((s) => (
                     <button
                       key={s}
@@ -456,7 +456,7 @@ function BunnyPlayer({ lessonId, embedUrl, startAt, trackProgress, nextHref, nex
   }, [embedUrl, startAt, save]);
 
   return (
-    <div data-testid="watch-player" data-kind="bunny" className="relative aspect-video w-full overflow-hidden rounded-2xl bg-black">
+    <div data-testid="watch-player" data-kind="bunny" className="relative aspect-video w-full overflow-hidden rounded-lg bg-black">
       <iframe
         ref={iframeRef}
         src={embedUrl}

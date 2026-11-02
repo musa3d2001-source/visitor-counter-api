@@ -8,7 +8,7 @@ test.describe("الزائر", () => {
     await expect(page.locator("html")).toHaveAttribute("dir", "rtl");
     await expect(page.locator("html")).toHaveAttribute("lang", "ar");
     await expect(page.getByRole("heading", { level: 1 })).toBeVisible();
-    await expect(page.getByRole("heading", { name: "اختر صفك الدراسي" })).toBeVisible();
+    await expect(page.getByRole("region", { name: "اختر صفك الدراسي" }).getByTestId("grade-picker")).toBeVisible();
     for (const g of ["الصف السادس", "الصف السابع", "الصف الثامن", "الصف التاسع"]) {
       await expect(page.locator("#grades").getByText(g, { exact: true })).toBeVisible();
     }

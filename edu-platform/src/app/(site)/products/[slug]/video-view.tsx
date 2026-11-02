@@ -1,15 +1,12 @@
 import Image from "next/image";
 import Link from "next/link";
-import { CalendarClock, CircleCheck, Clock, FileText, Gift, Lock, PlayCircle, ShieldCheck } from "lucide-react";
+import { Check, CircleCheck, FileText, Lock, Play } from "lucide-react";
 import type { PlaylistGroup, ProductCard, ProductDetail, PublicFileInfo } from "@/server/catalog/queries";
-import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Price } from "@/components/ui/price";
-import { Alert } from "@/components/ui/alert";
 import { AddToCart } from "@/components/site/add-to-cart";
-import { ProductCover } from "@/components/site/product-cover";
-import { ProductGrid } from "@/components/site/product-card";
-import { VideoGrid } from "@/components/site/video-card";
+import { posterTone } from "@/components/site/product-cover";
+import { ProductList } from "@/components/site/product-card";
 import { TeacherAvatar } from "@/components/site/teacher-avatar";
 import { formatClock, formatTotalDuration, lessonsLabel } from "@/components/site/format";
 import { PRODUCT_TYPE_LABELS, termLabel } from "@/lib/labels";
@@ -54,142 +51,153 @@ export function VideoProductView({
   const contents = product.contents.split("\n").map((l) => l.trim()).filter(Boolean);
   const mainFiles = files.filter((f) => f.kind === "main");
   const watchHref = `/watch/${product.id}${resumeLessonId ?? firstLesson ? `?lesson=${resumeLessonId ?? firstLesson}` : ""}`;
+  const facts = [
+    product.subjectName ?? "عدة مواد",
+    product.gradeName,
+    product.term ? termLabel(product.term).replace("الفصل الدراسي ", "الفصل ") : null,
+  ].filter(Boolean);
+  let n = 0;
 
   return (
     <>
-      <div className="mt-6 grid gap-8 lg:grid-cols-[1fr_380px] lg:gap-10">
+      <header className="mt-6 max-w-3xl">
+        <p className="text-sm font-semibold text-brand-700">{PRODUCT_TYPE_LABELS[product.type]}</p>
+        <h1 className="mt-1 text-[clamp(2.1rem,5vw,3.3rem)]">{product.title}</h1>
+        {product.summary ? <p className="mt-3 text-lg leading-8 text-ink-soft">{product.summary}</p> : null}
+        <p className="mt-3 text-sm text-muted">{facts.join("، ")}</p>
+      </header>
+
+      <div className="mt-8 grid gap-8 lg:grid-cols-[minmax(0,1fr)_22rem] lg:gap-12">
         <div className="min-w-0">
-          {/* الصورة المصغرة مع زر المعاينة */}
-          <div className="relative aspect-video overflow-hidden rounded-3xl bg-brand-900 shadow-lift">
+          {/* شاشة المعاينة */}
+          <div className="relative aspect-video overflow-hidden rounded-lg bg-ink">
             {product.thumbnailUrl ? (
-              <Image src={product.thumbnailUrl} alt="" fill priority sizes="(max-width: 1024px) 100vw, 700px" className="object-cover" />
+              <Image src={product.thumbnailUrl} alt="" fill priority sizes="(max-width: 1024px) 100vw, 760px" className="object-cover" />
             ) : (
-              <div className="absolute inset-0 [&>div]:!aspect-auto [&>div]:h-full" aria-hidden>
-                <ProductCover coverUrl={null} title={product.title} type={product.type} subjectName={product.subjectName} gradeName={product.gradeName} compact />
+              <div className="absolute inset-0 flex flex-col p-5 text-white sm:p-7" style={{ backgroundColor: posterTone(product.subjectName, product.gradeName) }} aria-hidden>
+                <span className="text-sm text-white/80">{product.gradeName}</span>
+                <span className="mt-1 font-display text-[clamp(2.4rem,7vw,4.5rem)] leading-none font-semibold">{product.subjectName ?? PRODUCT_TYPE_LABELS[product.type]}</span>
               </div>
             )}
-            <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-black/5" aria-hidden />
-            <div className="absolute inset-0 grid place-items-center">
+            <div className="absolute inset-x-0 bottom-0 flex flex-wrap items-end justify-between gap-3 bg-gradient-to-t from-black/55 to-transparent p-4 pt-16 sm:p-5 sm:pt-20">
               {isOwned ? (
-                <Link href={watchHref} className="flex items-center gap-2 rounded-full bg-white/95 px-5 py-3 font-bold text-brand-800 shadow-lift transition hover:scale-105" data-testid="continue-watching">
-                  <PlayCircle className="size-6" aria-hidden /> {resumeLessonId ? "تابع المشاهدة" : "ابدأ المشاهدة"}
+                <Link
+                  href={watchHref}
+                  className="inline-flex min-h-12 items-center gap-2.5 rounded-lg bg-white px-5 font-semibold text-ink transition-colors hover:bg-accent-200"
+                  data-testid="continue-watching"
+                >
+                  <Play className="size-4 fill-current" aria-hidden /> {resumeLessonId ? "تابع المشاهدة" : "ابدأ المشاهدة"}
                 </Link>
               ) : product.previewLessonId ? (
                 <Link
                   href={`/watch/${product.id}?lesson=${product.previewLessonId}`}
-                  className="flex items-center gap-2 rounded-full bg-white/95 px-5 py-3 font-bold text-brand-800 shadow-lift transition hover:scale-105"
+                  className="inline-flex min-h-12 items-center gap-2.5 rounded-lg bg-white px-5 font-semibold text-ink transition-colors hover:bg-accent-200"
                   data-testid="watch-preview"
                 >
-                  <PlayCircle className="size-6" aria-hidden /> شاهد المعاينة المجانية
+                  <Play className="size-4 fill-current" aria-hidden /> شاهد المعاينة المجانية
                 </Link>
               ) : (
-                <span className="grid size-16 place-items-center rounded-full bg-white/85 text-brand-700" aria-hidden>
-                  <PlayCircle className="size-9" />
-                </span>
+                <span />
               )}
-            </div>
-            <div className="absolute inset-x-3 bottom-3 flex flex-wrap items-center gap-2 text-sm font-semibold text-white">
-              <span className="flex items-center gap-1 rounded-lg bg-black/50 px-2 py-1">
-                <PlayCircle className="size-4" aria-hidden /> {lessonsLabel(product.lessonCount)}
+              <span className="text-sm font-medium text-white">
+                {lessonsLabel(product.lessonCount)}
+                {product.totalDurationSeconds ? ` في ${formatTotalDuration(product.totalDurationSeconds)}` : ""}
               </span>
-              {product.totalDurationSeconds ? (
-                <span className="flex items-center gap-1 rounded-lg bg-black/50 px-2 py-1">
-                  <Clock className="size-4" aria-hidden /> {formatTotalDuration(product.totalDurationSeconds)}
-                </span>
-              ) : null}
             </div>
           </div>
-
-          <div className="mt-5 flex flex-wrap gap-2">
-            <Badge>{PRODUCT_TYPE_LABELS[product.type]}</Badge>
-            <Badge tone="neutral">
-              {product.subjectName ?? "عدة مواد"} · {product.gradeName}
-            </Badge>
-            {product.term ? <Badge tone="neutral">{termLabel(product.term)}</Badge> : null}
-          </div>
-          <h1 className="mt-3 text-2xl leading-[1.5] font-bold sm:text-3xl">{product.title}</h1>
-          {product.summary ? <p className="mt-2 text-lg leading-8 text-ink-soft">{product.summary}</p> : null}
 
           {product.teacher ? (
-            <div className="mt-5 flex items-center gap-3 rounded-2xl border border-line bg-surface p-3 shadow-card">
-              <TeacherAvatar name={product.teacher.name} photoUrl={product.teacher.photoUrl} size={52} />
+            <div className="mt-6 flex items-center gap-4 border-b border-line pb-6">
+              <TeacherAvatar name={product.teacher.name} photoUrl={product.teacher.photoUrl} size={56} />
               <div className="min-w-0 flex-1">
-                <p className="text-xs text-muted">المعلم</p>
-                <p className="font-bold">{product.teacher.name}</p>
-                {product.teacher.headline ? <p className="truncate text-xs text-muted">{product.teacher.headline}</p> : null}
+                <p className="font-semibold">{product.teacher.name}</p>
+                {product.teacher.headline ? <p className="text-sm text-muted">{product.teacher.headline}</p> : null}
               </div>
               {product.teacher.slug ? (
-                <Button asChild variant="secondary" size="sm">
-                  <Link href={`/teachers/${product.teacher.slug}`} data-testid="teacher-link">
-                    صفحة المعلم
-                  </Link>
-                </Button>
+                <Link
+                  href={`/teachers/${product.teacher.slug}`}
+                  data-testid="teacher-link"
+                  className="shrink-0 text-sm font-semibold text-brand-700 underline decoration-brand-300 underline-offset-4 hover:decoration-brand-700"
+                >
+                  صفحة المعلم
+                </Link>
               ) : null}
             </div>
-          ) : null}
-
-          {product.description ? (
-            <section className="mt-8">
-              <h2 className="text-lg font-bold">عن {PRODUCT_TYPE_LABELS[product.type]}</h2>
-              <p className="mt-2 leading-8 whitespace-pre-line text-ink-soft">{product.description}</p>
-            </section>
           ) : null}
 
           {contents.length ? (
-            <section className="mt-8">
-              <h2 className="text-lg font-bold">ماذا ستتعلم؟</h2>
-              <ul className="mt-3 grid gap-2 sm:grid-cols-2">
+            <section className="mt-8" aria-labelledby="learn">
+              <h2 id="learn" className="text-[1.9rem]">
+                ماذا ستتعلم
+              </h2>
+              <ul className="mt-3 grid gap-x-8 gap-y-2.5 sm:grid-cols-2">
                 {contents.map((c) => (
-                  <li key={c} className="flex items-start gap-2 text-ink-soft">
-                    <CircleCheck className="mt-1 size-4 shrink-0 text-brand-600" aria-hidden /> {c}
+                  <li key={c} className="flex items-start gap-2.5 leading-7 text-ink-soft">
+                    <Check className="mt-1.5 size-4 shrink-0 text-brand-600" aria-hidden /> {c}
                   </li>
                 ))}
               </ul>
             </section>
           ) : null}
 
-          {/* قائمة الدروس */}
-          {playlist.length ? (
-            <section className="mt-8" aria-labelledby="lessons-title">
-              <h2 id="lessons-title" className="text-lg font-bold">
-                محتوى الشرح <span className="text-sm font-normal text-muted">({lessonsLabel(lessons.length)})</span>
+          {product.description ? (
+            <section className="mt-8" aria-labelledby="about">
+              <h2 id="about" className="text-[1.9rem]">
+                عن {PRODUCT_TYPE_LABELS[product.type]}
               </h2>
-              <div className="mt-3 space-y-4">
+              <p className="mt-2 max-w-[68ch] leading-8 whitespace-pre-line text-ink-soft">{product.description}</p>
+            </section>
+          ) : null}
+
+          {/* جدول الدروس: الترقيم هنا تسلسل فعلي لترتيب المشاهدة */}
+          {playlist.length ? (
+            <section className="mt-10" aria-labelledby="lessons-title">
+              <div className="flex items-baseline justify-between gap-4">
+                <h2 id="lessons-title" className="text-[1.9rem]">
+                  الدروس
+                </h2>
+                <span className="text-sm text-muted">
+                  {lessonsLabel(lessons.length)}
+                  {product.totalDurationSeconds ? ` في ${formatTotalDuration(product.totalDurationSeconds)}` : ""}
+                </span>
+              </div>
+              <div className="mt-3 space-y-6">
                 {playlist.map((g) => (
-                  <div key={g.key} className="overflow-hidden rounded-2xl border border-line bg-surface">
-                    <h3 className="flex items-center justify-between gap-2 border-b border-line bg-canvas/60 px-4 py-2.5 text-sm font-bold">
-                      <span>{g.title}</span>
-                      <span className="text-xs font-normal text-muted">{formatTotalDuration(g.lessons.reduce((n, l) => n + (l.durationSeconds ?? 0), 0))}</span>
-                    </h3>
-                    <ol className="divide-y divide-line">
+                  <div key={g.key}>
+                    {playlist.length > 1 || g.title !== product.title ? (
+                      <h3 className="flex items-baseline justify-between gap-3 border-b-2 border-ink pb-2 text-[0.98rem] font-semibold">
+                        <span>{g.title}</span>
+                        <span className="text-xs font-normal text-muted">{formatTotalDuration(g.lessons.reduce((s, l) => s + (l.durationSeconds ?? 0), 0))}</span>
+                      </h3>
+                    ) : (
+                      <div className="border-b-2 border-ink" />
+                    )}
+                    <ol>
                       {g.lessons.map((l) => {
+                        n += 1;
                         const open = isOwned || l.isFreePreview;
+                        const watched = watchedIds.has(l.id);
                         return (
-                          <li key={l.id} data-testid="lesson-item">
+                          <li key={l.id} data-testid="lesson-item" className="border-b border-line">
                             <Link
                               href={`/watch/${product.id}?lesson=${l.id}`}
-                              className="flex items-center gap-3 px-3 py-2.5 text-sm hover:bg-brand-50/50"
-                              aria-label={`${l.title}${open ? "" : " — مقفل"}`}
+                              className="group grid min-h-14 grid-cols-[2rem_1fr_auto_3.5rem] items-center gap-3 py-2.5 text-[0.95rem] transition-colors hover:bg-mist sm:px-2"
+                              aria-label={`${l.title}${open ? "" : "، مقفل"}`}
                             >
-                              <span className="relative aspect-video w-24 shrink-0 overflow-hidden rounded-lg bg-brand-100 sm:w-28">
-                                {l.thumbnailUrl ? <Image src={l.thumbnailUrl} alt="" fill sizes="112px" className="object-cover" /> : null}
-                                <span className="absolute inset-0 grid place-items-center text-brand-700" aria-hidden>
-                                  <PlayCircle className={l.thumbnailUrl ? "size-6 text-white drop-shadow" : "size-6"} />
-                                </span>
+                              <span className="num text-center text-sm text-muted">{n}</span>
+                              <span className={open ? "font-semibold group-hover:text-brand-700" : "text-ink-soft"}>{l.title}</span>
+                              <span className="flex items-center">
+                                {watched ? (
+                                  <CircleCheck className="size-4.5 text-success" aria-label="تمت المشاهدة" />
+                                ) : l.isFreePreview && !isOwned ? (
+                                  <span className="rounded-md bg-accent-200 px-2 py-0.5 text-xs font-semibold text-ink">مجاني</span>
+                                ) : open ? (
+                                  <Play className="size-3.5 text-brand-600 fill-current" aria-hidden />
+                                ) : (
+                                  <Lock className="size-4 text-muted" aria-label="مقفل" data-testid="lesson-locked" />
+                                )}
                               </span>
-                              <span className="min-w-0 flex-1">
-                                <span className="line-clamp-2 font-semibold">{l.title}</span>
-                                <span className="num text-xs text-muted">{formatClock(l.durationSeconds)}</span>
-                              </span>
-                              {watchedIds.has(l.id) ? (
-                                <CircleCheck className="size-5 shrink-0 text-success" aria-label="تمت المشاهدة" />
-                              ) : l.isFreePreview && !isOwned ? (
-                                <Badge tone="success">
-                                  <Gift className="size-3" aria-hidden /> مجاني
-                                </Badge>
-                              ) : open ? null : (
-                                <Lock className="size-4 shrink-0 text-muted" aria-label="مقفل" data-testid="lesson-locked" />
-                              )}
+                              <span className="num text-end text-sm text-muted">{formatClock(l.durationSeconds)}</span>
                             </Link>
                           </li>
                         );
@@ -202,15 +210,17 @@ export function VideoProductView({
           ) : null}
 
           {mainFiles.length ? (
-            <section className="mt-8">
-              <h2 className="text-lg font-bold">ملفات مرفقة</h2>
-              <ul className="mt-3 divide-y divide-line rounded-2xl border border-line bg-surface">
+            <section className="mt-10" aria-labelledby="files">
+              <h2 id="files" className="text-[1.9rem]">
+                ملفات مرفقة
+              </h2>
+              <ul className="mt-3 border-t-2 border-ink">
                 {mainFiles.map((f) => (
-                  <li key={f.id} className="flex items-center gap-3 px-4 py-3 text-sm">
-                    <FileText className="size-5 text-brand-600" aria-hidden />
+                  <li key={f.id} className="flex min-h-12 items-center gap-3 border-b border-line py-2.5 text-[0.95rem]">
+                    <FileText className="size-4.5 text-brand-600" aria-hidden />
                     <span className="flex-1 font-semibold">{f.title}</span>
                     {f.pageCount ? (
-                      <span className="text-muted">
+                      <span className="text-sm text-muted">
                         <span className="num">{f.pageCount}</span> صفحة
                       </span>
                     ) : null}
@@ -221,60 +231,76 @@ export function VideoProductView({
           ) : null}
         </div>
 
-        {/* صندوق الشراء */}
-        <aside className="h-fit lg:sticky lg:top-24">
-          <div className="rounded-2xl border border-line bg-surface p-5 shadow-card">
-            <Price fils={product.priceFils} compareAt={product.compareAtPriceFils} size="lg" />
-            {included.length && itemsValue > product.priceFils ? (
-              <p className="mt-1 text-sm font-semibold text-success">
-                توفّر <span className="num">{filsToKwdString(itemsValue - product.priceFils)}</span> د.ك مقارنة بالشراء المنفرد
-              </p>
-            ) : null}
-            <p className="mt-3 flex items-center gap-1.5 text-sm text-ink-soft" data-testid="access-period">
-              <CalendarClock className="size-4 text-brand-600" aria-hidden /> {accessPeriodText(product)}
-            </p>
-            <div className="mt-4">
-              {isOwned ? (
-                <div className="flex flex-col gap-3">
-                  <Alert tone="success">
-                    هذا المحتوى في مكتبتك{ownedUntil ? ` — متاح حتى ${formatDate(ownedUntil)}` : ""}.
-                  </Alert>
-                  <Button asChild size="lg">
-                    <Link href={watchHref}>
-                      <PlayCircle aria-hidden /> {resumeLessonId ? "تابع المشاهدة" : "ابدأ المشاهدة"}
-                    </Link>
-                  </Button>
-                </div>
-              ) : canBuy ? (
-                <AddToCart productId={product.id} />
-              ) : null}
-            </div>
-            <ul className="mt-4 flex flex-col gap-2 text-xs text-muted">
-              <li className="flex items-center gap-1.5"><ShieldCheck className="size-4 text-success" aria-hidden /> دفع آمن عبر كي نت والبطاقات</li>
-              <li className="flex items-center gap-1.5"><CircleCheck className="size-4 text-success" aria-hidden /> مشاهدة فورية بعد تأكيد الدفع</li>
-              <li className="flex items-center gap-1.5"><CircleCheck className="size-4 text-success" aria-hidden /> تكمل من حيث توقفت على أي جهاز</li>
-            </ul>
+        {/* لوحة الشراء */}
+        <aside className="h-fit lg:sticky lg:top-24" aria-label="الشراء">
+          <div className="rounded-lg bg-mist p-5 sm:p-6">
+            {isOwned ? (
+              <>
+                <p className="font-semibold text-success">في مكتبتك</p>
+                {ownedUntil ? <p className="mt-1 text-sm text-ink-soft">متاح حتى {formatDate(ownedUntil)}</p> : null}
+                <Button asChild size="lg" className="mt-4 w-full">
+                  <Link href={watchHref}>
+                    <Play className="fill-current" aria-hidden /> {resumeLessonId ? "تابع المشاهدة" : "ابدأ المشاهدة"}
+                  </Link>
+                </Button>
+              </>
+            ) : (
+              <>
+                <Price fils={product.priceFils} compareAt={product.compareAtPriceFils} size="lg" />
+                {included.length && itemsValue > product.priceFils ? (
+                  <p className="mt-1 text-sm font-semibold text-brand-700">
+                    توفّر <span className="num">{filsToKwdString(itemsValue - product.priceFils)}</span> د.ك مقارنة بالشراء المنفرد
+                  </p>
+                ) : null}
+                {canBuy ? (
+                  <div className="mt-5">
+                    <AddToCart productId={product.id} />
+                  </div>
+                ) : null}
+              </>
+            )}
+            <dl className="mt-5 space-y-2.5 border-t border-line-strong pt-4 text-sm">
+              <div className="flex justify-between gap-4">
+                <dt className="text-muted">مدة الوصول</dt>
+                <dd className="text-end font-medium" data-testid="access-period">
+                  {accessPeriodText(product)}
+                </dd>
+              </div>
+              <div className="flex justify-between gap-4">
+                <dt className="text-muted">المشاهدة</dt>
+                <dd className="text-end font-medium">فور تأكيد الدفع</dd>
+              </div>
+              <div className="flex justify-between gap-4">
+                <dt className="text-muted">الدفع</dt>
+                <dd className="text-end font-medium">كي نت أو بطاقة</dd>
+              </div>
+            </dl>
+            <p className="mt-4 text-xs leading-6 text-muted">تكمل من حيث توقفت على أي جهاز.</p>
           </div>
         </aside>
       </div>
 
       {included.length ? (
-        <section className="mt-14">
-          <h2 className="mb-5 text-2xl font-bold">{product.type === "bundle" ? "تشمل الباقة" : "تشمل الدورة"} ({included.length})</h2>
-          {included.every((i) => i.isVideo) ? <VideoGrid products={included} ownedIds={owned} /> : <ProductGrid products={included} ownedIds={owned} />}
+        <section className="mt-14" aria-labelledby="included">
+          <h2 id="included" className="mb-4 text-[clamp(1.7rem,3vw,2.3rem)]">
+            {product.type === "bundle" ? "تشمل الباقة" : "تشمل الدورة"}
+          </h2>
+          <ProductList products={included} ownedIds={owned} />
         </section>
       ) : null}
 
       {bundles.length ? (
-        <section className="mt-14">
-          <h2 className="mb-1 text-2xl font-bold">وفّر أكثر مع الباقات</h2>
-          <p className="mb-5 text-sm text-muted">هذا المحتوى مضمّن في الباقات التالية</p>
-          <ProductGrid products={bundles} ownedIds={owned} />
+        <section className="mt-14" aria-labelledby="in-bundles">
+          <h2 id="in-bundles" className="text-[clamp(1.7rem,3vw,2.3rem)]">
+            ضمن باقة أوفر
+          </h2>
+          <p className="mt-1 mb-4 text-muted">هذا المحتوى مضمّن في الباقات التالية.</p>
+          <ProductList products={bundles} ownedIds={owned} />
         </section>
       ) : null}
 
       {!isOwned && canBuy ? (
-        <div className="fixed inset-x-0 bottom-0 z-30 border-t border-line bg-surface/95 p-3 backdrop-blur lg:hidden no-print">
+        <div className="fixed inset-x-0 bottom-0 z-30 border-t border-line bg-surface p-3 lg:hidden no-print">
           <div className="mx-auto flex max-w-6xl items-center gap-3">
             <Price fils={product.priceFils} compareAt={product.compareAtPriceFils} size="md" className="shrink-0" />
             <AddToCart productId={product.id} compact className="flex-1" />

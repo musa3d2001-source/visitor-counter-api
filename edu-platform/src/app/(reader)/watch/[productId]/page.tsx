@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import { ArrowRight, ChevronLeft, CircleCheck, Gift, Lock, LogIn, PlayCircle, ShoppingCart } from "lucide-react";
+import { ArrowRight, ChevronLeft, CircleCheck, Lock, LogIn, Play, ShoppingCart } from "lucide-react";
 import { getCurrentUser } from "@/server/auth/session";
 import { accessibleProductIds, isTeacherOfProduct } from "@/server/access/entitlements";
 import { checkLessonAccess, playbackFor } from "@/server/access/lessons";
@@ -11,7 +11,6 @@ import { sql } from "@/server/db";
 import { LessonPlayer } from "@/components/reader/lesson-player";
 import { LessonsPanel } from "@/components/reader/lessons-panel";
 import { Alert } from "@/components/ui/alert";
-import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { formatClock, lessonsLabel } from "@/components/site/format";
 import { cn } from "@/lib/utils";
@@ -68,27 +67,27 @@ export default async function WatchPage({ params, searchParams }: { params: Prom
   const backHref = ownsRoot ? "/library" : `/products/${product.slug}`;
 
   return (
-    <div className="min-h-dvh bg-canvas">
-      <header className="sticky top-0 z-30 flex h-14 items-center gap-2 border-b border-line bg-surface/95 px-3 backdrop-blur sm:px-4">
-        <Link href={backHref} className="flex h-10 shrink-0 items-center gap-1.5 rounded-lg px-2 text-sm font-semibold hover:bg-brand-50">
+    <div className="min-h-dvh bg-surface">
+      <header className="sticky top-0 z-30 flex h-14 items-center gap-2 border-b border-line bg-surface px-3 sm:px-4">
+        <Link href={backHref} className="flex h-10 shrink-0 items-center gap-1.5 rounded-lg px-2 text-sm font-semibold hover:bg-mist">
           <ArrowRight className="size-5" aria-hidden /> <span className="hidden sm:inline">{ownsRoot ? "مكتبتي" : "صفحة المحتوى"}</span>
         </Link>
         <div className="min-w-0 flex-1">
-          <h1 className="truncate text-sm font-bold sm:text-base">{product.title}</h1>
+          <h1 className="truncate font-sans text-sm font-semibold sm:text-base">{product.title}</h1>
           {user && lessons.length ? (
             <div className="mt-0.5 flex items-center gap-2" aria-label={`أكملت ${doneCount} من ${lessons.length}`}>
-              <div className="h-1.5 w-24 overflow-hidden rounded-full bg-line sm:w-40">
-                <div className="h-full rounded-full bg-success" style={{ width: `${(doneCount / lessons.length) * 100}%` }} />
+              <div className="h-1 w-24 overflow-hidden rounded-full bg-line sm:w-40">
+                <div className="h-full bg-brand-600" style={{ width: `${(doneCount / lessons.length) * 100}%` }} />
               </div>
-              <span className="num text-[0.7rem] text-muted">
-                {doneCount}/{lessons.length}
+              <span className="text-[0.72rem] text-muted">
+                أكملت <span className="num">{doneCount}</span> من <span className="num">{lessons.length}</span>
               </span>
             </div>
           ) : null}
         </div>
       </header>
 
-      <div className="mx-auto grid max-w-7xl gap-5 px-3 py-4 sm:px-4 lg:grid-cols-[1fr_360px] lg:py-6">
+      <div className="mx-auto grid max-w-7xl gap-6 px-3 py-4 sm:px-4 lg:grid-cols-[minmax(0,1fr)_22rem] lg:gap-10 lg:py-6">
         <main id="main" className="min-w-0">
           {videosOff ? (
             <Alert tone="info">دروس الفيديو غير مفعلة حاليًا.</Alert>
@@ -108,32 +107,32 @@ export default async function WatchPage({ params, searchParams }: { params: Prom
               nextTitle={next?.title ?? null}
             />
           ) : (
-            <div className="grid aspect-video place-items-center rounded-2xl bg-ink p-6 text-center text-white" data-testid="lesson-locked-panel">
+            <div className="grid aspect-video place-items-center rounded-lg bg-ink p-6 text-center text-white" data-testid="lesson-locked-panel">
               <div>
-                <Lock className="mx-auto size-10 text-accent-600" aria-hidden />
+                <Lock className="mx-auto size-8 text-white/70" aria-hidden />
                 {access && !access.ok && access.reason === "not_ready" ? (
                   <>
-                    <p className="mt-3 font-bold">الدرس قيد المعالجة</p>
+                    <p className="mt-3 font-display text-[1.7rem] leading-tight">الدرس قيد المعالجة</p>
                     <p className="mt-1 text-sm text-white/70">سيكون متاحًا للمشاهدة بعد اكتمال المعالجة.</p>
                   </>
                 ) : access && !access.ok && access.reason === "unauthenticated" ? (
                   <>
-                    <p className="mt-3 font-bold">سجّل الدخول لمشاهدة هذا الدرس</p>
+                    <p className="mt-3 font-display text-[1.7rem] leading-tight">سجّل الدخول لمشاهدة هذا الدرس</p>
                     <p className="mt-1 text-sm text-white/70">إذا اشتريت المحتوى، سجّل الدخول بنفس الحساب.</p>
                     <div className="mt-4 flex flex-wrap justify-center gap-2">
-                      <Link href={`/login?next=${encodeURIComponent(`/watch/${product.id}?lesson=${selected.id}`)}`} className="flex items-center gap-1.5 rounded-xl bg-white/15 px-4 py-2.5 font-semibold">
+                      <Link href={`/login?next=${encodeURIComponent(`/watch/${product.id}?lesson=${selected.id}`)}`} className="flex min-h-11 items-center gap-1.5 rounded-lg border border-white/40 px-4 font-semibold hover:bg-white/10">
                         <LogIn className="size-4" aria-hidden /> تسجيل الدخول
                       </Link>
-                      <Link href={`/products/${product.slug}`} className="flex items-center gap-1.5 rounded-xl bg-accent-600 px-4 py-2.5 font-semibold text-ink">
+                      <Link href={`/products/${product.slug}`} className="flex min-h-11 items-center gap-1.5 rounded-lg bg-accent-600 px-4 font-semibold text-ink hover:bg-accent-700">
                         <ShoppingCart className="size-4" aria-hidden /> اشترِ للوصول لكل الدروس
                       </Link>
                     </div>
                   </>
                 ) : (
                   <>
-                    <p className="mt-3 font-bold">هذا الدرس متاح للمشتركين</p>
+                    <p className="mt-3 font-display text-[1.7rem] leading-tight">هذا الدرس لمن اشترى المحتوى</p>
                     <p className="mt-1 text-sm text-white/70">اشترِ المحتوى للوصول لكل الدروس ومتابعة التقدم.</p>
-                    <Link href={`/products/${product.slug}`} className="mt-4 inline-flex items-center gap-1.5 rounded-xl bg-accent-600 px-5 py-2.5 font-semibold text-ink" data-testid="buy-from-locked">
+                    <Link href={`/products/${product.slug}`} className="mt-4 inline-flex min-h-11 items-center gap-1.5 rounded-lg bg-accent-600 px-5 font-semibold text-ink hover:bg-accent-700" data-testid="buy-from-locked">
                       <ShoppingCart className="size-4" aria-hidden /> اشترِ للوصول لكل الدروس
                     </Link>
                   </>
@@ -146,8 +145,8 @@ export default async function WatchPage({ params, searchParams }: { params: Prom
             <div className="mt-4">
               <div className="flex flex-wrap items-start justify-between gap-3">
                 <div className="min-w-0">
-                  {access?.ok && access.via === "free" && !owned.has(selected.productId) ? <Badge tone="success" className="mb-1.5">معاينة مجانية</Badge> : null}
-                  <h2 className="text-xl font-bold" data-testid="lesson-title">
+                  {access?.ok && access.via === "free" && !owned.has(selected.productId) ? <p className="mb-1 text-sm font-semibold text-brand-700">معاينة مجانية</p> : null}
+                  <h2 className="text-[clamp(1.7rem,3.5vw,2.3rem)]" data-testid="lesson-title">
                     {selected.title}
                   </h2>
                   {selected.unitTitle ? <p className="mt-0.5 text-sm text-muted">{selected.unitTitle}</p> : null}
@@ -189,7 +188,7 @@ export default async function WatchPage({ params, searchParams }: { params: Prom
           <LessonsPanel title="قائمة الدروس" count={lessonsLabel(lessons.length)}>
             {playlist.map((g) => (
               <section key={g.key} aria-label={g.title}>
-                <h3 className="sticky top-0 z-10 border-b border-line bg-canvas/95 px-4 py-2 text-xs font-bold text-ink-soft backdrop-blur">{g.title}</h3>
+                <h3 className="sticky top-0 z-10 border-b border-line bg-surface px-4 pt-4 pb-2 text-xs font-semibold text-muted lg:px-0">{g.title}</h3>
                 <ol>
                   {g.lessons.map((l) => {
                     const open = canOpen(l);
@@ -202,18 +201,12 @@ export default async function WatchPage({ params, searchParams }: { params: Prom
                           href={`/watch/${product.id}?lesson=${l.id}`}
                           aria-current={current ? "true" : undefined}
                           className={cn(
-                            "flex items-center gap-3 border-b border-line/60 px-4 py-3 text-sm transition-colors hover:bg-brand-50",
-                            current && "bg-brand-50 font-semibold",
+                            "grid min-h-14 grid-cols-[1.75rem_1fr_auto] items-center gap-3 border-b border-line px-4 py-2.5 text-sm transition-colors hover:bg-mist lg:px-2",
+                            current && "bg-mist font-semibold shadow-[inset_-3px_0_0_var(--color-brand-600)]",
                           )}
                         >
-                          <span
-                            className={cn(
-                              "num grid size-7 shrink-0 place-items-center rounded-full text-xs",
-                              done ? "bg-success text-white" : current ? "bg-brand-600 text-white" : "bg-canvas text-ink-soft",
-                            )}
-                            aria-hidden
-                          >
-                            {done ? <CircleCheck className="size-4" /> : current ? <PlayCircle className="size-4" /> : n}
+                          <span className={cn("num text-center text-xs", done ? "text-success" : current ? "text-brand-700" : "text-muted")} aria-hidden>
+                            {done ? <CircleCheck className="mx-auto size-4" /> : current ? <Play className="mx-auto size-3.5 fill-current" /> : n}
                           </span>
                           <span className="min-w-0 flex-1">
                             <span className="line-clamp-2">{l.title}</span>
@@ -222,7 +215,7 @@ export default async function WatchPage({ params, searchParams }: { params: Prom
                           {!open ? (
                             <Lock className="size-4 shrink-0 text-muted" aria-label="مقفل" data-testid="lesson-locked" />
                           ) : l.isFreePreview && !owned.has(l.productId) && !staff ? (
-                            <Gift className="size-4 shrink-0 text-success" aria-label="مجاني" />
+                            <span className="rounded-md bg-accent-200 px-1.5 py-0.5 text-[0.7rem] font-semibold text-ink">مجاني</span>
                           ) : null}
                         </Link>
                       </li>

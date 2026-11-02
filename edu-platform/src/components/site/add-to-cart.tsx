@@ -29,7 +29,7 @@ export function AddToCart({ productId, compact, className }: { productId: string
       </div>
       {state?.ok ? (
         <p className="flex items-center gap-1.5 text-sm text-success" role="status">
-          <CircleCheck className="size-4" aria-hidden /> {state.message} —{" "}
+          <CircleCheck className="size-4" aria-hidden /> {state.message}،{" "}
           <Link href="/cart" className="font-semibold underline">
             عرض السلة
           </Link>

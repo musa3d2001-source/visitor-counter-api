@@ -5,6 +5,7 @@ import { getSettings } from "@/server/platform/settings";
 import { getCurrentUser } from "@/server/auth/session";
 import { accessibleProductIds } from "@/server/access/entitlements";
 import { ProductList, productMeta } from "@/components/site/product-card";
+import { BundleRow } from "@/components/site/bundle-row";
 import { TeacherGrid } from "@/components/site/teacher-card";
 import { posterTone } from "@/components/site/product-cover";
 import { TeacherAvatar } from "@/components/site/teacher-avatar";
@@ -256,30 +257,3 @@ function FeaturePanel({ p }: { p: ProductCard }) {
   );
 }
 
-function BundleRow({ b, owned }: { b: ProductCard; owned?: boolean }) {
-  const saving = b.compareAtPriceFils && b.compareAtPriceFils > b.priceFils ? b.compareAtPriceFils - b.priceFils : 0;
-  return (
-    <Link href={`/products/${b.slug}`} className="grid gap-4 rounded-lg bg-mist p-5 transition-colors hover:bg-brand-50 sm:grid-cols-[1fr_auto] sm:items-center sm:p-6">
-      <span>
-        <span className="block text-[1.1rem] leading-7 font-semibold">{b.title}</span>
-        <span className="mt-1 block text-sm leading-6 text-muted">{b.summary || productMeta(b, { grade: true })}</span>
-      </span>
-      <span className="sm:text-end">
-        {owned ? (
-          <span className="font-semibold text-success">في مكتبتك</span>
-        ) : (
-          <>
-            <span className="block text-xl font-bold">
-              <span className="num">{filsToKwdString(b.priceFils)}</span> <span className="text-sm font-semibold text-muted">د.ك</span>
-            </span>
-            {saving ? (
-              <span className="text-sm text-brand-800">
-                توفّر <span className="num">{filsToKwdString(saving)}</span> د.ك
-              </span>
-            ) : null}
-          </>
-        )}
-      </span>
-    </Link>
-  );
-}
