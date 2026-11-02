@@ -7,6 +7,7 @@
 import postgres from "postgres";
 import { loadEnvFile } from "./_env";
 import { buildDemoPdf, closeDemoBrowser } from "./demo-pdf";
+import { seedDemoTeachers } from "./demo-teachers";
 import { PDFDocument } from "pdf-lib";
 import { randomUUID } from "node:crypto";
 import { mkdirSync, writeFileSync } from "node:fs";
@@ -215,6 +216,12 @@ async function main() {
         academicYear: "2026-2027",
       });
       console.log(`✔ تمت إضافة ${n} منتجًا تجريبيًا ${args.includes("--publish") ? "(منشورة)" : "(كمسودات)"}`);
+      const t = await seedDemoTeachers(sql, {
+        publish: args.includes("--publish"),
+        storageDir: join(process.cwd(), process.env.LOCAL_STORAGE_DIR ?? "storage"),
+        academicYear: "2026-2027",
+      });
+      console.log(`✔ معلمون تجريبيون: ${t.created} منتج فيديو${t.videos ? "" : " (بدون مقاطع — ffmpeg غير متوفر)"}`);
     }
   } finally {
     await closeDemoBrowser();
