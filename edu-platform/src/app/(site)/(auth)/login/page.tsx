@@ -1,0 +1,30 @@
+import type { Metadata } from "next";
+import { redirect } from "next/navigation";
+import { AuthCard } from "@/components/site/auth-card";
+import { Alert } from "@/components/ui/alert";
+import { getCurrentUser } from "@/server/auth/session";
+import { safeNextPath } from "@/lib/utils";
+import { LoginForm } from "./login-form";
+
+export const metadata: Metadata = { title: "تسجيل الدخول", robots: { index: false } };
+
+export default async function LoginPage({ searchParams }: { searchParams: Promise<{ next?: string; reset?: string }> }) {
+  const sp = await searchParams;
+  const next = safeNextPath(sp.next, "/library");
+  if (await getCurrentUser()) redirect(next);
+  return (
+    <AuthCard title="مرحبًا بعودتك" subtitle="سجّل دخولك للوصول إلى مكتبتك ومشترياتك">
+      {sp.reset ? (
+        <Alert tone="success" className="mb-4">
+          تم تغيير كلمة المرور بنجاح. سجّل دخولك بكلمة المرور الجديدة.
+        </Alert>
+      ) : null}
+      {sp.next?.startsWith("/checkout") ? (
+        <Alert tone="info" className="mb-4">
+          سجّل دخولك أو أنشئ حسابًا لإتمام الشراء — سلتك محفوظة.
+        </Alert>
+      ) : null}
+      <LoginForm next={next} />
+    </AuthCard>
+  );
+}

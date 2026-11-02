@@ -1,0 +1,16 @@
+node_modules/
+.next/
+out/
+next-env.d.ts
+*.tsbuildinfo
+.env
+.env.local
+.env.*.local
+!.env.example
+# الملفات المرفوعة محليًا (تخزين خاص) — لا تُرفع إلى Git أبدًا
+storage/*
+!storage/.gitkeep
+public/pdfjs/
+test-results/
+playwright-report/
+coverage/
