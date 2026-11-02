@@ -14,21 +14,22 @@ export const metadata = { title: "أرباحي ومبيعاتي" };
 const METHOD_LABELS: Record<string, string> = { bank_transfer: "تحويل بنكي", cash: "نقدًا", other: "أخرى" };
 
 /** صفحة المعلم: مبيعاته وأرباحه فقط — بدون أي بيانات للطلاب أو لمعلمين آخرين */
-export default async function TeacherEarningsPage() {
+export default async function TeacherEarningsPage({ searchParams }: { searchParams: Promise<{ test?: string }> }) {
   const actor = await requireStaff();
+  const includeTest = (await searchParams).test === "1";
   if (actor.kind === "owner") redirect("/admin/teachers");
   if (actor.kind !== "teacher") notFound();
   const teacherId = actor.teacherId;
   const [[t], summary, balance, earnings, payouts, sales] = await Promise.all([
     sql<{ revenue_share_bps: number | null }[]>`select revenue_share_bps from teachers where id = ${teacherId}`,
-    teacherSalesSummary(teacherId),
-    teacherBalance(teacherId),
-    listEarnings(teacherId, { limit: 200 }),
+    teacherSalesSummary(teacherId, { includeTest }),
+    teacherBalance(teacherId, { includeTest }),
+    listEarnings(teacherId, { includeTest, limit: 200 }),
     listPayouts(teacherId),
     sql<{ order_number: string; paid_at: Date; title: string; unit_price_fils: number; status: string }[]>`
       select o.number as order_number, o.paid_at, oi.title, oi.unit_price_fils, o.status
       from order_items oi join orders o on o.id = oi.order_id
-      where oi.teacher_id = ${teacherId} and o.status in ('paid', 'refunded') and not o.is_test
+      where oi.teacher_id = ${teacherId} and o.status in ('paid', 'refunded') and (${includeTest} or not o.is_test)
       order by o.paid_at desc limit 100
     `,
   ]);
@@ -36,7 +37,15 @@ export default async function TeacherEarningsPage() {
 
   return (
     <div className="space-y-6">
-      <AdminPageHeader title="أرباحي ومبيعاتي" description="مبيعات محتواك المدفوعة (الطلبات التجريبية مستبعدة)" />
+      <AdminPageHeader
+        title="أرباحي ومبيعاتي"
+        description={includeTest ? "تشمل الطلبات التجريبية (بيئة الاختبار) — لا تُحتسب ضمن المستحقات الفعلية" : "مبيعات محتواك المدفوعة (الطلبات التجريبية مستبعدة)"}
+        actions={
+          <a href={includeTest ? "/admin/earnings" : "/admin/earnings?test=1"} className="rounded-xl border border-line-strong px-3 py-1.5 text-xs font-semibold text-ink-soft hover:bg-brand-50">
+            {includeTest ? "إخفاء البيانات التجريبية" : "إظهار البيانات التجريبية"}
+          </a>
+        }
+      />
       <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
         <StatCard label="عمليات بيع" value={<span className="num">{summary.items}</span>} icon={<FileText />} />
         <StatCard label="قيمة المبيعات" value={<><span className="num">{filsToKwdString(summary.grossFils)}</span> <span className="text-sm text-muted">د.ك</span></>} icon={<Banknote />} />

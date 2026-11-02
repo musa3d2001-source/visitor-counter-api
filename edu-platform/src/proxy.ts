@@ -41,7 +41,8 @@ function buildCsp(nonce: string) {
     // يسمح بإعادة التوجيه إلى صفحة الدفع بعد إرسال النموذج
     `form-action 'self' https://*.myfatoorah.com`,
     `frame-ancestors 'none'`,
-    isDev ? "" : "upgrade-insecure-requests",
+    // ترقية الطلبات غير الآمنة فقط عندما يُخدم الموقع عبر HTTPS (الإنتاج)
+    (process.env.APP_URL ?? "").startsWith("https://") ? "upgrade-insecure-requests" : "",
   ]
     .filter(Boolean)
     .join("; ");
