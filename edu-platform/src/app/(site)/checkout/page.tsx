@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import type * as React from "react";
 import Link from "next/link";
 import { redirect } from "next/navigation";
 import { requireUser } from "@/server/auth/guards";
@@ -40,22 +41,20 @@ export default async function CheckoutPage({ searchParams }: { searchParams: Pro
   }
 
   return (
-    <div className="mx-auto max-w-5xl px-4 py-8">
+    <div className="mx-auto max-w-5xl px-4 pt-6 pb-8">
       <Breadcrumbs items={[{ label: "السلة", href: "/cart" }, { label: "إتمام الشراء" }]} />
-      <h1 className="mt-4 text-3xl font-bold">إتمام الشراء</h1>
-      <div className="mt-6 grid gap-6 lg:grid-cols-[1fr_360px]">
-        <div className="flex flex-col gap-5">
-          <section className="rounded-2xl border border-line bg-surface p-5 shadow-card">
-            <h2 className="font-bold">بيانات المشتري</h2>
-            <p className="mt-2 text-sm text-ink-soft">
-              {user.fullName} — <span dir="ltr">{user.email}</span>
+      <h1 className="mt-6 text-[clamp(2.2rem,5vw,3.2rem)]">إتمام الشراء</h1>
+      <div className="mt-6 grid gap-8 lg:grid-cols-[minmax(0,1fr)_21rem] lg:gap-12">
+        <ol className="flex flex-col gap-8">
+          <CheckoutStep n={1} title="الحساب">
+            <p className="text-ink-soft">
+              {user.fullName}، <span dir="ltr">{user.email}</span>
             </p>
-            <p className="mt-1 text-xs text-muted">ستُضاف المشتريات إلى مكتبة هذا الحساب.</p>
-          </section>
+            <p className="mt-1 text-sm text-muted">تُضاف المشتريات إلى مكتبة هذا الحساب.</p>
+          </CheckoutStep>
 
-          <section className="rounded-2xl border border-line bg-surface p-5 shadow-card">
-            <h2 className="font-bold">كود الخصم</h2>
-            <form method="get" className="mt-3 flex gap-2">
+          <CheckoutStep n={2} title="كود الخصم">
+            <form method="get" className="flex max-w-md gap-2">
               <Input name="coupon" defaultValue={couponCode} placeholder="أدخل الكود" dir="ltr" className="flex-1 uppercase" aria-label="كود الخصم" />
               <Button type="submit" variant="outline">
                 تطبيق
@@ -63,34 +62,39 @@ export default async function CheckoutPage({ searchParams }: { searchParams: Pro
             </form>
             {coupon && !coupon.ok ? <p className="mt-2 text-sm text-danger" role="alert">{coupon.error}</p> : null}
             {coupon?.ok ? <p className="mt-2 text-sm text-success" role="status">تم تطبيق الخصم بنجاح.</p> : null}
-          </section>
+          </CheckoutStep>
 
-          {total > 0 && !cfg.enabled ? (
-            <Alert tone="warning" title="الدفع الإلكتروني غير متاح حاليًا">
-              {cfg.reason}.{" "}
-              {settings.whatsapp_number ? (
-                <a href={`https://wa.me/${settings.whatsapp_number.replace(/\D/g, "")}`} target="_blank" rel="noopener noreferrer">
-                  تواصل معنا عبر واتساب
-                </a>
-              ) : (
-                <Link href="/contact">تواصل معنا</Link>
-              )}{" "}
-              لإتمام طلبك.
-            </Alert>
-          ) : null}
-          {methodsError ? <Alert tone="warning">تعذر تحميل وسائل الدفع، سيتم عرض كل الوسائل المتاحة في صفحة الدفع.</Alert> : null}
+          <CheckoutStep n={3} title={total > 0 ? "الدفع" : "التأكيد"}>
+            <div className="flex flex-col gap-4">
+              {total > 0 && !cfg.enabled ? (
+                <Alert tone="warning" title="الدفع الإلكتروني غير متاح حاليًا">
+                  {cfg.reason}.{" "}
+                  {settings.whatsapp_number ? (
+                    <a href={`https://wa.me/${settings.whatsapp_number.replace(/\D/g, "")}`} target="_blank" rel="noopener noreferrer">
+                      تواصل معنا عبر واتساب
+                    </a>
+                  ) : (
+                    <Link href="/contact">تواصل معنا</Link>
+                  )}{" "}
+                  لإتمام طلبك.
+                </Alert>
+              ) : null}
+              {methodsError ? <Alert tone="warning">تعذر تحميل وسائل الدفع، وستظهر كل الوسائل المتاحة في صفحة الدفع.</Alert> : null}
+              <CheckoutForm
+                coupon={coupon?.ok ? couponCode : ""}
+                total={total}
+                methods={methods}
+                disabled={total > 0 && !cfg.enabled}
+                sandbox={cfg.enabled && cfg.environment === "sandbox"}
+              />
+            </div>
+          </CheckoutStep>
+        </ol>
 
-          <CheckoutForm
-            coupon={coupon?.ok ? couponCode : ""}
-            total={total}
-            methods={methods}
-            disabled={total > 0 && !cfg.enabled}
-            sandbox={cfg.enabled && cfg.environment === "sandbox"}
-          />
-        </div>
-
-        <aside className="h-fit rounded-2xl border border-line bg-surface p-5 shadow-card lg:sticky lg:top-24">
-          <h2 className="text-lg font-bold">ملخص الطلب</h2>
+        <aside className="h-fit rounded-lg bg-mist p-5 sm:p-6 lg:sticky lg:top-24" aria-labelledby="summary">
+          <h2 id="summary" className="text-[1.7rem]">
+            ملخص الطلب
+          </h2>
           <ul className="mt-4 space-y-2 text-sm">
             {cart.payableLines.map((l) => (
               <li key={l.id} className="flex justify-between gap-3">
@@ -99,7 +103,7 @@ export default async function CheckoutPage({ searchParams }: { searchParams: Pro
               </li>
             ))}
           </ul>
-          <dl className="mt-4 space-y-2 border-t border-line pt-4 text-sm">
+          <dl className="mt-4 space-y-2 border-t border-line-strong pt-4 text-sm">
             <div className="flex justify-between">
               <dt className="text-muted">المجموع</dt>
               <dd className="num">{filsToKwdString(cart.subtotalFils)} د.ك</dd>
@@ -110,15 +114,30 @@ export default async function CheckoutPage({ searchParams }: { searchParams: Pro
                 <dd className="num">−{filsToKwdString(discount)} د.ك</dd>
               </div>
             ) : null}
-            <div className="flex justify-between border-t border-line pt-3 text-base font-bold">
-              <dt>الإجمالي</dt>
-              <dd data-testid="checkout-total">
-                <span className="num">{filsToKwdString(total)}</span> د.ك
+            <div className="flex items-baseline justify-between border-t border-line-strong pt-3">
+              <dt className="font-semibold">الإجمالي</dt>
+              <dd className="text-2xl font-bold" data-testid="checkout-total">
+                <span className="num">{filsToKwdString(total)}</span> <span className="text-sm font-semibold text-muted">د.ك</span>
               </dd>
             </div>
           </dl>
         </aside>
       </div>
     </div>
+  );
+}
+
+/** خطوات الشراء متسلسلة فعلًا، لذا الترقيم هنا معلومة لا زينة */
+function CheckoutStep({ n, title, children }: { n: number; title: string; children: React.ReactNode }) {
+  return (
+    <li className="grid grid-cols-[2.25rem_1fr] gap-x-3 border-t-2 border-ink pt-4 sm:grid-cols-[3rem_1fr]">
+      <span className="font-display text-[2.4rem] leading-[0.9] font-medium text-brand-700" aria-hidden>
+        {"٠١٢٣٤٥٦٧٨٩"[n]}
+      </span>
+      <div className="min-w-0">
+        <h2 className="text-[1.6rem] leading-tight">{title}</h2>
+        <div className="mt-3">{children}</div>
+      </div>
+    </li>
   );
 }

@@ -21,7 +21,7 @@ export default async function LoginPage({ searchParams }: { searchParams: Promis
       ) : null}
       {sp.next?.startsWith("/checkout") ? (
         <Alert tone="info" className="mb-4">
-          سجّل دخولك أو أنشئ حسابًا لإتمام الشراء — سلتك محفوظة.
+          سجّل دخولك أو أنشئ حسابًا لإتمام الشراء. سلتك محفوظة.
         </Alert>
       ) : null}
       <LoginForm next={next} />

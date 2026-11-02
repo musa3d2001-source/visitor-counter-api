@@ -22,8 +22,8 @@ export default async function ContactPage() {
       {channels.length ? (
         <div className="mt-6 grid gap-3 sm:grid-cols-2">
           {channels.map(({ Icon, label, value, href }) => (
-            <a key={label} href={href} target={href.startsWith("http") ? "_blank" : undefined} rel="noopener noreferrer" className="flex items-center gap-4 rounded-2xl border border-line bg-surface p-5 shadow-card hover:border-brand-300">
-              <span className="grid size-12 place-items-center rounded-xl bg-brand-50 text-brand-700">
+            <a key={label} href={href} target={href.startsWith("http") ? "_blank" : undefined} rel="noopener noreferrer" className="flex items-center gap-4 rounded-lg border border-line bg-surface p-5 hover:border-brand-300">
+              <span className="grid size-12 place-items-center rounded-lg bg-brand-50 text-brand-700">
                 <Icon className="size-6" aria-hidden />
               </span>
               <span>

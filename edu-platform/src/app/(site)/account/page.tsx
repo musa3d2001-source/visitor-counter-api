@@ -52,7 +52,7 @@ export default async function AccountPage({ searchParams }: { searchParams: Prom
         {orders.length === 0 ? (
           <EmptyState icon={<Receipt />} title="لا توجد طلبات بعد" description="عند شراء أي مذكرة ستظهر فاتورتها هنا." />
         ) : (
-          <ul className="divide-y divide-line overflow-hidden rounded-2xl border border-line bg-surface">
+          <ul className="divide-y divide-line overflow-hidden rounded-lg border border-line bg-surface">
             {orders.map((o) => (
               <li key={o.id}>
                 <Link href={`/orders/${o.id}`} className="flex flex-wrap items-center gap-x-4 gap-y-1 px-4 py-3.5 hover:bg-brand-50/50">
@@ -74,11 +74,11 @@ export default async function AccountPage({ searchParams }: { searchParams: Prom
       </section>
 
       <div className="mt-10 grid gap-6 md:grid-cols-2">
-        <section className="rounded-2xl border border-line bg-surface p-5 shadow-card">
+        <section className="rounded-lg border border-line bg-surface p-5">
           <h2 className="mb-4 text-lg font-bold">بياناتي</h2>
           <ProfileForm user={{ fullName: user.fullName, phone: user.phone, gradeId: user.gradeId }} grades={grades.map((g) => ({ id: g.id, name: g.name }))} />
         </section>
-        <section className="rounded-2xl border border-line bg-surface p-5 shadow-card">
+        <section className="rounded-lg border border-line bg-surface p-5">
           <h2 className="mb-4 text-lg font-bold">تغيير كلمة المرور</h2>
           <PasswordForm />
         </section>

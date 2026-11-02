@@ -15,7 +15,7 @@ export function ProfileForm({ user, grades }: { user: { fullName: string; phone:
       <Field label="الاسم" htmlFor="fullName" error={fe.fullName}>
         <Input id="fullName" name="fullName" defaultValue={user.fullName} required />
       </Field>
-      <Field label="رقم الهاتف" htmlFor="phone" error={fe.phone} hint="اختياري — رقم كويتي">
+      <Field label="رقم الهاتف" htmlFor="phone" error={fe.phone} hint="اختياري، رقم كويتي">
         <Input id="phone" name="phone" type="tel" dir="ltr" defaultValue={user.phone?.replace("+965", "") ?? ""} />
       </Field>
       <Field label="الصف الدراسي" htmlFor="gradeId">

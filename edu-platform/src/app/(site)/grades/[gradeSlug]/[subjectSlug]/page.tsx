@@ -19,7 +19,7 @@ export async function generateMetadata({ params }: { params: Promise<Params> }):
   const subject = grade ? await getSubject(grade.id, p.subjectSlug) : null;
   if (!grade || !subject) return {};
   return {
-    title: `${subject.name} — ${grade.name}`,
+    title: `${subject.name} ${grade.name}`,
     description: `مذكرات ${subject.name} لـ${grade.name}: المذكرة النهائية، ليلة الاختبار، نماذج الاختبارات والإجابات.`,
     alternates: { canonical: `/grades/${grade.slug}/${subject.slug}` },
   };

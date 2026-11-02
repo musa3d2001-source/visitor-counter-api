@@ -19,7 +19,7 @@ export default async function PreviewPage({ params }: { params: Promise<{ fileId
       title={`معاينة: ${product.title}`}
       backHref={`/products/${product.slug}`}
       backLabel="العودة للمذكرة"
-      badge="معاينة مجانية — اشترِ المذكرة للوصول الكامل"
+      badge="معاينة مجانية. اشترِ المذكرة للوصول الكامل"
     />
   );
 }

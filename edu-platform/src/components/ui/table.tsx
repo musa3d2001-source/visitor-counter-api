@@ -3,7 +3,7 @@ import { cn } from "@/lib/utils";
 
 export function Table({ className, ...props }: React.ComponentProps<"table">) {
   return (
-    <div className="w-full overflow-x-auto rounded-2xl border border-line bg-surface">
+    <div className="w-full overflow-x-auto rounded-lg border border-line bg-surface">
       <table className={cn("w-full min-w-[640px] border-collapse text-sm", className)} {...props} />
     </div>
   );

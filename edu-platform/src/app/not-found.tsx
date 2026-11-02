@@ -1,18 +1,22 @@
 import Link from "next/link";
-import { Compass } from "lucide-react";
 
 export default function NotFound() {
   return (
-    <main id="main" className="grid min-h-dvh place-items-center bg-canvas px-4">
-      <div className="text-center">
-        <span className="mx-auto grid size-16 place-items-center rounded-2xl bg-brand-50 text-brand-700">
-          <Compass className="size-8" aria-hidden />
-        </span>
-        <h1 className="mt-5 text-2xl font-bold">الصفحة غير موجودة</h1>
-        <p className="mt-2 text-muted">ربما تم نقلها أو لم تعد متاحة.</p>
-        <Link href="/" className="mt-6 inline-flex h-11 items-center rounded-xl bg-brand-600 px-5 font-semibold text-white hover:bg-brand-700">
-          العودة للرئيسية
-        </Link>
+    <main id="main" className="grid min-h-dvh place-items-center bg-surface px-4">
+      <div className="max-w-md text-center">
+        <p className="font-display text-[7rem] leading-none font-medium text-brand-700" aria-hidden>
+          ٤٠٤
+        </p>
+        <h1 className="mt-2 text-[2.2rem]">الصفحة غير موجودة</h1>
+        <p className="mt-2 text-ink-soft">ربما نُقلت أو لم تعد متاحة. ابدأ من صفك وستجد ما تبحث عنه.</p>
+        <div className="mt-6 flex flex-wrap justify-center gap-3">
+          <Link href="/#grades" className="inline-flex h-11 items-center rounded-lg bg-brand-600 px-5 font-semibold text-white hover:bg-brand-700">
+            اختر صفك
+          </Link>
+          <Link href="/" className="inline-flex h-11 items-center rounded-lg border border-line-strong px-5 font-semibold text-ink hover:border-brand-500">
+            الصفحة الرئيسية
+          </Link>
+        </div>
       </div>
     </main>
   );

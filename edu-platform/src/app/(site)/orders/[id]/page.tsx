@@ -33,7 +33,7 @@ export default async function OrderPage({ params, searchParams }: { params: Prom
   return (
     <div className="mx-auto max-w-3xl px-4 py-8">
       {order.status === "paid" ? (
-        <div className="mb-6 rounded-3xl border border-success/20 bg-success-50 p-6 text-center no-print">
+        <div className="mb-6 rounded-lg border border-success/20 bg-success-50 p-6 text-center no-print">
           <CircleCheck className="mx-auto size-12 text-success" aria-hidden />
           <h1 className="mt-3 text-2xl font-bold">تم الدفع بنجاح</h1>
           <p className="mt-2 text-ink-soft">مشترياتك جاهزة الآن في مكتبتك.</p>
@@ -44,7 +44,7 @@ export default async function OrderPage({ params, searchParams }: { params: Prom
           </Button>
         </div>
       ) : order.status === "pending" ? (
-        <div className="mb-6 rounded-3xl border border-warning/25 bg-warning-50 p-6 text-center no-print">
+        <div className="mb-6 rounded-lg border border-warning/25 bg-warning-50 p-6 text-center no-print">
           <Clock className="mx-auto size-12 text-warning" aria-hidden />
           <h1 className="mt-3 text-2xl font-bold">بانتظار تأكيد الدفع</h1>
           <p className="mt-2 text-ink-soft">إذا أتممت الدفع، اضغط «تحديث الحالة». لن تُضاف المذكرات قبل تأكيد البوابة.</p>
@@ -62,7 +62,7 @@ export default async function OrderPage({ params, searchParams }: { params: Prom
           </div>
         </div>
       ) : order.status === "failed" ? (
-        <div className="mb-6 rounded-3xl border border-danger/20 bg-danger-50 p-6 text-center no-print">
+        <div className="mb-6 rounded-lg border border-danger/20 bg-danger-50 p-6 text-center no-print">
           <XCircle className="mx-auto size-12 text-danger" aria-hidden />
           <h1 className="mt-3 text-2xl font-bold" data-testid="payment-failed">لم تكتمل عملية الدفع</h1>
           <p className="mt-2 text-ink-soft">{payment?.error_message ? `السبب: ${payment.error_message}. ` : ""}لم يتم خصم أي مبلغ مقابل هذا الطلب. يمكنك المحاولة مرة أخرى.</p>
@@ -79,10 +79,10 @@ export default async function OrderPage({ params, searchParams }: { params: Prom
         </Alert>
       ) : null}
 
-      <section className="rounded-2xl border border-line bg-surface p-6 shadow-card">
+      <section className="rounded-lg border border-line bg-surface p-6">
         <div className="flex flex-wrap items-start justify-between gap-3">
           <div>
-            <p className="text-sm text-muted">{settings.site_name} — فاتورة</p>
+            <p className="text-sm text-muted">فاتورة {settings.site_name}</p>
             <h2 className="mt-1 text-xl font-bold">
               طلب رقم <span className="num">{order.number}</span>
             </h2>

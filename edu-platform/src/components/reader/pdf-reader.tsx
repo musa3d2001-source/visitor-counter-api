@@ -158,7 +158,7 @@ export function PdfReader({ src, title, backHref, backLabel, initialPage = 1, wa
 
       <div ref={containerRef} className="reader-scroll flex-1 overflow-auto px-2 py-4" data-testid="reader">
         {error ? (
-          <div className="mx-auto mt-16 max-w-sm rounded-2xl bg-surface p-6 text-center text-ink" role="alert">
+          <div className="mx-auto mt-16 max-w-sm rounded-lg bg-surface p-6 text-center text-ink" role="alert">
             <TriangleAlert className="mx-auto size-10 text-danger" aria-hidden />
             <p className="mt-3 font-semibold">{error}</p>
             <Link href={backHref} className="mt-4 inline-block text-sm font-semibold text-brand-700 underline">

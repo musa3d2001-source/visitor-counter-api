@@ -7,7 +7,7 @@ import { Breadcrumbs } from "@/components/ui/breadcrumbs";
 
 export async function generateMetadata({ params }: { params: Promise<{ slug: string }> }): Promise<Metadata> {
   const stage = await getStageBySlug((await params).slug);
-  return stage ? { title: stage.name, description: `مذكرات ونماذج ${stage.name} — ${stage.description}`, alternates: { canonical: `/stages/${stage.slug}` } } : {};
+  return stage ? { title: stage.name, description: `مذكرات ونماذج ${stage.name}. ${stage.description}`, alternates: { canonical: `/stages/${stage.slug}` } } : {};
 }
 
 export default async function StagePage({ params }: { params: Promise<{ slug: string }> }) {
@@ -21,7 +21,7 @@ export default async function StagePage({ params }: { params: Promise<{ slug: st
       <p className="mt-2 text-muted">{stage.description}</p>
       <div className="mt-8 grid grid-cols-2 gap-4 lg:grid-cols-4">
         {stage.grades.map((g) => (
-          <Link key={g.id} href={`/grades/${g.slug}`} className="group rounded-2xl border border-line bg-surface p-5 shadow-card transition hover:border-brand-300 hover:shadow-lift">
+          <Link key={g.id} href={`/grades/${g.slug}`} className="group rounded-lg border border-line bg-surface p-5 transition hover:border-brand-300 hover:">
             <p className="text-xl font-bold">{g.name}</p>
             <p className="mt-1 text-sm text-muted">
               <span className="num">{stats.get(g.id)?.products ?? 0}</span> منتج

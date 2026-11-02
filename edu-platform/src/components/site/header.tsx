@@ -23,7 +23,7 @@ export async function SiteHeader() {
     { href: "/#faq", label: "الأسئلة الشائعة" },
   ];
   return (
-    <header className="sticky top-0 z-40 border-b border-line bg-surface/95 backdrop-blur-sm no-print">
+    <header className="sticky top-0 z-40 border-b border-line bg-surface-sm no-print">
       <div className="mx-auto flex h-16 max-w-6xl items-center gap-2 px-4 sm:h-[4.5rem] sm:gap-6">
         <MobileNav grades={grades.map((g) => ({ href: `/grades/${g.slug}`, label: g.name }))} links={links} siteName={settings.site_name} />
         <Logo name={settings.site_name} logoUrl={logoUrl} />

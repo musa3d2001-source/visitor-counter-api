@@ -109,7 +109,7 @@ export default async function TeacherPage({ params }: { params: Promise<Params> 
       ) : (
         <>
           {groups.length > 1 ? (
-            <nav aria-label="انتقل إلى المادة" className="sticky top-16 z-20 mt-8 border-y border-line bg-surface/95 backdrop-blur no-print sm:top-[4.5rem]">
+            <nav aria-label="انتقل إلى المادة" className="sticky top-16 z-20 mt-8 border-y border-line bg-surface no-print sm:top-[4.5rem]">
               <div className="mx-auto flex max-w-6xl gap-6 overflow-x-auto px-4">
                 {groups.map((g) => (
                   <a key={g.key} href={`#${g.subjectSlug ?? "all"}-${g.gradeSlug}`} className="border-b-2 border-transparent py-3 text-sm font-semibold whitespace-nowrap text-ink-soft hover:border-brand-600 hover:text-brand-700">
