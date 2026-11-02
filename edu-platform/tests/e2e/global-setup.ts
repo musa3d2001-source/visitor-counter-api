@@ -2,6 +2,7 @@ import postgres from "postgres";
 import { rmSync } from "node:fs";
 import { migrate } from "../../scripts/migrate";
 import { seedDemo, seedStructure } from "../../scripts/seed";
+import { seedDemoTeachers } from "../../scripts/demo-teachers";
 import { closeDemoBrowser } from "../../scripts/demo-pdf";
 import { hashPassword } from "../../src/server/auth/password-core";
 import { E2E_ADMIN, E2E_DATABASE_URL, E2E_STORAGE_DIR } from "./e2e-env";
@@ -28,6 +29,7 @@ export default async function globalSetup() {
     rmSync(E2E_STORAGE_DIR, { recursive: true, force: true });
     await seedStructure(sql);
     await seedDemo(sql, { publish: true, storageDir: E2E_STORAGE_DIR, academicYear: "2026-2027" });
+    await seedDemoTeachers(sql, { publish: true, storageDir: E2E_STORAGE_DIR, academicYear: "2026-2027" });
     await closeDemoBrowser();
     await sql`
       insert into users (email, password_hash, full_name, role, email_verified_at)

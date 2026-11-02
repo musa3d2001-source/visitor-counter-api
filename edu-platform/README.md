@@ -87,6 +87,7 @@
 1. أنشئ Video Library، وفعّل من *Security*: **Embed view token authentication**، وأضف نطاق موقعك في **Allowed referrers**.
 2. انسخ إلى البيئة: `BUNNY_STREAM_LIBRARY_ID`، `BUNNY_STREAM_API_KEY` (مفتاح المكتبة)، `BUNNY_STREAM_TOKEN_KEY` (مفتاح التوقيع)، `BUNNY_STREAM_READONLY_API_KEY`، `BUNNY_STREAM_CDN_HOSTNAME`، ثم `VIDEO_PROVIDER=bunny`.
 3. اضبط Webhook المكتبة على `https://<domain>/api/video/bunny/webhook`.
+4. نطاق مشغل التضمين الافتراضي `https://iframe.mediadelivery.net` (المستخدم في وثائق توقيع الروابط). إن كانت لوحة Bunny تولّد روابط على `player.mediadelivery.net` اضبط `BUNNY_STREAM_EMBED_BASE=https://player.mediadelivery.net`.
 
 ### أرباح المعلمين (اختياري)
 يحدد المالك نسبة كل معلم (أو يتركها فارغة = غير مفعّل). عند تأكيد الدفع يُسجَّل لكل بند يخص معلمًا: قيمة البند، حصته من الخصم، حصته من **الرسوم المعتمدة** (نسبة + مبلغ ثابت من الإعدادات)، الصافي المؤهل، حصة المعلم، حصة المنصة — بدقة الفلس. الاسترداد يعكس السجل. **لا تحويلات تلقائية:** المالك يسجّل التسويات اليدوية (تحويل بنكي/نقدي) مع سجل تدقيق، ويرى المستحق والمسدد والرصيد لكل معلم.

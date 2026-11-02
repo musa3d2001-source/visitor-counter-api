@@ -1,5 +1,5 @@
 import { defineConfig, devices } from "@playwright/test";
-import { E2E_BASE_URL, E2E_SERVER_ENV, E2E_SIM_KEY, E2E_SIM_PORT, E2E_WEBHOOK_SECRET } from "./tests/e2e/e2e-env";
+import { E2E_BASE_URL, E2E_BUNNY, E2E_BUNNY_PORT, E2E_SERVER_ENV, E2E_SIM_KEY, E2E_SIM_PORT, E2E_WEBHOOK_SECRET } from "./tests/e2e/e2e-env";
 
 /**
  * اختبارات E2E (Playwright) — تعمل على Chromium المثبت مسبقًا بقياسات iPhone و iPad والكمبيوتر.
@@ -39,6 +39,13 @@ export default defineConfig({
     {
       command: `npx tsx tests/mocks/run-simulator.ts --port ${simPort} --api-key ${E2E_SIM_KEY} --webhook ${baseURL}/api/payments/myfatoorah/webhook --secret ${E2E_WEBHOOK_SECRET} --duplicate`,
       url: `http://127.0.0.1:${simPort}/__sim/health`,
+      reuseExistingServer: true,
+      timeout: 30_000,
+    },
+    {
+      // محاكي Bunny Stream (بديل اختبار) — رفع TUS، معالجة، Webhook موقّع، تضمين موقّع
+      command: `npx tsx tests/mocks/run-bunny-simulator.ts --port ${E2E_BUNNY_PORT} --library ${E2E_BUNNY.library} --api-key ${E2E_BUNNY.apiKey} --token-key ${E2E_BUNNY.tokenKey} --readonly-key ${E2E_BUNNY.readonlyKey} --webhook ${baseURL}/api/video/bunny/webhook --delay 300 --duplicate`,
+      url: `${E2E_BUNNY.base}/__sim/health`,
       reuseExistingServer: true,
       timeout: 30_000,
     },

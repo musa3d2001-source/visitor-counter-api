@@ -118,6 +118,8 @@ export function signedEmbedUrl(videoId: string, opts: { ttlSeconds?: number; aut
     autoplay: opts.autoplay ? "true" : "false",
     preload: "true",
     responsive: "true",
+    // تشغيل داخل الصفحة على iPhone بدل ملء الشاشة الإجباري
+    playsinline: "true",
   });
   if (opts.startAt && opts.startAt > 0) q.set("t", String(Math.floor(opts.startAt)));
   return `${c.embedBase}/embed/${encodeURIComponent(c.libraryId)}/${videoId}?${q.toString()}`;
