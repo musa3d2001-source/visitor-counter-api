@@ -18,9 +18,9 @@ function buildCsp(nonce: string) {
   const bunny = "https://iframe.mediadelivery.net";
   return [
     `default-src 'self'`,
-    `script-src 'self' 'nonce-${nonce}' 'strict-dynamic'${isDev ? " 'unsafe-eval'" : ""}`,
+    `script-src 'self' 'nonce-${nonce}' 'strict-dynamic' 'wasm-unsafe-eval'${isDev ? " 'unsafe-eval'" : ""}`,
     `style-src 'self' 'unsafe-inline'`,
-    `img-src 'self' blob: data: ${supabase}`.trim(),
+    `img-src 'self' blob: data: https://*.myfatoorah.com ${supabase}`.trim(),
     `font-src 'self' data:`,
     `connect-src 'self' ${supabase}`.trim(),
     `media-src 'self' blob: ${supabase}`.trim(),
@@ -40,7 +40,7 @@ function buildCsp(nonce: string) {
 export function proxy(request: NextRequest) {
   const { pathname, search } = request.nextUrl;
 
-  const needsSession = ["/admin", "/library", "/account", "/read", "/watch", "/orders", "/checkout"].some((p) => pathname === p || pathname.startsWith(`${p}/`));
+  const needsSession = ["/admin", "/library", "/account", "/read", "/orders", "/checkout"].some((p) => pathname === p || pathname.startsWith(`${p}/`));
   if (needsSession && !request.cookies.get(SESSION_COOKIE)?.value) {
     const url = request.nextUrl.clone();
     url.pathname = "/login";

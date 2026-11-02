@@ -3,6 +3,9 @@ import { getSettings } from "@/server/platform/settings";
 import { env } from "@/server/env";
 import "./globals.css";
 
+/** كل الصفحات ديناميكية (جلسات + CSP nonce لكل طلب) — البناء لا يحتاج قاعدة بيانات */
+export const dynamic = "force-dynamic";
+
 export async function generateMetadata(): Promise<Metadata> {
   const s = await getSettings();
   const base = new URL(env().APP_URL);

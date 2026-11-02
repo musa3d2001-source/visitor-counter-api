@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { Mail, Phone } from "lucide-react";
+import { AtSign, Mail, Phone } from "lucide-react";
 import { getSettings } from "@/server/platform/settings";
 import { listGrades } from "@/server/catalog/queries";
 import { Logo } from "./logo";
@@ -24,6 +24,11 @@ export async function SiteFooter() {
             {settings.contact_email ? (
               <a href={`mailto:${settings.contact_email}`} className="flex items-center gap-2 hover:text-white">
                 <Mail className="size-4" aria-hidden /> {settings.contact_email}
+              </a>
+            ) : null}
+            {settings.instagram_url ? (
+              <a href={settings.instagram_url} target="_blank" rel="noopener noreferrer" className="flex items-center gap-2 hover:text-white">
+                <AtSign className="size-4" aria-hidden /> إنستغرام
               </a>
             ) : null}
           </div>

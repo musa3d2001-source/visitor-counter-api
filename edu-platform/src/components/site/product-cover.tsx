@@ -27,6 +27,7 @@ export function ProductCover({
   gradeName,
   className,
   priority,
+  compact,
   sizes = "(max-width: 640px) 50vw, (max-width: 1024px) 33vw, 25vw",
 }: {
   coverUrl: string | null;
@@ -36,6 +37,8 @@ export function ProductCover({
   gradeName: string;
   className?: string;
   priority?: boolean;
+  /** نسخة مصغرة للصور الصغيرة (السلة والمكتبة) */
+  compact?: boolean;
   sizes?: string;
 }) {
   if (coverUrl) {
@@ -56,12 +59,20 @@ export function ProductCover({
     >
       <div className="pointer-events-none absolute -start-10 -top-10 size-40 rounded-full bg-white/8" />
       <div className="pointer-events-none absolute -bottom-14 -end-8 size-44 rounded-full border-[18px] border-white/6" />
-      <span className="relative w-fit rounded-full bg-white/15 px-2.5 py-1 text-[0.7rem] font-semibold backdrop-blur-sm">{PRODUCT_TYPE_LABELS[type]}</span>
-      <div className="relative">
-        <Icon className="mb-2 size-7 text-[color:var(--accent)]" aria-hidden />
-        <p className="text-lg leading-snug font-bold sm:text-xl">{subjectName ?? "باقة شاملة"}</p>
-        <p className="mt-1 text-xs text-white/80">{gradeName}</p>
-      </div>
+      {compact ? (
+        <div className="relative grid flex-1 place-items-center">
+          <Icon className="size-7 text-[color:var(--accent)]" aria-hidden />
+        </div>
+      ) : (
+        <>
+          <span className="relative w-fit rounded-full bg-white/15 px-2.5 py-1 text-[0.7rem] font-semibold backdrop-blur-sm">{PRODUCT_TYPE_LABELS[type]}</span>
+          <div className="relative">
+            <Icon className="mb-2 size-7 text-[color:var(--accent)]" aria-hidden />
+            <p className="text-lg leading-snug font-bold sm:text-xl">{subjectName ?? "باقة شاملة"}</p>
+            <p className="mt-1 text-xs text-white/80">{gradeName}</p>
+          </div>
+        </>
+      )}
     </div>
   );
 }
