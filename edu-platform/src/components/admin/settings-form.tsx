@@ -26,6 +26,9 @@ export type SettingsValues = {
   videos_enabled: boolean;
   watermark_enabled: boolean;
   faq: { q: string; a: string }[];
+  /** نسبة الرسوم كنص (مثال "2.5") والرسوم الثابتة بالدينار (مثال "0.100") */
+  fee_percent: string;
+  fee_fixed: string;
   footer_note: string;
 };
 
@@ -135,6 +138,20 @@ export function SettingsForm({ action, values }: { action: ServerAction; values:
             <Checkbox name="watermark_enabled" defaultChecked={values.watermark_enabled} label="ختم علامة مائية بهوية المشتري على ملفات PDF" />
             <Checkbox name="videos_enabled" defaultChecked={values.videos_enabled} label="تفعيل قسم دروس الفيديو للطلاب" />
           </div>
+        </div>
+      </Card>
+
+      <Card title="الرسوم المعتمدة لحساب أرباح المعلمين">
+        <p className="mb-4 text-sm leading-7 text-muted">
+          تُخصم من قيمة كل طلب قبل احتساب حصة المعلم (مثل رسوم بوابة الدفع). تُطبق على المبيعات الجديدة فقط ولا تغيّر السجلات السابقة.
+        </p>
+        <div className="grid gap-4 sm:grid-cols-2">
+          <Field label="نسبة الرسوم من قيمة الطلب (%)" htmlFor="fee_percent" error={fe.fee_percent_bps} hint="مثال: 2.5 — الحد الأقصى 20%">
+            <Input id="fee_percent" name="fee_percent" defaultValue={values.fee_percent} inputMode="decimal" dir="ltr" className="num text-start" />
+          </Field>
+          <Field label="رسوم ثابتة لكل طلب (د.ك)" htmlFor="fee_fixed" error={fe.fee_fixed_fils} hint="مثال: 0.100 — اتركه 0 إن لم توجد">
+            <Input id="fee_fixed" name="fee_fixed" defaultValue={values.fee_fixed} inputMode="decimal" dir="ltr" className="num text-start" />
+          </Field>
         </div>
       </Card>
 

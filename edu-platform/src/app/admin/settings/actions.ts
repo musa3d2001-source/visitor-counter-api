@@ -7,6 +7,7 @@ import { audit } from "@/server/platform/audit";
 import { storage } from "@/server/storage";
 import { getSettings } from "@/server/platform/settings";
 import { AdminError, adminAction, bool, str } from "@/server/admin/common";
+import { parseKwdToFils } from "@/lib/money";
 
 const FIELD_LABELS: Record<string, string> = {
   site_name: "اسم المنصة",
@@ -22,6 +23,8 @@ const FIELD_LABELS: Record<string, string> = {
   academic_year: "العام الدراسي",
   faq: "الأسئلة الشائعة",
   footer_note: "نص التذييل",
+  fee_percent_bps: "نسبة الرسوم",
+  fee_fixed_fils: "الرسوم الثابتة",
 };
 
 export async function saveSettingsAction(_p: ActionState, fd: FormData): Promise<ActionState> {
@@ -33,6 +36,11 @@ export async function saveSettingsAction(_p: ActionState, fd: FormData): Promise
       throw new AdminError("صيغة الأسئلة الشائعة غير صحيحة");
     }
     const whatsapp = str(fd, "whatsapp_number").replace(/[\s-]/g, "");
+    const feePctRaw = str(fd, "fee_percent") || "0";
+    const feePct = Number(feePctRaw.replace("٫", "."));
+    if (!Number.isFinite(feePct) || feePct < 0 || feePct > 20) throw new AdminError("نسبة الرسوم بين 0 و 20%", { fee_percent_bps: "قيمة غير صحيحة" });
+    const feeFixed = parseKwdToFils(str(fd, "fee_fixed") || "0");
+    if (feeFixed === null || feeFixed > 10000) throw new AdminError("الرسوم الثابتة غير صحيحة (حتى 10.000 د.ك)", { fee_fixed_fils: "قيمة غير صحيحة" });
     const patch: Partial<PlatformSettings> = {
       site_name: str(fd, "site_name"),
       tagline: str(fd, "tagline"),
@@ -49,6 +57,8 @@ export async function saveSettingsAction(_p: ActionState, fd: FormData): Promise
       watermark_enabled: bool(fd, "watermark_enabled"),
       faq: faq as PlatformSettings["faq"],
       footer_note: str(fd, "footer_note"),
+      fee_percent_bps: Math.round(feePct * 100),
+      fee_fixed_fils: feeFixed,
     };
     const parsed = settingsSchema.partial().safeParse(patch);
     if (!parsed.success) {
@@ -62,7 +72,20 @@ export async function saveSettingsAction(_p: ActionState, fd: FormData): Promise
     const [a, b] = (parsed.data.academic_year ?? "2026-2027").split("-").map(Number);
     if (b !== a + 1) throw new AdminError("العام الدراسي غير صحيح (مثال: 2026-2027)");
     await saveSettings(parsed.data, adminId);
-    await audit({ actorId: adminId, action: "settings.update", entityType: "settings", entityId: "platform", metadata: { keys: Object.keys(parsed.data) }, ip });
+    const before = await getSettings();
+    await audit({
+      actorId: adminId,
+      action: "settings.update",
+      entityType: "settings",
+      entityId: "platform",
+      metadata: {
+        keys: Object.keys(parsed.data),
+        ...(before.fee_percent_bps !== parsed.data.fee_percent_bps || before.fee_fixed_fils !== parsed.data.fee_fixed_fils
+          ? { fees: { from: [before.fee_percent_bps, before.fee_fixed_fils], to: [parsed.data.fee_percent_bps, parsed.data.fee_fixed_fils] } }
+          : {}),
+      },
+      ip,
+    });
     revalidatePath("/", "layout");
     return { ok: true, message: "تم حفظ الإعدادات وتطبيقها على الموقع" };
   });

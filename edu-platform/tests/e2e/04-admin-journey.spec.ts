@@ -38,7 +38,7 @@ test.describe("رحلة المدير والطالب الكاملة", () => {
     await page.selectOption("#type", "review_notes");
     await page.fill("#title", title);
     await page.fill("#price", "2.750");
-    await page.getByRole("button", { name: "حفظ كمسودة ومتابعة رفع الملفات" }).click();
+    await page.getByRole("button", { name: "حفظ كمسودة ومتابعة الرفع" }).click();
     await page.waitForURL(/\/admin\/products\/[0-9a-f-]{36}/);
     const productId = page.url().match(/products\/([0-9a-f-]{36})/)![1];
 

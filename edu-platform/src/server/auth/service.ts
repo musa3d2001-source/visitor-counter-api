@@ -3,7 +3,7 @@ import { sql } from "../db";
 import { env } from "../env";
 import { hashPassword, verifyPassword, burnPasswordTime } from "./password";
 import { createSession, generateToken, hashToken, invalidateAllUserSessions } from "./session";
-import { hitRateLimit, clearRateLimit } from "./rate-limit";
+import { hitRateLimit, clearRateLimit, peekRateLimit } from "./rate-limit";
 import { sendMail } from "../platform/mailer";
 import { getSettings } from "../platform/settings";
 
@@ -11,13 +11,20 @@ import { getSettings } from "../platform/settings";
 
 export type AuthResult = { ok: true; userId: string; token: string; expiresAt: Date } | { ok: false; error: string; retryAfter?: number };
 
-const LOGIN_LIMIT = { perAccount: 5, perIp: 30, windowSec: 15 * 60 };
+/**
+ * حدود الدخول:
+ *  - لكل حساب: 5 محاولات خلال 15 دقيقة (تُصفّر عند النجاح)
+ *  - لكل IP: 50 محاولة **فاشلة** خلال 15 دقيقة — الدخول الناجح لا يُحتسب،
+ *    حتى لا يُقفل فصل دراسي كامل يدخل من شبكة مدرسة واحدة (NAT)
+ */
+const LOGIN_LIMIT = { perAccount: 5, failedPerIp: 50, windowSec: 15 * 60 };
 
 export async function loginWithPassword(email: string, password: string, meta: { ip: string; userAgent: string }): Promise<AuthResult> {
   const accountKey = `login:acct:${email.toLowerCase()}`;
-  const ipKey = `login:ip:${meta.ip}`;
-  const ipLimit = await hitRateLimit(ipKey, LOGIN_LIMIT.perIp, LOGIN_LIMIT.windowSec);
-  if (!ipLimit.allowed) return { ok: false, error: "محاولات كثيرة. حاول مرة أخرى بعد قليل.", retryAfter: ipLimit.retryAfterSeconds };
+  const ipKey = `login:ipfail:${meta.ip}`;
+  const ipState = await peekRateLimit(ipKey, LOGIN_LIMIT.failedPerIp);
+  if (ipState.blocked) return { ok: false, error: "محاولات كثيرة. حاول مرة أخرى بعد قليل.", retryAfter: ipState.retryAfterSeconds };
+  const failIp = () => hitRateLimit(ipKey, LOGIN_LIMIT.failedPerIp, LOGIN_LIMIT.windowSec);
 
   const [user] = await sql<{ id: string; password_hash: string; is_active: boolean }[]>`
     select id, password_hash, is_active from users where email = ${email}
@@ -25,14 +32,19 @@ export async function loginWithPassword(email: string, password: string, meta: {
   // نتحقق من حد الحساب قبل فحص كلمة المرور لمنع التخمين
   const acct = await hitRateLimit(accountKey, LOGIN_LIMIT.perAccount, LOGIN_LIMIT.windowSec);
   if (!acct.allowed) {
+    await failIp();
     return { ok: false, error: "تم إيقاف تسجيل الدخول مؤقتًا بسبب محاولات خاطئة متكررة. حاول بعد 15 دقيقة أو استعد كلمة المرور.", retryAfter: acct.retryAfterSeconds };
   }
   if (!user) {
     await burnPasswordTime(password);
+    await failIp();
     return { ok: false, error: "البريد الإلكتروني أو كلمة المرور غير صحيحة." };
   }
   const valid = await verifyPassword(password, user.password_hash);
-  if (!valid) return { ok: false, error: "البريد الإلكتروني أو كلمة المرور غير صحيحة." };
+  if (!valid) {
+    await failIp();
+    return { ok: false, error: "البريد الإلكتروني أو كلمة المرور غير صحيحة." };
+  }
   if (!user.is_active) return { ok: false, error: "هذا الحساب موقوف. تواصل مع الدعم." };
   await clearRateLimit(accountKey);
   const s = await createSession(user.id, meta);

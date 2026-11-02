@@ -104,8 +104,7 @@ export async function enableAccountAction(_prev: ActionState, fd: FormData): Pro
     const parsed = accountSchema.safeParse({ email: str(fd, "email"), fullName: str(fd, "fullName") });
     if (!parsed.success) throw new AdminError("راجع البيانات", fieldErrors(parsed.error));
     const res = await enableTeacherAccount(id, parsed.data, adminId, ip);
-    revalidatePath(`/admin/teachers/${id}`);
-    revalidatePath("/admin/teachers");
+    // لا نعيد تحميل الصفحة هنا حتى تبقى كلمة المرور ظاهرة للمالك (يحدّثها زر «تم»)
     return {
       ok: true,
       message: res.password

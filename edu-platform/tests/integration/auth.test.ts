@@ -2,7 +2,8 @@ import { afterAll, beforeAll, describe, expect, it } from "vitest";
 import { createSession, hashToken, invalidateAllUserSessions, invalidateSession, validateSessionToken } from "@/server/auth/session";
 import { clearRateLimit, hitRateLimit, peekRateLimit } from "@/server/auth/rate-limit";
 import { closeDb, resetDb, sql } from "../helpers/db";
-import { createUser } from "../helpers/factories";
+import { createUser, TEST_PASSWORD } from "../helpers/factories";
+import { loginWithPassword } from "@/server/auth/service";
 
 beforeAll(resetDb);
 afterAll(closeDb);
@@ -108,4 +109,24 @@ describe("rate limiting (fixed window in DB)", () => {
     await clearRateLimit("login:clear");
     expect((await peekRateLimit("login:clear", 1)).blocked).toBe(false);
   });
+});
+
+describe("login limits per IP (school networks behind one NAT)", () => {
+  it("successful logins from one IP never lock it; repeated failures do", async () => {
+    const ip = "203.0.113.77";
+    const users = await Promise.all(Array.from({ length: 4 }, () => createUser()));
+    // 60 دخولًا ناجحًا من نفس الشبكة (فصل كامل)
+    for (let i = 0; i < 60; i++) {
+      const u = users[i % users.length];
+      const r = await loginWithPassword(u.email, TEST_PASSWORD, { ip, userAgent: "t" });
+      expect(r.ok, `login ${i}`).toBe(true);
+    }
+    // 50 محاولة فاشلة (حسابات مختلفة) تقفل الـ IP
+    for (let i = 0; i < 50; i++) await loginWithPassword(`nobody-${i}@example.com`, "wrong-password", { ip, userAgent: "t" });
+    const blocked = await loginWithPassword(users[0].email, TEST_PASSWORD, { ip, userAgent: "t" });
+    expect(blocked.ok).toBe(false);
+    // شبكة أخرى لا تتأثر
+    const other = await loginWithPassword(users[0].email, TEST_PASSWORD, { ip: "198.51.100.5", userAgent: "t" });
+    expect(other.ok).toBe(true);
+  }, 120_000);
 });

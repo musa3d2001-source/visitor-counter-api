@@ -1,3 +1,4 @@
+import { PRODUCT_TYPE_LABELS } from "@/lib/labels";
 import { requireOwnerPage } from "@/server/auth/permissions";
 import Link from "next/link";
 import { Package, Pencil, Plus } from "lucide-react";
@@ -17,8 +18,8 @@ export default async function BundlesPage() {
   return (
     <div>
       <AdminPageHeader
-        title="الباقات"
-        description="الباقة منتج يجمع عدة مذكرات من نفس الصف بسعر واحد. لا تُكرر الصلاحيات للمنتجات المتداخلة."
+        title="الباقات والدورات"
+        description="الباقات والدورات والوحدات التي تضم محتويات أخرى (فيديوهات ومذكرات). المشتري يحصل على كل المحتويات ولا تُكرر الصلاحيات."
         actions={
           <Button asChild>
             <Link href="/admin/products/new?type=bundle">
@@ -62,10 +63,14 @@ export default async function BundlesPage() {
                     <Link href={`/admin/products/${b.id}`} className="hover:text-brand-700">
                       {b.title}
                     </Link>
+                    <p className="text-xs font-normal text-muted">
+                      {PRODUCT_TYPE_LABELS[b.type]}
+                      {b.teacher_name ? ` · ${b.teacher_name}` : ""}
+                    </p>
                   </TD>
                   <TD>{b.grade_name}</TD>
                   <TD>
-                    <span className="num">{b.item_count}</span> منتج
+                    <span className="num">{b.item_count}</span> عنصر
                   </TD>
                   <TD className="num">{filsToKwdString(b.items_total)}</TD>
                   <TD className="num font-semibold">{filsToKwdString(b.price_fils)}</TD>

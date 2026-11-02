@@ -253,7 +253,8 @@ export async function withdrawReviewAction(_prev: ActionState, fd: FormData): Pr
 }
 
 export async function approveAndPublishAction(_prev: ActionState, fd: FormData): Promise<ActionState> {
-  return staffAction(async ({ actor, ip }) => {
+  let approvedId: string | null = null;
+  const res = await staffAction(async ({ actor, ip }) => {
     if (actor.kind !== "owner") throw new PermissionError("اعتماد المحتوى متاح لإدارة المنصة فقط");
     const id = str(fd, "id");
     if (!isUuid(id)) throw new AdminError("طلب غير صالح");
@@ -276,18 +277,26 @@ export async function approveAndPublishAction(_prev: ActionState, fd: FormData):
     );
     revalidateProduct(id);
     revalidatePath("/", "layout");
+    approvedId = id;
     return { ok: true, message: "تم اعتماد المحتوى ونشره للطلاب" };
   });
+  // لوحة المراجعة تختفي بعد النشر — نعرض التأكيد عبر رابط الصفحة
+  if (approvedId) redirect(`/admin/products/${approvedId}?approved=1`);
+  return res;
 }
 
 export async function returnForChangesAction(_prev: ActionState, fd: FormData): Promise<ActionState> {
-  return staffAction(async ({ actor, ip }) => {
+  let returnedId: string | null = null;
+  const res = await staffAction(async ({ actor, ip }) => {
     const id = str(fd, "id");
     if (!isUuid(id)) throw new AdminError("طلب غير صالح");
     await returnForChanges(id, str(fd, "reason"), actor, ip);
     revalidateProduct(id);
+    returnedId = id;
     return { ok: true, message: "أُعيد المحتوى للمعلم مع الملاحظات" };
   });
+  if (returnedId) redirect(`/admin/products/${returnedId}?returned=1`);
+  return res;
 }
 
 export async function deleteProductAction(_prev: ActionState, fd: FormData): Promise<ActionState> {

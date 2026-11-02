@@ -3,6 +3,8 @@ import Image from "next/image";
 import { CircleCheck, CreditCard, TriangleAlert } from "lucide-react";
 import { getSettings } from "@/server/platform/settings";
 import { paymentsConfig } from "@/server/payments/service";
+import { bunnyConfigured } from "@/server/video/bunny";
+import { filsToKwdString } from "@/lib/money";
 import { env } from "@/server/env";
 import { storage } from "@/server/storage";
 import { AdminPageHeader, Section } from "@/components/admin/page-header";
@@ -59,6 +61,8 @@ export default async function SettingsPage() {
             watermark_enabled: s.watermark_enabled,
             faq: s.faq,
             footer_note: s.footer_note,
+            fee_percent: String(s.fee_percent_bps / 100),
+            fee_fixed: filsToKwdString(s.fee_fixed_fils),
           }}
         />
 
@@ -96,6 +100,21 @@ export default async function SettingsPage() {
               <p className="font-semibold text-ink-soft">رابط العودة بعد الدفع:</p>
               <code className="block rounded-lg bg-canvas p-2 break-all" dir="ltr">
                 {callbackUrl}
+              </code>
+            </div>
+          </Section>
+
+          <Section title="مزود الفيديو" description="يُضبط من متغيرات البيئة — لا تُعرض المفاتيح هنا.">
+            <ul className="divide-y divide-line">
+              <Row label="مزود الرفع (VIDEO_PROVIDER)" ok text={e.VIDEO_PROVIDER === "bunny" ? "Bunny Stream" : "تخزين المنصة الخاص"} />
+              <Row label="Bunny Stream مضبوط" ok={bunnyConfigured()} text={bunnyConfigured() ? "نعم" : "لا"} />
+              <Row label="مفتاح توقيع Webhook" ok={Boolean(e.BUNNY_STREAM_READONLY_API_KEY)} text={e.BUNNY_STREAM_READONLY_API_KEY ? "مضبوط" : "غير مضبوط"} />
+              <Row label="نطاق صور المعاينة (CDN)" ok={Boolean(e.BUNNY_STREAM_CDN_HOSTNAME)} text={e.BUNNY_STREAM_CDN_HOSTNAME ? "مضبوط" : "غير مضبوط"} />
+            </ul>
+            <div className="mt-4 space-y-2 text-xs">
+              <p className="font-semibold text-ink-soft">رابط Webhook (يُضاف في إعدادات مكتبة Bunny Stream):</p>
+              <code className="block rounded-lg bg-canvas p-2 break-all" dir="ltr">
+                {`${e.APP_URL.replace(/\/$/, "")}/api/video/bunny/webhook`}
               </code>
             </div>
           </Section>

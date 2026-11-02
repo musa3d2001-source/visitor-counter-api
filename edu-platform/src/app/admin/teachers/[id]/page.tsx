@@ -10,7 +10,7 @@ import { storage } from "@/server/storage";
 import { AdminPageHeader, Section, StatCard } from "@/components/admin/page-header";
 import { TeacherForm } from "@/components/admin/teacher-form";
 import { FileUploader } from "@/components/admin/file-uploader";
-import { ActionForm } from "@/components/admin/action-form";
+import { OneTimeSecretForm } from "@/components/admin/one-time-secret-form";
 import { ConfirmButton, QuickAction } from "@/components/admin/confirm-button";
 import { ProductStatusBadge } from "@/components/admin/status-badge";
 import { Alert } from "@/components/ui/alert";
@@ -173,7 +173,7 @@ export default async function TeacherAdminPage({ params, searchParams }: { param
               <div className="space-y-3">
                 <Badge tone="neutral">يديره المالك — بدون حساب دخول</Badge>
                 <p className="text-xs leading-6 text-muted">لتفعيل حساب يرفع منه المعلم مسوداته بنفسه، أدخل بريده. إن كان البريد مسجلًا كطالب سيُرقّى حسابه.</p>
-                <ActionForm action={enableAccountAction} className="space-y-3">
+                <OneTimeSecretForm action={enableAccountAction} className="space-y-3">
                   <input type="hidden" name="teacherId" value={teacher.id} />
                   <Field label="بريد المعلم" htmlFor="acc-email">
                     <Input id="acc-email" name="email" type="email" dir="ltr" className="text-start" required />
@@ -182,7 +182,7 @@ export default async function TeacherAdminPage({ params, searchParams }: { param
                     <Input id="acc-name" name="fullName" defaultValue={teacher.display_name} required />
                   </Field>
                   <SubmitButton size="sm">تفعيل حساب المعلم</SubmitButton>
-                </ActionForm>
+                </OneTimeSecretForm>
               </div>
             )}
             <div className="mt-4 border-t border-line pt-3">

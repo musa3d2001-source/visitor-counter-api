@@ -92,7 +92,7 @@ function kuwaitDate(d: Date | null) {
 
 const STATUS_TONE = { ready: "success", processing: "warning", uploading: "neutral", failed: "danger" } as const;
 
-export default async function EditProductPage({ params, searchParams }: { params: Promise<{ id: string }>; searchParams: Promise<{ created?: string }> }) {
+export default async function EditProductPage({ params, searchParams }: { params: Promise<{ id: string }>; searchParams: Promise<{ created?: string; approved?: string; returned?: string }> }) {
   const actor = await requireStaff();
   const owner = actor.kind === "owner";
   const { id } = await params;
@@ -161,6 +161,17 @@ export default async function EditProductPage({ params, searchParams }: { params
         <Alert tone="success" title="تم إنشاء المسودة" className="mb-5">
           الخطوة التالية: {isPdf ? "ارفع ملف PDF" : isVideo ? "ارفع دروس الفيديو" : "أضف المحتويات"}
           {owner ? "، ثم انشر المنتج." : "، ثم أرسله للمراجعة."}
+        </Alert>
+      ) : null}
+
+      {sp.approved && product.status === "published" ? (
+        <Alert tone="success" title="تم اعتماد المحتوى ونشره للطلاب" className="mb-5">
+          السعر المعتمد: <span className="num font-bold">{filsToKwdString(product.price_fils)}</span> د.ك
+        </Alert>
+      ) : null}
+      {sp.returned && owner ? (
+        <Alert tone="info" title="أُعيد المحتوى للمعلم مع ملاحظاتك" className="mb-5">
+          سيظهر للمعلم في قائمة «محتوى أُعيد إليك للتعديل».
         </Alert>
       ) : null}
 
@@ -283,9 +294,9 @@ export default async function EditProductPage({ params, searchParams }: { params
                       return (
                         <li key={l.id} className="rounded-xl border border-line">
                           <details className="group">
-                            <summary className="flex cursor-pointer list-none items-center gap-3 p-3 text-sm [&::-webkit-details-marker]:hidden">
+                            <summary className="flex cursor-pointer list-none flex-wrap items-center gap-3 p-3 text-sm sm:flex-nowrap [&::-webkit-details-marker]:hidden">
                               <span className="num w-5 shrink-0 text-center text-xs text-muted">{i + 1}</span>
-                              <span className="relative grid aspect-video w-20 shrink-0 place-items-center overflow-hidden rounded-lg bg-canvas">
+                              <span className="relative grid aspect-video w-16 shrink-0 place-items-center overflow-hidden rounded-lg bg-canvas sm:w-20">
                                 {thumb ? <Image src={thumb} alt="" fill sizes="80px" className="object-cover" /> : <PlayCircle className="size-5 text-brand-600" aria-hidden />}
                               </span>
                               <span className="min-w-0 flex-1">
@@ -295,7 +306,7 @@ export default async function EditProductPage({ params, searchParams }: { params
                                   {l.size_bytes ? ` · ${fmtSize(Number(l.size_bytes))}` : ""}
                                 </span>
                               </span>
-                              <span className="flex flex-wrap items-center justify-end gap-1">
+                              <span className="flex w-full flex-wrap items-center gap-1 ps-8 sm:w-auto sm:justify-end sm:ps-0">
                                 <Badge tone={STATUS_TONE[l.processing_status]} data-testid="lesson-status">
                                   {PROCESSING_STATUS_LABELS[l.processing_status]}
                                 </Badge>
@@ -359,12 +370,10 @@ export default async function EditProductPage({ params, searchParams }: { params
               )}
               {canUpload ? (
                 <div className="space-y-4">
-                  <details className="rounded-xl border border-line p-4" open={lessons.length === 0}>
-                    <summary className="cursor-pointer font-semibold">رفع درس فيديو</summary>
-                    <div className="mt-4">
-                      <LessonUploader productId={id} provider={provider} />
-                    </div>
-                  </details>
+                  <div className="rounded-xl border border-brand-200 bg-brand-50/40 p-4">
+                    <h3 className="mb-4 font-semibold">{lessons.length ? "إضافة درس آخر" : "رفع أول درس فيديو"}</h3>
+                    <LessonUploader productId={id} provider={provider} />
+                  </div>
                   {owner && bunnyConfigured() ? (
                     <details className="rounded-xl border border-line p-4">
                       <summary className="cursor-pointer font-semibold">ربط فيديو موجود في Bunny Stream</summary>
@@ -496,7 +505,7 @@ export default async function EditProductPage({ params, searchParams }: { params
             </Section>
           ) : null}
 
-          {isContainer ? (
+          {isContainer && (bundleItems.length > 0 || candidates.length > 0 || product.type === "bundle") ? (
             <Section
               title={product.type === "bundle" ? "محتويات الباقة" : "محتويات مضمّنة"}
               description={
