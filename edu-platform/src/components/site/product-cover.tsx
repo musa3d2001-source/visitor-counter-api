@@ -1,6 +1,6 @@
 import Image from "next/image";
 import { FileText, Package, PlayCircle } from "lucide-react";
-import { PRODUCT_TYPE_LABELS, type ProductType } from "@/lib/labels";
+import { isVideoType, PRODUCT_TYPE_LABELS, type ProductType } from "@/lib/labels";
 import { cn } from "@/lib/utils";
 
 /** غلاف المنتج — صورة الغلاف إن وُجدت، وإلا غلاف مولّد متناسق مع الهوية */
@@ -49,7 +49,7 @@ export function ProductCover({
     );
   }
   const [a, b] = PALETTES[hash(`${subjectName ?? ""}${gradeName}`) % PALETTES.length];
-  const Icon = type === "bundle" ? Package : type === "video_course" ? PlayCircle : FileText;
+  const Icon = type === "bundle" ? Package : isVideoType(type) ? PlayCircle : FileText;
   return (
     <div
       className={cn("relative flex aspect-[4/4.4] flex-col sm:aspect-[4/5] justify-between overflow-hidden p-4 text-white", className)}

@@ -1,5 +1,6 @@
 import Link from "next/link";
-import { Eye } from "lucide-react";
+import { Eye, PlayCircle } from "lucide-react";
+import { formatTotalDuration, lessonsLabel } from "./format";
 import type { ProductCard as ProductCardData } from "@/server/catalog/queries";
 import { PRODUCT_TYPE_LABELS, termLabel } from "@/lib/labels";
 import { Badge } from "@/components/ui/badge";
@@ -15,7 +16,7 @@ export function ProductCard({ product, owned }: { product: ProductCardData; owne
     <article className="group relative flex flex-col overflow-hidden rounded-2xl border border-line bg-surface shadow-card transition-shadow hover:shadow-lift">
       <div className="relative">
         <ProductCover
-          coverUrl={product.coverUrl}
+          coverUrl={product.coverUrl ?? (product.isVideo ? product.thumbnailUrl : null)}
           title={product.title}
           type={product.type}
           subjectName={product.subjectName}
@@ -36,9 +37,16 @@ export function ProductCard({ product, owned }: { product: ProductCardData; owne
             {product.title}
           </Link>
         </h3>
+        {product.teacherName ? <p className="-mt-1 text-xs text-muted">{product.teacherName}</p> : null}
+        {product.isVideo && product.lessonCount ? (
+          <p className="flex items-center gap-1 text-xs font-semibold text-ink-soft">
+            <PlayCircle className="size-3.5 text-brand-600" aria-hidden /> {lessonsLabel(product.lessonCount)}
+            {product.totalDurationSeconds ? <> · {formatTotalDuration(product.totalDurationSeconds)}</> : null}
+          </p>
+        ) : null}
         <div className="mt-auto flex items-end justify-between gap-2 pt-1">
           <Price fils={product.priceFils} compareAt={product.compareAtPriceFils} size="sm" />
-          {product.hasPreview ? (
+          {product.hasPreview || product.previewLessonId ? (
             <span className="flex items-center gap-1 text-xs text-muted">
               <Eye className="size-3.5" aria-hidden /> معاينة
             </span>

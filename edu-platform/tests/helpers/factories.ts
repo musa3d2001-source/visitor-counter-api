@@ -17,9 +17,9 @@ async function passwordHash() {
 let counter = 0;
 const uniq = () => `${Date.now().toString(36)}${(counter++).toString(36)}`;
 
-export async function createUser(opts: { role?: "student" | "admin"; email?: string; fullName?: string; isActive?: boolean; phone?: string | null } = {}): Promise<SessionUser> {
+export async function createUser(opts: { role?: "student" | "admin" | "teacher"; email?: string; fullName?: string; isActive?: boolean; phone?: string | null } = {}): Promise<SessionUser> {
   const email = opts.email ?? `user-${uniq()}@example.com`;
-  const [u] = await sql<{ id: string; email: string; full_name: string; phone: string | null; role: "student" | "admin"; grade_id: string | null; is_active: boolean }[]>`
+  const [u] = await sql<{ id: string; email: string; full_name: string; phone: string | null; role: "student" | "admin" | "teacher"; grade_id: string | null; is_active: boolean }[]>`
     insert into users (email, password_hash, full_name, role, is_active, phone)
     values (${email}, ${await passwordHash()}, ${opts.fullName ?? "طالب تجريبي"}, ${opts.role ?? "student"}, ${opts.isActive ?? true}, ${opts.phone ?? null})
     returning id, email, full_name, phone, role, grade_id, is_active
@@ -143,4 +143,126 @@ export async function activeEntitlements(userId: string): Promise<string[]> {
     select product_id from entitlements where user_id = ${userId} and revoked_at is null order by product_id
   `;
   return rows.map((r) => r.product_id);
+}
+
+// ---------------------------------------------------------------------------
+// المعلمون ومنتجات الفيديو والحاويات
+// ---------------------------------------------------------------------------
+
+export type TestTeacher = { id: string; slug: string; displayName: string; user: SessionUser | null };
+
+export async function createTeacher(opts: {
+  mode?: "managed" | "self_managed";
+  /** ينشئ حساب دخول بدور teacher ويربطه (يُفرض مع self_managed) */
+  withUser?: boolean;
+  shareBps?: number | null;
+  published?: boolean;
+  canUpload?: boolean;
+  displayName?: string;
+} = {}): Promise<TestTeacher> {
+  const mode = opts.mode ?? "managed";
+  const user = mode === "self_managed" || opts.withUser ? await createUser({ role: "teacher", fullName: opts.displayName ?? "معلم الاختبار" }) : null;
+  const slug = `t-${uniq()}`;
+  const displayName = opts.displayName ?? `أ. معلم ${slug}`;
+  const [t] = await sql<{ id: string }[]>`
+    insert into teachers (slug, display_name, headline, bio, mode, user_id, can_upload, is_published, revenue_share_bps)
+    values (${slug}, ${displayName}, 'معلم اختبار', 'نبذة', ${mode}, ${user?.id ?? null}, ${opts.canUpload ?? true},
+            ${opts.published ?? true}, ${opts.shareBps === undefined ? null : opts.shareBps})
+    returning id
+  `;
+  return { id: t.id, slug, displayName, user };
+}
+
+export type TestVideoProduct = TestProduct & { lessonIds: string[] };
+
+/** يكتب مقطع فيديو (حقيقي إن توفر ffmpeg، وإلا بايتات MP4 شكلية) في التخزين الخاص */
+export function writePrivateVideo(key: string, bytes?: Uint8Array) {
+  const data =
+    bytes ??
+    new Uint8Array([0, 0, 0, 24, 0x66, 0x74, 0x79, 0x70, 0x69, 0x73, 0x6f, 0x6d, 0, 0, 2, 0, 0x69, 0x73, 0x6f, 0x6d, 0x69, 0x73, 0x6f, 0x32]);
+  writePrivate(key, data);
+  return data.length;
+}
+
+export async function createVideoProduct(opts: {
+  type?: "video_lesson" | "unit" | "quiz_review" | "exam_review" | "video_course";
+  teacherId?: string | null;
+  lessons?: number;
+  ready?: boolean;
+  freePreviewIndex?: number | null;
+  status?: "draft" | "in_review" | "published" | "hidden" | "archived";
+  priceFils?: number;
+  accessMode?: "unlimited" | "until_date" | "days";
+  accessUntil?: Date | null;
+  accessDays?: number | null;
+  level?: number;
+  subjectSlug?: string;
+  provider?: "file" | "bunny";
+  videoRefs?: string[];
+  title?: string;
+} = {}): Promise<TestVideoProduct> {
+  const { gradeId, subjectId } = await gradeAndSubject(opts.level ?? 7, opts.subjectSlug ?? "science");
+  const slug = `v-${uniq()}`;
+  const status = opts.status ?? "published";
+  const [p] = await sql<{ id: string; price_fils: number }[]>`
+    insert into products (slug, type, title, grade_id, subject_id, academic_year, term, price_fils, status, published_at, teacher_id,
+                          access_mode, access_until, access_days)
+    values (${slug}, ${opts.type ?? "unit"}, ${opts.title ?? `وحدة فيديو ${slug}`}, ${gradeId}, ${subjectId}, '2026-2027', 1,
+            ${opts.priceFils ?? 4000}, ${status}, ${status === "published" ? new Date() : null}, ${opts.teacherId ?? null},
+            ${opts.accessMode ?? "unlimited"}, ${opts.accessUntil ?? null}, ${opts.accessDays ?? null})
+    returning id, price_fils
+  `;
+  const lessonIds: string[] = [];
+  const n = opts.lessons ?? 3;
+  const provider = opts.provider ?? "file";
+  for (let i = 0; i < n; i++) {
+    let ref: string;
+    let size: number | null = null;
+    if (provider === "bunny") {
+      ref = opts.videoRefs?.[i] ?? randomUUID();
+    } else {
+      ref = `lessons/${p.id}/${randomUUID()}.mp4`;
+      size = writePrivateVideo(ref);
+    }
+    const [l] = await sql<{ id: string }[]>`
+      insert into lessons (product_id, unit_title, title, provider, video_ref, mime_type, size_bytes, duration_seconds,
+                           is_free_preview, is_published, sort_order, processing_status)
+      values (${p.id}, 'الوحدة الأولى', ${`الدرس ${i + 1}`}, ${provider}, ${ref}, 'video/mp4', ${size}, 60,
+              ${opts.freePreviewIndex === i}, true, ${i}, ${opts.ready === false ? "processing" : "ready"})
+      returning id
+    `;
+    lessonIds.push(l.id);
+  }
+  return { id: p.id, slug, priceFils: p.price_fils, mainFileId: null, previewFileId: null, lessonIds };
+}
+
+/** حاوية (باقة/دورة/وحدة) تضم منتجات أخرى */
+export async function createContainer(opts: {
+  type?: "bundle" | "video_course" | "unit";
+  items: string[];
+  priceFils?: number;
+  status?: "draft" | "published";
+  teacherId?: string | null;
+  accessMode?: "unlimited" | "until_date" | "days";
+  accessUntil?: Date | null;
+  accessDays?: number | null;
+  level?: number;
+}): Promise<TestProduct> {
+  const { gradeId, subjectId } = await gradeAndSubject(opts.level ?? 7, "science");
+  const slug = `c-${uniq()}`;
+  const status = opts.status ?? "published";
+  const type = opts.type ?? "bundle";
+  const [b] = await sql<{ id: string; price_fils: number }[]>`
+    insert into products (slug, type, title, grade_id, subject_id, academic_year, term, price_fils, status, published_at, teacher_id,
+                          access_mode, access_until, access_days)
+    values (${slug}, ${type}, ${`حاوية ${slug}`}, ${gradeId}, ${type === "bundle" ? null : subjectId}, '2026-2027', 1,
+            ${opts.priceFils ?? 9000}, ${status}, ${status === "published" ? new Date() : null}, ${opts.teacherId ?? null},
+            ${opts.accessMode ?? "unlimited"}, ${opts.accessUntil ?? null}, ${opts.accessDays ?? null})
+    returning id, price_fils
+  `;
+  let i = 0;
+  for (const item of opts.items) {
+    await sql`insert into bundle_items (bundle_id, product_id, sort_order) values (${b.id}, ${item}, ${i++})`;
+  }
+  return { id: b.id, slug, priceFils: b.price_fils, mainFileId: null, previewFileId: null };
 }
