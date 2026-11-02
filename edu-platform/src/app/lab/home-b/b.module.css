@@ -1,0 +1,152 @@
+.page {
+  --board: #173229;
+  --board-2: #21443a;
+  --chalk: #f2f4ee;
+  --chalk-dim: #b8c4bd;
+  --chalk-yellow: #e7d36a;
+  --stone: #6b746f;
+  --line: #dde3dd;
+  background: #fafbf8;
+  color: #19221f;
+  font-family: "IBM Plex Sans Arabic", system-ui, sans-serif;
+}
+.head {
+  font-family: "Readex Pro Variable", sans-serif;
+  font-weight: 600;
+  letter-spacing: -0.01em;
+}
+.board {
+  background: var(--board);
+  color: var(--chalk);
+}
+.heroTitle {
+  font-family: "Readex Pro Variable", sans-serif;
+  font-weight: 650;
+  font-size: clamp(2.1rem, 4.6vw, 3.6rem);
+  line-height: 1.25;
+  text-wrap: balance;
+}
+.screen {
+  position: relative;
+  aspect-ratio: 16 / 9;
+  background: var(--board-2);
+  border: 1px solid rgb(242 244 238 / 0.14);
+  display: grid;
+  place-items: center;
+  overflow: hidden;
+}
+.screenSubject {
+  font-family: "Readex Pro Variable", sans-serif;
+  font-weight: 700;
+  font-size: clamp(2.4rem, 6vw, 4.5rem);
+  color: var(--chalk);
+  opacity: 0.92;
+}
+.bigPlay {
+  position: absolute;
+  inset: auto auto 1.25rem 1.25rem;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.6rem;
+  background: var(--chalk-yellow);
+  color: #19221f;
+  font-weight: 700;
+  padding: 0.75rem 1.1rem;
+  border-radius: 999px;
+}
+.teacherTag {
+  position: absolute;
+  inset: 1.25rem 1.25rem auto auto;
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  color: var(--chalk);
+  font-size: 0.95rem;
+}
+.dot {
+  width: 2.25rem;
+  height: 2.25rem;
+  border-radius: 999px;
+  display: grid;
+  place-items: center;
+  background: var(--chalk);
+  color: var(--board);
+  font-weight: 700;
+}
+.gradePills a {
+  border: 1px solid rgb(242 244 238 / 0.3);
+  color: var(--chalk);
+  padding: 0.55rem 1rem;
+  border-radius: 999px;
+  font-weight: 600;
+}
+.gradePills a:hover {
+  background: var(--chalk);
+  color: var(--board);
+}
+.shelf {
+  display: grid;
+  grid-auto-flow: column;
+  grid-auto-columns: minmax(15rem, 1fr);
+  gap: 1rem;
+  overflow-x: auto;
+  scroll-snap-type: x mandatory;
+  padding-bottom: 0.5rem;
+}
+.tile {
+  scroll-snap-align: start;
+}
+.tilePoster {
+  position: relative;
+  aspect-ratio: 16 / 10;
+  background: var(--board);
+  color: var(--chalk);
+  display: grid;
+  place-items: center;
+  font-family: "Readex Pro Variable", sans-serif;
+  font-weight: 700;
+  font-size: 1.6rem;
+}
+.dur {
+  position: absolute;
+  inset: auto 0.5rem 0.5rem auto;
+  background: rgb(0 0 0 / 0.55);
+  color: #fff;
+  font-size: 0.75rem;
+  padding: 0.1rem 0.4rem;
+}
+.tileTitle {
+  font-weight: 600;
+  line-height: 1.6;
+}
+.stone {
+  color: var(--stone);
+}
+.btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  min-height: 2.75rem;
+  padding: 0 1.1rem;
+  border-radius: 999px;
+  font-weight: 600;
+}
+.btnChalk {
+  background: var(--chalk);
+  color: var(--board);
+}
+.teacherRow {
+  display: flex;
+  gap: 1.25rem;
+  overflow-x: auto;
+}
+.teacher {
+  min-width: 13rem;
+  border-top: 3px solid var(--board);
+  padding-top: 1rem;
+}
+.bundle {
+  border: 1px solid var(--line);
+  padding: 1.5rem;
+  background: #fff;
+}
