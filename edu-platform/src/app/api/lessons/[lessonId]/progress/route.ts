@@ -13,7 +13,7 @@ export async function POST(req: NextRequest, ctx: { params: Promise<{ lessonId: 
   if (!user) return NextResponse.json({ error: "unauthenticated" }, { status: 401 });
   const { lessonId } = await ctx.params;
   const access = await checkLessonAccess(lessonId, user);
-  if (!access.ok) return NextResponse.json({ error: "forbidden" }, { status: 403 });
+  if (!access.ok) return NextResponse.json({ error: access.reason }, { status: access.reason === "not_ready" ? 409 : 403 });
   const parsed = schema.safeParse(await req.json().catch(() => null));
   if (!parsed.success) return NextResponse.json({ error: "invalid" }, { status: 400 });
   await sql`

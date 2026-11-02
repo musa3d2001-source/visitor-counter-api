@@ -1,11 +1,11 @@
 import { NextResponse } from "next/server";
-import { getCurrentUser } from "@/server/auth/session";
+import { getActor } from "@/server/auth/permissions";
 import { verifyLocalUploadToken } from "@/server/storage/local";
 import { storage } from "@/server/storage";
 
 /**
  * مستقبل الرفع المباشر في وضع التخزين المحلي فقط (بديل رابط الرفع الموقّع في Supabase).
- * يتحقق من الرمز الموقّع ومن أن المستخدم الحالي هو نفس المدير، ويوقف الرفع فور تجاوز الحد الأقصى.
+ * يتحقق من الرمز الموقّع ومن أن المستخدم الحالي هو نفس من جهّز الرفع (مالك أو معلم)، ويوقف الرفع فور تجاوز الحد الأقصى.
  */
 export const dynamic = "force-dynamic";
 export const maxDuration = 300;
@@ -15,8 +15,9 @@ export async function PUT(req: Request) {
   const token = new URL(req.url).searchParams.get("token") ?? "";
   const claims = verifyLocalUploadToken(token);
   if (!claims) return NextResponse.json({ error: "رابط الرفع غير صالح أو منتهي" }, { status: 403 });
-  const user = await getCurrentUser();
-  if (!user || user.role !== "admin" || user.id !== claims.u) return NextResponse.json({ error: "غير مصرح" }, { status: 403 });
+  // الرمز مرتبط بالمستخدم الذي جهّز الرفع (مالك أو معلم مفعّل)
+  const actor = await getActor();
+  if (!actor || actor.userId !== claims.u) return NextResponse.json({ error: "غير مصرح" }, { status: 403 });
 
   const declared = Number(req.headers.get("content-length") ?? "0");
   if (declared > claims.m) return NextResponse.json({ error: "حجم الملف أكبر من المسموح" }, { status: 413 });

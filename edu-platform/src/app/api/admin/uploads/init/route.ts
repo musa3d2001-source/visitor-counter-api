@@ -1,15 +1,17 @@
 import { NextResponse } from "next/server";
-import { getCurrentUser } from "@/server/auth/session";
 import { isSameOriginRequest } from "@/server/http";
+import { getActor, PermissionError } from "@/server/auth/permissions";
 import { AdminError } from "@/server/admin/common";
 import { initSchema, initUpload } from "@/server/admin/uploads";
+import { BunnyError } from "@/server/video/bunny";
 
 export const dynamic = "force-dynamic";
 
+/** تجهيز رفع ملف (للمالك أو المعلم المفعّل — الصلاحية على المنتج تُفحص في initUpload) */
 export async function POST(req: Request) {
   if (!isSameOriginRequest(req)) return NextResponse.json({ error: "طلب غير مسموح" }, { status: 403 });
-  const user = await getCurrentUser();
-  if (!user || user.role !== "admin") return NextResponse.json({ error: "غير مصرح" }, { status: 403 });
+  const actor = await getActor();
+  if (!actor) return NextResponse.json({ error: "غير مصرح" }, { status: 403 });
   let body: unknown;
   try {
     body = await req.json();
@@ -19,10 +21,15 @@ export async function POST(req: Request) {
   const parsed = initSchema.safeParse(body);
   if (!parsed.success) return NextResponse.json({ error: "بيانات الملف غير صالحة" }, { status: 400 });
   try {
-    const res = await initUpload(parsed.data, user.id);
+    const res = await initUpload(parsed.data, actor);
     return NextResponse.json(res, { headers: { "cache-control": "no-store" } });
   } catch (err) {
     if (err instanceof AdminError) return NextResponse.json({ error: err.userMessage }, { status: 400 });
+    if (err instanceof PermissionError) return NextResponse.json({ error: err.userMessage }, { status: 403 });
+    if (err instanceof BunnyError) {
+      console.error("[upload-init] bunny", err.message);
+      return NextResponse.json({ error: "تعذر تجهيز رفع الفيديو لدى مزود البث. حاول مرة أخرى." }, { status: 502 });
+    }
     console.error("[upload-init]", err);
     return NextResponse.json({ error: "تعذر تجهيز الرفع. حاول مرة أخرى." }, { status: 500 });
   }

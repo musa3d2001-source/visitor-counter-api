@@ -1,3 +1,4 @@
+import { requireOwnerPage } from "@/server/auth/permissions";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { Ban, CircleCheck, KeyRound, Undo2 } from "lucide-react";
@@ -21,6 +22,7 @@ export const metadata = { title: "ملف الطالب" };
 const ACCESS_LABELS: Record<string, string> = { view: "قراءة", download: "تنزيل", preview: "معاينة", video: "مشاهدة فيديو", denied: "محاولة مرفوضة" };
 
 export default async function StudentPage({ params }: { params: Promise<{ id: string }> }) {
+  await requireOwnerPage();
   const { id } = await params;
   if (!/^[0-9a-f-]{36}$/i.test(id)) notFound();
   const [data, products] = await Promise.all([getStudent(id), grantableProducts()]);

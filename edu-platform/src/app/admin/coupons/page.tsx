@@ -1,3 +1,4 @@
+import { requireOwnerPage } from "@/server/auth/permissions";
 import Link from "next/link";
 import { Pencil, Ticket, Trash2 } from "lucide-react";
 import { listCoupons } from "@/server/admin/records";
@@ -25,6 +26,7 @@ function couponState(c: { is_active: boolean; starts_at: Date | null; ends_at: D
 }
 
 export default async function CouponsPage({ searchParams }: { searchParams: Promise<{ created?: string }> }) {
+  await requireOwnerPage();
   const sp = await searchParams;
   const coupons = await listCoupons();
   return (

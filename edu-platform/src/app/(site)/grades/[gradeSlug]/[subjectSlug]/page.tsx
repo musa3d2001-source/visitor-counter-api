@@ -1,14 +1,16 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import { getGradeBySlug, getSubject, listProducts } from "@/server/catalog/queries";
+import { getGradeBySlug, getSubject, listProducts, teachersForSubject } from "@/server/catalog/queries";
 import { getCurrentUser } from "@/server/auth/session";
 import { accessibleProductIds } from "@/server/access/entitlements";
 import { Breadcrumbs } from "@/components/ui/breadcrumbs";
 import { EmptyState } from "@/components/ui/empty-state";
 import { ProductGrid } from "@/components/site/product-card";
+import { VideoGrid } from "@/components/site/video-card";
+import { TeacherAvatar } from "@/components/site/teacher-avatar";
 import { SubjectIcon } from "@/components/site/subject-icon";
-import { PRODUCT_TYPE_LABELS, PRODUCT_TYPE_ORDER } from "@/lib/labels";
+import { isPdfType, PRODUCT_TYPE_ORDER, PRODUCT_TYPE_SECTION_LABELS } from "@/lib/labels";
 import { cn } from "@/lib/utils";
 
 type Params = { gradeSlug: string; subjectSlug: string };
@@ -33,7 +35,7 @@ export default async function SubjectPage({ params, searchParams }: { params: Pr
   const subject = await getSubject(grade.id, p.subjectSlug);
   if (!subject) notFound();
 
-  const all = await listProducts({ gradeId: grade.id, subjectId: subject.id });
+  const [all, teachers] = await Promise.all([listProducts({ gradeId: grade.id, subjectId: subject.id }), teachersForSubject(subject.id)]);
   const terms = [...new Set(all.map((x) => x.term).filter((t): t is number => t !== null))].sort();
   const term = sp.term === "1" || sp.term === "2" ? Number(sp.term) : null;
   const products = term ? all.filter((x) => x.term === term || x.term === null) : all;
@@ -54,6 +56,27 @@ export default async function SubjectPage({ params, searchParams }: { params: Pr
           <p className="mt-1 text-muted">{grade.name}</p>
         </div>
       </div>
+
+      {teachers.length ? (
+        <section className="mt-6" aria-labelledby="subject-teachers">
+          <h2 id="subject-teachers" className="mb-3 text-sm font-bold text-muted">
+            معلمو المادة
+          </h2>
+          <div className="flex gap-2 overflow-x-auto pb-1">
+            {teachers.map((t) => (
+              <Link
+                key={t.id}
+                href={`/teachers/${t.slug}#${subject.slug}-${grade.slug}`}
+                data-testid="subject-teacher"
+                className="flex shrink-0 items-center gap-2.5 rounded-full border border-line bg-surface py-1.5 ps-1.5 pe-4 shadow-card transition hover:border-brand-300"
+              >
+                <TeacherAvatar name={t.name} photoUrl={t.photoUrl} size={36} />
+                <span className="text-sm font-bold whitespace-nowrap">{t.name}</span>
+              </Link>
+            ))}
+          </div>
+        </section>
+      ) : null}
 
       {terms.length > 1 ? (
         <nav aria-label="تصفية حسب الفصل الدراسي" className="mt-6 flex gap-2 overflow-x-auto pb-1">
@@ -84,9 +107,9 @@ export default async function SubjectPage({ params, searchParams }: { params: Pr
             <section key={g.type} aria-labelledby={`type-${g.type}`}>
               <h2 id={`type-${g.type}`} className="mb-4 flex items-center gap-2 text-xl font-bold">
                 <span className="h-6 w-1.5 rounded-full bg-accent-600" aria-hidden />
-                {g.type === "bundle" ? "الباقات" : PRODUCT_TYPE_LABELS[g.type]}
+                {PRODUCT_TYPE_SECTION_LABELS[g.type]}
               </h2>
-              <ProductGrid products={g.items} ownedIds={owned} />
+              {isPdfType(g.type) || g.items.every((i) => !i.isVideo) ? <ProductGrid products={g.items} ownedIds={owned} /> : <VideoGrid products={g.items} ownedIds={owned} />}
             </section>
           ))}
         </div>

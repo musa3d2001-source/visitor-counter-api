@@ -14,7 +14,13 @@ export async function GET(req: NextRequest, ctx: { params: Promise<{ lessonId: s
   const { lessonId } = await ctx.params;
   const user = await getCurrentUser();
   const access = await checkLessonAccess(lessonId, user);
-  if (!access.ok) return new NextResponse(null, { status: access.reason === "unauthenticated" ? 401 : access.reason === "forbidden" ? 403 : 404 });
+  if (!access.ok) {
+    const status = { unauthenticated: 401, forbidden: 403, not_ready: 409, not_found: 404 }[access.reason];
+    if (access.reason === "forbidden") {
+      await logAccess({ userId: user?.id ?? null, lessonId: /^[0-9a-f-]{36}$/i.test(lessonId) ? lessonId : null, action: "denied", ip: ipFromHeaders(req.headers), userAgent: req.headers.get("user-agent") });
+    }
+    return new NextResponse(null, { status, headers: { "cache-control": "private, no-store", "x-robots-tag": "noindex" } });
+  }
   const l = access.lesson;
   if (l.provider !== "file") return new NextResponse(null, { status: 404 });
 

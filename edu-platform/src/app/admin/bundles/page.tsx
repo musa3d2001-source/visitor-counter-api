@@ -1,3 +1,4 @@
+import { requireOwnerPage } from "@/server/auth/permissions";
 import Link from "next/link";
 import { Package, Pencil, Plus } from "lucide-react";
 import { listBundlesAdmin } from "@/server/admin/products";
@@ -11,6 +12,7 @@ import { filsToKwdString } from "@/lib/money";
 export const metadata = { title: "الباقات" };
 
 export default async function BundlesPage() {
+  await requireOwnerPage();
   const bundles = await listBundlesAdmin();
   return (
     <div>

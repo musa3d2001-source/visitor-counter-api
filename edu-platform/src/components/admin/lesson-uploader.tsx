@@ -8,8 +8,12 @@ import { Button } from "@/components/ui/button";
 import { Checkbox, Field, Input, Textarea } from "@/components/ui/form";
 import { Alert } from "@/components/ui/alert";
 
-/** إضافة درس فيديو برفع ملف MP4 إلى التخزين الخاص */
-export function LessonUploader({ productId }: { productId: string }) {
+/**
+ * إضافة درس فيديو:
+ *  - provider = file  : رفع MP4 إلى التخزين الخاص للمنصة (جاهز فور التحقق)
+ *  - provider = bunny : رفع TUS مباشر إلى Bunny Stream ثم انتظار اكتمال المعالجة
+ */
+export function LessonUploader({ productId, provider = "file" }: { productId: string; provider?: "file" | "bunny" }) {
   const router = useRouter();
   const formRef = useRef<HTMLFormElement>(null);
   const [pct, setPct] = useState<number | null>(null);
@@ -21,7 +25,7 @@ export function LessonUploader({ productId }: { productId: string }) {
     const fd = new FormData(e.currentTarget);
     const file = fd.get("file");
     const title = String(fd.get("title") ?? "").trim();
-    if (!(file instanceof File) || file.size === 0) return setResult({ ok: false, text: "اختر ملف الفيديو (MP4)" });
+    if (!(file instanceof File) || file.size === 0) return setResult({ ok: false, text: "اختر ملف الفيديو" });
     if (title.length < 2) return setResult({ ok: false, text: "عنوان الدرس مطلوب" });
     setResult(null);
     setPct(0);
@@ -63,8 +67,13 @@ export function LessonUploader({ productId }: { productId: string }) {
       <Field label="وصف مختصر" htmlFor="l-desc" className="sm:col-span-2">
         <Textarea id="l-desc" name="description" rows={2} maxLength={2000} disabled={busy} />
       </Field>
-      <Field label="ملف الفيديو (MP4 حتى 2 جيجابايت)" htmlFor="l-file" required>
-        <Input id="l-file" name="file" type="file" accept="video/mp4" className="pt-2" disabled={busy} data-testid="upload-lesson" />
+      <Field
+        label={provider === "bunny" ? "ملف الفيديو (MP4 / MOV / WEBM حتى 8 جيجابايت)" : "ملف الفيديو (MP4 حتى 2 جيجابايت)"}
+        htmlFor="l-file"
+        required
+        hint={provider === "bunny" ? "يُرفع مباشرة إلى Bunny Stream ويُعالَج بجودات متعددة تلقائيًا" : undefined}
+      >
+        <Input id="l-file" name="file" type="file" accept={provider === "bunny" ? "video/mp4,video/quicktime,video/webm" : "video/mp4"} className="pt-2" disabled={busy} data-testid="upload-lesson" />
       </Field>
       <div className="flex items-end pb-2">
         <Checkbox name="isFreePreview" label="درس مجاني للمعاينة" disabled={busy} />
@@ -74,7 +83,7 @@ export function LessonUploader({ productId }: { productId: string }) {
           <div className="h-2 overflow-hidden rounded-full bg-line" role="progressbar" aria-valuenow={pct ?? 0} aria-valuemin={0} aria-valuemax={100}>
             <div className="h-full bg-brand-600 transition-[width]" style={{ width: `${pct}%` }} />
           </div>
-          <p className="mt-1 text-xs text-muted">{phase === "processing" ? "جارٍ التحقق من الملف…" : <>جارٍ الرفع <span className="num">{pct}%</span></>}</p>
+          <p className="mt-1 text-xs text-muted">{phase === "processing" ? "جارٍ التحقق من الملف…" : <>جارٍ الرفع <span className="num">{pct}%</span> — لا تغلق الصفحة</>}</p>
         </div>
       ) : null}
       {result ? (

@@ -1,3 +1,4 @@
+import { requireOwnerPage } from "@/server/auth/permissions";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { RefreshCw, RotateCcw, Send } from "lucide-react";
@@ -19,6 +20,7 @@ export const metadata = { title: "تفاصيل الطلب" };
 const REFUND_STATUS: Record<string, string> = { recorded: "مسجل محليًا", requested: "مُرسل للبوابة", completed: "مكتمل", failed: "فشل" };
 
 export default async function AdminOrderPage({ params }: { params: Promise<{ id: string }> }) {
+  await requireOwnerPage();
   const { id } = await params;
   if (!/^[0-9a-f-]{36}$/i.test(id)) notFound();
   const data = await getAdminOrder(id);

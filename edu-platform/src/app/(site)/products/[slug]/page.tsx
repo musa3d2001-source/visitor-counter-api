@@ -6,11 +6,14 @@ import {
   getBundleItems,
   getBundlesContaining,
   getLessons,
+  getPlaylist,
   getProductBySlug,
   getProductFilesInfo,
 } from "@/server/catalog/queries";
 import { getCurrentUser } from "@/server/auth/session";
-import { accessibleProductIds } from "@/server/access/entitlements";
+import { accessExpiry, accessibleProductIds, isTeacherOfProduct } from "@/server/access/entitlements";
+import { sql } from "@/server/db";
+import { VideoProductView } from "./video-view";
 import { getSettings } from "@/server/platform/settings";
 import { env } from "@/server/env";
 import { Breadcrumbs } from "@/components/ui/breadcrumbs";
@@ -48,8 +51,70 @@ function formatDuration(sec: number | null) {
 export default async function ProductPage({ params }: { params: Promise<Params> }) {
   const { slug } = await params;
   const user = await getCurrentUser();
-  const product = await getProductBySlug(slug, { includeUnpublished: user?.role === "admin" });
+  let product = await getProductBySlug(slug, { includeUnpublished: user?.role === "admin" || user?.role === "teacher" });
+  // المعلم يعاين محتواه غير المنشور فقط
+  if (product && product.status !== "published" && user?.role === "teacher" && !(await isTeacherOfProduct(user.id, product.id))) product = null;
   if (!product) notFound();
+
+  if (product.isVideo) {
+    const [playlist, included, bundlesV, filesV, ownedV] = await Promise.all([
+      getPlaylist(product.id),
+      getBundleItems(product.id),
+      getBundlesContaining(product.id),
+      getProductFilesInfo(product.id),
+      user ? accessibleProductIds(user.id) : Promise.resolve(new Set<string>()),
+    ]);
+    const lessonIds = playlist.flatMap((g) => g.lessons.map((l) => l.id));
+    const ownedNow = ownedV.has(product.id);
+    let resumeLessonId: string | null = null;
+    let watchedIds = new Set<string>();
+    let ownedUntil: Date | null = null;
+    if (user && lessonIds.length) {
+      const prog = await sql<{ lesson_id: string; completed: boolean; updated_at: Date }[]>`
+        select lesson_id, completed, updated_at from lesson_progress
+        where user_id = ${user.id} and lesson_id = any(${lessonIds}::uuid[])
+        order by updated_at desc
+      `;
+      watchedIds = new Set(prog.filter((p) => p.completed).map((p) => p.lesson_id));
+      if (ownedNow && prog.length) {
+        const last = prog[0];
+        // إن أكمل آخر درس شاهده ننتقل للتالي
+        const idx = lessonIds.indexOf(last.lesson_id);
+        resumeLessonId = last.completed && idx >= 0 && idx < lessonIds.length - 1 ? lessonIds[idx + 1] : last.lesson_id;
+      }
+    }
+    if (user && ownedNow) ownedUntil = (await accessExpiry(user.id, product.id)).expiresAt;
+    return (
+      <div className="mx-auto max-w-6xl px-4 pt-6 pb-28 lg:pb-10">
+        <Breadcrumbs
+          items={[
+            { label: "الرئيسية", href: "/" },
+            { label: product.gradeName, href: `/grades/${product.gradeSlug}` },
+            ...(product.subjectName && product.subjectSlug ? [{ label: product.subjectName, href: `/grades/${product.gradeSlug}/${product.subjectSlug}` }] : []),
+            { label: product.title },
+          ]}
+        />
+        {product.status !== "published" ? (
+          <Alert tone="warning" className="mt-4" title={`معاينة — الحالة: ${PRODUCT_STATUS_LABELS[product.status as ProductStatus]}`}>
+            هذه الصفحة غير ظاهرة للطلاب حتى يتم اعتماد المحتوى ونشره.
+          </Alert>
+        ) : null}
+        <VideoProductView
+          product={product}
+          playlist={playlist}
+          included={included}
+          bundles={bundlesV}
+          files={filesV}
+          owned={ownedV}
+          isOwned={ownedNow}
+          ownedUntil={ownedUntil}
+          resumeLessonId={resumeLessonId}
+          watchedIds={watchedIds}
+          canBuy={product.status === "published"}
+        />
+      </div>
+    );
+  }
 
   const [files, bundleItems, bundles, lessons, settings] = await Promise.all([
     getProductFilesInfo(product.id),

@@ -1,3 +1,4 @@
+import { requireOwnerPage } from "@/server/auth/permissions";
 import Link from "next/link";
 import { Receipt, Search } from "lucide-react";
 import { listAdminOrders } from "@/server/admin/records";
@@ -14,6 +15,7 @@ import { formatDateTime } from "@/lib/utils";
 export const metadata = { title: "الطلبات والمدفوعات" };
 
 export default async function AdminOrdersPage({ searchParams }: { searchParams: Promise<{ q?: string; status?: string; test?: string }> }) {
+  await requireOwnerPage();
   const sp = await searchParams;
   const status = ORDER_STATUSES.includes(sp.status as never) ? sp.status : undefined;
   const test = sp.test === "real" || sp.test === "test" ? sp.test : undefined;

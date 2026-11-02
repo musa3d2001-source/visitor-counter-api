@@ -1,3 +1,4 @@
+import { requireOwnerPage } from "@/server/auth/permissions";
 import Link from "next/link";
 import { Download } from "lucide-react";
 import { auditLog, parseRange, reportByDay, reportByGrade, reportByProduct, reportSummary } from "@/server/admin/stats";
@@ -35,6 +36,7 @@ function kwd(f: number) {
 }
 
 export default async function ReportsPage({ searchParams }: { searchParams: Promise<SP> }) {
+  await requireOwnerPage();
   const sp = await searchParams;
   const tab = sp.tab === "audit" ? "audit" : "sales";
   const tabs = (

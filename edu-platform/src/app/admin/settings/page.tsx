@@ -1,3 +1,4 @@
+import { requireOwnerPage } from "@/server/auth/permissions";
 import Image from "next/image";
 import { CircleCheck, CreditCard, TriangleAlert } from "lucide-react";
 import { getSettings } from "@/server/platform/settings";
@@ -26,6 +27,7 @@ function Row({ label, ok, text }: { label: string; ok: boolean; text: string }) 
 }
 
 export default async function SettingsPage() {
+  await requireOwnerPage();
   const s = await getSettings();
   const e = env();
   const cfg = paymentsConfig();

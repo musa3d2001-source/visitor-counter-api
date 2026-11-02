@@ -6,10 +6,12 @@ export const dynamic = "force-dynamic";
 
 export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   const base = env().APP_URL.replace(/\/$/, "");
-  const { products, grades, subjects, stages } = await sitemapEntries();
+  const { products, grades, subjects, stages, teachers } = await sitemapEntries();
   return [
     { url: `${base}/`, changeFrequency: "daily", priority: 1 },
     { url: `${base}/bundles`, changeFrequency: "weekly", priority: 0.7 },
+    { url: `${base}/teachers`, changeFrequency: "weekly", priority: 0.8 },
+    ...teachers.map((t) => ({ url: `${base}/teachers/${t.slug}`, lastModified: t.updated_at, changeFrequency: "weekly" as const, priority: 0.8 })),
     ...stages.filter((s) => s.grades.length).map((s) => ({ url: `${base}/stages/${s.slug}`, priority: 0.7 })),
     ...grades.map((g) => ({ url: `${base}/grades/${g.slug}`, changeFrequency: "daily" as const, priority: 0.9 })),
     ...subjects.map((s) => ({ url: `${base}/grades/${s.grade_slug}/${s.slug}`, changeFrequency: "daily" as const, priority: 0.8 })),

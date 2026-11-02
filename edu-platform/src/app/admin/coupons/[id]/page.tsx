@@ -1,3 +1,4 @@
+import { requireOwnerPage } from "@/server/auth/permissions";
 import { notFound } from "next/navigation";
 import { getCoupon } from "@/server/admin/records";
 import { AdminPageHeader, Section } from "@/components/admin/page-header";
@@ -12,6 +13,7 @@ function day(d: Date | null) {
 }
 
 export default async function EditCouponPage({ params }: { params: Promise<{ id: string }> }) {
+  await requireOwnerPage();
   const { id } = await params;
   if (!/^[0-9a-f-]{36}$/i.test(id)) notFound();
   const c = await getCoupon(id);

@@ -1,3 +1,4 @@
+import { requireOwnerPage } from "@/server/auth/permissions";
 import { Eye, EyeOff, Layers, Plus, Trash2 } from "lucide-react";
 import { getCatalogTree } from "@/server/admin/catalog";
 import { AdminPageHeader } from "@/components/admin/page-header";
@@ -56,6 +57,7 @@ function IconPicker({ name, value }: { name: string; value: string }) {
 }
 
 export default async function CatalogPage() {
+  await requireOwnerPage();
   const tree = await getCatalogTree();
 
   return (

@@ -192,3 +192,44 @@ export function parseRange(sp: { from?: string; to?: string; test?: string }): R
   if (from > to) [from, to] = [new Date(to.getTime() - 86400_000), new Date(from.getTime() + 86400_000)];
   return { from, to, includeTest: sp.test === "1", fromDay, toDay };
 }
+
+/**
+ * المبيعات حسب المعلم (للمالك): عناصر الطلبات المدفوعة المنسوبة لكل معلم وقت الشراء
+ * (لقطة order_items.teacher_id) + الأرباح المحتسبة من السجل المحاسبي.
+ */
+export async function reportByTeacher(r: ReportRange) {
+  const rows = await sql<{ teacher_id: string | null; teacher_name: string | null; sold: number; revenue: string; teacher_share: string; platform_share: string }[]>`
+    select oi.teacher_id, coalesce(max(t.display_name), max(oi.teacher_name)) as teacher_name,
+      count(*)::int as sold, coalesce(sum(oi.unit_price_fils), 0)::bigint as revenue,
+      coalesce(sum(te.teacher_fils) filter (where te.status = 'active'), 0)::bigint as teacher_share,
+      coalesce(sum(te.platform_fils) filter (where te.status = 'active'), 0)::bigint as platform_share
+    from order_items oi
+    join orders o on o.id = oi.order_id
+    left join teachers t on t.id = oi.teacher_id
+    left join teacher_earnings te on te.order_item_id = oi.id
+    where o.status = 'paid' and o.paid_at >= ${r.from} and o.paid_at < ${r.to} and (${r.includeTest} or not o.is_test)
+    group by oi.teacher_id
+    order by revenue desc
+  `;
+  return rows.map((x) => ({
+    teacherId: x.teacher_id,
+    teacherName: x.teacher_id ? (x.teacher_name ?? "—") : "محتوى المنصة",
+    sold: x.sold,
+    revenueFils: Number(x.revenue),
+    teacherShareFils: Number(x.teacher_share),
+    platformShareFils: Number(x.platform_share),
+  }));
+}
+
+/** أفضل المعلمين مبيعًا خلال آخر N يومًا (للوحة المالك) */
+export async function topTeachers(days: number, includeTest: boolean, limit = 6) {
+  const rows = await sql<{ teacher_id: string; teacher_name: string; sold: number; revenue: string }[]>`
+    select oi.teacher_id, coalesce(max(t.display_name), max(oi.teacher_name)) as teacher_name, count(*)::int as sold,
+      coalesce(sum(oi.unit_price_fils), 0)::bigint as revenue
+    from order_items oi join orders o on o.id = oi.order_id left join teachers t on t.id = oi.teacher_id
+    where o.status = 'paid' and oi.teacher_id is not null and (${includeTest} or not o.is_test)
+      and o.paid_at >= now() - make_interval(days => ${days})
+    group by oi.teacher_id order by revenue desc limit ${limit}
+  `;
+  return rows.map((x) => ({ teacherId: x.teacher_id, teacherName: x.teacher_name, sold: x.sold, revenueFils: Number(x.revenue) }));
+}

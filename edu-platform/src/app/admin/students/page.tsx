@@ -1,3 +1,4 @@
+import { requireOwnerPage } from "@/server/auth/permissions";
 import Link from "next/link";
 import { Search, Users } from "lucide-react";
 import { listStudents } from "@/server/admin/records";
@@ -13,6 +14,7 @@ import { formatDate } from "@/lib/utils";
 export const metadata = { title: "الطلاب" };
 
 export default async function StudentsPage({ searchParams }: { searchParams: Promise<{ q?: string }> }) {
+  await requireOwnerPage();
   const sp = await searchParams;
   const students = await listStudents(sp.q?.slice(0, 80));
   return (

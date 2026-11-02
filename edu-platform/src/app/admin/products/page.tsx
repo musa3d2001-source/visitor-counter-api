@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { Eye, EyeOff, FileText, Pencil, Plus, Search, Send } from "lucide-react";
-import { catalogOptions, listAdminProducts } from "@/server/admin/products";
+import { catalogOptions, listAdminProducts, teacherOptions } from "@/server/admin/products";
+import { requireStaff } from "@/server/auth/permissions";
 import { AdminPageHeader } from "@/components/admin/page-header";
 import { ProductStatusBadge } from "@/components/admin/status-badge";
 import { ActionForm } from "@/components/admin/action-form";
@@ -16,9 +17,11 @@ import { setStatusAction, updateSortAction } from "./actions";
 
 export const metadata = { title: "المذكرات والمنتجات" };
 
-type SP = { q?: string; grade?: string; subject?: string; type?: string; status?: string; deleted?: string };
+type SP = { q?: string; grade?: string; subject?: string; type?: string; status?: string; teacher?: string; deleted?: string };
 
 export default async function AdminProductsPage({ searchParams }: { searchParams: Promise<SP> }) {
+  const actor = await requireStaff();
+  const owner = actor.kind === "owner";
   const sp = await searchParams;
   const uuid = (v?: string) => (v && /^[0-9a-f-]{36}$/i.test(v) ? v : undefined);
   const filters = {
@@ -27,26 +30,31 @@ export default async function AdminProductsPage({ searchParams }: { searchParams
     subjectId: uuid(sp.subject),
     type: PRODUCT_TYPES.includes(sp.type as never) ? sp.type : undefined,
     status: PRODUCT_STATUSES.includes(sp.status as never) ? sp.status : undefined,
+    teacherId: owner ? (sp.teacher === "none" ? "none" : uuid(sp.teacher)) : undefined,
   };
-  const [products, { grades, subjects }] = await Promise.all([listAdminProducts(filters), catalogOptions()]);
-  const filtered = Boolean(filters.q || filters.gradeId || filters.subjectId || filters.type || filters.status);
+  const [products, { grades, subjects }, teachers] = await Promise.all([listAdminProducts(actor, filters), catalogOptions(), owner ? teacherOptions() : Promise.resolve([])]);
+  const filtered = Boolean(filters.q || filters.gradeId || filters.subjectId || filters.type || filters.status || filters.teacherId);
 
   return (
     <div>
       <AdminPageHeader
-        title="المذكرات والمنتجات"
-        description="أضف المذكرات والنماذج، وتحكم في أسعارها وظهورها للطلاب"
+        title={owner ? "المحتوى والمنتجات" : "محتواي"}
+        description={owner ? "الفيديوهات والمذكرات والباقات — الأسعار والظهور والمراجعة" : "أنشئ دروسك ومراجعاتك وملفاتك، ثم أرسلها للمراجعة قبل النشر"}
         actions={
-          <Button asChild>
-            <Link href="/admin/products/new">
-              <Plus aria-hidden /> إضافة منتج
-            </Link>
-          </Button>
+          actor.kind === "teacher" && !actor.canUpload ? (
+            <span className="rounded-xl bg-warning-50 px-3 py-2 text-sm font-semibold text-warning">صلاحية الرفع موقوفة حاليًا</span>
+          ) : (
+            <Button asChild>
+              <Link href="/admin/products/new">
+                <Plus aria-hidden /> {owner ? "إضافة منتج" : "إضافة محتوى"}
+              </Link>
+            </Button>
+          )
         }
       />
       {sp.deleted ? <Alert tone="success" className="mb-4">تم حذف المنتج نهائيًا.</Alert> : null}
 
-      <form className="mb-5 grid gap-2 rounded-2xl border border-line bg-surface p-3 sm:grid-cols-2 lg:grid-cols-6" role="search">
+      <form className={`mb-5 grid gap-2 rounded-2xl border border-line bg-surface p-3 sm:grid-cols-2 ${owner ? "lg:grid-cols-7" : "lg:grid-cols-6"}`} role="search">
         <div className="relative lg:col-span-2">
           <Search className="pointer-events-none absolute start-3 top-1/2 size-4 -translate-y-1/2 text-muted" aria-hidden />
           <Input name="q" defaultValue={sp.q} placeholder="ابحث بالعنوان أو الرابط" className="ps-9" aria-label="بحث" />
@@ -78,6 +86,17 @@ export default async function AdminProductsPage({ searchParams }: { searchParams
             </option>
           ))}
         </Select>
+        {owner ? (
+          <Select name="teacher" defaultValue={filters.teacherId ?? ""} aria-label="المعلم">
+            <option value="">كل المعلمين</option>
+            <option value="none">محتوى المنصة</option>
+            {teachers.map((t) => (
+              <option key={t.id} value={t.id}>
+                {t.display_name}
+              </option>
+            ))}
+          </Select>
+        ) : null}
         <div className="flex gap-2">
           <Select name="status" defaultValue={filters.status ?? ""} aria-label="الحالة">
             <option value="">كل الحالات (عدا المؤرشف)</option>
@@ -97,7 +116,7 @@ export default async function AdminProductsPage({ searchParams }: { searchParams
         <EmptyState
           icon={<FileText />}
           title={filtered ? "لا توجد نتائج مطابقة" : "لا توجد منتجات بعد"}
-          description={filtered ? "جرّب تغيير معايير البحث." : "ابدأ بإضافة أول مذكرة: اختر الصف والمادة ثم ارفع ملف PDF."}
+          description={filtered ? "جرّب تغيير معايير البحث." : owner ? "ابدأ بإضافة أول منتج: اختر الصف والمادة والنوع ثم ارفع الفيديو أو ملف PDF." : "ابدأ بإضافة أول محتوى: شرح وحدة، مراجعة اختبار، أو مذكرة."}
           action={
             filtered ? (
               <Button asChild variant="outline">
@@ -121,10 +140,10 @@ export default async function AdminProductsPage({ searchParams }: { searchParams
                 <TH>المنتج</TH>
                 <TH>الصف / المادة</TH>
                 <TH>السعر</TH>
-                <TH>الملفات</TH>
+                <TH>المحتوى</TH>
                 <TH>المبيعات</TH>
                 <TH>الحالة</TH>
-                <TH>الترتيب</TH>
+                {owner ? <TH>الترتيب</TH> : null}
                 <TH>إجراءات</TH>
               </tr>
             </THead>
@@ -135,38 +154,53 @@ export default async function AdminProductsPage({ searchParams }: { searchParams
                     <Link href={`/admin/products/${p.id}`} className="line-clamp-2 font-semibold hover:text-brand-700">
                       {p.title}
                     </Link>
-                    <p className="text-xs text-muted">{PRODUCT_TYPE_LABELS[p.type]}</p>
+                    <p className="text-xs text-muted">
+                      {PRODUCT_TYPE_LABELS[p.type]}
+                      {owner ? ` · ${p.teacher_name ?? "محتوى المنصة"}` : ""}
+                    </p>
+                    {p.status === "draft" && p.review_note ? <p className="mt-1 text-xs font-semibold text-warning">أُعيد للتعديل</p> : null}
                   </TD>
                   <TD className="text-xs">
                     <p className="font-semibold text-ink-soft">{p.grade_name}</p>
                     <p className="text-muted">{p.subject_name ?? "—"}</p>
                   </TD>
                   <TD className="whitespace-nowrap">
-                    <span className="num font-semibold">{filsToKwdString(p.price_fils)}</span> د.ك
-                    {p.compare_at_price_fils ? (
-                      <p className="num text-xs text-muted line-through">{filsToKwdString(p.compare_at_price_fils)}</p>
-                    ) : null}
-                  </TD>
-                  <TD className="text-xs text-muted">
-                    {p.type === "bundle" || p.type === "video_course" ? "—" : (
+                    {p.teacher_id && p.status !== "published" && p.price_fils === 0 && p.proposed_price_fils !== null ? (
+                      <span className="text-xs text-muted">
+                        مقترح: <span className="num">{filsToKwdString(p.proposed_price_fils)}</span>
+                      </span>
+                    ) : (
                       <>
-                        <span className="num">{p.main_files}</span> ملف{p.has_preview ? " · معاينة" : ""}
+                        <span className="num font-semibold">{filsToKwdString(p.price_fils)}</span> د.ك
+                        {p.compare_at_price_fils ? <p className="num text-xs text-muted line-through">{filsToKwdString(p.compare_at_price_fils)}</p> : null}
                       </>
                     )}
+                  </TD>
+                  <TD className="text-xs text-muted">
+                    {[
+                      p.lessons ? `${p.lessons} درس` : null,
+                      p.main_files ? `${p.main_files} ملف` : null,
+                      p.items ? `${p.items} عنصر مضمّن` : null,
+                      p.has_preview ? "معاينة" : null,
+                    ]
+                      .filter(Boolean)
+                      .join(" · ") || "—"}
                   </TD>
                   <TD className="num">{p.sold}</TD>
                   <TD>
                     <ProductStatusBadge status={p.status} />
                   </TD>
-                  <TD>
-                    <ActionForm action={updateSortAction} compact className="flex items-center gap-1">
-                      <input type="hidden" name="id" value={p.id} />
-                      <Input name="sortOrder" type="number" defaultValue={p.sort_order} className="num h-9 w-20 px-2 text-sm" aria-label="ترتيب العرض" />
-                      <Button type="submit" size="sm" variant="ghost">
-                        حفظ
-                      </Button>
-                    </ActionForm>
-                  </TD>
+                  {owner ? (
+                    <TD>
+                      <ActionForm action={updateSortAction} compact className="flex items-center gap-1">
+                        <input type="hidden" name="id" value={p.id} />
+                        <Input name="sortOrder" type="number" defaultValue={p.sort_order} className="num h-9 w-20 px-2 text-sm" aria-label="ترتيب العرض" />
+                        <Button type="submit" size="sm" variant="ghost">
+                          حفظ
+                        </Button>
+                      </ActionForm>
+                    </TD>
+                  ) : null}
                   <TD>
                     <div className="flex items-center gap-1">
                       <Button asChild size="icon" variant="ghost" title="تعديل">
@@ -174,9 +208,9 @@ export default async function AdminProductsPage({ searchParams }: { searchParams
                           <Pencil aria-hidden />
                         </Link>
                       </Button>
-                      {p.status === "published" ? (
+                      {!owner ? null : p.status === "published" ? (
                         <QuickAction action={setStatusAction} hidden={{ id: p.id, status: "hidden" }} icon={<EyeOff aria-hidden />} variant="ghost" size="icon" title="إخفاء" />
-                      ) : p.status !== "archived" ? (
+                      ) : p.status !== "archived" && p.status !== "in_review" ? (
                         <QuickAction action={setStatusAction} hidden={{ id: p.id, status: "published" }} icon={<Send aria-hidden />} variant="ghost" size="icon" title="نشر" />
                       ) : null}
                       {p.status === "published" ? (

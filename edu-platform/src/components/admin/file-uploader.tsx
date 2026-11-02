@@ -5,23 +5,45 @@ import { useRouter } from "next/navigation";
 import { CircleCheck, LoaderCircle, TriangleAlert, Upload } from "lucide-react";
 import { cn } from "@/lib/utils";
 
-export type UploadTargetName = "main" | "preview" | "cover" | "lesson" | "logo";
+export type UploadTargetName = "main" | "preview" | "cover" | "lesson" | "logo" | "teacher_photo" | "lesson_thumb";
 
-type InitResponse = { key: string; method: "PUT"; url: string; headers: Record<string, string>; error?: string };
+type InitResponse =
+  | { key: string; method: "PUT"; url: string; headers: Record<string, string>; error?: string }
+  | { key: string; method: "TUS"; endpoint: string; headers: Record<string, string>; metadata: Record<string, string>; videoId: string; error?: string };
+
+/** رفع TUS مباشر إلى Bunny Stream (قابل للاستئناف عند انقطاع الاتصال) */
+async function tusUpload(file: File, init: Extract<InitResponse, { method: "TUS" }>, onProgress: (pct: number) => void): Promise<{ ok: boolean; error?: string }> {
+  const { Upload } = await import("tus-js-client");
+  return new Promise((resolve) => {
+    const upload = new Upload(file, {
+      endpoint: init.endpoint,
+      retryDelays: [0, 3000, 5000, 10000, 20000],
+      chunkSize: 50 * 1024 * 1024,
+      headers: init.headers,
+      metadata: { ...init.metadata, filetype: file.type || init.metadata.filetype || "video/mp4" },
+      onProgress: (sent, total) => onProgress(total ? Math.round((sent / total) * 100) : 0),
+      onError: (err) => resolve({ ok: false, error: `فشل رفع الفيديو: ${String((err as Error)?.message ?? err).slice(0, 120)}` }),
+      onSuccess: () => resolve({ ok: true }),
+    });
+    upload.start();
+  });
+}
 
 /** رفع ملف واحد: تجهيز ← رفع مباشر بمؤشر تقدم ← تأكيد وتحقق على الخادم */
 export async function uploadFile(
   file: File,
-  opts: { target: UploadTargetName; productId?: string | null; extra?: Record<string, unknown> },
+  opts: { target: UploadTargetName; productId?: string | null; teacherId?: string | null; lessonId?: string | null; extra?: Record<string, unknown> },
   onProgress: (pct: number, phase: "uploading" | "processing") => void,
 ): Promise<{ ok: true; message: string } | { ok: false; error: string }> {
-  const mime = file.type || (file.name.toLowerCase().endsWith(".pdf") ? "application/pdf" : "");
+  const lower = file.name.toLowerCase();
+  const mime = file.type || (lower.endsWith(".pdf") ? "application/pdf" : lower.endsWith(".mp4") ? "video/mp4" : "");
+  const ids = { productId: opts.productId ?? null, teacherId: opts.teacherId ?? null, lessonId: opts.lessonId ?? null };
   let init: InitResponse;
   try {
     const res = await fetch("/api/admin/uploads/init", {
       method: "POST",
       headers: { "content-type": "application/json" },
-      body: JSON.stringify({ target: opts.target, productId: opts.productId ?? null, fileName: file.name, size: file.size, mime }),
+      body: JSON.stringify({ target: opts.target, ...ids, fileName: file.name, size: file.size, mime, ...(opts.extra ?? {}) }),
     });
     init = (await res.json()) as InitResponse;
     if (!res.ok) return { ok: false, error: init.error ?? "تعذر تجهيز الرفع" };
@@ -29,10 +51,14 @@ export async function uploadFile(
     return { ok: false, error: "تعذر الاتصال بالخادم" };
   }
 
-  const putOk = await new Promise<{ ok: boolean; error?: string }>((resolve) => {
+  const putOk =
+    init.method === "TUS"
+      ? await tusUpload(file, init, (pct) => onProgress(pct, "uploading"))
+      : await new Promise<{ ok: boolean; error?: string }>((resolve) => {
     const xhr = new XMLHttpRequest();
-    xhr.open(init.method, init.url);
-    for (const [k, v] of Object.entries(init.headers)) xhr.setRequestHeader(k, v);
+    const put = init as Extract<InitResponse, { method: "PUT" }>;
+    xhr.open(put.method, put.url);
+    for (const [k, v] of Object.entries(put.headers)) xhr.setRequestHeader(k, v);
     xhr.upload.onprogress = (e) => {
       if (e.lengthComputable) onProgress(Math.round((e.loaded / e.total) * 100), "uploading");
     };
@@ -58,7 +84,7 @@ export async function uploadFile(
     const res = await fetch("/api/admin/uploads/complete", {
       method: "POST",
       headers: { "content-type": "application/json" },
-      body: JSON.stringify({ target: opts.target, key: init.key, productId: opts.productId ?? null, originalName: file.name, ...opts.extra }),
+      body: JSON.stringify({ target: opts.target, key: init.key, ...ids, originalName: file.name, ...opts.extra }),
     });
     const data = (await res.json()) as { ok?: boolean; message?: string; error?: string };
     if (!res.ok || !data.ok) return { ok: false, error: data.error ?? "تعذر التحقق من الملف" };
@@ -78,6 +104,8 @@ function fmtSize(n: number) {
 export function FileUploader({
   target,
   productId,
+  teacherId,
+  lessonId,
   accept,
   multiple,
   label,
@@ -86,6 +114,8 @@ export function FileUploader({
 }: {
   target: UploadTargetName;
   productId?: string | null;
+  teacherId?: string | null;
+  lessonId?: string | null;
   accept: string;
   multiple?: boolean;
   label: string;
@@ -109,7 +139,7 @@ export function FileUploader({
       const idx = start + i;
       const update = (patch: Partial<Item>) => setItems((prev) => prev.map((it, j) => (j === idx ? { ...it, ...patch } : it)));
       update({ phase: "uploading" });
-      const res = await uploadFile(list[i], { target, productId }, (pct, phase) => update({ pct, phase }));
+      const res = await uploadFile(list[i], { target, productId, teacherId, lessonId }, (pct, phase) => update({ pct, phase }));
       if (res.ok) {
         anyOk = true;
         update({ phase: "done", pct: 100, message: res.message });
