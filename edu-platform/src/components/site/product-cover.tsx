@@ -64,7 +64,7 @@ export function ProductCover({
       aria-label={title}
     >
       {compact ? null : <span className="text-[0.72rem] font-medium text-white/85">{PRODUCT_TYPE_LABELS[type]}</span>}
-      <span className={cn("font-display font-semibold leading-[1.05]", compact ? "text-base" : wide ? "text-[clamp(1.4rem,4.5vw,2rem)]" : "text-[clamp(1.6rem,5vw,2.25rem)]")}>{label}</span>
+      <span className={cn("font-display font-semibold leading-[1.05]", compact ? "line-clamp-2 text-[0.8rem] sm:text-base" : wide ? "text-[clamp(1.4rem,4.5vw,2rem)]" : "text-[clamp(1.6rem,5vw,2.25rem)]")}>{label}</span>
       {compact ? null : (
         <span className="flex items-center justify-between text-[0.72rem] text-white/80">
           <span>{subjectName ? gradeName : ""}</span>

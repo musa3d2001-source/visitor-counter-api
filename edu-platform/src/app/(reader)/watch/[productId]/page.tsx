@@ -107,7 +107,7 @@ export default async function WatchPage({ params, searchParams }: { params: Prom
               nextTitle={next?.title ?? null}
             />
           ) : (
-            <div className="grid aspect-video place-items-center rounded-lg bg-ink p-6 text-center text-white" data-testid="lesson-locked-panel">
+            <div className="on-dark grid aspect-video place-items-center rounded-lg bg-ink p-6 text-center text-white" data-testid="lesson-locked-panel">
               <div>
                 <Lock className="mx-auto size-8 text-white/70" aria-hidden />
                 {access && !access.ok && access.reason === "not_ready" ? (
@@ -169,7 +169,7 @@ export default async function WatchPage({ params, searchParams }: { params: Prom
               {selected.description ? <p className="mt-3 leading-7 whitespace-pre-line text-ink-soft">{selected.description}</p> : null}
               {playback?.kind === "file" ? (
                 <p className="mt-3 text-xs text-muted">
-                  الاختصارات: المسافة للتشغيل/الإيقاف، الأسهم للتقديم والرجوع 10 ثوانٍ، F لملء الشاشة. الجودات المتعددة التلقائية متاحة عند البث عبر Bunny Stream.
+                  اختصارات لوحة المفاتيح: المسافة للتشغيل والإيقاف، والأسهم للتقديم والرجوع 10 ثوانٍ، وحرف F لملء الشاشة.
                 </p>
               ) : null}
               {!user && access?.ok ? (

@@ -31,6 +31,7 @@ function PriceInline({ p }: { p: ProductCardData }) {
       </span>
       {p.compareAtPriceFils && p.compareAtPriceFils > p.priceFils ? (
         <span className="ms-2 text-xs text-muted line-through decoration-muted/60">
+          <span className="sr-only">السعر قبل الخصم </span>
           <span className="num">{filsToKwdString(p.compareAtPriceFils)}</span>
         </span>
       ) : null}
@@ -49,11 +50,11 @@ export function ProductRow({ product: p, owned, showGrade, showTeacher = true, w
     <article
       data-testid={p.isVideo ? "video-card" : "product-row"}
       className={cn(
-        "group grid grid-cols-[5.5rem_1fr] items-start gap-x-4 gap-y-2 py-4 sm:grid-cols-[8.5rem_1fr_auto] sm:items-center",
+        "group relative grid grid-cols-[5.5rem_1fr] items-start gap-x-4 gap-y-2 py-4 sm:grid-cols-[8.5rem_1fr_auto] sm:items-center",
         wide && "lg:grid-cols-[8.5rem_minmax(0,1fr)_16rem_auto] lg:gap-x-8",
       )}
     >
-      <Link href={`/products/${p.slug}`} tabIndex={-1} aria-hidden className="relative block overflow-hidden rounded-md">
+      <span className="relative block overflow-hidden rounded-md" aria-hidden>
         {thumb ? (
           <span className="relative block aspect-[16/10] bg-mist">
             <Image src={thumb} alt="" fill sizes="136px" className="object-cover" />
@@ -66,11 +67,12 @@ export function ProductRow({ product: p, owned, showGrade, showTeacher = true, w
             <Play className="size-3 fill-current" />
           </span>
         ) : null}
-      </Link>
+      </span>
       <div className="min-w-0">
         <p className="text-xs font-semibold text-brand-700">{PRODUCT_TYPE_LABELS[p.type]}</p>
         <h3 className="mt-0.5 text-[1rem] leading-7 font-semibold">
-          <Link href={`/products/${p.slug}`} className="hover:text-brand-700 hover:underline hover:decoration-brand-300 hover:underline-offset-4">
+          {/* الرابط يغطي الصف كاملًا (مساحة لمس كبيرة)، وزر المعاينة فوقه بطبقة مستقلة */}
+          <Link href={`/products/${p.slug}`} className="after:absolute after:inset-0 group-hover:text-brand-700 group-hover:underline group-hover:decoration-brand-300 group-hover:underline-offset-4">
             {p.title}
           </Link>
         </h3>
@@ -82,7 +84,7 @@ export function ProductRow({ product: p, owned, showGrade, showTeacher = true, w
         {p.previewLessonId && !owned ? (
           <Link
             href={`/watch/${p.id}?lesson=${p.previewLessonId}`}
-            className="inline-flex min-h-10 items-center gap-1.5 rounded-lg border border-line-strong px-3 text-sm font-semibold text-ink-soft transition-colors hover:border-brand-500 hover:text-brand-700"
+            className="relative z-10 inline-flex min-h-11 items-center gap-1.5 rounded-lg border border-line-strong bg-surface px-3 text-sm font-semibold text-ink-soft transition-colors hover:border-brand-500 hover:text-brand-700"
           >
             <Play className="size-3.5" aria-hidden /> معاينة مجانية
           </Link>

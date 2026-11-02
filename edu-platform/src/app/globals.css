@@ -97,6 +97,11 @@
     outline: 2px solid var(--brand);
     outline-offset: 2px;
   }
+  /* على الأقسام الداكنة: حلقة تركيز صفراء (تباين أعلى من 3:1) */
+  .on-dark :focus-visible,
+  footer :focus-visible {
+    outline-color: var(--accent);
+  }
   ::selection {
     background: color-mix(in oklab, var(--accent) 35%, white);
   }

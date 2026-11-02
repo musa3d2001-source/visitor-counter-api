@@ -11,14 +11,14 @@ export async function generateMetadata(): Promise<Metadata> {
   const base = new URL(env().APP_URL);
   return {
     metadataBase: base,
-    title: { default: `${s.site_name} — ${s.tagline}`, template: `%s | ${s.site_name}` },
+    title: { default: `${s.site_name} | ${s.tagline}`, template: `%s | ${s.site_name}` },
     description: s.hero_subtitle,
     applicationName: s.site_name,
     openGraph: {
       type: "website",
       locale: "ar_KW",
       siteName: s.site_name,
-      title: `${s.site_name} — ${s.tagline}`,
+      title: `${s.site_name} | ${s.tagline}`,
       description: s.hero_subtitle,
       images: [{ url: "/brand/og.png", width: 1200, height: 630, alt: s.site_name }],
     },
@@ -28,7 +28,7 @@ export async function generateMetadata(): Promise<Metadata> {
 }
 
 export const viewport: Viewport = {
-  themeColor: "#0f5257",
+  themeColor: "#0c6b66",
   width: "device-width",
   initialScale: 1,
 };

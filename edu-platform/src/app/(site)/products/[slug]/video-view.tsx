@@ -14,9 +14,13 @@ import { filsToKwdString } from "@/lib/money";
 import { formatDate } from "@/lib/utils";
 
 export function accessPeriodText(p: Pick<ProductDetail, "accessMode" | "accessUntil" | "accessDays">): string {
-  if (p.accessMode === "until_date" && p.accessUntil) return `الوصول حتى ${formatDate(p.accessUntil)}`;
-  if (p.accessMode === "days" && p.accessDays) return `الوصول لمدة ${p.accessDays} يومًا من تاريخ الشراء`;
-  return "وصول غير محدد";
+  if (p.accessMode === "until_date" && p.accessUntil) return `حتى ${formatDate(p.accessUntil)}`;
+  if (p.accessMode === "days" && p.accessDays) {
+    const d = p.accessDays;
+    const days = d === 1 ? "يوم واحد" : d === 2 ? "يومين" : d <= 10 ? `${d} أيام` : `${d} يومًا`;
+    return `${days} من تاريخ الشراء`;
+  }
+  return "بلا تاريخ انتهاء";
 }
 
 /** صفحة منتج الفيديو (درس/وحدة/مراجعة/دورة/باقة فيها فيديوهات) */
@@ -282,9 +286,10 @@ export function VideoProductView({
 
       {included.length ? (
         <section className="mt-14" aria-labelledby="included">
-          <h2 id="included" className="mb-4 text-[clamp(1.7rem,3vw,2.3rem)]">
-            {product.type === "bundle" ? "تشمل الباقة" : "تشمل الدورة"}
+          <h2 id="included" className="text-[clamp(1.7rem,3vw,2.3rem)]">
+            {product.type === "bundle" ? "تشمل الباقة" : "أجزاء الدورة"}
           </h2>
+          <p className="mt-1 mb-4 text-muted">{product.type === "bundle" ? "كل ما تحصل عليه عند شراء الباقة." : "تحتاج جزءًا واحدًا فقط؟ كل جزء متاح للشراء وحده."}</p>
           <ProductList products={included} ownedIds={owned} />
         </section>
       ) : null}
@@ -292,9 +297,9 @@ export function VideoProductView({
       {bundles.length ? (
         <section className="mt-14" aria-labelledby="in-bundles">
           <h2 id="in-bundles" className="text-[clamp(1.7rem,3vw,2.3rem)]">
-            ضمن باقة أوفر
+            متوفر أيضًا ضمن باقة
           </h2>
-          <p className="mt-1 mb-4 text-muted">هذا المحتوى مضمّن في الباقات التالية.</p>
+          <p className="mt-1 mb-4 text-muted">الباقة تضم هذا المحتوى مع محتوى آخر. قارن ما تشمله قبل الاختيار.</p>
           <ProductList products={bundles} ownedIds={owned} />
         </section>
       ) : null}
@@ -302,7 +307,10 @@ export function VideoProductView({
       {!isOwned && canBuy ? (
         <div className="fixed inset-x-0 bottom-0 z-30 border-t border-line bg-surface p-3 lg:hidden no-print">
           <div className="mx-auto flex max-w-6xl items-center gap-3">
-            <Price fils={product.priceFils} compareAt={product.compareAtPriceFils} size="md" className="shrink-0" />
+            <div className="shrink-0">
+              <Price fils={product.priceFils} compareAt={product.compareAtPriceFils} size="md" />
+              <p className="text-[0.7rem] text-muted">{accessPeriodText(product)}</p>
+            </div>
             <AddToCart productId={product.id} compact className="flex-1" />
           </div>
         </div>

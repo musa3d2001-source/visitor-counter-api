@@ -13,7 +13,8 @@ export function Price({ fils, compareAt, className, size = "md" }: { fils: numbe
         </span>
       )}
       {compareAt && compareAt > fils ? (
-        <span className="text-sm text-muted line-through decoration-danger/50">
+        <span className="text-sm text-muted line-through decoration-muted/60">
+          <span className="sr-only">السعر قبل الخصم </span>
           <span className="num">{filsToKwdString(compareAt)}</span> د.ك
         </span>
       ) : null}

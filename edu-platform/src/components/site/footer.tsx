@@ -54,10 +54,10 @@ function FooterCol({ title, links }: { title: string; links: { href: string; lab
   return (
     <div>
       <p className="mb-3 text-sm font-semibold text-white">{title}</p>
-      <ul className="space-y-2.5 text-sm">
+      <ul className="text-sm">
         {links.map((l) => (
           <li key={l.href + l.label}>
-            <Link href={l.href} className="hover:text-white" {...(l.href.startsWith("http") ? { target: "_blank", rel: "noopener noreferrer" } : {})}>
+            <Link href={l.href} className="inline-flex min-h-10 items-center hover:text-white" {...(l.href.startsWith("http") ? { target: "_blank", rel: "noopener noreferrer" } : {})}>
               {l.label}
             </Link>
           </li>

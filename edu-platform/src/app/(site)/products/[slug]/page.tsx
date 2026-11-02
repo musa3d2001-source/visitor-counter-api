@@ -342,9 +342,9 @@ export default async function ProductPage({ params }: { params: Promise<Params> 
       {bundles.length ? (
         <section className="mt-14" aria-labelledby="in-bundles">
           <h2 id="in-bundles" className="text-[clamp(1.7rem,3vw,2.3rem)]">
-            ضمن باقة أوفر
+            متوفر أيضًا ضمن باقة
           </h2>
-          <p className="mt-1 mb-4 text-muted">هذه المذكرة مضمّنة في الباقات التالية.</p>
+          <p className="mt-1 mb-4 text-muted">الباقة تضم هذه المذكرة مع محتوى آخر. قارن ما تشمله قبل الاختيار.</p>
           <ProductList products={bundles} ownedIds={owned} />
         </section>
       ) : null}

@@ -10,6 +10,7 @@ import { TeacherGrid } from "@/components/site/teacher-card";
 import { posterTone } from "@/components/site/product-cover";
 import { TeacherAvatar } from "@/components/site/teacher-avatar";
 import { EmptyState } from "@/components/ui/empty-state";
+import { formatTotalDuration, lessonsLabel } from "@/components/site/format";
 import { PRODUCT_TYPE_LABELS, isPdfType } from "@/lib/labels";
 import { filsToKwdString } from "@/lib/money";
 
@@ -85,7 +86,7 @@ export default async function HomePage() {
 
       {/* قبل الاختبار: درس مميز + جدول المراجعات */}
       {feature || reviewRows.length ? (
-        <section className="mt-16 bg-ink text-white sm:mt-20" aria-labelledby="before-exam">
+        <section className="on-dark mt-16 bg-ink text-white sm:mt-20" aria-labelledby="before-exam">
           <div className="mx-auto max-w-6xl px-4 py-14 sm:py-16">
             <div className="grid items-end gap-6 md:grid-cols-[1fr_auto]">
               <div>
@@ -128,7 +129,7 @@ export default async function HomePage() {
               المعلمون
             </h2>
             <p className="mt-2 leading-8 text-muted">لكل معلم صفحة تجمع شرحه للوحدات ومراجعاته ومذكراته.</p>
-            <Link href="/teachers" className="mt-4 inline-block text-sm font-semibold text-brand-700 underline decoration-brand-300 underline-offset-4">
+            <Link href="/teachers" className="mt-4 inline-flex min-h-11 items-center text-sm font-semibold text-brand-700 underline decoration-brand-300 underline-offset-4">
               كل المعلمين
             </Link>
           </div>
@@ -157,7 +158,7 @@ export default async function HomePage() {
               </h2>
               <p className="mt-2 text-muted">السعر الظاهر هو المبلغ الذي تدفعه، والتوفير محسوب من أسعار محتوياتها منفردة.</p>
             </div>
-            <Link href="/bundles" className="text-sm font-semibold text-brand-700 underline decoration-brand-300 underline-offset-4">
+            <Link href="/bundles" className="inline-flex min-h-11 items-center text-sm font-semibold text-brand-700 underline decoration-brand-300 underline-offset-4">
               كل الباقات
             </Link>
           </div>
@@ -233,15 +234,27 @@ function FeaturePanel({ p }: { p: ProductCard }) {
   const href = p.previewLessonId ? `/watch/${p.id}?lesson=${p.previewLessonId}` : `/products/${p.slug}`;
   return (
     <div>
-      <Link href={href} className="group relative block aspect-[16/10] overflow-hidden rounded-lg" style={{ backgroundColor: posterTone(p.subjectName, p.gradeName) }} data-testid="feature-lesson">
+      <Link href={href} className="group relative flex aspect-[16/10] flex-col overflow-hidden rounded-lg p-5 sm:p-6" style={{ backgroundColor: posterTone(p.subjectName, p.gradeName) }} data-testid="feature-lesson">
         {p.thumbnailUrl ? (
           // eslint-disable-next-line @next/next/no-img-element
           <img src={p.thumbnailUrl} alt="" className="absolute inset-0 size-full object-cover opacity-80" />
-        ) : (
-          <span className="absolute inset-0 grid place-items-center font-display text-[clamp(3rem,8vw,5.5rem)] font-semibold text-white/95">{p.subjectName}</span>
+        ) : null}
+        <span className="relative text-sm text-white/80">
+          {PRODUCT_TYPE_LABELS[p.type]}، {p.gradeName}
+        </span>
+        {p.thumbnailUrl ? null : (
+          <span className="relative mt-1 font-display text-[clamp(2.6rem,7vw,4.6rem)] leading-none font-semibold text-white">{p.subjectName}</span>
         )}
-        <span className="absolute start-4 bottom-4 inline-flex min-h-12 items-center gap-2 rounded-full bg-accent-600 px-5 font-semibold text-ink transition-transform group-hover:scale-[1.03]">
-          <Play className="size-4 fill-current" aria-hidden /> {p.previewLessonId ? "شاهد المعاينة" : "تفاصيل المراجعة"}
+        <span className="relative mt-auto flex flex-wrap items-end justify-between gap-3">
+          <span className="inline-flex min-h-12 items-center gap-2 rounded-lg bg-accent-600 px-5 font-semibold text-ink transition-colors group-hover:bg-accent-200">
+            <Play className="size-4 fill-current" aria-hidden /> {p.previewLessonId ? "شاهد المعاينة مجانًا" : "تفاصيل المراجعة"}
+          </span>
+          {p.lessonCount ? (
+            <span className="text-sm text-white/85">
+              {lessonsLabel(p.lessonCount)}
+              {p.totalDurationSeconds ? ` في ${formatTotalDuration(p.totalDurationSeconds)}` : ""}
+            </span>
+          ) : null}
         </span>
       </Link>
       <div className="mt-4 flex items-start gap-3">
@@ -250,7 +263,14 @@ function FeaturePanel({ p }: { p: ProductCard }) {
           <Link href={`/products/${p.slug}`} className="text-lg leading-7 font-semibold hover:underline hover:underline-offset-4">
             {p.title}
           </Link>
-          <p className="text-sm text-white/65">{productMeta(p, { grade: true })}</p>
+          <p className="text-sm text-white/70">{productMeta(p)}</p>
+          <p className="mt-1 font-bold">
+            {p.priceFils === 0 ? "مجانًا" : (
+              <>
+                <span className="num">{filsToKwdString(p.priceFils)}</span> <span className="text-xs font-semibold text-white/70">د.ك</span>
+              </>
+            )}
+          </p>
         </div>
       </div>
     </div>
