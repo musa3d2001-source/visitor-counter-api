@@ -40,7 +40,7 @@ export default async function SettingsPage() {
 
   return (
     <div className="space-y-6">
-      <AdminPageHeader title="إعدادات المنصة" description="الاسم والشعار والألوان والتواصل والأسئلة الشائعة — تُطبق فورًا دون تعديل الكود." />
+      <AdminPageHeader title="إعدادات المنصة" description="الاسم والشعار والألوان والتواصل والأسئلة الشائعة، تُطبق فورًا دون تعديل الكود." />
 
       <div className="grid items-start gap-6 lg:grid-cols-[1fr_340px]">
         <SettingsForm
@@ -68,10 +68,10 @@ export default async function SettingsPage() {
 
         <aside className="space-y-6">
           <Section title="الشعار">
-            <div className="mb-3 grid h-28 place-items-center rounded-xl bg-canvas">
+            <div className="mb-3 grid h-28 place-items-center rounded-lg bg-canvas">
               {logoUrl ? <Image src={logoUrl} alt="شعار المنصة" width={96} height={96} className="max-h-24 w-auto object-contain" /> : <span className="text-sm text-muted">يُستخدم الشعار الافتراضي</span>}
             </div>
-            <FileUploader target="logo" accept="image/png,image/jpeg,image/webp" label={logoUrl ? "تغيير الشعار" : "رفع شعار"} hint="PNG بخلفية شفافة يفضل · مربع" compact />
+            <FileUploader target="logo" accept="image/png,image/jpeg,image/webp" label={logoUrl ? "تغيير الشعار" : "رفع شعار"} hint="PNG بخلفية شفافة يفضل، مربع" compact />
             {logoUrl ? (
               <div className="mt-2">
                 <QuickAction action={removeLogoAction} label="إزالة الشعار" variant="ghost" />
@@ -79,7 +79,7 @@ export default async function SettingsPage() {
             ) : null}
           </Section>
 
-          <Section title="بوابة الدفع" description="تُضبط من متغيرات البيئة على الخادم — لا تُعرض المفاتيح هنا أبدًا.">
+          <Section title="بوابة الدفع" description="تُضبط من متغيرات البيئة على الخادم، لا تُعرض المفاتيح هنا أبدًا.">
             <div className="mb-3 flex items-center gap-2">
               <CreditCard className="size-5 text-brand-600" aria-hidden />
               <span className="font-bold">MyFatoorah</span>
@@ -93,7 +93,7 @@ export default async function SettingsPage() {
               {e.PAYMENTS_MODE === "live" ? <Row label="تأكيد الإنتاج" ok={e.MYFATOORAH_LIVE_CONFIRMED} text={e.MYFATOORAH_LIVE_CONFIRMED ? "مؤكد" : "غير مؤكد"} /> : null}
             </ul>
             <div className="mt-4 space-y-2 text-xs">
-              <p className="font-semibold text-ink-soft">رابط Webhook (يُضاف في لوحة MyFatoorah — الإصدار V2):</p>
+              <p className="font-semibold text-ink-soft">رابط Webhook (يُضاف في لوحة MyFatoorah، الإصدار V2):</p>
               <code className="block rounded-lg bg-canvas p-2 break-all" dir="ltr">
                 {webhookUrl}
               </code>
@@ -104,7 +104,7 @@ export default async function SettingsPage() {
             </div>
           </Section>
 
-          <Section title="مزود الفيديو" description="يُضبط من متغيرات البيئة — لا تُعرض المفاتيح هنا.">
+          <Section title="مزود الفيديو" description="يُضبط من متغيرات البيئة، لا تُعرض المفاتيح هنا.">
             <ul className="divide-y divide-line">
               <Row label="مزود الرفع (VIDEO_PROVIDER)" ok text={e.VIDEO_PROVIDER === "bunny" ? "Bunny Stream" : "تخزين المنصة الخاص"} />
               <Row label="Bunny Stream مضبوط" ok={bunnyConfigured()} text={bunnyConfigured() ? "نعم" : "لا"} />

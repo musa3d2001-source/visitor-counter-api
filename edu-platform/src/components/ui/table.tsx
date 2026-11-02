@@ -9,7 +9,7 @@ export function Table({ className, ...props }: React.ComponentProps<"table">) {
   );
 }
 export function THead(props: React.ComponentProps<"thead">) {
-  return <thead className="bg-canvas/80 text-xs text-muted" {...props} />;
+  return <thead className="bg-mist text-xs text-ink-soft" {...props} />;
 }
 export function TH({ className, ...props }: React.ComponentProps<"th">) {
   return <th className={cn("px-4 py-3 text-start font-semibold whitespace-nowrap", className)} {...props} />;

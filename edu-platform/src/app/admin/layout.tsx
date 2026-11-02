@@ -29,7 +29,7 @@ export default async function AdminLayout({ children }: { children: React.ReactN
   const role = actor.kind;
   const name = actor.kind === "teacher" ? actor.teacherName : actor.name;
   return (
-    <div className="flex min-h-dvh bg-canvas">
+    <div className="flex min-h-dvh bg-surface">
       <AdminSidebar siteName={settings.site_name} adminName={name} role={role} pendingReview={pending} />
       <div className="min-w-0 flex-1">
         <SandboxBanner />

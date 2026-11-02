@@ -58,19 +58,19 @@ export default async function TeacherProfilePage() {
               <div className="flex flex-wrap gap-2">
                 {subjects.map((s) => (
                   <Badge key={s.subject_id} tone="neutral">
-                    {s.subject_name} — {s.grade_name}
+                    {s.subject_name}، {s.grade_name}
                   </Badge>
                 ))}
               </div>
             </div>
           ) : null}
         </Section>
-        <div className="rounded-2xl border border-line bg-surface p-5 shadow-card">
+        <div className="rounded-lg border border-line bg-surface p-5">
           <h2 className="mb-3 font-bold">صورتك</h2>
           <div className="relative mx-auto mb-3 grid size-32 place-items-center overflow-hidden rounded-full bg-brand-50 text-brand-700">
             {photo ? <Image src={photo} alt="" fill sizes="128px" className="object-cover" /> : <GraduationCap className="size-10" aria-hidden />}
           </div>
-          <FileUploader target="teacher_photo" teacherId={teacher.id} accept="image/jpeg,image/png,image/webp" label={photo ? "تغيير الصورة" : "رفع صورة"} hint="صورة مربعة · حتى 5 م.ب" compact />
+          <FileUploader target="teacher_photo" teacherId={teacher.id} accept="image/jpeg,image/png,image/webp" label={photo ? "تغيير الصورة" : "رفع صورة"} hint="صورة مربعة، حتى 5 م.ب" compact />
           {photo ? (
             <div className="mt-2">
               <QuickAction action={removeOwnPhotoAction} label="إزالة الصورة" variant="ghost" />

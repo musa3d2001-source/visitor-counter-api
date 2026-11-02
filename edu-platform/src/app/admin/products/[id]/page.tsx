@@ -145,7 +145,7 @@ export default async function EditProductPage({ params, searchParams }: { params
     <div>
       <AdminPageHeader
         title={product.title}
-        description={`${PRODUCT_TYPE_LABELS[product.type]} · ${product.grade_name}${product.subject_name ? ` · ${product.subject_name}` : ""}${owner ? ` · ${product.teacher_name ?? "محتوى المنصة"}` : ""}`}
+        description={`${PRODUCT_TYPE_LABELS[product.type]}، ${product.grade_name}${product.subject_name ? `، ${product.subject_name}` : ""}${owner ? `، ${product.teacher_name ?? "محتوى المنصة"}` : ""}`}
         crumbs={[{ label: backLabel, href: "/admin/products" }, { label: "تعديل" }]}
         actions={
           owner || product.status === "published" ? (
@@ -197,7 +197,7 @@ export default async function EditProductPage({ params, searchParams }: { params
       ) : null}
 
       {owner && product.status === "in_review" ? (
-        <section className="mb-6 rounded-2xl border-2 border-accent-200 bg-accent-50 p-4 shadow-card sm:p-6" aria-labelledby="review-h">
+        <section className="mb-6 rounded-lg border-2 border-accent-200 bg-accent-50 p-4 sm:p-6" aria-labelledby="review-h">
           <div className="mb-4 flex flex-wrap items-start justify-between gap-3">
             <div>
               <h2 id="review-h" className="flex items-center gap-2 text-lg font-bold">
@@ -208,7 +208,7 @@ export default async function EditProductPage({ params, searchParams }: { params
                 {product.proposed_price_fils !== null ? (
                   <>
                     {" "}
-                    · السعر المقترح: <span className="num font-bold">{filsToKwdString(product.proposed_price_fils)}</span> د.ك
+                   ، السعر المقترح: <span className="num font-bold">{filsToKwdString(product.proposed_price_fils)}</span> د.ك
                   </>
                 ) : null}
               </p>
@@ -220,7 +220,7 @@ export default async function EditProductPage({ params, searchParams }: { params
               icon={<Undo2 aria-hidden />}
               variant="outline"
               title="إعادة المحتوى للمعلم؟"
-              description="اكتب ملاحظة واضحة بما يجب تعديله — ستظهر للمعلم في صفحة المحتوى."
+              description="اكتب ملاحظة واضحة بما يجب تعديله، ستظهر للمعلم في صفحة المحتوى."
               requireReason
               reasonLabel="ملاحظات المراجعة (إلزامي)"
               confirmLabel="إعادة للتعديل"
@@ -286,13 +286,13 @@ export default async function EditProductPage({ params, searchParams }: { params
               {lessons.length ? (
                 <>
                   <p className="mb-3 text-sm text-muted">
-                    <span className="num">{lessons.length}</span> درس · المدة الإجمالية <span className="num">{fmtDuration(totalDuration)}</span>
+                    <span className="num">{lessons.length}</span> درس، المدة الإجمالية <span className="num">{fmtDuration(totalDuration)}</span>
                   </p>
                   <ul className="mb-5 space-y-2" data-testid="lesson-list">
                     {lessons.map((l, i) => {
                       const thumb = l.thumbnail_key ? storage().publicUrl(l.thumbnail_key) : null;
                       return (
-                        <li key={l.id} className="rounded-xl border border-line">
+                        <li key={l.id} className="rounded-lg border border-line">
                           <details className="group">
                             <summary className="flex cursor-pointer list-none flex-wrap items-center gap-3 p-3 text-sm sm:flex-nowrap [&::-webkit-details-marker]:hidden">
                               <span className="num w-5 shrink-0 text-center text-xs text-muted">{i + 1}</span>
@@ -302,8 +302,8 @@ export default async function EditProductPage({ params, searchParams }: { params
                               <span className="min-w-0 flex-1">
                                 <span className="font-semibold">{l.title}</span>
                                 <span className="block text-xs text-muted">
-                                  {l.unit_title || "بدون قسم"} · <span className="num">{fmtDuration(l.duration_seconds)}</span> · {l.provider === "bunny" ? "Bunny Stream" : "ملف خاص"}
-                                  {l.size_bytes ? ` · ${fmtSize(Number(l.size_bytes))}` : ""}
+                                  {l.unit_title || "بدون قسم"}، <span className="num">{fmtDuration(l.duration_seconds)}</span>، {l.provider === "bunny" ? "Bunny Stream" : "ملف خاص"}
+                                  {l.size_bytes ? `، ${fmtSize(Number(l.size_bytes))}` : ""}
                                 </span>
                               </span>
                               <span className="flex w-full flex-wrap items-center gap-1 ps-8 sm:w-auto sm:justify-end sm:ps-0">
@@ -348,7 +348,7 @@ export default async function EditProductPage({ params, searchParams }: { params
                                     </div>
                                   </ActionForm>
                                   <div className="grid gap-3 border-t border-line pt-3 sm:grid-cols-[1fr_auto] sm:items-end">
-                                    <FileUploader target="lesson_thumb" productId={id} lessonId={l.id} accept="image/jpeg,image/png,image/webp" label={thumb ? "تغيير الصورة المصغرة" : "رفع صورة مصغرة"} hint="16:9 · JPG أو PNG أو WEBP" compact />
+                                    <FileUploader target="lesson_thumb" productId={id} lessonId={l.id} accept="image/jpeg,image/png,image/webp" label={thumb ? "تغيير الصورة المصغرة" : "رفع صورة مصغرة"} hint="16:9، JPG أو PNG أو WEBP" compact />
                                     {thumb ? <QuickAction action={removeLessonThumbAction} hidden={{ productId: id, lessonId: l.id }} icon={<ImageIcon aria-hidden />} label="إزالة الصورة" variant="ghost" /> : null}
                                   </div>
                                   <div className="flex flex-wrap gap-1 border-t border-line pt-3">
@@ -366,16 +366,16 @@ export default async function EditProductPage({ params, searchParams }: { params
                   </ul>
                 </>
               ) : (
-                <p className="mb-5 rounded-xl bg-canvas p-4 text-center text-sm text-muted">لا توجد دروس بعد.</p>
+                <p className="mb-5 rounded-lg bg-canvas p-4 text-center text-sm text-muted">لا توجد دروس بعد.</p>
               )}
               {canUpload ? (
                 <div className="space-y-4">
-                  <div className="rounded-xl border border-brand-200 bg-brand-50/40 p-4">
+                  <div className="rounded-lg border border-brand-200 bg-brand-50/40 p-4">
                     <h3 className="mb-4 font-semibold">{lessons.length ? "إضافة درس آخر" : "رفع أول درس فيديو"}</h3>
                     <LessonUploader productId={id} provider={provider} />
                   </div>
                   {owner && bunnyConfigured() ? (
-                    <details className="rounded-xl border border-line p-4">
+                    <details className="rounded-lg border border-line p-4">
                       <summary className="cursor-pointer font-semibold">ربط فيديو موجود في Bunny Stream</summary>
                       <ActionForm action={addBunnyLessonAction} resetOnSuccess className="mt-4 grid gap-3 sm:grid-cols-2">
                         <>
@@ -415,10 +415,10 @@ export default async function EditProductPage({ params, searchParams }: { params
               description={isPdf ? "الملفات الأصلية تُحفظ في تخزين خاص ولا تُعرض إلا لمن اشترى المنتج." : "أوراق عمل أو ملخصات تُرفق مع الفيديو للمشتركين (اختياري)."}
             >
               {canUpload ? (
-                <FileUploader target="main" productId={id} accept="application/pdf,.pdf" multiple label="اسحب ملفات PDF هنا أو اضغط للاختيار" hint="PDF فقط · حتى 100 ميجابايت للملف · يمكن رفع عدة ملفات" compact={!isPdf} />
+                <FileUploader target="main" productId={id} accept="application/pdf,.pdf" multiple label="اسحب ملفات PDF هنا أو اضغط للاختيار" hint="PDF فقط، حتى 100 ميجابايت للملف، يمكن رفع عدة ملفات" compact={!isPdf} />
               ) : null}
               {mainFiles.length ? (
-                <ul className="mt-4 divide-y divide-line rounded-xl border border-line">
+                <ul className="mt-4 divide-y divide-line rounded-lg border border-line">
                   {mainFiles.map((f, i) => (
                     <li key={f.id} className="flex flex-wrap items-center gap-x-3 gap-y-2 p-3">
                       <FileText className="hidden size-5 shrink-0 text-brand-600 sm:block" aria-hidden />
@@ -436,7 +436,7 @@ export default async function EditProductPage({ params, searchParams }: { params
                           <p className="font-semibold">{f.title}</p>
                         )}
                         <p className="mt-1 text-xs text-muted">
-                          <span className="num">{f.page_count ?? "?"}</span> صفحة · <span className="num">{fmtSize(f.size_bytes)}</span> · {formatDateTime(f.created_at)}
+                          <span className="num">{f.page_count ?? "?"}</span> صفحة، <span className="num">{fmtSize(f.size_bytes)}</span>، {formatDateTime(f.created_at)}
                         </p>
                       </div>
                       <div className="ms-auto flex items-center gap-1">
@@ -460,7 +460,7 @@ export default async function EditProductPage({ params, searchParams }: { params
                             size="icon"
                             variant="ghost"
                             title="حذف الملف؟"
-                            description={`سيتم حذف «${f.title}» نهائيًا من التخزين.${i === 0 && isPdf ? " هذا هو الملف الأول — ستُعاد توليد المعاينة." : ""}`}
+                            description={`سيتم حذف «${f.title}» نهائيًا من التخزين.${i === 0 && isPdf ? " هذا هو الملف الأول، ستُعاد توليد المعاينة." : ""}`}
                             confirmLabel="حذف"
                           />
                         ) : null}
@@ -469,7 +469,7 @@ export default async function EditProductPage({ params, searchParams }: { params
                   ))}
                 </ul>
               ) : isPdf ? (
-                <p className="mt-4 rounded-xl bg-canvas p-4 text-center text-sm text-muted">لم يُرفع أي ملف بعد.</p>
+                <p className="mt-4 rounded-lg bg-canvas p-4 text-center text-sm text-muted">لم يُرفع أي ملف بعد.</p>
               ) : null}
             </Section>
           ) : null}
@@ -477,12 +477,12 @@ export default async function EditProductPage({ params, searchParams }: { params
           {isPdf ? (
             <Section title="المعاينة المجانية" description={`تُولَّد تلقائيًا من أول ${product.preview_pages} صفحات من الملف الأول، أو ارفع ملف معاينة مخصص.`}>
               {preview ? (
-                <div className="mb-4 flex flex-wrap items-center gap-3 rounded-xl border border-line p-3">
+                <div className="mb-4 flex flex-wrap items-center gap-3 rounded-lg border border-line p-3">
                   <Eye className="size-5 text-brand-600" aria-hidden />
                   <div className="flex-1 text-sm">
                     <p className="font-semibold">{preview.is_auto_preview ? "معاينة تلقائية" : "معاينة مخصصة (مرفوعة يدويًا)"}</p>
                     <p className="text-xs text-muted">
-                      <span className="num">{preview.page_count ?? "?"}</span> صفحة · متاحة للجميع بدون تسجيل
+                      <span className="num">{preview.page_count ?? "?"}</span> صفحة، متاحة للجميع بدون تسجيل
                     </p>
                   </div>
                   <Button asChild variant="ghost" size="sm">
@@ -492,7 +492,7 @@ export default async function EditProductPage({ params, searchParams }: { params
                   </Button>
                 </div>
               ) : (
-                <p className="mb-4 rounded-xl bg-canvas p-3 text-sm text-muted">لا توجد معاينة حاليًا{product.preview_pages === 0 ? " (عدد صفحات المعاينة = 0)" : mainFiles.length ? "" : " — ارفع ملفًا أولًا"}.</p>
+                <p className="mb-4 rounded-lg bg-canvas p-3 text-sm text-muted">لا توجد معاينة حاليًا{product.preview_pages === 0 ? " (عدد صفحات المعاينة = 0)" : mainFiles.length ? "" : "، ارفع ملفًا أولًا"}.</p>
               )}
               {editable ? (
                 <div className="grid gap-4 sm:grid-cols-[1fr_auto] sm:items-end">
@@ -510,13 +510,13 @@ export default async function EditProductPage({ params, searchParams }: { params
               title={product.type === "bundle" ? "محتويات الباقة" : "محتويات مضمّنة"}
               description={
                 product.type === "bundle"
-                  ? "من نفس الصف — فيديوهات ومذكرات ودورات. المشتري يحصل على كل المحتويات (بأي عمق) ولا تُحتسب المكررة."
-                  : "أضف وحدات أو دروسًا منفردة لتكوين الدورة/الوحدة — من يشتريها يحصل عليها كلها، ويمكن بيع كل جزء منفردًا أيضًا."
+                  ? "من نفس الصف، فيديوهات ومذكرات ودورات. المشتري يحصل على كل المحتويات (بأي عمق) ولا تُحتسب المكررة."
+                  : "أضف وحدات أو دروسًا منفردة لتكوين الدورة/الوحدة، من يشتريها يحصل عليها كلها، ويمكن بيع كل جزء منفردًا أيضًا."
               }
             >
               {bundleItems.length ? (
                 <>
-                  <ul className="divide-y divide-line rounded-xl border border-line">
+                  <ul className="divide-y divide-line rounded-lg border border-line">
                     {bundleItems.map((it) => (
                       <li key={it.product_id} className="flex items-center gap-3 p-3 text-sm">
                         <div className="min-w-0 flex-1">
@@ -524,8 +524,8 @@ export default async function EditProductPage({ params, searchParams }: { params
                             {it.title}
                           </Link>
                           <p className="text-xs text-muted">
-                            {PRODUCT_TYPE_LABELS[it.type]} · {it.subject_name ?? "—"}
-                            {owner && it.teacher_name ? ` · ${it.teacher_name}` : ""} {it.status !== "published" ? "· غير منشور" : ""}
+                            {PRODUCT_TYPE_LABELS[it.type]}، {it.subject_name ?? "—"}
+                            {owner && it.teacher_name ? `، ${it.teacher_name}` : ""} {it.status !== "published" ? "، غير منشور" : ""}
                           </p>
                         </div>
                         <span className="num whitespace-nowrap">{filsToKwdString(it.price_fils)} د.ك</span>
@@ -534,32 +534,32 @@ export default async function EditProductPage({ params, searchParams }: { params
                     ))}
                   </ul>
                   <p className="mt-3 text-sm text-muted">
-                    قيمة المحتويات منفردة: <span className="num font-bold text-ink">{filsToKwdString(itemsTotal)}</span> د.ك · السعر:{" "}
+                    قيمة المحتويات منفردة: <span className="num font-bold text-ink">{filsToKwdString(itemsTotal)}</span> د.ك، السعر:{" "}
                     <span className="num font-bold text-ink">{filsToKwdString(product.price_fils)}</span> د.ك
                     {itemsTotal > product.price_fils && product.price_fils > 0 ? (
                       <>
                         {" "}
-                        · توفير <span className="num font-bold text-success">{filsToKwdString(itemsTotal - product.price_fils)}</span> د.ك
+                       ، توفير <span className="num font-bold text-success">{filsToKwdString(itemsTotal - product.price_fils)}</span> د.ك
                       </>
                     ) : null}
                   </p>
                 </>
               ) : (
-                <p className="rounded-xl bg-canvas p-4 text-center text-sm text-muted">لا توجد محتويات مضمّنة بعد.</p>
+                <p className="rounded-lg bg-canvas p-4 text-center text-sm text-muted">لا توجد محتويات مضمّنة بعد.</p>
               )}
               {candidates.length ? (
                 <ActionForm action={addBundleItemAction} className="mt-5">
                   <input type="hidden" name="bundleId" value={id} />
                   <p className="mb-2 text-sm font-semibold">إضافة محتوى من {product.grade_name}</p>
-                  <div className="max-h-72 space-y-1 overflow-y-auto rounded-xl border border-line p-2">
+                  <div className="max-h-72 space-y-1 overflow-y-auto rounded-lg border border-line p-2">
                     {candidates.map((c) => (
                       <label key={c.id} className="flex cursor-pointer items-center gap-3 rounded-lg px-2 py-2 text-sm hover:bg-brand-50">
                         <input type="checkbox" name="productId" value={c.id} className="size-4 accent-[var(--brand)]" />
                         <span className="min-w-0 flex-1">
                           {c.title}
                           <span className="block text-xs text-muted">
-                            {c.subject_name ?? "—"} · {PRODUCT_TYPE_LABELS[c.type]}
-                            {owner && c.teacher_name ? ` · ${c.teacher_name}` : ""} {c.status !== "published" ? "· غير منشور" : ""}
+                            {c.subject_name ?? "—"}، {PRODUCT_TYPE_LABELS[c.type]}
+                            {owner && c.teacher_name ? `، ${c.teacher_name}` : ""} {c.status !== "published" ? "، غير منشور" : ""}
                           </span>
                         </span>
                         <span className="num text-xs whitespace-nowrap">{filsToKwdString(c.price_fils)}</span>
@@ -615,7 +615,7 @@ export default async function EditProductPage({ params, searchParams }: { params
         </div>
 
         <aside className="space-y-6 lg:sticky lg:top-6">
-          <div className="rounded-2xl border border-line bg-surface p-5 shadow-card">
+          <div className="rounded-lg border border-line bg-surface p-5">
             <div className="flex items-center justify-between gap-2">
               <h2 className="font-bold">حالة النشر</h2>
               <ProductStatusBadge status={product.status} />
@@ -708,7 +708,7 @@ export default async function EditProductPage({ params, searchParams }: { params
                   <dt>آخر مراجعة</dt>
                   <dd>
                     {formatDateTime(product.reviewed_at)}
-                    {owner && product.reviewed_by_name ? ` — ${product.reviewed_by_name}` : ""}
+                    {owner && product.reviewed_by_name ? `، ${product.reviewed_by_name}` : ""}
                   </dd>
                 </div>
               ) : null}
@@ -721,16 +721,16 @@ export default async function EditProductPage({ params, searchParams }: { params
             </dl>
           </div>
 
-          <div className="rounded-2xl border border-line bg-surface p-5 shadow-card">
+          <div className="rounded-lg border border-line bg-surface p-5">
             <h2 className="mb-3 font-bold">صورة الغلاف</h2>
             {coverUrl ? (
-              <div className="mb-3 overflow-hidden rounded-xl border border-line">
+              <div className="mb-3 overflow-hidden rounded-lg border border-line">
                 <div className="relative aspect-[4/5]">
                   <Image src={coverUrl} alt="غلاف المنتج" fill sizes="320px" className="object-cover" />
                 </div>
               </div>
             ) : (
-              <div className="mb-3 grid aspect-[4/5] place-items-center rounded-xl bg-canvas text-center text-sm text-muted">
+              <div className="mb-3 grid aspect-[4/5] place-items-center rounded-lg bg-canvas text-center text-sm text-muted">
                 <span>
                   <Package className="mx-auto mb-2 size-7 opacity-50" aria-hidden />
                   يُعرض غلاف تلقائي بألوان الهوية
@@ -738,7 +738,7 @@ export default async function EditProductPage({ params, searchParams }: { params
               </div>
             )}
             {canUpload ? (
-              <FileUploader target="cover" productId={id} accept="image/jpeg,image/png,image/webp" label={coverUrl ? "تغيير الغلاف" : "رفع صورة غلاف"} hint="JPG أو PNG أو WEBP · حتى 5 م.ب · نسبة 4:5" compact />
+              <FileUploader target="cover" productId={id} accept="image/jpeg,image/png,image/webp" label={coverUrl ? "تغيير الغلاف" : "رفع صورة غلاف"} hint="JPG أو PNG أو WEBP، حتى 5 م.ب، نسبة 4:5" compact />
             ) : null}
             {coverUrl && editable ? (
               <div className="mt-2">

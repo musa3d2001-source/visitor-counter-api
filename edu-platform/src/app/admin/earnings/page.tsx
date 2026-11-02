@@ -39,9 +39,9 @@ export default async function TeacherEarningsPage({ searchParams }: { searchPara
     <div className="space-y-6">
       <AdminPageHeader
         title="أرباحي ومبيعاتي"
-        description={includeTest ? "تشمل الطلبات التجريبية (بيئة الاختبار) — لا تُحتسب ضمن المستحقات الفعلية" : "مبيعات محتواك المدفوعة (الطلبات التجريبية مستبعدة)"}
+        description={includeTest ? "تشمل الطلبات التجريبية (بيئة الاختبار)، لا تُحتسب ضمن المستحقات الفعلية" : "مبيعات محتواك المدفوعة (الطلبات التجريبية مستبعدة)"}
         actions={
-          <a href={includeTest ? "/admin/earnings" : "/admin/earnings?test=1"} className="rounded-xl border border-line-strong px-3 py-1.5 text-xs font-semibold text-ink-soft hover:bg-brand-50">
+          <a href={includeTest ? "/admin/earnings" : "/admin/earnings?test=1"} className="rounded-lg border border-line-strong px-3 py-1.5 text-xs font-semibold text-ink-soft hover:bg-brand-50">
             {includeTest ? "إخفاء البيانات التجريبية" : "إظهار البيانات التجريبية"}
           </a>
         }
@@ -56,12 +56,12 @@ export default async function TeacherEarningsPage({ searchParams }: { searchPara
           </>
         ) : null}
       </div>
-      {!shareOn ? <p className="rounded-xl bg-canvas p-4 text-sm text-muted">لم يُفعَّل احتساب الأرباح لحسابك بعد. تواصل مع إدارة المنصة.</p> : null}
+      {!shareOn ? <p className="rounded-lg bg-canvas p-4 text-sm text-muted">لم يُفعَّل احتساب الأرباح لحسابك بعد. تواصل مع إدارة المنصة.</p> : null}
 
       {shareOn ? (
         <Section title="تفاصيل الأرباح" description="الصافي = قيمة البيع − حصته من الخصم − الرسوم المعتمدة. المستردات تُعكس تلقائيًا.">
           {earnings.length === 0 ? (
-            <p className="rounded-xl bg-canvas p-4 text-center text-sm text-muted">لا توجد أرباح بعد.</p>
+            <p className="rounded-lg bg-canvas p-4 text-center text-sm text-muted">لا توجد أرباح بعد.</p>
           ) : (
             <Table>
               <THead>
@@ -99,7 +99,7 @@ export default async function TeacherEarningsPage({ searchParams }: { searchPara
       ) : (
         <Section title="آخر المبيعات">
           {sales.length === 0 ? (
-            <p className="rounded-xl bg-canvas p-4 text-center text-sm text-muted">لا توجد مبيعات بعد.</p>
+            <p className="rounded-lg bg-canvas p-4 text-center text-sm text-muted">لا توجد مبيعات بعد.</p>
           ) : (
             <Table>
               <THead>
@@ -130,9 +130,9 @@ export default async function TeacherEarningsPage({ searchParams }: { searchPara
       {shareOn ? (
         <Section title="التسويات المستلمة">
           {payouts.length === 0 ? (
-            <p className="rounded-xl bg-canvas p-4 text-center text-sm text-muted">لا توجد تسويات بعد.</p>
+            <p className="rounded-lg bg-canvas p-4 text-center text-sm text-muted">لا توجد تسويات بعد.</p>
           ) : (
-            <ul className="divide-y divide-line rounded-xl border border-line">
+            <ul className="divide-y divide-line rounded-lg border border-line">
               {payouts.map((p) => (
                 <li key={p.id} className="flex flex-wrap items-center gap-x-4 gap-y-1 p-3 text-sm">
                   <span className="num font-bold">{filsToKwdString(p.amount_fils)} د.ك</span>

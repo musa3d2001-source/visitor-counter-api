@@ -20,7 +20,7 @@ export default async function StudentsPage({ searchParams }: { searchParams: Pro
   return (
     <div>
       <AdminPageHeader title="الطلاب" description="حسابات الطلاب ومشترياتهم وصلاحياتهم" />
-      <form className="mb-5 flex gap-2 rounded-2xl border border-line bg-surface p-3" role="search">
+      <form className="mb-5 flex gap-2 rounded-lg border border-line bg-surface p-3" role="search">
         <div className="relative flex-1">
           <Search className="pointer-events-none absolute start-3 top-1/2 size-4 -translate-y-1/2 text-muted" aria-hidden />
           <Input name="q" defaultValue={sp.q} placeholder="ابحث بالاسم أو البريد أو الهاتف" className="ps-9" aria-label="بحث" />

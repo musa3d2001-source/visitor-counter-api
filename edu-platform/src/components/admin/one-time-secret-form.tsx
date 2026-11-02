@@ -24,7 +24,7 @@ export function OneTimeSecretForm({ action, children, className }: { action: Ser
       <div className="space-y-3" role="status">
         <Alert tone="success">{state.message}</Alert>
         {secret ? (
-          <div className="flex items-center gap-2 rounded-xl border-2 border-dashed border-brand-300 bg-brand-50 p-3">
+          <div className="flex items-center gap-2 rounded-lg border-2 border-dashed border-brand-300 bg-brand-50 p-3">
             <KeyRound className="size-4 shrink-0 text-brand-700" aria-hidden />
             <code className="num flex-1 font-bold break-all" dir="ltr" data-testid="one-time-secret">
               {secret}
@@ -47,7 +47,7 @@ export function OneTimeSecretForm({ action, children, className }: { action: Ser
           </div>
         ) : null}
         <Button type="button" size="sm" onClick={() => router.refresh()}>
-          تم — متابعة
+          تم، متابعة
         </Button>
       </div>
     );

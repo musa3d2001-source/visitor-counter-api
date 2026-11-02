@@ -40,7 +40,7 @@ export default async function ReportsPage({ searchParams }: { searchParams: Prom
   const sp = await searchParams;
   const tab = sp.tab === "audit" ? "audit" : "sales";
   const tabs = (
-    <div className="mb-6 flex gap-1 rounded-xl bg-surface p-1 shadow-card" role="tablist">
+    <div className="mb-6 flex gap-1 rounded-lg bg-surface p-1" role="tablist">
       {[
         ["sales", "تقرير المبيعات"],
         ["audit", "سجل التدقيق"],
@@ -66,7 +66,7 @@ export default async function ReportsPage({ searchParams }: { searchParams: Prom
       <div>
         <AdminPageHeader title="التقارير" description="آخر 200 عملية حساسة مسجلة" />
         {tabs}
-        <form className="mb-4 grid gap-2 rounded-2xl border border-line bg-surface p-3 sm:grid-cols-[1fr_1fr_auto]">
+        <form className="mb-4 grid gap-2 rounded-lg border border-line bg-surface p-3 sm:grid-cols-[1fr_1fr_auto]">
           <input type="hidden" name="tab" value="audit" />
           <Select name="entity" defaultValue={entity ?? ""} aria-label="نوع العنصر">
             {ENTITY_TYPES.map(([k, l]) => (
@@ -81,7 +81,7 @@ export default async function ReportsPage({ searchParams }: { searchParams: Prom
           </Button>
         </form>
         {rows.length === 0 ? (
-          <p className="rounded-2xl bg-surface p-8 text-center text-sm text-muted">لا توجد عمليات مسجلة.</p>
+          <p className="rounded-lg bg-surface p-8 text-center text-sm text-muted">لا توجد عمليات مسجلة.</p>
         ) : (
           <Table>
             <THead>
@@ -158,7 +158,7 @@ export default async function ReportsPage({ searchParams }: { searchParams: Prom
     <div className="space-y-6">
       <AdminPageHeader
         title="التقارير"
-        description={`من ${range.fromDay} إلى ${range.toDay}${range.includeTest ? " · تشمل الطلبات التجريبية" : ""}`}
+        description={`من ${range.fromDay} إلى ${range.toDay}${range.includeTest ? "، تشمل الطلبات التجريبية" : ""}`}
         actions={
           <Button asChild variant="outline" size="sm">
             <a href={`/api/admin/reports/export?${exportQs}`}>
@@ -168,7 +168,7 @@ export default async function ReportsPage({ searchParams }: { searchParams: Prom
         }
       />
       {tabs}
-      <form className="grid items-end gap-3 rounded-2xl border border-line bg-surface p-3 sm:grid-cols-[1fr_1fr_auto_auto]">
+      <form className="grid items-end gap-3 rounded-lg border border-line bg-surface p-3 sm:grid-cols-[1fr_1fr_auto_auto]">
         <label className="text-sm">
           <span className="mb-1 block font-semibold text-ink-soft">من تاريخ</span>
           <Input type="date" name="from" defaultValue={range.fromDay} className="num" />
@@ -239,7 +239,7 @@ export default async function ReportsPage({ searchParams }: { searchParams: Prom
                     <div className="mb-1 flex justify-between text-sm">
                       <span className="font-semibold">{g.grade_name}</span>
                       <span>
-                        {kwd(g.revenueFils)} · <span className="num">{g.sold}</span>
+                        {kwd(g.revenueFils)}، <span className="num">{g.sold}</span>
                       </span>
                     </div>
                     <div className="h-2 overflow-hidden rounded-full bg-line">

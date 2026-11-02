@@ -65,7 +65,7 @@ export default async function BundlesPage() {
                     </Link>
                     <p className="text-xs font-normal text-muted">
                       {PRODUCT_TYPE_LABELS[b.type]}
-                      {b.teacher_name ? ` · ${b.teacher_name}` : ""}
+                      {b.teacher_name ? `، ${b.teacher_name}` : ""}
                     </p>
                   </TD>
                   <TD>{b.grade_name}</TD>

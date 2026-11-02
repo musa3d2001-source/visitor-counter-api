@@ -164,13 +164,13 @@ export function FileUploader({
           void handle(e.dataTransfer.files);
         }}
         className={cn(
-          "flex cursor-pointer flex-col items-center justify-center gap-2 rounded-2xl border-2 border-dashed px-4 text-center transition-colors",
+          "flex cursor-pointer flex-col items-center justify-center gap-2 rounded-lg border-2 border-dashed px-4 text-center transition-colors",
           compact ? "py-4" : "py-8",
           drag ? "border-brand-500 bg-brand-50" : "border-line-strong bg-canvas/60 hover:border-brand-300 hover:bg-brand-50/50",
           busy && "pointer-events-none opacity-70",
         )}
       >
-        <span className="grid size-11 place-items-center rounded-xl bg-surface text-brand-700 shadow-sm">
+        <span className="grid size-11 place-items-center rounded-lg bg-surface text-brand-700">
           {busy ? <LoaderCircle className="size-5 animate-spin" aria-hidden /> : <Upload className="size-5" aria-hidden />}
         </span>
         <span className="text-sm font-bold text-ink">{label}</span>
@@ -189,7 +189,7 @@ export function FileUploader({
       {items.length ? (
         <ul className="mt-3 space-y-2" aria-live="polite">
           {items.map((it, i) => (
-            <li key={i} className="rounded-xl border border-line bg-surface p-3 text-sm">
+            <li key={i} className="rounded-lg border border-line bg-surface p-3 text-sm">
               <div className="flex items-center justify-between gap-3">
                 <span className="flex min-w-0 items-center gap-2">
                   {it.phase === "done" ? (

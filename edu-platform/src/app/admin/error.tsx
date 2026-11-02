@@ -5,8 +5,8 @@ import { Button } from "@/components/ui/button";
 
 export default function AdminError({ error, reset }: { error: Error & { digest?: string }; reset: () => void }) {
   return (
-    <div className="mx-auto max-w-lg rounded-2xl border border-danger/20 bg-surface p-8 text-center shadow-card">
-      <span className="mx-auto grid size-12 place-items-center rounded-xl bg-danger-50 text-danger">
+    <div className="mx-auto max-w-lg rounded-lg border border-danger/20 bg-surface p-8 text-center">
+      <span className="mx-auto grid size-12 place-items-center rounded-lg bg-danger-50 text-danger">
         <TriangleAlert className="size-6" aria-hidden />
       </span>
       <h1 className="mt-4 text-xl font-bold">تعذر تحميل هذه الصفحة</h1>

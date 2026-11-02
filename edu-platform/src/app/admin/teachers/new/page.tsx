@@ -13,10 +13,10 @@ export default async function NewTeacherPage() {
     <div className="max-w-4xl">
       <AdminPageHeader
         title="إضافة معلم"
-        description="يُنشأ المعلم بوضع «يديره المالك» — يمكنك بعدها تفعيل حساب دخول له من صفحته."
+        description="يُنشأ المعلم بوضع «يديره المالك»، يمكنك بعدها تفعيل حساب دخول له من صفحته."
         crumbs={[{ label: "المعلمون", href: "/admin/teachers" }, { label: "إضافة معلم" }]}
       />
-      <div className="rounded-2xl border border-line bg-surface p-4 shadow-card sm:p-6">
+      <div className="rounded-lg border border-line bg-surface p-4 sm:p-6">
         <TeacherForm
           action={createTeacherAction}
           subjects={subjects}

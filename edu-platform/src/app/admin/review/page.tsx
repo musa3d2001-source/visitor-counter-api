@@ -18,7 +18,7 @@ export default async function ReviewQueuePage() {
   const items = await reviewQueue();
   return (
     <div>
-      <AdminPageHeader title="مراجعة المحتوى" description="محتوى أرسله المعلمون للنشر — راجعه، حدد السعر وفترة الإتاحة، ثم اعتمده أو أعده بملاحظات." />
+      <AdminPageHeader title="مراجعة المحتوى" description="محتوى أرسله المعلمون للنشر، راجعه، حدد السعر وفترة الإتاحة، ثم اعتمده أو أعده بملاحظات." />
       {items.length === 0 ? (
         <EmptyState icon={<BadgeCheck />} title="لا يوجد محتوى بانتظار المراجعة" description="عندما يرسل المعلمون محتوى جديدًا سيظهر هنا." />
       ) : (
@@ -49,7 +49,7 @@ export default async function ReviewQueuePage() {
                   <p className="text-muted">{p.subject_name ?? "—"}</p>
                 </TD>
                 <TD className="text-xs text-muted">
-                  {[p.lessons ? `${p.lessons} درس` : null, p.files ? `${p.files} ملف` : null, p.items ? `${p.items} عنصر` : null].filter(Boolean).join(" · ") || "—"}
+                  {[p.lessons ? `${p.lessons} درس` : null, p.files ? `${p.files} ملف` : null, p.items ? `${p.items} عنصر` : null].filter(Boolean).join("، ") || "—"}
                   {p.not_ready ? (
                     <Badge tone="warning" className="mt-1">
                       <Clock className="size-3" aria-hidden /> {p.not_ready} قيد المعالجة

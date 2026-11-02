@@ -259,7 +259,7 @@ export async function approveAndPublishAction(_prev: ActionState, fd: FormData):
     const id = str(fd, "id");
     if (!isUuid(id)) throw new AdminError("طلب غير صالح");
     const price = priceSchema.safeParse(str(fd, "price"));
-    if (!price.success) throw new AdminError("حدد سعرًا صحيحًا — مثال: 2.500", { price: price.error.issues[0].message });
+    if (!price.success) throw new AdminError("حدد سعرًا صحيحًا، مثال: 2.500", { price: price.error.issues[0].message });
     const compare = optionalPriceSchema.safeParse(str(fd, "compareAtPrice") || undefined);
     if (!compare.success) throw new AdminError("السعر السابق غير صحيح", { compareAtPrice: "غير صحيح" });
     const daysRaw = str(fd, "accessDays");
@@ -447,7 +447,7 @@ export async function addBunnyLessonAction(_prev: ActionState, fd: FormData): Pr
     const parsed = lessonSchema.safeParse({ title: str(fd, "title"), unitTitle: str(fd, "unitTitle"), description: str(fd, "description") });
     if (!parsed.success) throw new AdminError(parsed.error.issues[0]?.message ?? "راجع بيانات الدرس", fieldErrors(parsed.error));
     const videoId = str(fd, "videoRef").toLowerCase();
-    if (!/^[0-9a-f-]{36}$/i.test(videoId)) throw new AdminError("معرّف فيديو Bunny غير صحيح — انسخ Video ID (بصيغة GUID) من لوحة Bunny Stream", { videoRef: "معرّف غير صحيح" });
+    if (!/^[0-9a-f-]{36}$/i.test(videoId)) throw new AdminError("معرّف فيديو Bunny غير صحيح، انسخ Video ID (بصيغة GUID) من لوحة Bunny Stream", { videoRef: "معرّف غير صحيح" });
     const p = await assertProductAccess(actor, productId, "view");
     if (!["video_lesson", "unit", "quiz_review", "exam_review", "video_course"].includes(p.type)) throw new AdminError("الدروس متاحة لمنتجات الفيديو فقط");
     const order = await nextLessonOrder(productId);
@@ -468,7 +468,7 @@ export async function addBunnyLessonAction(_prev: ActionState, fd: FormData): Pr
     }
     await audit({ actorId: actor.userId, action: "lesson.create", entityType: "product", entityId: productId, metadata: { lessonId: l.id, provider: "bunny", videoId, linked: true } });
     revalidatePath(`/admin/products/${productId}`);
-    return { ok: true, message: status === "ready" ? "تمت إضافة الدرس" : "تمت إضافة الدرس — بانتظار اكتمال المعالجة لدى Bunny" };
+    return { ok: true, message: status === "ready" ? "تمت إضافة الدرس" : "تمت إضافة الدرس، بانتظار اكتمال المعالجة لدى Bunny" };
   });
 }
 

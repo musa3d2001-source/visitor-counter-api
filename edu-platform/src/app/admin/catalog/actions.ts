@@ -167,13 +167,13 @@ export async function deleteCatalogAction(_p: ActionState, fd: FormData): Promis
       const [{ p, s }] = await sql<{ p: number; s: number }[]>`
         select (select count(*)::int from products where grade_id = ${id}) as p, (select count(*)::int from subjects where grade_id = ${id}) as s
       `;
-      if (p > 0) throw new AdminError("الصف يحتوي منتجات — استخدم الإخفاء بدل الحذف.");
+      if (p > 0) throw new AdminError("الصف يحتوي منتجات، استخدم الإخفاء بدل الحذف.");
       if (s > 0) throw new AdminError("الصف يحتوي مواد. احذف المواد أولًا أو استخدم الإخفاء.");
       await sql`update users set grade_id = null where grade_id = ${id}`;
     }
     if (kind === "subject") {
       const [{ n }] = await sql<{ n: number }[]>`select count(*)::int as n from products where subject_id = ${id}`;
-      if (n > 0) throw new AdminError("المادة تحتوي منتجات — استخدم الإخفاء بدل الحذف.");
+      if (n > 0) throw new AdminError("المادة تحتوي منتجات، استخدم الإخفاء بدل الحذف.");
     }
     await sql`delete from ${sql(TABLES[kind])} where id = ${id}`;
     await audit({ actorId: adminId, action: `catalog.${kind}_delete`, entityType: kind, entityId: id });

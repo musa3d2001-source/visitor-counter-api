@@ -83,7 +83,7 @@ export function LessonUploader({ productId, provider = "file" }: { productId: st
           <div className="h-2 overflow-hidden rounded-full bg-line" role="progressbar" aria-valuenow={pct ?? 0} aria-valuemin={0} aria-valuemax={100}>
             <div className="h-full bg-brand-600 transition-[width]" style={{ width: `${pct}%` }} />
           </div>
-          <p className="mt-1 text-xs text-muted">{phase === "processing" ? "جارٍ التحقق من الملف…" : <>جارٍ الرفع <span className="num">{pct}%</span> — لا تغلق الصفحة</>}</p>
+          <p className="mt-1 text-xs text-muted">{phase === "processing" ? "جارٍ التحقق من الملف…" : <>جارٍ الرفع <span className="num">{pct}%</span>، لا تغلق الصفحة</>}</p>
         </div>
       ) : null}
       {result ? (

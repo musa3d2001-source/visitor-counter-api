@@ -10,7 +10,7 @@ import { AdminError, adminAction, isUuid, str } from "@/server/admin/common";
 
 function requireReason(fd: FormData) {
   const reason = str(fd, "reason");
-  if (reason.length < 3) throw new AdminError("اكتب سبب الإجراء (3 أحرف على الأقل) — يُحفظ في سجل التدقيق");
+  if (reason.length < 3) throw new AdminError("اكتب سبب الإجراء (3 أحرف على الأقل)، يُحفظ في سجل التدقيق");
   if (reason.length > 500) throw new AdminError("السبب طويل جدًا");
   return reason;
 }
@@ -28,7 +28,7 @@ export async function grantAction(_p: ActionState, fd: FormData): Promise<Action
     revalidatePath(`/admin/students/${userId}`);
     return {
       ok: true,
-      message: res.granted.length ? `تم منح الصلاحية (${res.granted.length} منتج)` : "الطالب يملك هذا المنتج مسبقًا — لم يتغير شيء",
+      message: res.granted.length ? `تم منح الصلاحية (${res.granted.length} منتج)` : "الطالب يملك هذا المنتج مسبقًا، لم يتغير شيء",
     };
   });
 }

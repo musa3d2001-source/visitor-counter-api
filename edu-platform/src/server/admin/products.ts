@@ -389,7 +389,7 @@ export async function publishBlockers(productId: string, opts: { ignorePrice?: b
       from lessons where product_id = ${productId}
     `;
     if (l.published === 0 && items === 0) issues.push("أضف درس فيديو منشورًا واحدًا على الأقل (أو محتوى مضمّنًا) قبل النشر");
-    if (l.failed > 0) issues.push("يوجد درس فشلت معالجته — احذفه أو ارفعه من جديد");
+    if (l.failed > 0) issues.push("يوجد درس فشلت معالجته، احذفه أو ارفعه من جديد");
     else if (l.not_ready > 0) issues.push("لا يمكن النشر قبل اكتمال معالجة الفيديو");
   }
   void opts;
@@ -540,9 +540,9 @@ export async function deleteOrArchiveProduct(id: string, actor: Actor, ip?: stri
       (select count(*)::int from bundle_items where product_id = ${id}) as "inBundles"
   `;
   if (orders > 0 || ents > 0) {
-    if (actor.kind !== "owner") throw new PermissionError("لا يمكن حذف محتوى مرتبط بمشتريات — تواصل مع إدارة المنصة");
+    if (actor.kind !== "owner") throw new PermissionError("لا يمكن حذف محتوى مرتبط بمشتريات، تواصل مع إدارة المنصة");
     await sql`update products set status = 'archived' where id = ${id}`;
-    await audit({ actorId: actor.userId, action: "product.archive", entityType: "product", entityId: id, reason: "مرتبط بطلبات أو صلاحيات — أرشفة بدل الحذف", ip });
+    await audit({ actorId: actor.userId, action: "product.archive", entityType: "product", entityId: id, reason: "مرتبط بطلبات أو صلاحيات، أرشفة بدل الحذف", ip });
     return "archived";
   }
   if (inBundles > 0) throw new AdminError("المنتج ضمن باقة أو دورة. أزله منها أولًا أو استخدم الإخفاء.");

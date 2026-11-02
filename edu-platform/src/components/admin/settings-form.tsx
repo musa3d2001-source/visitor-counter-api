@@ -34,7 +34,7 @@ export type SettingsValues = {
 
 function Card({ title, children }: { title: string; children: React.ReactNode }) {
   return (
-    <fieldset className="rounded-2xl border border-line bg-surface p-4 shadow-card sm:p-6">
+    <fieldset className="rounded-lg border border-line bg-surface p-4 sm:p-6">
       <legend className="sr-only">{title}</legend>
       <h2 className="mb-4 text-lg font-bold" aria-hidden>
         {title}
@@ -90,18 +90,18 @@ export function SettingsForm({ action, values }: { action: ServerAction; values:
           ].map((c) => (
             <Field key={c.id} label={c.label} htmlFor={c.id} error={fe[c.id]}>
               <div className="flex items-center gap-3">
-                <input type="color" id={c.id} value={c.value} onChange={(e) => c.set(e.target.value)} className="h-11 w-14 cursor-pointer rounded-xl border border-line-strong bg-surface p-1" />
+                <input type="color" id={c.id} value={c.value} onChange={(e) => c.set(e.target.value)} className="h-11 w-14 cursor-pointer rounded-lg border border-line-strong bg-surface p-1" />
                 <Input name={c.id} value={c.value} onChange={(e) => c.set(e.target.value)} dir="ltr" className="num w-32 text-start" pattern="#[0-9a-fA-F]{6}" aria-label={`${c.label} (HEX)`} />
               </div>
             </Field>
           ))}
         </div>
-        <div className="mt-5 rounded-2xl border border-line p-4" style={{ "--brand": primary, "--accent": accent } as React.CSSProperties} aria-label="معاينة الألوان">
+        <div className="mt-5 rounded-lg border border-line p-4" style={{ "--brand": primary, "--accent": accent } as React.CSSProperties} aria-label="معاينة الألوان">
           <p className="mb-3 text-xs font-semibold text-muted">معاينة مباشرة</p>
           <div className="flex flex-wrap items-center gap-3">
-            <span className="inline-flex h-10 items-center rounded-xl bg-brand-600 px-4 text-sm font-semibold text-white">زر أساسي</span>
-            <span className="inline-flex h-10 items-center rounded-xl bg-accent-600 px-4 text-sm font-semibold text-ink">زر مساعد</span>
-            <span className="inline-flex h-10 items-center rounded-xl bg-brand-50 px-4 text-sm font-semibold text-brand-700">زر ثانوي</span>
+            <span className="inline-flex h-10 items-center rounded-lg bg-brand-600 px-4 text-sm font-semibold text-white">زر أساسي</span>
+            <span className="inline-flex h-10 items-center rounded-lg bg-accent-600 px-4 text-sm font-semibold text-ink">زر مساعد</span>
+            <span className="inline-flex h-10 items-center rounded-lg bg-brand-50 px-4 text-sm font-semibold text-brand-700">زر ثانوي</span>
             <span className="rounded-full bg-accent-100 px-3 py-1 text-xs font-semibold text-accent-800">خصم 25%</span>
             <span className="flex gap-1">
               {["bg-brand-50", "bg-brand-100", "bg-brand-300", "bg-brand-600", "bg-brand-800"].map((c) => (
@@ -114,7 +114,7 @@ export function SettingsForm({ action, values }: { action: ServerAction; values:
 
       <Card title="التواصل">
         <div className="grid gap-4 sm:grid-cols-2">
-          <Field label="رقم واتساب (بالصيغة الدولية)" htmlFor="whatsapp_number" error={fe.whatsapp_number} hint="مثال: 96550000000 — فارغ لإخفاء زر واتساب">
+          <Field label="رقم واتساب (بالصيغة الدولية)" htmlFor="whatsapp_number" error={fe.whatsapp_number} hint="مثال: 96550000000، فارغ لإخفاء زر واتساب">
             <Input id="whatsapp_number" name="whatsapp_number" defaultValue={values.whatsapp_number} dir="ltr" className="num text-start" inputMode="tel" />
           </Field>
           <Field label="البريد الإلكتروني" htmlFor="contact_email" error={fe.contact_email}>
@@ -146,10 +146,10 @@ export function SettingsForm({ action, values }: { action: ServerAction; values:
           تُخصم من قيمة كل طلب قبل احتساب حصة المعلم (مثل رسوم بوابة الدفع). تُطبق على المبيعات الجديدة فقط ولا تغيّر السجلات السابقة.
         </p>
         <div className="grid gap-4 sm:grid-cols-2">
-          <Field label="نسبة الرسوم من قيمة الطلب (%)" htmlFor="fee_percent" error={fe.fee_percent_bps} hint="مثال: 2.5 — الحد الأقصى 20%">
+          <Field label="نسبة الرسوم من قيمة الطلب (%)" htmlFor="fee_percent" error={fe.fee_percent_bps} hint="مثال: 2.5، الحد الأقصى 20%">
             <Input id="fee_percent" name="fee_percent" defaultValue={values.fee_percent} inputMode="decimal" dir="ltr" className="num text-start" />
           </Field>
-          <Field label="رسوم ثابتة لكل طلب (د.ك)" htmlFor="fee_fixed" error={fe.fee_fixed_fils} hint="مثال: 0.100 — اتركه 0 إن لم توجد">
+          <Field label="رسوم ثابتة لكل طلب (د.ك)" htmlFor="fee_fixed" error={fe.fee_fixed_fils} hint="مثال: 0.100، اتركه 0 إن لم توجد">
             <Input id="fee_fixed" name="fee_fixed" defaultValue={values.fee_fixed} inputMode="decimal" dir="ltr" className="num text-start" />
           </Field>
         </div>
@@ -159,7 +159,7 @@ export function SettingsForm({ action, values }: { action: ServerAction; values:
         <input type="hidden" name="faq" value={JSON.stringify(faq.filter((f) => f.q.trim() || f.a.trim()))} />
         <ol className="space-y-3">
           {faq.map((f, i) => (
-            <li key={i} className="rounded-xl border border-line p-3">
+            <li key={i} className="rounded-lg border border-line p-3">
               <div className="flex items-start gap-2">
                 <span className="num mt-2 text-sm font-bold text-muted">{i + 1}</span>
                 <div className="grid flex-1 gap-2">
@@ -188,7 +188,7 @@ export function SettingsForm({ action, values }: { action: ServerAction; values:
 
       {state?.error ? <Alert tone="danger">{state.error}</Alert> : null}
       {state?.ok && state.message ? <Alert tone="success">{state.message}</Alert> : null}
-      <div className="sticky bottom-0 -mx-4 border-t border-line bg-surface/95 px-4 py-3 backdrop-blur sm:static sm:mx-0 sm:border-0 sm:bg-transparent sm:p-0">
+      <div className="sticky bottom-0 -mx-4 border-t border-line bg-surface/95 px-4 py-3 sm:static sm:mx-0 sm:border-0 sm:bg-transparent sm:p-0">
         <SubmitButton pendingText="جارٍ الحفظ…">حفظ الإعدادات</SubmitButton>
       </div>
     </form>

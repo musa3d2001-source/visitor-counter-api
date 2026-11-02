@@ -39,10 +39,10 @@ export default async function AdminProductsPage({ searchParams }: { searchParams
     <div>
       <AdminPageHeader
         title={owner ? "المحتوى والمنتجات" : "محتواي"}
-        description={owner ? "الفيديوهات والمذكرات والباقات — الأسعار والظهور والمراجعة" : "أنشئ دروسك ومراجعاتك وملفاتك، ثم أرسلها للمراجعة قبل النشر"}
+        description={owner ? "الفيديوهات والمذكرات والباقات، الأسعار والظهور والمراجعة" : "أنشئ دروسك ومراجعاتك وملفاتك، ثم أرسلها للمراجعة قبل النشر"}
         actions={
           actor.kind === "teacher" && !actor.canUpload ? (
-            <span className="rounded-xl bg-warning-50 px-3 py-2 text-sm font-semibold text-warning">صلاحية الرفع موقوفة حاليًا</span>
+            <span className="rounded-lg bg-warning-50 px-3 py-2 text-sm font-semibold text-warning">صلاحية الرفع موقوفة حاليًا</span>
           ) : (
             <Button asChild>
               <Link href="/admin/products/new">
@@ -54,7 +54,7 @@ export default async function AdminProductsPage({ searchParams }: { searchParams
       />
       {sp.deleted ? <Alert tone="success" className="mb-4">تم حذف المنتج نهائيًا.</Alert> : null}
 
-      <form className={`mb-5 grid gap-2 rounded-2xl border border-line bg-surface p-3 sm:grid-cols-2 ${owner ? "lg:grid-cols-7" : "lg:grid-cols-6"}`} role="search">
+      <form className={`mb-5 grid gap-2 rounded-lg border border-line bg-surface p-3 sm:grid-cols-2 ${owner ? "lg:grid-cols-7" : "lg:grid-cols-6"}`} role="search">
         <div className="relative lg:col-span-2">
           <Search className="pointer-events-none absolute start-3 top-1/2 size-4 -translate-y-1/2 text-muted" aria-hidden />
           <Input name="q" defaultValue={sp.q} placeholder="ابحث بالعنوان أو الرابط" className="ps-9" aria-label="بحث" />
@@ -74,7 +74,7 @@ export default async function AdminProductsPage({ searchParams }: { searchParams
             .map((s) => (
               <option key={s.id} value={s.id}>
                 {s.name}
-                {filters.gradeId ? "" : ` — ${grades.find((g) => g.id === s.grade_id)?.name ?? ""}`}
+                {filters.gradeId ? "" : `، ${grades.find((g) => g.id === s.grade_id)?.name ?? ""}`}
               </option>
             ))}
         </Select>
@@ -156,7 +156,7 @@ export default async function AdminProductsPage({ searchParams }: { searchParams
                     </Link>
                     <p className="text-xs text-muted">
                       {PRODUCT_TYPE_LABELS[p.type]}
-                      {owner ? ` · ${p.teacher_name ?? "محتوى المنصة"}` : ""}
+                      {owner ? `، ${p.teacher_name ?? "محتوى المنصة"}` : ""}
                     </p>
                     {p.status === "draft" && p.review_note ? <p className="mt-1 text-xs font-semibold text-warning">أُعيد للتعديل</p> : null}
                   </TD>
@@ -184,7 +184,7 @@ export default async function AdminProductsPage({ searchParams }: { searchParams
                       p.has_preview ? "معاينة" : null,
                     ]
                       .filter(Boolean)
-                      .join(" · ") || "—"}
+                      .join("، ") || "—"}
                   </TD>
                   <TD className="num">{p.sold}</TD>
                   <TD>

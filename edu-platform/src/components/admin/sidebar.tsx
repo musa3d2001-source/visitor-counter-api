@@ -69,14 +69,14 @@ function NavList({ role, pendingReview, onNavigate }: { role: StaffRole; pending
             onClick={onNavigate}
             aria-current={active ? "page" : undefined}
             className={cn(
-              "flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-semibold transition-colors",
-              active ? "bg-brand-600 text-white shadow-sm" : "text-ink-soft hover:bg-brand-50 hover:text-brand-700",
+              "flex min-h-10 items-center gap-3 rounded-md px-3 py-2 text-sm font-semibold transition-colors",
+              active ? "bg-surface text-ink shadow-[inset_-3px_0_0_var(--color-brand-600)]" : "text-ink-soft hover:bg-surface/70 hover:text-ink",
             )}
           >
-            <Icon className="size-4.5 shrink-0" aria-hidden />
+            <Icon className={cn("size-4.5 shrink-0", active ? "text-brand-700" : "text-muted")} aria-hidden />
             <span className="flex-1">{label}</span>
             {badge === "review" && pendingReview > 0 ? (
-              <span className={cn("num grid min-w-6 place-items-center rounded-full px-1.5 text-xs font-bold", active ? "bg-white text-brand-700" : "bg-accent-600 text-ink")} aria-label={`${pendingReview} بانتظار المراجعة`}>
+              <span className={cn("num grid min-w-6 place-items-center rounded-full px-1.5 text-xs font-bold", "bg-accent-600 text-ink")} aria-label={`${pendingReview} بانتظار المراجعة`}>
                 {pendingReview}
               </span>
             ) : null}
@@ -86,7 +86,7 @@ function NavList({ role, pendingReview, onNavigate }: { role: StaffRole; pending
       <Link
         href="/"
         target="_blank"
-        className="mt-3 flex items-center gap-3 rounded-xl border border-dashed border-line-strong px-3 py-2.5 text-sm font-semibold text-muted hover:border-brand-300 hover:text-brand-700"
+        className="mt-4 flex min-h-10 items-center gap-3 border-t border-line-strong px-3 pt-4 text-sm font-semibold text-muted hover:text-brand-700"
       >
         <ExternalLink className="size-4.5" aria-hidden /> عرض الموقع
       </Link>
@@ -96,16 +96,16 @@ function NavList({ role, pendingReview, onNavigate }: { role: StaffRole; pending
 
 export function AdminSidebar({ siteName, adminName, role, pendingReview = 0 }: { siteName: string; adminName: string; role: StaffRole; pendingReview?: number }) {
   return (
-    <aside className="sticky top-0 hidden h-dvh w-64 shrink-0 flex-col border-e border-line bg-surface lg:flex">
-      <div className="border-b border-line px-5 py-4">
-        <p className="text-xs font-semibold text-muted">{role === "owner" ? "لوحة الإدارة — المالك" : "لوحة المعلم"}</p>
-        <p className="mt-0.5 truncate text-lg font-bold">{siteName}</p>
+    <aside className="sticky top-0 hidden h-dvh w-64 shrink-0 flex-col bg-mist lg:flex">
+      <div className="px-5 pt-5 pb-3">
+        <p className="truncate font-display text-[1.75rem] leading-tight font-semibold">{siteName}</p>
+        <p className="text-xs font-semibold text-brand-700">{role === "owner" ? "لوحة المالك" : "لوحة المعلم"}</p>
       </div>
       <div className="flex-1 overflow-y-auto p-3">
         <NavList role={role} pendingReview={pendingReview} />
       </div>
-      <div className="border-t border-line px-5 py-3 text-xs text-muted">
-        مسجل الدخول: <span className="font-semibold text-ink-soft">{adminName}</span>
+      <div className="border-t border-line-strong px-5 py-3 text-xs text-muted">
+        مسجّل الدخول باسم <span className="font-semibold text-ink-soft">{adminName}</span>
       </div>
     </aside>
   );
@@ -117,18 +117,21 @@ export function AdminMobileNav({ siteName, role, pendingReview = 0 }: { siteName
   useEffect(() => setOpen(false), [pathname]);
   const current = navFor(role).find((n) => (n.exact ? pathname === n.href : pathname.startsWith(n.href)));
   return (
-    <div className="sticky top-0 z-30 flex h-14 items-center gap-3 border-b border-line bg-surface/95 px-3 backdrop-blur lg:hidden">
+    <div className="sticky top-0 z-30 flex h-14 items-center gap-3 border-b border-line bg-surface/95 px-3 lg:hidden">
       <Dialog.Root open={open} onOpenChange={setOpen}>
         <Dialog.Trigger asChild>
-          <button className="grid size-10 place-items-center rounded-xl hover:bg-brand-50" aria-label="فتح قائمة الإدارة">
+          <button className="grid size-10 place-items-center rounded-lg hover:bg-brand-50" aria-label="فتح قائمة الإدارة">
             <Menu className="size-5.5" aria-hidden />
           </button>
         </Dialog.Trigger>
         <Dialog.Portal>
           <Dialog.Overlay className="fixed inset-0 z-50 bg-ink/40" />
-          <Dialog.Content dir="rtl" className="fixed inset-y-0 end-0 z-50 flex w-[82%] max-w-xs flex-col bg-surface shadow-lift outline-none">
-            <div className="flex items-center justify-between border-b border-line p-4">
-              <Dialog.Title className="font-bold">{siteName} — {role === "owner" ? "الإدارة" : "لوحة المعلم"}</Dialog.Title>
+          <Dialog.Content dir="rtl" className="fixed inset-y-0 start-0 z-50 flex w-[82%] max-w-xs flex-col bg-mist outline-none">
+            <div className="flex items-center justify-between border-b border-line-strong p-4">
+              <Dialog.Title className="font-display text-[1.5rem] leading-tight font-semibold">
+                {siteName}
+                <span className="block font-sans text-xs font-semibold text-brand-700">{role === "owner" ? "لوحة المالك" : "لوحة المعلم"}</span>
+              </Dialog.Title>
               <Dialog.Close className="grid size-9 place-items-center rounded-lg hover:bg-brand-50" aria-label="إغلاق">
                 <X className="size-5" aria-hidden />
               </Dialog.Close>

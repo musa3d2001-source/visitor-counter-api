@@ -33,7 +33,7 @@ export default async function AdminOrderPage({ params }: { params: Promise<{ id:
     <div className="space-y-6">
       <AdminPageHeader
         title={`الطلب ${order.number}`}
-        description={`أُنشئ ${formatDateTime(order.created_at)}${order.paid_at ? ` · دُفع ${formatDateTime(order.paid_at)}` : ""}`}
+        description={`أُنشئ ${formatDateTime(order.created_at)}${order.paid_at ? `، دُفع ${formatDateTime(order.paid_at)}` : ""}`}
         crumbs={[{ label: "الطلبات والمدفوعات", href: "/admin/orders" }, { label: order.number }]}
         actions={
           <div className="flex flex-wrap gap-1">
@@ -119,7 +119,7 @@ export default async function AdminOrderPage({ params }: { params: Promise<{ id:
         }
       >
         {payments.length === 0 ? (
-          <p className="rounded-xl bg-canvas p-4 text-center text-sm text-muted">لم تبدأ أي محاولة دفع لهذا الطلب.</p>
+          <p className="rounded-lg bg-canvas p-4 text-center text-sm text-muted">لم تبدأ أي محاولة دفع لهذا الطلب.</p>
         ) : (
           <Table>
             <THead>
@@ -180,12 +180,12 @@ export default async function AdminOrderPage({ params }: { params: Promise<{ id:
         {refunds.length ? (
           <ul className="mb-4 space-y-2">
             {refunds.map((r) => (
-              <li key={r.id} className="flex flex-wrap items-center gap-3 rounded-xl border border-line p-3 text-sm">
+              <li key={r.id} className="flex flex-wrap items-center gap-3 rounded-lg border border-line p-3 text-sm">
                 <span className="num font-bold">{filsToKwdString(r.amount_fils)} د.ك</span>
                 <Badge tone={r.status === "completed" ? "success" : r.status === "failed" ? "danger" : "neutral"}>{REFUND_STATUS[r.status] ?? r.status}</Badge>
                 <span className="min-w-0 flex-1 text-ink-soft">{r.reason}</span>
                 <span className="text-xs text-muted">
-                  {r.admin_name ?? ""} · {formatDateTime(r.created_at)}
+                  {r.admin_name ?? ""}، {formatDateTime(r.created_at)}
                 </span>
                 {cfg.enabled && r.payment_id && (r.status === "recorded" || r.status === "failed") && payments.some((p) => p.id === r.payment_id && p.provider === "myfatoorah") ? (
                   <ConfirmButton
@@ -214,7 +214,7 @@ export default async function AdminOrderPage({ params }: { params: Promise<{ id:
             requireReason
             reasonLabel="سبب الاسترداد (إلزامي)"
             confirmLabel="تسجيل الاسترداد"
-            fields={[{ name: "amount", label: "المبلغ بالدينار (اختياري — الافتراضي كامل المبلغ)", placeholder: filsToKwdString(order.total_fils), ltr: true }]}
+            fields={[{ name: "amount", label: "المبلغ بالدينار (اختياري، الافتراضي كامل المبلغ)", placeholder: filsToKwdString(order.total_fils), ltr: true }]}
           />
         ) : refunds.length === 0 ? (
           <p className="text-sm text-muted">الاسترداد متاح للطلبات المدفوعة فقط.</p>

@@ -106,12 +106,12 @@ export default async function TeacherAdminPage({ params, searchParams }: { param
         </Section>
 
         <div className="space-y-6">
-          <div className="rounded-2xl border border-line bg-surface p-5 shadow-card">
+          <div className="rounded-lg border border-line bg-surface p-5">
             <h2 className="mb-3 font-bold">الصورة</h2>
             <div className="relative mx-auto mb-3 grid size-36 place-items-center overflow-hidden rounded-full bg-brand-50 text-brand-700">
               {photo ? <Image src={photo} alt={teacher.display_name} fill sizes="144px" className="object-cover" /> : <GraduationCap className="size-12" aria-hidden />}
             </div>
-            <FileUploader target="teacher_photo" teacherId={teacher.id} accept="image/jpeg,image/png,image/webp" label={photo ? "تغيير الصورة" : "رفع صورة"} hint="صورة مربعة · حتى 5 م.ب" compact />
+            <FileUploader target="teacher_photo" teacherId={teacher.id} accept="image/jpeg,image/png,image/webp" label={photo ? "تغيير الصورة" : "رفع صورة"} hint="صورة مربعة، حتى 5 م.ب" compact />
             {photo ? (
               <div className="mt-2">
                 <QuickAction action={removeTeacherPhotoAction} hidden={{ teacherId: teacher.id }} label="إزالة الصورة" variant="ghost" />
@@ -119,7 +119,7 @@ export default async function TeacherAdminPage({ params, searchParams }: { param
             ) : null}
           </div>
 
-          <div className="rounded-2xl border border-line bg-surface p-5 shadow-card" data-testid="teacher-account">
+          <div className="rounded-lg border border-line bg-surface p-5" data-testid="teacher-account">
             <h2 className="mb-1 font-bold">الحساب والصلاحيات</h2>
             <p className="mb-4 text-xs text-muted">تغيير طريقة الإدارة لا يحذف أي محتوى أو مبيعات.</p>
             {teacher.mode === "self_managed" && teacher.user_id ? (
@@ -171,7 +171,7 @@ export default async function TeacherAdminPage({ params, searchParams }: { param
               </div>
             ) : (
               <div className="space-y-3">
-                <Badge tone="neutral">يديره المالك — بدون حساب دخول</Badge>
+                <Badge tone="neutral">يديره المالك، بدون حساب دخول</Badge>
                 <p className="text-xs leading-6 text-muted">لتفعيل حساب يرفع منه المعلم مسوداته بنفسه، أدخل بريده. إن كان البريد مسجلًا كطالب سيُرقّى حسابه.</p>
                 <OneTimeSecretForm action={enableAccountAction} className="space-y-3">
                   <input type="hidden" name="teacherId" value={teacher.id} />
@@ -203,9 +203,9 @@ export default async function TeacherAdminPage({ params, searchParams }: { param
 
       <Section
         title="المبيعات والأرباح"
-        description={shareOn ? `حصة المعلم ${teacher.revenue_share_bps! / 100}% من صافي المبيعات المؤهلة (بعد الخصم والرسوم المعتمدة)` : "نظام الأرباح غير مفعّل لهذا المعلم — حدد نسبة في الملف لتفعيله للمبيعات القادمة."}
+        description={shareOn ? `حصة المعلم ${teacher.revenue_share_bps! / 100}% من صافي المبيعات المؤهلة (بعد الخصم والرسوم المعتمدة)` : "نظام الأرباح غير مفعّل لهذا المعلم، حدد نسبة في الملف لتفعيله للمبيعات القادمة."}
         actions={
-          <Link href={includeTest ? `/admin/teachers/${id}` : `/admin/teachers/${id}?test=1`} className="rounded-xl border border-line-strong px-3 py-1.5 text-xs font-semibold text-ink-soft hover:bg-brand-50">
+          <Link href={includeTest ? `/admin/teachers/${id}` : `/admin/teachers/${id}?test=1`} className="rounded-lg border border-line-strong px-3 py-1.5 text-xs font-semibold text-ink-soft hover:bg-brand-50">
             {includeTest ? "إخفاء البيانات التجريبية" : "إظهار البيانات التجريبية"}
           </Link>
         }
@@ -245,7 +245,7 @@ export default async function TeacherAdminPage({ params, searchParams }: { param
 
         <h3 className="mt-6 mb-2 font-bold">السجل المحاسبي</h3>
         {earnings.length === 0 ? (
-          <p className="rounded-xl bg-canvas p-4 text-center text-sm text-muted">لا توجد أرباح مسجلة بعد.</p>
+          <p className="rounded-lg bg-canvas p-4 text-center text-sm text-muted">لا توجد أرباح مسجلة بعد.</p>
         ) : (
           <Table>
             <THead>
@@ -293,9 +293,9 @@ export default async function TeacherAdminPage({ params, searchParams }: { param
 
         <h3 className="mt-6 mb-2 font-bold">التسويات المسددة</h3>
         {payouts.length === 0 ? (
-          <p className="rounded-xl bg-canvas p-4 text-center text-sm text-muted">لا توجد تسويات بعد.</p>
+          <p className="rounded-lg bg-canvas p-4 text-center text-sm text-muted">لا توجد تسويات بعد.</p>
         ) : (
-          <ul className="divide-y divide-line rounded-xl border border-line">
+          <ul className="divide-y divide-line rounded-lg border border-line">
             {payouts.map((p) => (
               <li key={p.id} className="flex flex-wrap items-center gap-x-4 gap-y-1 p-3 text-sm">
                 <span className="num font-bold">{filsToKwdString(p.amount_fils)} د.ك</span>
@@ -317,9 +317,9 @@ export default async function TeacherAdminPage({ params, searchParams }: { param
 
       <Section title={`محتوى المعلم (${products.length})`}>
         {products.length === 0 ? (
-          <p className="rounded-xl bg-canvas p-4 text-center text-sm text-muted">لا يوجد محتوى بعد.</p>
+          <p className="rounded-lg bg-canvas p-4 text-center text-sm text-muted">لا يوجد محتوى بعد.</p>
         ) : (
-          <ul className="divide-y divide-line rounded-xl border border-line">
+          <ul className="divide-y divide-line rounded-lg border border-line">
             {products.map((p) => (
               <li key={p.id} className="flex flex-wrap items-center gap-3 p-3 text-sm">
                 <div className="min-w-0 flex-1">
@@ -327,7 +327,7 @@ export default async function TeacherAdminPage({ params, searchParams }: { param
                     {p.title}
                   </Link>
                   <p className="text-xs text-muted">
-                    {PRODUCT_TYPE_LABELS[p.type]} · {p.grade_name} · {p.subject_name ?? "—"}
+                    {PRODUCT_TYPE_LABELS[p.type]}، {p.grade_name}، {p.subject_name ?? "—"}
                   </p>
                 </div>
                 <span className="num text-xs text-muted">{p.sold} مبيعات</span>

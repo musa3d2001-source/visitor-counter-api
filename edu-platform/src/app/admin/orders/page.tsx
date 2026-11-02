@@ -24,7 +24,7 @@ export default async function AdminOrdersPage({ searchParams }: { searchParams: 
   return (
     <div>
       <AdminPageHeader title="الطلبات والمدفوعات" description="كل الطلبات مع حالة الدفع. الطلبات التجريبية (Sandbox) مميزة بشارة." />
-      <form className="mb-5 grid gap-2 rounded-2xl border border-line bg-surface p-3 sm:grid-cols-[2fr_1fr_1fr_auto]" role="search">
+      <form className="mb-5 grid gap-2 rounded-lg border border-line bg-surface p-3 sm:grid-cols-[2fr_1fr_1fr_auto]" role="search">
         <div className="relative">
           <Search className="pointer-events-none absolute start-3 top-1/2 size-4 -translate-y-1/2 text-muted" aria-hidden />
           <Input name="q" defaultValue={sp.q} placeholder="رقم الطلب أو البريد أو الاسم" className="ps-9" aria-label="بحث" />

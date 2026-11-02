@@ -41,16 +41,16 @@ export default async function AdminDashboard({ searchParams }: { searchParams: P
     <div className="space-y-6">
       <AdminPageHeader
         title="لوحة المعلومات"
-        description={includeTest ? "تشمل الأرقام الطلبات التجريبية (Sandbox)" : "الأرقام من الطلبات الحقيقية فقط — الطلبات التجريبية مستبعدة"}
+        description={includeTest ? "تشمل الأرقام الطلبات التجريبية (Sandbox)" : "الأرقام من الطلبات الحقيقية فقط، الطلبات التجريبية مستبعدة"}
         actions={
-          <Link href={qs({ test: includeTest ? undefined : "1" })} className="rounded-xl border border-line-strong bg-surface px-3 py-2 text-sm font-semibold text-ink-soft hover:bg-brand-50">
+          <Link href={qs({ test: includeTest ? undefined : "1" })} className="rounded-lg border border-line-strong bg-surface px-3 py-2 text-sm font-semibold text-ink-soft hover:bg-brand-50">
             {includeTest ? "إخفاء البيانات التجريبية" : `إظهار البيانات التجريبية${totals.testPaidOrders ? ` (${totals.testPaidOrders})` : ""}`}
           </Link>
         }
       />
 
       {pending > 0 ? (
-        <Link href="/admin/review" className="flex items-center gap-3 rounded-2xl border-2 border-accent-200 bg-accent-50 p-4 font-semibold hover:bg-accent-100">
+        <Link href="/admin/review" className="flex items-center gap-3 rounded-lg border-2 border-accent-200 bg-accent-50 p-4 font-semibold hover:bg-accent-100">
           <BadgeCheck className="size-5 text-accent-700" aria-hidden />
           <span className="flex-1">
             يوجد <span className="num">{pending}</span> محتوى بانتظار المراجعة والاعتماد
@@ -70,14 +70,14 @@ export default async function AdminDashboard({ searchParams }: { searchParams: P
         title="المبيعات حسب الفترة"
         description="إجمالي الطلبات المدفوعة يوميًا بتوقيت الكويت"
         actions={
-          <div className="flex gap-1 rounded-xl bg-canvas p-1" role="tablist" aria-label="الفترة">
+          <div className="flex gap-1 rounded-lg bg-mist p-1" role="tablist" aria-label="الفترة">
             {[7, 30, 90].map((d) => (
               <Link
                 key={d}
                 href={qs({ days: String(d) })}
                 role="tab"
                 aria-selected={d === days}
-                className={cn("rounded-lg px-3 py-1.5 text-sm font-semibold", d === days ? "bg-surface text-brand-700 shadow-sm" : "text-muted hover:text-ink")}
+                className={cn("rounded-lg px-3 py-1.5 text-sm font-semibold", d === days ? "bg-surface text-brand-700" : "text-muted hover:text-ink")}
               >
                 <span className="num">{d}</span> يوم
               </Link>
@@ -92,7 +92,7 @@ export default async function AdminDashboard({ searchParams }: { searchParams: P
         </p>
       </Section>
 
-      <div className="grid gap-6 lg:grid-cols-[1.4fr_1fr]">
+      <div className="grid gap-6 xl:grid-cols-[1.4fr_1fr]">
         <Section title="أحدث الطلبات" actions={<Link href="/admin/orders" className="text-sm font-semibold text-brand-700 hover:underline">كل الطلبات</Link>}>
           {latest.length === 0 ? (
             <EmptyState icon={<Receipt />} title="لا توجد طلبات بعد" description="ستظهر هنا الطلبات فور إنشائها من الطلاب." />
@@ -133,12 +133,12 @@ export default async function AdminDashboard({ searchParams }: { searchParams: P
         </Section>
         <Section title="الأكثر مبيعًا" description="عدد المبيعات وقيمتها بسعر المنتج قبل الخصم">
           {top.length === 0 ? (
-            <p className="rounded-xl bg-canvas p-6 text-center text-sm text-muted">لا توجد مبيعات مدفوعة بعد.</p>
+            <p className="rounded-lg bg-mist p-6 text-center text-sm text-muted">لا توجد مبيعات مدفوعة بعد.</p>
           ) : (
             <ol className="space-y-3">
               {top.map((p, i) => (
                 <li key={p.product_id} className="flex items-center gap-3">
-                  <span className="num grid size-8 shrink-0 place-items-center rounded-lg bg-brand-50 text-sm font-bold text-brand-700">{i + 1}</span>
+                  <span className="num w-6 shrink-0 text-center font-display text-[1.6rem] leading-none font-medium text-brand-700">{i + 1}</span>
                   <div className="min-w-0 flex-1">
                     <Link href={`/admin/products/${p.product_id}`} className="line-clamp-1 text-sm font-semibold hover:text-brand-700">
                       {p.title}
@@ -158,14 +158,14 @@ export default async function AdminDashboard({ searchParams }: { searchParams: P
         </Section>
       </div>
 
-      <Section title="المبيعات حسب المعلم" description={`آخر ${days} يومًا — قيمة عناصر الطلبات المدفوعة المنسوبة لكل معلم`} actions={<Link href="/admin/teachers" className="text-sm font-semibold text-brand-700 hover:underline">كل المعلمين</Link>}>
+      <Section title="المبيعات حسب المعلم" description={`آخر ${days} يومًا، قيمة عناصر الطلبات المدفوعة المنسوبة لكل معلم`} actions={<Link href="/admin/teachers" className="text-sm font-semibold text-brand-700 hover:underline">كل المعلمين</Link>}>
         {teachersTop.length === 0 ? (
-          <p className="rounded-xl bg-canvas p-6 text-center text-sm text-muted">لا توجد مبيعات لمحتوى المعلمين في هذه الفترة.</p>
+          <p className="rounded-lg bg-mist p-6 text-center text-sm text-muted">لا توجد مبيعات لمحتوى المعلمين في هذه الفترة.</p>
         ) : (
           <ol className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
             {teachersTop.map((t, i) => (
-              <li key={t.teacherId} className="flex items-center gap-3 rounded-xl border border-line p-3">
-                <span className="num grid size-8 shrink-0 place-items-center rounded-lg bg-brand-50 text-sm font-bold text-brand-700">{i + 1}</span>
+              <li key={t.teacherId} className="flex items-center gap-3 rounded-lg border border-line p-3">
+                <span className="num w-6 shrink-0 text-center font-display text-[1.6rem] leading-none font-medium text-brand-700">{i + 1}</span>
                 <div className="min-w-0 flex-1">
                   <Link href={`/admin/teachers/${t.teacherId}`} className="line-clamp-1 text-sm font-semibold hover:text-brand-700">
                     {t.teacherName}
@@ -200,12 +200,12 @@ async function TeacherHome({ actor }: { actor: Extract<Actor, { kind: "teacher" 
           ) : null
         }
       />
-      {!actor.canUpload ? <p className="rounded-xl bg-warning-50 p-4 text-sm font-semibold text-warning">صلاحية رفع المحتوى موقوفة حاليًا — تواصل مع إدارة المنصة.</p> : null}
+      {!actor.canUpload ? <p className="rounded-lg bg-warning-50 p-4 text-sm font-semibold text-warning">صلاحية رفع المحتوى موقوفة حاليًا، تواصل مع إدارة المنصة.</p> : null}
       {d.returned.length ? (
         <Section title="محتوى أُعيد إليك للتعديل">
           <ul className="space-y-2">
             {d.returned.map((r) => (
-              <li key={r.id} className="rounded-xl border border-warning/30 bg-warning-50 p-3 text-sm">
+              <li key={r.id} className="rounded-lg border border-warning/30 bg-warning-50 p-3 text-sm">
                 <Link href={`/admin/products/${r.id}`} className="font-semibold hover:underline">
                   {r.title}
                 </Link>

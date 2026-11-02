@@ -76,9 +76,9 @@ export default async function StudentPage({ params }: { params: Promise<{ id: st
 
       <Section title="الصلاحيات (المكتبة)" description="المنتجات التي يستطيع الطالب الوصول إليها. المنح والسحب اليدوي يتطلبان سببًا ويُسجلان في سجل التدقيق.">
         {active.length === 0 ? (
-          <p className="mb-4 rounded-xl bg-canvas p-4 text-center text-sm text-muted">لا توجد صلاحيات نشطة.</p>
+          <p className="mb-4 rounded-lg bg-canvas p-4 text-center text-sm text-muted">لا توجد صلاحيات نشطة.</p>
         ) : (
-          <ul className="mb-5 divide-y divide-line rounded-xl border border-line">
+          <ul className="mb-5 divide-y divide-line rounded-lg border border-line">
             {active.map((e) => (
               <li key={e.id} className="flex flex-wrap items-center gap-3 p-3 text-sm">
                 <div className="min-w-0 flex-1">
@@ -86,15 +86,15 @@ export default async function StudentPage({ params }: { params: Promise<{ id: st
                     {e.title}
                   </Link>
                   <p className="text-xs text-muted">
-                    {PRODUCT_TYPE_LABELS[e.type as ProductType] ?? e.type} · {ENTITLEMENT_SOURCE_LABELS[e.source] ?? e.source}
+                    {PRODUCT_TYPE_LABELS[e.type as ProductType] ?? e.type}، {ENTITLEMENT_SOURCE_LABELS[e.source] ?? e.source}
                     {e.order_number ? (
                       <>
                         {" "}
-                        · طلب <bdi className="num">{e.order_number}</bdi>
+                       ، طلب <bdi className="num">{e.order_number}</bdi>
                       </>
                     ) : null}
-                    {e.via_bundle_title ? ` · عبر «${e.via_bundle_title}»` : ""}
-                    {e.grant_reason ? ` · السبب: ${e.grant_reason}` : ""} · <bdi>{formatDateTime(e.granted_at)}</bdi>
+                    {e.via_bundle_title ? `، عبر «${e.via_bundle_title}»` : ""}
+                    {e.grant_reason ? `، السبب: ${e.grant_reason}` : ""}، <bdi>{formatDateTime(e.granted_at)}</bdi>
                   </p>
                 </div>
                 <ConfirmButton
@@ -112,7 +112,7 @@ export default async function StudentPage({ params }: { params: Promise<{ id: st
           </ul>
         )}
 
-        <div className="rounded-xl border border-dashed border-line-strong p-4">
+        <div className="rounded-lg border border-dashed border-line-strong p-4">
           <h3 className="mb-3 flex items-center gap-2 font-bold">
             <KeyRound className="size-4" aria-hidden /> منح صلاحية يدويًا
           </h3>
@@ -123,7 +123,7 @@ export default async function StudentPage({ params }: { params: Promise<{ id: st
                 <option value="">اختر المنتج</option>
                 {products.map((p) => (
                   <option key={p.id} value={p.id}>
-                    {p.grade_name} — {p.title}
+                    {p.grade_name}، {p.title}
                     {p.type === "bundle" ? " (باقة)" : ""}
                     {p.status !== "published" ? " [غير منشور]" : ""}
                   </option>
@@ -145,7 +145,7 @@ export default async function StudentPage({ params }: { params: Promise<{ id: st
             <ul className="mt-2 space-y-1 text-sm">
               {revoked.map((e) => (
                 <li key={e.id} className="rounded-lg bg-canvas px-3 py-2">
-                  <span className="font-semibold">{e.title}</span> — سُحبت {formatDateTime(e.revoked_at)} · السبب: {e.revoke_reason ?? "—"}
+                  <span className="font-semibold">{e.title}</span>، سُحبت {formatDateTime(e.revoked_at)}، السبب: {e.revoke_reason ?? "—"}
                 </li>
               ))}
             </ul>
@@ -155,7 +155,7 @@ export default async function StudentPage({ params }: { params: Promise<{ id: st
 
       <Section title="الطلبات">
         {orders.length === 0 ? (
-          <p className="rounded-xl bg-canvas p-4 text-center text-sm text-muted">لا توجد طلبات.</p>
+          <p className="rounded-lg bg-canvas p-4 text-center text-sm text-muted">لا توجد طلبات.</p>
         ) : (
           <Table>
             <THead>
@@ -215,7 +215,7 @@ export default async function StudentPage({ params }: { params: Promise<{ id: st
                   <span className="font-semibold" dir="ltr">
                     {a.action}
                   </span>{" "}
-                  · {a.actor_name ?? "النظام"} · {formatDateTime(a.created_at)}
+                 ، {a.actor_name ?? "النظام"}، {formatDateTime(a.created_at)}
                   {a.reason ? <p className="mt-0.5 text-ink-soft">السبب: {a.reason}</p> : null}
                 </li>
               ))}
@@ -229,7 +229,7 @@ export default async function StudentPage({ params }: { params: Promise<{ id: st
 
 function Info({ label, value }: { label: string; value: React.ReactNode }) {
   return (
-    <div className="rounded-2xl border border-line bg-surface p-4">
+    <div className="rounded-lg border border-line bg-surface p-4">
       <p className="text-xs text-muted">{label}</p>
       <div className="mt-1 truncate text-sm font-semibold">{value}</div>
     </div>

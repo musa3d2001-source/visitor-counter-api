@@ -5,7 +5,7 @@ export function SalesBars({ data }: { data: { day: string; orders: number; reven
   const max = Math.max(1, ...data.map((d) => d.revenueFils));
   const total = data.reduce((s, d) => s + d.revenueFils, 0);
   if (total === 0) {
-    return <p className="rounded-xl bg-canvas p-6 text-center text-sm text-muted">لا توجد مبيعات مدفوعة في هذه الفترة.</p>;
+    return <p className="rounded-lg bg-mist p-6 text-center text-sm text-muted">لا توجد مبيعات مدفوعة في هذه الفترة.</p>;
   }
   const step = Math.ceil(data.length / 8);
   return (
@@ -14,11 +14,11 @@ export function SalesBars({ data }: { data: { day: string; orders: number; reven
         {data.map((d) => (
           <div key={d.day} className="group relative flex h-full flex-1 items-end">
             <div
-              className="w-full rounded-t-[3px] bg-brand-500 transition-colors group-hover:bg-accent-600"
+              className="w-full rounded-t-[2px] bg-brand-600 transition-colors group-hover:bg-accent-600"
               style={{ height: `${Math.max(d.revenueFils > 0 ? 3 : 0, (d.revenueFils / max) * 100)}%` }}
             />
             <div className="pointer-events-none absolute bottom-full left-1/2 z-10 mb-1 hidden -translate-x-1/2 rounded-lg bg-ink px-2 py-1 text-[0.7rem] whitespace-nowrap text-white group-hover:block">
-              <span className="num">{d.day}</span> · <span className="num">{filsToKwdString(d.revenueFils)}</span> د.ك · <span className="num">{d.orders}</span> طلب
+              <span className="num">{d.day}</span>: <span className="num">{filsToKwdString(d.revenueFils)}</span> د.ك، <span className="num">{d.orders}</span> طلب
             </div>
           </div>
         ))}

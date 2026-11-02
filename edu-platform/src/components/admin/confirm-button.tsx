@@ -65,7 +65,7 @@ export function ConfirmButton({
         </AlertDialog.Trigger>
         <AlertDialog.Portal>
           <AlertDialog.Overlay className="fixed inset-0 z-50 bg-ink/40" />
-          <AlertDialog.Content dir="rtl" className="fixed left-1/2 top-1/2 z-50 w-[92vw] max-w-md -translate-x-1/2 -translate-y-1/2 rounded-2xl bg-surface p-6 shadow-lift outline-none">
+          <AlertDialog.Content dir="rtl" className="fixed left-1/2 top-1/2 z-50 w-[92vw] max-w-md -translate-x-1/2 -translate-y-1/2 rounded-lg bg-surface p-6 shadow-lift outline-none">
             <AlertDialog.Title className="text-lg font-bold">{title}</AlertDialog.Title>
             {description ? <AlertDialog.Description className="mt-2 text-sm leading-7 text-ink-soft">{description}</AlertDialog.Description> : <AlertDialog.Description className="sr-only">{title}</AlertDialog.Description>}
             {requireReason ? (
@@ -85,7 +85,7 @@ export function ConfirmButton({
                   id={`${formId}-${selectField.name}`}
                   name={selectField.name}
                   form={formId}
-                  className="h-11 w-full rounded-xl border border-line-strong bg-surface px-3 text-[0.95rem]"
+                  className="h-11 w-full rounded-lg border border-line-strong bg-surface px-3 text-[0.95rem]"
                 >
                   {selectField.options.map((o) => (
                     <option key={o.value} value={o.value}>

@@ -93,7 +93,7 @@ export function ProductForm({
       {state?.error ? <Alert tone="danger">{state.error}</Alert> : null}
       {state?.ok && state.message ? <Alert tone="success">{state.message}</Alert> : null}
 
-      <fieldset disabled={readOnly} className="space-y-6 disabled:opacity-80">
+      <fieldset disabled={readOnly} className="space-y-10 disabled:opacity-80">
         <Step n={1} title="أين يظهر المحتوى؟">
           <div className="grid gap-4 sm:grid-cols-3">
             <Field label="الصف" htmlFor="gradeId" error={fe.gradeId} required>
@@ -173,21 +173,21 @@ export function ProductForm({
                 maxLength={160}
                 required
                 aria-invalid={Boolean(fe.title)}
-                placeholder={isVideo ? "مثال: شرح الوحدة الأولى — الحركة والقوة" : "مثال: المذكرة النهائية — الرياضيات — الفصل الأول"}
+                placeholder={isVideo ? "مثال: شرح الوحدة الأولى، الحركة والقوة" : "مثال: المذكرة النهائية، الرياضيات، الفصل الأول"}
               />
             </Field>
             {owner ? (
               <>
-                <Field label="السعر المعتمد (د.ك)" htmlFor="price" error={fe.price} required hint={v.proposedPrice ? `السعر المقترح من المعلم: ${v.proposedPrice} د.ك` : "بالدينار الكويتي — مثال: 2.500 (ضع 0 للمجاني)"}>
+                <Field label="السعر المعتمد (د.ك)" htmlFor="price" error={fe.price} required hint={v.proposedPrice ? `السعر المقترح من المعلم: ${v.proposedPrice} د.ك` : "بالدينار الكويتي، مثال: 2.500 (ضع 0 للمجاني)"}>
                   <Input id="price" name="price" defaultValue={v.price} inputMode="decimal" dir="ltr" className="num text-start" required aria-invalid={Boolean(fe.price)} />
                 </Field>
-                <Field label="السعر السابق (اختياري)" htmlFor="compareAtPrice" error={fe.compareAtPrice} hint="فقط عند وجود عرض حقيقي — يجب أن يكون أكبر من السعر">
+                <Field label="السعر السابق (اختياري)" htmlFor="compareAtPrice" error={fe.compareAtPrice} hint="فقط عند وجود عرض حقيقي، يجب أن يكون أكبر من السعر">
                   <Input id="compareAtPrice" name="compareAtPrice" defaultValue={v.compareAtPrice} inputMode="decimal" dir="ltr" className="num text-start" aria-invalid={Boolean(fe.compareAtPrice)} />
                 </Field>
                 <input type="hidden" name="proposedPrice" value={v.proposedPrice} />
               </>
             ) : (
-              <Field label="السعر المقترح (د.ك)" htmlFor="proposedPrice" error={fe.proposedPrice} hint="اقتراح فقط — السعر النهائي تحدده إدارة المنصة عند الاعتماد" className="sm:col-span-2">
+              <Field label="السعر المقترح (د.ك)" htmlFor="proposedPrice" error={fe.proposedPrice} hint="اقتراح فقط، السعر النهائي تحدده إدارة المنصة عند الاعتماد" className="sm:col-span-2">
                 <Input id="proposedPrice" name="proposedPrice" defaultValue={v.proposedPrice} inputMode="decimal" dir="ltr" className="num text-start" aria-invalid={Boolean(fe.proposedPrice)} />
               </Field>
             )}
@@ -212,7 +212,7 @@ export function ProductForm({
             <Field label="الوصف التفصيلي" htmlFor="description" error={fe.description}>
               <Textarea id="description" name="description" defaultValue={v.description} rows={4} maxLength={5000} />
             </Field>
-            <Field label={isVideo ? "ماذا سيتعلم الطالب؟" : "محتويات المذكرة"} htmlFor="contents" error={fe.contents} hint="كل بند في سطر مستقل — تظهر كقائمة في صفحة المنتج">
+            <Field label={isVideo ? "ماذا سيتعلم الطالب؟" : "محتويات المذكرة"} htmlFor="contents" error={fe.contents} hint="كل بند في سطر مستقل، تظهر كقائمة في صفحة المنتج">
               <Textarea id="contents" name="contents" defaultValue={v.contents} rows={4} maxLength={5000} />
             </Field>
           </div>
@@ -220,7 +220,7 @@ export function ProductForm({
 
         <Step n={4} title={owner ? "الإتاحة والعرض والحماية" : "المعاينة"}>
           <div className="grid gap-4 sm:grid-cols-3">
-            <Field label="صفحات المعاينة المجانية" htmlFor="previewPages" error={fe.previewPages} hint={isPdf ? "تُستخرج تلقائيًا من أول ملف (0 = بدون معاينة)" : "للمذكرات فقط — في الفيديو حدّد «درس مجاني» من قائمة الدروس"}>
+            <Field label="صفحات المعاينة المجانية" htmlFor="previewPages" error={fe.previewPages} hint={isPdf ? "تُستخرج تلقائيًا من أول ملف (0 = بدون معاينة)" : "للمذكرات فقط، في الفيديو حدّد «درس مجاني» من قائمة الدروس"}>
               <Input id="previewPages" name="previewPages" type="number" min={0} max={30} defaultValue={v.previewPages} className="num" />
             </Field>
             {owner ? (
@@ -236,7 +236,7 @@ export function ProductForm({
           </div>
           {owner ? (
             <>
-              <div className="mt-5 grid gap-4 rounded-xl border border-line bg-canvas/60 p-4 sm:grid-cols-3">
+              <div className="mt-5 grid gap-4 rounded-lg border border-line bg-canvas/60 p-4 sm:grid-cols-3">
                 <Field label="فترة الإتاحة بعد الشراء" htmlFor="accessMode" error={fe.accessMode} className="sm:col-span-1">
                   <Select id="accessMode" name="accessMode" value={accessMode} onChange={(e) => setAccessMode(e.target.value)}>
                     {Object.entries(ACCESS_MODE_LABELS).map(([k, label]) => (
@@ -256,7 +256,7 @@ export function ProductForm({
                     <Input id="accessDays" name="accessDays" type="number" min={1} max={3650} defaultValue={v.accessDays} className="num" />
                   </Field>
                 ) : null}
-                <p className="text-xs leading-6 text-muted sm:col-span-3">تُطبّق الفترة على المشتريات الجديدة فقط — صلاحيات المشترين السابقين لا تتغير.</p>
+                <p className="text-xs leading-6 text-muted sm:col-span-3">تُطبّق الفترة على المشتريات الجديدة فقط، صلاحيات المشترين السابقين لا تتغير.</p>
               </div>
               <div className="mt-4 flex flex-col gap-3 sm:flex-row sm:gap-8">
                 {isPdf || type === "bundle" ? <Checkbox name="isDownloadable" defaultChecked={v.isDownloadable} label="يسمح بتنزيل ملفات PDF (وإلا: للقراءة داخل المنصة فقط)" /> : null}
@@ -268,7 +268,7 @@ export function ProductForm({
       </fieldset>
 
       {readOnly ? null : (
-        <div className="sticky bottom-0 -mx-4 flex items-center justify-end gap-3 border-t border-line bg-surface/95 px-4 py-3 backdrop-blur sm:static sm:mx-0 sm:border-0 sm:bg-transparent sm:p-0">
+        <div className="sticky bottom-0 -mx-4 flex items-center justify-end gap-3 border-t border-line bg-surface/95 px-4 py-3 sm:static sm:mx-0 sm:border-0 sm:bg-transparent sm:p-0">
           <SubmitButton pendingText="جارٍ الحفظ…">{submitLabel}</SubmitButton>
         </div>
       )}
@@ -278,11 +278,11 @@ export function ProductForm({
 
 function Step({ n, title, children }: { n: number; title: string; children: React.ReactNode }) {
   return (
-    <fieldset className={cn("rounded-2xl border border-line bg-surface p-4 shadow-card sm:p-6")}>
+    <fieldset className={cn("border-t-2 border-ink pt-4")}>
       <legend className="sr-only">{title}</legend>
-      <div className="mb-4 flex items-center gap-3" aria-hidden>
-        <span className="num grid size-8 place-items-center rounded-full bg-brand-600 text-sm font-bold text-white">{n}</span>
-        <h2 className="text-base font-bold">{title}</h2>
+      <div className="mb-4 flex items-end gap-3" aria-hidden>
+        <span className="font-display text-[2.2rem] leading-[0.85] font-medium text-brand-700">{"٠١٢٣٤٥٦٧٨٩"[n] ?? n}</span>
+        <h2 className="text-[1.5rem] leading-tight">{title}</h2>
       </div>
       {children}
     </fieldset>

@@ -45,7 +45,7 @@ function IconPicker({ name, value }: { name: string; value: string }) {
         {SUBJECT_ICONS.map((ic) => (
           <label key={ic} className="cursor-pointer" title={ICON_LABELS[ic]}>
             <input type="radio" name={name} value={ic} defaultChecked={ic === value} className="peer sr-only" />
-            <span className="grid size-10 place-items-center rounded-xl border border-line text-ink-soft peer-checked:border-brand-600 peer-checked:bg-brand-50 peer-checked:text-brand-700 peer-focus-visible:ring-2 peer-focus-visible:ring-brand-300">
+            <span className="grid size-10 place-items-center rounded-lg border border-line text-ink-soft peer-checked:border-brand-600 peer-checked:bg-brand-50 peer-checked:text-brand-700 peer-focus-visible:ring-2 peer-focus-visible:ring-brand-300">
               <SubjectIcon name={ic} className="size-5" />
               <span className="sr-only">{ICON_LABELS[ic]}</span>
             </span>
@@ -71,7 +71,7 @@ export default async function CatalogPage() {
 
       <div className="space-y-6">
         {tree.map((stage) => (
-          <section key={stage.id} className="rounded-2xl border border-line bg-surface shadow-card">
+          <section key={stage.id} className="rounded-lg border border-line bg-surface">
             <div className="flex flex-wrap items-center gap-3 border-b border-line p-4 sm:p-5">
               <div className="min-w-0 flex-1">
                 <div className="flex flex-wrap items-center gap-2">
@@ -127,13 +127,13 @@ export default async function CatalogPage() {
                     {g.subjects.map((s) => (
                       <li key={s.id}>
                         <details className="group relative">
-                          <summary className={`flex cursor-pointer list-none items-center gap-2 rounded-xl border px-3 py-2 text-sm font-semibold [&::-webkit-details-marker]:hidden ${s.is_published ? "border-line bg-surface" : "border-dashed border-line-strong bg-canvas text-muted"}`}>
+                          <summary className={`flex cursor-pointer list-none items-center gap-2 rounded-lg border px-3 py-2 text-sm font-semibold [&::-webkit-details-marker]:hidden ${s.is_published ? "border-line bg-surface" : "border-dashed border-line-strong bg-canvas text-muted"}`}>
                             <SubjectIcon name={s.icon} className="size-4 text-brand-600" />
                             {s.name}
                             <span className="num text-xs font-normal text-muted">({s.product_count})</span>
                             {!s.is_published ? <EyeOff className="size-3.5" aria-label="مخفية" /> : null}
                           </summary>
-                          <div className="absolute start-0 top-full z-20 mt-2 w-[min(92vw,26rem)] rounded-2xl border border-line bg-surface p-4 shadow-lift">
+                          <div className="absolute start-0 top-full z-20 mt-2 w-[min(92vw,26rem)] rounded-lg border border-line bg-surface p-4 shadow-lift">
                             <ActionForm action={saveSubjectAction} className="grid gap-3 sm:grid-cols-2">
                               <input type="hidden" name="id" value={s.id} />
                               <input type="hidden" name="gradeId" value={g.id} />
@@ -266,7 +266,7 @@ export default async function CatalogPage() {
         ))}
       </div>
 
-      <section className="mt-6 rounded-2xl border border-dashed border-line-strong bg-surface p-5">
+      <section className="mt-6 rounded-lg border border-dashed border-line-strong bg-surface p-5">
         <h2 className="mb-3 flex items-center gap-2 font-bold">
           <Plus className="size-4" aria-hidden /> إضافة مرحلة دراسية
         </h2>

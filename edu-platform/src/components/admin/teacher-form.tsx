@@ -53,12 +53,12 @@ export function TeacherForm({
           <Input id="displayName" name="displayName" defaultValue={val("displayName")} maxLength={80} placeholder="أ. أحمد الكندري" />
         </Field>
         <Field label="العنوان التعريفي" htmlFor="headline" error={fe.headline} hint="سطر قصير يظهر تحت الاسم">
-          <Input id="headline" name="headline" defaultValue={val("headline")} maxLength={140} placeholder="معلم فيزياء — خبرة 12 سنة" />
+          <Input id="headline" name="headline" defaultValue={val("headline")} maxLength={140} placeholder="معلم فيزياء، خبرة 12 سنة" />
         </Field>
         <Field label="نبذة عن المعلم" htmlFor="bio" error={fe.bio} className="sm:col-span-2">
           <Textarea id="bio" name="bio" defaultValue={val("bio")} rows={4} maxLength={3000} />
         </Field>
-        <Field label="رابط الصفحة (slug)" htmlFor="slug" error={fe.slug} hint="أحرف إنجليزية — اتركه فارغًا ليُنشأ تلقائيًا">
+        <Field label="رابط الصفحة (slug)" htmlFor="slug" error={fe.slug} hint="أحرف إنجليزية، اتركه فارغًا ليُنشأ تلقائيًا">
           <Input id="slug" name="slug" defaultValue={val("slug")} dir="ltr" className="text-start" placeholder="ahmad-alkandari" />
         </Field>
         <Field label="حصة المعلم من صافي المبيعات (%)" htmlFor="revenueShare" error={fe.revenueShare} hint="اتركها فارغة إن لم يُفعّل نظام الأرباح لهذا المعلم">
@@ -73,7 +73,7 @@ export function TeacherForm({
         </div>
       </div>
 
-      <fieldset className="rounded-xl border border-line p-4">
+      <fieldset className="rounded-lg border border-line p-4">
         <legend className="px-1 text-sm font-bold">المواد التي يدرّسها</legend>
         {byGrade.length === 0 ? (
           <p className="text-sm text-muted">لا توجد مواد بعد.</p>
