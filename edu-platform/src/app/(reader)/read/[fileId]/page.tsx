@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import { notFound } from "next/navigation";
+import { notFound, redirect } from "next/navigation";
 import Link from "next/link";
 import { requireUser } from "@/server/auth/guards";
 import { checkFileAccess } from "@/server/access/entitlements";
@@ -23,7 +23,7 @@ export default async function ReadPage({ params }: { params: Promise<{ fileId: s
       </div>
     );
   }
-  if (access.file.kind !== "main") notFound();
+  if (access.file.kind === "preview") redirect(`/preview/${fileId}`);
   const [progress] = await sql<{ last_page: number }[]>`
     select last_page from reading_progress where user_id = ${user.id} and file_id = ${fileId}
   `;
