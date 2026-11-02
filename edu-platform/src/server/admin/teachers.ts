@@ -286,3 +286,12 @@ export async function teacherDashboard(teacherId: string) {
   ]);
   return { counts, summary, balance, latest, returned };
 }
+
+/** المواد مع صفوفها (لنموذج المعلم) */
+export async function subjectOptions() {
+  return sql<{ id: string; name: string; grade_name: string; grade_level: number }[]>`
+    select s.id, s.name, g.name as grade_name, g.level as grade_level
+    from subjects s join grades g on g.id = s.grade_id
+    order by g.level, s.sort_order, s.name
+  `;
+}

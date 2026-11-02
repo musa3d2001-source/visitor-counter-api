@@ -1,6 +1,10 @@
 import Link from "next/link";
-import { Banknote, FileText, Receipt, Users } from "lucide-react";
-import { dashboardTotals, latestOrders, salesByDay, topProducts } from "@/server/admin/stats";
+import { BadgeCheck, Banknote, FileText, GraduationCap, Receipt, Users, Wallet } from "lucide-react";
+import { dashboardTotals, latestOrders, salesByDay, topProducts, topTeachers } from "@/server/admin/stats";
+import { requireStaff, type Actor } from "@/server/auth/permissions";
+import { pendingReviewCount } from "@/server/admin/products";
+import { teacherDashboard } from "@/server/admin/teachers";
+import { Button } from "@/components/ui/button";
 import { AdminPageHeader, Section, StatCard } from "@/components/admin/page-header";
 import { SalesBars } from "@/components/admin/sales-bars";
 import { OrderStatusBadge, TestBadge } from "@/components/admin/status-badge";
@@ -13,14 +17,18 @@ import { formatDateTime, cn } from "@/lib/utils";
 export const metadata = { title: "الرئيسية" };
 
 export default async function AdminDashboard({ searchParams }: { searchParams: Promise<{ days?: string; test?: string }> }) {
+  const actor = await requireStaff();
+  if (actor.kind === "teacher") return <TeacherHome actor={actor} />;
   const sp = await searchParams;
   const days = [7, 30, 90].includes(Number(sp.days)) ? Number(sp.days) : 30;
   const includeTest = sp.test === "1";
-  const [totals, latest, top, series] = await Promise.all([
+  const [totals, latest, top, series, pending, teachersTop] = await Promise.all([
     dashboardTotals(includeTest),
     latestOrders(8, includeTest),
     topProducts(6, includeTest),
     salesByDay(days, includeTest),
+    pendingReviewCount(),
+    topTeachers(days, includeTest),
   ]);
   const qs = (patch: Record<string, string | undefined>) => {
     const p = new URLSearchParams({ ...(sp.days ? { days: sp.days } : {}), ...(includeTest ? { test: "1" } : {}) });
@@ -40,6 +48,16 @@ export default async function AdminDashboard({ searchParams }: { searchParams: P
           </Link>
         }
       />
+
+      {pending > 0 ? (
+        <Link href="/admin/review" className="flex items-center gap-3 rounded-2xl border-2 border-accent-200 bg-accent-50 p-4 font-semibold hover:bg-accent-100">
+          <BadgeCheck className="size-5 text-accent-700" aria-hidden />
+          <span className="flex-1">
+            يوجد <span className="num">{pending}</span> محتوى بانتظار المراجعة والاعتماد
+          </span>
+          <span className="text-sm text-brand-700">مراجعة الآن</span>
+        </Link>
+      ) : null}
 
       <div className="grid grid-cols-2 gap-3 sm:gap-4 lg:grid-cols-4">
         <StatCard label="إجمالي المبيعات" value={<><span className="num">{filsToKwdString(totals.salesFils)}</span> <span className="text-sm text-muted">د.ك</span></>} icon={<Banknote />} />
@@ -139,6 +157,102 @@ export default async function AdminDashboard({ searchParams }: { searchParams: P
           )}
         </Section>
       </div>
+
+      <Section title="المبيعات حسب المعلم" description={`آخر ${days} يومًا — قيمة عناصر الطلبات المدفوعة المنسوبة لكل معلم`} actions={<Link href="/admin/teachers" className="text-sm font-semibold text-brand-700 hover:underline">كل المعلمين</Link>}>
+        {teachersTop.length === 0 ? (
+          <p className="rounded-xl bg-canvas p-6 text-center text-sm text-muted">لا توجد مبيعات لمحتوى المعلمين في هذه الفترة.</p>
+        ) : (
+          <ol className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+            {teachersTop.map((t, i) => (
+              <li key={t.teacherId} className="flex items-center gap-3 rounded-xl border border-line p-3">
+                <span className="num grid size-8 shrink-0 place-items-center rounded-lg bg-brand-50 text-sm font-bold text-brand-700">{i + 1}</span>
+                <div className="min-w-0 flex-1">
+                  <Link href={`/admin/teachers/${t.teacherId}`} className="line-clamp-1 text-sm font-semibold hover:text-brand-700">
+                    {t.teacherName}
+                  </Link>
+                  <p className="text-xs text-muted">
+                    <span className="num">{t.sold}</span> عملية بيع
+                  </p>
+                </div>
+                <p className="num text-sm font-bold">{filsToKwdString(t.revenueFils)}</p>
+              </li>
+            ))}
+          </ol>
+        )}
+      </Section>
+    </div>
+  );
+}
+
+/** الصفحة الرئيسية للمعلم: أرقامه فقط — بدون بيانات الطلاب */
+async function TeacherHome({ actor }: { actor: Extract<Actor, { kind: "teacher" }> }) {
+  const d = await teacherDashboard(actor.teacherId);
+  return (
+    <div className="space-y-6">
+      <AdminPageHeader
+        title={`أهلًا ${actor.teacherName}`}
+        description="ملخص محتواك ومبيعاته"
+        actions={
+          actor.canUpload ? (
+            <Button asChild>
+              <Link href="/admin/products/new">إضافة محتوى</Link>
+            </Button>
+          ) : null
+        }
+      />
+      {!actor.canUpload ? <p className="rounded-xl bg-warning-50 p-4 text-sm font-semibold text-warning">صلاحية رفع المحتوى موقوفة حاليًا — تواصل مع إدارة المنصة.</p> : null}
+      {d.returned.length ? (
+        <Section title="محتوى أُعيد إليك للتعديل">
+          <ul className="space-y-2">
+            {d.returned.map((r) => (
+              <li key={r.id} className="rounded-xl border border-warning/30 bg-warning-50 p-3 text-sm">
+                <Link href={`/admin/products/${r.id}`} className="font-semibold hover:underline">
+                  {r.title}
+                </Link>
+                <p className="mt-1 text-ink-soft">{r.review_note}</p>
+              </li>
+            ))}
+          </ul>
+        </Section>
+      ) : null}
+      <div className="grid grid-cols-2 gap-3 sm:gap-4 lg:grid-cols-4">
+        <StatCard label="منشور" value={<span className="num">{d.counts.published}</span>} icon={<FileText />} />
+        <StatCard label="بانتظار المراجعة" value={<span className="num">{d.counts.in_review}</span>} icon={<BadgeCheck />} />
+        <StatCard label="مسودات" value={<span className="num">{d.counts.draft}</span>} icon={<GraduationCap />} />
+        <StatCard label="عمليات بيع" value={<span className="num">{d.summary.items}</span>} hint={`${filsToKwdString(d.summary.grossFils)} د.ك`} icon={<Banknote />} />
+      </div>
+      {d.balance.earnedFils > 0 || d.balance.paidFils > 0 ? (
+        <div className="grid grid-cols-2 gap-3 sm:gap-4">
+          <StatCard label="أرباحي المستحقة" value={<><span className="num">{filsToKwdString(d.balance.earnedFils)}</span> <span className="text-sm text-muted">د.ك</span></>} icon={<Wallet />} />
+          <StatCard label="الرصيد غير المسدد" value={<><span className="num">{filsToKwdString(d.balance.balanceFils)}</span> <span className="text-sm text-muted">د.ك</span></>} icon={<Wallet />} />
+        </div>
+      ) : null}
+      <Section title="آخر مبيعات محتواك" actions={<Link href="/admin/earnings" className="text-sm font-semibold text-brand-700 hover:underline">التفاصيل</Link>}>
+        {d.latest.length === 0 ? (
+          <EmptyState icon={<Receipt />} title="لا توجد مبيعات بعد" description="عند شراء الطلاب لمحتواك ستظهر العمليات هنا." />
+        ) : (
+          <Table>
+            <THead>
+              <tr>
+                <TH>الطلب</TH>
+                <TH>التاريخ</TH>
+                <TH>المحتوى</TH>
+                <TH>القيمة</TH>
+              </tr>
+            </THead>
+            <tbody>
+              {d.latest.map((s, i) => (
+                <TR key={`${s.order_number}-${i}`}>
+                  <TD className="num font-semibold">{s.order_number}</TD>
+                  <TD className="text-xs text-muted">{formatDateTime(s.paid_at)}</TD>
+                  <TD className="text-xs">{s.title}</TD>
+                  <TD className="num">{filsToKwdString(s.unit_price_fils)}</TD>
+                </TR>
+              ))}
+            </tbody>
+          </Table>
+        )}
+      </Section>
     </div>
   );
 }

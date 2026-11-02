@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { getCurrentUser } from "@/server/auth/session";
-import { parseRange, reportOrdersForExport } from "@/server/admin/stats";
+import { parseRange, reportByTeacher, reportOrdersForExport } from "@/server/admin/stats";
 import { filsToKwdString } from "@/lib/money";
 import { ORDER_STATUS_LABELS, type OrderStatus } from "@/lib/labels";
 
@@ -22,6 +22,21 @@ export async function GET(req: Request) {
     to: url.searchParams.get("to") ?? undefined,
     test: url.searchParams.get("test") ?? undefined,
   });
+  if (url.searchParams.get("type") === "teachers") {
+    const rows = await reportByTeacher(range);
+    const header = ["المعلم", "عمليات البيع", "قيمة المبيعات (د.ك)", "حصة المعلم (د.ك)", "حصة المنصة من المؤهل (د.ك)"];
+    const lines = [header.map(csvCell).join(",")];
+    for (const r of rows) {
+      lines.push([r.teacherName, r.sold, filsToKwdString(r.revenueFils), filsToKwdString(r.teacherShareFils), filsToKwdString(r.platformShareFils)].map(csvCell).join(","));
+    }
+    return new NextResponse("\uFEFF" + lines.join("\r\n"), {
+      headers: {
+        "content-type": "text/csv; charset=utf-8",
+        "content-disposition": `attachment; filename="teachers-${range.fromDay}-to-${range.toDay}.csv"`,
+        "cache-control": "no-store",
+      },
+    });
+  }
   const rows = await reportOrdersForExport(range);
   const header = ["رقم الطلب", "تاريخ الدفع", "اسم العميل", "البريد", "الحالة", "المجموع (د.ك)", "الخصم (د.ك)", "الإجمالي (د.ك)", "كود الخصم", "تجريبي", "المنتجات"];
   const lines = [header.map(csvCell).join(",")];

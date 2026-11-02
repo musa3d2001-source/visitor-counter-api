@@ -31,7 +31,9 @@ export function lessonsLabel(n: number): string {
 
 export function initials(name: string): string {
   const parts = name
-    .replace(/^(الأستاذ|الأستاذة|أ\.|د\.|المعلم|المعلمة)\s*/u, "")
+    .replace(/^(الأستاذة|الأستاذ|أ\.|د\.|المعلمة|المعلم)\s*/u, "")
+    .replace(/\([^)]*\)/gu, " ")
+    .replace(/[^\p{L}\s]/gu, " ")
     .trim()
     .split(/\s+/)
     .filter(Boolean);

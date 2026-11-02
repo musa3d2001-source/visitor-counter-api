@@ -96,7 +96,7 @@ export default async function HomePage() {
               <p className="mt-1.5 text-sm text-muted">شرح الوحدات ومراجعات الاختبارات بالفيديو — شاهد المعاينة مجانًا</p>
             </div>
           </div>
-          <VideoGrid products={videos} ownedIds={owned} />
+          <VideoGrid products={videos} ownedIds={owned} scroller />
         </section>
       ) : null}
 

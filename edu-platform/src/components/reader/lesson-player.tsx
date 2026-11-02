@@ -101,7 +101,7 @@ function FilePlayer({ lessonId, src, startAt, trackProgress, watermark, nextHref
   const [muted, setMuted] = useState(false);
   const [volume, setVolume] = useState(1);
   const [fullscreen, setFullscreen] = useState(false);
-  const [waiting, setWaiting] = useState(true);
+  const [waiting, setWaiting] = useState(false);
   const [error, setError] = useState(false);
   const [ended, setEnded] = useState(false);
   const [showControls, setShowControls] = useState(true);
@@ -120,6 +120,24 @@ function FilePlayer({ lessonId, src, startAt, trackProgress, watermark, nextHref
   useEffect(() => {
     if (videoRef.current) videoRef.current.playbackRate = speed;
   }, [speed]);
+
+  // الاستكمال من آخر نقطة — يعمل حتى لو حُمّلت البيانات قبل اكتمال تهيئة React
+  const resumed = useRef(false);
+  const applyResume = useCallback(() => {
+    const v = videoRef.current;
+    if (!v || resumed.current || !Number.isFinite(v.duration) || v.duration <= 0) return;
+    resumed.current = true;
+    setDuration(v.duration);
+    if (startAt > 1 && startAt < v.duration - 1) {
+      v.currentTime = startAt;
+      setTime(startAt);
+    }
+  }, [startAt]);
+  useEffect(() => {
+    const v = videoRef.current;
+    if (v && v.readyState >= 1) applyResume();
+    if (v && v.readyState >= 2) setWaiting(false);
+  }, [applyResume]);
 
   const poke = useCallback(() => {
     setShowControls(true);
@@ -215,10 +233,8 @@ function FilePlayer({ lessonId, src, startAt, trackProgress, watermark, nextHref
         disablePictureInPicture
         onClick={toggle}
         onLoadedMetadata={(e) => {
-          const v = e.currentTarget;
-          setDuration(v.duration || 0);
-          v.playbackRate = speed;
-          if (startAt > 3 && startAt < (v.duration || 0) - 5) v.currentTime = startAt;
+          e.currentTarget.playbackRate = speed;
+          applyResume();
         }}
         onTimeUpdate={(e) => {
           const v = e.currentTarget;

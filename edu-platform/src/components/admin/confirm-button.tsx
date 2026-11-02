@@ -27,6 +27,7 @@ export function ConfirmButton({
   reasonLabel = "السبب (إلزامي)",
   icon,
   fields,
+  selectField,
 }: {
   action: ServerAction;
   hidden?: Record<string, string>;
@@ -41,6 +42,8 @@ export function ConfirmButton({
   icon?: React.ReactNode;
   /** حقول إضافية داخل نافذة التأكيد (مرتبطة بالنموذج عبر سمة form) */
   fields?: { name: string; label: string; placeholder?: string; ltr?: boolean }[];
+  /** قائمة اختيار داخل نافذة التأكيد */
+  selectField?: { name: string; label: string; options: { value: string; label: string }[] };
 }) {
   const { state, formAction, pending, formRef } = usePreservingAction(action);
   const [open, setOpen] = useState(false);
@@ -71,6 +74,25 @@ export function ConfirmButton({
                   {reasonLabel}
                 </label>
                 <Textarea id={`${formId}-reason`} name="reason" form={formId} required minLength={3} maxLength={500} rows={3} />
+              </div>
+            ) : null}
+            {selectField ? (
+              <div className="mt-4">
+                <label htmlFor={`${formId}-${selectField.name}`} className="mb-1.5 block text-sm font-semibold text-ink-soft">
+                  {selectField.label}
+                </label>
+                <select
+                  id={`${formId}-${selectField.name}`}
+                  name={selectField.name}
+                  form={formId}
+                  className="h-11 w-full rounded-xl border border-line-strong bg-surface px-3 text-[0.95rem]"
+                >
+                  {selectField.options.map((o) => (
+                    <option key={o.value} value={o.value}>
+                      {o.label}
+                    </option>
+                  ))}
+                </select>
               </div>
             ) : null}
             {fields?.map((f) => (

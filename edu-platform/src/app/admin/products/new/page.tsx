@@ -17,8 +17,8 @@ export default async function NewProductPage({ searchParams }: { searchParams: P
   const [{ grades, subjects: allSubjects }, settings, teachers] = await Promise.all([catalogOptions(), getSettings(), owner ? teacherOptions() : Promise.resolve([])]);
 
   // المعلم يرى المواد التي يدرّسها فقط (إن حددها المالك)، وإلا كل المواد
-  let subjects = allSubjects;
-  let gradeList = grades;
+  let subjects = [...allSubjects];
+  let gradeList = [...grades];
   if (actor.kind === "teacher") {
     const mine = new Set(await teacherSubjectIds(actor.teacherId));
     if (mine.size) {

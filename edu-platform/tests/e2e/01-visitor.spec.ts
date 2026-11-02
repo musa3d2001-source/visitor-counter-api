@@ -28,7 +28,7 @@ test.describe("الزائر", () => {
     await page.getByRole("link", { name: /العلوم/ }).first().click();
     await expect(page).toHaveURL(/\/grades\/grade-8\/science/);
     await expect(page.getByRole("navigation", { name: "مسار التنقل" })).toContainText("الصف الثامن");
-    await expect(page.getByRole("heading", { name: "مذكرة نهائية" })).toBeVisible();
+    await expect(page.getByRole("heading", { name: "المذكرات النهائية" })).toBeVisible();
     await expectNoHorizontalOverflow(page);
     await page.getByRole("link", { name: "المذكرة النهائية — العلوم" }).first().click();
     await expect(page).toHaveURL(/\/products\//);

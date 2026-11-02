@@ -12,7 +12,7 @@ export function Logo({ name, logoUrl, tone = "dark" }: { name: string; logoUrl: 
           <GraduationCap className="size-5.5" aria-hidden />
         </span>
       )}
-      <span className={tone === "dark" ? "text-lg font-bold text-ink" : "text-lg font-bold text-white"}>{name}</span>
+      <span className={tone === "dark" ? "text-lg font-bold whitespace-nowrap text-ink" : "text-lg font-bold whitespace-nowrap text-white"}>{name}</span>
     </Link>
   );
 }

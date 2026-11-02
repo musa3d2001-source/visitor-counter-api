@@ -9,13 +9,16 @@ import { Breadcrumbs } from "@/components/ui/breadcrumbs";
 import { EmptyState } from "@/components/ui/empty-state";
 import { Alert } from "@/components/ui/alert";
 import { TeacherAvatar } from "@/components/site/teacher-avatar";
-import { VideoGrid } from "@/components/site/video-card";
-import { ProductGrid } from "@/components/site/product-card";
+import { VideoCard } from "@/components/site/video-card";
+import { ProductCard } from "@/components/site/product-card";
 import { formatTotalDuration } from "@/components/site/format";
 import { isPdfType, PRODUCT_TYPE_SECTION_LABELS } from "@/lib/labels";
 import { env } from "@/server/env";
 
 type Params = { slug: string };
+
+const SPAN = { 1: "lg:col-span-1", 2: "lg:col-span-2", 3: "lg:col-span-3", 4: "lg:col-span-4" } as const;
+const INNER = { 1: "lg:grid-cols-1", 2: "lg:grid-cols-2", 3: "lg:grid-cols-3", 4: "lg:grid-cols-4" } as const;
 
 export async function generateMetadata({ params }: { params: Promise<Params> }): Promise<Metadata> {
   const t = await getTeacherBySlug((await params).slug);
@@ -130,20 +133,25 @@ export default async function TeacherPage({ params }: { params: Promise<Params> 
                 <h2 id={`h-${g.key}`} className="text-2xl font-bold">
                   {g.subjectName ?? "محتوى عام"} <span className="text-lg font-semibold text-muted">— {g.gradeName}</span>
                 </h2>
-                <div className="mt-5 space-y-10">
-                  {g.sections.map((sec) => (
-                    <div key={sec.type}>
-                      <h3 className="mb-4 flex items-center gap-2 text-lg font-bold">
-                        <span className="h-6 w-1.5 rounded-full bg-accent-600" aria-hidden />
-                        {PRODUCT_TYPE_SECTION_LABELS[sec.type]}
-                      </h3>
-                      {isPdfType(sec.type) || sec.items.every((i) => !i.isVideo) ? (
-                        <ProductGrid products={sec.items} ownedIds={owned} />
-                      ) : (
-                        <VideoGrid products={sec.items} ownedIds={owned} />
-                      )}
-                    </div>
-                  ))}
+                {/* الأقسام الصغيرة تُرصّ جنبًا إلى جنب على الشاشات العريضة */}
+                <div className="mt-5 grid gap-x-4 gap-y-10 lg:grid-cols-4">
+                  {g.sections.map((sec) => {
+                    const span = Math.min(4, sec.items.length) as 1 | 2 | 3 | 4;
+                    const pdf = isPdfType(sec.type) || sec.items.every((i) => !i.isVideo);
+                    return (
+                      <div key={sec.type} className={SPAN[span]} data-testid="teacher-section">
+                        <h3 className="mb-4 flex items-center gap-2 text-lg font-bold">
+                          <span className="h-6 w-1.5 rounded-full bg-accent-600" aria-hidden />
+                          {PRODUCT_TYPE_SECTION_LABELS[sec.type]}
+                        </h3>
+                        <div className={`grid gap-3 sm:gap-4 ${pdf ? "grid-cols-2" : "grid-cols-1 min-[460px]:grid-cols-2"} ${INNER[span]}`}>
+                          {sec.items.map((item) =>
+                            pdf ? <ProductCard key={item.id} product={item} owned={owned?.has(item.id)} /> : <VideoCard key={item.id} product={item} owned={owned?.has(item.id)} />,
+                          )}
+                        </div>
+                      </div>
+                    );
+                  })}
                 </div>
               </section>
             ))}

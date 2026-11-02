@@ -66,7 +66,19 @@ export function VideoCard({ product, owned }: { product: ProductCard; owned?: bo
   );
 }
 
-export function VideoGrid({ products, ownedIds }: { products: ProductCard[]; ownedIds?: Set<string> }) {
+export function VideoGrid({ products, ownedIds, scroller }: { products: ProductCard[]; ownedIds?: Set<string>; scroller?: boolean }) {
+  if (scroller) {
+    // على الجوال: شريط أفقي قابل للسحب، وعلى الشاشات الأكبر: شبكة
+    return (
+      <div className="-mx-4 flex snap-x snap-mandatory gap-3 overflow-x-auto px-4 pb-2 sm:mx-0 sm:grid sm:snap-none sm:grid-cols-2 sm:gap-4 sm:overflow-visible sm:px-0 sm:pb-0 lg:grid-cols-4">
+        {products.map((p) => (
+          <div key={p.id} className="w-[78%] shrink-0 snap-start sm:w-auto">
+            <VideoCard product={p} owned={ownedIds?.has(p.id)} />
+          </div>
+        ))}
+      </div>
+    );
+  }
   return (
     <div className="grid grid-cols-1 gap-3 min-[460px]:grid-cols-2 sm:gap-4 lg:grid-cols-4">
       {products.map((p) => (

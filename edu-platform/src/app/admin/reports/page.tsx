@@ -1,7 +1,7 @@
 import { requireOwnerPage } from "@/server/auth/permissions";
 import Link from "next/link";
 import { Download } from "lucide-react";
-import { auditLog, parseRange, reportByDay, reportByGrade, reportByProduct, reportSummary } from "@/server/admin/stats";
+import { auditLog, parseRange, reportByDay, reportByGrade, reportByProduct, reportByTeacher, reportSummary } from "@/server/admin/stats";
 import { AdminPageHeader, Section, StatCard } from "@/components/admin/page-header";
 import { SalesBars } from "@/components/admin/sales-bars";
 import { Button } from "@/components/ui/button";
@@ -136,7 +136,13 @@ export default async function ReportsPage({ searchParams }: { searchParams: Prom
   }
 
   const range = parseRange(sp);
-  const [summary, byDay, byProduct, byGrade] = await Promise.all([reportSummary(range), reportByDay(range), reportByProduct(range), reportByGrade(range)]);
+  const [summary, byDay, byProduct, byGrade, byTeacher] = await Promise.all([
+    reportSummary(range),
+    reportByDay(range),
+    reportByProduct(range),
+    reportByGrade(range),
+    reportByTeacher(range),
+  ]);
   const exportQs = new URLSearchParams({ from: range.fromDay, to: range.toDay, ...(range.includeTest ? { test: "1" } : {}) }).toString();
 
   // سلسلة أيام كاملة للمخطط
@@ -247,6 +253,45 @@ export default async function ReportsPage({ searchParams }: { searchParams: Prom
           <p className="mt-4 text-xs text-muted">ملاحظة: إيرادات المنتج تُحسب بسعره وقت الطلب قبل خصم الكوبون.</p>
         </Section>
       </div>
+
+      <Section
+        title="حسب المعلم"
+        description="نسبة كل بيع للمعلم وقت الشراء (لا تتغير بتعديل ملفه). الحصص من السجل المحاسبي للمعلمين المفعّل لهم نظام الأرباح."
+        actions={
+          <Button asChild variant="outline" size="sm">
+            <a href={`/api/admin/reports/export?${exportQs}&type=teachers`}>
+              <Download aria-hidden /> تصدير CSV
+            </a>
+          </Button>
+        }
+      >
+        {byTeacher.length === 0 ? (
+          <p className="text-sm text-muted">لا توجد مبيعات في هذه الفترة.</p>
+        ) : (
+          <Table>
+            <THead>
+              <tr>
+                <TH>المعلم</TH>
+                <TH>عمليات البيع</TH>
+                <TH>قيمة المبيعات</TH>
+                <TH>حصة المعلم</TH>
+                <TH>حصة المنصة (من المؤهل)</TH>
+              </tr>
+            </THead>
+            <tbody>
+              {byTeacher.map((t) => (
+                <TR key={t.teacherId ?? "platform"}>
+                  <TD className="font-semibold">{t.teacherId ? <Link href={`/admin/teachers/${t.teacherId}`} className="hover:text-brand-700">{t.teacherName}</Link> : t.teacherName}</TD>
+                  <TD className="num">{t.sold}</TD>
+                  <TD>{kwd(t.revenueFils)}</TD>
+                  <TD>{t.teacherShareFils ? kwd(t.teacherShareFils) : "—"}</TD>
+                  <TD>{t.platformShareFils ? kwd(t.platformShareFils) : "—"}</TD>
+                </TR>
+              ))}
+            </tbody>
+          </Table>
+        )}
+      </Section>
     </div>
   );
 }

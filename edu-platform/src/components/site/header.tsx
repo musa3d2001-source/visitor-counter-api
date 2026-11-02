@@ -26,15 +26,15 @@ export async function SiteHeader() {
         <MobileNav grades={gradeLinks.map((g) => ({ ...g, label: `الصف ${g.label}` }))} links={links} siteName={settings.site_name} />
         <Logo name={settings.site_name} logoUrl={logoUrl} />
         <nav aria-label="التنقل الرئيسي" className="ms-6 hidden items-center gap-1 md:flex">
-          <Link href="/teachers" className="rounded-lg px-3 py-2 text-sm font-semibold text-ink-soft hover:bg-brand-50 hover:text-brand-700">
+          <Link href="/teachers" className="rounded-lg px-3 py-2 text-sm font-semibold whitespace-nowrap text-ink-soft hover:bg-brand-50 hover:text-brand-700">
             المعلمون
           </Link>
           {grades.slice(0, 6).map((g) => (
-            <Link key={g.id} href={`/grades/${g.slug}`} className="rounded-lg px-3 py-2 text-sm font-semibold text-ink-soft hover:bg-brand-50 hover:text-brand-700">
+            <Link key={g.id} href={`/grades/${g.slug}`} className="hidden rounded-lg px-3 py-2 text-sm font-semibold whitespace-nowrap text-ink-soft hover:bg-brand-50 hover:text-brand-700 lg:block">
               {g.name}
             </Link>
           ))}
-          <Link href="/bundles" className="rounded-lg px-3 py-2 text-sm font-semibold text-ink-soft hover:bg-brand-50 hover:text-brand-700">
+          <Link href="/bundles" className="rounded-lg px-3 py-2 text-sm font-semibold whitespace-nowrap text-ink-soft hover:bg-brand-50 hover:text-brand-700">
             الباقات
           </Link>
         </nav>

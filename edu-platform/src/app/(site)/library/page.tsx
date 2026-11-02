@@ -58,7 +58,7 @@ export default async function LibraryPage({ searchParams }: { searchParams: Prom
       <div className="flex flex-wrap items-end justify-between gap-3">
         <div>
           <h1 className="text-3xl font-bold">مكتبتي</h1>
-          <p className="mt-1 text-muted">أهلًا {user.fullName.split(" ")[0]} — كل مذكراتك في مكان واحد</p>
+          <p className="mt-1 text-muted">أهلًا {user.fullName.split(" ")[0]} — كل دروسك ومذكراتك في مكان واحد</p>
         </div>
         <Button asChild variant="outline" size="sm">
           <Link href="/account">مشترياتي وفواتيري</Link>
