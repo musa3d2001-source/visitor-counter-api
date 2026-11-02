@@ -1,6 +1,7 @@
 "use client";
 
-import { useActionState, useState } from "react";
+import { usePreservingAction } from "./use-preserving-action";
+import { useState } from "react";
 import { ArrowDown, ArrowUp, Plus, Trash2 } from "lucide-react";
 import type { ActionState } from "@/lib/action-state";
 import { Alert } from "@/components/ui/alert";
@@ -41,7 +42,7 @@ function Card({ title, children }: { title: string; children: React.ReactNode })
 }
 
 export function SettingsForm({ action, values }: { action: ServerAction; values: SettingsValues }) {
-  const [state, formAction] = useActionState(action, null);
+  const { state, formAction, formRef } = usePreservingAction(action);
   const [primary, setPrimary] = useState(values.primary_color);
   const [accent, setAccent] = useState(values.accent_color);
   const [faq, setFaq] = useState(values.faq);
@@ -57,7 +58,7 @@ export function SettingsForm({ action, values }: { action: ServerAction; values:
     });
 
   return (
-    <form action={formAction} className="space-y-6">
+    <form ref={formRef} action={formAction} className="space-y-6">
       <Card title="الهوية والنصوص">
         <div className="grid gap-4 sm:grid-cols-2">
           <Field label="اسم المنصة" htmlFor="site_name" error={fe.site_name} required>

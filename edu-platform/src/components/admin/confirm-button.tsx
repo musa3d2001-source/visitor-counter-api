@@ -1,6 +1,7 @@
 "use client";
 
 import { useActionState, useEffect, useId, useState } from "react";
+import { usePreservingAction } from "./use-preserving-action";
 import { AlertDialog } from "radix-ui";
 import { LoaderCircle } from "lucide-react";
 import type * as React from "react";
@@ -41,7 +42,7 @@ export function ConfirmButton({
   /** حقول إضافية داخل نافذة التأكيد (مرتبطة بالنموذج عبر سمة form) */
   fields?: { name: string; label: string; placeholder?: string; ltr?: boolean }[];
 }) {
-  const [state, formAction, pending] = useActionState(action, null);
+  const { state, formAction, pending, formRef } = usePreservingAction(action);
   const [open, setOpen] = useState(false);
   const formId = useId();
   useEffect(() => {
@@ -49,7 +50,7 @@ export function ConfirmButton({
   }, [state]);
   return (
     <div className="inline-flex flex-col items-start">
-      <form id={formId} action={formAction}>
+      <form id={formId} ref={formRef} action={formAction}>
         {hidden ? Object.entries(hidden).map(([k, v]) => <input key={k} type="hidden" name={k} value={v} />) : null}
       </form>
       <AlertDialog.Root open={open} onOpenChange={setOpen}>

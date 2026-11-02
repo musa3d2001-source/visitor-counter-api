@@ -1,6 +1,7 @@
 "use client";
 
-import { useActionState, useState } from "react";
+import { usePreservingAction } from "./use-preserving-action";
+import { useState } from "react";
 import type { ActionState } from "@/lib/action-state";
 import { Alert } from "@/components/ui/alert";
 import { Checkbox, Field, Input, Select } from "@/components/ui/form";
@@ -23,12 +24,12 @@ export type CouponDefaults = {
 };
 
 export function CouponForm({ action, defaults, submitLabel }: { action: ServerAction; defaults: CouponDefaults; submitLabel: string }) {
-  const [state, formAction] = useActionState(action, null);
+  const { state, formAction, formRef } = usePreservingAction(action);
   const v = { ...defaults, ...(state?.values ?? {}) } as CouponDefaults;
   const [kind, setKind] = useState<"percent" | "fixed">(v.kind);
   const fe = state?.fieldErrors ?? {};
   return (
-    <form action={formAction} className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4" noValidate>
+    <form ref={formRef} action={formAction} className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4" noValidate>
       {defaults.id ? <input type="hidden" name="id" value={defaults.id} /> : null}
       <Field label="الكود" htmlFor="c-code" error={fe.code} required>
         <Input id="c-code" name="code" defaultValue={v.code} dir="ltr" className="text-start uppercase" placeholder="EXAM2026" />

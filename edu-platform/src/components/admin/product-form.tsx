@@ -1,6 +1,7 @@
 "use client";
 
-import { useActionState, useMemo, useState } from "react";
+import { usePreservingAction } from "./use-preserving-action";
+import { useMemo, useState } from "react";
 import type { ActionState } from "@/lib/action-state";
 import { PRODUCT_TYPES, PRODUCT_TYPE_LABELS, type ProductType } from "@/lib/labels";
 import { Alert } from "@/components/ui/alert";
@@ -48,7 +49,7 @@ export function ProductForm({
   submitLabel: string;
   mode: "create" | "edit";
 }) {
-  const [state, formAction] = useActionState(action, null);
+  const { state, formAction, formRef } = usePreservingAction(action);
   const v = { ...defaults, ...(state?.values ?? {}) } as ProductFormDefaults;
   const [gradeId, setGradeId] = useState(v.gradeId);
   const [subjectId, setSubjectId] = useState(v.subjectId);
@@ -66,7 +67,7 @@ export function ProductForm({
   }, [grades]);
 
   return (
-    <form action={formAction} className="space-y-6" noValidate>
+    <form ref={formRef} action={formAction} className="space-y-6" noValidate>
       {state?.error ? <Alert tone="danger">{state.error}</Alert> : null}
       {state?.ok && state.message ? <Alert tone="success">{state.message}</Alert> : null}
 

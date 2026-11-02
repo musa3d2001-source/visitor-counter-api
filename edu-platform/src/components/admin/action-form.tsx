@@ -1,6 +1,7 @@
 "use client";
 
-import { useActionState, useEffect, useRef } from "react";
+import { useEffect } from "react";
+import { usePreservingAction } from "./use-preserving-action";
 import type * as React from "react";
 import type { ActionState } from "@/lib/action-state";
 import { Alert } from "@/components/ui/alert";
@@ -26,8 +27,7 @@ export function ActionForm({
   compact?: boolean;
   id?: string;
 }) {
-  const [state, formAction, pending] = useActionState(action, null);
-  const ref = useRef<HTMLFormElement>(null);
+  const { state, formAction, pending, formRef: ref } = usePreservingAction(action);
   useEffect(() => {
     if (state?.ok && resetOnSuccess) ref.current?.reset();
   }, [state, resetOnSuccess]);
