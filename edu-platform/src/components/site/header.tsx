@@ -14,6 +14,7 @@ export async function SiteHeader() {
   const gradeLinks = grades.map((g) => ({ href: `/grades/${g.slug}`, label: g.name.replace("الصف ", "") }));
   const links = [
     { href: "/", label: "الرئيسية" },
+    { href: "/teachers", label: "المعلمون" },
     { href: "/bundles", label: "الباقات والعروض" },
     ...(user ? [{ href: "/library", label: "مكتبتي" }, { href: "/account", label: "حسابي" }] : [{ href: "/login", label: "تسجيل الدخول" }, { href: "/register", label: "إنشاء حساب" }]),
     ...(user?.role === "admin" ? [{ href: "/admin", label: "لوحة الإدارة" }] : []),
@@ -25,6 +26,9 @@ export async function SiteHeader() {
         <MobileNav grades={gradeLinks.map((g) => ({ ...g, label: `الصف ${g.label}` }))} links={links} siteName={settings.site_name} />
         <Logo name={settings.site_name} logoUrl={logoUrl} />
         <nav aria-label="التنقل الرئيسي" className="ms-6 hidden items-center gap-1 md:flex">
+          <Link href="/teachers" className="rounded-lg px-3 py-2 text-sm font-semibold text-ink-soft hover:bg-brand-50 hover:text-brand-700">
+            المعلمون
+          </Link>
           {grades.slice(0, 6).map((g) => (
             <Link key={g.id} href={`/grades/${g.slug}`} className="rounded-lg px-3 py-2 text-sm font-semibold text-ink-soft hover:bg-brand-50 hover:text-brand-700">
               {g.name}

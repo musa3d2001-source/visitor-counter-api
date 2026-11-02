@@ -1,26 +1,32 @@
 import Link from "next/link";
-import { ArrowLeft, BadgePercent, CircleCheck, Eye, Layers, Lock, Smartphone, Zap } from "lucide-react";
-import { gradeStats, listProducts, listStages } from "@/server/catalog/queries";
+import { ArrowLeft, BadgePercent, CircleCheck, Eye, Layers, Lock, PlayCircle, Smartphone, Zap } from "lucide-react";
+import { gradeStats, latestVideoProducts, listProducts, listStages, listTeachers } from "@/server/catalog/queries";
 import { getSettings } from "@/server/platform/settings";
 import { getCurrentUser } from "@/server/auth/session";
 import { accessibleProductIds } from "@/server/access/entitlements";
 import { ProductGrid } from "@/components/site/product-card";
+import { VideoGrid } from "@/components/site/video-card";
+import { TeacherGrid } from "@/components/site/teacher-card";
 import { ProductCover } from "@/components/site/product-cover";
 import { Button } from "@/components/ui/button";
 import { EmptyState } from "@/components/ui/empty-state";
 
 export default async function HomePage() {
-  const [stages, stats, latest, bundles, settings, user] = await Promise.all([
+  const [stages, stats, latestAll, bundles, settings, user, videos, teachers] = await Promise.all([
     listStages(),
     gradeStats(),
-    listProducts({ excludeType: "bundle", order: "latest", limit: 8 }),
+    listProducts({ excludeType: "bundle", order: "latest", limit: 24 }),
     listProducts({ type: "bundle", limit: 4 }),
     getSettings(),
     getCurrentUser(),
+    latestVideoProducts(8),
+    listTeachers({ limit: 8 }),
   ]);
+  // قسم المذكرات يعرض ملفات PDF فقط (الفيديو له قسمه الخاص في الأعلى)
+  const latest = latestAll.filter((p) => !p.isVideo).slice(0, 8);
   const owned = user ? await accessibleProductIds(user.id) : undefined;
   const visibleStages = stages.filter((s) => s.grades.length > 0);
-  const showcase = latest.slice(0, 3);
+  const showcase = (videos.length >= 3 ? videos : latest).slice(0, 3);
 
   return (
     <>
@@ -52,6 +58,7 @@ export default async function HomePage() {
               )}
             </div>
             <ul className="mt-8 flex flex-wrap gap-x-6 gap-y-2 text-sm text-ink-soft">
+              <li className="flex items-center gap-1.5"><CircleCheck className="size-4 text-success" aria-hidden /> شروحات فيديو ومذكرات</li>
               <li className="flex items-center gap-1.5"><CircleCheck className="size-4 text-success" aria-hidden /> معاينة مجانية قبل الشراء</li>
               <li className="flex items-center gap-1.5"><CircleCheck className="size-4 text-success" aria-hidden /> وصول فوري بعد الدفع</li>
               <li className="flex items-center gap-1.5"><CircleCheck className="size-4 text-success" aria-hidden /> دفع آمن بكي نت</li>
@@ -77,6 +84,21 @@ export default async function HomePage() {
           ) : null}
         </div>
       </section>
+
+      {/* الدروس المرئية — عنصر أساسي في المنصة */}
+      {videos.length ? (
+        <section className="mx-auto max-w-6xl px-4 pt-14" aria-labelledby="videos-title">
+          <div className="mb-6 flex items-end justify-between gap-4">
+            <div>
+              <h2 id="videos-title" className="flex items-center gap-2 text-2xl font-bold">
+                <PlayCircle className="size-6 text-accent-600" aria-hidden /> أحدث الدروس المرئية
+              </h2>
+              <p className="mt-1.5 text-sm text-muted">شرح الوحدات ومراجعات الاختبارات بالفيديو — شاهد المعاينة مجانًا</p>
+            </div>
+          </div>
+          <VideoGrid products={videos} ownedIds={owned} />
+        </section>
+      ) : null}
 
       {/* اختيار الصف */}
       <section id="grades" className="mx-auto max-w-6xl scroll-mt-20 px-4 pt-14">
@@ -128,10 +150,26 @@ export default async function HomePage() {
         )}
       </section>
 
+      {/* المعلمون */}
+      {teachers.length ? (
+        <section className="mx-auto max-w-6xl px-4 pt-16" aria-labelledby="teachers-title">
+          <div className="mb-6 flex items-end justify-between gap-4">
+            <div>
+              <h2 id="teachers-title" className="text-2xl font-bold">تعلّم مع نخبة المعلمين</h2>
+              <p className="mt-1.5 text-sm text-muted">اختر معلمك وتابع شروحاته ومراجعاته لكل اختبار</p>
+            </div>
+            <Link href="/teachers" className="shrink-0 text-sm font-semibold text-brand-700 hover:underline">
+              كل المعلمين
+            </Link>
+          </div>
+          <TeacherGrid teachers={teachers} />
+        </section>
+      ) : null}
+
       {/* أحدث المذكرات */}
       {latest.length ? (
         <section className="mx-auto max-w-6xl px-4 pt-16">
-          <SectionTitle title="أحدث المذكرات والنماذج" subtitle="آخر ما أضفناه للمنصة" />
+          <SectionTitle title="أحدث المذكرات والنماذج" subtitle="ملفات PDF منظمة لكل مادة" />
           <ProductGrid products={latest} ownedIds={owned} />
         </section>
       ) : null}
@@ -157,12 +195,12 @@ export default async function HomePage() {
         <SectionTitle title="لماذا تختار منصتنا؟" subtitle="صممنا المنصة لتكون أسهل طريق لمذكرتك" />
         <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
           {[
-            { Icon: Eye, t: "عاين قبل أن تشتري", d: "افتح صفحات من المذكرة مجانًا وتأكد أنها تناسبك." },
+            { Icon: PlayCircle, t: "شرح بالفيديو", d: "دروس مسجلة لكل وحدة ومراجعات قبل كل اختبار، تكمل من حيث توقفت." },
+            { Icon: Eye, t: "عاين قبل أن تشتري", d: "شاهد درسًا مجانيًا أو افتح صفحات من المذكرة وتأكد أنها تناسبك." },
             { Icon: Zap, t: "وصول فوري", d: "بعد تأكيد الدفع تظهر المذكرة مباشرة في مكتبتك." },
             { Icon: Lock, t: "دفع آمن", d: "الدفع عبر بوابة MyFatoorah المعتمدة، ولا نخزن بيانات بطاقتك." },
-            { Icon: Smartphone, t: "على أي جهاز", d: "اقرأ مذكراتك من الجوال أو الآيباد أو الكمبيوتر." },
-            { Icon: Layers, t: "مرتبة وواضحة", d: "حسب الصف والمادة والفصل الدراسي ونوع المذكرة." },
-            { Icon: BadgePercent, t: "باقات توفّر عليك", d: "اشترِ مذكرات المادة أو الصف كاملة بسعر أقل." },
+            { Icon: Smartphone, t: "على أي جهاز", d: "شاهد دروسك واقرأ مذكراتك من الجوال أو الآيباد أو الكمبيوتر." },
+            { Icon: BadgePercent, t: "باقات توفّر عليك", d: "اشترِ الوحدة أو الدورة أو باقة المادة كاملة بسعر أقل." },
           ].map(({ Icon, t, d }) => (
             <div key={t} className="rounded-2xl border border-line bg-surface p-5">
               <span className="grid size-11 place-items-center rounded-xl bg-brand-50 text-brand-700">
@@ -180,7 +218,7 @@ export default async function HomePage() {
         <div className="rounded-3xl bg-brand-800 px-6 py-10 text-white sm:px-10">
           <h2 className="text-2xl font-bold">أربع خطوات وتبدأ</h2>
           <ol className="mt-8 grid gap-6 sm:grid-cols-2 lg:grid-cols-4">
-            {["اختر صفك الدراسي", "اختر المادة والمذكرة", "عاينها وادفع بأمان", "ذاكر من مكتبتك"].map((s, i) => (
+            {["اختر صفك الدراسي", "اختر المادة والمعلم", "عاين مجانًا وادفع بأمان", "شاهد وذاكر من مكتبتك"].map((s, i) => (
               <li key={s} className="flex items-center gap-3">
                 <span className="num grid size-10 shrink-0 place-items-center rounded-full bg-accent-600 font-bold text-ink">{i + 1}</span>
                 <span className="font-semibold">{s}</span>
