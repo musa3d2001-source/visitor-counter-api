@@ -55,13 +55,16 @@ export default async function TeachersPage({ searchParams }: { searchParams: Pro
         </nav>
       ) : null}
 
-      <div className="mt-8">
+      <section className="mt-8" aria-labelledby="teachers-list">
+        <h2 id="teachers-list" className="sr-only">
+          قائمة المعلمين
+        </h2>
         {teachers.length ? (
           <TeacherGrid teachers={teachers} />
         ) : (
           <EmptyState icon={<GraduationCap />} title="لا يوجد معلمون لهذا الاختيار بعد" description="اختر صفًا أو مادة أخرى، أو اعرض كل المعلمين." />
         )}
-      </div>
+      </section>
     </div>
   );
 }

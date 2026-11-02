@@ -112,6 +112,10 @@
   h1 {
     font-size: 1.15em;
   }
+  h3,
+  h4 {
+    text-wrap: balance;
+  }
   p {
     text-wrap: pretty;
   }
