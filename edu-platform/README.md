@@ -112,7 +112,7 @@
 
 - `src/server/*` — منطق الخادم فقط (`server-only`): `auth`، `catalog`، `commerce`، `payments`، `access`، `storage`، `platform`، `admin`.
 - `src/app/*` — الصفحات ومسارات API (تستدعي طبقة الخادم ولا تحتوي منطقًا تجاريًا).
-- `src/components/*` — نظام التصميم والمكونات.
+- `src/components/*` — نظام التصميم والمكونات. الهوية البصرية «جدول الحصص» ورموزها موثقة في [docs/design/REDESIGN.md](docs/design/REDESIGN.md).
 - `db/migrations/*.sql` — مخطط قاعدة البيانات.
 
 **قرار هندسي واحد مختلف عن المقترح — المصادقة:** استخدمنا Supabase لقاعدة البيانات والتخزين كما هو مقترح، لكن المصادقة مبنية داخل التطبيق (جلسات في PostgreSQL + scrypt) بدل Supabase Auth، للأسباب التالية:

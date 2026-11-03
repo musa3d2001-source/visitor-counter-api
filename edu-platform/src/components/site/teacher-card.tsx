@@ -1,54 +1,108 @@
 import Link from "next/link";
-import { Clock, PlayCircle } from "lucide-react";
+import { ArrowLeft, Clock3, Layers, MonitorPlay } from "lucide-react";
 import type { TeacherCard as TeacherCardData } from "@/server/catalog/queries";
+import { SubjectArt, SubjectIcon } from "@/components/art";
+import { count, toneClass, W } from "@/lib/design";
+import { cn } from "@/lib/utils";
+import { catalogStyles as s } from "./card-parts";
 import { TeacherAvatar } from "./teacher-avatar";
 import { formatTotalDuration } from "./format";
 
-export function TeacherCard({ teacher, anchor }: { teacher: TeacherCardData; anchor?: string }) {
-  const subjects = [...new Map(teacher.subjects.map((s) => [s.name, s])).values()].slice(0, 3);
-  const grades = [...new Set(teacher.subjects.map((s) => s.gradeName))];
+/**
+ * بطاقة المعلم «الفصل المشمس» (v2-c TeacherTile): شريط بتدرج مادته الأولى ورسمها، صورة كبيرة بحلقة
+ * (أو الحرف الأول) مع شارة المادة الذهبية، الاسم، التعريف، كبسولات المواد بألوانها والصفوف،
+ * أرقام حقيقية (الدروس المرئية، المحتوى، المدة) إن وُجدت، وزر «صفحة المعلم».
+ */
+export function TeacherCard({ teacher: t, anchor, headingLevel = 3, showDuration }: { teacher: TeacherCardData; anchor?: string; headingLevel?: 2 | 3 | 4; showDuration?: boolean }) {
+  const H = `h${headingLevel}` as "h3";
+  const first = t.subjects[0];
+  const subjects = [...new Map(t.subjects.map((x) => [x.slug ?? x.name, x])).values()].slice(0, 3);
+  const grades = [...new Map(t.subjects.map((x) => [x.gradeSlug, x])).values()].sort((a, b) => a.gradeLevel - b.gradeLevel).map((x) => x.gradeName);
+  const total = formatTotalDuration(t.totalDurationSeconds);
+  const hasStats = t.videoCount > 0 || t.productCount > 0;
   return (
-    <article
-      data-testid="teacher-card"
-      className="group relative flex flex-col items-center rounded-2xl border border-line bg-surface p-5 text-center shadow-card transition hover:-translate-y-0.5 hover:border-brand-300 hover:shadow-lift"
-    >
-      <TeacherAvatar name={teacher.name} photoUrl={teacher.photoUrl} size={84} />
-      <h3 className="mt-3 text-base font-bold">
-        <Link href={`/teachers/${teacher.slug}${anchor ? `#${anchor}` : ""}`} className="after:absolute after:inset-0 focus-visible:outline-none">
-          {teacher.name}
-        </Link>
-      </h3>
-      {teacher.headline ? <p className="mt-1 line-clamp-2 text-xs leading-5 text-muted">{teacher.headline}</p> : null}
-      {subjects.length ? (
-        <div className="mt-3 flex flex-wrap justify-center gap-1.5">
-          {subjects.map((s) => (
-            <span key={s.name} className="rounded-full bg-brand-50 px-2.5 py-0.5 text-[0.7rem] font-semibold text-brand-700">
-              {s.name}
-            </span>
-          ))}
-        </div>
-      ) : null}
-      {grades.length ? <p className="mt-2 text-[0.7rem] text-muted">{grades.join(" · ")}</p> : null}
-      <div className="mt-auto flex items-center gap-3 pt-4 text-xs text-ink-soft">
-        <span className="flex items-center gap-1">
-          <PlayCircle className="size-3.5 text-brand-600" aria-hidden /> <span className="num">{teacher.videoCount}</span> فيديو
+    <article data-testid="teacher-card" className={cn(s.cardBase, s.tcard, toneClass(first?.slug))}>
+      <div className={s.tcover} aria-hidden>
+        <span className={s.tcoverArt}>
+          <SubjectArt slug={first?.slug} />
         </span>
-        {teacher.totalDurationSeconds ? (
-          <span className="flex items-center gap-1">
-            <Clock className="size-3.5 text-brand-600" aria-hidden /> {formatTotalDuration(teacher.totalDurationSeconds)}
+      </div>
+      <div className={s.tavatarWrap}>
+        <TeacherAvatar name={t.name} photoUrl={t.photoUrl} size={104} inheritTone ring="lg" decorative />
+        {first ? (
+          <span className={s.tbadge} aria-hidden>
+            <SubjectIcon slug={first.slug} size={16} strokeWidth={2.4} />
           </span>
         ) : null}
       </div>
+      <H className={s.tname}>
+        <Link href={`/teachers/${t.slug}${anchor ? `#${anchor}` : ""}`} className="stretched rounded-[28px]">
+          {t.name}
+        </Link>
+      </H>
+      {t.headline ? <p className={s.theadline}>{t.headline}</p> : null}
+      {subjects.length || grades.length ? (
+        <ul className={s.tchips} aria-label="المواد والصفوف">
+          {subjects.map((x) => (
+            <li key={x.id} className={toneClass(x.slug)}>
+              {x.name}
+            </li>
+          ))}
+          {grades.slice(0, 3).map((g) => (
+            <li key={g} className={s.tgrade}>
+              {g}
+            </li>
+          ))}
+        </ul>
+      ) : (
+        <span className="mb-4" />
+      )}
+      {hasStats ? (
+        <div className={s.tstats}>
+          {t.videoCount > 0 ? (
+            <span>
+              <MonitorPlay aria-hidden />
+              {count(t.videoCount, W.videoLesson)}
+            </span>
+          ) : null}
+          {t.productCount > 0 ? (
+            <span>
+              <Layers aria-hidden />
+              {count(t.productCount, W.product)}
+            </span>
+          ) : null}
+          {showDuration && total ? (
+            <span>
+              <Clock3 aria-hidden />
+              {total}
+            </span>
+          ) : null}
+        </div>
+      ) : null}
+      <span className={cn(s.footBtn, !hasStats && "mt-auto")} aria-hidden>
+        صفحة المعلم
+        <ArrowLeft />
+      </span>
     </article>
   );
 }
 
-export function TeacherGrid({ teachers }: { teachers: TeacherCardData[] }) {
+/** شبكة بطاقات المعلمين: عمودان أو ثلاثة أو أربعة على الشاشات الكبيرة */
+export function TeacherGrid({ teachers, columns = 3, className }: { teachers: TeacherCardData[]; columns?: 2 | 3 | 4; className?: string }) {
   return (
-    <div className="grid grid-cols-2 gap-3 sm:gap-4 md:grid-cols-3 lg:grid-cols-4">
+    <ul
+      className={cn(
+        "grid grid-cols-1 gap-5 min-[480px]:grid-cols-2 sm:gap-6",
+        columns >= 3 && "lg:grid-cols-3",
+        columns === 4 && "xl:grid-cols-4",
+        className,
+      )}
+    >
       {teachers.map((t) => (
-        <TeacherCard key={t.id} teacher={t} />
+        <li key={t.id} className="min-w-0">
+          <TeacherCard teacher={t} />
+        </li>
       ))}
-    </div>
+    </ul>
   );
 }

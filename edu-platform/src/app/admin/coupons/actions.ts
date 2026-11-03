@@ -106,7 +106,7 @@ export async function deleteCouponAction(_p: ActionState, fd: FormData): Promise
     const [{ o }] = await sql<{ o: number }[]>`select count(*)::int as o from orders where coupon_id = ${id}`;
     if (n > 0 || o > 0) {
       await sql`update coupons set is_active = false where id = ${id}`;
-      await audit({ actorId: adminId, action: "coupon.deactivate", entityType: "coupon", entityId: id, reason: "مستخدم في طلبات — إيقاف بدل الحذف" });
+      await audit({ actorId: adminId, action: "coupon.deactivate", entityType: "coupon", entityId: id, reason: "مستخدم في طلبات، إيقاف بدل الحذف" });
       revalidatePath("/admin/coupons");
       return { ok: true, message: "الكوبون مستخدم في طلبات سابقة، لذلك تم إيقافه بدل حذفه" };
     }

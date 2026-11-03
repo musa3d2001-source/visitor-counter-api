@@ -1,22 +1,27 @@
 import Image from "next/image";
-import { FileText, Package, PlayCircle } from "lucide-react";
-import { isVideoType, PRODUCT_TYPE_LABELS, type ProductType } from "@/lib/labels";
+import { FileText, Package, Play } from "lucide-react";
+import { SubjectArt, SubjectIcon } from "@/components/art";
+import { PRODUCT_TYPE_LABELS, isVideoType, type ProductType } from "@/lib/labels";
+import { subjectTone, toneClass } from "@/lib/design";
 import { cn } from "@/lib/utils";
+import { subjectSlugFromName } from "./card-parts";
 
-/** غلاف المنتج — صورة الغلاف إن وُجدت، وإلا غلاف مولّد متناسق مع الهوية */
-const PALETTES = [
-  ["#0f5257", "#1d6f6c"],
-  ["#2d4a6b", "#3d6590"],
-  ["#5b3f6e", "#7a5591"],
-  ["#7a4a24", "#a0662f"],
-  ["#2f5d3a", "#3f7c4d"],
-  ["#6b2f3a", "#8e3f4d"],
-];
+/**
+ * غلاف المحتوى «الفصل المشمس»: صورة الغلاف إن رفعها المالك، وإلا ملصق متدرج بلون المادة
+ * (نقاط بيضاء، حلقة، رسم المادة) مع نوع المحتوى واسم المادة والصف وزر تشغيل للفيديو.
+ * compact: مربع متدرج صغير بأيقونة المادة (السلة والمكتبة والقوائم).
+ * المذكرات بنسبة كتيّب (4:5) والفيديو بنسبة شاشة (16:10) مع wide.
+ */
 
-function hash(s: string) {
-  let h = 0;
-  for (const c of s) h = (h * 31 + c.charCodeAt(0)) >>> 0;
-  return h;
+/** لون داكن ثابت للمادة يصلح خلفيةً لنص أبيض (للتوافق مع الصفحات القديمة) */
+export function posterTone(subjectName: string | null, _gradeName?: string, subjectSlug?: string | null) {
+  return subjectTone(subjectSlug ?? subjectSlugFromName(subjectName)).deep;
+}
+
+/** خلفية الملصق المتدرجة بلون المادة (للاستخدام في style={{ background }}) */
+export function posterBackground(subjectSlug: string | null | undefined) {
+  const t = subjectTone(subjectSlug);
+  return `radial-gradient(110% 80% at 95% 0%, rgb(255 255 255 / 0.36), transparent 55%), linear-gradient(150deg, ${t.from}, ${t.to})`;
 }
 
 export function ProductCover({
@@ -24,55 +29,72 @@ export function ProductCover({
   title,
   type,
   subjectName,
+  subjectSlug,
   gradeName,
   className,
   priority,
   compact,
+  wide,
   sizes = "(max-width: 640px) 50vw, (max-width: 1024px) 33vw, 25vw",
 }: {
   coverUrl: string | null;
   title: string;
   type: ProductType;
   subjectName: string | null;
+  /** مفتاح المادة للألوان؛ إن غاب يُستنتج من اسمها */
+  subjectSlug?: string | null;
   gradeName: string;
   className?: string;
   priority?: boolean;
-  /** نسخة مصغرة للصور الصغيرة (السلة والمكتبة) */
+  /** نسخة مصغرة للصور الصغيرة (السلة والمكتبة والصفوف) */
   compact?: boolean;
+  /** نسبة شاشة 16:10 بدل الكتيّب — للفيديو */
+  wide?: boolean;
   sizes?: string;
 }) {
+  const video = isVideoType(type);
+  const slug = subjectSlug ?? subjectSlugFromName(subjectName);
+  const ratio = wide ? "aspect-[16/10]" : compact ? "aspect-square" : "aspect-[4/5]";
   if (coverUrl) {
     return (
-      <div className={cn("relative aspect-[4/4.4] overflow-hidden bg-canvas sm:aspect-[4/5]", className)}>
+      <div className={cn("relative overflow-hidden rounded-xl bg-mist", ratio, className)}>
         <Image src={coverUrl} alt={title} fill sizes={sizes} priority={priority} className="object-cover" />
       </div>
     );
   }
-  const [a, b] = PALETTES[hash(`${subjectName ?? ""}${gradeName}`) % PALETTES.length];
-  const Icon = type === "bundle" ? Package : isVideoType(type) ? PlayCircle : FileText;
+  const label = subjectName ?? (type === "bundle" ? "باقة" : gradeName);
+
+  if (compact) {
+    const Fallback = type === "bundle" ? Package : video ? Play : FileText;
+    return (
+      <div className={cn("poster grid place-items-center rounded-xl text-white", toneClass(slug), ratio, className)} role="img" aria-label={title}>
+        {slug ? <SubjectIcon slug={slug} className="size-[38%] min-h-5 min-w-5 drop-shadow-[0_2px_4px_rgb(0_0_0/0.2)]" strokeWidth={2.2} /> : <Fallback className="size-[36%] min-h-5 min-w-5" aria-hidden />}
+        {video ? (
+          <span className="absolute end-1 bottom-1 grid size-[30%] max-h-7 max-w-7 min-h-4 min-w-4 place-items-center rounded-full bg-white" style={{ color: "var(--b)" }} aria-hidden>
+            <Play className="size-1/2 fill-current" />
+          </span>
+        ) : null}
+      </div>
+    );
+  }
+
   return (
-    <div
-      className={cn("relative flex aspect-[4/4.4] flex-col sm:aspect-[4/5] justify-between overflow-hidden p-4 text-white", className)}
-      style={{ background: `linear-gradient(155deg, ${a}, ${b})` }}
-      role="img"
-      aria-label={title}
-    >
-      <div className="pointer-events-none absolute -start-10 -top-10 size-40 rounded-full bg-white/8" />
-      <div className="pointer-events-none absolute -bottom-14 -end-8 size-44 rounded-full border-[18px] border-white/6" />
-      {compact ? (
-        <div className="relative grid flex-1 place-items-center">
-          <Icon className="size-7 text-[color:var(--accent)]" aria-hidden />
-        </div>
-      ) : (
-        <>
-          <span className="relative w-fit rounded-full bg-white/15 px-2.5 py-1 text-[0.7rem] font-semibold backdrop-blur-sm">{PRODUCT_TYPE_LABELS[type]}</span>
-          <div className="relative">
-            <Icon className="mb-2 size-7 text-[color:var(--accent)]" aria-hidden />
-            <p className="text-lg leading-snug font-bold sm:text-xl">{subjectName ?? "باقة شاملة"}</p>
-            <p className="mt-1 text-xs text-white/80">{gradeName}</p>
-          </div>
-        </>
-      )}
+    <div className={cn("poster @container flex flex-col justify-between p-4 sm:p-5", toneClass(slug), ratio, className)} role="img" aria-label={title}>
+      <span className="chip chip-glass self-start">{PRODUCT_TYPE_LABELS[type]}</span>
+      <span className={cn("pointer-events-none absolute end-[4%] -rotate-6", wide ? "top-[12%] w-[40%]" : "top-[16%] w-[52%]")} aria-hidden>
+        <span className="block aspect-square">
+          <SubjectArt slug={slug} />
+        </span>
+      </span>
+      {video ? (
+        <span className={cn("play-dot absolute -mt-[1.8rem]", wide ? "end-[24%] top-[44%] -me-[1.8rem]" : "start-1/2 top-1/2 -ms-[1.8rem]")} aria-hidden>
+          <Play className="-ms-0.5 size-6 fill-current" />
+        </span>
+      ) : null}
+      <span className={cn("relative", wide && "max-w-[58%]")}>
+        <span className={cn("block font-display leading-[1.3] font-black text-white [text-shadow:0_3px_0_color-mix(in_oklab,var(--d)_60%,transparent),0_8px_18px_rgb(0_0_0/0.22)]", wide ? "text-[clamp(1rem,7.5cqi,2rem)]" : "text-[clamp(1rem,11.5cqi,2.3rem)]")}>{label}</span>
+        {subjectName ? <span className="mt-1 inline-block rounded-full bg-white/90 px-2.5 font-display text-[clamp(0.7rem,5cqi,0.85rem)] leading-7 font-extrabold" style={{ color: "var(--tink)" }}>{gradeName}</span> : null}
+      </span>
     </div>
   );
 }

@@ -1,18 +1,43 @@
-import Image from "next/image";
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import { Banknote, ExternalLink, FileText, GraduationCap, KeyRound, Plus, ShieldOff, ShieldCheck, UserMinus, Wallet } from "lucide-react";
+import {
+  Banknote,
+  BookOpenCheck,
+  Camera,
+  Clock3,
+  Coins,
+  ExternalLink,
+  Eye,
+  EyeOff,
+  FileText,
+  FlaskConical,
+  KeyRound,
+  Landmark,
+  Mail,
+  Percent,
+  Plus,
+  ShieldCheck,
+  ShieldOff,
+  UserCog,
+  UserMinus,
+  UserRoundPen,
+  Wallet,
+} from "lucide-react";
 import { requireOwnerPage } from "@/server/auth/permissions";
 import { getTeacherAdmin, subjectOptions, teacherSubjectIds } from "@/server/admin/teachers";
 import { listAdminProducts } from "@/server/admin/products";
 import { listEarnings, listPayouts, teacherBalance, teacherSalesSummary } from "@/server/commerce/earnings";
 import { storage } from "@/server/storage";
-import { AdminPageHeader, Section, StatCard } from "@/components/admin/page-header";
+import { Section, StatCard, StatGrid } from "@/components/admin/page-header";
 import { TeacherForm } from "@/components/admin/teacher-form";
 import { FileUploader } from "@/components/admin/file-uploader";
 import { OneTimeSecretForm } from "@/components/admin/one-time-secret-form";
 import { ConfirmButton, QuickAction } from "@/components/admin/confirm-button";
-import { ProductStatusBadge } from "@/components/admin/status-badge";
+import { DataList, DataRow } from "@/components/admin/data-list";
+import { ProductStatusBadge, StatusPill } from "@/components/admin/status-badge";
+import { ToneIcon } from "@/components/admin/icon-tile";
+import { TeacherAvatar } from "@/components/site/teacher-avatar";
+import { SubjectIcon } from "@/components/art";
 import { Alert } from "@/components/ui/alert";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -21,7 +46,8 @@ import { SubmitButton } from "@/components/ui/submit-button";
 import { Table, TD, TH, THead, TR } from "@/components/ui/table";
 import { filsToKwdString } from "@/lib/money";
 import { PRODUCT_TYPE_LABELS } from "@/lib/labels";
-import { formatDate, formatDateTime } from "@/lib/utils";
+import { ar, count, subjectVars, W } from "@/lib/design";
+import { cn, formatDate, formatDateTime } from "@/lib/utils";
 import {
   enableAccountAction,
   recordPayoutAction,
@@ -32,6 +58,10 @@ import {
   switchToManagedAction,
   updateTeacherAction,
 } from "../actions";
+import { BandChip, ProfileHero } from "../../_components/people/band";
+import { TeachersArt } from "../../_components/people/art";
+import { Kwd, SoftNote, TypeIcon } from "../../_components/people/bits";
+import { SALE_WORD, sharePct, subjectSlugOf } from "../../_components/people/helpers";
 
 export const metadata = { title: "ملف المعلم" };
 
@@ -55,22 +85,58 @@ export default async function TeacherAdminPage({ params, searchParams }: { param
   ]);
   const photo = teacher.photo_key ? storage().publicUrl(teacher.photo_key) : null;
   const shareOn = teacher.revenue_share_bps !== null;
+  // أسماء المواد المسندة (من خيارات المواد نفسها) لكبسولات الرأس
+  const chosenSet = new Set(chosen);
+  const mySubjects = subjects.filter((s) => chosenSet.has(s.id));
+  const subjectNames = [...new Set(mySubjects.map((s) => s.name))];
+  const gradeCount = new Set(mySubjects.map((s) => s.grade_name)).size;
+  const lead = subjectSlugOf(subjectNames[0]);
+  const selfManaged = teacher.mode === "self_managed" && teacher.user_id;
 
   return (
     <div className="space-y-6">
-      <AdminPageHeader
+      <ProfileHero
+        tone="pink"
+        crumbs={[{ label: "المعلمون", href: "/admin/teachers" }, { label: teacher.display_name }]}
+        avatar={<TeacherAvatar name={teacher.display_name} photoUrl={photo} size={104} subjectSlug={lead} ring="lg" decorative />}
+        eyebrow={
+          selfManaged
+            ? { label: "حساب معلم", icon: <KeyRound aria-hidden />, tone: "teal" }
+            : { label: "يديره المالك", icon: <UserCog aria-hidden />, tone: "gold" }
+        }
         title={teacher.display_name}
         description={teacher.headline || "ملف المعلم"}
-        crumbs={[{ label: "المعلمون", href: "/admin/teachers" }, { label: teacher.display_name }]}
+        chips={
+          <>
+            {teacher.is_published ? <StatusPill tone="success">صفحة ظاهرة</StatusPill> : <StatusPill tone="neutral">صفحة مخفية</StatusPill>}
+            {!teacher.can_upload ? <StatusPill tone="warning">الرفع موقوف</StatusPill> : null}
+            {subjectNames.slice(0, 4).map((n) => (
+              <span key={n} className="chip min-h-8" style={subjectVars(subjectSlugOf(n))}>
+                <SubjectIcon slug={subjectSlugOf(n) ?? undefined} name={n} />
+                {n}
+              </span>
+            ))}
+            {gradeCount ? <span className="chip chip-white min-h-8">{count(gradeCount, W.grade)}</span> : null}
+            <BandChip tone="gold" icon={<Percent aria-hidden />}>
+              {shareOn ? (
+                <>
+                  حصة المعلم {sharePct(teacher.revenue_share_bps!)}
+                </>
+              ) : (
+                "الأرباح غير مفعّلة"
+              )}
+            </BandChip>
+          </>
+        }
         actions={
           <>
-            <Button asChild size="sm">
+            <Button asChild size="md" variant="accent">
               <Link href={`/admin/products/new?teacher=${teacher.id}`}>
                 <Plus aria-hidden /> إضافة محتوى لهذا المعلم
               </Link>
             </Button>
             {teacher.is_published ? (
-              <Button asChild size="sm" variant="outline">
+              <Button asChild size="md" variant="outline">
                 <Link href={`/teachers/${teacher.slug}`} target="_blank">
                   <ExternalLink aria-hidden /> الصفحة العامة
                 </Link>
@@ -78,6 +144,7 @@ export default async function TeacherAdminPage({ params, searchParams }: { param
             ) : null}
           </>
         }
+        art={<TeachersArt className="size-full" />}
       />
       {sp.created ? (
         <Alert tone="success" title="تم إضافة المعلم">
@@ -85,8 +152,8 @@ export default async function TeacherAdminPage({ params, searchParams }: { param
         </Alert>
       ) : null}
 
-      <div className="grid items-start gap-6 lg:grid-cols-[1fr_320px]">
-        <Section title="الملف التعريفي">
+      <div className="grid items-start gap-6 lg:grid-cols-[minmax(0,1fr)_340px]">
+        <Section title="الملف التعريفي" icon={<UserRoundPen />} tone="pink" description="ما يراه الطلاب في صفحة المعلم، والمواد والصلاحيات ونسبة الأرباح">
           <TeacherForm
             action={updateTeacherAction.bind(null, teacher.id)}
             subjects={subjects}
@@ -105,130 +172,164 @@ export default async function TeacherAdminPage({ params, searchParams }: { param
           />
         </Section>
 
-        <div className="space-y-6">
-          <div className="rounded-2xl border border-line bg-surface p-5 shadow-card">
-            <h2 className="mb-3 font-bold">الصورة</h2>
-            <div className="relative mx-auto mb-3 grid size-36 place-items-center overflow-hidden rounded-full bg-brand-50 text-brand-700">
-              {photo ? <Image src={photo} alt={teacher.display_name} fill sizes="144px" className="object-cover" /> : <GraduationCap className="size-12" aria-hidden />}
+        <div className="space-y-6 max-lg:order-first">
+          <div data-testid="teacher-account">
+            <Section title="الحساب والصلاحيات" icon={<ShieldCheck />} tone="teal" description="تغيير طريقة الإدارة لا يحذف أي محتوى أو مبيعات.">
+              {selfManaged ? (
+                <div className="space-y-3 text-sm">
+                  <div className="rounded-[1.3rem] bg-brand-50/70 p-3.5 ring-1 ring-brand-100 ring-inset">
+                    <div className="flex flex-wrap items-center gap-2">
+                      <Badge tone="brand">حساب معلم</Badge>
+                      {teacher.account_active === false ? <StatusPill tone="danger">معطّل</StatusPill> : <StatusPill tone="success">نشط</StatusPill>}
+                    </div>
+                    <p dir="ltr" className="mt-2.5 flex items-center gap-2 text-start font-display font-extrabold break-all text-ink">
+                      <Mail className="size-4 shrink-0 text-brand-600" aria-hidden />
+                      {teacher.account_email}
+                    </p>
+                    <p className="mt-1 flex items-center gap-1.5 text-xs text-muted">
+                      <Clock3 className="size-3.5" aria-hidden />
+                      آخر دخول: {formatDateTime(teacher.account_last_login)}
+                    </p>
+                  </div>
+                  <div className="flex flex-col items-stretch gap-2 [&_button]:w-full [&>div]:w-full">
+                    <ConfirmButton
+                      action={resetPasswordAction}
+                      hidden={{ teacherId: teacher.id }}
+                      label="إعادة تعيين كلمة المرور"
+                      icon={<KeyRound aria-hidden />}
+                      variant="outline"
+                      title="إعادة تعيين كلمة المرور؟"
+                      description="ستُولَّد كلمة مرور جديدة وتُعرض مرة واحدة، ويُسجَّل خروج المعلم من كل الأجهزة."
+                      confirmLabel="إعادة التعيين"
+                    />
+                    {teacher.account_active === false ? (
+                      <ConfirmButton action={setAccountActiveAction} hidden={{ teacherId: teacher.id, active: "1" }} label="تفعيل الحساب" icon={<ShieldCheck aria-hidden />} variant="outline" title="تفعيل حساب المعلم؟" requireReason confirmLabel="تفعيل" />
+                    ) : (
+                      <ConfirmButton
+                        action={setAccountActiveAction}
+                        hidden={{ teacherId: teacher.id, active: "0" }}
+                        label="تعطيل الحساب"
+                        icon={<ShieldOff aria-hidden />}
+                        title="تعطيل حساب المعلم؟"
+                        description="لن يستطيع الدخول، ويبقى محتواه منشورًا ومبيعاته كما هي."
+                        requireReason
+                        confirmLabel="تعطيل"
+                      />
+                    )}
+                    <ConfirmButton
+                      action={switchToManagedAction}
+                      hidden={{ teacherId: teacher.id }}
+                      label="تحويل إلى «يديره المالك»"
+                      icon={<UserMinus aria-hidden />}
+                      variant="ghost"
+                      title="إلغاء حساب الدخول للمعلم؟"
+                      description="يتحول الحساب إلى طالب عادي ويُسجَّل خروجه. المحتوى والمبيعات والصلاحيات تبقى مرتبطة بملف المعلم وتديرها أنت."
+                      confirmLabel="تحويل"
+                    />
+                  </div>
+                </div>
+              ) : (
+                <div className="space-y-3">
+                  <div className="rounded-[1.3rem] bg-accent-100/60 p-3.5 ring-1 ring-accent-200 ring-inset">
+                    <Badge tone="neutral">يديره المالك، بدون حساب دخول</Badge>
+                    <p className="mt-2 text-xs leading-6 text-ink-soft">لتفعيل حساب يرفع منه المعلم مسوداته بنفسه، أدخل بريده. إن كان البريد مسجلًا كطالب سيُرقّى حسابه.</p>
+                  </div>
+                  <OneTimeSecretForm action={enableAccountAction} className="space-y-3">
+                    <input type="hidden" name="teacherId" value={teacher.id} />
+                    <Field label="بريد المعلم" htmlFor="acc-email">
+                      <Input id="acc-email" name="email" type="email" dir="ltr" className="text-start" required />
+                    </Field>
+                    <Field label="الاسم الكامل" htmlFor="acc-name">
+                      <Input id="acc-name" name="fullName" defaultValue={teacher.display_name} required />
+                    </Field>
+                    <SubmitButton size="md" className="w-full">
+                      <KeyRound aria-hidden /> تفعيل حساب المعلم
+                    </SubmitButton>
+                  </OneTimeSecretForm>
+                </div>
+              )}
+              <div className="mt-4 border-t border-dashed border-line pt-3">
+                {teacher.can_upload ? (
+                  <QuickAction action={setCanUploadAction} hidden={{ teacherId: teacher.id, canUpload: "0" }} label="إيقاف صلاحية الرفع" variant="ghost" />
+                ) : (
+                  <>
+                    <StatusPill tone="warning">صلاحية الرفع موقوفة</StatusPill>
+                    <div className="mt-2">
+                      <QuickAction action={setCanUploadAction} hidden={{ teacherId: teacher.id, canUpload: "1" }} label="إعادة تفعيل الرفع" variant="outline" />
+                    </div>
+                  </>
+                )}
+              </div>
+            </Section>
+          </div>
+
+          <Section title="الصورة" icon={<Camera />} tone="violet">
+            <div className="relative mb-4 grid place-items-center overflow-hidden rounded-[1.4rem] py-6" style={subjectVars(lead)}>
+              <span className="absolute inset-0 bg-[var(--soft)]" aria-hidden />
+              <span className="absolute inset-0 bg-[radial-gradient(color-mix(in_oklab,var(--b)_25%,transparent)_1.2px,transparent_1.6px)] bg-[length:16px_16px]" aria-hidden />
+              <TeacherAvatar name={teacher.display_name} photoUrl={photo} size={128} subjectSlug={lead} ring="lg" className="relative" />
             </div>
-            <FileUploader target="teacher_photo" teacherId={teacher.id} accept="image/jpeg,image/png,image/webp" label={photo ? "تغيير الصورة" : "رفع صورة"} hint="صورة مربعة · حتى 5 م.ب" compact />
+            <FileUploader target="teacher_photo" teacherId={teacher.id} accept="image/jpeg,image/png,image/webp" label={photo ? "تغيير الصورة" : "رفع صورة"} hint="صورة مربعة، حتى 5 م.ب" compact />
             {photo ? (
               <div className="mt-2">
                 <QuickAction action={removeTeacherPhotoAction} hidden={{ teacherId: teacher.id }} label="إزالة الصورة" variant="ghost" />
               </div>
             ) : null}
-          </div>
-
-          <div className="rounded-2xl border border-line bg-surface p-5 shadow-card" data-testid="teacher-account">
-            <h2 className="mb-1 font-bold">الحساب والصلاحيات</h2>
-            <p className="mb-4 text-xs text-muted">تغيير طريقة الإدارة لا يحذف أي محتوى أو مبيعات.</p>
-            {teacher.mode === "self_managed" && teacher.user_id ? (
-              <div className="space-y-3 text-sm">
-                <div className="flex flex-wrap items-center gap-2">
-                  <Badge tone="brand">حساب معلم</Badge>
-                  {teacher.account_active === false ? <Badge tone="danger">معطّل</Badge> : <Badge tone="success">نشط</Badge>}
-                </div>
-                <p dir="ltr" className="text-start font-semibold">
-                  {teacher.account_email}
-                </p>
-                <p className="text-xs text-muted">آخر دخول: {formatDateTime(teacher.account_last_login)}</p>
-                <div className="flex flex-col gap-2 border-t border-line pt-3">
-                  <ConfirmButton
-                    action={resetPasswordAction}
-                    hidden={{ teacherId: teacher.id }}
-                    label="إعادة تعيين كلمة المرور"
-                    icon={<KeyRound aria-hidden />}
-                    variant="outline"
-                    title="إعادة تعيين كلمة المرور؟"
-                    description="ستُولَّد كلمة مرور جديدة وتُعرض مرة واحدة، ويُسجَّل خروج المعلم من كل الأجهزة."
-                    confirmLabel="إعادة التعيين"
-                  />
-                  {teacher.account_active === false ? (
-                    <ConfirmButton action={setAccountActiveAction} hidden={{ teacherId: teacher.id, active: "1" }} label="تفعيل الحساب" icon={<ShieldCheck aria-hidden />} variant="outline" title="تفعيل حساب المعلم؟" requireReason confirmLabel="تفعيل" />
-                  ) : (
-                    <ConfirmButton
-                      action={setAccountActiveAction}
-                      hidden={{ teacherId: teacher.id, active: "0" }}
-                      label="تعطيل الحساب"
-                      icon={<ShieldOff aria-hidden />}
-                      title="تعطيل حساب المعلم؟"
-                      description="لن يستطيع الدخول، ويبقى محتواه منشورًا ومبيعاته كما هي."
-                      requireReason
-                      confirmLabel="تعطيل"
-                    />
-                  )}
-                  <ConfirmButton
-                    action={switchToManagedAction}
-                    hidden={{ teacherId: teacher.id }}
-                    label="تحويل إلى «يديره المالك»"
-                    icon={<UserMinus aria-hidden />}
-                    variant="ghost"
-                    title="إلغاء حساب الدخول للمعلم؟"
-                    description="يتحول الحساب إلى طالب عادي ويُسجَّل خروجه. المحتوى والمبيعات والصلاحيات تبقى مرتبطة بملف المعلم وتديرها أنت."
-                    confirmLabel="تحويل"
-                  />
-                </div>
-              </div>
-            ) : (
-              <div className="space-y-3">
-                <Badge tone="neutral">يديره المالك — بدون حساب دخول</Badge>
-                <p className="text-xs leading-6 text-muted">لتفعيل حساب يرفع منه المعلم مسوداته بنفسه، أدخل بريده. إن كان البريد مسجلًا كطالب سيُرقّى حسابه.</p>
-                <OneTimeSecretForm action={enableAccountAction} className="space-y-3">
-                  <input type="hidden" name="teacherId" value={teacher.id} />
-                  <Field label="بريد المعلم" htmlFor="acc-email">
-                    <Input id="acc-email" name="email" type="email" dir="ltr" className="text-start" required />
-                  </Field>
-                  <Field label="الاسم الكامل" htmlFor="acc-name">
-                    <Input id="acc-name" name="fullName" defaultValue={teacher.display_name} required />
-                  </Field>
-                  <SubmitButton size="sm">تفعيل حساب المعلم</SubmitButton>
-                </OneTimeSecretForm>
-              </div>
-            )}
-            <div className="mt-4 border-t border-line pt-3">
-              {teacher.can_upload ? (
-                <QuickAction action={setCanUploadAction} hidden={{ teacherId: teacher.id, canUpload: "0" }} label="إيقاف صلاحية الرفع" variant="ghost" />
-              ) : (
-                <>
-                  <Badge tone="warning">صلاحية الرفع موقوفة</Badge>
-                  <div className="mt-2">
-                    <QuickAction action={setCanUploadAction} hidden={{ teacherId: teacher.id, canUpload: "1" }} label="إعادة تفعيل الرفع" variant="outline" />
-                  </div>
-                </>
-              )}
-            </div>
-          </div>
+          </Section>
         </div>
       </div>
 
       <Section
         title="المبيعات والأرباح"
-        description={shareOn ? `حصة المعلم ${teacher.revenue_share_bps! / 100}% من صافي المبيعات المؤهلة (بعد الخصم والرسوم المعتمدة)` : "نظام الأرباح غير مفعّل لهذا المعلم — حدد نسبة في الملف لتفعيله للمبيعات القادمة."}
+        icon={<Coins />}
+        tone="gold"
+        description={shareOn ? `حصة المعلم ${sharePct(teacher.revenue_share_bps!)} من صافي المبيعات المؤهلة (بعد الخصم والرسوم المعتمدة)` : "نظام الأرباح غير مفعّل لهذا المعلم، حدد نسبة في الملف لتفعيله للمبيعات القادمة."}
         actions={
-          <Link href={includeTest ? `/admin/teachers/${id}` : `/admin/teachers/${id}?test=1`} className="rounded-xl border border-line-strong px-3 py-1.5 text-xs font-semibold text-ink-soft hover:bg-brand-50">
+          <Link
+            href={includeTest ? `/admin/teachers/${id}` : `/admin/teachers/${id}?test=1`}
+            className={cn(
+              "inline-flex min-h-11 items-center gap-1.5 rounded-full px-4 font-display text-[0.85rem] font-extrabold ring-1 ring-inset transition-colors",
+              includeTest ? "bg-sky-50 text-sky-700 ring-sky/25 hover:bg-sky-50/70" : "bg-surface text-ink-soft ring-line-strong hover:bg-mist",
+            )}
+          >
+            {includeTest ? <EyeOff className="size-4" aria-hidden /> : <FlaskConical className="size-4" aria-hidden />}
             {includeTest ? "إخفاء البيانات التجريبية" : "إظهار البيانات التجريبية"}
           </Link>
         }
       >
-        <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
-          <StatCard label="عمليات بيع" value={<span className="num">{summary.items}</span>} hint={`${summary.orders} طلب`} icon={<FileText />} />
-          <StatCard label="إجمالي المبيعات" value={<><span className="num">{filsToKwdString(summary.grossFils)}</span> <span className="text-sm text-muted">د.ك</span></>} icon={<Banknote />} />
-          <StatCard label="المستحق للمعلم" value={<><span className="num">{filsToKwdString(balance.earnedFils)}</span> <span className="text-sm text-muted">د.ك</span></>} hint={balance.reversedFils ? `معكوس بسبب استرداد: ${filsToKwdString(balance.reversedFils)}` : undefined} icon={<Wallet />} />
+        <StatGrid cols={4}>
+          <StatCard label="عمليات بيع" tone="green" value={<span>{ar(summary.items)}</span>} hint={count(summary.orders, W.order)} icon={<FileText />} />
+          <StatCard label="إجمالي المبيعات" tone="sky" value={<><span className="num">{filsToKwdString(summary.grossFils)}</span> <span className="text-sm text-muted">د.ك</span></>} icon={<Banknote />} />
+          <StatCard
+            label="المستحق للمعلم"
+            tone="violet"
+            value={<><span className="num">{filsToKwdString(balance.earnedFils)}</span> <span className="text-sm text-muted">د.ك</span></>}
+            hint={balance.reversedFils ? `معكوس بسبب استرداد: ${filsToKwdString(balance.reversedFils)}` : undefined}
+            icon={<Wallet />}
+          />
           <StatCard
             label="الرصيد غير المسدد"
+            tone="gold"
             value={<><span className={`num ${balance.balanceFils < 0 ? "text-danger" : ""}`} data-testid="teacher-balance">{filsToKwdString(balance.balanceFils)}</span> <span className="text-sm text-muted">د.ك</span></>}
             hint={`المسدد: ${filsToKwdString(balance.paidFils)} د.ك`}
             icon={<Wallet />}
           />
-        </div>
+        </StatGrid>
 
-        <div className="mt-5 flex flex-wrap items-center gap-3">
+        <div className="mt-5 flex flex-wrap items-center gap-3 rounded-[1.4rem] border-2 border-dashed border-[#F0C766] bg-[linear-gradient(160deg,#fffaf0,#fff1cf)] p-3.5">
+          <ToneIcon tone="gold" size="sm">
+            <Landmark />
+          </ToneIcon>
+          <p className="min-w-[12rem] flex-1 text-[0.85rem] leading-6 text-ink-soft">
+            سجّل ما دفعته للمعلم خارج المنصة. <span className="text-muted">كل تسوية تُحفظ في سجل التدقيق.</span>
+          </p>
           <ConfirmButton
             action={recordPayoutAction}
             hidden={{ teacherId: teacher.id }}
             label="تسجيل تسوية يدوية"
             icon={<Banknote aria-hidden />}
             variant="primary"
+            size="md"
             title="تسجيل تسوية للمعلم"
             description="سجّل مبلغًا دفعته للمعلم خارج المنصة (تحويل بنكي أو نقدًا). لا تتم أي تحويلات تلقائية."
             selectField={{ name: "method", label: "طريقة الدفع", options: Object.entries(METHOD_LABELS).map(([value, label]) => ({ value, label })) }}
@@ -240,13 +341,17 @@ export default async function TeacherAdminPage({ params, searchParams }: { param
             reasonLabel="ملاحظة (إلزامي)"
             confirmLabel="تسجيل التسوية"
           />
-          <p className="text-xs text-muted">كل تسوية تُحفظ في سجل التدقيق.</p>
         </div>
 
-        <h3 className="mt-6 mb-2 font-bold">السجل المحاسبي</h3>
+        <h3 className="mt-7 mb-3 flex items-center gap-2 font-display text-[1.1rem] font-black text-ink">
+          <FileText className="size-4 text-brand-600" aria-hidden /> السجل المحاسبي
+        </h3>
         {earnings.length === 0 ? (
-          <p className="rounded-xl bg-canvas p-4 text-center text-sm text-muted">لا توجد أرباح مسجلة بعد.</p>
+          <SoftNote icon={<Coins aria-hidden />}>لا توجد أرباح مسجلة بعد.</SoftNote>
         ) : (
+          <>
+          {/* الجدول الكامل للشاشات الواسعة (عشرة أعمدة لا تتسع لأقل من ذلك) */}
+          <div className="hidden min-[1320px]:block">
           <Table>
             <THead>
               <tr>
@@ -266,75 +371,152 @@ export default async function TeacherAdminPage({ params, searchParams }: { param
               {earnings.map((e) => (
                 <TR key={e.id}>
                   <TD>
-                    <Link href={`/admin/orders/${e.order_id}`} className="num font-semibold text-brand-700 hover:underline">
+                    <Link href={`/admin/orders/${e.order_id}`} className="num font-display font-extrabold whitespace-nowrap text-brand-700 hover:underline">
                       {e.order_number}
                     </Link>
                     <p className="text-xs text-muted">{formatDate(e.created_at)}</p>
                   </TD>
-                  <TD className="max-w-48 text-xs">{e.product_title}</TD>
+                  <TD className="max-w-48 text-xs font-semibold text-ink">{e.product_title}</TD>
                   <TD className="num">{filsToKwdString(e.gross_fils)}</TD>
                   <TD className="num text-muted">{filsToKwdString(e.discount_fils)}</TD>
                   <TD className="num text-muted">{filsToKwdString(e.fee_fils)}</TD>
                   <TD className="num">{filsToKwdString(e.net_fils)}</TD>
-                  <TD className="num text-xs">{e.share_bps / 100}%</TD>
-                  <TD className="num font-semibold">{filsToKwdString(e.teacher_fils)}</TD>
+                  <TD className="text-xs font-bold whitespace-nowrap">{sharePct(e.share_bps)}</TD>
+                  <TD className="num font-display font-black text-brand-800">{filsToKwdString(e.teacher_fils)}</TD>
                   <TD className="num">{filsToKwdString(e.platform_fils)}</TD>
                   <TD>
                     <div className="flex flex-wrap gap-1">
-                      {e.status === "reversed" ? <Badge tone="danger">معكوس (استرداد)</Badge> : <Badge tone="success">مستحق</Badge>}
-                      {e.is_test ? <Badge tone="warning">تجريبي</Badge> : null}
+                      {e.status === "reversed" ? <StatusPill tone="danger">معكوس (استرداد)</StatusPill> : <StatusPill tone="success">مستحق</StatusPill>}
+                      {e.is_test ? <StatusPill tone="info">تجريبي</StatusPill> : null}
                     </div>
                   </TD>
                 </TR>
               ))}
             </tbody>
           </Table>
+          </div>
+          {/* بطاقات للجوال والأجهزة اللوحية: حصة المعلم والحالة ظاهرتان أولًا، والتفاصيل في شبكة صغيرة */}
+          <DataList className="min-[1320px]:hidden">
+            {earnings.map((e) => (
+              <DataRow
+                key={e.id}
+                href={`/admin/orders/${e.order_id}`}
+                leading={
+                  <ToneIcon tone={e.status === "reversed" ? "coral" : "gold"} size="sm">
+                    <Coins />
+                  </ToneIcon>
+                }
+                title={
+                  <>
+                    <span className="num whitespace-nowrap">{e.order_number}</span>{" "}
+                    <span className="font-sans text-[0.78rem] font-semibold whitespace-nowrap text-muted">{formatDate(e.created_at)}</span>
+                  </>
+                }
+                sub={<span className="line-clamp-2">{e.product_title}</span>}
+                aside={
+                  <>
+                    <span className="flex flex-wrap gap-1">
+                      {e.status === "reversed" ? <StatusPill tone="danger">معكوس (استرداد)</StatusPill> : <StatusPill tone="success">مستحق</StatusPill>}
+                      {e.is_test ? <StatusPill tone="info">تجريبي</StatusPill> : null}
+                    </span>
+                    <span className="text-end">
+                      <span className="block text-[0.7rem] font-bold text-muted">حصة المعلم</span>
+                      <Kwd fils={e.teacher_fils} className="font-display text-[1.05rem] font-black text-brand-800" />
+                    </span>
+                  </>
+                }
+                footer={
+                  <dl className="grid grid-cols-2 gap-1.5 text-[0.78rem] sm:grid-cols-3">
+                    {[
+                      { label: "القيمة", fils: e.gross_fils },
+                      { label: "الخصم", fils: e.discount_fils },
+                      { label: "الرسوم", fils: e.fee_fils },
+                      { label: "الصافي", fils: e.net_fils },
+                      { label: "حصة المنصة", fils: e.platform_fils },
+                    ].map((it) => (
+                      <div key={it.label} className="flex items-center justify-between gap-2 rounded-xl bg-canvas px-3 py-1.5">
+                        <dt className="font-bold text-muted">{it.label}</dt>
+                        <dd className="num font-display font-extrabold text-ink">{filsToKwdString(it.fils)}</dd>
+                      </div>
+                    ))}
+                    <div className="flex items-center justify-between gap-2 rounded-xl bg-accent-100/70 px-3 py-1.5">
+                      <dt className="font-bold text-accent-900">النسبة</dt>
+                      <dd className="font-display font-extrabold text-ink">{sharePct(e.share_bps)}</dd>
+                    </div>
+                  </dl>
+                }
+              />
+            ))}
+          </DataList>
+          </>
         )}
 
-        <h3 className="mt-6 mb-2 font-bold">التسويات المسددة</h3>
+        <h3 className="mt-7 mb-3 flex items-center gap-2 font-display text-[1.1rem] font-black text-ink">
+          <Landmark className="size-4 text-brand-600" aria-hidden /> التسويات المسددة
+        </h3>
         {payouts.length === 0 ? (
-          <p className="rounded-xl bg-canvas p-4 text-center text-sm text-muted">لا توجد تسويات بعد.</p>
+          <SoftNote icon={<Landmark aria-hidden />}>لا توجد تسويات بعد.</SoftNote>
         ) : (
-          <ul className="divide-y divide-line rounded-xl border border-line">
+          <DataList>
             {payouts.map((p) => (
-              <li key={p.id} className="flex flex-wrap items-center gap-x-4 gap-y-1 p-3 text-sm">
-                <span className="num font-bold">{filsToKwdString(p.amount_fils)} د.ك</span>
-                <span className="text-muted">{METHOD_LABELS[p.method] ?? p.method}</span>
-                {p.reference ? (
-                  <span className="num text-xs text-muted" dir="ltr">
-                    {p.reference}
+              <DataRow
+                key={p.id}
+                leading={
+                  <ToneIcon tone="gold" size="sm">
+                    <Banknote />
+                  </ToneIcon>
+                }
+                title={<Kwd fils={p.amount_fils} />}
+                sub={
+                  <span className="flex flex-wrap items-center gap-x-2">
+                    <span>{METHOD_LABELS[p.method] ?? p.method}</span>
+                    {p.reference ? (
+                      <span className="num text-xs" dir="ltr">
+                        {p.reference}
+                      </span>
+                    ) : null}
+                    {p.note ? <span className="text-xs">{p.note}</span> : null}
                   </span>
-                ) : null}
-                <span className="text-xs text-muted">{p.note}</span>
-                <span className="ms-auto text-xs text-muted">
-                  {formatDateTime(p.paid_at)} {p.created_by_name ? `— ${p.created_by_name}` : ""}
-                </span>
-              </li>
+                }
+                aside={
+                  <span className="text-end text-xs text-muted">
+                    {formatDateTime(p.paid_at)}
+                    {p.created_by_name ? <span className="block">{p.created_by_name}</span> : null}
+                  </span>
+                }
+              />
             ))}
-          </ul>
+          </DataList>
         )}
       </Section>
 
-      <Section title={`محتوى المعلم (${products.length})`}>
+      <Section title={`محتوى المعلم (${ar(products.length)})`} icon={<BookOpenCheck />} tone="sky">
         {products.length === 0 ? (
-          <p className="rounded-xl bg-canvas p-4 text-center text-sm text-muted">لا يوجد محتوى بعد.</p>
+          <SoftNote icon={<BookOpenCheck aria-hidden />}>لا يوجد محتوى بعد.</SoftNote>
         ) : (
-          <ul className="divide-y divide-line rounded-xl border border-line">
+          <DataList>
             {products.map((p) => (
-              <li key={p.id} className="flex flex-wrap items-center gap-3 p-3 text-sm">
-                <div className="min-w-0 flex-1">
-                  <Link href={`/admin/products/${p.id}`} className="font-semibold hover:text-brand-700">
-                    {p.title}
-                  </Link>
-                  <p className="text-xs text-muted">
-                    {PRODUCT_TYPE_LABELS[p.type]} · {p.grade_name} · {p.subject_name ?? "—"}
-                  </p>
-                </div>
-                <span className="num text-xs text-muted">{p.sold} مبيعات</span>
-                <ProductStatusBadge status={p.status} />
-              </li>
+              <DataRow
+                key={p.id}
+                href={`/admin/products/${p.id}`}
+                leading={<TypeIcon type={p.type} />}
+                title={p.title}
+                sub={
+                  <>
+                    {[PRODUCT_TYPE_LABELS[p.type], p.grade_name, p.subject_name].filter(Boolean).join("، ")}
+                  </>
+                }
+                aside={
+                  <>
+                    <span className="chip chip-white">
+                      {count(p.sold, SALE_WORD)}
+                    </span>
+                    <ProductStatusBadge status={p.status} />
+                  </>
+                }
+              />
             ))}
-          </ul>
+          </DataList>
         )}
       </Section>
     </div>

@@ -1,24 +1,36 @@
+import type * as React from "react";
 import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import { BookOpen, Clock, PlayCircle } from "lucide-react";
+import { ArrowLeft, Clock3, Layers, MonitorPlay, PlayCircle, Quote } from "lucide-react";
 import { getTeacherBySlug, teacherContent } from "@/server/catalog/queries";
 import { getCurrentUser } from "@/server/auth/session";
 import { accessibleProductIds } from "@/server/access/entitlements";
 import { Breadcrumbs } from "@/components/ui/breadcrumbs";
 import { EmptyState } from "@/components/ui/empty-state";
 import { Alert } from "@/components/ui/alert";
+import { StatPill } from "@/components/ui/page-header";
+import { Sparkle, SubjectArt, SubjectIcon } from "@/components/art";
 import { TeacherAvatar } from "@/components/site/teacher-avatar";
-import { VideoCard } from "@/components/site/video-card";
-import { ProductCard } from "@/components/site/product-card";
-import { formatTotalDuration } from "@/components/site/format";
-import { isPdfType, PRODUCT_TYPE_SECTION_LABELS } from "@/lib/labels";
+import { ProductCard, ProductGrid, ProductShelf } from "@/components/site/product-card";
+import { isPdfType } from "@/lib/labels";
+import { ar, count, duration, gradeClass, toneClass, W } from "@/lib/design";
+import { cn } from "@/lib/utils";
 import { env } from "@/server/env";
+import { balancedGrid, pillCount, TypeSlots } from "../../grades/_components/browse";
+import { teacherStyles as s } from "../_components/teachers";
 
 type Params = { slug: string };
 
-const SPAN = { 1: "lg:col-span-1", 2: "lg:col-span-2", 3: "lg:col-span-3", 4: "lg:col-span-4" } as const;
-const INNER = { 1: "lg:grid-cols-1", 2: "lg:grid-cols-2", 3: "lg:grid-cols-3", 4: "lg:grid-cols-4" } as const;
+/** مواضع ملصقات المواد على الغلاف: من جهة نهاية السطر (يسار) بعيدًا عن رسم المادة في جهة البداية */
+const BUBBLE_SPOTS: React.CSSProperties[] = [
+  { top: "24%", insetInlineEnd: "40%" },
+  { top: "56%", insetInlineEnd: "27%" },
+  { top: "18%", insetInlineEnd: "14%" },
+];
+
+/** مجموعة صغيرة (≤٦ منتجات أو ≤٢ لكل نوع) تُعرض شبكة واحدة؛ شارات النوع على البطاقات تكفي بلا رؤوس أنواع */
+const FLAT_MAX = 6;
 
 export async function generateMetadata({ params }: { params: Promise<Params> }): Promise<Metadata> {
   const t = await getTeacherBySlug((await params).slug);
@@ -38,9 +50,11 @@ export default async function TeacherPage({ params }: { params: Promise<Params> 
   const teacher = await getTeacherBySlug(slug, { includeUnpublished: user?.role === "admin" });
   if (!teacher) notFound();
   const [groups, owned] = await Promise.all([teacherContent(teacher.id), user ? accessibleProductIds(user.id) : Promise.resolve(undefined)]);
-  const grades = [...new Set(teacher.subjects.map((s) => s.gradeName))];
-  const subjects = [...new Set(teacher.subjects.map((s) => s.name))];
-  const productCount = groups.reduce((n, g) => n + g.sections.reduce((m, s) => m + s.items.length, 0), 0);
+  const subjects = [...new Map(teacher.subjects.map((x) => [x.slug ?? x.name, x])).values()];
+  const grades = [...new Map(teacher.subjects.map((x) => [x.gradeSlug, x])).values()].sort((a, b) => a.gradeLevel - b.gradeLevel);
+  const productCount = groups.reduce((n, g) => n + g.sections.reduce((m, sec) => m + sec.items.length, 0), 0);
+  const mainSlug = subjects[0]?.slug ?? groups[0]?.subjectSlug ?? null;
+  const total = duration(teacher.totalDurationSeconds);
 
   const jsonLd = {
     "@context": "https://schema.org",
@@ -53,108 +67,182 @@ export default async function TeacherPage({ params }: { params: Promise<Params> 
   };
 
   return (
-    <div className="pb-10">
+    <div className="pb-16">
       <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd).replace(/</g, "\\u003c") }} />
-      {/* رأس الملف التعريفي */}
-      <section className="border-b border-line bg-gradient-to-b from-brand-50 to-canvas">
-        <div className="mx-auto max-w-6xl px-4 pt-6 pb-8">
-          <Breadcrumbs items={[{ label: "الرئيسية", href: "/" }, { label: "المعلمون", href: "/teachers" }, { label: teacher.name }]} />
-          {!teacher.isPublished ? (
-            <Alert tone="warning" className="mt-4">
-              معاينة المالك — ملف هذا المعلم غير منشور للطلاب بعد.
-            </Alert>
-          ) : null}
-          <div className="mt-6 flex flex-col items-center gap-5 text-center sm:flex-row sm:items-start sm:text-start">
-            <TeacherAvatar name={teacher.name} photoUrl={teacher.photoUrl} size={112} className="shadow-lift" />
-            <div className="min-w-0 flex-1">
-              <h1 className="text-3xl font-bold">{teacher.name}</h1>
-              {teacher.headline ? <p className="mt-1.5 text-lg text-ink-soft">{teacher.headline}</p> : null}
-              <div className="mt-3 flex flex-wrap justify-center gap-1.5 sm:justify-start">
-                {subjects.map((s) => (
-                  <span key={s} className="rounded-full bg-brand-600 px-3 py-1 text-xs font-semibold text-white">
-                    {s}
-                  </span>
-                ))}
-                {grades.map((g) => (
-                  <span key={g} className="rounded-full border border-brand-200 bg-surface px-3 py-1 text-xs font-semibold text-brand-700">
-                    {g}
-                  </span>
-                ))}
-              </div>
-              <dl className="mt-4 flex flex-wrap justify-center gap-x-6 gap-y-2 text-sm sm:justify-start">
-                <div className="flex items-center gap-1.5">
-                  <PlayCircle className="size-4 text-brand-600" aria-hidden />
-                  <dt className="sr-only">الفيديوهات</dt>
-                  <dd>
-                    <span className="num font-bold">{teacher.videoCount}</span> فيديو
-                  </dd>
-                </div>
-                {teacher.totalDurationSeconds ? (
-                  <div className="flex items-center gap-1.5">
-                    <Clock className="size-4 text-brand-600" aria-hidden />
-                    <dt className="sr-only">مدة الشرح</dt>
-                    <dd>{formatTotalDuration(teacher.totalDurationSeconds)} من الشرح</dd>
+      <section className="mx-auto max-w-7xl px-4 pt-5 sm:px-6 sm:pt-6" aria-labelledby="teacher-name">
+        <Breadcrumbs items={[{ label: "الرئيسية", href: "/" }, { label: "المعلمون", href: "/teachers" }, { label: teacher.name }]} />
+        {!teacher.isPublished ? (
+          <Alert tone="warning" className="mt-4">
+            معاينة للمالك: ملف هذا المعلم غير منشور للطلاب بعد.
+          </Alert>
+        ) : null}
+
+        <div className={cn("panel mt-5", s.profile, toneClass(mainSlug))}>
+          <div className={cn("poster", s.cover)} aria-hidden>
+            <span className={s.coverArt}>
+              <SubjectArt slug={mainSlug} />
+            </span>
+            {/* ملصقات المواد الأخرى فقط (المادة الأساسية مرسومة في الغلاف)، في النصف البعيد عن الرسم */}
+            {subjects
+              .filter((x) => x.slug !== mainSlug)
+              .slice(0, 3)
+              .map((x, i) => (
+                <span key={x.id} className={cn(s.coverBubble, toneClass(x.slug))} style={BUBBLE_SPOTS[i]}>
+                  <SubjectIcon slug={x.slug} size={24} />
+                </span>
+              ))}
+            <span className={s.coverSpark} style={{ top: "16%", right: "34%" }}>
+              <Sparkle className="animate-twinkle size-full" />
+            </span>
+            <span className={s.coverSpark} style={{ bottom: "18%", right: "46%", width: 16, height: 16 }}>
+              <Sparkle className="animate-twinkle size-full [animation-delay:1.2s]" color="#fff" />
+            </span>
+          </div>
+
+          <div className={s.pbody}>
+            <div className={s.avatarWrap}>
+              <TeacherAvatar name={teacher.name} photoUrl={teacher.photoUrl} size={168} subjectSlug={mainSlug} ring="lg" className="max-sm:!size-[132px] max-sm:!text-[3.6rem]" />
+              {mainSlug ? (
+                <span className={s.avatarBadge} aria-hidden>
+                  <SubjectIcon slug={mainSlug} size={20} strokeWidth={2.4} />
+                </span>
+              ) : null}
+            </div>
+            <div className="min-w-0">
+              <h1 id="teacher-name" className={s.pname}>
+                {teacher.name}
+              </h1>
+              {teacher.headline ? <p className={s.headline}>{teacher.headline}</p> : null}
+              {subjects.length || grades.length ? (
+                <ul className={s.pchips} aria-label="المواد والصفوف">
+                  {subjects.map((x) => (
+                    <li key={x.id} className={toneClass(x.slug)}>
+                      <span aria-hidden>
+                        <SubjectIcon slug={x.slug} size={13} strokeWidth={2.6} />
+                      </span>
+                      {x.name}
+                    </li>
+                  ))}
+                  {grades.map((g) => (
+                    <li key={g.gradeSlug} className={cn(s.gchip, gradeClass(g.gradeLevel))}>
+                      <span aria-hidden>{ar(g.gradeLevel)}</span>
+                      {g.gradeName}
+                    </li>
+                  ))}
+                </ul>
+              ) : null}
+            </div>
+            {teacher.videoCount || productCount || total ? (
+              <dl className={s.pstats}>
+                {teacher.videoCount ? (
+                  <div>
+                    <dt className="sr-only">الدروس المرئية</dt>
+                    <dd>
+                      <StatPill tone="teal" icon={<MonitorPlay aria-hidden />} {...pillCount(teacher.videoCount, W.videoLesson)} />
+                    </dd>
                   </div>
                 ) : null}
-                <div className="flex items-center gap-1.5">
-                  <BookOpen className="size-4 text-brand-600" aria-hidden />
-                  <dt className="sr-only">المحتوى</dt>
-                  <dd>
-                    <span className="num font-bold">{productCount}</span> محتوى
-                  </dd>
-                </div>
+                {productCount ? (
+                  <div>
+                    <dt className="sr-only">المحتوى المتاح للشراء</dt>
+                    <dd>
+                      <StatPill tone="gold" icon={<Layers aria-hidden />} {...pillCount(productCount, W.product)} />
+                    </dd>
+                  </div>
+                ) : null}
+                {total ? (
+                  <div>
+                    <dt className="sr-only">مدة الشرح</dt>
+                    <dd>
+                      <StatPill tone="coral" icon={<Clock3 aria-hidden />} num={total} label="من الشرح" />
+                    </dd>
+                  </div>
+                ) : null}
               </dl>
-            </div>
+            ) : null}
           </div>
-          {teacher.bio ? <p className="mx-auto mt-6 max-w-3xl leading-8 whitespace-pre-line text-ink-soft sm:mx-0">{teacher.bio}</p> : null}
+
+          {teacher.bio ? (
+            <div className={s.bio}>
+              <h2>
+                <Quote aria-hidden />
+                عن المعلم
+              </h2>
+              <p>{teacher.bio}</p>
+            </div>
+          ) : null}
         </div>
       </section>
 
       {groups.length === 0 ? (
-        <div className="mx-auto max-w-6xl px-4 pt-8">
-          <EmptyState icon={<PlayCircle />} title="المحتوى قيد التجهيز" description="يعمل المعلم على تجهيز شروحاته، تابعنا قريبًا." />
+        <div className="mx-auto max-w-7xl px-4 pt-10 sm:px-6">
+          <EmptyState headingLevel={2} icon={<PlayCircle />} title="لم يُنشر محتوى لهذا المعلم بعد" description="تظهر شروحاته ومراجعاته هنا فور نشرها." />
         </div>
       ) : (
         <>
           {groups.length > 1 ? (
-            <nav aria-label="انتقل إلى المادة" className="sticky top-16 z-20 border-b border-line bg-surface/95 backdrop-blur no-print">
-              <div className="mx-auto flex max-w-6xl gap-2 overflow-x-auto px-4 py-2.5">
+            <nav aria-label="انتقل إلى المادة" className={cn(s.subnav, "no-print mx-auto max-w-7xl px-4 sm:px-6")}>
+              <div className={s.subnavInner}>
                 {groups.map((g) => (
-                  <a key={g.key} href={`#${g.subjectSlug ?? "all"}-${g.gradeSlug}`} className="rounded-full border border-line bg-surface px-4 py-1.5 text-sm font-semibold whitespace-nowrap text-ink-soft hover:border-brand-300 hover:text-brand-700">
-                    {g.subjectName ?? "عام"} · {g.gradeName}
+                  <a key={g.key} href={`#${g.subjectSlug ?? "all"}-${g.gradeSlug}`} className={cn(s.snChip, toneClass(g.subjectSlug))}>
+                    <span aria-hidden>
+                      <SubjectIcon slug={g.subjectSlug} size={17} />
+                    </span>
+                    {g.subjectName ?? "عام"}، {g.gradeName}
                   </a>
                 ))}
               </div>
             </nav>
           ) : null}
-          <div className="mx-auto max-w-6xl space-y-14 px-4 pt-8">
-            {groups.map((g) => (
-              <section key={g.key} id={`${g.subjectSlug ?? "all"}-${g.gradeSlug}`} className="scroll-mt-32" aria-labelledby={`h-${g.key}`}>
-                <h2 id={`h-${g.key}`} className="text-2xl font-bold">
-                  {g.subjectName ?? "محتوى عام"} <span className="text-lg font-semibold text-muted">— {g.gradeName}</span>
-                </h2>
-                {/* الأقسام الصغيرة تُرصّ جنبًا إلى جنب على الشاشات العريضة */}
-                <div className="mt-5 grid gap-x-4 gap-y-10 lg:grid-cols-4">
-                  {g.sections.map((sec) => {
-                    const span = Math.min(4, sec.items.length) as 1 | 2 | 3 | 4;
-                    const pdf = isPdfType(sec.type) || sec.items.every((i) => !i.isVideo);
-                    return (
-                      <div key={sec.type} className={SPAN[span]} data-testid="teacher-section">
-                        <h3 className="mb-4 flex items-center gap-2 text-lg font-bold">
-                          <span className="h-6 w-1.5 rounded-full bg-accent-600" aria-hidden />
-                          {PRODUCT_TYPE_SECTION_LABELS[sec.type]}
-                        </h3>
-                        <div className={`grid gap-3 sm:gap-4 ${pdf ? "grid-cols-2" : "grid-cols-1 min-[460px]:grid-cols-2"} ${INNER[span]}`}>
-                          {sec.items.map((item) =>
-                            pdf ? <ProductCard key={item.id} product={item} owned={owned?.has(item.id)} /> : <VideoCard key={item.id} product={item} owned={owned?.has(item.id)} />,
-                          )}
-                        </div>
-                      </div>
-                    );
-                  })}
-                </div>
-              </section>
-            ))}
+          <div className="mx-auto max-w-7xl space-y-16 px-4 pt-10 sm:space-y-20 sm:px-6 sm:pt-14">
+            {groups.map((g) => {
+              const n = g.sections.reduce((m, sec) => m + sec.items.length, 0);
+              return (
+                <section key={g.key} id={`${g.subjectSlug ?? "all"}-${g.gradeSlug}`} className={cn(s.group, toneClass(g.subjectSlug))} aria-labelledby={`h-${g.key}`}>
+                  <div className={s.ghead}>
+                    <span className={cn("icon-tile", s.gicon)} aria-hidden>
+                      <SubjectIcon slug={g.subjectSlug} size={30} />
+                    </span>
+                    <div className="min-w-[12rem] flex-1">
+                      <h2 id={`h-${g.key}`} className={s.gtitle}>
+                        {g.subjectName ?? "محتوى عام"}، {g.gradeName}
+                      </h2>
+                      <p className={s.gsub}>{count(n, W.product)}</p>
+                    </div>
+                    {g.subjectSlug ? (
+                      <Link href={`/grades/${g.gradeSlug}/${g.subjectSlug}`} className="btn btn-3d btn-light btn-md">
+                        كل محتوى المادة
+                        <ArrowLeft aria-hidden />
+                      </Link>
+                    ) : null}
+                  </div>
+                  <div className={s.gsections}>
+                    {[g.sections.filter((sec) => !isPdfType(sec.type)), g.sections.filter((sec) => isPdfType(sec.type))].map((secs, i) => {
+                      if (!secs.length) return null;
+                      const items = secs.flatMap((sec) => sec.items);
+                      if (items.length <= FLAT_MAX || secs.every((sec) => sec.items.length <= 2)) {
+                        // الفيديو رف سحب على الجوال (كما في صفحة الصف)، والمذكرات شبكة أوراق بعمودين
+                        return i === 0 ? (
+                          <ProductShelf key={i} products={items} ownedIds={owned} showGrade={false} className={balancedGrid(items.length, { md: [3, 2], lg: [4, 3], video: true })} />
+                        ) : (
+                          <ProductGrid key={i} products={items} ownedIds={owned} showGrade={false} className={balancedGrid(items.length, { md: [3, 2], lg: [4, 5, 3] })} />
+                        );
+                      }
+                      return (
+                        <TypeSlots
+                          key={i}
+                          notes={i === 1}
+                          groups={secs}
+                          idPrefix={`${g.key.replace(":", "-")}-`}
+                          testId="teacher-section"
+                          renderItem={(x) => <ProductCard product={x} owned={owned?.has(x.id)} showGrade={false} headingLevel={4} />}
+                        />
+                      );
+                    })}
+                  </div>
+                </section>
+              );
+            })}
           </div>
         </>
       )}

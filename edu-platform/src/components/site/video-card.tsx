@@ -1,89 +1,120 @@
 import Image from "next/image";
 import Link from "next/link";
-import { Clock, Gift, PlayCircle } from "lucide-react";
+import { useId } from "react";
+import { ArrowLeft, Play, Sparkles } from "lucide-react";
 import type { ProductCard } from "@/server/catalog/queries";
+import { SubjectArt } from "@/components/art";
 import { PRODUCT_TYPE_LABELS } from "@/lib/labels";
-import { Badge } from "@/components/ui/badge";
-import { Price } from "@/components/ui/price";
-import { ProductCover } from "./product-cover";
-import { formatTotalDuration, lessonsLabel } from "./format";
+import { toneClass } from "@/lib/design";
+import { cn } from "@/lib/utils";
+import { CompactPrice, Kicker, OwnedChip, catalogStyles as s, contentChips, previewHref } from "./card-parts";
+import { TeacherAvatar } from "./teacher-avatar";
+import { ProductList } from "./product-row";
 
-/** بطاقة منتج فيديو: صورة مصغرة بنسبة 16:9 مع شارة تشغيل ومدة وعدد الدروس والمعلم */
-export function VideoCard({ product, owned }: { product: ProductCard; owned?: boolean }) {
+/**
+ * بطاقة الملصق «الفصل المشمس» (v2-c VideoCard):
+ * ملصق بتدرج المادة + رسمها + نقاط، كبسولة النوع، «معاينة مجانية» الذهبية عند وجود درس مجاني فعلي،
+ * صورة المعلم (أو حرفه) متداخلة، «المادة · الصف»، العنوان، المعلم، الدروس والمدة، السعر والخصم الحقيقي،
+ * وزر التذييل: «شاهد مجانًا» رابط مستقل للمعاينة، وإلا «التفاصيل».
+ * البطاقة كلها قابلة للنقر برابط ممتد (حلقة التركيز على البطاقة)، وزر المعاينة فوقه.
+ */
+export function VideoCard({
+  product: p,
+  owned,
+  showGrade = true,
+  headingLevel = 3,
+  priority,
+  fitTitle,
+}: {
+  product: ProductCard;
+  owned?: boolean;
+  showGrade?: boolean;
+  headingLevel?: 2 | 3 | 4;
+  priority?: boolean;
+  /**
+   * في القوائم العمودية (عمود واحد على الجوال) لا جيران لمحاذاة العنوان معهم، فلا يُحجز سطر ثانٍ فارغ.
+   * يبقى معطّلًا للرفوف الأفقية (رف الرئيسية) حتى يتحاذى سطر المعلم والكبسولات بين البطاقات المتجاورة.
+   */
+  fitTitle?: boolean;
+}) {
+  const titleId = useId();
+  const H = `h${headingLevel}` as "h3";
+  const preview = !owned ? previewHref(p) : null;
+  const chips = contentChips(p);
+  const meta = [p.subjectName, showGrade ? p.gradeName : null].filter(Boolean).join(" · ");
   return (
-    <article data-testid="video-card" className="group relative flex flex-col overflow-hidden rounded-2xl border border-line bg-surface shadow-card transition-shadow hover:shadow-lift">
-      <div className="relative aspect-video overflow-hidden bg-brand-900">
-        {product.thumbnailUrl ? (
-          <Image src={product.thumbnailUrl} alt="" fill sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 25vw" className="object-cover transition-transform duration-300 group-hover:scale-[1.03]" />
+    <article data-testid={p.isVideo ? "video-card" : undefined} className={cn(s.cardBase, s.vcard, toneClass(p.subjectSlug))}>
+      <div className={cn("poster", s.vposter)}>
+        {p.coverUrl ? (
+          <>
+            <Image src={p.coverUrl} alt="" fill sizes="(max-width: 640px) 85vw, (max-width: 1024px) 45vw, 300px" priority={priority} className={s.vposterImg} />
+            <span className={s.vposterShade} aria-hidden />
+          </>
         ) : (
-          <div className="absolute inset-0 [&>div]:!aspect-auto [&>div]:h-full" aria-hidden>
-            <ProductCover coverUrl={null} title={product.title} type={product.type} subjectName={product.subjectName} gradeName={product.gradeName} compact />
-          </div>
-        )}
-        <div className="absolute inset-0 bg-gradient-to-t from-black/55 via-black/5 to-transparent" aria-hidden />
-        <span className="absolute inset-0 grid place-items-center" aria-hidden>
-          <span className="grid size-12 place-items-center rounded-full bg-white/90 text-brand-700 shadow-lift transition-transform group-hover:scale-110">
-            <PlayCircle className="size-7" />
+          <span className={s.vart} aria-hidden>
+            <SubjectArt slug={p.subjectSlug} />
           </span>
-        </span>
-        <div className="absolute start-2 top-2 flex gap-1">
-          <Badge tone="solid" className="bg-black/55 backdrop-blur-sm">
-            {PRODUCT_TYPE_LABELS[product.type]}
-          </Badge>
-        </div>
-        <div className="absolute end-2 top-2 flex flex-col items-end gap-1">
-          {owned ? <Badge tone="success">في مكتبتك</Badge> : null}
-          {product.previewLessonId && !owned ? (
-            <Badge tone="accent">
-              <Gift className="size-3" aria-hidden /> معاينة مجانية
-            </Badge>
-          ) : null}
-        </div>
-        <div className="absolute inset-x-2 bottom-2 flex items-center justify-between text-[0.72rem] font-semibold text-white">
-          <span>{product.lessonCount ? lessonsLabel(product.lessonCount) : ""}</span>
-          {product.totalDurationSeconds ? (
-            <span className="flex items-center gap-1 rounded-md bg-black/50 px-1.5 py-0.5">
-              <Clock className="size-3" aria-hidden /> {formatTotalDuration(product.totalDurationSeconds)}
-            </span>
-          ) : null}
-        </div>
+        )}
+        <span className={cn("chip chip-glass", s.vtype)}>{PRODUCT_TYPE_LABELS[p.type]}</span>
+        {p.previewLessonId ? (
+          <span className={cn("chip chip-gold", s.vfree)}>
+            <Sparkles aria-hidden />
+            معاينة مجانية
+          </span>
+        ) : null}
+        {p.isVideo ? (
+          <span className={cn("play-dot", s.vplay)} aria-hidden>
+            <Play fill="currentColor" />
+          </span>
+        ) : null}
       </div>
-      <div className="flex flex-1 flex-col gap-1.5 p-3.5 sm:p-4">
-        <p className="text-xs font-semibold text-brand-700">
-          {product.subjectName ?? "عدة مواد"} · {product.gradeName}
-        </p>
-        <h3 className="line-clamp-2 text-[0.95rem] leading-6 font-bold">
-          <Link href={`/products/${product.slug}`} className="after:absolute after:inset-0 focus-visible:outline-none">
-            {product.title}
+      <div className={s.vbody}>
+        {p.teacherName ? (
+          <span className={s.avatarFloat}>
+            <TeacherAvatar name={p.teacherName} photoUrl={p.teacherPhotoUrl} size={50} inheritTone ring decorative />
+          </span>
+        ) : null}
+        {meta ? <Kicker>{meta}</Kicker> : null}
+        <H className={cn(s.vtitle, fitTitle && s.vtitleFit)}>
+          <Link href={`/products/${p.slug}`} id={titleId} className="stretched">
+            {p.title}
           </Link>
-        </h3>
-        {product.teacherName ? <p className="text-xs text-muted">{product.teacherName}</p> : null}
-        <div className="mt-auto pt-1">
-          <Price fils={product.priceFils} compareAt={product.compareAtPriceFils} size="sm" />
+        </H>
+        {p.teacherName ? <p className={s.vteacher}>{p.teacherName}</p> : null}
+        {chips.length ? <p className={s.metaChips}>{chips}</p> : <span className="mb-3.5" />}
+        <div className={s.vfoot}>
+          {owned ? <OwnedChip /> : <CompactPrice fils={p.priceFils} compareAt={p.compareAtPriceFils} />}
+          {preview ? (
+            <Link href={preview} className={s.footBtn} aria-describedby={titleId}>
+              <Play fill="currentColor" aria-hidden />
+              شاهد مجانًا
+            </Link>
+          ) : (
+            <span className={cn(s.footBtn, s.footBtnQuiet)} aria-hidden>
+              التفاصيل
+              <ArrowLeft />
+            </span>
+          )}
         </div>
       </div>
     </article>
   );
 }
 
+/**
+ * عرض منتجات الفيديو:
+ *  - scroller: رف أفقي قابل للسحب على الجوال، وشبكة ملصقات على الشاشات الأكبر
+ *  - وإلا: قائمة صفوف ملونة مضغوطة
+ */
 export function VideoGrid({ products, ownedIds, scroller }: { products: ProductCard[]; ownedIds?: Set<string>; scroller?: boolean }) {
-  if (scroller) {
-    // على الجوال: شريط أفقي قابل للسحب، وعلى الشاشات الأكبر: شبكة
-    return (
-      <div className="-mx-4 flex snap-x snap-mandatory gap-3 overflow-x-auto px-4 pb-2 sm:mx-0 sm:grid sm:snap-none sm:grid-cols-2 sm:gap-4 sm:overflow-visible sm:px-0 sm:pb-0 lg:grid-cols-4">
-        {products.map((p) => (
-          <div key={p.id} className="w-[78%] shrink-0 snap-start sm:w-auto">
-            <VideoCard product={p} owned={ownedIds?.has(p.id)} />
-          </div>
-        ))}
-      </div>
-    );
-  }
+  if (!scroller) return <ProductList products={products} ownedIds={ownedIds} columns={2} />;
   return (
-    <div className="grid grid-cols-1 gap-3 min-[460px]:grid-cols-2 sm:gap-4 lg:grid-cols-4">
+    <ul className={s.shelf}>
       {products.map((p) => (
-        <VideoCard key={p.id} product={p} owned={ownedIds?.has(p.id)} />
+        <li key={p.id}>
+          <VideoCard product={p} owned={ownedIds?.has(p.id)} />
+        </li>
       ))}
-    </div>
+    </ul>
   );
 }

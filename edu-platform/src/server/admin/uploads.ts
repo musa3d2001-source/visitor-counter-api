@@ -101,7 +101,7 @@ async function authorizeTarget(
   const p = await assertProductAccess(actor, productId, actor.kind === "owner" ? "view" : "upload");
   const type = p.type as ProductType;
   if (target === "lesson" && !isVideoType(type)) throw new AdminError("الفيديو يُرفع لمنتجات الفيديو فقط (درس، وحدة، مراجعة، دورة)");
-  if ((target === "main" || target === "preview") && type === "bundle") throw new AdminError("الباقة لا تحتوي ملفات مباشرة — أضف منتجات إليها");
+  if ((target === "main" || target === "preview") && type === "bundle") throw new AdminError("الباقة لا تحتوي ملفات مباشرة، أضف منتجات إليها");
   if (target === "preview" && !PDF_PRODUCT_TYPES.includes(type)) throw new AdminError("المعاينة المخصصة لمذكرات PDF فقط");
   if (target === "lesson_thumb") {
     if (!ids.lessonId) throw new AdminError("الدرس غير محدد");
@@ -177,7 +177,7 @@ export async function completeUpload(input: z.infer<typeof completeSchema>, acto
       console.error("[upload-complete] bunny sync", err);
     }
     await audit({ actorId: actor.userId, action: "lesson.create", entityType: "product", entityId: productId, metadata: { lessonId: lesson.id, title: lesson.title, provider: "bunny", videoId: input.key } });
-    return { id: lesson.id, message: `تم رفع «${lesson.title}» — جارٍ معالجة الفيديو، ولن يظهر للطلاب قبل اكتمالها` };
+    return { id: lesson.id, message: `تم رفع «${lesson.title}»، جارٍ معالجة الفيديو، ولن يظهر للطلاب قبل اكتمالها` };
   }
 
   const kind = TARGET_KIND[input.target];
@@ -211,7 +211,7 @@ export async function completeUpload(input: z.infer<typeof completeSchema>, acto
       const bytes = await storage().read(bucket, input.key);
       pageCount = await getPdfPageCount(bytes);
     } catch {
-      return reject("تعذر قراءة ملف PDF — قد يكون تالفًا أو محميًا بكلمة مرور");
+      return reject("تعذر قراءة ملف PDF، قد يكون تالفًا أو محميًا بكلمة مرور");
     }
     const title = input.title || stripExt(originalName) || (input.target === "main" ? "ملف المذكرة" : "معاينة مجانية");
     if (input.target === "preview") {

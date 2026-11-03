@@ -1,0 +1,6 @@
+# Impeccable: ملفات شخصية لكل مطور وذاكرة مؤقتة (الإعداد المشترك config.json يُرفع)
+.impeccable/config.local.json
+.impeccable/hook.cache.json
+.impeccable/cache/
+.impeccable/screenshots/
+.impeccable/live/session*

@@ -115,7 +115,7 @@ export const TEACHER_MODE_LABELS: Record<string, string> = {
 };
 
 export const ACCESS_MODE_LABELS: Record<string, string> = {
-  unlimited: "وصول غير محدد",
+  unlimited: "بلا تاريخ انتهاء",
   until_date: "حتى تاريخ محدد",
   days: "عدد أيام من تاريخ الشراء",
 };

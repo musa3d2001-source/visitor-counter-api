@@ -3,30 +3,36 @@ import { cva, type VariantProps } from "class-variance-authority";
 import type * as React from "react";
 import { cn } from "@/lib/utils";
 
-export const buttonVariants = cva(
-  "inline-flex items-center justify-center gap-2 whitespace-nowrap rounded-xl font-semibold transition-[background-color,color,box-shadow,transform] duration-150 active:scale-[0.98] disabled:pointer-events-none disabled:opacity-55 [&_svg]:size-[1.15em] [&_svg]:shrink-0",
-  {
-    variants: {
-      variant: {
-        primary: "bg-brand-600 text-white shadow-sm hover:bg-brand-700",
-        accent: "bg-accent-600 text-ink shadow-sm hover:bg-accent-700 hover:text-white",
-        secondary: "bg-brand-50 text-brand-700 hover:bg-brand-100",
-        outline: "border border-line-strong bg-surface text-ink hover:border-brand-300 hover:bg-brand-50",
-        ghost: "text-ink-soft hover:bg-brand-50 hover:text-brand-700",
-        danger: "bg-danger text-white hover:bg-danger/90",
-        "danger-outline": "border border-danger/30 bg-surface text-danger hover:bg-danger-50",
-        link: "h-auto p-0 text-brand-700 underline-offset-4 hover:underline",
-      },
-      size: {
-        sm: "h-9 px-3 text-sm",
-        md: "h-11 px-5 text-[0.95rem]",
-        lg: "h-13 px-7 text-base",
-        icon: "size-10",
-      },
+/**
+ * أزرار «الفصل المشمس»: الأصناف الفعلية في src/app/globals.css (.btn و .btn-*).
+ * primary: فيروزي ثلاثي الأبعاد بحافة سفلية داكنة · accent: ذهبي بنص داكن · soft/secondary: مُلوَّن فاتح
+ * outline: أبيض بحد دافئ وحافة صغيرة · light: أبيض للأسطح الداكنة · ghost · danger · danger-outline · link
+ * الأحجام: sm (44px، حشو وخط أصغر) · md (46px) · lg (56px) · xl (62px) · icon (44px)
+ */
+export const buttonVariants = cva("btn", {
+  variants: {
+    variant: {
+      primary: "btn-3d btn-primary",
+      accent: "btn-3d btn-accent",
+      secondary: "btn-3d btn-soft",
+      soft: "btn-3d btn-soft",
+      outline: "btn-3d btn-outline",
+      light: "btn-3d btn-light",
+      ghost: "btn-ghost",
+      danger: "btn-3d btn-danger",
+      "danger-outline": "btn-3d btn-danger-outline",
+      link: "btn-link",
     },
-    defaultVariants: { variant: "primary", size: "md" },
+    size: {
+      sm: "btn-sm",
+      md: "btn-md",
+      lg: "btn-lg",
+      xl: "btn-xl",
+      icon: "btn-icon",
+    },
   },
-);
+  defaultVariants: { variant: "primary", size: "md" },
+});
 
 export type ButtonProps = React.ComponentProps<"button"> & VariantProps<typeof buttonVariants> & { asChild?: boolean };
 

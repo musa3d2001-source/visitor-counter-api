@@ -1,97 +1,207 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import { CalendarDays } from "lucide-react";
-import { bestSellers, getGradeBySlug, listProducts, listSubjects } from "@/server/catalog/queries";
+import { ArrowLeft, BookOpen, Flame, GraduationCap, Layers, MonitorPlay, Package, Play, Printer, Users } from "lucide-react";
+import { bestSellers, getBundleItems, getGradeBySlug, listProducts, listSubjects, teachersForSubject, type ProductCard as ProductCardData, type TeacherCard } from "@/server/catalog/queries";
 import { getCurrentUser } from "@/server/auth/session";
 import { accessibleProductIds } from "@/server/access/entitlements";
-import { Breadcrumbs } from "@/components/ui/breadcrumbs";
-import { Badge } from "@/components/ui/badge";
 import { EmptyState } from "@/components/ui/empty-state";
-import { ProductGrid } from "@/components/site/product-card";
-import { SubjectIcon } from "@/components/site/subject-icon";
+import { SectionHead } from "@/components/ui/section-head";
+import { StatPill } from "@/components/ui/page-header";
+import { ProductGrid, ProductShelf } from "@/components/site/product-card";
+import { previewHref, shortTerm } from "@/components/site/card-parts";
 import { termLabel } from "@/lib/labels";
+import { gradeClass, W } from "@/lib/design";
+import { cn } from "@/lib/utils";
+import { balancedGrid, browseStyles as s, GradeWindow, NightPanel, offerPhrase, pillCount, splitByFamily, SubjectCard, ToneHero, typeFamily } from "../_components/browse";
 
 export async function generateMetadata({ params }: { params: Promise<{ gradeSlug: string }> }): Promise<Metadata> {
   const grade = await getGradeBySlug((await params).gradeSlug);
   if (!grade) return {};
   return {
-    title: `مذكرات ${grade.name}`,
-    description: `المذكرات النهائية ومراجعات ليلة الاختبار ونماذج الاختبارات لـ${grade.name} — ${grade.stageName} في الكويت.`,
+    title: `شروحات ومذكرات ${grade.name}`,
+    description: `شرح الوحدات بالفيديو ومراجعات الاختبارات والمذكرات النهائية لطلاب ${grade.name}، ${grade.stageName} في الكويت.`,
     alternates: { canonical: `/grades/${grade.slug}` },
   };
 }
 
+/** عدد المذكرات المعروضة في صفحة الصف (الباقي في صفحات المواد): ١٢ يملأ صفوف ٢ و٣ و٤ أعمدة */
+const NOTES_LIMIT = 12;
+/** المذكرات النهائية أولًا (واحدة لكل مادة غالبًا) ثم ليلة الاختبار ثم النماذج */
+const NOTE_ORDER = ["final_notes", "exam_night", "review_notes", "exam_model", "answer_key"];
+
 export default async function GradePage({ params }: { params: Promise<{ gradeSlug: string }> }) {
   const grade = await getGradeBySlug((await params).gradeSlug);
   if (!grade) notFound();
-  const [subjects, bundles, popular, latest, user] = await Promise.all([
+  const [subjects, bundles, popular, all, user] = await Promise.all([
     listSubjects(grade.id),
-    listProducts({ gradeId: grade.id, type: "bundle", limit: 8 }),
+    listProducts({ gradeId: grade.id, type: "bundle", limit: 6 }),
     bestSellers({ gradeId: grade.id, limit: 4 }),
-    listProducts({ gradeId: grade.id, excludeType: "bundle", order: "latest", limit: 8 }),
+    listProducts({ gradeId: grade.id, excludeType: "bundle" }),
     getCurrentUser(),
   ]);
-  const owned = user ? await accessibleProductIds(user.id) : undefined;
+  const [owned, teacherLists, bundleItems] = await Promise.all([
+    user ? accessibleProductIds(user.id) : Promise.resolve(undefined),
+    Promise.all(subjects.map(async (x) => [x.id, await teachersForSubject(x.id)] as const)),
+    Promise.all(bundles.map(async (b) => [b.id, await getBundleItems(b.id)] as const)),
+  ]);
+  const teachersBySubject = new Map<string, TeacherCard[]>(teacherLists);
+  const itemsById = new Map<string, ProductCardData[]>(bundleItems);
+  const teacherIds = new Set(teacherLists.flatMap(([, ts]) => ts.map((t) => t.id)));
+
+  const { videos, night, quiz, notes: rawNotes } = splitByFamily(all);
+  const notes = [...rawNotes].sort((a, b) => NOTE_ORDER.indexOf(a.type) - NOTE_ORDER.indexOf(b.type));
+  const shownNotes = notes.slice(0, NOTES_LIMIT);
+  const offer = offerPhrase(all);
+  const productTotal = all.length + bundles.length;
+  const firstPreview = all.find((p) => p.previewLessonId);
+  const freeHref = firstPreview ? previewHref(firstPreview) : null;
+  const level = grade.level;
+  const tone = gradeClass(level);
 
   return (
-    <div className="mx-auto max-w-6xl px-4 py-8">
-      <Breadcrumbs items={[{ label: "الرئيسية", href: "/" }, { label: grade.stageName, href: `/stages/${grade.stageSlug}` }, { label: grade.name }]} />
-      <div className="mt-4 flex flex-wrap items-end justify-between gap-3">
-        <div>
-          <h1 className="text-3xl font-bold">{grade.name}</h1>
-          <p className="mt-2 text-muted">اختر المادة لعرض مذكراتها ونماذجها</p>
-        </div>
-        <Badge tone="accent" className="px-3 py-1 text-sm">
-          <CalendarDays className="size-4" aria-hidden /> {termLabel(grade.currentTerm)}
-        </Badge>
-      </div>
-
-      <section className="mt-8" aria-labelledby="subjects">
-        <h2 id="subjects" className="sr-only">المواد الدراسية</h2>
-        {subjects.length === 0 ? (
-          <EmptyState title="لا توجد مواد متاحة حاليًا" description="نجهز محتوى هذا الصف، تابعنا قريبًا." />
-        ) : (
-          <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-6">
-            {subjects.map((s) => (
-              <Link
-                key={s.id}
-                href={`/grades/${grade.slug}/${s.slug}`}
-                className="group flex flex-col items-center gap-3 rounded-2xl border border-line bg-surface px-3 py-6 text-center shadow-card transition hover:-translate-y-0.5 hover:border-brand-300 hover:shadow-lift"
-              >
-                <span className="grid size-14 place-items-center rounded-2xl bg-brand-50 text-brand-700 transition-colors group-hover:bg-brand-600 group-hover:text-white">
-                  <SubjectIcon name={s.icon} className="size-7" />
-                </span>
-                <span className="font-bold">{s.name}</span>
-                <span className="text-xs text-muted">
-                  <span className="num">{s.productCount}</span> منتج
-                </span>
+    <div className="pb-16">
+      <ToneHero
+        toneClassName={tone}
+        titleId="grade-title"
+        breadcrumbs={[{ label: "الرئيسية", href: "/" }, { label: grade.stageName, href: `/stages/${grade.stageSlug}` }, { label: grade.name }]}
+        eyebrow={
+          <span className="eyebrow-pill eyebrow-light">
+            <span className="eyebrow-icon">
+              <GraduationCap aria-hidden />
+            </span>
+            {grade.stageName} · {shortTerm(grade.currentTerm) || termLabel(grade.currentTerm)}
+          </span>
+        }
+        title={grade.name}
+        sub={offer ? `كل ما تحتاجه في ${grade.name} في مكان واحد: ${offer}.` : undefined}
+        stats={
+          <>
+            {subjects.length ? <StatPill tone="gold" icon={<BookOpen aria-hidden />} {...pillCount(subjects.length, W.subject)} /> : null}
+            {productTotal ? <StatPill tone="teal" icon={<Layers aria-hidden />} {...pillCount(productTotal, W.product)} /> : null}
+            {teacherIds.size ? <StatPill tone="coral" icon={<Users aria-hidden />} {...pillCount(teacherIds.size, W.teacher)} /> : null}
+          </>
+        }
+        actions={
+          <>
+            {subjects.length ? (
+              <a href="#subjects" className="btn btn-3d btn-accent btn-lg">
+                اختر مادتك
+                <ArrowLeft aria-hidden />
+              </a>
+            ) : null}
+            {freeHref ? (
+              <Link href={freeHref} className="btn btn-3d btn-light btn-lg">
+                <Play aria-hidden className="fill-current" />
+                شاهد درسًا مجانًا
               </Link>
-            ))}
-          </div>
-        )}
-      </section>
+            ) : null}
+          </>
+        }
+        window={<GradeWindow level={level} />}
+      />
 
-      {bundles.length ? (
-        <section className="mt-14">
-          <h2 className="mb-5 text-2xl font-bold">باقات {grade.name}</h2>
-          <ProductGrid products={bundles} ownedIds={owned} />
+      <div className="mx-auto max-w-7xl space-y-16 px-4 pt-12 sm:space-y-20 sm:px-6 sm:pt-16">
+        <section id="subjects" className="scroll-mt-28" aria-labelledby="subjects-title">
+          <SectionHead
+            id="subjects-title"
+            icon={<BookOpen aria-hidden />}
+            eyebrow={`مواد ${grade.name}`}
+            title={
+              <>
+                اختر <span className="text-hl">مادتك</span>
+              </>
+            }
+            sub="ادخل المادة لترى شرح وحداتها ومراجعاتها ومذكراتها مرتبة حسب النوع."
+          />
+          {subjects.length === 0 ? (
+            <EmptyState title="لا توجد مواد منشورة لهذا الصف بعد" description="نجهّز المحتوى الآن، وتظهر المواد هنا فور نشرها." />
+          ) : (
+            <ul className={s.subGrid}>
+              {subjects.map((x) => {
+                const mine = all.filter((p) => p.subjectSlug === x.slug);
+                return (
+                  <li key={x.id}>
+                    <SubjectCard
+                      subject={x}
+                      href={`/grades/${grade.slug}/${x.slug}`}
+                      videos={mine.filter((p) => typeFamily(p.type) !== "pdf").length}
+                      pdfs={mine.filter((p) => typeFamily(p.type) === "pdf").length}
+                      total={x.productCount}
+                      teachers={teachersBySubject.get(x.id) ?? []}
+                    />
+                  </li>
+                );
+              })}
+            </ul>
+          )}
         </section>
-      ) : null}
 
-      {popular.length ? (
-        <section className="mt-14">
-          <h2 className="mb-5 text-2xl font-bold">الأكثر طلبًا</h2>
-          <ProductGrid products={popular} ownedIds={owned} />
-        </section>
-      ) : null}
+        {night.length || quiz.length ? (
+          <NightPanel
+            id="reviews"
+            title={
+              <>
+                قبل الاختبار؟ <span className="text-hl">راجع بتركيز</span>
+              </>
+            }
+            sub={`مراجعات مركزة لاختبارات ${grade.name} القصيرة والنهائية.`}
+            night={night}
+            quiz={quiz}
+            owned={owned}
+          />
+        ) : null}
 
-      {latest.length ? (
-        <section className="mt-14">
-          <h2 className="mb-5 text-2xl font-bold">أحدث الإضافات</h2>
-          <ProductGrid products={latest} ownedIds={owned} />
-        </section>
-      ) : null}
+        {videos.length ? (
+          <section aria-labelledby="videos">
+            <SectionHead
+              id="videos"
+              icon={<MonitorPlay aria-hidden />}
+              eyebrow="شروحات بالفيديو"
+              title={
+                <>
+                  شرح الوحدات <span className="text-hl">بالفيديو</span>
+                </>
+              }
+              sub="شرح كل وحدة بصوت معلمك، وفي كثير منها درس مجاني تشاهده قبل الشراء."
+            />
+            <ProductShelf products={videos} ownedIds={owned} showGrade={false} className={balancedGrid(videos.length, { md: [3, 2], lg: [4, 3], video: true })} />
+          </section>
+        ) : null}
+
+        {popular.length ? (
+          <section aria-labelledby="popular">
+            <SectionHead id="popular" icon={<Flame aria-hidden />} tone="coral" eyebrow="من طلبات الطلاب" title="الأكثر طلبًا" sub={`أكثر ما اشتراه طلاب ${grade.name} على المنصة.`} />
+            <ProductShelf products={popular} ownedIds={owned} itemsById={itemsById} showGrade={false} className={balancedGrid(popular.length, { md: [3, 2], lg: [4, 3], video: true })} />
+          </section>
+        ) : null}
+
+        {bundles.length ? (
+          <section aria-labelledby="bundles">
+            <SectionHead id="bundles" icon={<Package aria-hidden />} tone="violet" eyebrow="كل المواد معًا" title={`باقات ${grade.name}`} sub="اشترِ مجموعة كاملة مرة واحدة، وتظهر كل محتوياتها في مكتبتك." />
+            <ProductGrid products={bundles} ownedIds={owned} itemsById={itemsById} showGrade={false} className={balancedGrid(bundles.length, { md: [3, 2], lg: [4, 3], video: true })} />
+          </section>
+        ) : null}
+
+        {notes.length ? (
+          <section className={cn("panel panel-rainbow", s.paper)} aria-labelledby="notes">
+            <SectionHead
+              id="notes"
+              icon={<Printer aria-hidden />}
+              tone="gold"
+              eyebrow="مذكرات PDF"
+              title={
+                <>
+                  مذكرات <span className="text-hl">جاهزة للطباعة</span>
+                </>
+              }
+              sub={notes.length > NOTES_LIMIT ? "مختارات من المذكرات والنماذج، وتجد كل مذكرات المادة في صفحتها." : "المذكرات النهائية ومذكرات ليلة الاختبار ونماذج الاختبارات."}
+              more={notes.length > NOTES_LIMIT ? { href: "#subjects", label: "كل المواد" } : undefined}
+            />
+            <ProductGrid products={shownNotes} ownedIds={owned} showGrade={false} className={balancedGrid(shownNotes.length, { md: [3, 2], lg: [4, 5, 3] })} />
+          </section>
+        ) : null}
+      </div>
     </div>
   );
 }

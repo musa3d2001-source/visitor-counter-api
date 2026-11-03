@@ -39,7 +39,7 @@ test.describe("دورة المعلم الكاملة", () => {
     const ts = Date.now();
     const teacherName = `أ. فيصل الاختبار ${ts % 100000}`;
     const teacherEmail = `teacher-${ts}@example.com`;
-    const unitTitle = `شرح الوحدة الأولى — رياضيات ${ts % 100000}`;
+    const unitTitle = `شرح الوحدة الأولى في الرياضيات ${ts % 100000}`;
     const [subject] = await db()<{ grade_id: string; subject_id: string }[]>`
       select g.id as grade_id, s.id as subject_id from grades g join subjects s on s.grade_id = g.id where g.level = 9 and s.slug = 'math'
     `;
@@ -48,7 +48,7 @@ test.describe("دورة المعلم الكاملة", () => {
     await loginAdmin(page);
     await page.goto("/admin/teachers/new");
     await page.fill("#displayName", teacherName);
-    await page.fill("#headline", "معلم رياضيات — حساب اختبار");
+    await page.fill("#headline", "معلم رياضيات، حساب اختبار");
     await page.fill("#bio", "نبذة تجريبية للاختبار الآلي.");
     await page.fill("#slug", `e2e-teacher-${ts}`);
     await page.fill("#revenueShare", "40");
@@ -184,7 +184,7 @@ test.describe("دورة المعلم الكاملة", () => {
     test.setTimeout(120_000);
     const ts = Date.now();
     const name = `أ. منيرة المُدارة ${ts % 100000}`;
-    const title = `مراجعة الاختبار القصير الأول — ${ts % 100000}`;
+    const title = `مراجعة الاختبار القصير الأول ${ts % 100000}`;
     const [subject] = await db()<{ grade_id: string; subject_id: string }[]>`
       select g.id as grade_id, s.id as subject_id from grades g join subjects s on s.grade_id = g.id where g.level = 8 and s.slug = 'math'
     `;

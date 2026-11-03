@@ -1,15 +1,19 @@
 import { requireOwnerPage } from "@/server/auth/permissions";
 import Link from "next/link";
-import { Search, Users } from "lucide-react";
+import { CalendarDays, Phone, Receipt, UserX, Users } from "lucide-react";
 import { listStudents } from "@/server/admin/records";
 import { AdminPageHeader } from "@/components/admin/page-header";
-import { Badge } from "@/components/ui/badge";
-import { Button } from "@/components/ui/button";
+import { FilterBar, FilterSearch, FilterSubmit, ResultCount, Toolbar } from "@/components/admin/filter-bar";
+import { StatusPill } from "@/components/admin/status-badge";
+import { STRETCHED_FOCUS, toneStyle } from "@/components/admin/tones";
 import { EmptyState } from "@/components/ui/empty-state";
-import { Input } from "@/components/ui/form";
-import { Table, TD, TH, THead, TR } from "@/components/ui/table";
 import { displayPhone } from "@/lib/phone";
-import { formatDate } from "@/lib/utils";
+import { ar, count, gradeVars, W } from "@/lib/design";
+import { cn, formatDate } from "@/lib/utils";
+import { BandChip, BandChips, PeopleBand } from "../_components/people/band";
+import { StudentsArt } from "../_components/people/art";
+import { Metric, PersonAvatar } from "../_components/people/bits";
+import { gradeLevelFromName, personTone } from "../_components/people/helpers";
 
 export const metadata = { title: "الطلاب" };
 
@@ -17,55 +21,119 @@ export default async function StudentsPage({ searchParams }: { searchParams: Pro
   await requireOwnerPage();
   const sp = await searchParams;
   const students = await listStudents(sp.q?.slice(0, 80));
+  const active = students.filter((s) => s.is_active).length;
+  const suspended = students.length - active;
+  const buyers = students.filter((s) => s.paid_orders > 0).length;
+
   return (
-    <div>
-      <AdminPageHeader title="الطلاب" description="حسابات الطلاب ومشترياتهم وصلاحياتهم" />
-      <form className="mb-5 flex gap-2 rounded-2xl border border-line bg-surface p-3" role="search">
-        <div className="relative flex-1">
-          <Search className="pointer-events-none absolute start-3 top-1/2 size-4 -translate-y-1/2 text-muted" aria-hidden />
-          <Input name="q" defaultValue={sp.q} placeholder="ابحث بالاسم أو البريد أو الهاتف" className="ps-9" aria-label="بحث" />
-        </div>
-        <Button type="submit" variant="secondary">
-          بحث
-        </Button>
-      </form>
-      {students.length === 0 ? (
-        <EmptyState icon={<Users />} title={sp.q ? "لا توجد نتائج" : "لا يوجد طلاب بعد"} description={sp.q ? "جرّب كلمة بحث أخرى." : "ستظهر هنا حسابات الطلاب بعد التسجيل."} />
-      ) : (
-        <Table>
-          <THead>
-            <tr>
-              <TH>الطالب</TH>
-              <TH>الهاتف</TH>
-              <TH>الصف</TH>
-              <TH>طلبات مدفوعة</TH>
-              <TH>صلاحيات نشطة</TH>
-              <TH>التسجيل</TH>
-              <TH>الحالة</TH>
-            </tr>
-          </THead>
-          <tbody>
-            {students.map((s) => (
-              <TR key={s.id}>
-                <TD>
-                  <Link href={`/admin/students/${s.id}`} className="font-semibold hover:text-brand-700">
-                    {s.full_name}
-                  </Link>
-                  <p className="text-xs text-muted" dir="ltr">
-                    {s.email}
-                  </p>
-                </TD>
-                <TD className="num text-sm">{s.phone ? displayPhone(s.phone) : "—"}</TD>
-                <TD className="text-sm">{s.grade_name ?? "—"}</TD>
-                <TD className="num">{s.paid_orders}</TD>
-                <TD className="num">{s.active_entitlements}</TD>
-                <TD className="text-xs text-muted">{formatDate(s.created_at)}</TD>
-                <TD>{s.is_active ? <Badge tone="success">نشط</Badge> : <Badge tone="danger">موقوف</Badge>}</TD>
-              </TR>
-            ))}
-          </tbody>
-        </Table>
-      )}
+    <div className="space-y-6">
+      <PeopleBand
+        tone="violet"
+        art={<StudentsArt className="size-full motion-safe:animate-bob" />}
+        footer={
+          students.length ? (
+            <BandChips>
+              <BandChip tone="violet" icon={<Users aria-hidden />}>
+                {count(students.length, W.student)} {sp.q ? "مطابقون" : "مسجلون"}
+              </BandChip>
+              {buyers ? (
+                <BandChip tone="green" icon={<Receipt aria-hidden />}>
+                  لديهم طلبات مدفوعة: {ar(buyers)}
+                </BandChip>
+              ) : null}
+              {suspended ? (
+                <BandChip tone="coral" icon={<UserX aria-hidden />}>
+                  حسابات موقوفة: {ar(suspended)}
+                </BandChip>
+              ) : null}
+            </BandChips>
+          ) : null
+        }
+      >
+        <AdminPageHeader className="mb-0" title="الطلاب" description="حسابات الطلاب ومشترياتهم وصلاحياتهم" />
+      </PeopleBand>
+
+      <div>
+        <FilterBar label="البحث في الطلاب" className="lg:grid-cols-[minmax(0,1fr)_12rem]">
+          <FilterSearch name="q" defaultValue={sp.q} placeholder="ابحث بالاسم أو البريد أو الهاتف" label="بحث" wide={false} className="sm:col-span-1" />
+          <FilterSubmit label="بحث" resetHref="/admin/students" active={Boolean(sp.q)} />
+        </FilterBar>
+
+        {students.length === 0 ? (
+          <EmptyState art={sp.q ? "search" : "generic"} title={sp.q ? "لا توجد نتائج" : "لا يوجد طلاب بعد"} description={sp.q ? "جرّب كلمة بحث أخرى." : "ستظهر هنا حسابات الطلاب بعد التسجيل."} />
+        ) : (
+          <>
+            <Toolbar start={<ResultCount>{count(students.length, W.student)}</ResultCount>} end={<p className="text-[0.82rem] text-muted">الأحدث تسجيلًا أولًا</p>} />
+            <ul className="grid gap-3 sm:grid-cols-2 sm:gap-4 xl:grid-cols-3" aria-label="قائمة الطلاب">
+              {students.map((s) => {
+                const level = gradeLevelFromName(s.grade_name);
+                return (
+                  <li
+                    key={s.id}
+                    className={cn(
+                      "lift relative flex min-w-0 flex-col overflow-hidden rounded-[1.6rem] border border-[rgb(23_32_38/0.06)] bg-surface shadow-card",
+                      STRETCHED_FOCUS,
+                    )}
+                  >
+                    <span
+                      className="pointer-events-none absolute inset-x-0 top-0 h-16 bg-[linear-gradient(120deg,var(--a),var(--m,var(--b)),var(--b))] opacity-90"
+                      style={level ? gradeVars(level) : toneStyle(personTone(s.full_name))}
+                      aria-hidden
+                    >
+                      <span className="absolute inset-0 bg-[radial-gradient(rgb(255_255_255/0.35)_1.2px,transparent_1.6px)] bg-[length:16px_16px]" />
+                    </span>
+                    <div className="relative flex items-end gap-3 px-4 pt-7">
+                      <PersonAvatar name={s.full_name} size={64} ring="lg" />
+                      <div className="min-w-0 flex-1 pb-0.5">
+                        {s.is_active ? (
+                          <StatusPill tone="success" className="bg-white">
+                            نشط
+                          </StatusPill>
+                        ) : (
+                          <StatusPill tone="danger" className="bg-white">
+                            موقوف
+                          </StatusPill>
+                        )}
+                      </div>
+                    </div>
+                    <div className="flex flex-1 flex-col px-4 pt-3 pb-4">
+                      <Link href={`/admin/students/${s.id}`} className="stretched line-clamp-1 font-display text-[1.12rem] font-black text-ink hover:text-brand-700">
+                        {s.full_name}
+                      </Link>
+                      <p className="truncate text-end text-[0.8rem] leading-5 text-muted" dir="ltr">
+                        {s.email}
+                      </p>
+                      <div className="mt-2.5 flex flex-wrap gap-1.5">
+                        {s.grade_name ? (
+                          <span className="chip" style={gradeVars(level)}>
+                            {s.grade_name}
+                          </span>
+                        ) : (
+                          <span className="chip">لم يُحدَّد الصف</span>
+                        )}
+                        {s.phone ? (
+                          <span className="chip chip-white">
+                            <Phone aria-hidden />
+                            <span className="num">{displayPhone(s.phone)}</span>
+                          </span>
+                        ) : null}
+                      </div>
+                      <div className="mt-3 grid grid-cols-2 gap-2">
+                        <Metric tone="green" label="طلبات مدفوعة" value={ar(s.paid_orders)} />
+                        <Metric tone="violet" label="صلاحيات نشطة" value={ar(s.active_entitlements)} />
+                      </div>
+                      <p className="mt-3 flex items-center gap-1.5 border-t border-dashed border-line pt-2.5 text-[0.78rem] text-muted">
+                        <CalendarDays className="size-3.5" aria-hidden />
+                        التسجيل: {formatDate(s.created_at)}
+                      </p>
+                    </div>
+                  </li>
+                );
+              })}
+            </ul>
+          </>
+        )}
+      </div>
     </div>
   );
 }

@@ -108,7 +108,7 @@ export async function enableAccountAction(_prev: ActionState, fd: FormData): Pro
     return {
       ok: true,
       message: res.password
-        ? `تم إنشاء حساب المعلم (${res.email}). كلمة المرور المؤقتة — انسخها الآن ولن تظهر مرة أخرى: ${res.password}`
+        ? `تم إنشاء حساب المعلم (${res.email}). كلمة المرور المؤقتة، انسخها الآن ولن تظهر مرة أخرى: ${res.password}`
         : `تم ربط الحساب الموجود (${res.email}) بملف المعلم. يدخل المعلم بكلمة مرور حسابه الحالية.`,
     };
   });
@@ -119,7 +119,7 @@ export async function resetPasswordAction(_prev: ActionState, fd: FormData): Pro
     const id = str(fd, "teacherId");
     if (!isUuid(id)) throw new AdminError("طلب غير صالح");
     const password = await resetTeacherPassword(id, adminId, ip);
-    return { ok: true, message: `كلمة المرور الجديدة — انسخها الآن ولن تظهر مرة أخرى: ${password}` };
+    return { ok: true, message: `كلمة المرور الجديدة، انسخها الآن ولن تظهر مرة أخرى: ${password}` };
   });
 }
 
@@ -144,7 +144,7 @@ export async function setAccountActiveAction(_prev: ActionState, fd: FormData): 
     await setTeacherAccountActive(id, active, adminId, reason, ip);
     revalidatePath(`/admin/teachers/${id}`);
     revalidatePath("/admin/teachers");
-    return { ok: true, message: active ? "تم تفعيل الحساب" : "تم تعطيل الحساب وتسجيل خروجه — المحتوى باقٍ كما هو" };
+    return { ok: true, message: active ? "تم تفعيل الحساب" : "تم تعطيل الحساب وتسجيل خروجه، المحتوى باقٍ كما هو" };
   });
 }
 
@@ -175,7 +175,7 @@ export async function recordPayoutAction(_prev: ActionState, fd: FormData): Prom
     const id = str(fd, "teacherId");
     if (!isUuid(id)) throw new AdminError("طلب غير صالح");
     const amount = parseKwdToFils(str(fd, "amount"));
-    if (amount === null || amount <= 0) throw new AdminError("أدخل مبلغ التسوية بالدينار — مثال: 25.000");
+    if (amount === null || amount <= 0) throw new AdminError("أدخل مبلغ التسوية بالدينار، مثال: 25.000");
     const method = str(fd, "method");
     if (!["bank_transfer", "cash", "other"].includes(method)) throw new AdminError("اختر طريقة التسوية");
     const reference = str(fd, "reference").slice(0, 120);

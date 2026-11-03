@@ -1,68 +1,92 @@
-import Link from "next/link";
-import { Eye, PlayCircle } from "lucide-react";
-import { formatTotalDuration, lessonsLabel } from "./format";
 import type { ProductCard as ProductCardData } from "@/server/catalog/queries";
-import { PRODUCT_TYPE_LABELS, termLabel } from "@/lib/labels";
-import { Badge } from "@/components/ui/badge";
-import { Price } from "@/components/ui/price";
-import { ProductCover } from "./product-cover";
+import { isPdfType } from "@/lib/labels";
+import { cn } from "@/lib/utils";
+import { catalogStyles as s } from "./card-parts";
+import { VideoCard } from "./video-card";
+import { NoteCard } from "./note-card";
+import { BundleCard } from "./bundle-card";
+import { ExamTicket } from "./exam-ticket";
 
-export function ProductCard({ product, owned }: { product: ProductCardData; owned?: boolean }) {
-  const discount =
-    product.compareAtPriceFils && product.compareAtPriceFils > product.priceFils
-      ? Math.round(100 - (product.priceFils / product.compareAtPriceFils) * 100)
-      : 0;
+export { productMeta, PriceInline, ProductRow, ProductList } from "./product-row";
+
+export type ProductCardVariant = "auto" | "poster" | "note" | "bundle" | "ticket";
+
+/** هل يُعرض المنتج كورقة مذكرة؟ (PDF بلا دروس مرئية) */
+export function isNoteProduct(p: Pick<ProductCardData, "type" | "isVideo">) {
+  return !p.isVideo && isPdfType(p.type);
+}
+
+/**
+ * بطاقة المنتج «الفصل المشمس» — تختار الشكل حسب النوع (variant="auto"):
+ *  - باقة ← BundleCard (أوراق مروحية بألوان موادها، ملصق التوفير الحقيقي)
+ *  - مذكرة PDF ← NoteCard (ورقة مطوية برأس المادة والصف والصفحات)
+ *  - غير ذلك ← VideoCard (ملصق متدرج، معاينة مجانية، المعلم، الدروس والمدة)
+ * variant="ticket" ← ExamTicket (تذكرة مثقوبة أفقية).
+ */
+export function ProductCard({
+  product: p,
+  owned,
+  variant = "auto",
+  items,
+  showGrade = true,
+  headingLevel = 3,
+}: {
+  product: ProductCardData;
+  owned?: boolean;
+  variant?: ProductCardVariant;
+  /** محتويات الباقة (لتلوين أوراقها وأيقوناتها بموادها الحقيقية) */
+  items?: ProductCardData[];
+  showGrade?: boolean;
+  headingLevel?: 2 | 3 | 4;
+}) {
+  const v = variant === "auto" ? (p.type === "bundle" ? "bundle" : isNoteProduct(p) ? "note" : "poster") : variant;
+  if (v === "bundle") return <BundleCard product={p} owned={owned} items={items} showGrade={showGrade} headingLevel={headingLevel} />;
+  if (v === "note") return <NoteCard product={p} owned={owned} showGrade={showGrade} headingLevel={headingLevel} />;
+  if (v === "ticket") return <ExamTicket product={p} owned={owned} items={items} headingLevel={headingLevel} />;
+  // ‏ProductCard تعرضه الشبكات والقوائم العمودية؛ الرف الأفقي (.shelf) يعيد حجز السطرين في CSS
+  return <VideoCard product={p} owned={owned} showGrade={showGrade} headingLevel={headingLevel} fitTitle />;
+}
+
+/**
+ * شبكة بطاقات متجاوبة. إن كانت كل المنتجات مذكرات تصبح شبكة أوراق أضيق (عمودان على الجوال).
+ * itemsById: محتويات الباقات (معرّف الباقة ← محتوياتها) لتلوين أوراقها.
+ */
+export function ProductGrid({
+  products,
+  ownedIds,
+  variant = "auto",
+  itemsById,
+  showGrade,
+  className,
+}: {
+  products: ProductCardData[];
+  ownedIds?: Set<string>;
+  variant?: ProductCardVariant;
+  itemsById?: Map<string, ProductCardData[]>;
+  showGrade?: boolean;
+  className?: string;
+}) {
+  const notes = variant === "note" || (variant === "auto" && products.length > 0 && products.every(isNoteProduct));
   return (
-    <article className="group relative flex flex-col overflow-hidden rounded-2xl border border-line bg-surface shadow-card transition-shadow hover:shadow-lift">
-      <div className="relative">
-        <ProductCover
-          coverUrl={product.coverUrl ?? (product.isVideo ? product.thumbnailUrl : null)}
-          title={product.title}
-          type={product.type}
-          subjectName={product.subjectName}
-          gradeName={product.gradeName}
-          className="transition-transform duration-300 group-hover:scale-[1.02]"
-        />
-        <div className="absolute end-2 top-2 flex flex-col items-end gap-1">
-          {discount > 0 ? <Badge tone="accent">خصم {discount}%</Badge> : null}
-          {owned ? <Badge tone="success">في مكتبتك</Badge> : null}
-        </div>
-      </div>
-      <div className="flex flex-1 flex-col gap-2 p-3.5 sm:p-4">
-        <p className="text-xs font-semibold text-brand-700">
-          {PRODUCT_TYPE_LABELS[product.type]} · {termLabel(product.term).replace("الفصل الدراسي ", "الفصل ")}
-        </p>
-        <h3 className="line-clamp-2 text-[0.95rem] leading-6 font-bold">
-          <Link href={`/products/${product.slug}`} className="after:absolute after:inset-0 focus-visible:outline-none">
-            {product.title}
-          </Link>
-        </h3>
-        {product.teacherName ? <p className="-mt-1 text-xs text-muted">{product.teacherName}</p> : null}
-        {product.isVideo && product.lessonCount ? (
-          <p className="flex items-center gap-1 text-xs font-semibold text-ink-soft">
-            <PlayCircle className="size-3.5 text-brand-600" aria-hidden /> {lessonsLabel(product.lessonCount)}
-            {product.totalDurationSeconds ? <> · {formatTotalDuration(product.totalDurationSeconds)}</> : null}
-          </p>
-        ) : null}
-        <div className="mt-auto flex items-end justify-between gap-2 pt-1">
-          <Price fils={product.priceFils} compareAt={product.compareAtPriceFils} size="sm" />
-          {product.hasPreview || product.previewLessonId ? (
-            <span className="flex items-center gap-1 text-xs text-muted">
-              <Eye className="size-3.5" aria-hidden /> معاينة
-            </span>
-          ) : null}
-        </div>
-      </div>
-    </article>
+    <ul className={cn(notes ? s.noteGrid : s.grid, className)}>
+      {products.map((p) => (
+        <li key={p.id}>
+          <ProductCard product={p} owned={ownedIds?.has(p.id)} variant={variant} items={itemsById?.get(p.id)} showGrade={showGrade} />
+        </li>
+      ))}
+    </ul>
   );
 }
 
-export function ProductGrid({ products, ownedIds }: { products: ProductCardData[]; ownedIds?: Set<string> }) {
+/** رف أفقي قابل للسحب على الجوال (بطاقة بعرض ٨٠٪ مع إطلالة التالية)، وشبكة على الشاشات الأكبر */
+export function ProductShelf({ products, ownedIds, variant = "auto", itemsById, showGrade, className }: { products: ProductCardData[]; ownedIds?: Set<string>; variant?: ProductCardVariant; itemsById?: Map<string, ProductCardData[]>; showGrade?: boolean; className?: string }) {
   return (
-    <div className="grid grid-cols-2 gap-3 sm:gap-4 md:grid-cols-3 lg:grid-cols-4">
+    <ul className={cn(s.shelf, className)}>
       {products.map((p) => (
-        <ProductCard key={p.id} product={p} owned={ownedIds?.has(p.id)} />
+        <li key={p.id}>
+          <ProductCard product={p} owned={ownedIds?.has(p.id)} variant={variant} items={itemsById?.get(p.id)} showGrade={showGrade} />
+        </li>
       ))}
-    </div>
+    </ul>
   );
 }

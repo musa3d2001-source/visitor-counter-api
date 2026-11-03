@@ -99,11 +99,11 @@ function demoDefs(): DemoDef[] {
   const out: DemoDef[] = [];
   for (const level of [6, 7, 8, 9]) {
     for (const sub of INTERMEDIATE_SUBJECTS) {
-      out.push({ level, subject: sub.slug, type: "final_notes", title: `${TYPE_TITLES.final_notes} — ${sub.name}`, price: 3000, compareAt: 4000, term: 1 });
+      out.push({ level, subject: sub.slug, type: "final_notes", title: `${TYPE_TITLES.final_notes} لمادة ${sub.name}`, price: 3000, compareAt: 4000, term: 1 });
       if (["math", "science", "arabic", "english"].includes(sub.slug)) {
-        out.push({ level, subject: sub.slug, type: "exam_night", title: `${TYPE_TITLES.exam_night} — ${sub.name}`, price: 1500, term: 1 });
-        out.push({ level, subject: sub.slug, type: "exam_model", title: `${TYPE_TITLES.exam_model} — ${sub.name}`, price: 2000, term: 1, downloadable: true });
-        out.push({ level, subject: sub.slug, type: "answer_key", title: `${TYPE_TITLES.answer_key} — ${sub.name}`, price: 1000, term: 1 });
+        out.push({ level, subject: sub.slug, type: "exam_night", title: `${TYPE_TITLES.exam_night} لمادة ${sub.name}`, price: 1500, term: 1 });
+        out.push({ level, subject: sub.slug, type: "exam_model", title: `${TYPE_TITLES.exam_model} لمادة ${sub.name}`, price: 2000, term: 1, downloadable: true });
+        out.push({ level, subject: sub.slug, type: "answer_key", title: `${TYPE_TITLES.answer_key} لمادة ${sub.name}`, price: 1000, term: 1 });
       }
     }
   }
@@ -138,7 +138,7 @@ export async function seedDemo(sql: postgres.Sql, opts: { publish: boolean; stor
       insert into products (slug, type, title, summary, description, contents, grade_id, subject_id, academic_year, term,
                             price_fils, compare_at_price_fils, status, is_downloadable, preview_pages, page_count, published_at, sort_order)
       values (${slug}, ${d.type}, ${d.title},
-        ${`ملخص منظم لمادة ${subject.name} — ${GRADE_NAMES[d.level]}`},
+        ${`ملخص منظم لمادة ${subject.name} في ${GRADE_NAMES[d.level]}`},
         ${`محتوى تجريبي أصلي لأغراض العرض والاختبار. يحتوي على شرح مختصر وأمثلة محلولة وتدريبات لمادة ${subject.name}.`},
         ${"شرح مختصر لكل درس\nأمثلة محلولة خطوة بخطوة\nتدريبات متنوعة مع الإجابات\nأسئلة متوقعة للاختبار"},
         ${grade.id}, ${subject.id}, ${opts.academicYear}, ${d.term}, ${d.price}, ${d.compareAt ?? null}, ${status},
@@ -178,7 +178,7 @@ export async function seedDemo(sql: postgres.Sql, opts: { publish: boolean; stor
     const [bundle] = await sql<{ id: string }[]>`
       insert into products (slug, type, title, summary, description, contents, grade_id, academic_year, term, price_fils,
                             compare_at_price_fils, status, is_featured, published_at)
-      values (${slug}, 'bundle', ${`باقة المذكرات النهائية — ${GRADE_NAMES[g.level]}`},
+      values (${slug}, 'bundle', ${`باقة المذكرات النهائية ${GRADE_NAMES[g.level].replace(/^ال/, "لل")}`},
         ${"كل المذكرات النهائية للفصل الأول بسعر واحد"},
         ${"باقة تجريبية تجمع المذكرات النهائية لكل مواد الصف للفصل الدراسي الأول."},
         ${"جميع المذكرات النهائية لمواد الصف\nوصول فوري بعد الدفع\nتحديثات المذكرات ضمن الباقة"},

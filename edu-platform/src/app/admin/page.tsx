@@ -1,18 +1,42 @@
 import Link from "next/link";
-import { BadgeCheck, Banknote, FileText, GraduationCap, Receipt, Users, Wallet } from "lucide-react";
+import {
+  BadgeCheck,
+  Banknote,
+  CalendarDays,
+  ChartColumn,
+  Clock,
+  Crown,
+  FileText,
+  FlaskConical,
+  GraduationCap,
+  Plus,
+  Receipt,
+  Settings,
+  Ticket,
+  Trophy,
+  UserRound,
+  Users,
+  Wallet,
+} from "lucide-react";
 import { dashboardTotals, latestOrders, salesByDay, topProducts, topTeachers } from "@/server/admin/stats";
 import { requireStaff, type Actor } from "@/server/auth/permissions";
 import { pendingReviewCount } from "@/server/admin/products";
 import { teacherDashboard } from "@/server/admin/teachers";
 import { Button } from "@/components/ui/button";
-import { AdminPageHeader, Section, StatCard } from "@/components/admin/page-header";
+import { Eyebrow } from "@/components/ui/section-head";
+import { AdminNotice, MiniStat, MoreLink, Section, StatGrid, StatTile } from "@/components/admin/page-header";
+import { DataList, DataRow, RankList } from "@/components/admin/data-list";
+import { Segmented } from "@/components/admin/filter-bar";
+import { ToneIcon } from "@/components/admin/icon-tile";
 import { SalesBars } from "@/components/admin/sales-bars";
-import { OrderStatusBadge, TestBadge } from "@/components/admin/status-badge";
+import { OrderStatusBadge, StatusPill, TestBadge } from "@/components/admin/status-badge";
 import { EmptyState } from "@/components/ui/empty-state";
-import { Table, TD, TH, THead, TR } from "@/components/ui/table";
-import { filsToKwdString } from "@/lib/money";
+import { ar, count, W } from "@/lib/design";
 import { PRODUCT_TYPE_LABELS, type ProductType } from "@/lib/labels";
-import { formatDateTime, cn } from "@/lib/utils";
+import { formatDateTime } from "@/lib/utils";
+import { DashHero, HeroChip } from "./_components/overview/bands";
+import { Kwd, CONTENT, SALE, todayLabel } from "./_components/overview/money";
+import { QuickTiles } from "./_components/overview/quick-tiles";
 
 export const metadata = { title: "الرئيسية" };
 
@@ -34,150 +58,177 @@ export default async function AdminDashboard({ searchParams }: { searchParams: P
     const p = new URLSearchParams({ ...(sp.days ? { days: sp.days } : {}), ...(includeTest ? { test: "1" } : {}) });
     for (const [k, v] of Object.entries(patch)) (v === undefined ? p.delete(k) : p.set(k, v));
     const s = p.toString();
-    return s ? `?${s}` : "";
+    return s ? `/admin?${s}` : "/admin";
   };
+  const periodFils = series.reduce((s, d) => s + d.revenueFils, 0);
+  const periodOrders = series.reduce((s, d) => s + d.orders, 0);
+  const today = todayLabel();
 
   return (
     <div className="space-y-6">
-      <AdminPageHeader
-        title="لوحة المعلومات"
-        description={includeTest ? "تشمل الأرقام الطلبات التجريبية (Sandbox)" : "الأرقام من الطلبات الحقيقية فقط — الطلبات التجريبية مستبعدة"}
+      <DashHero
+        eyebrow={
+          <>
+            <Eyebrow tone="light" icon={<Crown aria-hidden />}>
+              لوحة المالك
+            </Eyebrow>
+            {today ? <HeroChip icon={<CalendarDays aria-hidden />}>{today}</HeroChip> : null}
+          </>
+        }
+        greeting="أهلًا،"
+        name={actor.name}
+        sub={includeTest ? "تشمل الأرقام الطلبات التجريبية (Sandbox)" : "الأرقام من الطلبات الحقيقية فقط، الطلبات التجريبية مستبعدة"}
+        chips={
+          totals.pendingOrders || includeTest ? (
+            <>
+              {totals.pendingOrders ? <HeroChip icon={<Clock aria-hidden />}>{count(totals.pendingOrders, W.order)} بانتظار الدفع (آخر يومين)</HeroChip> : null}
+              {includeTest ? <HeroChip icon={<FlaskConical aria-hidden />}>وضع عرض البيانات التجريبية</HeroChip> : null}
+            </>
+          ) : null
+        }
         actions={
-          <Link href={qs({ test: includeTest ? undefined : "1" })} className="rounded-xl border border-line-strong bg-surface px-3 py-2 text-sm font-semibold text-ink-soft hover:bg-brand-50">
-            {includeTest ? "إخفاء البيانات التجريبية" : `إظهار البيانات التجريبية${totals.testPaidOrders ? ` (${totals.testPaidOrders})` : ""}`}
-          </Link>
+          <>
+            <Button asChild variant="accent" size="lg">
+              <Link href="/admin/products/new">
+                <Plus aria-hidden /> إضافة منتج
+              </Link>
+            </Button>
+            <Button asChild variant="light" size="md">
+              <Link href={qs({ test: includeTest ? undefined : "1" })}>
+                <FlaskConical aria-hidden />
+                {includeTest ? "إخفاء البيانات التجريبية" : `إظهار البيانات التجريبية${totals.testPaidOrders ? ` (${ar(totals.testPaidOrders)})` : ""}`}
+              </Link>
+            </Button>
+          </>
         }
       />
 
       {pending > 0 ? (
-        <Link href="/admin/review" className="flex items-center gap-3 rounded-2xl border-2 border-accent-200 bg-accent-50 p-4 font-semibold hover:bg-accent-100">
-          <BadgeCheck className="size-5 text-accent-700" aria-hidden />
-          <span className="flex-1">
-            يوجد <span className="num">{pending}</span> محتوى بانتظار المراجعة والاعتماد
-          </span>
-          <span className="text-sm text-brand-700">مراجعة الآن</span>
-        </Link>
+        <AdminNotice href="/admin/review" icon={<BadgeCheck />} action="مراجعة الآن">
+          يوجد {count(pending, CONTENT)} بانتظار المراجعة والاعتماد
+        </AdminNotice>
       ) : null}
 
-      <div className="grid grid-cols-2 gap-3 sm:gap-4 lg:grid-cols-4">
-        <StatCard label="إجمالي المبيعات" value={<><span className="num">{filsToKwdString(totals.salesFils)}</span> <span className="text-sm text-muted">د.ك</span></>} icon={<Banknote />} />
-        <StatCard label="الطلبات المدفوعة" value={<span className="num">{totals.paidOrders}</span>} hint={totals.pendingOrders ? `${totals.pendingOrders} بانتظار الدفع (آخر يومين)` : undefined} icon={<Receipt />} />
-        <StatCard label="عدد الطلاب" value={<span className="num">{totals.students}</span>} icon={<Users />} />
-        <StatCard label="المنتجات المنشورة" value={<span className="num">{totals.publishedProducts}</span>} icon={<FileText />} />
-      </div>
+      <StatGrid>
+        <StatTile label="إجمالي المبيعات" value={<Kwd fils={totals.salesFils} />} icon={<Banknote />} href="/admin/reports" />
+        <StatTile
+          label="الطلبات المدفوعة"
+          value={<span className="num">{ar(totals.paidOrders)}</span>}
+          hint={totals.pendingOrders ? `${count(totals.pendingOrders, W.order)} بانتظار الدفع` : undefined}
+          icon={<Receipt />}
+          href="/admin/orders"
+        />
+        <StatTile label="عدد الطلاب" value={<span className="num">{ar(totals.students)}</span>} icon={<Users />} href="/admin/students" />
+        <StatTile label="المنتجات المنشورة" value={<span className="num">{ar(totals.publishedProducts)}</span>} icon={<FileText />} href="/admin/products" />
+      </StatGrid>
+
+      <QuickTiles
+        items={[
+          { href: "/admin/products/new", label: "منتج جديد", sub: "فيديو أو مذكرة أو باقة", icon: <Plus />, tone: "sky" },
+          { href: "/admin/review", label: "مراجعة المحتوى", sub: pending ? count(pending, CONTENT) : "لا شيء بالانتظار", icon: <BadgeCheck />, tone: "gold", badge: pending ? ar(pending) : undefined },
+          { href: "/admin/orders", label: "الطلبات", sub: "الدفع والاسترداد", icon: <Receipt />, tone: "green" },
+          { href: "/admin/coupons", label: "الكوبونات", sub: "خصومات وعروض", icon: <Ticket />, tone: "coral" },
+          { href: "/admin/reports", label: "التقارير", sub: "تصدير وتحليل", icon: <ChartColumn />, tone: "violet" },
+          { href: "/admin/settings", label: "الإعدادات", sub: "الهوية والتواصل", icon: <Settings />, tone: "slate" },
+        ]}
+      />
 
       <Section
         title="المبيعات حسب الفترة"
         description="إجمالي الطلبات المدفوعة يوميًا بتوقيت الكويت"
-        actions={
-          <div className="flex gap-1 rounded-xl bg-canvas p-1" role="tablist" aria-label="الفترة">
-            {[7, 30, 90].map((d) => (
-              <Link
-                key={d}
-                href={qs({ days: String(d) })}
-                role="tab"
-                aria-selected={d === days}
-                className={cn("rounded-lg px-3 py-1.5 text-sm font-semibold", d === days ? "bg-surface text-brand-700 shadow-sm" : "text-muted hover:text-ink")}
-              >
-                <span className="num">{d}</span> يوم
-              </Link>
-            ))}
-          </div>
-        }
+        icon={<ChartColumn />}
+        tone="teal"
+        actions={<Segmented label="الفترة" items={[7, 30, 90].map((d) => ({ href: qs({ days: String(d) }), label: count(d, W.day), active: d === days }))} />}
       >
         <SalesBars data={series} />
-        <p className="mt-3 text-sm text-muted">
-          إجمالي الفترة: <span className="num font-bold text-ink">{filsToKwdString(series.reduce((s, d) => s + d.revenueFils, 0))}</span> د.ك ·{" "}
-          <span className="num font-bold text-ink">{series.reduce((s, d) => s + d.orders, 0)}</span> طلب
-        </p>
+        <div className="mt-5 grid grid-cols-2 gap-3 sm:grid-cols-3">
+          <MiniStat label="إجمالي الفترة" tone="teal" value={<Kwd fils={periodFils} />} />
+          <MiniStat label="عدد الطلبات" tone="green" value={<span className="num">{ar(periodOrders)}</span>} />
+          {periodOrders > 0 ? (
+            <MiniStat label="متوسط قيمة الطلب" tone="gold" value={<Kwd fils={Math.round(periodFils / periodOrders)} />} className="max-sm:col-span-2" />
+          ) : null}
+        </div>
       </Section>
 
-      <div className="grid gap-6 lg:grid-cols-[1.4fr_1fr]">
-        <Section title="أحدث الطلبات" actions={<Link href="/admin/orders" className="text-sm font-semibold text-brand-700 hover:underline">كل الطلبات</Link>}>
+      <div className="grid gap-6 xl:grid-cols-[1.35fr_1fr]">
+        <Section title="أحدث الطلبات" icon={<Receipt />} tone="green" actions={<MoreLink href="/admin/orders">كل الطلبات</MoreLink>}>
           {latest.length === 0 ? (
-            <EmptyState icon={<Receipt />} title="لا توجد طلبات بعد" description="ستظهر هنا الطلبات فور إنشائها من الطلاب." />
+            <EmptyState art="receipt" compact title="لا توجد طلبات بعد" description="ستظهر هنا الطلبات فور إنشائها من الطلاب." />
           ) : (
-            <Table>
-              <THead>
-                <tr>
-                  <TH>الطلب</TH>
-                  <TH>العميل</TH>
-                  <TH>المبلغ</TH>
-                  <TH>الحالة</TH>
-                </tr>
-              </THead>
-              <tbody>
-                {latest.map((o) => (
-                  <TR key={o.id}>
-                    <TD>
-                      <Link href={`/admin/orders/${o.id}`} className="num font-semibold text-brand-700 hover:underline">
-                        {o.number}
-                      </Link>
-                      <p className="text-xs text-muted">{formatDateTime(o.created_at)}</p>
-                    </TD>
-                    <TD>{o.customer_name}</TD>
-                    <TD>
-                      <span className="num">{filsToKwdString(o.total_fils)}</span> د.ك
-                    </TD>
-                    <TD>
-                      <div className="flex flex-wrap gap-1">
+            <DataList>
+              {latest.map((o) => (
+                <DataRow
+                  key={o.id}
+                  href={`/admin/orders/${o.id}`}
+                  leading={
+                    <ToneIcon tone={o.status === "paid" ? "green" : o.status === "refunded" ? "violet" : o.status === "pending" ? "gold" : "slate"} size="sm">
+                      <Receipt />
+                    </ToneIcon>
+                  }
+                  title={
+                    <span className="num whitespace-nowrap" dir="ltr">
+                      {o.number}
+                    </span>
+                  }
+                  sub={
+                    <>
+                      {o.customer_name} · <span className="whitespace-nowrap">{formatDateTime(o.created_at)}</span>
+                    </>
+                  }
+                  aside={
+                    <div className="flex w-full items-center justify-between gap-1.5 sm:w-auto sm:flex-col sm:items-end">
+                      <Kwd fils={o.total_fils} className="font-display text-[1.05rem] font-black text-ink" />
+                      <div className="flex flex-wrap justify-end gap-1">
                         <OrderStatusBadge status={o.status} />
                         {o.is_test ? <TestBadge /> : null}
                       </div>
-                    </TD>
-                  </TR>
-                ))}
-              </tbody>
-            </Table>
+                    </div>
+                  }
+                  className="max-sm:[&>div:last-child]:w-full"
+                />
+              ))}
+            </DataList>
           )}
         </Section>
-        <Section title="الأكثر مبيعًا" description="عدد المبيعات وقيمتها بسعر المنتج قبل الخصم">
+
+        <Section title="الأكثر مبيعًا" description="عدد المبيعات وقيمتها بسعر المنتج قبل الخصم" icon={<Trophy />} tone="gold">
           {top.length === 0 ? (
-            <p className="rounded-xl bg-canvas p-6 text-center text-sm text-muted">لا توجد مبيعات مدفوعة بعد.</p>
+            <EmptyState art="generic" compact title="لا توجد مبيعات مدفوعة بعد." />
           ) : (
-            <ol className="space-y-3">
-              {top.map((p, i) => (
-                <li key={p.product_id} className="flex items-center gap-3">
-                  <span className="num grid size-8 shrink-0 place-items-center rounded-lg bg-brand-50 text-sm font-bold text-brand-700">{i + 1}</span>
-                  <div className="min-w-0 flex-1">
-                    <Link href={`/admin/products/${p.product_id}`} className="line-clamp-1 text-sm font-semibold hover:text-brand-700">
-                      {p.title}
-                    </Link>
-                    <p className="text-xs text-muted">{PRODUCT_TYPE_LABELS[p.type as ProductType] ?? p.type}</p>
-                  </div>
-                  <div className="text-end text-sm">
-                    <p className="num font-bold">{p.sold}</p>
-                    <p className="text-xs text-muted">
-                      <span className="num">{filsToKwdString(Number(p.revenue))}</span> د.ك
-                    </p>
-                  </div>
-                </li>
-              ))}
-            </ol>
+            <RankList
+              items={top.map((p) => ({
+                key: p.product_id,
+                href: `/admin/products/${p.product_id}`,
+                title: p.title,
+                sub: PRODUCT_TYPE_LABELS[p.type as ProductType] ?? p.type,
+                value: <Kwd fils={Number(p.revenue)} />,
+                valueSub: count(p.sold, SALE),
+              }))}
+            />
           )}
         </Section>
       </div>
 
-      <Section title="المبيعات حسب المعلم" description={`آخر ${days} يومًا — قيمة عناصر الطلبات المدفوعة المنسوبة لكل معلم`} actions={<Link href="/admin/teachers" className="text-sm font-semibold text-brand-700 hover:underline">كل المعلمين</Link>}>
+      <Section
+        title="المبيعات حسب المعلم"
+        description={`آخر ${count(days, W.day)}، قيمة عناصر الطلبات المدفوعة المنسوبة لكل معلم`}
+        icon={<GraduationCap />}
+        tone="pink"
+        actions={<MoreLink href="/admin/teachers">كل المعلمين</MoreLink>}
+      >
         {teachersTop.length === 0 ? (
-          <p className="rounded-xl bg-canvas p-6 text-center text-sm text-muted">لا توجد مبيعات لمحتوى المعلمين في هذه الفترة.</p>
+          <EmptyState art="search" compact title="لا توجد مبيعات لمحتوى المعلمين في هذه الفترة." />
         ) : (
-          <ol className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
-            {teachersTop.map((t, i) => (
-              <li key={t.teacherId} className="flex items-center gap-3 rounded-xl border border-line p-3">
-                <span className="num grid size-8 shrink-0 place-items-center rounded-lg bg-brand-50 text-sm font-bold text-brand-700">{i + 1}</span>
-                <div className="min-w-0 flex-1">
-                  <Link href={`/admin/teachers/${t.teacherId}`} className="line-clamp-1 text-sm font-semibold hover:text-brand-700">
-                    {t.teacherName}
-                  </Link>
-                  <p className="text-xs text-muted">
-                    <span className="num">{t.sold}</span> عملية بيع
-                  </p>
-                </div>
-                <p className="num text-sm font-bold">{filsToKwdString(t.revenueFils)}</p>
-              </li>
-            ))}
-          </ol>
+          <RankList
+            grid
+            items={teachersTop.map((t) => ({
+              key: t.teacherId,
+              href: `/admin/teachers/${t.teacherId}`,
+              title: t.teacherName,
+              sub: count(t.sold, SALE),
+              value: <Kwd fils={t.revenueFils} />,
+            }))}
+          />
         )}
       </Section>
     </div>
@@ -187,70 +238,126 @@ export default async function AdminDashboard({ searchParams }: { searchParams: P
 /** الصفحة الرئيسية للمعلم: أرقامه فقط — بدون بيانات الطلاب */
 async function TeacherHome({ actor }: { actor: Extract<Actor, { kind: "teacher" }> }) {
   const d = await teacherDashboard(actor.teacherId);
+  const today = todayLabel();
+  const inReview = d.counts.in_review;
   return (
     <div className="space-y-6">
-      <AdminPageHeader
-        title={`أهلًا ${actor.teacherName}`}
-        description="ملخص محتواك ومبيعاته"
+      <DashHero
+        eyebrow={
+          <>
+            <Eyebrow tone="light" icon={<GraduationCap aria-hidden />}>
+              لوحة المعلم
+            </Eyebrow>
+            {today ? <HeroChip icon={<CalendarDays aria-hidden />}>{today}</HeroChip> : null}
+          </>
+        }
+        greeting="أهلًا"
+        name={actor.teacherName}
+        sub="ملخص محتواك ومبيعاته"
+        chips={inReview ? <HeroChip icon={<Clock aria-hidden />}>{count(inReview, CONTENT)} بانتظار المراجعة</HeroChip> : null}
         actions={
-          actor.canUpload ? (
-            <Button asChild>
-              <Link href="/admin/products/new">إضافة محتوى</Link>
+          <>
+            {actor.canUpload ? (
+              <Button asChild variant="accent" size="lg">
+                <Link href="/admin/products/new">
+                  <Plus aria-hidden /> إضافة محتوى
+                </Link>
+              </Button>
+            ) : null}
+            <Button asChild variant="light" size="md">
+              <Link href="/admin/earnings">
+                <Wallet aria-hidden /> عرض أرباحي
+              </Link>
             </Button>
-          ) : null
+          </>
         }
       />
-      {!actor.canUpload ? <p className="rounded-xl bg-warning-50 p-4 text-sm font-semibold text-warning">صلاحية رفع المحتوى موقوفة حاليًا — تواصل مع إدارة المنصة.</p> : null}
+
+      {!actor.canUpload ? (
+        <p className="flex items-center gap-3 rounded-[1.4rem] border-2 border-accent-200 bg-warning-50 p-4 font-display text-[0.95rem] font-bold text-warning shadow-[0_4px_0_color-mix(in_oklab,var(--accent-edge)_25%,white)]">
+          <ToneIcon tone="gold" size="sm">
+            <Clock />
+          </ToneIcon>
+          صلاحية رفع المحتوى موقوفة حاليًا، تواصل مع إدارة المنصة.
+        </p>
+      ) : null}
+
       {d.returned.length ? (
-        <Section title="محتوى أُعيد إليك للتعديل">
-          <ul className="space-y-2">
+        <Section title="محتوى أُعيد إليك للتعديل" description="راجع ملاحظات الإدارة ثم أعد إرساله للمراجعة." icon={<BadgeCheck />} tone="coral">
+          <DataList>
             {d.returned.map((r) => (
-              <li key={r.id} className="rounded-xl border border-warning/30 bg-warning-50 p-3 text-sm">
-                <Link href={`/admin/products/${r.id}`} className="font-semibold hover:underline">
-                  {r.title}
-                </Link>
-                <p className="mt-1 text-ink-soft">{r.review_note}</p>
-              </li>
+              <DataRow
+                key={r.id}
+                href={`/admin/products/${r.id}`}
+                leading={
+                  <ToneIcon tone="coral" size="sm">
+                    <FileText />
+                  </ToneIcon>
+                }
+                title={r.title}
+                sub={r.review_note}
+                badges={<StatusPill tone="review">بحاجة إلى تعديل</StatusPill>}
+                className="border-coral/20 bg-coral-50/40"
+              />
             ))}
-          </ul>
+          </DataList>
         </Section>
       ) : null}
-      <div className="grid grid-cols-2 gap-3 sm:gap-4 lg:grid-cols-4">
-        <StatCard label="منشور" value={<span className="num">{d.counts.published}</span>} icon={<FileText />} />
-        <StatCard label="بانتظار المراجعة" value={<span className="num">{d.counts.in_review}</span>} icon={<BadgeCheck />} />
-        <StatCard label="مسودات" value={<span className="num">{d.counts.draft}</span>} icon={<GraduationCap />} />
-        <StatCard label="عمليات بيع" value={<span className="num">{d.summary.items}</span>} hint={`${filsToKwdString(d.summary.grossFils)} د.ك`} icon={<Banknote />} />
-      </div>
+
+      <StatGrid>
+        <StatTile label="منشور" value={<span className="num">{ar(d.counts.published)}</span>} icon={<FileText />} href="/admin/products" />
+        <StatTile label="بانتظار المراجعة" value={<span className="num">{ar(d.counts.in_review)}</span>} icon={<BadgeCheck />} />
+        <StatTile label="مسودات" value={<span className="num">{ar(d.counts.draft)}</span>} icon={<GraduationCap />} />
+        <StatTile label="عمليات بيع" value={<span className="num">{ar(d.summary.items)}</span>} hint={<Kwd fils={d.summary.grossFils} unitClassName="text-[var(--tink)]" />} icon={<Banknote />} href="/admin/earnings" />
+      </StatGrid>
+
       {d.balance.earnedFils > 0 || d.balance.paidFils > 0 ? (
-        <div className="grid grid-cols-2 gap-3 sm:gap-4">
-          <StatCard label="أرباحي المستحقة" value={<><span className="num">{filsToKwdString(d.balance.earnedFils)}</span> <span className="text-sm text-muted">د.ك</span></>} icon={<Wallet />} />
-          <StatCard label="الرصيد غير المسدد" value={<><span className="num">{filsToKwdString(d.balance.balanceFils)}</span> <span className="text-sm text-muted">د.ك</span></>} icon={<Wallet />} />
-        </div>
+        <StatGrid cols={2}>
+          <StatTile label="أرباحي المستحقة" value={<Kwd fils={d.balance.earnedFils} />} icon={<Wallet />} />
+          <StatTile label="الرصيد غير المسدد" value={<Kwd fils={d.balance.balanceFils} />} icon={<Wallet />} />
+        </StatGrid>
       ) : null}
-      <Section title="آخر مبيعات محتواك" actions={<Link href="/admin/earnings" className="text-sm font-semibold text-brand-700 hover:underline">التفاصيل</Link>}>
+
+      <QuickTiles
+        items={[
+          ...(actor.canUpload ? [{ href: "/admin/products/new", label: "محتوى جديد", sub: "وحدة فيديو أو مذكرة", icon: <Plus />, tone: "teal" as const }] : []),
+          { href: "/admin/products", label: "محتواي", sub: count(d.counts.published + d.counts.in_review + d.counts.draft + d.counts.hidden, CONTENT), icon: <FileText />, tone: "sky" },
+          { href: "/admin/earnings", label: "أرباحي ومبيعاتي", sub: "التفاصيل والتسويات", icon: <Wallet />, tone: "gold" },
+          { href: "/admin/profile", label: "ملفي التعريفي", sub: "النبذة والصورة", icon: <UserRound />, tone: "pink" },
+        ]}
+      />
+
+      <Section title="آخر مبيعات محتواك" icon={<Receipt />} tone="green" actions={<MoreLink href="/admin/earnings">التفاصيل</MoreLink>}>
         {d.latest.length === 0 ? (
-          <EmptyState icon={<Receipt />} title="لا توجد مبيعات بعد" description="عند شراء الطلاب لمحتواك ستظهر العمليات هنا." />
+          <EmptyState art="receipt" compact title="لا توجد مبيعات بعد" description="عند شراء الطلاب لمحتواك ستظهر العمليات هنا." />
         ) : (
-          <Table>
-            <THead>
-              <tr>
-                <TH>الطلب</TH>
-                <TH>التاريخ</TH>
-                <TH>المحتوى</TH>
-                <TH>القيمة</TH>
-              </tr>
-            </THead>
-            <tbody>
-              {d.latest.map((s, i) => (
-                <TR key={`${s.order_number}-${i}`}>
-                  <TD className="num font-semibold">{s.order_number}</TD>
-                  <TD className="text-xs text-muted">{formatDateTime(s.paid_at)}</TD>
-                  <TD className="text-xs">{s.title}</TD>
-                  <TD className="num">{filsToKwdString(s.unit_price_fils)}</TD>
-                </TR>
-              ))}
-            </tbody>
-          </Table>
+          <DataList>
+            {d.latest.map((s, i) => (
+              <DataRow
+                key={`${s.order_number}-${i}`}
+                leading={
+                  <ToneIcon tone={s.status === "refunded" ? "violet" : "green"} size="sm">
+                    <Receipt />
+                  </ToneIcon>
+                }
+                title={s.title}
+                sub={
+                  <>
+                    <span className="num whitespace-nowrap" dir="ltr">
+                      {s.order_number}
+                    </span>{" "}
+                    · <span className="whitespace-nowrap">{formatDateTime(s.paid_at)}</span>
+                  </>
+                }
+                aside={
+                  <div className="flex items-center gap-2">
+                    {s.status === "refunded" ? <StatusPill tone="violet">مسترد</StatusPill> : null}
+                    <Kwd fils={s.unit_price_fils} className="font-display text-[1.05rem] font-black text-ink" />
+                  </div>
+                }
+              />
+            ))}
+          </DataList>
         )}
       </Section>
     </div>

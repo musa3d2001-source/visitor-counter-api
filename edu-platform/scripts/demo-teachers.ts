@@ -36,9 +36,9 @@ export function makeDemoClip(cacheDir: string, seconds = 8, label = "demo"): Cli
 }
 
 const TEACHERS = [
-  { slug: "demo-math-teacher", name: "أ. خالد (معلم تجريبي)", headline: "شرح الرياضيات للمرحلة المتوسطة — حساب تجريبي للعرض", level: 9, subject: "math", share: 4000 },
-  { slug: "demo-science-teacher", name: "أ. نورة (معلمة تجريبية)", headline: "العلوم بأسلوب مبسط — حساب تجريبي للعرض", level: 8, subject: "science", share: 5000 },
-  { slug: "demo-english-teacher", name: "أ. يوسف (معلم تجريبي)", headline: "English made easy — حساب تجريبي للعرض", level: 7, subject: "english", share: null },
+  { slug: "demo-math-teacher", name: "أ. خالد (معلم تجريبي)", headline: "شرح الرياضيات للمرحلة المتوسطة، حساب تجريبي للعرض", level: 9, subject: "math", share: 4000 },
+  { slug: "demo-science-teacher", name: "أ. نورة (معلمة تجريبية)", headline: "العلوم بأسلوب مبسط، حساب تجريبي للعرض", level: 8, subject: "science", share: 5000 },
+  { slug: "demo-english-teacher", name: "أ. يوسف (معلم تجريبي)", headline: "English made easy، حساب تجريبي للعرض", level: 7, subject: "english", share: null },
 ];
 
 export async function seedDemoTeachers(sql: postgres.Sql, opts: { publish: boolean; storageDir: string; academicYear: string }) {
@@ -67,7 +67,7 @@ export async function seedDemoTeachers(sql: postgres.Sql, opts: { publish: boole
       const [p] = await sql<{ id: string }[]>`
         insert into products (slug, type, title, summary, description, contents, grade_id, subject_id, academic_year, term,
           price_fils, compare_at_price_fils, status, teacher_id, published_at, sort_order, is_featured)
-        values (${slug}, ${type}, ${title}, ${extra.summary ?? `${row.subject_name} — ${row.grade_name}`},
+        values (${slug}, ${type}, ${title}, ${extra.summary ?? `${row.subject_name} في ${row.grade_name}`},
           ${"محتوى فيديو تجريبي أصلي لعرض المنصة واختبارها."}, ${"شرح مبسط لكل درس\nأمثلة محلولة\nأسئلة متوقعة"},
           ${row.grade_id}, ${row.subject_id}, ${opts.academicYear}, 1, ${price}, ${extra.compareAt ?? null}, ${status}, ${teacher.id},
           ${opts.publish ? new Date() : null}, ${created}, ${type === "video_course"})
@@ -94,12 +94,12 @@ export async function seedDemoTeachers(sql: postgres.Sql, opts: { publish: boole
       return p.id;
     };
 
-    const unit = await mk("unit", `شرح الوحدة الأولى — ${row.subject_name}`, 4000, ["الدرس الأول: مقدمة الوحدة", "الدرس الثاني: الأفكار الأساسية", "الدرس الثالث: حل التمارين"], true, { compareAt: 5000 });
-    const quiz = await mk("quiz_review", `مراجعة الاختبار القصير الأول — ${row.subject_name}`, 1500, ["مراجعة شاملة للاختبار القصير"], true);
-    const exam = await mk("exam_review", `مراجعة ليلة الاختبار — ${row.subject_name}`, 2500, ["أهم الأسئلة المتوقعة", "حل نموذج اختبار"], false);
-    const lesson = await mk("video_lesson", `درس منفرد: أسئلة الفهم — ${row.subject_name}`, 750, ["أسئلة الفهم خطوة بخطوة"], false);
+    const unit = await mk("unit", `شرح الوحدة الأولى في ${row.subject_name}`, 4000, ["الدرس الأول: مقدمة الوحدة", "الدرس الثاني: الأفكار الأساسية", "الدرس الثالث: حل التمارين"], true, { compareAt: 5000 });
+    const quiz = await mk("quiz_review", `مراجعة الاختبار القصير الأول في ${row.subject_name}`, 1500, ["مراجعة شاملة للاختبار القصير"], true);
+    const exam = await mk("exam_review", `مراجعة ليلة الاختبار في ${row.subject_name}`, 2500, ["أهم الأسئلة المتوقعة", "حل نموذج اختبار"], false);
+    const lesson = await mk("video_lesson", `درس منفرد: أسئلة الفهم في ${row.subject_name}`, 750, ["أسئلة الفهم خطوة بخطوة"], false);
     // دورة كاملة تضم الوحدة والمراجعات والدرس المنفرد
-    const course = await mk("video_course", `الدورة الكاملة — ${row.subject_name} ${row.grade_name}`, 7000, [], false, { compareAt: 8750, summary: "كل الشروحات والمراجعات بسعر واحد" });
+    const course = await mk("video_course", `الدورة الكاملة: ${row.subject_name} ${row.grade_name.replace(/^ال/, "لل")}`, 7000, [], false, { compareAt: 8750, summary: "كل الشروحات والمراجعات بسعر واحد" });
     let i = 0;
     for (const item of [unit, quiz, exam, lesson]) await sql`insert into bundle_items (bundle_id, product_id, sort_order) values (${course}, ${item}, ${i++})`;
     // باقة شاملة: الدورة + المذكرة النهائية (PDF) للمادة إن وجدت
@@ -107,7 +107,7 @@ export async function seedDemoTeachers(sql: postgres.Sql, opts: { publish: boole
       select id from products where grade_id = ${row.grade_id} and subject_id = ${row.subject_id} and type = 'final_notes' and teacher_id is null limit 1
     `;
     if (notes) {
-      const bundle = await mk("bundle", `الباقة الشاملة — ${row.subject_name} ${row.grade_name}`, 8500, [], false, { compareAt: 10000, summary: "الدورة الكاملة + المذكرة النهائية" });
+      const bundle = await mk("bundle", `الباقة الشاملة: ${row.subject_name} ${row.grade_name.replace(/^ال/, "لل")}`, 8500, [], false, { compareAt: 10000, summary: "الدورة الكاملة + المذكرة النهائية" });
       await sql`insert into bundle_items (bundle_id, product_id, sort_order) values (${bundle}, ${course}, 0), (${bundle}, ${notes.id}, 1)`;
     }
   }

@@ -1,17 +1,20 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import { getGradeBySlug, getSubject, listProducts, teachersForSubject } from "@/server/catalog/queries";
+import { FileText, GraduationCap, Layers, MonitorPlay, Package, Play, Printer, Users } from "lucide-react";
+import { getBundleItems, getGradeBySlug, getSubject, listProducts, teachersForSubject, type ProductCard as ProductCardData } from "@/server/catalog/queries";
 import { getCurrentUser } from "@/server/auth/session";
 import { accessibleProductIds } from "@/server/access/entitlements";
-import { Breadcrumbs } from "@/components/ui/breadcrumbs";
 import { EmptyState } from "@/components/ui/empty-state";
-import { ProductGrid } from "@/components/site/product-card";
-import { VideoGrid } from "@/components/site/video-card";
-import { TeacherAvatar } from "@/components/site/teacher-avatar";
-import { SubjectIcon } from "@/components/site/subject-icon";
-import { isPdfType, PRODUCT_TYPE_ORDER, PRODUCT_TYPE_SECTION_LABELS } from "@/lib/labels";
+import { StatPill } from "@/components/ui/page-header";
+import { ProductCard, ProductGrid } from "@/components/site/product-card";
+import { SectionHead } from "@/components/ui/section-head";
+import { previewHref } from "@/components/site/card-parts";
+import { BundleRow } from "@/components/site/bundle-row";
+import { PRODUCT_TYPE_ORDER, PRODUCT_TYPE_SECTION_LABELS } from "@/lib/labels";
+import { gradeClass, toneClass, W } from "@/lib/design";
 import { cn } from "@/lib/utils";
+import { browseStyles as s, HeroTeachers, JumpChip, NightPanel, offerPhrase, pillCount, SubjectWindow, ToneHero, typeCount, typeFamily, TypeSlots, WORDS } from "../../_components/browse";
 
 type Params = { gradeSlug: string; subjectSlug: string };
 
@@ -21,11 +24,14 @@ export async function generateMetadata({ params }: { params: Promise<Params> }):
   const subject = grade ? await getSubject(grade.id, p.subjectSlug) : null;
   if (!grade || !subject) return {};
   return {
-    title: `${subject.name} — ${grade.name}`,
+    title: `${subject.name} ${grade.name}`,
     description: `مذكرات ${subject.name} لـ${grade.name}: المذكرة النهائية، ليلة الاختبار، نماذج الاختبارات والإجابات.`,
     alternates: { canonical: `/grades/${grade.slug}/${subject.slug}` },
   };
 }
+
+/** ترتيب العرض: الفيديو ثم مراجعات ما قبل الاختبار ثم المذكرات ثم الباقات (داخل كل عائلة حسب PRODUCT_TYPE_ORDER) */
+const FAMILY_ORDER = ["video", "review", "pdf", "bundle"] as const;
 
 export default async function SubjectPage({ params, searchParams }: { params: Promise<Params>; searchParams: Promise<{ term?: string }> }) {
   const p = await params;
@@ -41,79 +47,164 @@ export default async function SubjectPage({ params, searchParams }: { params: Pr
   const products = term ? all.filter((x) => x.term === term || x.term === null) : all;
   const user = await getCurrentUser();
   const owned = user ? await accessibleProductIds(user.id) : undefined;
-  const groups = PRODUCT_TYPE_ORDER.map((type) => ({ type, items: products.filter((x) => x.type === type) })).filter((g) => g.items.length);
+  const groups = PRODUCT_TYPE_ORDER.map((type) => ({ type, items: products.filter((x) => x.type === type) }))
+    .filter((g) => g.items.length)
+    .sort((a, b) => FAMILY_ORDER.indexOf(typeFamily(a.type)) - FAMILY_ORDER.indexOf(typeFamily(b.type)));
+  const bundles = groups.find((g) => g.type === "bundle")?.items ?? [];
+  const itemsById = new Map<string, ProductCardData[]>(await Promise.all(bundles.map(async (b) => [b.id, await getBundleItems(b.id)] as const)));
   const base = `/grades/${grade.slug}/${subject.slug}`;
 
-  return (
-    <div className="mx-auto max-w-6xl px-4 py-8">
-      <Breadcrumbs items={[{ label: "الرئيسية", href: "/" }, { label: grade.name, href: `/grades/${grade.slug}` }, { label: subject.name }]} />
-      <div className="mt-4 flex items-center gap-4">
-        <span className="grid size-14 place-items-center rounded-2xl bg-brand-600 text-white">
-          <SubjectIcon name={subject.icon} className="size-7" />
-        </span>
-        <div>
-          <h1 className="text-3xl font-bold">{subject.name}</h1>
-          <p className="mt-1 text-muted">{grade.name}</p>
-        </div>
-      </div>
+  const videoCount = all.filter((x) => typeFamily(x.type) === "video" || typeFamily(x.type) === "review").length;
+  const pdfCount = all.filter((x) => typeFamily(x.type) === "pdf").length;
+  const firstPreview = products.find((x) => x.previewLessonId);
+  const freeHref = firstPreview ? previewHref(firstPreview) : null;
+  const offer = offerPhrase(all);
+  const night = groups.find((g) => g.type === "exam_review");
+  const quiz = groups.find((g) => g.type === "quiz_review");
 
-      {teachers.length ? (
-        <section className="mt-6" aria-labelledby="subject-teachers">
-          <h2 id="subject-teachers" className="mb-3 text-sm font-bold text-muted">
-            معلمو المادة
-          </h2>
-          <div className="flex gap-2 overflow-x-auto pb-1">
-            {teachers.map((t) => (
-              <Link
-                key={t.id}
-                href={`/teachers/${t.slug}#${subject.slug}-${grade.slug}`}
-                data-testid="subject-teacher"
-                className="flex shrink-0 items-center gap-2.5 rounded-full border border-line bg-surface py-1.5 ps-1.5 pe-4 shadow-card transition hover:border-brand-300"
-              >
-                <TeacherAvatar name={t.name} photoUrl={t.photoUrl} size={36} />
-                <span className="text-sm font-bold whitespace-nowrap">{t.name}</span>
-              </Link>
+  const videoGroups = groups.filter((g) => typeFamily(g.type) === "video");
+  const pdfGroups = groups.filter((g) => typeFamily(g.type) === "pdf");
+  const bundleGroups = groups.filter((g) => typeFamily(g.type) === "bundle");
+
+  return (
+    <div className="pb-16">
+      <ToneHero
+        toneClassName={toneClass(subject.slug)}
+        titleId="subject-title"
+        breadcrumbs={[{ label: "الرئيسية", href: "/" }, { label: grade.name, href: `/grades/${grade.slug}` }, { label: subject.name }]}
+        eyebrow={
+          <span className="eyebrow-pill eyebrow-light">
+            <span className="eyebrow-icon">
+              <GraduationCap aria-hidden />
+            </span>
+            {grade.name} · {grade.stageName}
+          </span>
+        }
+        title={subject.name}
+        sub={offer ? `${offer} في ${subject.name} لطلاب ${grade.name}.` : undefined}
+        stats={
+          <>
+            {videoCount ? <StatPill tone="teal" icon={<MonitorPlay aria-hidden />} {...pillCount(videoCount, WORDS.video)} /> : null}
+            {pdfCount ? <StatPill tone="gold" icon={<FileText aria-hidden />} {...pillCount(pdfCount, WORDS.pdf)} /> : null}
+            {!videoCount && !pdfCount && all.length ? <StatPill tone="teal" icon={<Layers aria-hidden />} {...pillCount(all.length, W.product)} /> : null}
+            {teachers.length ? <StatPill tone="coral" icon={<Users aria-hidden />} {...pillCount(teachers.length, W.teacher)} /> : null}
+          </>
+        }
+        actions={
+          freeHref ? (
+            <Link href={freeHref} className="btn btn-3d btn-accent btn-lg">
+              <Play aria-hidden className="fill-current" />
+              شاهد درسًا مجانًا
+            </Link>
+          ) : null
+        }
+        extra={<HeroTeachers label="معلمو المادة" teachers={teachers} anchor={`${subject.slug}-${grade.slug}`} />}
+        window={<SubjectWindow slug={subject.slug} icon={subject.icon} gradeLevel={grade.level} gradeName={grade.name} gradeToneClass={gradeClass(grade.level)} />}
+      />
+
+      <div className={cn("mx-auto max-w-7xl px-4 pt-8 sm:px-6 sm:pt-10", toneClass(subject.slug))}>
+        {groups.length > 1 || terms.length > 1 ? (
+          <div className={s.toolbar}>
+            {groups.length > 1 ? (
+              <nav aria-label="أقسام المادة" className={s.jump}>
+                {groups.map((g) => (
+                  <JumpChip key={g.type} type={g.type} href={`#sec-${g.type}`} label={PRODUCT_TYPE_SECTION_LABELS[g.type]} n={g.items.length} />
+                ))}
+              </nav>
+            ) : (
+              <span />
+            )}
+            {terms.length > 1 ? (
+              <nav aria-label="تصفية حسب الفصل الدراسي" className={s.seg}>
+                {[
+                  { label: "كل الفصول", href: base, active: term === null },
+                  ...terms.map((t) => ({ label: t === 1 ? "الفصل الأول" : "الفصل الثاني", href: `${base}?term=${t}`, active: term === t })),
+                ].map((t) => (
+                  <Link key={t.href} href={t.href} aria-current={t.active ? "page" : undefined} className={cn(s.segItem, t.active && s.segActive)}>
+                    {t.label}
+                  </Link>
+                ))}
+              </nav>
+            ) : null}
+          </div>
+        ) : null}
+
+        {groups.length === 0 ? (
+          <EmptyState headingLevel={2} className="mt-8" title="لا يوجد محتوى لهذا الفصل" description="اختر «كل الفصول» أو الفصل الآخر." />
+        ) : (
+          <div className="mt-12 space-y-16 sm:mt-14 sm:space-y-20">
+            {videoGroups.length ? (
+              <section aria-labelledby="videos-title">
+                <SectionHead
+                  id="videos-title"
+                  icon={<MonitorPlay aria-hidden />}
+                  eyebrow="شروحات بالفيديو"
+                  title={
+                    <>
+                      افهم <span className="text-hl">{subject.name}</span> بالفيديو
+                    </>
+                  }
+                  sub="شرح بصوت معلمك، وفي كثير منها درس مجاني تشاهده قبل الشراء."
+                />
+                <TypeSlots groups={videoGroups} renderItem={(x) => <ProductCard product={x} owned={owned?.has(x.id)} showGrade={false} headingLevel={4} />} />
+              </section>
+            ) : null}
+
+            {night || quiz ? (
+              <NightPanel
+                  id="reviews-title"
+                  title={
+                    <>
+                      قبل الاختبار؟ <span className="text-hl">راجع بتركيز</span>
+                    </>
+                  }
+                  sub={`دروس مركزة على الأسئلة المتوقعة في ${subject.name}، للاختبار القصير وليلة الاختبار.`}
+                  night={night?.items ?? []}
+                  quiz={quiz?.items ?? []}
+                  owned={owned}
+                  nightLabel={PRODUCT_TYPE_SECTION_LABELS.exam_review}
+                  quizLabel={PRODUCT_TYPE_SECTION_LABELS.quiz_review}
+                  colIds={{ night: "sec-exam_review", quiz: "sec-quiz_review" }}
+                />
+            ) : null}
+
+            {pdfGroups.length ? (
+              <section className={cn("panel panel-rainbow", s.paper)} aria-labelledby="notes-title">
+                <SectionHead
+                  id="notes-title"
+                  icon={<Printer aria-hidden />}
+                  tone="gold"
+                  eyebrow="مذكرات PDF"
+                  title={
+                    <>
+                      مذكرات <span className="text-hl">جاهزة للطباعة</span>
+                    </>
+                  }
+                  sub="تصفّح أول الصفحات مجانًا قبل الشراء، وتفتح المذكرة كاملة في مكتبتك بعد الدفع."
+                />
+                <TypeSlots notes groups={pdfGroups} renderItem={(x) => <ProductCard product={x} owned={owned?.has(x.id)} showGrade={false} headingLevel={4} />} />
+              </section>
+            ) : null}
+
+            {bundleGroups.map((g) => (
+              <section key={g.type} id={`sec-${g.type}`} className="scroll-mt-28" aria-labelledby={`type-${g.type}`}>
+                <SectionHead id={`type-${g.type}`} icon={<Package aria-hidden />} tone="violet" eyebrow="وفّر مع الباقات" title={PRODUCT_TYPE_SECTION_LABELS[g.type]} sub={typeCount(g.type, g.items.length)} />
+                {g.items.length <= 2 ? (
+                  <ul className="grid gap-5">
+                    {g.items.map((b) => (
+                      <li key={b.id}>
+                        <BundleRow b={b} owned={owned?.has(b.id)} items={itemsById.get(b.id)} showGrade={false} />
+                      </li>
+                    ))}
+                  </ul>
+                ) : (
+                  <ProductGrid products={g.items} ownedIds={owned} itemsById={itemsById} showGrade={false} />
+                )}
+              </section>
             ))}
           </div>
-        </section>
-      ) : null}
-
-      {terms.length > 1 ? (
-        <nav aria-label="تصفية حسب الفصل الدراسي" className="mt-6 flex gap-2 overflow-x-auto pb-1">
-          {[
-            { label: "الكل", href: base, active: term === null },
-            ...terms.map((t) => ({ label: t === 1 ? "الفصل الأول" : "الفصل الثاني", href: `${base}?term=${t}`, active: term === t })),
-          ].map((t) => (
-            <Link
-              key={t.href}
-              href={t.href}
-              aria-current={t.active ? "page" : undefined}
-              className={cn(
-                "rounded-full border px-4 py-2 text-sm font-semibold whitespace-nowrap transition",
-                t.active ? "border-brand-600 bg-brand-600 text-white" : "border-line bg-surface text-ink-soft hover:border-brand-300",
-              )}
-            >
-              {t.label}
-            </Link>
-          ))}
-        </nav>
-      ) : null}
-
-      {groups.length === 0 ? (
-        <EmptyState className="mt-8" title="لا توجد منتجات لهذا الفصل" description="جرّب اختيار «الكل» أو فصلًا دراسيًا آخر." />
-      ) : (
-        <div className="mt-8 space-y-12">
-          {groups.map((g) => (
-            <section key={g.type} aria-labelledby={`type-${g.type}`}>
-              <h2 id={`type-${g.type}`} className="mb-4 flex items-center gap-2 text-xl font-bold">
-                <span className="h-6 w-1.5 rounded-full bg-accent-600" aria-hidden />
-                {PRODUCT_TYPE_SECTION_LABELS[g.type]}
-              </h2>
-              {isPdfType(g.type) || g.items.every((i) => !i.isVideo) ? <ProductGrid products={g.items} ownedIds={owned} /> : <VideoGrid products={g.items} ownedIds={owned} />}
-            </section>
-          ))}
-        </div>
-      )}
+        )}
+      </div>
     </div>
   );
 }

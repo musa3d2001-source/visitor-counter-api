@@ -1,0 +1,1551 @@
+/*
+ * بطاقات الكتالوج «الفصل المشمس» (v2-c): ملصق الفيديو، الورقة المطوية للمذكرات، التذكرة للمراجعات،
+ * الباقة بأوراق مروحية، بطاقة المعلم، بطاقة الصف، مربع المادة، والصف المضغوط في القوائم.
+ * المرجع: src/app/lab/v2-c/v2c.module.css — الألوان من متغيرات .tone-* / .grade-* (--a --b --d --m --soft --tink).
+ * تُضاف الأصناف العامة من globals.css بجانبها: poster · chip · stretched · play-dot · icon-tile · tone-* · grade-*.
+ */
+
+/* ═════════ مشترك ═════════ */
+.cardBase {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  min-width: 0;
+  background: #fff;
+  border: 1px solid rgb(23 32 38 / 0.05);
+  box-shadow: var(--shadow-card);
+  transition:
+    transform 0.2s cubic-bezier(0.2, 0.8, 0.2, 1),
+    box-shadow 0.2s;
+}
+.cardBase:hover {
+  transform: translateY(-6px);
+  box-shadow: var(--shadow-lift);
+}
+
+/* سطر «المادة · الصف» بنقطة ملونة */
+.kicker {
+  display: flex;
+  align-items: flex-start;
+  gap: 7px;
+  min-width: 0;
+  font-family: var(--font-display);
+  font-size: 13.5px;
+  font-weight: 800;
+  line-height: 1.6;
+  color: var(--tink);
+}
+/* يلتف حتى سطرين (لا قصّ في منتصف الكلمة)؛ كل جزء لا ينكسر داخليًا إلا إن كان أعرض من السطر */
+.ktext {
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+  line-clamp: 2;
+  overflow: hidden;
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+.kpart {
+  display: inline-block;
+  max-width: 100%;
+}
+.ksep {
+  opacity: 0.7;
+}
+.kdot {
+  width: 8px;
+  height: 8px;
+  flex: none;
+  /* محاذاة النقطة مع منتصف السطر الأول (line-height 1.6) */
+  margin-top: calc(0.8em - 4px);
+  border-radius: 50%;
+  background: linear-gradient(135deg, var(--a), var(--b));
+}
+
+/* كبسولات المعلومات الرمادية الدافئة (الدروس، المدة، الصفحات) */
+.metaChips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+.metaChip {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding-inline: 10px;
+  border-radius: 999px;
+  background: var(--color-sand);
+  color: var(--color-ink-soft);
+  font-family: var(--font-display);
+  font-size: 13px;
+  font-weight: 700;
+  line-height: 2;
+  white-space: nowrap;
+}
+.metaChip svg {
+  width: 14px;
+  height: 14px;
+  flex: none;
+  color: var(--tink);
+}
+.metaChipFree {
+  background: #fff0c7;
+  color: #6e4700;
+  font-weight: 800;
+}
+.metaChipFree svg {
+  color: #a86b00;
+}
+.metaChipTone {
+  background: var(--soft);
+  color: var(--tink);
+  font-weight: 800;
+}
+
+/* السعر المضغوط */
+.price {
+  display: inline-flex;
+  align-items: baseline;
+  flex-wrap: wrap;
+  gap: 2px 8px;
+  font-family: var(--font-display);
+}
+.priceNow {
+  font-weight: 900;
+  font-size: 20px;
+  line-height: 1.3;
+  color: var(--color-brand-800);
+  white-space: nowrap;
+}
+.priceLg .priceNow {
+  font-size: 26px;
+}
+.priceFree {
+  color: var(--color-success);
+}
+.cur {
+  font-size: 0.66em;
+  font-weight: 800;
+  color: var(--color-muted);
+}
+.priceWas {
+  font-size: 13.5px;
+  font-weight: 700;
+  color: var(--color-muted);
+  text-decoration: line-through;
+  text-decoration-thickness: 1.5px;
+  white-space: nowrap;
+}
+.pct {
+  align-self: center;
+  padding: 0 8px;
+  border-radius: 999px;
+  background: var(--color-coral-50);
+  color: var(--color-coral-700);
+  font-size: 12.5px;
+  font-weight: 800;
+  line-height: 1.8;
+  white-space: nowrap;
+}
+
+/* «في مكتبتك» */
+.owned {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  min-height: 34px;
+  padding-inline: 12px;
+  border-radius: 999px;
+  background: var(--color-success-50);
+  color: var(--color-success);
+  font-family: var(--font-display);
+  font-size: 14px;
+  font-weight: 800;
+  white-space: nowrap;
+}
+.owned svg {
+  width: 16px;
+  height: 16px;
+}
+
+/* زر التذييل: «شاهد مجانًا» (رابط مستقل فوق الرابط الممتد) و«التفاصيل» (زخرفي) */
+.footBtn {
+  position: relative;
+  z-index: 2;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  min-height: 44px;
+  padding-inline: 14px;
+  border-radius: 14px;
+  font-family: var(--font-display);
+  font-weight: 800;
+  font-size: 14.5px;
+  line-height: 1;
+  white-space: nowrap;
+  background: var(--soft);
+  color: var(--tink);
+  box-shadow: inset 0 -3px 0 color-mix(in oklab, var(--b) 18%, transparent);
+  transition:
+    background 0.2s,
+    color 0.2s,
+    transform 0.15s;
+}
+.footBtn svg {
+  width: 15px;
+  height: 15px;
+  flex: none;
+}
+a.footBtn:hover {
+  background: linear-gradient(135deg, var(--a), var(--b));
+  color: #fff;
+  box-shadow: inset 0 -3px 0 rgb(0 0 0 / 0.16);
+}
+a.footBtn:active {
+  transform: translateY(2px);
+}
+.footBtnGold {
+  background: #fff0c7;
+  color: #6e4700;
+  box-shadow: inset 0 -3px 0 rgb(233 164 0 / 0.28);
+}
+a.footBtnGold:hover {
+  background: var(--accent);
+  color: var(--accent-ink);
+  box-shadow: inset 0 -3px 0 var(--accent-edge);
+}
+.footBtnQuiet {
+  background: var(--color-sand);
+  color: var(--color-ink-soft);
+  box-shadow: inset 0 -3px 0 rgb(23 32 38 / 0.06);
+}
+.cardBase:hover .footBtnQuiet,
+.trow:hover .footBtnQuiet {
+  background: var(--color-ink);
+  color: #fff;
+}
+.footBtnQuiet svg {
+  transition: transform 0.2s;
+}
+.cardBase:hover .footBtnQuiet svg {
+  transform: translateX(-3px);
+}
+
+/* الصورة الرمزية المتداخلة فوق الملصق */
+.avatarFloat {
+  position: absolute;
+  top: -27px;
+  inset-inline-end: 14px;
+  z-index: 2;
+}
+
+/* ═════════ بطاقة الفيديو (VideoCard) ═════════ */
+.vcard {
+  padding: 8px;
+  border-radius: 26px;
+}
+.vposter {
+  aspect-ratio: 16 / 11;
+  border-radius: 20px;
+  flex: none;
+}
+.vposterImg {
+  object-fit: cover;
+  z-index: -1;
+}
+.vposterShade {
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  background: linear-gradient(180deg, rgb(0 0 0 / 0.25), transparent 35%, transparent 65%, rgb(0 0 0 / 0.3));
+}
+.vart {
+  position: absolute;
+  inset-inline-end: 3%;
+  top: 52%;
+  width: 42%;
+  aspect-ratio: 1;
+  transform: translateY(-50%) rotate(-6deg);
+  transition: transform 0.35s cubic-bezier(0.2, 0.8, 0.2, 1);
+}
+.vcard:hover .vart {
+  transform: translateY(-50%) rotate(2deg) scale(1.06);
+}
+.vtype {
+  position: absolute;
+  top: 12px;
+  inset-inline-start: 12px;
+  max-width: calc(100% - 24px);
+}
+.vfree {
+  position: absolute;
+  bottom: 12px;
+  inset-inline-start: 12px;
+}
+.vplay {
+  position: absolute;
+  top: 50%;
+  inset-inline-start: 50%;
+  margin-top: -29px;
+  margin-inline-start: -29px;
+}
+.vplay svg {
+  width: 22px;
+  height: 22px;
+  margin-left: -3px;
+}
+.vcard:hover .vplay {
+  transform: scale(1.1);
+  box-shadow:
+    0 0 0 12px rgb(255 255 255 / 0.3),
+    0 18px 30px -10px rgb(0 0 0 / 0.45);
+}
+.vbody {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  flex: 1;
+  padding: 26px 12px 8px;
+}
+.vtitle {
+  font-family: var(--font-display);
+  font-weight: 800;
+  font-size: 17.5px;
+  line-height: 1.55;
+  color: var(--color-ink);
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+  min-height: 3.1em;
+}
+.vteacher {
+  font-size: 14.5px;
+  font-weight: 500;
+  color: var(--color-muted);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.vbody .metaChips {
+  margin-top: 6px;
+  margin-bottom: 14px;
+}
+.vfoot {
+  margin-top: auto;
+  padding-top: 14px;
+  border-top: 1px dashed rgb(23 32 38 / 0.12);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: nowrap;
+  gap: 8px;
+  /* ارتفاع ثابت يتسع للسعر المكدّس (السعر ثم المشطوب والخصم) فتتساوى تذييلات الصف الواحد */
+  min-height: 63px;
+  /* حاوية لاستعلام العرض أدناه: البطاقة الضيقة (رف الجوال ٨٠٪ على 360، أو شبكة ‎16.5rem‎ قرب 1180) */
+  container: vfoot / inline-size;
+}
+/* أضيق من نحو ‎268px‎ للبطاقة: زر التذييل يضيق حشوه قليلًا فلا يغطي «خصم ٪» بجانبه */
+@container vfoot (max-width: 231.98px) {
+  .vfoot > .footBtn {
+    gap: 4px;
+    padding-inline: 9px;
+  }
+}
+/* سطر واحد دائمًا: السعر المخفَّض يتكدّس (السعر، ثم المشطوب والخصم) بدل أن يدفع الزر لسطر ثانٍ */
+.vfoot > .price {
+  display: grid;
+  grid-template-columns: auto auto;
+  justify-content: start;
+  align-items: center;
+  gap: 0 6px;
+  min-width: 0;
+}
+.vfoot > .price > .priceNow {
+  grid-column: 1 / -1;
+  line-height: 1.2;
+}
+.vfoot > .price > .priceWas {
+  font-size: 12.5px;
+  line-height: 1.5;
+}
+.vfoot > .price > .pct {
+  font-size: 12px;
+  line-height: 1.6;
+}
+
+/* ═════════ المذكرة: ورقة مطوية (NoteCard) ═════════ */
+.ncard {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  height: 100%;
+  min-width: 0;
+}
+.nsheet {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  aspect-ratio: 5 / 6;
+  /* الأوراق المكدسة خلفها تبرز ٦px يمينًا: نحجز لها مكانًا حتى لا تتجاوز حافة العمود */
+  margin-right: 6px;
+  overflow: hidden;
+  padding: 10px;
+  border-radius: 18px;
+  background: #fff;
+  border: 1px solid rgb(23 32 38 / 0.06);
+  box-shadow:
+    9px 9px 0 -3px color-mix(in oklab, var(--a) 35%, white),
+    9px 9px 0 -2px color-mix(in oklab, var(--a) 50%, white),
+    0 24px 36px -22px rgb(23 32 38 / 0.45);
+  transition: transform 0.3s cubic-bezier(0.2, 0.8, 0.2, 1);
+}
+.ncard:hover .nsheet {
+  transform: rotate(-2.5deg) translateY(-6px);
+}
+.nhead {
+  position: relative;
+  isolation: isolate;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 8px;
+  flex: 1;
+  min-height: 84px;
+  padding: 12px;
+  border-radius: 12px;
+  overflow: hidden;
+  background:
+    radial-gradient(90% 90% at 90% 0%, rgb(255 255 255 / 0.35), transparent 60%),
+    linear-gradient(145deg, var(--a), var(--b));
+  color: #fff;
+}
+.nhead::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  background-image: radial-gradient(rgb(255 255 255 / 0.22) 1.5px, transparent 2px);
+  background-size: 12px 12px;
+}
+.nicon {
+  width: 42px;
+  height: 42px;
+  border-radius: 13px;
+  display: grid;
+  place-items: center;
+  background: rgb(255 255 255 / 0.25);
+  border: 1px solid rgb(255 255 255 / 0.4);
+}
+.nsub {
+  max-width: 100%;
+  padding: 0 10px;
+  border-radius: 999px;
+  background: rgb(255 255 255 / 0.94);
+  color: var(--tink);
+  font-family: var(--font-display);
+  font-weight: 800;
+  font-size: 13px;
+  line-height: 1.9;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  box-shadow: 0 4px 10px -4px rgb(0 0 0 / 0.25);
+}
+.nlines {
+  flex: none;
+  padding: 14px 6px 0;
+}
+.nlines i {
+  display: block;
+  height: 7px;
+  margin-bottom: 9px;
+  border-radius: 4px;
+  background: #efe9de;
+}
+.nlines i:nth-child(1) {
+  width: 70%;
+  background: color-mix(in oklab, var(--a) 40%, white);
+}
+.nlines i:nth-child(2) {
+  width: 92%;
+}
+.nlines i:nth-child(3) {
+  width: 84%;
+}
+.nlines i:nth-child(4) {
+  width: 60%;
+}
+.nfold {
+  position: absolute;
+  top: 0;
+  inset-inline-end: 0;
+  width: 30px;
+  height: 30px;
+  background: linear-gradient(225deg, var(--color-canvas) 50%, color-mix(in oklab, var(--b) 45%, white) 50%);
+  border-end-start-radius: 8px;
+  box-shadow: -2px 2px 4px rgb(0 0 0 / 0.08);
+}
+.nbadge {
+  position: absolute;
+  bottom: 12px;
+  inset-inline-start: 12px;
+  z-index: 1;
+}
+.nbody {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  flex: 1;
+  padding-inline: 2px;
+}
+.ntitle {
+  font-family: var(--font-display);
+  font-weight: 800;
+  font-size: 16px;
+  line-height: 1.55;
+  color: var(--color-ink);
+}
+.nbody .nfoot {
+  margin-top: auto;
+  padding-top: 4px;
+}
+
+/* ═════════ التذكرة (ExamTicket / ProductRow) ═════════ */
+.trow {
+  --pad: 14px;
+  --stub: 9.75rem;
+  --stubh: 62px;
+  --notch: 10px;
+  position: relative;
+  min-width: 0;
+  border-radius: 22px;
+  filter: drop-shadow(0 1px 1px rgb(23 32 38 / 0.06)) drop-shadow(0 10px 14px rgb(23 32 38 / 0.1));
+  transition:
+    transform 0.2s cubic-bezier(0.2, 0.8, 0.2, 1),
+    filter 0.2s;
+}
+.trow:hover {
+  transform: translateY(-3px);
+  filter: drop-shadow(0 1px 1px rgb(23 32 38 / 0.06)) drop-shadow(0 16px 20px rgb(23 32 38 / 0.16));
+}
+.tbox {
+  position: relative;
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) var(--stub);
+  align-items: center;
+  gap: 14px;
+  min-height: 100%;
+  padding: var(--pad);
+  border-radius: inherit;
+  background: #fff;
+  border: 1px solid rgb(23 32 38 / 0.04);
+}
+.notched .tbox {
+  -webkit-mask:
+    radial-gradient(circle var(--notch) at calc(var(--pad) + var(--stub)) 0, #0000 97%, #000) top / 100% 51% no-repeat,
+    radial-gradient(circle var(--notch) at calc(var(--pad) + var(--stub)) 100%, #0000 97%, #000) bottom / 100% 51% no-repeat;
+  mask:
+    radial-gradient(circle var(--notch) at calc(var(--pad) + var(--stub)) 0, #0000 97%, #000) top / 100% 51% no-repeat,
+    radial-gradient(circle var(--notch) at calc(var(--pad) + var(--stub)) 100%, #0000 97%, #000) bottom / 100% 51% no-repeat;
+}
+.tthumb {
+  position: relative;
+  isolation: isolate;
+  display: grid;
+  place-items: center;
+  width: 76px;
+  height: 76px;
+  flex: none;
+  overflow: hidden;
+  border-radius: 18px;
+  color: #fff;
+  background:
+    radial-gradient(90% 90% at 90% 0%, rgb(255 255 255 / 0.38), transparent 60%),
+    linear-gradient(145deg, var(--a), var(--b));
+  box-shadow:
+    inset 0 -3px 0 rgb(0 0 0 / 0.12),
+    0 8px 16px -8px color-mix(in oklab, var(--d) 70%, transparent);
+}
+.tthumb::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  background-image: radial-gradient(rgb(255 255 255 / 0.22) 1.4px, transparent 1.8px);
+  background-size: 11px 11px;
+}
+.tthumbImg {
+  object-fit: cover;
+  z-index: -1;
+}
+.tthumbPlay {
+  position: absolute;
+  bottom: 6px;
+  inset-inline-end: 6px;
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
+  display: grid;
+  place-items: center;
+  background: #fff;
+  color: var(--b);
+  box-shadow: 0 0 0 3px rgb(255 255 255 / 0.3);
+}
+.tthumbPlay svg {
+  width: 11px;
+  height: 11px;
+  margin-left: -1px;
+}
+/* المذكرة المصغرة: ورقة بيضاء برأس ملون */
+.tthumbNote {
+  background: color-mix(in oklab, var(--a) 22%, white);
+  box-shadow: none;
+}
+.tthumbNote::before {
+  display: none;
+}
+.miniSheet {
+  position: relative;
+  width: 44px;
+  height: 54px;
+  border-radius: 7px;
+  background: #fff;
+  overflow: hidden;
+  rotate: -6deg;
+  box-shadow:
+    4px 4px 0 -1px color-mix(in oklab, var(--a) 45%, white),
+    0 6px 12px -6px rgb(23 32 38 / 0.4);
+}
+.miniSheet > b {
+  display: grid;
+  place-items: center;
+  height: 22px;
+  background: linear-gradient(145deg, var(--a), var(--b));
+  color: #fff;
+}
+.miniSheet > i {
+  display: block;
+  height: 3.5px;
+  margin: 5px 6px 0;
+  border-radius: 2px;
+  background: #ece5d8;
+}
+.miniSheet > i:nth-of-type(2) {
+  width: 60%;
+}
+.tthumbStack {
+  place-items: end center;
+}
+.tthumbStack svg {
+  width: 150%;
+  max-width: none;
+  height: auto;
+  margin-bottom: -6%;
+  filter: drop-shadow(0 4px 6px rgb(0 0 0 / 0.18));
+}
+.ttext {
+  min-width: 0;
+}
+.ttag {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 4px 8px;
+}
+.ttitle {
+  margin-top: 2px;
+  font-family: var(--font-display);
+  font-weight: 800;
+  font-size: 16.5px;
+  line-height: 1.55;
+  color: var(--color-ink);
+}
+.ttitle a {
+  transition: color 0.15s;
+}
+.trow:hover .ttitle a {
+  color: var(--tink);
+}
+.tmeta {
+  margin-top: 1px;
+  font-size: 14px;
+  line-height: 1.65;
+  color: var(--color-muted);
+}
+.ttext .metaChips {
+  margin-top: 6px;
+}
+.tstub {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  align-self: stretch;
+  gap: 6px;
+  padding-inline-start: 14px;
+  border-inline-start: 2px dashed rgb(23 32 38 / 0.12);
+  text-align: center;
+}
+.tstub .price {
+  justify-content: center;
+}
+.tstub .footBtn {
+  min-height: 44px;
+  padding-inline: 12px;
+  font-size: 13.5px;
+}
+.tstubLink {
+  position: relative;
+  z-index: 2;
+}
+
+/* ═════════ الباقة (BundleCard) ═════════ */
+.bcard {
+  padding: 8px;
+  border-radius: 28px;
+}
+.bart {
+  position: relative;
+  isolation: isolate;
+  height: 200px;
+  flex: none;
+  overflow: hidden;
+  border-radius: 22px;
+  background:
+    radial-gradient(90% 70% at 85% 0%, rgb(255 255 255 / 0.4), transparent 60%),
+    linear-gradient(150deg, var(--a), var(--m, var(--a)) 55%, var(--b));
+}
+.bart::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  background-image: radial-gradient(rgb(255 255 255 / 0.2) 1.5px, transparent 2px);
+  background-size: 15px 15px;
+}
+.bnum {
+  position: absolute;
+  z-index: -1;
+  inset-inline-start: 18px;
+  top: -6px;
+  font-family: var(--font-display);
+  font-weight: 900;
+  font-size: 96px;
+  line-height: 1.25;
+  color: rgb(255 255 255 / 0.42);
+}
+.bstack {
+  position: absolute;
+  inset-inline: 0;
+  bottom: -26px;
+  height: 184px;
+  display: flex;
+  justify-content: center;
+  transition: transform 0.35s cubic-bezier(0.2, 0.8, 0.2, 1);
+  filter: drop-shadow(0 10px 14px rgb(0 0 0 / 0.18));
+}
+.bstack svg {
+  height: 100%;
+  width: auto;
+}
+.bcard:hover .bstack,
+.brow:hover .bstack {
+  transform: translateY(-8px) scale(1.03);
+}
+.ribbon {
+  position: absolute;
+  top: 14px;
+  inset-inline-end: 14px;
+  z-index: 2;
+  padding: 3px 12px;
+  border-radius: 12px;
+  background: var(--accent);
+  color: var(--accent-ink);
+  font-family: var(--font-display);
+  font-weight: 800;
+  font-size: 14px;
+  line-height: 1.7;
+  white-space: nowrap;
+  box-shadow:
+    0 8px 16px -8px rgb(0 0 0 / 0.45),
+    inset 0 -2px 0 rgb(0 0 0 / 0.08);
+  transform: rotate(-4deg);
+}
+.ribbon b {
+  font-weight: 900;
+  font-size: 16px;
+}
+.bbody {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  flex: 1;
+  padding: 18px 12px 8px;
+}
+.btitle {
+  font-family: var(--font-display);
+  font-weight: 800;
+  font-size: 18px;
+  line-height: 1.5;
+  color: var(--color-ink);
+}
+.btitleLg {
+  font-size: 21px;
+}
+.bsummary {
+  font-size: 14.5px;
+  line-height: 1.75;
+  color: var(--color-muted);
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+.bitems {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px;
+}
+.bitems li {
+  width: 30px;
+  height: 30px;
+  border-radius: 10px;
+  display: grid;
+  place-items: center;
+  background: var(--soft);
+  color: var(--tink);
+}
+.bitems .bcount {
+  width: auto;
+  height: auto;
+  background: none;
+  padding-inline-start: 4px;
+  font-size: 14px;
+  font-weight: 700;
+  color: var(--color-muted);
+}
+.bfoot {
+  margin-top: auto;
+  padding-top: 12px;
+  border-top: 1px dashed rgb(23 32 38 / 0.12);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+/* الباقة العريضة (BundleRow): الرسم بجانب النص */
+.brow {
+  display: grid;
+  grid-template-columns: 17rem minmax(0, 1fr) auto;
+  align-items: stretch;
+  gap: 0 28px;
+  padding: 8px;
+  border-radius: 28px;
+}
+.brow .bart {
+  height: auto;
+  min-height: 176px;
+}
+.brow .bstack {
+  height: 160px;
+}
+.brow .bbody {
+  justify-content: center;
+  padding: 16px 0;
+}
+.browSide {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  justify-content: center;
+  gap: 10px;
+  padding: 16px 20px 16px 16px;
+  border-inline-start: 2px dashed rgb(23 32 38 / 0.1);
+  text-align: end;
+}
+.browSide .price {
+  justify-content: flex-end;
+}
+
+/* ═════════ المعلم (TeacherCard) ═════════ */
+.tcard {
+  align-items: center;
+  overflow: hidden;
+  padding: 0 20px 22px;
+  border-radius: 28px;
+  text-align: center;
+}
+.tcover {
+  position: relative;
+  align-self: stretch;
+  height: 108px;
+  flex: none;
+  margin-inline: -20px;
+  overflow: hidden;
+  background:
+    radial-gradient(90% 90% at 90% 0%, rgb(255 255 255 / 0.35), transparent 60%),
+    linear-gradient(135deg, var(--a), var(--b));
+  color: var(--d);
+}
+.tcover::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background-image: radial-gradient(rgb(255 255 255 / 0.22) 1.5px, transparent 2px);
+  background-size: 14px 14px;
+}
+.tcoverArt {
+  position: absolute;
+  inset-inline-end: -6px;
+  top: -10px;
+  width: 104px;
+  height: 104px;
+  opacity: 0.95;
+  filter: drop-shadow(0 8px 14px rgb(0 0 0 / 0.16));
+  transform: rotate(12deg);
+  transition: transform 0.35s cubic-bezier(0.2, 0.8, 0.2, 1);
+}
+.tcard:hover .tcoverArt {
+  transform: rotate(0deg) scale(1.08);
+}
+.tavatarWrap {
+  position: relative;
+  margin-top: -52px;
+}
+.tbadge {
+  position: absolute;
+  bottom: 0;
+  inset-inline-end: -6px;
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  display: grid;
+  place-items: center;
+  background: var(--accent);
+  color: var(--accent-ink);
+  border: 3px solid #fff;
+}
+.tname {
+  margin-top: 16px;
+  font-family: var(--font-display);
+  font-weight: 800;
+  font-size: 19px;
+  line-height: 1.45;
+  color: var(--color-ink);
+}
+.theadline {
+  margin-top: 4px;
+  font-size: 15px;
+  line-height: 1.7;
+  color: var(--color-muted);
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+.tchips {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 6px;
+  margin-top: 12px;
+  margin-bottom: 16px;
+}
+.tchips li {
+  padding: 0 12px;
+  border-radius: 999px;
+  background: var(--soft);
+  color: var(--tink);
+  font-family: var(--font-display);
+  font-size: 13px;
+  font-weight: 800;
+  line-height: 2;
+}
+.tchips .tgrade {
+  background: var(--color-sand);
+  color: var(--color-ink-soft);
+}
+.tstats {
+  align-self: stretch;
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 6px 16px;
+  margin-top: auto;
+  margin-bottom: 16px;
+  padding-top: 14px;
+  border-top: 1px dashed rgb(23 32 38 / 0.12);
+}
+.tstats span {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 14.5px;
+  font-weight: 700;
+  color: var(--color-ink-soft);
+}
+.tstats svg {
+  width: 16px;
+  height: 16px;
+  color: var(--tink);
+}
+.tcard:hover .footBtn {
+  background: linear-gradient(135deg, var(--a), var(--b));
+  color: #fff;
+}
+
+/* ═════════ الصف (GradeCard) ═════════ */
+.gcard {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  overflow: hidden;
+  border-radius: 28px;
+}
+.gwin {
+  position: relative;
+  isolation: isolate;
+  display: block;
+  height: 190px;
+  flex: none;
+  overflow: hidden;
+  background:
+    radial-gradient(90% 70% at 85% 0%, rgb(255 255 255 / 0.4), transparent 60%),
+    linear-gradient(150deg, var(--a), var(--m, var(--a)) 55%, var(--b));
+  color: var(--d);
+}
+.gwin::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  background-image: radial-gradient(rgb(255 255 255 / 0.2) 1.5px, transparent 2px);
+  background-size: 15px 15px;
+}
+.gwin::after {
+  content: "";
+  position: absolute;
+  z-index: -1;
+  width: 220px;
+  height: 220px;
+  border-radius: 50%;
+  inset-inline-end: -70px;
+  bottom: -90px;
+  border: 30px solid rgb(255 255 255 / 0.14);
+}
+.gnum {
+  position: absolute;
+  inset-inline-start: 22px;
+  top: -4px;
+  font-family: var(--font-display);
+  font-weight: 900;
+  font-size: 132px;
+  line-height: 1.2;
+  color: #fff;
+  text-shadow:
+    0 5px 0 color-mix(in oklab, var(--d) 45%, transparent),
+    0 22px 40px rgb(0 0 0 / 0.18);
+}
+.gart {
+  position: absolute;
+  inset-inline-end: 8px;
+  bottom: 6px;
+  width: 132px;
+  height: 132px;
+  transition: transform 0.35s cubic-bezier(0.2, 0.8, 0.2, 1);
+}
+.gcard:hover .gart {
+  transform: rotate(-7deg) scale(1.07);
+}
+.gbody {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  flex: 1;
+  padding: 18px 20px 20px;
+}
+.gname {
+  font-family: var(--font-display);
+  font-weight: 900;
+  font-size: 25px;
+  line-height: 1.35;
+  color: var(--color-ink);
+}
+.gstats {
+  font-size: 15.5px;
+  font-weight: 700;
+  color: var(--color-muted);
+}
+.gsubs {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-top: 8px;
+}
+.gsubs span {
+  width: 30px;
+  height: 30px;
+  border-radius: 10px;
+  display: grid;
+  place-items: center;
+  background: var(--soft);
+  color: var(--tink);
+}
+.gcta {
+  margin-top: auto;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  min-height: 50px;
+  padding-inline: 18px 14px;
+  border-radius: 15px;
+  background: var(--soft);
+  color: var(--tink);
+  font-family: var(--font-display);
+  font-weight: 800;
+  font-size: 16.5px;
+  transition:
+    background 0.2s,
+    color 0.2s;
+}
+.gbody .gcta {
+  margin-top: auto;
+}
+.gsubs + .gcta,
+.gstats + .gcta {
+  margin-top: 16px;
+}
+.gcard:hover .gcta {
+  background: linear-gradient(135deg, var(--m, var(--a)), var(--b));
+  color: #fff;
+}
+.gcta svg {
+  width: 18px;
+  height: 18px;
+  transition: transform 0.2s;
+}
+.gcard:hover .gcta svg {
+  transform: translateX(-4px);
+}
+/* نسخة مضغوطة (للشبكات الضيقة والجوال) */
+.gcompact .gwin {
+  height: 124px;
+}
+.gcompact .gnum {
+  font-size: 84px;
+  inset-inline-start: 14px;
+  top: -2px;
+}
+.gcompact .gart {
+  width: 86px;
+  height: 86px;
+  inset-inline-end: 4px;
+  bottom: 4px;
+}
+.gcompact .gbody {
+  padding: 12px 14px 14px;
+}
+.gcompact .gname {
+  font-size: 19px;
+}
+.gcompact .gstats {
+  font-size: 13.5px;
+}
+.gcompact .gcta {
+  min-height: 44px;
+  font-size: 15px;
+  padding-inline: 14px 10px;
+}
+
+/* ═════════ المادة (SubjectTile) ═════════ */
+.subj {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 14px;
+  height: 100%;
+  min-height: 44px;
+  padding: 18px;
+  border-radius: 22px;
+  background: var(--soft);
+  border: 1px solid color-mix(in oklab, var(--b) 12%, transparent);
+  transition:
+    transform 0.2s,
+    box-shadow 0.2s,
+    background 0.2s;
+}
+.subj:hover {
+  transform: translateY(-4px);
+  background: #fff;
+  box-shadow: 0 18px 32px -18px color-mix(in oklab, var(--b) 80%, transparent);
+}
+.subjIcon {
+  width: 56px;
+  height: 56px;
+  border-radius: 18px;
+}
+.subjText {
+  min-width: 0;
+}
+.subjText b {
+  display: block;
+  font-family: var(--font-display);
+  font-weight: 800;
+  font-size: 17.5px;
+  line-height: 1.45;
+  color: var(--color-ink);
+}
+.subjText small {
+  display: block;
+  font-family: var(--font-display);
+  font-size: 14px;
+  font-weight: 700;
+  color: var(--tink);
+}
+.subjGo {
+  position: absolute;
+  top: 18px;
+  inset-inline-end: 16px;
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  display: grid;
+  place-items: center;
+  background: #fff;
+  color: var(--tink);
+  opacity: 0;
+  translate: 6px 0;
+  transition:
+    opacity 0.2s,
+    translate 0.2s,
+    background 0.2s;
+}
+.subj:hover .subjGo,
+.subj:focus-visible .subjGo {
+  opacity: 1;
+  translate: 0 0;
+  background: var(--soft);
+}
+/* نسخة أفقية (قوائم المواد الجانبية) */
+.subjRow {
+  flex-direction: row;
+  align-items: center;
+  gap: 12px;
+  padding: 12px 14px;
+  border-radius: 18px;
+}
+.subjRow .subjIcon {
+  width: 46px;
+  height: 46px;
+  border-radius: 15px;
+}
+.subjRow .subjGo {
+  position: static;
+  margin-inline-start: auto;
+  opacity: 1;
+  translate: 0 0;
+}
+
+/* ═════════ الشبكات والرفوف ═════════ */
+.grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(min(100%, 16.5rem), 1fr));
+  gap: 24px;
+}
+.grid > li,
+.shelf > li,
+.noteGrid > li,
+.list > li {
+  min-width: 0;
+}
+.noteGrid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(min(100%, 12.5rem), 1fr));
+  gap: 30px 22px;
+}
+.shelf {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(min(100%, 16.5rem), 1fr));
+  gap: 24px;
+}
+.list {
+  display: grid;
+  gap: 14px;
+}
+.list2 {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 16px 20px;
+}
+
+/* ═════════ الاستجابة ═════════ */
+@media (max-width: 1023px) {
+  .list2 {
+    grid-template-columns: minmax(0, 1fr);
+  }
+  .brow {
+    grid-template-columns: 14rem minmax(0, 1fr);
+  }
+  .browSide {
+    grid-column: 2;
+    flex-direction: row;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: space-between;
+    padding: 12px 0 8px;
+    border-inline-start: 0;
+    border-top: 1px dashed rgb(23 32 38 / 0.12);
+  }
+}
+@media (max-width: 767px) {
+  .shelf {
+    grid-template-columns: none;
+    grid-auto-flow: column;
+    grid-auto-columns: 80%;
+    gap: 16px;
+    overflow-x: auto;
+    overscroll-behavior-x: contain;
+    scroll-snap-type: x mandatory;
+    scroll-padding-inline: 16px;
+    margin-inline: -16px;
+    padding: 8px 16px 28px;
+    scrollbar-width: none;
+  }
+  .shelf::-webkit-scrollbar {
+    display: none;
+  }
+  .shelf > li {
+    scroll-snap-align: start;
+  }
+  .noteGrid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 26px 16px;
+  }
+  .ntitle {
+    font-size: 15px;
+  }
+  .ncard .pct {
+    display: none;
+  }
+  /* «أول الصفحات مجانًا» أعرض من عمود المذكرة الضيق على 360: تلتف داخل الكبسولة بدل أن تتجاوز البطاقة */
+  .ncard .metaChip {
+    max-width: 100%;
+  }
+  .ncard .metaChipFree {
+    white-space: normal;
+    line-height: 1.45;
+    padding-block: 4px;
+    border-radius: 14px;
+  }
+
+  .trow {
+    --pad: 12px;
+  }
+  .tbox {
+    grid-template-columns: auto minmax(0, 1fr);
+    align-items: start;
+    gap: 12px;
+    padding-bottom: 0;
+    border-radius: 20px;
+  }
+  .notched .tbox {
+    -webkit-mask:
+      radial-gradient(circle var(--notch) at 0 calc(100% - var(--stubh)), #0000 97%, #000) left / 51% 100% no-repeat,
+      radial-gradient(circle var(--notch) at 100% calc(100% - var(--stubh)), #0000 97%, #000) right / 51% 100% no-repeat;
+    mask:
+      radial-gradient(circle var(--notch) at 0 calc(100% - var(--stubh)), #0000 97%, #000) left / 51% 100% no-repeat,
+      radial-gradient(circle var(--notch) at 100% calc(100% - var(--stubh)), #0000 97%, #000) right / 51% 100% no-repeat;
+  }
+  .tthumb {
+    width: 60px;
+    height: 60px;
+    border-radius: 16px;
+  }
+  .tthumb > svg {
+    width: 26px;
+    height: 26px;
+  }
+  .miniSheet {
+    width: 36px;
+    height: 44px;
+  }
+  .miniSheet > b {
+    height: 17px;
+  }
+  .ttitle {
+    font-size: 15.5px;
+  }
+  .tstub {
+    grid-column: 1 / -1;
+    flex-direction: row;
+    flex-wrap: nowrap;
+    justify-content: space-between;
+    height: var(--stubh);
+    margin-inline: calc(-1 * var(--pad));
+    padding: 0 var(--pad);
+    border-inline-start: 0;
+    border-top: 2px dashed rgb(23 32 38 / 0.1);
+    text-align: start;
+  }
+  .tstub .price {
+    flex-wrap: nowrap;
+    justify-content: flex-start;
+    overflow: hidden;
+  }
+  .tstub .pct {
+    display: none;
+  }
+
+  .brow {
+    grid-template-columns: minmax(0, 1fr);
+  }
+  .brow .bart {
+    min-height: 160px;
+  }
+  .brow .bbody {
+    padding: 16px 10px 4px;
+  }
+  .browSide {
+    grid-column: auto;
+    margin-inline: 10px;
+  }
+
+  .gcard {
+    border-radius: 22px;
+  }
+  .gwin {
+    height: 120px;
+  }
+  .gnum {
+    font-size: 82px;
+    inset-inline-start: 14px;
+    top: -2px;
+  }
+  .gart {
+    width: 84px;
+    height: 84px;
+    inset-inline-end: 4px;
+    bottom: 4px;
+  }
+  .gwin::after {
+    width: 140px;
+    height: 140px;
+    border-width: 20px;
+  }
+  .gbody {
+    padding: 12px 12px 14px;
+  }
+  .gname {
+    font-size: clamp(16px, 4.7vw, 19px);
+    white-space: nowrap;
+  }
+  .gstats {
+    font-size: 13px;
+  }
+  .gsubs {
+    gap: 4px;
+  }
+  .gsubs span {
+    width: 24px;
+    height: 24px;
+    border-radius: 8px;
+  }
+  .gsubs svg {
+    width: 12px;
+    height: 12px;
+  }
+  .gcta {
+    min-height: 44px;
+    padding-inline: 12px 10px;
+    border-radius: 13px;
+    font-size: 14.5px;
+    white-space: nowrap;
+  }
+  .subj {
+    gap: 10px;
+    padding: 14px;
+    border-radius: 18px;
+  }
+  .subjIcon {
+    width: 46px;
+    height: 46px;
+    border-radius: 15px;
+  }
+  .subjIcon svg {
+    width: 22px;
+    height: 22px;
+  }
+  .subjText b {
+    font-size: 15.5px;
+  }
+  .subjText small {
+    font-size: 13.5px;
+  }
+  .subjGo {
+    display: none;
+  }
+  .subjRow .subjGo {
+    display: grid;
+  }
+}
+
+/*
+ * عمود واحد على الجوال: لا جيران لمحاذاة العنوان معهم، فلا يُحجز سطر ثانٍ فارغ.
+ * الإلغاء اختياري (vtitleFit تضعه ProductCard للشبكات والقوائم العمودية) لا عام، فالرفوف الأفقية
+ * (رف الرئيسية .rail و.shelf) تبقي حجز السطرين ليتحاذى سطر المعلم والكبسولات بين البطاقات المتجاورة.
+ */
+@media (max-width: 639.98px) {
+  .vtitleFit {
+    min-height: 0;
+  }
+  .shelf .vtitleFit {
+    min-height: 3.1em;
+  }
+}
+/* ‏.grid يصبح عمودين من ‎552px‎ للمحتوى (‎2×16.5rem + 24px‎)، أي من نحو ‎584px‎ مع حافتي ‎16px‎: يعود الحجز للمحاذاة */
+@media (min-width: 584px) and (max-width: 639.98px) {
+  .grid .vtitleFit {
+    min-height: 3.1em;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .cardBase,
+  .trow,
+  .nsheet,
+  .vart,
+  .bstack,
+  .tcoverArt,
+  .gart,
+  .subj,
+  .vplay,
+  .footBtn,
+  .subjGo {
+    transition: none !important;
+  }
+  .cardBase:hover,
+  .trow:hover,
+  .ncard:hover .nsheet,
+  .vcard:hover .vplay,
+  .bcard:hover .bstack,
+  .brow:hover .bstack,
+  .tcard:hover .tcoverArt,
+  .gcard:hover .gart,
+  .gcard:hover .gcta svg,
+  .subj:hover,
+  a.footBtn:active {
+    transform: none !important;
+  }
+  .vart {
+    transform: translateY(-50%) rotate(-6deg) !important;
+  }
+}

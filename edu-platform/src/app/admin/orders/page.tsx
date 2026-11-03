@@ -1,16 +1,21 @@
 import { requireOwnerPage } from "@/server/auth/permissions";
 import Link from "next/link";
-import { Receipt, Search } from "lucide-react";
+import { CircleCheck, Clock3, FlaskConical, Package, Receipt } from "lucide-react";
 import { listAdminOrders } from "@/server/admin/records";
 import { AdminPageHeader } from "@/components/admin/page-header";
+import { FilterBar, FilterSearch, FilterSubmit, ResultCount, Toolbar } from "@/components/admin/filter-bar";
 import { OrderStatusBadge, PaymentStatusBadge, TestBadge } from "@/components/admin/status-badge";
-import { Button } from "@/components/ui/button";
+import { STRETCHED_FOCUS } from "@/components/admin/tones";
+import { ToneIcon } from "@/components/admin/icon-tile";
 import { EmptyState } from "@/components/ui/empty-state";
-import { Input, Select } from "@/components/ui/form";
-import { Table, TD, TH, THead, TR } from "@/components/ui/table";
-import { filsToKwdString } from "@/lib/money";
+import { Select } from "@/components/ui/form";
 import { ORDER_STATUSES, ORDER_STATUS_LABELS } from "@/lib/labels";
-import { formatDateTime } from "@/lib/utils";
+import { count, W } from "@/lib/design";
+import { cn, formatDateTime } from "@/lib/utils";
+import { PeopleBand, BandChip, BandChips } from "../_components/people/band";
+import { OrdersArt } from "../_components/people/art";
+import { Kwd } from "../_components/people/bits";
+import { orderTone } from "../_components/people/helpers";
 
 export const metadata = { title: "الطلبات والمدفوعات" };
 
@@ -21,77 +26,123 @@ export default async function AdminOrdersPage({ searchParams }: { searchParams: 
   const test = sp.test === "real" || sp.test === "test" ? sp.test : undefined;
   const orders = await listAdminOrders({ q: sp.q?.slice(0, 80), status, test });
   const filtered = Boolean(sp.q || status || test);
+  const paid = orders.filter((o) => o.status === "paid").length;
+  const pending = orders.filter((o) => o.status === "pending").length;
+  const tests = orders.filter((o) => o.is_test).length;
+
   return (
-    <div>
-      <AdminPageHeader title="الطلبات والمدفوعات" description="كل الطلبات مع حالة الدفع. الطلبات التجريبية (Sandbox) مميزة بشارة." />
-      <form className="mb-5 grid gap-2 rounded-2xl border border-line bg-surface p-3 sm:grid-cols-[2fr_1fr_1fr_auto]" role="search">
-        <div className="relative">
-          <Search className="pointer-events-none absolute start-3 top-1/2 size-4 -translate-y-1/2 text-muted" aria-hidden />
-          <Input name="q" defaultValue={sp.q} placeholder="رقم الطلب أو البريد أو الاسم" className="ps-9" aria-label="بحث" />
-        </div>
-        <Select name="status" defaultValue={status ?? ""} aria-label="الحالة">
-          <option value="">كل الحالات</option>
-          {ORDER_STATUSES.map((s) => (
-            <option key={s} value={s}>
-              {ORDER_STATUS_LABELS[s]}
-            </option>
-          ))}
-        </Select>
-        <Select name="test" defaultValue={test ?? ""} aria-label="النوع">
-          <option value="">حقيقية وتجريبية</option>
-          <option value="real">حقيقية فقط</option>
-          <option value="test">تجريبية فقط</option>
-        </Select>
-        <Button type="submit" variant="secondary">
-          تصفية
-        </Button>
-      </form>
-      {orders.length === 0 ? (
-        <EmptyState icon={<Receipt />} title={filtered ? "لا توجد طلبات مطابقة" : "لا توجد طلبات بعد"} description={filtered ? "جرّب تغيير معايير البحث." : "ستظهر هنا طلبات الطلاب فور إنشائها."} />
-      ) : (
-        <Table>
-          <THead>
-            <tr>
-              <TH>رقم الطلب</TH>
-              <TH>التاريخ</TH>
-              <TH>العميل</TH>
-              <TH>المنتجات</TH>
-              <TH>الإجمالي</TH>
-              <TH>حالة الطلب</TH>
-              <TH>آخر دفع</TH>
-            </tr>
-          </THead>
-          <tbody>
-            {orders.map((o) => (
-              <TR key={o.id}>
-                <TD>
-                  <Link href={`/admin/orders/${o.id}`} className="num font-semibold text-brand-700 hover:underline">
-                    {o.number}
-                  </Link>
-                </TD>
-                <TD className="text-xs text-muted">{formatDateTime(o.created_at)}</TD>
-                <TD>
-                  <p className="font-semibold">{o.customer_name}</p>
-                  <p className="text-xs text-muted" dir="ltr">
-                    {o.customer_email}
-                  </p>
-                </TD>
-                <TD className="num">{o.item_count}</TD>
-                <TD className="whitespace-nowrap">
-                  <span className="num font-semibold">{filsToKwdString(o.total_fils)}</span> د.ك
-                </TD>
-                <TD>
-                  <div className="flex flex-wrap gap-1">
+    <div className="space-y-6">
+      <PeopleBand
+        tone="green"
+        art={<OrdersArt className="size-full motion-safe:animate-bob" />}
+        footer={
+          orders.length ? (
+            <BandChips>
+              <BandChip tone="green" icon={<Receipt aria-hidden />}>
+                {count(orders.length, W.order)} {filtered ? "مطابقة" : "في القائمة"}
+              </BandChip>
+              {paid ? (
+                <BandChip tone="green" icon={<CircleCheck aria-hidden />}>
+                  مدفوعة: {count(paid, W.order)}
+                </BandChip>
+              ) : null}
+              {pending ? (
+                <BandChip tone="gold" icon={<Clock3 aria-hidden />}>
+                  بانتظار الدفع: {count(pending, W.order)}
+                </BandChip>
+              ) : null}
+              {tests ? (
+                <BandChip tone="sky" icon={<FlaskConical aria-hidden />}>
+                  تجريبية: {count(tests, W.order)}
+                </BandChip>
+              ) : null}
+            </BandChips>
+          ) : null
+        }
+      >
+        <AdminPageHeader
+          className="mb-0"
+          title="الطلبات والمدفوعات"
+          description="كل الطلبات مع حالة الدفع. الطلبات التجريبية (Sandbox) مميزة بشارة."
+        />
+      </PeopleBand>
+
+      <div>
+        <FilterBar label="تصفية الطلبات">
+          <FilterSearch name="q" defaultValue={sp.q} placeholder="رقم الطلب أو البريد أو الاسم" label="بحث" />
+          <Select name="status" defaultValue={status ?? ""} aria-label="الحالة">
+            <option value="">كل الحالات</option>
+            {ORDER_STATUSES.map((s) => (
+              <option key={s} value={s}>
+                {ORDER_STATUS_LABELS[s]}
+              </option>
+            ))}
+          </Select>
+          <Select name="test" defaultValue={test ?? ""} aria-label="النوع">
+            <option value="">حقيقية وتجريبية</option>
+            <option value="real">حقيقية فقط</option>
+            <option value="test">تجريبية فقط</option>
+          </Select>
+          <FilterSubmit resetHref="/admin/orders" active={filtered} />
+        </FilterBar>
+
+        {orders.length === 0 ? (
+          <EmptyState
+            art={filtered ? "search" : "receipt"}
+            title={filtered ? "لا توجد طلبات مطابقة" : "لا توجد طلبات بعد"}
+            description={filtered ? "جرّب تغيير معايير البحث." : "ستظهر هنا طلبات الطلاب فور إنشائها."}
+          />
+        ) : (
+          <>
+            <Toolbar start={<ResultCount>{count(orders.length, W.order)}</ResultCount>} end={<p className="text-[0.82rem] text-muted">الأحدث أولًا</p>} />
+            <ul className="flex flex-col gap-3" aria-label="قائمة الطلبات">
+              {orders.map((o) => (
+                <li
+                  key={o.id}
+                  className={cn(
+                    "relative grid min-w-0 items-center gap-x-4 gap-y-3 rounded-[1.4rem] border border-[rgb(23_32_38/0.06)] bg-surface p-3.5 shadow-xs transition-shadow hover:shadow-card sm:p-4",
+                    "grid-cols-[auto_minmax(0,1fr)] sm:grid-cols-[auto_minmax(0,1fr)_minmax(0,1fr)] lg:grid-cols-[auto_minmax(0,1.1fr)_minmax(0,1.2fr)_auto_minmax(9.5rem,auto)]",
+                    STRETCHED_FOCUS,
+                  )}
+                >
+                  <ToneIcon tone={orderTone(o.status)} size="md" className="max-sm:size-11">
+                    <Receipt />
+                  </ToneIcon>
+                  <div className="min-w-0">
+                    <Link href={`/admin/orders/${o.id}`} className="stretched num font-display text-[1.02rem] font-black text-ink hover:text-brand-700">
+                      {o.number}
+                    </Link>
+                    <p className="text-[0.78rem] leading-5 text-muted">{formatDateTime(o.created_at)}</p>
+                  </div>
+                  <div className="col-span-2 min-w-0 sm:col-span-1">
+                    <p className="truncate font-display font-extrabold text-ink">{o.customer_name}</p>
+                    <p className="truncate text-end text-[0.8rem] leading-5 text-muted" dir="ltr">
+                      {o.customer_email}
+                    </p>
+                  </div>
+                  <div className="col-span-2 flex flex-wrap items-center gap-1.5 lg:col-span-1 lg:max-w-[15rem]">
                     <OrderStatusBadge status={o.status} />
+                    {o.last_payment_status ? (
+                      <span className="inline-flex items-center gap-1 font-display text-[0.76rem] font-bold text-muted">
+                        <span>آخر دفع</span>
+                        <PaymentStatusBadge status={o.last_payment_status} />
+                      </span>
+                    ) : null}
                     {o.is_test ? <TestBadge /> : null}
                   </div>
-                </TD>
-                <TD>{o.last_payment_status ? <PaymentStatusBadge status={o.last_payment_status} /> : <span className="text-xs text-muted">—</span>}</TD>
-              </TR>
-            ))}
-          </tbody>
-        </Table>
-      )}
+                  <div className="col-span-2 flex items-center justify-between gap-3 border-t border-dashed border-line pt-3 sm:col-span-1 sm:flex-col sm:items-end sm:justify-center sm:gap-0.5 sm:border-0 sm:pt-0">
+                    <span className="chip chip-mint min-h-7">
+                      <Package aria-hidden />
+                      {count(o.item_count, W.product)}
+                    </span>
+                    <Kwd fils={o.total_fils} className="font-display text-[1.2rem] font-black text-ink" />
+                  </div>
+                </li>
+              ))}
+            </ul>
+          </>
+        )}
+      </div>
     </div>
   );
 }

@@ -39,7 +39,7 @@ describe("validation schemas", () => {
     if (!r.success) {
       const errs = fieldErrors(r.error);
       expect(Object.keys(errs).sort()).toEqual(["email", "fullName", "password", "phone"]);
-      expect(errs.password).toContain("8");
+      expect(errs.password).toContain("٨ أحرف");
     }
   });
   it("register: phone optional", () => {

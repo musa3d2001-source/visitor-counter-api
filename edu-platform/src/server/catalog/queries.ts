@@ -493,7 +493,7 @@ export async function getPlaylist(productId: string, opts: { includeUnready?: bo
     }
     for (const [unit, ls] of byUnit) {
       const isRoot = node.id === productId;
-      const title = unit ? (isRoot ? unit : `${node.title} — ${unit}`) : isRoot ? "الدروس" : node.title;
+      const title = unit ? (isRoot ? unit : `${node.title}: ${unit}`) : isRoot ? "الدروس" : node.title;
       groups.push({ key: `${node.id}:${unit}`, title, productId: node.id, lessons: ls });
     }
   }

@@ -5,6 +5,7 @@ import { Alert } from "@/components/ui/alert";
 import { getCurrentUser } from "@/server/auth/session";
 import { safeNextPath } from "@/lib/utils";
 import { LoginForm } from "./login-form";
+import { MobilePerks } from "../_components/auth-bits";
 
 export const metadata: Metadata = { title: "تسجيل الدخول", robots: { index: false } };
 
@@ -21,10 +22,11 @@ export default async function LoginPage({ searchParams }: { searchParams: Promis
       ) : null}
       {sp.next?.startsWith("/checkout") ? (
         <Alert tone="info" className="mb-4">
-          سجّل دخولك أو أنشئ حسابًا لإتمام الشراء — سلتك محفوظة.
+          سجّل دخولك أو أنشئ حسابًا لإتمام الشراء. سلتك محفوظة.
         </Alert>
       ) : null}
       <LoginForm next={next} />
+      <MobilePerks />
     </AuthCard>
   );
 }
