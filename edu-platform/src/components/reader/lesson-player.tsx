@@ -4,6 +4,7 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { Gauge, LoaderCircle, Maximize, Minimize, Pause, Play, RotateCcw, RotateCw, SkipBack, TriangleAlert, Volume2, VolumeX } from "lucide-react";
 import { PlayerJsBridge } from "./playerjs";
+import { ar } from "@/lib/design";
 import { cn } from "@/lib/utils";
 
 const SPEEDS = [0.75, 1, 1.25, 1.5, 1.75, 2];
@@ -52,6 +53,13 @@ function useProgressSaver(lessonId: string, enabled: boolean) {
   );
 }
 
+/** «٥ ثوانٍ» / «ثانيتين» / «ثانية واحدة» */
+function secondsLabel(n: number): string {
+  if (n === 1) return "ثانية واحدة";
+  if (n === 2) return "ثانيتين";
+  return `${ar(n)} ثوانٍ`;
+}
+
 /** عدّاد الانتقال التلقائي للدرس التالي (5 ثوانٍ قابلة للإلغاء) */
 function NextOverlay({ nextHref, nextTitle, onCancel }: { nextHref: string; nextTitle: string | null; onCancel: () => void }) {
   const router = useRouter();
@@ -64,16 +72,43 @@ function NextOverlay({ nextHref, nextTitle, onCancel }: { nextHref: string; next
     const t = setTimeout(() => setLeft((n) => n - 1), 1000);
     return () => clearTimeout(t);
   }, [left, nextHref, router]);
+  const r = 22;
+  const c = 2 * Math.PI * r;
   return (
-    <div className="absolute inset-0 z-20 grid place-items-center bg-black/75 p-4 text-center text-white" role="dialog" aria-live="polite" data-testid="next-countdown">
-      <div>
-        <p className="text-sm text-white/75">الدرس التالي خلال <span className="num font-bold">{left}</span> ثوانٍ</p>
-        {nextTitle ? <p className="mt-1 text-lg font-bold">{nextTitle}</p> : null}
-        <div className="mt-4 flex justify-center gap-2">
-          <button className="rounded-lg bg-accent-600 px-4 py-2 font-semibold text-ink" onClick={() => router.push(nextHref)} data-testid="next-lesson-now">
-            شاهد الآن
+    <div
+      className="on-dark absolute inset-0 z-40 grid place-items-center overflow-y-auto p-3 text-center text-white backdrop-blur-sm sm:p-6"
+      style={{ background: "radial-gradient(60% 80% at 50% 40%, rgb(10 107 102 / 0.5), transparent), rgb(4 24 28 / 0.88)" }}
+      role="dialog"
+      aria-live="polite"
+      aria-label="الدرس التالي"
+      data-testid="next-countdown"
+    >
+      <div className="flex max-w-md flex-col items-center">
+        <span className="relative hidden size-14 place-items-center sm:grid" aria-hidden>
+          <svg viewBox="0 0 52 52" className="absolute inset-0 -rotate-90">
+            <circle cx="26" cy="26" r={r} fill="none" stroke="rgb(255 255 255 / 0.18)" strokeWidth="4" />
+            <circle
+              cx="26"
+              cy="26"
+              r={r}
+              fill="none"
+              stroke="#ffc531"
+              strokeWidth="4"
+              strokeLinecap="round"
+              strokeDasharray={c}
+              strokeDashoffset={c * (1 - left / 5)}
+              className="transition-[stroke-dashoffset] duration-1000 ease-linear motion-reduce:transition-none"
+            />
+          </svg>
+          <span className="font-display text-xl font-black">{ar(Math.max(left, 0))}</span>
+        </span>
+        <p className="font-display text-[0.9rem] font-bold text-white/80 sm:mt-3">الدرس التالي خلال {secondsLabel(Math.max(left, 0))}</p>
+        {nextTitle ? <p className="mt-1 line-clamp-2 font-display text-base leading-snug font-black sm:text-xl">{nextTitle}</p> : null}
+        <div className="mt-3 flex justify-center gap-2 sm:mt-5">
+          <button className="btn btn-3d btn-accent btn-sm sm:min-h-[2.875rem] sm:px-5 sm:text-base" onClick={() => router.push(nextHref)} data-testid="next-lesson-now">
+            <Play className="fill-current" aria-hidden /> شاهد الآن
           </button>
-          <button className="rounded-lg border border-white/40 px-4 py-2 font-semibold" onClick={onCancel}>
+          <button className="btn btn-sm bg-white/12 text-white ring-1 ring-white/25 hover:bg-white/20 sm:min-h-[2.875rem] sm:px-5 sm:text-base" onClick={onCancel}>
             إلغاء
           </button>
         </div>
@@ -218,7 +253,7 @@ function FilePlayer({ lessonId, src, startAt, trackProgress, watermark, nextHref
       ref={containerRef}
       data-testid="watch-player"
       data-kind="file"
-      className={cn("group/player relative aspect-video w-full overflow-hidden bg-black select-none", fullscreen ? "" : "rounded-lg", !showControls && playing ? "cursor-none" : "")}
+      className={cn("group/player on-dark relative aspect-video w-full overflow-hidden bg-black select-none", fullscreen ? "" : "rounded-[1.1rem] sm:rounded-[1.5rem]", !showControls && playing ? "cursor-none" : "")}
       onContextMenu={(e) => e.preventDefault()}
       onMouseMove={poke}
       onTouchStart={poke}
@@ -269,17 +304,19 @@ function FilePlayer({ lessonId, src, startAt, trackProgress, watermark, nextHref
       />
 
       {watermark ? (
-        <span className="pointer-events-none absolute end-3 top-3 z-10 text-[0.7rem] font-semibold text-white/30" aria-hidden>
+        <span className="pointer-events-none absolute end-3 top-3 z-10 text-[0.7rem] font-semibold text-white/30 sm:end-4 sm:top-4" aria-hidden>
           {watermark}
         </span>
       ) : null}
 
       {error ? (
-        <div className="absolute inset-0 z-20 grid place-items-center bg-black/80 p-6 text-center text-white" role="alert">
-          <div>
-            <TriangleAlert className="mx-auto size-10 text-accent-600" aria-hidden />
-            <p className="mt-3 font-bold">تعذر تشغيل الفيديو</p>
-            <p className="mt-1 text-sm text-white/70">تحقق من اتصالك ثم أعد تحميل الصفحة. إن انتهت جلستك سجّل الدخول مجددًا.</p>
+        <div className="absolute inset-0 z-20 grid place-items-center overflow-y-auto bg-[rgb(4_24_28/0.9)] p-4 text-center text-white sm:p-6" role="alert">
+          <div className="max-w-sm">
+            <span className="mx-auto grid size-12 place-items-center rounded-2xl bg-[#ffc531] text-[#3d2a00] sm:size-14" aria-hidden>
+              <TriangleAlert className="size-7" />
+            </span>
+            <p className="mt-3 font-display text-lg font-black">تعذر تشغيل الفيديو</p>
+            <p className="mt-1 text-sm text-white/80">تحقق من اتصالك ثم أعد تحميل الصفحة. إن انتهت جلستك سجّل الدخول مجددًا.</p>
           </div>
         </div>
       ) : null}
@@ -291,17 +328,17 @@ function FilePlayer({ lessonId, src, startAt, trackProgress, watermark, nextHref
       ) : null}
 
       {!playing && !ended && !error && !waiting ? (
-        <button className="absolute inset-0 z-10 grid place-items-center" onClick={toggle} aria-label="تشغيل">
-          <span className="grid size-16 place-items-center rounded-full bg-white text-ink transition-colors hover:bg-accent-200">
-            <Play className="size-8 translate-x-0.5" fill="currentColor" aria-hidden />
+        <button className="group/play absolute inset-0 z-10 grid place-items-center bg-black/10" onClick={toggle} aria-label="تشغيل">
+          <span className="grid size-16 place-items-center rounded-full bg-white text-brand-600 shadow-[0_0_0_10px_rgb(255_255_255/0.22),0_18px_34px_-12px_rgb(0_0_0/0.6)] transition-transform group-hover/play:scale-105 motion-reduce:transition-none sm:size-20">
+            <Play className="size-7 translate-x-0.5 sm:size-9" fill="currentColor" aria-hidden />
           </span>
         </button>
       ) : null}
 
       {ended && nextHref ? <NextOverlay nextHref={nextHref} nextTitle={nextTitle ?? null} onCancel={() => setEnded(false)} /> : null}
       {ended && !nextHref ? (
-        <div className="absolute inset-0 z-20 grid place-items-center bg-black/70 text-white">
-          <button className="flex items-center gap-2 rounded-lg bg-white/15 px-4 py-2 font-semibold" onClick={() => videoRef.current && ((videoRef.current.currentTime = 0), void videoRef.current.play())}>
+        <div className="absolute inset-0 z-20 grid place-items-center bg-[rgb(4_24_28/0.8)] text-white">
+          <button className="btn btn-3d btn-light btn-md" onClick={() => videoRef.current && ((videoRef.current.currentTime = 0), void videoRef.current.play())}>
             <SkipBack className="size-5" aria-hidden /> إعادة المشاهدة
           </button>
         </div>
@@ -310,16 +347,16 @@ function FilePlayer({ lessonId, src, startAt, trackProgress, watermark, nextHref
       {/* شريط التحكم */}
       <div
         className={cn(
-          "absolute inset-x-0 bottom-0 z-30 bg-gradient-to-t from-black/85 via-black/50 to-transparent px-3 pt-8 pb-2 text-white transition-opacity duration-200",
+          "absolute inset-x-0 bottom-0 z-30 bg-gradient-to-t from-black/85 via-black/45 to-transparent px-2 pt-10 pb-1.5 text-white transition-opacity duration-200 sm:px-4 sm:pb-2.5",
           showControls || !playing ? "opacity-100" : "pointer-events-none opacity-0",
         )}
         dir="ltr"
       >
-        <div className="relative h-4">
-          <div className="absolute top-1/2 h-1 w-full -translate-y-1/2 rounded-full bg-white/25" aria-hidden>
+        <div className="relative mx-1 h-4">
+          <div className="absolute top-1/2 h-1.5 w-full -translate-y-1/2 rounded-full bg-white/25" aria-hidden>
             <div className="h-full rounded-full bg-white/35" style={{ width: `${duration ? (buffered / duration) * 100 : 0}%` }} />
           </div>
-          <div className="pointer-events-none absolute top-1/2 h-1 -translate-y-1/2 rounded-full bg-accent-600" style={{ width: `${pct}%` }} aria-hidden />
+          <div className="pointer-events-none absolute top-1/2 h-1.5 -translate-y-1/2 rounded-full bg-[linear-gradient(90deg,#ffd25e,#ffc531)] shadow-[0_0_10px_rgb(255_197_49/0.6)]" style={{ width: `${pct}%` }} aria-hidden />
           <input
             type="range"
             min={0}
@@ -333,26 +370,26 @@ function FilePlayer({ lessonId, src, startAt, trackProgress, watermark, nextHref
             }}
             aria-label="شريط التقدم"
             aria-valuetext={`${clock(time)} من ${clock(duration)}`}
-            className="absolute inset-0 h-4 w-full cursor-pointer appearance-none bg-transparent [&::-webkit-slider-thumb]:size-3.5 [&::-webkit-slider-thumb]:appearance-none [&::-webkit-slider-thumb]:rounded-full [&::-webkit-slider-thumb]:bg-white"
+            className="absolute inset-0 h-4 w-full cursor-pointer appearance-none bg-transparent [&::-moz-range-thumb]:size-4 [&::-moz-range-thumb]:rounded-full [&::-moz-range-thumb]:border-2 [&::-moz-range-thumb]:border-white [&::-moz-range-thumb]:bg-[#ffc531] [&::-webkit-slider-thumb]:size-4 [&::-webkit-slider-thumb]:appearance-none [&::-webkit-slider-thumb]:rounded-full [&::-webkit-slider-thumb]:border-2 [&::-webkit-slider-thumb]:border-white [&::-webkit-slider-thumb]:bg-[#ffc531] [&::-webkit-slider-thumb]:shadow"
           />
         </div>
-        <div className="mt-1 flex items-center gap-1 sm:gap-2">
-          <button className="grid size-9 place-items-center rounded-lg hover:bg-white/15" onClick={toggle} aria-label={playing ? "إيقاف مؤقت" : "تشغيل"} data-testid="play-toggle">
+        <div className="mt-0.5 flex items-center gap-0.5 sm:gap-1.5">
+          <button className="grid size-11 place-items-center rounded-xl transition-colors hover:bg-white/15" onClick={toggle} aria-label={playing ? "إيقاف مؤقت" : "تشغيل"} data-testid="play-toggle">
             {playing ? <Pause className="size-5" fill="currentColor" aria-hidden /> : <Play className="size-5" fill="currentColor" aria-hidden />}
           </button>
-          <button className="grid size-9 place-items-center rounded-lg hover:bg-white/15" onClick={() => seekBy(-10)} aria-label="رجوع 10 ثوانٍ">
+          <button className="grid size-11 place-items-center rounded-xl transition-colors hover:bg-white/15" onClick={() => seekBy(-10)} aria-label="رجوع 10 ثوانٍ">
             <RotateCcw className="size-4.5" aria-hidden />
           </button>
-          <button className="grid size-9 place-items-center rounded-lg hover:bg-white/15" onClick={() => seekBy(10)} aria-label="تقديم 10 ثوانٍ">
+          <button className="grid size-11 place-items-center rounded-xl transition-colors hover:bg-white/15" onClick={() => seekBy(10)} aria-label="تقديم 10 ثوانٍ">
             <RotateCw className="size-4.5" aria-hidden />
           </button>
-          <span className="num ms-1 text-xs tabular-nums sm:text-sm" data-testid="player-time">
+          <span className="num ms-1 rounded-full bg-black/35 px-2 py-0.5 text-xs font-semibold tabular-nums sm:text-sm" data-testid="player-time">
             {clock(time)} / {clock(duration)}
           </span>
           <div className="ms-auto flex items-center gap-1">
             <div className="hidden items-center sm:flex">
               <button
-                className="grid size-9 place-items-center rounded-lg hover:bg-white/15"
+                className="grid size-11 place-items-center rounded-xl transition-colors hover:bg-white/15"
                 onClick={() => videoRef.current && (videoRef.current.muted = !videoRef.current.muted)}
                 aria-label={muted ? "إلغاء كتم الصوت" : "كتم الصوت"}
               >
@@ -371,12 +408,12 @@ function FilePlayer({ lessonId, src, startAt, trackProgress, watermark, nextHref
                   v.muted = Number(e.target.value) === 0;
                 }}
                 aria-label="مستوى الصوت"
-                className="w-20 accent-white"
+                className="w-20 accent-[#ffc531]"
               />
             </div>
             <div className="relative">
               <button
-                className="flex h-9 items-center gap-1 rounded-lg px-2 text-sm font-semibold hover:bg-white/15"
+                className="flex h-11 items-center gap-1 rounded-xl px-2 font-display text-sm font-extrabold transition-colors hover:bg-white/15"
                 onClick={() => setSpeedOpen((o) => !o)}
                 aria-haspopup="menu"
                 aria-expanded={speedOpen}
@@ -386,13 +423,13 @@ function FilePlayer({ lessonId, src, startAt, trackProgress, watermark, nextHref
                 <Gauge className="size-4.5" aria-hidden /> <span className="num">{speed}x</span>
               </button>
               {speedOpen ? (
-                <div role="menu" className="absolute end-0 bottom-11 min-w-28 overflow-hidden rounded-lg bg-ink py-1 ring-1 ring-white/10" dir="rtl">
+                <div role="menu" className="absolute end-0 bottom-12 min-w-32 overflow-hidden rounded-2xl bg-[#0b2a2e] p-1.5 shadow-[0_18px_40px_-12px_rgb(0_0_0/0.7)] ring-1 ring-white/15" dir="rtl">
                   {SPEEDS.map((s) => (
                     <button
                       key={s}
                       role="menuitemradio"
                       aria-checked={s === speed}
-                      className={cn("flex w-full items-center justify-between gap-3 px-3 py-2 text-sm hover:bg-white/10", s === speed && "text-accent-600")}
+                      className={cn("flex min-h-10 w-full items-center justify-between gap-3 rounded-xl px-3 py-2 font-display text-sm font-bold hover:bg-white/10", s === speed && "bg-white/10 text-[#ffd25e]")}
                       onClick={() => {
                         setSpeed(s);
                         setSpeedOpen(false);
@@ -411,7 +448,7 @@ function FilePlayer({ lessonId, src, startAt, trackProgress, watermark, nextHref
                 </div>
               ) : null}
             </div>
-            <button className="grid size-9 place-items-center rounded-lg hover:bg-white/15" onClick={toggleFullscreen} aria-label={fullscreen ? "الخروج من ملء الشاشة" : "ملء الشاشة"}>
+            <button className="grid size-11 place-items-center rounded-xl transition-colors hover:bg-white/15" onClick={toggleFullscreen} aria-label={fullscreen ? "الخروج من ملء الشاشة" : "ملء الشاشة"}>
               {fullscreen ? <Minimize className="size-4.5" aria-hidden /> : <Maximize className="size-4.5" aria-hidden />}
             </button>
           </div>
@@ -456,7 +493,7 @@ function BunnyPlayer({ lessonId, embedUrl, startAt, trackProgress, nextHref, nex
   }, [embedUrl, startAt, save]);
 
   return (
-    <div data-testid="watch-player" data-kind="bunny" className="relative aspect-video w-full overflow-hidden rounded-lg bg-black">
+    <div data-testid="watch-player" data-kind="bunny" className="on-dark relative aspect-video w-full overflow-hidden rounded-[1.1rem] bg-black sm:rounded-[1.5rem]">
       <iframe
         ref={iframeRef}
         src={embedUrl}

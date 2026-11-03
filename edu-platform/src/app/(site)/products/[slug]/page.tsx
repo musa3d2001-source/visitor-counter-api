@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import { BookOpen, Check, Download, Eye, FileText, Lock, Play } from "lucide-react";
+import { BookOpen, BookOpenText, CalendarDays, Download, Eye, FileText, GraduationCap, Layers, Library, ListChecks, ListVideo, Lock, Play, ShieldCheck, Sparkles, Shapes, Files } from "lucide-react";
 import {
   getBundleItems,
   getBundlesContaining,
@@ -9,22 +9,27 @@ import {
   getPlaylist,
   getProductBySlug,
   getProductFilesInfo,
+  type ProductCard,
 } from "@/server/catalog/queries";
 import { getCurrentUser } from "@/server/auth/session";
 import { accessExpiry, accessibleProductIds, isTeacherOfProduct } from "@/server/access/entitlements";
 import { sql } from "@/server/db";
-import { VideoProductView } from "./video-view";
+import { VideoProductView, accessPeriodText } from "./video-view";
 import { getSettings } from "@/server/platform/settings";
 import { env } from "@/server/env";
-import { Breadcrumbs } from "@/components/ui/breadcrumbs";
-import { Button } from "@/components/ui/button";
-import { Price } from "@/components/ui/price";
 import { Alert } from "@/components/ui/alert";
-import { ProductCover } from "@/components/site/product-cover";
-import { ProductList } from "@/components/site/product-card";
+import { ProductGrid } from "@/components/site/product-card";
 import { AddToCart } from "@/components/site/add-to-cart";
-import { PRODUCT_TYPE_LABELS, PRODUCT_STATUS_LABELS, termLabel, type ProductStatus } from "@/lib/labels";
+import { SubjectIcon } from "@/components/art";
+import { PRODUCT_TYPE_LABELS, PRODUCT_STATUS_LABELS, type ProductStatus } from "@/lib/labels";
 import { filsToKwdString } from "@/lib/money";
+import { academicYearLabel, count, gradeClass, gradeLevelFromSlug, toneClass, W } from "@/lib/design";
+import { GlassChip, HeroStat, HeroStats, ProductHero } from "./_components/hero";
+import { BundleFanArt, NotePaperArt } from "./_components/hero-art";
+import { MobileBuyBar, PurchasePanel, type TrustItem } from "./_components/purchase";
+import { FactGrid, FileList, LearnList, SectionPanel, WideHead } from "./_components/sections";
+import { LessonTimeline } from "./_components/lesson-timeline";
+import { includesLabel, previewLabel, shortTermLabel } from "./_components/labels";
 
 type Params = { slug: string };
 
@@ -40,19 +45,10 @@ export async function generateMetadata({ params }: { params: Promise<Params> }):
   };
 }
 
-/** «تصفّح أول صفحتين مجانًا» بصيغة العدد الصحيحة */
-function previewLabel(pages: number | null) {
-  if (!pages) return "تصفّح المعاينة مجانًا";
-  if (pages === 1) return "تصفّح الصفحة الأولى مجانًا";
-  if (pages === 2) return "تصفّح أول صفحتين مجانًا";
-  return `تصفّح أول ${pages} ${pages <= 10 ? "صفحات" : "صفحة"} مجانًا`;
-}
-
-function formatDuration(sec: number | null) {
-  if (!sec) return "";
-  const m = Math.floor(sec / 60);
-  const s = sec % 60;
-  return `${m}:${String(s).padStart(2, "0")}`;
+/** محتويات الباقات التي تضم المنتج: لتلوين أوراقها بموادها الحقيقية */
+async function itemsOf(bundles: ProductCard[]) {
+  const lists = await Promise.all(bundles.map((b) => getBundleItems(b.id)));
+  return new Map(bundles.map((b, i) => [b.id, lists[i]]));
 }
 
 export default async function ProductPage({ params }: { params: Promise<Params> }) {
@@ -63,6 +59,13 @@ export default async function ProductPage({ params }: { params: Promise<Params> 
   if (product && product.status !== "published" && user?.role === "teacher" && !(await isTeacherOfProduct(user.id, product.id))) product = null;
   if (!product) notFound();
 
+  const breadcrumbs = [
+    { label: "الرئيسية", href: "/" },
+    { label: product.gradeName, href: `/grades/${product.gradeSlug}` },
+    ...(product.subjectName && product.subjectSlug ? [{ label: product.subjectName, href: `/grades/${product.gradeSlug}/${product.subjectSlug}` }] : []),
+    { label: product.title },
+  ];
+
   if (product.isVideo) {
     const [playlist, included, bundlesV, filesV, ownedV] = await Promise.all([
       getPlaylist(product.id),
@@ -71,6 +74,7 @@ export default async function ProductPage({ params }: { params: Promise<Params> 
       getProductFilesInfo(product.id),
       user ? accessibleProductIds(user.id) : Promise.resolve(new Set<string>()),
     ]);
+    const bundleItemsV = await itemsOf(bundlesV);
     const lessonIds = playlist.flatMap((g) => g.lessons.map((l) => l.id));
     const ownedNow = ownedV.has(product.id);
     let resumeLessonId: string | null = null;
@@ -92,17 +96,9 @@ export default async function ProductPage({ params }: { params: Promise<Params> 
     }
     if (user && ownedNow) ownedUntil = (await accessExpiry(user.id, product.id)).expiresAt;
     return (
-      <div className="mx-auto max-w-6xl px-4 pt-6 pb-28 lg:pb-10">
-        <Breadcrumbs
-          items={[
-            { label: "الرئيسية", href: "/" },
-            { label: product.gradeName, href: `/grades/${product.gradeSlug}` },
-            ...(product.subjectName && product.subjectSlug ? [{ label: product.subjectName, href: `/grades/${product.gradeSlug}/${product.subjectSlug}` }] : []),
-            { label: product.title },
-          ]}
-        />
+      <div className="mx-auto max-w-7xl px-3 pt-4 pb-36 sm:px-6 lg:pb-16">
         {product.status !== "published" ? (
-          <Alert tone="warning" className="mt-4" title={`معاينة قبل النشر، الحالة: ${PRODUCT_STATUS_LABELS[product.status as ProductStatus]}`}>
+          <Alert tone="warning" className="mb-4" title={`معاينة قبل النشر، الحالة: ${PRODUCT_STATUS_LABELS[product.status as ProductStatus]}`}>
             هذه الصفحة غير ظاهرة للطلاب حتى يتم اعتماد المحتوى ونشره.
           </Alert>
         ) : null}
@@ -111,6 +107,7 @@ export default async function ProductPage({ params }: { params: Promise<Params> 
           playlist={playlist}
           included={included}
           bundles={bundlesV}
+          bundleItems={bundleItemsV}
           files={filesV}
           owned={ownedV}
           isOwned={ownedNow}
@@ -118,6 +115,7 @@ export default async function ProductPage({ params }: { params: Promise<Params> 
           resumeLessonId={resumeLessonId}
           watchedIds={watchedIds}
           canBuy={product.status === "published"}
+          breadcrumbs={breadcrumbs}
         />
       </div>
     );
@@ -130,7 +128,7 @@ export default async function ProductPage({ params }: { params: Promise<Params> 
     product.type === "video_course" ? getLessons(product.id) : Promise.resolve([]),
     getSettings(),
   ]);
-  const owned = user ? await accessibleProductIds(user.id) : new Set<string>();
+  const [owned, bundleItemsById] = await Promise.all([user ? accessibleProductIds(user.id) : Promise.resolve(new Set<string>()), itemsOf(bundles)]);
   const isOwned = owned.has(product.id);
   const mainFiles = files.filter((f) => f.kind === "main");
   const preview = files.find((f) => f.kind === "preview");
@@ -139,6 +137,22 @@ export default async function ProductPage({ params }: { params: Promise<Params> 
   const contents = product.contents.split("\n").map((l) => l.trim()).filter(Boolean);
   const freeLesson = lessons.find((l) => l.isFreePreview);
   const videosOff = product.type === "video_course" && !settings.videos_enabled;
+
+  const isBundle = product.type === "bundle";
+  const level = gradeLevelFromSlug(product.gradeSlug);
+  const tone = isBundle ? gradeClass(level) : toneClass(product.subjectSlug);
+  const typeLabel = PRODUCT_TYPE_LABELS[product.type];
+  const term = shortTermLabel(product.term);
+  const subjectsCount = new Set(bundleItems.map((i) => i.subjectSlug ?? i.subjectName ?? i.id)).size;
+  const readOnly = !product.isDownloadable && !isBundle && product.type !== "video_course";
+  const readingText = product.isDownloadable ? "قابلة للتنزيل والطباعة بعد الشراء" : readOnly ? "تُقرأ داخل المنصة، ولا تُنزّل" : null;
+  const accessText = accessPeriodText(product);
+
+  const trust: TrustItem[] = [
+    { icon: <ShieldCheck aria-hidden />, text: "دفع آمن عبر ماي فاتورة: كي نت أو بطاقة", bg: "#DEF8EE", fg: "#0A6F52" },
+    { icon: <Library aria-hidden />, text: isBundle ? "كل محتويات الباقة تظهر في مكتبتي فور تأكيد الدفع" : "يظهر في مكتبتي فور تأكيد الدفع", bg: "#FFF0C7", fg: "#6E4700" },
+    ...(readingText ? [{ icon: product.isDownloadable ? <Download aria-hidden /> : <Lock aria-hidden />, text: readingText, bg: "#E8EEFF", fg: "#2B33B5" }] : []),
+  ];
 
   const jsonLd = {
     "@context": "https://schema.org",
@@ -156,207 +170,157 @@ export default async function ProductPage({ params }: { params: Promise<Params> 
     },
   };
 
+  const facts = [
+    { k: "الصف", v: product.gradeName, icon: <GraduationCap />, tone: gradeClass(level) },
+    { k: "المادة", v: product.subjectName ?? "عدة مواد", icon: <SubjectIcon slug={product.subjectSlug} size={18} />, tone: toneClass(product.subjectSlug) },
+    ...(term ? [{ k: "الفصل الدراسي", v: term.replace("الفصل ", ""), icon: <CalendarDays />, tone: "tone-social" }] : []),
+    ...(totalPages ? [{ k: "الصفحات", v: count(totalPages, W.page), icon: <FileText />, tone: "tone-english" }] : []),
+    ...(isBundle && bundleItems.length ? [{ k: "المحتويات", v: count(bundleItems.length, W.product), icon: <Layers />, tone: "tone-english" }] : []),
+    { k: "العام الدراسي", v: academicYearLabel(product.academicYear), icon: <CalendarDays />, tone: "tone-islamic" },
+    ...(readingText ? [{ k: "طريقة القراءة", v: product.isDownloadable ? "تنزيل وطباعة" : "داخل المنصة", icon: product.isDownloadable ? <Download /> : <Lock />, tone: "tone-arabic" }] : []),
+  ];
+
   return (
-    <div className="mx-auto max-w-6xl px-4 pt-6 pb-28 md:pb-10">
+    <div className="mx-auto max-w-7xl px-3 pt-4 pb-36 sm:px-6 lg:pb-16">
       <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd).replace(/</g, "\\u003c") }} />
-      <Breadcrumbs
-        items={[
-          { label: "الرئيسية", href: "/" },
-          { label: product.gradeName, href: `/grades/${product.gradeSlug}` },
-          ...(product.subjectName && product.subjectSlug ? [{ label: product.subjectName, href: `/grades/${product.gradeSlug}/${product.subjectSlug}` }] : []),
-          { label: product.title },
-        ]}
-      />
 
       {product.status !== "published" ? (
-        <Alert tone="warning" className="mt-4" title={`معاينة قبل النشر، الحالة: ${PRODUCT_STATUS_LABELS[product.status as ProductStatus]}`}>
+        <Alert tone="warning" className="mb-4" title={`معاينة قبل النشر، الحالة: ${PRODUCT_STATUS_LABELS[product.status as ProductStatus]}`}>
           هذه الصفحة غير ظاهرة للطلاب حتى يتم نشر المنتج.
         </Alert>
       ) : null}
 
-      <div className="mt-6 grid gap-8 md:grid-cols-[17rem_minmax(0,1fr)] lg:grid-cols-[19rem_minmax(0,1fr)_20rem] lg:gap-10">
-        <div className="mx-auto w-full max-w-[13rem] md:max-w-none">
-          <div className="overflow-hidden rounded-md">
-            <ProductCover coverUrl={product.coverUrl} title={product.title} type={product.type} subjectName={product.subjectName} gradeName={product.gradeName} priority sizes="304px" />
+      <ProductHero
+        toneClass={tone}
+        breadcrumbs={breadcrumbs}
+        title={product.title}
+        summary={product.summary}
+        chips={
+          <>
+            <span className="chip chip-white">
+              {isBundle ? <Layers aria-hidden /> : <FileText aria-hidden />}
+              {typeLabel}
+            </span>
+            <GlassChip icon={<GraduationCap aria-hidden />}>{product.gradeName}</GlassChip>
+            {product.subjectName ? <GlassChip icon={<SubjectIcon slug={product.subjectSlug} size={16} />}>{product.subjectName}</GlassChip> : null}
+            {term ? <GlassChip>{term}</GlassChip> : null}
+          </>
+        }
+        art={
+          isBundle ? (
+            <BundleFanArt level={level} items={bundleItems} priceFils={product.priceFils} compareAtPriceFils={isOwned ? null : product.compareAtPriceFils} />
+          ) : (
+            <NotePaperArt
+              subjectSlug={product.subjectSlug}
+              subjectName={product.subjectName}
+              typeLabel={typeLabel}
+              gradeName={product.gradeName}
+              pages={totalPages}
+              previewPages={preview?.pageCount ?? null}
+              hasPreview={!!preview && !isOwned}
+              priceFils={product.priceFils}
+              compareAtPriceFils={isOwned ? null : product.compareAtPriceFils}
+            />
+          )
+        }
+      >
+        <HeroStats>
+          {totalPages ? <HeroStat icon={<FileText aria-hidden />}>{count(totalPages, W.page)}</HeroStat> : null}
+          {mainFiles.length > 1 ? <HeroStat icon={<Files aria-hidden />}>{count(mainFiles.length, { one: "ملف", two: "ملفان", plural: "ملفات", acc: "ملفًا" })}</HeroStat> : null}
+          {isBundle && bundleItems.length ? <HeroStat icon={<Layers aria-hidden />}>{includesLabel(bundleItems.length)}</HeroStat> : null}
+          {isBundle && subjectsCount > 1 ? <HeroStat icon={<Shapes aria-hidden />}>{count(subjectsCount, W.subject)}</HeroStat> : null}
+          {lessons.length ? <HeroStat icon={<ListVideo aria-hidden />}>{count(lessons.length, W.lesson)}</HeroStat> : null}
+          {readingText ? <HeroStat icon={product.isDownloadable ? <Download aria-hidden /> : <Lock aria-hidden />}>{product.isDownloadable ? "تنزيل وطباعة" : "قراءة داخل المنصة"}</HeroStat> : null}
+        </HeroStats>
+      </ProductHero>
+
+      <div className={`${tone} mt-8 grid gap-8 lg:mt-0 lg:grid-cols-[minmax(0,1fr)_23rem] lg:gap-10 xl:grid-cols-[minmax(0,1fr)_24.5rem]`}>
+        <aside className="relative z-10 h-full lg:col-start-2 lg:row-start-1 lg:-mt-24 lg:me-6 xl:me-8" aria-label="الشراء">
+          <div className="lg:sticky lg:top-24">
+            <PurchasePanel
+              toneClass={tone}
+              typeIcon={isBundle ? <Layers aria-hidden /> : <FileText aria-hidden />}
+              typeLabel={typeLabel}
+              gradeName={[product.gradeName, product.subjectName].filter(Boolean).join(" · ")}
+              priceFils={product.priceFils}
+              compareAtPriceFils={product.compareAtPriceFils}
+              bundleSaving={isBundle && itemsValue > product.priceFils ? { fils: itemsValue - product.priceFils, label: "مقارنة بشراء المذكرات منفردة" } : null}
+              owned={isOwned ? { until: null, href: "/library", label: "افتح في مكتبتي", icon: <BookOpen aria-hidden /> } : null}
+              buy={videosOff ? <Alert tone="info">دروس الفيديو ستتوفر قريبًا.</Alert> : product.status === "published" ? <AddToCart productId={product.id} /> : null}
+              preview={preview && !isOwned ? { href: `/preview/${preview.id}`, label: previewLabel(preview.pageCount), icon: <Eye aria-hidden />, testId: "free-preview" } : null}
+              accessText={accessText}
+              trust={trust}
+            />
           </div>
-          {preview && !isOwned ? (
-            <Button asChild variant="outline" size="lg" className="mt-4 w-full">
-              <Link href={`/preview/${preview.id}`} data-testid="free-preview">
-                <Eye aria-hidden /> {previewLabel(preview.pageCount)}
-              </Link>
-            </Button>
-          ) : null}
-        </div>
+        </aside>
 
-        <div className="min-w-0">
-          <p className="text-sm font-semibold text-brand-700">{PRODUCT_TYPE_LABELS[product.type]}</p>
-          <h1 className="mt-1 text-[clamp(2.1rem,5vw,3.1rem)]">{product.title}</h1>
-          {product.summary ? <p className="mt-3 text-lg leading-8 text-ink-soft">{product.summary}</p> : null}
-
-          <dl className="mt-6 grid grid-cols-2 gap-x-4 border-t-2 border-ink sm:grid-cols-4 lg:grid-cols-2 xl:grid-cols-4">
-            {[
-              { k: "الصف", v: product.gradeName },
-              { k: "المادة", v: product.subjectName ?? "عدة مواد" },
-              { k: "الفصل", v: termLabel(product.term).replace("الفصل الدراسي ", "") },
-              totalPages ? { k: "الصفحات", v: String(totalPages) } : { k: "العام الدراسي", v: product.academicYear.replace("-", " / ") },
-            ].map((d) => (
-              <div key={d.k} className="border-b border-line py-3 pe-3">
-                <dt className="text-xs text-muted">{d.k}</dt>
-                <dd className="mt-0.5 font-semibold">{d.v}</dd>
-              </div>
-            ))}
-          </dl>
-          <p className="mt-3 flex items-center gap-1.5 text-sm text-ink-soft">
-            {product.isDownloadable ? (
-              <>
-                <Download className="size-4 text-brand-600" aria-hidden /> قابلة للتنزيل والطباعة بعد الشراء
-              </>
-            ) : product.type !== "bundle" && product.type !== "video_course" ? (
-              <>
-                <Lock className="size-4 text-muted" aria-hidden /> تُقرأ داخل المنصة، ولا تُنزّل
-              </>
-            ) : null}
-          </p>
+        <div className="min-w-0 space-y-6 lg:col-start-1 lg:row-start-1 lg:pt-8">
+          <SectionPanel id="details" title={`تفاصيل ${isBundle ? "الباقة" : typeLabel}`} icon={<ListChecks aria-hidden />}>
+            <FactGrid facts={facts} />
+          </SectionPanel>
 
           {contents.length ? (
-            <section className="mt-8" aria-labelledby="contents">
-              <h2 id="contents" className="text-[1.9rem]">
-                ماذا تحتوي
-              </h2>
-              <ul className="mt-3 grid gap-x-8 gap-y-2.5 sm:grid-cols-2">
-                {contents.map((c) => (
-                  <li key={c} className="flex items-start gap-2.5 leading-7 text-ink-soft">
-                    <Check className="mt-1.5 size-4 shrink-0 text-brand-600" aria-hidden /> {c}
-                  </li>
-                ))}
-              </ul>
-            </section>
+            <SectionPanel id="contents" title="ماذا تحتوي" icon={<Sparkles aria-hidden />}>
+              <LearnList items={contents} />
+            </SectionPanel>
           ) : null}
 
           {product.description ? (
-            <section className="mt-8" aria-labelledby="about">
-              <h2 id="about" className="text-[1.9rem]">
-                عن {PRODUCT_TYPE_LABELS[product.type]}
-              </h2>
-              <p className="mt-2 max-w-[68ch] leading-8 whitespace-pre-line text-ink-soft">{product.description}</p>
-            </section>
+            <SectionPanel id="about" title={`عن ${typeLabel}`} icon={<BookOpenText aria-hidden />}>
+              <p className="max-w-[68ch] text-[1.05rem] leading-9 whitespace-pre-line text-ink-soft">{product.description}</p>
+            </SectionPanel>
           ) : null}
 
           {mainFiles.length ? (
-            <section className="mt-8" aria-labelledby="files">
-              <h2 id="files" className="text-[1.9rem]">
-                الملفات
-              </h2>
-              <ul className="mt-3 border-t-2 border-ink">
-                {mainFiles.map((f) => (
-                  <li key={f.id} className="flex min-h-12 items-center gap-3 border-b border-line py-2.5 text-[0.95rem]">
-                    <FileText className="size-4.5 text-brand-600" aria-hidden />
-                    <span className="flex-1 font-semibold">{f.title}</span>
-                    {f.pageCount ? <span className="text-sm text-muted"><span className="num">{f.pageCount}</span> صفحة</span> : null}
-                  </li>
-                ))}
-              </ul>
-            </section>
+            <SectionPanel id="files" title="الملفات" icon={<Files aria-hidden />}>
+              <FileList files={mainFiles.map((f) => ({ id: f.id, title: f.title, pages: f.pageCount ? count(f.pageCount, W.page) : null }))} />
+            </SectionPanel>
           ) : null}
 
           {lessons.length ? (
-            <section className="mt-8" aria-labelledby="lessons">
-              <h2 id="lessons" className="text-[1.9rem]">
-                الدروس
-              </h2>
-              <ol className="mt-3 border-t-2 border-ink">
-                {lessons.map((l, i) => (
-                  <li key={l.id} className="grid min-h-12 grid-cols-[2rem_1fr_auto_3.5rem] items-center gap-3 border-b border-line py-2.5 text-[0.95rem]">
-                    <span className="num text-center text-sm text-muted">{i + 1}</span>
-                    <span>
-                      {l.unitTitle ? <span className="block text-xs text-muted">{l.unitTitle}</span> : null}
-                      <span className="font-semibold">{l.title}</span>
-                    </span>
-                    {l.isFreePreview ? <span className="rounded-md bg-accent-200 px-2 py-0.5 text-xs font-semibold text-ink">مجاني</span> : <Lock className="size-4 text-muted" aria-label="مدفوع" />}
-                    <span className="num text-end text-sm text-muted">{formatDuration(l.durationSeconds)}</span>
-                  </li>
-                ))}
-              </ol>
+            <SectionPanel id="lessons" title="الدروس" icon={<ListVideo aria-hidden />}>
+              <LessonTimeline productId={product.id} isOwned={isOwned} linkable={false} testIds={false} groups={[{ key: "all", title: null, lessons }]} />
               {freeLesson && settings.videos_enabled ? (
-                <Button asChild variant="outline" className="mt-4">
-                  <Link href={`/watch/${product.id}?lesson=${freeLesson.id}`}>
-                    <Play className="fill-current" aria-hidden /> شاهد الدرس المجاني
-                  </Link>
-                </Button>
+                <Link href={`/watch/${product.id}?lesson=${freeLesson.id}`} className="btn btn-3d btn-accent btn-md mt-5">
+                  <Play className="fill-current" aria-hidden /> شاهد الدرس المجاني
+                </Link>
               ) : null}
-            </section>
+            </SectionPanel>
           ) : null}
         </div>
-
-        <aside className="h-fit md:col-span-2 lg:sticky lg:top-24 lg:col-span-1" aria-label="الشراء">
-          <div className="rounded-lg bg-mist p-5 sm:p-6">
-            {isOwned ? (
-              <>
-                <p className="font-semibold text-success">في مكتبتك</p>
-                <Button asChild size="lg" className="mt-4 w-full">
-                  <Link href="/library">
-                    <BookOpen aria-hidden /> افتح في مكتبتي
-                  </Link>
-                </Button>
-              </>
-            ) : (
-              <>
-                <Price fils={product.priceFils} compareAt={product.compareAtPriceFils} size="lg" />
-                {product.type === "bundle" && itemsValue > product.priceFils ? (
-                  <p className="mt-1 text-sm font-semibold text-brand-700">
-                    توفّر <span className="num">{filsToKwdString(itemsValue - product.priceFils)}</span> د.ك مقارنة بشراء المذكرات منفردة
-                  </p>
-                ) : null}
-                <div className="mt-5">
-                  {videosOff ? (
-                    <Alert tone="info">دروس الفيديو ستتوفر قريبًا.</Alert>
-                  ) : product.status === "published" ? (
-                    <AddToCart productId={product.id} />
-                  ) : null}
-                </div>
-              </>
-            )}
-            <dl className="mt-5 space-y-2.5 border-t border-line-strong pt-4 text-sm">
-              <div className="flex justify-between gap-4">
-                <dt className="text-muted">الاستلام</dt>
-                <dd className="text-end font-medium">في مكتبتك فور تأكيد الدفع</dd>
-              </div>
-              <div className="flex justify-between gap-4">
-                <dt className="text-muted">الدفع</dt>
-                <dd className="text-end font-medium">كي نت أو بطاقة</dd>
-              </div>
-            </dl>
-          </div>
-        </aside>
       </div>
 
       {bundleItems.length ? (
-        <section className="mt-14" aria-labelledby="bundle-items">
-          <h2 id="bundle-items" className="mb-4 text-[clamp(1.7rem,3vw,2.3rem)]">
-            محتويات الباقة
-          </h2>
-          <ProductList products={bundleItems} ownedIds={owned} />
+        <section className="mt-16" aria-labelledby="bundle-items">
+          <WideHead
+            id="bundle-items"
+            eyebrow={count(bundleItems.length, W.product)}
+            eyebrowIcon={<Layers aria-hidden />}
+            tone="eyebrow-violet"
+            title="محتويات الباقة"
+            sub="كل ما تحصل عليه عند شراء الباقة، ويظهر في مكتبتك بعد تأكيد الدفع."
+          />
+          <ProductGrid products={bundleItems} ownedIds={owned} />
         </section>
       ) : null}
 
       {bundles.length ? (
-        <section className="mt-14" aria-labelledby="in-bundles">
-          <h2 id="in-bundles" className="text-[clamp(1.7rem,3vw,2.3rem)]">
-            متوفر أيضًا ضمن باقة
-          </h2>
-          <p className="mt-1 mb-4 text-muted">الباقة تضم هذه المذكرة مع محتوى آخر. قارن ما تشمله قبل الاختيار.</p>
-          <ProductList products={bundles} ownedIds={owned} />
+        <section className="mt-16" aria-labelledby="in-bundles">
+          <WideHead
+            id="in-bundles"
+            eyebrow="وفّر أكثر"
+            eyebrowIcon={<Sparkles aria-hidden />}
+            tone="eyebrow-gold"
+            title="متوفر أيضًا ضمن باقة"
+            sub="الباقة تضم هذه المذكرة مع محتوى آخر. قارن ما تشمله قبل الاختيار."
+          />
+          <ProductGrid products={bundles} ownedIds={owned} itemsById={bundleItemsById} />
         </section>
       ) : null}
 
       {/* شريط شراء ثابت على الجوال */}
       {!isOwned && product.status === "published" && !videosOff ? (
-        <div className="fixed inset-x-0 bottom-0 z-30 border-t border-line bg-surface p-3 md:hidden no-print">
-          <div className="mx-auto flex max-w-6xl items-center gap-3">
-            <Price fils={product.priceFils} compareAt={product.compareAtPriceFils} size="md" showPercent={false} className="shrink-0" />
-            <AddToCart productId={product.id} compact className="flex-1" />
-          </div>
-        </div>
+        <MobileBuyBar productId={product.id} priceFils={product.priceFils} compareAtPriceFils={product.compareAtPriceFils} accessText={accessText} />
       ) : null}
     </div>
   );

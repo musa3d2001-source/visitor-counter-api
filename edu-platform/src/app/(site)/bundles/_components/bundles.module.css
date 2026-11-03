@@ -1,0 +1,192 @@
+/* صفحة الباقات «الفصل المشمس»: شريط رأس كل صف بتدرّجه، وفن الرأس */
+.band {
+  position: relative;
+  isolation: isolate;
+  overflow: hidden;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 1rem 1.25rem;
+  min-height: 8.5rem;
+  padding: 1.25rem 1.25rem;
+  border-radius: 2rem;
+  color: #fff;
+  background:
+    radial-gradient(70% 90% at 10% 0%, rgb(255 255 255 / 0.32), transparent 60%),
+    linear-gradient(to left, var(--d), var(--b) 45%, var(--m, var(--a)));
+  box-shadow:
+    0 7px 0 color-mix(in oklab, var(--d) 70%, black),
+    0 30px 50px -28px var(--d);
+}
+@media (min-width: 640px) {
+  .band {
+    padding: 1.5rem 2rem;
+    border-radius: 2.25rem;
+  }
+}
+@media (min-width: 1024px) {
+  .band {
+    align-self: stretch;
+    flex-direction: column;
+    align-items: flex-start;
+    min-height: 22rem;
+    padding: 2rem 1.75rem 1.75rem;
+    border-radius: 2.25rem;
+    background:
+      radial-gradient(90% 60% at 20% 0%, rgb(255 255 255 / 0.32), transparent 60%),
+      linear-gradient(170deg, var(--m, var(--a)), var(--b) 55%, var(--d));
+  }
+  .band .art {
+    top: auto;
+    bottom: 4.5rem;
+    left: 0.75rem;
+    translate: none;
+    width: 8.5rem;
+    height: 8.5rem;
+  }
+}
+.band::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  background-image: radial-gradient(rgb(255 255 255 / 0.18) 1.5px, transparent 2px);
+  background-size: 16px 16px;
+  -webkit-mask-image: linear-gradient(to right, #000, transparent 70%);
+  mask-image: linear-gradient(to right, #000, transparent 70%);
+}
+.numBig {
+  display: grid;
+  place-items: center;
+  flex: none;
+  width: 4.75rem;
+  height: 4.75rem;
+  border-radius: 1.5rem;
+  font-family: var(--font-display);
+  font-weight: 900;
+  font-size: 3rem;
+  line-height: 1;
+  color: var(--d);
+  background: #fff;
+  box-shadow:
+    0 6px 0 color-mix(in oklab, var(--d) 40%, white),
+    0 16px 26px -12px rgb(0 0 0 / 0.45);
+  transform: rotate(-5deg);
+}
+.art {
+  position: absolute;
+  z-index: -1;
+  left: 1rem;
+  top: 50%;
+  width: 9rem;
+  height: 9rem;
+  translate: 0 -50%;
+  opacity: 0.95;
+}
+@media (max-width: 767px) {
+  .art {
+    left: -1.5rem;
+    width: 7rem;
+    height: 7rem;
+    opacity: 0.4;
+  }
+}
+.heroArt {
+  position: relative;
+  width: min(100%, 26rem);
+  aspect-ratio: 5 / 4;
+  margin-inline: auto;
+}
+.heroBlob {
+  position: absolute;
+  inset: 6% 8% 0;
+  border-radius: 46% 54% 48% 52% / 55% 45% 55% 45%;
+  background:
+    radial-gradient(70% 70% at 30% 20%, rgb(255 255 255 / 0.5), transparent 60%),
+    linear-gradient(150deg, #ffd25e, #ff9f43 45%, #9b5cf6);
+  box-shadow: 0 40px 60px -30px rgb(155 92 246 / 0.6);
+}
+.heroStack {
+  position: absolute;
+  inset: 2% 0 -4%;
+  filter: drop-shadow(0 18px 20px rgb(0 0 0 / 0.25));
+}
+.ribbon {
+  position: absolute;
+  z-index: 2;
+  top: 4%;
+  right: 0;
+  padding: 0.4rem 1rem;
+  border-radius: 1rem;
+  background: var(--accent);
+  color: var(--accent-ink);
+  font-family: var(--font-display);
+  font-weight: 800;
+  line-height: 1.5;
+  text-align: center;
+  transform: rotate(-6deg);
+  box-shadow:
+    0 14px 24px -10px rgb(0 0 0 / 0.45),
+    inset 0 -3px 0 rgb(0 0 0 / 0.08);
+}
+.ribbon b {
+  display: block;
+  font-weight: 900;
+  font-size: 1.35rem;
+}
+.jump {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.6rem;
+  min-height: 3rem;
+  padding: 0.3rem 0.4rem 0.3rem 1rem;
+  border-radius: 999px;
+  background: #fff;
+  font-family: var(--font-display);
+  font-weight: 800;
+  color: var(--color-ink);
+  box-shadow:
+    0 4px 0 color-mix(in oklab, var(--d) 35%, white),
+    var(--shadow-card);
+  transition: transform 0.15s;
+}
+.jump:hover {
+  transform: translateY(-2px);
+}
+.jump:active {
+  transform: translateY(2px);
+}
+.jumpNum {
+  width: 2.3rem !important;
+  height: 2.3rem !important;
+  border-radius: 0.8rem !important;
+  font-size: 1.25rem !important;
+}
+@media (prefers-reduced-motion: reduce) {
+  .jump:hover,
+  .jump:active {
+    transform: none;
+  }
+}
+.row {
+  display: grid;
+  gap: 1.75rem;
+  align-items: start;
+}
+@media (min-width: 1024px) {
+  .row {
+    grid-template-columns: 18.5rem minmax(0, 1fr);
+    gap: 2rem;
+  }
+}
+.grid {
+  display: grid;
+  gap: 1.5rem;
+  grid-template-columns: repeat(auto-fill, minmax(min(100%, 17.5rem), 1fr));
+}
+@media (min-width: 1024px) {
+  .grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+

@@ -1,27 +1,36 @@
-import Image from "next/image";
 import Link from "next/link";
-import { Check, CircleCheck, FileText, Lock, Play } from "lucide-react";
+import { BookOpenText, CirclePlay, Clock3, GraduationCap, Layers, Library, ListVideo, MonitorSmartphone, Play, ShieldCheck, Sparkles, Zap } from "lucide-react";
 import type { PlaylistGroup, ProductCard, ProductDetail, PublicFileInfo } from "@/server/catalog/queries";
-import { Button } from "@/components/ui/button";
-import { Price } from "@/components/ui/price";
 import { AddToCart } from "@/components/site/add-to-cart";
-import { posterTone } from "@/components/site/product-cover";
-import { ProductList } from "@/components/site/product-card";
+import { ProductGrid } from "@/components/site/product-card";
 import { TeacherAvatar } from "@/components/site/teacher-avatar";
-import { formatClock, formatTotalDuration, lessonsLabel } from "@/components/site/format";
-import { PRODUCT_TYPE_LABELS, termLabel } from "@/lib/labels";
-import { filsToKwdString } from "@/lib/money";
+import { SubjectIcon } from "@/components/art";
+import { PRODUCT_TYPE_LABELS } from "@/lib/labels";
+import { count, duration, gradeClass, gradeLevelFromSlug, toneClass, W } from "@/lib/design";
 import { formatDate } from "@/lib/utils";
+import { GlassChip, HeroStat, HeroStats, ProductHero } from "./_components/hero";
+import { BundleFanArt, VideoPosterArt } from "./_components/hero-art";
+import { MobileBuyBar, PurchasePanel, type TrustItem } from "./_components/purchase";
+import { FileList, LearnList, SectionPanel, WideHead } from "./_components/sections";
+import { LessonTimeline } from "./_components/lesson-timeline";
+import { includesLabel, shortTermLabel } from "./_components/labels";
 
 export function accessPeriodText(p: Pick<ProductDetail, "accessMode" | "accessUntil" | "accessDays">): string {
   if (p.accessMode === "until_date" && p.accessUntil) return `حتى ${formatDate(p.accessUntil)}`;
   if (p.accessMode === "days" && p.accessDays) {
     const d = p.accessDays;
-    const days = d === 1 ? "يوم واحد" : d === 2 ? "يومين" : d <= 10 ? `${d} أيام` : `${d} يومًا`;
+    const days = d === 1 ? "يوم واحد" : d === 2 ? "يومان" : count(d, W.day);
     return `${days} من تاريخ الشراء`;
   }
   return "بلا تاريخ انتهاء";
 }
+
+/** ضمانات صحيحة لمنتج الفيديو */
+export const VIDEO_TRUST: TrustItem[] = [
+  { icon: <ShieldCheck aria-hidden />, text: "دفع آمن عبر ماي فاتورة: كي نت أو بطاقة", bg: "#DEF8EE", fg: "#0A6F52" },
+  { icon: <Library aria-hidden />, text: "يظهر في مكتبتي فور تأكيد الدفع", bg: "#FFF0C7", fg: "#6E4700" },
+  { icon: <MonitorSmartphone aria-hidden />, text: "تكمل من حيث توقفت على أي جهاز", bg: "#E8EEFF", fg: "#2B33B5" },
+];
 
 /** صفحة منتج الفيديو (درس/وحدة/مراجعة/دورة/باقة فيها فيديوهات) */
 export function VideoProductView({
@@ -29,6 +38,7 @@ export function VideoProductView({
   playlist,
   included,
   bundles,
+  bundleItems,
   files,
   owned,
   isOwned,
@@ -36,11 +46,14 @@ export function VideoProductView({
   resumeLessonId,
   watchedIds,
   canBuy,
+  breadcrumbs,
 }: {
   product: ProductDetail;
   playlist: PlaylistGroup[];
   included: ProductCard[];
   bundles: ProductCard[];
+  /** محتويات الباقات التي تضم هذا المنتج (لتلوين أوراقها بموادها الحقيقية) */
+  bundleItems?: Map<string, ProductCard[]>;
   files: PublicFileInfo[];
   owned: Set<string>;
   isOwned: boolean;
@@ -48,6 +61,7 @@ export function VideoProductView({
   resumeLessonId: string | null;
   watchedIds: Set<string>;
   canBuy: boolean;
+  breadcrumbs: { label: string; href?: string }[];
 }) {
   const lessons = playlist.flatMap((g) => g.lessons);
   const firstLesson = lessons[0]?.id ?? null;
@@ -55,266 +69,189 @@ export function VideoProductView({
   const contents = product.contents.split("\n").map((l) => l.trim()).filter(Boolean);
   const mainFiles = files.filter((f) => f.kind === "main");
   const watchHref = `/watch/${product.id}${resumeLessonId ?? firstLesson ? `?lesson=${resumeLessonId ?? firstLesson}` : ""}`;
-  const facts = [
-    product.subjectName ?? "عدة مواد",
-    product.gradeName,
-    product.term ? termLabel(product.term).replace("الفصل الدراسي ", "الفصل ") : null,
-  ].filter(Boolean);
-  let n = 0;
+  const previewHref = product.previewLessonId ? `/watch/${product.id}?lesson=${product.previewLessonId}` : null;
+  const isBundle = product.type === "bundle";
+  const level = gradeLevelFromSlug(product.gradeSlug);
+  const tone = isBundle ? gradeClass(level) : toneClass(product.subjectSlug);
+  const typeLabel = PRODUCT_TYPE_LABELS[product.type];
+  const term = shortTermLabel(product.term);
+  const watchLabel = resumeLessonId ? "تابع المشاهدة" : "ابدأ المشاهدة";
+  const totalDur = duration(product.totalDurationSeconds);
+
+  const play = isOwned
+    ? { href: watchHref, label: watchLabel, testId: "continue-watching" }
+    : previewHref
+      ? { href: previewHref, label: "شاهد المعاينة المجانية", testId: "watch-preview" }
+      : null;
 
   return (
     <>
-      <header className="mt-6 max-w-3xl">
-        <p className="text-sm font-semibold text-brand-700">{PRODUCT_TYPE_LABELS[product.type]}</p>
-        <h1 className="mt-1 text-[clamp(2.1rem,5vw,3.3rem)]">{product.title}</h1>
-        {product.summary ? <p className="mt-3 text-lg leading-8 text-ink-soft">{product.summary}</p> : null}
-        <p className="mt-3 text-sm text-muted">{facts.join("، ")}</p>
-      </header>
-
-      <div className="mt-8 grid gap-8 lg:grid-cols-[minmax(0,1fr)_22rem] lg:gap-12">
-        <div className="min-w-0">
-          {/* شاشة المعاينة */}
-          <div className="relative aspect-video overflow-hidden rounded-lg bg-ink">
-            {product.thumbnailUrl ? (
-              <Image src={product.thumbnailUrl} alt="" fill priority sizes="(max-width: 1024px) 100vw, 760px" className="object-cover" />
-            ) : (
-              <div className="absolute inset-0 flex flex-col p-5 text-white sm:p-7" style={{ backgroundColor: posterTone(product.subjectName, product.gradeName) }} aria-hidden>
-                <span className="text-sm text-white/80">{product.gradeName}</span>
-                <span className="mt-1 font-display text-[clamp(2.4rem,7vw,4.5rem)] leading-none font-semibold">{product.subjectName ?? PRODUCT_TYPE_LABELS[product.type]}</span>
-              </div>
-            )}
-            <div className="absolute inset-x-0 bottom-0 flex flex-wrap items-end justify-between gap-3 bg-gradient-to-t from-black/55 to-transparent p-4 pt-16 sm:p-5 sm:pt-20">
-              {isOwned ? (
-                <Link
-                  href={watchHref}
-                  className="inline-flex min-h-12 items-center gap-2.5 rounded-lg bg-white px-5 font-semibold text-ink transition-colors hover:bg-accent-200"
-                  data-testid="continue-watching"
-                >
-                  <Play className="size-4 fill-current" aria-hidden /> {resumeLessonId ? "تابع المشاهدة" : "ابدأ المشاهدة"}
-                </Link>
-              ) : product.previewLessonId ? (
-                <Link
-                  href={`/watch/${product.id}?lesson=${product.previewLessonId}`}
-                  className="inline-flex min-h-12 items-center gap-2.5 rounded-lg bg-white px-5 font-semibold text-ink transition-colors hover:bg-accent-200"
-                  data-testid="watch-preview"
-                >
-                  <Play className="size-4 fill-current" aria-hidden /> شاهد المعاينة المجانية
-                </Link>
-              ) : (
-                <span />
-              )}
-              <span className="text-sm font-medium text-white">
-                {lessonsLabel(product.lessonCount)}
-                {product.totalDurationSeconds ? ` في ${formatTotalDuration(product.totalDurationSeconds)}` : ""}
+      <ProductHero
+        toneClass={tone}
+        breadcrumbs={breadcrumbs}
+        title={product.title}
+        summary={product.summary}
+        chips={
+          <>
+            <span className="chip chip-white">
+              {isBundle ? <Layers aria-hidden /> : <CirclePlay aria-hidden />}
+              {typeLabel}
+            </span>
+            <GlassChip icon={<GraduationCap aria-hidden />}>{product.gradeName}</GlassChip>
+            {product.subjectName ? <GlassChip icon={<SubjectIcon slug={product.subjectSlug} size={16} />}>{product.subjectName}</GlassChip> : null}
+            {term ? <GlassChip>{term}</GlassChip> : null}
+            {previewHref && !isOwned ? (
+              <span className="chip chip-gold">
+                <Sparkles aria-hidden /> معاينة مجانية
               </span>
+            ) : null}
+          </>
+        }
+        art={
+          isBundle ? (
+            <BundleFanArt level={level} items={included} priceFils={product.priceFils} compareAtPriceFils={isOwned ? null : product.compareAtPriceFils} />
+          ) : (
+            <VideoPosterArt
+              subjectSlug={product.subjectSlug}
+              coverUrl={product.coverUrl}
+              typeLabel={typeLabel}
+              teacherName={product.teacher?.name ?? product.teacherName}
+              teacherPhotoUrl={product.teacher?.photoUrl ?? product.teacherPhotoUrl}
+              priceFils={product.priceFils}
+              compareAtPriceFils={isOwned ? null : product.compareAtPriceFils}
+              play={play}
+              lessonsText={product.lessonCount > 0 ? count(product.lessonCount, W.lesson) : null}
+              hasPreview={!!previewHref && !isOwned}
+            />
+          )
+        }
+      >
+        {product.lessonCount > 0 || included.length ? (
+          <HeroStats>
+            {product.lessonCount > 0 ? <HeroStat icon={<ListVideo aria-hidden />}>{count(product.lessonCount, W.lesson)}</HeroStat> : null}
+            {totalDur ? <HeroStat icon={<Clock3 aria-hidden />}>{totalDur}</HeroStat> : null}
+            {included.length ? <HeroStat icon={<Layers aria-hidden />}>{includesLabel(included.length)}</HeroStat> : null}
+          </HeroStats>
+        ) : null}
+        {product.teacher ? (
+          <div className="flex flex-wrap items-center gap-3 rounded-3xl border border-white/22 bg-white/12 p-3 sm:max-w-[34rem]">
+            <TeacherAvatar name={product.teacher.name} photoUrl={product.teacher.photoUrl} size={56} subjectSlug={product.subjectSlug} ring decorative />
+            <div className="min-w-0 flex-[1_1_10rem]">
+              <p className="text-xs font-bold text-white/80">المعلم</p>
+              <p className="font-display text-lg leading-snug font-black text-white">{product.teacher.name}</p>
+              {product.teacher.headline ? <p className="text-sm leading-6 text-white/85">{product.teacher.headline}</p> : null}
             </div>
+            {product.teacher.slug ? (
+              <Link href={`/teachers/${product.teacher.slug}`} data-testid="teacher-link" className="btn btn-3d btn-light btn-md shrink-0">
+                صفحة المعلم
+              </Link>
+            ) : null}
           </div>
+        ) : null}
+      </ProductHero>
 
-          {product.teacher ? (
-            <div className="mt-6 flex items-center gap-4 border-b border-line pb-6">
-              <TeacherAvatar name={product.teacher.name} photoUrl={product.teacher.photoUrl} size={56} />
-              <div className="min-w-0 flex-1">
-                <p className="font-semibold">{product.teacher.name}</p>
-                {product.teacher.headline ? <p className="text-sm text-muted">{product.teacher.headline}</p> : null}
-              </div>
-              {product.teacher.slug ? (
-                <Link
-                  href={`/teachers/${product.teacher.slug}`}
-                  data-testid="teacher-link"
-                  className="shrink-0 text-sm font-semibold text-brand-700 underline decoration-brand-300 underline-offset-4 hover:decoration-brand-700"
-                >
-                  صفحة المعلم
-                </Link>
-              ) : null}
-            </div>
-          ) : null}
+      <div className={`${tone} mt-8 grid gap-8 lg:mt-0 lg:grid-cols-[minmax(0,1fr)_23rem] lg:gap-10 xl:grid-cols-[minmax(0,1fr)_24.5rem]`}>
+        {/* لوح الشراء: بعد البطل مباشرة على الجوال، ولاصق يسارًا متداخلًا مع البطل على الحاسوب */}
+        <aside className="relative z-10 h-full lg:col-start-2 lg:row-start-1 lg:-mt-24 lg:me-6 xl:me-8" aria-label="الشراء">
+          <div className="lg:sticky lg:top-24">
+            <PurchasePanel
+              toneClass={tone}
+              typeIcon={isBundle ? <Layers aria-hidden /> : <CirclePlay aria-hidden />}
+              typeLabel={typeLabel}
+              gradeName={[product.gradeName, product.subjectName].filter(Boolean).join(" · ")}
+              priceFils={product.priceFils}
+              compareAtPriceFils={product.compareAtPriceFils}
+              bundleSaving={included.length && itemsValue > product.priceFils ? { fils: itemsValue - product.priceFils, label: "مقارنة بالشراء المنفرد" } : null}
+              owned={isOwned ? { until: ownedUntil, href: watchHref, label: watchLabel, icon: <Play className="fill-current" aria-hidden /> } : null}
+              buy={canBuy ? <AddToCart productId={product.id} /> : null}
+              preview={!isOwned && previewHref ? { href: previewHref, label: "شاهد المعاينة المجانية", icon: <Play className="fill-current" aria-hidden /> } : null}
+              accessText={accessPeriodText(product)}
+              trust={VIDEO_TRUST}
+            />
+          </div>
+        </aside>
 
+        <div className="min-w-0 space-y-6 lg:col-start-1 lg:row-start-1 lg:pt-8">
           {contents.length ? (
-            <section className="mt-8" aria-labelledby="learn">
-              <h2 id="learn" className="text-[1.9rem]">
-                ماذا ستتعلم
-              </h2>
-              <ul className="mt-3 grid gap-x-8 gap-y-2.5 sm:grid-cols-2">
-                {contents.map((c) => (
-                  <li key={c} className="flex items-start gap-2.5 leading-7 text-ink-soft">
-                    <Check className="mt-1.5 size-4 shrink-0 text-brand-600" aria-hidden /> {c}
-                  </li>
-                ))}
-              </ul>
-            </section>
+            <SectionPanel id="learn" title="ماذا ستتعلم" icon={<Zap aria-hidden />}>
+              <LearnList items={contents} />
+            </SectionPanel>
           ) : null}
 
           {product.description ? (
-            <section className="mt-8" aria-labelledby="about">
-              <h2 id="about" className="text-[1.9rem]">
-                عن {PRODUCT_TYPE_LABELS[product.type]}
-              </h2>
-              <p className="mt-2 max-w-[68ch] leading-8 whitespace-pre-line text-ink-soft">{product.description}</p>
-            </section>
+            <SectionPanel id="about" title={`عن ${typeLabel}`} icon={<BookOpenText aria-hidden />}>
+              <p className="max-w-[68ch] text-[1.05rem] leading-9 whitespace-pre-line text-ink-soft">{product.description}</p>
+            </SectionPanel>
           ) : null}
 
           {/* جدول الدروس: الترقيم هنا تسلسل فعلي لترتيب المشاهدة */}
           {playlist.length ? (
-            <section className="mt-10" aria-labelledby="lessons-title">
-              <div className="flex items-baseline justify-between gap-4">
-                <h2 id="lessons-title" className="text-[1.9rem]">
-                  الدروس
-                </h2>
-                <span className="text-sm text-muted">
-                  {lessonsLabel(lessons.length)}
-                  {product.totalDurationSeconds ? ` في ${formatTotalDuration(product.totalDurationSeconds)}` : ""}
-                </span>
-              </div>
-              <div className="mt-3 space-y-6">
-                {playlist.map((g) => (
-                  <div key={g.key}>
-                    {playlist.length > 1 || g.title !== product.title ? (
-                      <h3 className="flex items-baseline justify-between gap-3 border-b-2 border-ink pb-2 text-[0.98rem] font-semibold">
-                        <span>{g.title}</span>
-                        <span className="text-xs font-normal text-muted">{formatTotalDuration(g.lessons.reduce((s, l) => s + (l.durationSeconds ?? 0), 0))}</span>
-                      </h3>
-                    ) : (
-                      <div className="border-b-2 border-ink" />
-                    )}
-                    <ol>
-                      {g.lessons.map((l) => {
-                        n += 1;
-                        const open = isOwned || l.isFreePreview;
-                        const watched = watchedIds.has(l.id);
-                        return (
-                          <li key={l.id} data-testid="lesson-item" className="border-b border-line">
-                            <Link
-                              href={`/watch/${product.id}?lesson=${l.id}`}
-                              className="group grid min-h-14 grid-cols-[2rem_1fr_auto_3.5rem] items-center gap-3 py-2.5 text-[0.95rem] transition-colors hover:bg-mist sm:px-2"
-                              aria-label={`${l.title}${open ? "" : "، مقفل"}`}
-                            >
-                              <span className="num text-center text-sm text-muted">{n}</span>
-                              <span className={open ? "font-semibold group-hover:text-brand-700" : "text-ink-soft"}>{l.title}</span>
-                              <span className="flex items-center">
-                                {watched ? (
-                                  <CircleCheck className="size-4.5 text-success" aria-label="تمت المشاهدة" />
-                                ) : l.isFreePreview && !isOwned ? (
-                                  <span className="rounded-md bg-accent-200 px-2 py-0.5 text-xs font-semibold text-ink">مجاني</span>
-                                ) : open ? (
-                                  <Play className="size-3.5 text-brand-600 fill-current" aria-hidden />
-                                ) : (
-                                  <Lock className="size-4 text-muted" aria-label="مقفل" data-testid="lesson-locked" />
-                                )}
-                              </span>
-                              <span className="num text-end text-sm text-muted">{formatClock(l.durationSeconds)}</span>
-                            </Link>
-                          </li>
-                        );
-                      })}
-                    </ol>
-                  </div>
-                ))}
-              </div>
-            </section>
+            <SectionPanel
+              id="lessons-title"
+              title="الدروس"
+              icon={<ListVideo aria-hidden />}
+              aside={
+                <>
+                  <span className="chip">{count(lessons.length, W.lesson)}</span>
+                  {totalDur ? (
+                    <span className="chip">
+                      <Clock3 aria-hidden /> {totalDur}
+                    </span>
+                  ) : null}
+                </>
+              }
+            >
+              <LessonTimeline
+                productId={product.id}
+                isOwned={isOwned}
+                watchedIds={watchedIds}
+                groups={playlist.map((g) => ({
+                  key: g.key,
+                  title: playlist.length > 1 || g.title !== product.title ? g.title : null,
+                  lessons: g.lessons,
+                }))}
+              />
+            </SectionPanel>
           ) : null}
 
           {mainFiles.length ? (
-            <section className="mt-10" aria-labelledby="files">
-              <h2 id="files" className="text-[1.9rem]">
-                ملفات مرفقة
-              </h2>
-              <ul className="mt-3 border-t-2 border-ink">
-                {mainFiles.map((f) => (
-                  <li key={f.id} className="flex min-h-12 items-center gap-3 border-b border-line py-2.5 text-[0.95rem]">
-                    <FileText className="size-4.5 text-brand-600" aria-hidden />
-                    <span className="flex-1 font-semibold">{f.title}</span>
-                    {f.pageCount ? (
-                      <span className="text-sm text-muted">
-                        <span className="num">{f.pageCount}</span> صفحة
-                      </span>
-                    ) : null}
-                  </li>
-                ))}
-              </ul>
-            </section>
+            <SectionPanel id="files" title="ملفات مرفقة" icon={<BookOpenText aria-hidden />}>
+              <FileList files={mainFiles.map((f) => ({ id: f.id, title: f.title, pages: f.pageCount ? count(f.pageCount, W.page) : null }))} />
+            </SectionPanel>
           ) : null}
-        </div>
 
-        {/* لوحة الشراء */}
-        <aside className="h-fit lg:sticky lg:top-24" aria-label="الشراء">
-          <div className="rounded-lg bg-mist p-5 sm:p-6">
-            {isOwned ? (
-              <>
-                <p className="font-semibold text-success">في مكتبتك</p>
-                {ownedUntil ? <p className="mt-1 text-sm text-ink-soft">متاح حتى {formatDate(ownedUntil)}</p> : null}
-                <Button asChild size="lg" className="mt-4 w-full">
-                  <Link href={watchHref}>
-                    <Play className="fill-current" aria-hidden /> {resumeLessonId ? "تابع المشاهدة" : "ابدأ المشاهدة"}
-                  </Link>
-                </Button>
-              </>
-            ) : (
-              <>
-                <Price fils={product.priceFils} compareAt={product.compareAtPriceFils} size="lg" />
-                {included.length && itemsValue > product.priceFils ? (
-                  <p className="mt-1 text-sm font-semibold text-brand-700">
-                    توفّر <span className="num">{filsToKwdString(itemsValue - product.priceFils)}</span> د.ك مقارنة بالشراء المنفرد
-                  </p>
-                ) : null}
-                {canBuy ? (
-                  <div className="mt-5">
-                    <AddToCart productId={product.id} />
-                  </div>
-                ) : null}
-              </>
-            )}
-            <dl className="mt-5 space-y-2.5 border-t border-line-strong pt-4 text-sm">
-              <div className="flex justify-between gap-4">
-                <dt className="text-muted">مدة الوصول</dt>
-                <dd className="text-end font-medium" data-testid="access-period">
-                  {accessPeriodText(product)}
-                </dd>
-              </div>
-              <div className="flex justify-between gap-4">
-                <dt className="text-muted">المشاهدة</dt>
-                <dd className="text-end font-medium">فور تأكيد الدفع</dd>
-              </div>
-              <div className="flex justify-between gap-4">
-                <dt className="text-muted">الدفع</dt>
-                <dd className="text-end font-medium">كي نت أو بطاقة</dd>
-              </div>
-            </dl>
-            <p className="mt-4 text-xs leading-6 text-muted">تكمل من حيث توقفت على أي جهاز.</p>
-          </div>
-        </aside>
+        </div>
       </div>
 
       {included.length ? (
-        <section className="mt-14" aria-labelledby="included">
-          <h2 id="included" className="text-[clamp(1.7rem,3vw,2.3rem)]">
-            {product.type === "bundle" ? "تشمل الباقة" : "أجزاء الدورة"}
-          </h2>
-          <p className="mt-1 mb-4 text-muted">{product.type === "bundle" ? "كل ما تحصل عليه عند شراء الباقة." : "تحتاج جزءًا واحدًا فقط؟ كل جزء متاح للشراء وحده."}</p>
-          <ProductList products={included} ownedIds={owned} />
+        <section className="mt-16" aria-labelledby="included">
+          <WideHead
+            id="included"
+            eyebrow={isBundle ? "محتوى الباقة" : "اشترِ جزءًا وحده"}
+            eyebrowIcon={<Layers aria-hidden />}
+            tone="eyebrow-violet"
+            title={isBundle ? "تشمل الباقة" : "أجزاء الدورة"}
+            sub={isBundle ? "كل ما تحصل عليه عند شراء الباقة." : "تحتاج جزءًا واحدًا فقط؟ كل جزء متاح للشراء وحده."}
+          />
+          <ProductGrid products={included} ownedIds={owned} />
         </section>
       ) : null}
 
       {bundles.length ? (
-        <section className="mt-14" aria-labelledby="in-bundles">
-          <h2 id="in-bundles" className="text-[clamp(1.7rem,3vw,2.3rem)]">
-            متوفر أيضًا ضمن باقة
-          </h2>
-          <p className="mt-1 mb-4 text-muted">الباقة تضم هذا المحتوى مع محتوى آخر. قارن ما تشمله قبل الاختيار.</p>
-          <ProductList products={bundles} ownedIds={owned} />
+        <section className="mt-16" aria-labelledby="in-bundles">
+          <WideHead
+            id="in-bundles"
+            eyebrow="وفّر أكثر"
+            eyebrowIcon={<Sparkles aria-hidden />}
+            tone="eyebrow-gold"
+            title="متوفر أيضًا ضمن باقة"
+            sub="الباقة تضم هذا المحتوى مع محتوى آخر. قارن ما تشمله قبل الاختيار."
+          />
+          <ProductGrid products={bundles} ownedIds={owned} itemsById={bundleItems} />
         </section>
       ) : null}
 
-      {!isOwned && canBuy ? (
-        <div className="fixed inset-x-0 bottom-0 z-30 border-t border-line bg-surface p-3 lg:hidden no-print">
-          <div className="mx-auto flex max-w-6xl items-center gap-3">
-            <div className="shrink-0">
-              <Price fils={product.priceFils} compareAt={product.compareAtPriceFils} size="md" showPercent={false} />
-              <p className="text-[0.7rem] text-muted">{accessPeriodText(product)}</p>
-            </div>
-            <AddToCart productId={product.id} compact className="flex-1" />
-          </div>
-        </div>
-      ) : null}
+      {!isOwned && canBuy ? <MobileBuyBar productId={product.id} priceFils={product.priceFils} compareAtPriceFils={product.compareAtPriceFils} accessText={accessPeriodText(product)} /> : null}
     </>
   );
 }

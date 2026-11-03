@@ -36,13 +36,13 @@ export function VideoPlayer({ lessonId, src, embedUrl, startAt, trackProgress, w
 
   if (embedUrl) {
     return (
-      <div className="relative aspect-video w-full overflow-hidden rounded-lg bg-black">
+      <div className="relative aspect-video w-full overflow-hidden rounded-[1.25rem] bg-black">
         <iframe src={embedUrl} className="absolute inset-0 h-full w-full" allow="accelerometer; gyroscope; encrypted-media; picture-in-picture; fullscreen" allowFullScreen title="درس الفيديو" />
       </div>
     );
   }
   return (
-    <div className="relative aspect-video w-full overflow-hidden rounded-lg bg-black" onContextMenu={(e) => e.preventDefault()}>
+    <div className="relative aspect-video w-full overflow-hidden rounded-[1.25rem] bg-black" onContextMenu={(e) => e.preventDefault()}>
       <video
         ref={ref}
         src={src}

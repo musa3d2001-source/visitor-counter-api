@@ -2,16 +2,22 @@ import type { Metadata } from "next";
 import type * as React from "react";
 import Link from "next/link";
 import { redirect } from "next/navigation";
+import { ArrowRight, Lock, Package, Ticket, Wallet } from "lucide-react";
 import { requireUser } from "@/server/auth/guards";
 import { computeCart, getCartIds } from "@/server/commerce/cart";
 import { evaluateCoupon } from "@/server/commerce/coupons";
 import { getPaymentMethods, paymentsConfig, type PaymentMethodOption } from "@/server/payments/service";
 import { getSettings } from "@/server/platform/settings";
-import { Breadcrumbs } from "@/components/ui/breadcrumbs";
 import { Alert } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/form";
+import { PageHeader, StatPill } from "@/components/ui/page-header";
+import { ProductCover } from "@/components/site/product-cover";
+import { PRODUCT_TYPE_LABELS } from "@/lib/labels";
 import { filsToKwdString } from "@/lib/money";
+import { ar, initial, W } from "@/lib/design";
+import { cn } from "@/lib/utils";
+import { Kwd, SumRow, TiltedPosters, pillParts } from "../cart/_components/commerce";
 import { CheckoutForm } from "./checkout-form";
 
 export const metadata: Metadata = { title: "إتمام الشراء", robots: { index: false } };
@@ -41,103 +47,148 @@ export default async function CheckoutPage({ searchParams }: { searchParams: Pro
   }
 
   return (
-    <div className="mx-auto max-w-5xl px-4 pt-6 pb-8">
-      <Breadcrumbs items={[{ label: "السلة", href: "/cart" }, { label: "إتمام الشراء" }]} />
-      <h1 className="mt-6 text-[clamp(2.2rem,5vw,3.2rem)]">إتمام الشراء</h1>
-      <div className="mt-6 grid gap-8 lg:grid-cols-[minmax(0,1fr)_21rem] lg:gap-12">
-        <ol className="flex flex-col gap-8">
-          <CheckoutStep n={1} title="الحساب">
-            <p className="text-ink-soft">
-              {user.fullName}، <span dir="ltr">{user.email}</span>
-            </p>
-            <p className="mt-1 text-sm text-muted">تُضاف المشتريات إلى مكتبة هذا الحساب.</p>
-          </CheckoutStep>
+    <>
+      <PageHeader
+        breadcrumbs={[{ label: "السلة", href: "/cart" }, { label: "إتمام الشراء" }]}
+        eyebrow={{ icon: <Lock />, label: total > 0 ? "دفع آمن" : "طلب مجاني", tone: "teal" }}
+        title="إتمام الشراء"
+        sub={total > 0 ? "ثلاث خطوات قصيرة، ثم ننقلك إلى صفحة الدفع الآمنة لإتمام العملية." : "ثلاث خطوات قصيرة، ويُضاف المحتوى إلى مكتبتك مباشرة."}
+        aside={
+          <TiltedPosters
+            items={cart.payableLines.map((l) => ({ key: l.id, title: l.title, type: l.type, subjectName: l.subjectName, subjectSlug: l.subjectSlug, gradeName: l.gradeName, coverUrl: l.coverUrl }))}
+            coin={{ label: "الإجمالي", value: filsToKwdString(total), unit: "د.ك" }}
+          />
+        }
+      >
+        <div className="flex flex-wrap gap-3">
+          <StatPill icon={<Package />} tone="teal" {...pillParts(cart.payableLines.length, W.product)} />
+          <StatPill icon={<Wallet />} tone="gold" num={<span className="num">{filsToKwdString(total)}</span>} label="د.ك" />
+        </div>
+      </PageHeader>
 
-          <CheckoutStep n={2} title="كود الخصم">
-            <form method="get" className="flex max-w-md gap-2">
-              <Input name="coupon" defaultValue={couponCode} placeholder="أدخل الكود" dir="ltr" className="flex-1 uppercase" aria-label="كود الخصم" />
-              <Button type="submit" variant="outline">
-                تطبيق
-              </Button>
-            </form>
-            {coupon && !coupon.ok ? <p className="mt-2 text-sm text-danger" role="alert">{coupon.error}</p> : null}
-            {coupon?.ok ? <p className="mt-2 text-sm text-success" role="status">تم تطبيق الخصم بنجاح.</p> : null}
-          </CheckoutStep>
-
-          <CheckoutStep n={3} title={total > 0 ? "الدفع" : "التأكيد"}>
-            <div className="flex flex-col gap-4">
-              {total > 0 && !cfg.enabled ? (
-                <Alert tone="warning" title="الدفع الإلكتروني غير متاح حاليًا">
-                  {cfg.reason}.{" "}
-                  {settings.whatsapp_number ? (
-                    <a href={`https://wa.me/${settings.whatsapp_number.replace(/\D/g, "")}`} target="_blank" rel="noopener noreferrer">
-                      تواصل معنا عبر واتساب
-                    </a>
-                  ) : (
-                    <Link href="/contact">تواصل معنا</Link>
-                  )}{" "}
-                  لإتمام طلبك.
-                </Alert>
-              ) : null}
-              {methodsError ? <Alert tone="warning">تعذر تحميل وسائل الدفع، وستظهر كل الوسائل المتاحة في صفحة الدفع.</Alert> : null}
-              <CheckoutForm
-                coupon={coupon?.ok ? couponCode : ""}
-                total={total}
-                methods={methods}
-                disabled={total > 0 && !cfg.enabled}
-                sandbox={cfg.enabled && cfg.environment === "sandbox"}
-              />
-            </div>
-          </CheckoutStep>
-        </ol>
-
-        <aside className="h-fit rounded-lg bg-mist p-5 sm:p-6 lg:sticky lg:top-24" aria-labelledby="summary">
-          <h2 id="summary" className="text-[1.7rem]">
-            ملخص الطلب
-          </h2>
-          <ul className="mt-4 space-y-2 text-sm">
-            {cart.payableLines.map((l) => (
-              <li key={l.id} className="flex justify-between gap-3">
-                <span className="text-ink-soft">{l.title}</span>
-                <span className="num shrink-0 font-semibold">{filsToKwdString(l.priceFils)}</span>
-              </li>
-            ))}
-          </ul>
-          <dl className="mt-4 space-y-2 border-t border-line-strong pt-4 text-sm">
-            <div className="flex justify-between">
-              <dt className="text-muted">المجموع</dt>
-              <dd className="num">{filsToKwdString(cart.subtotalFils)} د.ك</dd>
-            </div>
-            {discount ? (
-              <div className="flex justify-between text-success">
-                <dt>الخصم</dt>
-                <dd className="num">−{filsToKwdString(discount)} د.ك</dd>
+      <div className="mx-auto max-w-7xl px-4 pb-16 sm:px-6">
+        <div className="grid gap-8 lg:grid-cols-[minmax(0,1fr)_24rem] lg:gap-10">
+          <ol className="flex min-w-0 flex-col gap-6">
+            <CheckoutStep n={1} title="الحساب" tone="grade-7">
+              <div className="flex items-center gap-3.5">
+                <span className="grid size-13 shrink-0 place-items-center rounded-full bg-linear-to-br from-brand-400 to-brand-600 font-display text-[1.4rem] font-black text-white shadow-[0_4px_0_var(--brand-edge)]" aria-hidden>
+                  {initial(user.fullName)}
+                </span>
+                <div className="min-w-0">
+                  <p className="font-display text-[1.08rem] font-extrabold text-ink">{user.fullName}</p>
+                  <p className="truncate text-[0.95rem] text-ink-soft" dir="ltr">
+                    {user.email}
+                  </p>
+                </div>
               </div>
-            ) : null}
-            <div className="flex items-baseline justify-between border-t border-line-strong pt-3">
-              <dt className="font-semibold">الإجمالي</dt>
-              <dd className="text-2xl font-bold" data-testid="checkout-total">
-                <span className="num">{filsToKwdString(total)}</span> <span className="text-sm font-semibold text-muted">د.ك</span>
-              </dd>
+              <p className="mt-3 text-[0.92rem] text-muted">تُضاف المشتريات إلى مكتبة هذا الحساب.</p>
+            </CheckoutStep>
+
+            <CheckoutStep n={2} title="كود الخصم" tone="grade-6">
+              <form method="get" className="flex max-w-lg gap-2.5">
+                <div className="relative min-w-0 flex-1">
+                  <Ticket className="pointer-events-none absolute start-3.5 top-1/2 size-5 -translate-y-1/2 text-accent-800" aria-hidden />
+                  <Input name="coupon" defaultValue={couponCode} placeholder="أدخل الكود" dir="ltr" className="w-full pe-11 uppercase" aria-label="كود الخصم" />
+                </div>
+                <Button type="submit" variant="accent">
+                  تطبيق
+                </Button>
+              </form>
+              {coupon && !coupon.ok ? (
+                <p className="mt-3 inline-flex rounded-full bg-danger-50 px-3.5 py-1.5 text-[0.92rem] font-semibold text-danger" role="alert">
+                  {coupon.error}
+                </p>
+              ) : null}
+              {coupon?.ok ? (
+                <p className="mt-3 inline-flex rounded-full bg-success-50 px-3.5 py-1.5 text-[0.92rem] font-semibold text-success" role="status">
+                  تم تطبيق الخصم بنجاح.
+                </p>
+              ) : null}
+            </CheckoutStep>
+
+            <CheckoutStep n={3} title={total > 0 ? "الدفع" : "التأكيد"} tone="grade-8">
+              <div className="flex flex-col gap-4">
+                {total > 0 && !cfg.enabled ? (
+                  <Alert tone="warning" title="الدفع الإلكتروني غير متاح حاليًا">
+                    {cfg.reason}.{" "}
+                    {settings.whatsapp_number ? (
+                      <a href={`https://wa.me/${settings.whatsapp_number.replace(/\D/g, "")}`} target="_blank" rel="noopener noreferrer">
+                        تواصل معنا عبر واتساب
+                      </a>
+                    ) : (
+                      <Link href="/contact">تواصل معنا</Link>
+                    )}{" "}
+                    لإتمام طلبك.
+                  </Alert>
+                ) : null}
+                {methodsError ? <Alert tone="warning">تعذر تحميل وسائل الدفع، وستظهر كل الوسائل المتاحة في صفحة الدفع.</Alert> : null}
+                <CheckoutForm
+                  coupon={coupon?.ok ? couponCode : ""}
+                  total={total}
+                  methods={methods}
+                  disabled={total > 0 && !cfg.enabled}
+                  sandbox={cfg.enabled && cfg.environment === "sandbox"}
+                />
+              </div>
+            </CheckoutStep>
+          </ol>
+
+          <aside className="panel panel-rainbow h-fit p-6 pt-9 sm:p-7 sm:pt-10 lg:sticky lg:top-28" aria-labelledby="summary">
+            <div className="flex items-center justify-between gap-3">
+              <h2 id="summary" className="font-display text-[1.6rem] font-black">
+                ملخص الطلب
+              </h2>
+              <span className="chip chip-mint">{ar(cart.payableLines.length)}</span>
             </div>
-          </dl>
-        </aside>
+            <ul className="mt-5 space-y-3">
+              {cart.payableLines.map((l) => (
+                <li key={l.id} className="flex items-center gap-3">
+                  <ProductCover coverUrl={l.coverUrl} title={l.title} type={l.type} subjectName={l.subjectName} subjectSlug={l.subjectSlug} gradeName={l.gradeName} sizes="52px" compact className="size-13 shrink-0 rounded-[0.9rem]" />
+                  <span className="min-w-0 flex-1">
+                    <span className="block text-[0.95rem] leading-6 font-bold text-ink">{l.title}</span>
+                    <span className="block text-[0.8rem] text-muted">{PRODUCT_TYPE_LABELS[l.type]}</span>
+                  </span>
+                  <span className="num shrink-0 font-display font-extrabold">{filsToKwdString(l.priceFils)}</span>
+                </li>
+              ))}
+            </ul>
+            <dl className="mt-5 space-y-3 border-t-2 border-dashed border-line-strong pt-5">
+              <SumRow label="المجموع">
+                <span className="num">{filsToKwdString(cart.subtotalFils)}</span> د.ك
+              </SumRow>
+              {discount ? (
+                <SumRow label={`الخصم${coupon?.ok ? ` (${couponCode.toUpperCase()})` : ""}`} tone="success">
+                  <span className="num">−{filsToKwdString(discount)}</span> د.ك
+                </SumRow>
+              ) : null}
+              <div className="flex items-baseline justify-between gap-3 rounded-2xl bg-brand-50 px-4 py-3">
+                <dt className="font-display text-lg font-extrabold text-brand-800">الإجمالي</dt>
+                <dd data-testid="checkout-total">
+                  <Kwd fils={total} className="text-[2rem] text-brand-800" unitClassName="text-[0.5em]" />
+                </dd>
+              </div>
+            </dl>
+            <Link href="/cart" className="btn btn-ghost btn-sm mt-4 text-brand-800">
+              <ArrowRight aria-hidden /> تعديل السلة
+            </Link>
+          </aside>
+        </div>
       </div>
-    </div>
+    </>
   );
 }
 
-/** خطوات الشراء متسلسلة فعلًا، لذا الترقيم هنا معلومة لا زينة */
-function CheckoutStep({ n, title, children }: { n: number; title: string; children: React.ReactNode }) {
+/** خطوات الشراء متسلسلة فعلًا، لذا الترقيم هنا معلومة لا زينة (رقم عربي في مربع ملون) */
+function CheckoutStep({ n, title, tone, children }: { n: number; title: string; tone: string; children: React.ReactNode }) {
   return (
-    <li className="grid grid-cols-[2.25rem_1fr] gap-x-3 border-t-2 border-ink pt-4 sm:grid-cols-[3rem_1fr]">
-      <span className="font-display text-[2.4rem] leading-[0.9] font-medium text-brand-700" aria-hidden>
-        {"٠١٢٣٤٥٦٧٨٩"[n]}
-      </span>
-      <div className="min-w-0">
-        <h2 className="text-[1.6rem] leading-tight">{title}</h2>
-        <div className="mt-3">{children}</div>
+    <li className={cn("tile-3d p-5 sm:p-7", tone)}>
+      <div className="flex items-center gap-3.5">
+        <span className="num-tile shadow-[inset_0_-3px_0_rgb(0_0_0/0.12),0_8px_16px_-8px_var(--d)]" aria-hidden>
+          {ar(n)}
+        </span>
+        <h2 className="font-display text-[1.45rem] leading-tight font-black sm:text-[1.6rem]">{title}</h2>
       </div>
+      <div className="mt-5">{children}</div>
     </li>
   );
 }

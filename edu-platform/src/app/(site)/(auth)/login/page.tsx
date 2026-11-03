@@ -5,6 +5,7 @@ import { Alert } from "@/components/ui/alert";
 import { getCurrentUser } from "@/server/auth/session";
 import { safeNextPath } from "@/lib/utils";
 import { LoginForm } from "./login-form";
+import { MobilePerks } from "../_components/auth-bits";
 
 export const metadata: Metadata = { title: "تسجيل الدخول", robots: { index: false } };
 
@@ -25,6 +26,7 @@ export default async function LoginPage({ searchParams }: { searchParams: Promis
         </Alert>
       ) : null}
       <LoginForm next={next} />
+      <MobilePerks />
     </AuthCard>
   );
 }

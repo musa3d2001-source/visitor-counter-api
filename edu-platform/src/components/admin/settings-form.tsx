@@ -2,12 +2,15 @@
 
 import { usePreservingAction } from "./use-preserving-action";
 import { useState } from "react";
-import { ArrowDown, ArrowUp, Plus, Trash2 } from "lucide-react";
+import { ArrowDown, ArrowUp, BookOpen, CircleHelp, Palette, Percent, Phone, Plus, Sparkles, Trash2, Type } from "lucide-react";
+import { ToneIcon } from "./icon-tile";
+import type { AdminTone } from "./tones";
 import type { ActionState } from "@/lib/action-state";
 import { Alert } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
 import { Checkbox, Field, Input, Textarea } from "@/components/ui/form";
 import { SubmitButton } from "@/components/ui/submit-button";
+import { ar } from "@/lib/design";
 
 type ServerAction = (prev: ActionState, fd: FormData) => Promise<ActionState>;
 
@@ -32,13 +35,34 @@ export type SettingsValues = {
   footer_note: string;
 };
 
-function Card({ title, children }: { title: string; children: React.ReactNode }) {
+const PREVIEW_VARS = (primary: string, accent: string) =>
+  ({
+    "--brand": primary,
+    "--accent": accent,
+    // الدرجات المشتقة تُحسب على :root؛ نعيد تعريفها هنا حتى تتبع المعاينة اللونين المختارين
+    "--brand-hi": "color-mix(in oklab, var(--brand) 62%, #4fe3d2)",
+    "--brand-glow": "color-mix(in oklab, var(--brand) 22%, #c4fff0)",
+    "--brand-edge": "color-mix(in oklab, var(--brand) 72%, black)",
+    "--brand-deep": "color-mix(in oklab, var(--brand) 58%, black)",
+    "--accent-hi": "color-mix(in oklab, var(--accent) 70%, #fff3c4)",
+    "--accent-edge": "color-mix(in oklab, var(--accent) 80%, #a35f00)",
+    "--accent-text": "color-mix(in oklab, var(--accent) 38%, #4a2c00)",
+    "--accent-ink": "color-mix(in oklab, var(--accent) 14%, #231600)",
+  }) as React.CSSProperties;
+
+function Card({ title, icon, tone = "teal", description, children }: { title: string; icon: React.ReactNode; tone?: AdminTone; description?: string; children: React.ReactNode }) {
   return (
-    <fieldset className="rounded-lg border border-line bg-surface p-4 sm:p-6">
+    <fieldset className="min-w-0 rounded-[1.75rem] border border-[rgb(23_32_38/0.06)] bg-surface p-4 shadow-card sm:p-6">
       <legend className="sr-only">{title}</legend>
-      <h2 className="mb-4 text-lg font-bold" aria-hidden>
-        {title}
-      </h2>
+      <div className="mb-5 flex items-center gap-3" aria-hidden>
+        <ToneIcon tone={tone} size="sm">
+          {icon}
+        </ToneIcon>
+        <div className="min-w-0">
+          <h2 className="font-display text-[1.2rem] leading-snug font-black text-ink sm:text-[1.3rem]">{title}</h2>
+          {description ? <p className="mt-0.5 text-[0.85rem] leading-6 text-muted">{description}</p> : null}
+        </div>
+      </div>
       {children}
     </fieldset>
   );
@@ -62,7 +86,7 @@ export function SettingsForm({ action, values }: { action: ServerAction; values:
 
   return (
     <form ref={formRef} action={formAction} className="space-y-6">
-      <Card title="الهوية والنصوص">
+      <Card title="الهوية والنصوص" icon={<Type />} tone="teal" description="اسم المنصة وعبارات الصفحة الرئيسية والتذييل.">
         <div className="grid gap-4 sm:grid-cols-2">
           <Field label="اسم المنصة" htmlFor="site_name" error={fe.site_name} required>
             <Input id="site_name" name="site_name" defaultValue={values.site_name} maxLength={60} />
@@ -82,37 +106,60 @@ export function SettingsForm({ action, values }: { action: ServerAction; values:
         </div>
       </Card>
 
-      <Card title="الألوان">
-        <div className="grid gap-6 sm:grid-cols-2">
+      <Card title="الألوان" icon={<Palette />} tone="pink" description="لون الهوية الأساسي واللون المساعد (الذهبي)، تُشتق منهما بقية الدرجات تلقائيًا.">
+        <div className="grid gap-4 sm:grid-cols-2">
           {[
             { id: "primary_color", label: "اللون الأساسي", value: primary, set: setPrimary },
             { id: "accent_color", label: "اللون المساعد", value: accent, set: setAccent },
           ].map((c) => (
             <Field key={c.id} label={c.label} htmlFor={c.id} error={fe[c.id]}>
-              <div className="flex items-center gap-3">
-                <input type="color" id={c.id} value={c.value} onChange={(e) => c.set(e.target.value)} className="h-11 w-14 cursor-pointer rounded-lg border border-line-strong bg-surface p-1" />
-                <Input name={c.id} value={c.value} onChange={(e) => c.set(e.target.value)} dir="ltr" className="num w-32 text-start" pattern="#[0-9a-fA-F]{6}" aria-label={`${c.label} (HEX)`} />
+              <div className="flex items-center gap-3 rounded-2xl border border-line bg-field p-2">
+                <input
+                  type="color"
+                  id={c.id}
+                  value={c.value}
+                  onChange={(e) => c.set(e.target.value)}
+                  className="h-12 w-16 shrink-0 cursor-pointer rounded-xl border-2 border-white bg-surface p-0.5 shadow-[0_3px_0_var(--color-line-strong)]"
+                />
+                <Input name={c.id} value={c.value} onChange={(e) => c.set(e.target.value)} dir="ltr" className="num min-w-0 flex-1 text-start" pattern="#[0-9a-fA-F]{6}" aria-label={`${c.label} (HEX)`} />
               </div>
             </Field>
           ))}
         </div>
-        <div className="mt-5 rounded-lg border border-line p-4" style={{ "--brand": primary, "--accent": accent } as React.CSSProperties} aria-label="معاينة الألوان">
-          <p className="mb-3 text-xs font-semibold text-muted">معاينة مباشرة</p>
-          <div className="flex flex-wrap items-center gap-3">
-            <span className="inline-flex h-10 items-center rounded-lg bg-brand-600 px-4 text-sm font-semibold text-white">زر أساسي</span>
-            <span className="inline-flex h-10 items-center rounded-lg bg-accent-600 px-4 text-sm font-semibold text-ink">زر مساعد</span>
-            <span className="inline-flex h-10 items-center rounded-lg bg-brand-50 px-4 text-sm font-semibold text-brand-700">زر ثانوي</span>
-            <span className="rounded-full bg-accent-100 px-3 py-1 text-xs font-semibold text-accent-800">خصم 25%</span>
-            <span className="flex gap-1">
-              {["bg-brand-50", "bg-brand-100", "bg-brand-300", "bg-brand-600", "bg-brand-800"].map((c) => (
-                <span key={c} className={`size-6 rounded-md ${c}`} />
-              ))}
-            </span>
+        <div role="group" className="mt-5 overflow-hidden rounded-[1.5rem] border border-line" style={PREVIEW_VARS(primary, accent)} aria-label="معاينة الألوان">
+          <div className="on-dark bg-teal-night relative isolate flex flex-wrap items-center justify-between gap-3 px-4 py-4 sm:px-5">
+            <p className="flex items-center gap-2 font-display text-[0.95rem] font-black text-white">
+              <Sparkles className="size-4 text-[#FFD25E]" aria-hidden /> معاينة مباشرة
+            </p>
+            <span className="chip chip-gold">خصم ٢٥٪</span>
+          </div>
+          <div className="bg-sunny space-y-4 p-4 sm:p-5">
+            <div className="flex flex-wrap items-center gap-3">
+              <span className="btn btn-3d btn-primary btn-md">زر أساسي</span>
+              <span className="btn btn-3d btn-accent btn-md">زر مساعد</span>
+              <span className="btn btn-3d btn-soft btn-md">زر ثانوي</span>
+            </div>
+            <div className="flex flex-wrap items-center gap-3">
+              <span className="eyebrow-pill">
+                <span className="eyebrow-icon">
+                  <Sparkles aria-hidden />
+                </span>
+                تسمية قسم
+              </span>
+              <span className="font-display text-[1.1rem] font-black text-ink">
+                عنوان <span className="text-hl">مميز</span>
+              </span>
+              <span className="flex gap-1" aria-hidden>
+                {["bg-brand-50", "bg-brand-100", "bg-brand-300", "bg-brand-600", "bg-brand-800", "bg-accent-100", "bg-accent-600"].map((c) => (
+                  <span key={c} className={`size-7 rounded-lg shadow-[inset_0_-2px_0_rgb(0_0_0/0.1)] ${c}`} />
+                ))}
+              </span>
+            </div>
           </div>
         </div>
       </Card>
 
-      <Card title="التواصل">
+      <Card title="التواصل" icon={<Phone />} tone="green" description="تظهر في التذييل وزر واتساب.">
         <div className="grid gap-4 sm:grid-cols-2">
           <Field label="رقم واتساب (بالصيغة الدولية)" htmlFor="whatsapp_number" error={fe.whatsapp_number} hint="مثال: 96550000000، فارغ لإخفاء زر واتساب">
             <Input id="whatsapp_number" name="whatsapp_number" defaultValue={values.whatsapp_number} dir="ltr" className="num text-start" inputMode="tel" />
@@ -129,7 +176,7 @@ export function SettingsForm({ action, values }: { action: ServerAction; values:
         </div>
       </Card>
 
-      <Card title="الدراسة والمحتوى">
+      <Card title="الدراسة والمحتوى" icon={<BookOpen />} tone="sky">
         <div className="grid gap-4 sm:grid-cols-2">
           <Field label="العام الدراسي الحالي" htmlFor="academic_year" error={fe.academic_year} hint="يُستخدم افتراضيًا عند إضافة منتجات جديدة">
             <Input id="academic_year" name="academic_year" defaultValue={values.academic_year} dir="ltr" className="num text-start" placeholder="2026-2027" />
@@ -141,7 +188,7 @@ export function SettingsForm({ action, values }: { action: ServerAction; values:
         </div>
       </Card>
 
-      <Card title="الرسوم المعتمدة لحساب أرباح المعلمين">
+      <Card title="الرسوم المعتمدة لحساب أرباح المعلمين" icon={<Percent />} tone="gold">
         <p className="mb-4 text-sm leading-7 text-muted">
           تُخصم من قيمة كل طلب قبل احتساب حصة المعلم (مثل رسوم بوابة الدفع). تُطبق على المبيعات الجديدة فقط ولا تغيّر السجلات السابقة.
         </p>
@@ -155,13 +202,13 @@ export function SettingsForm({ action, values }: { action: ServerAction; values:
         </div>
       </Card>
 
-      <Card title="الأسئلة الشائعة">
+      <Card title="الأسئلة الشائعة" icon={<CircleHelp />} tone="violet" description="تظهر في الصفحة الرئيسية بالترتيب نفسه.">
         <input type="hidden" name="faq" value={JSON.stringify(faq.filter((f) => f.q.trim() || f.a.trim()))} />
         <ol className="space-y-3">
           {faq.map((f, i) => (
-            <li key={i} className="rounded-lg border border-line p-3">
+            <li key={i} className="rounded-[1.25rem] border border-line bg-canvas/60 p-3">
               <div className="flex items-start gap-2">
-                <span className="num mt-2 text-sm font-bold text-muted">{i + 1}</span>
+                <span className="mt-1.5 grid size-8 shrink-0 place-items-center rounded-[0.7rem] bg-linear-to-br from-[#B28CFF] to-[#6A3FE0] font-display text-[0.95rem] font-black text-white" aria-hidden>{ar(i + 1)}</span>
                 <div className="grid flex-1 gap-2">
                   <Input value={f.q} onChange={(e) => setFaq((p) => p.map((x, j) => (j === i ? { ...x, q: e.target.value } : x)))} placeholder="السؤال" aria-label={`السؤال ${i + 1}`} maxLength={200} />
                   <Textarea value={f.a} onChange={(e) => setFaq((p) => p.map((x, j) => (j === i ? { ...x, a: e.target.value } : x)))} placeholder="الإجابة" aria-label={`الإجابة ${i + 1}`} rows={2} maxLength={1500} />
@@ -188,8 +235,8 @@ export function SettingsForm({ action, values }: { action: ServerAction; values:
 
       {state?.error ? <Alert tone="danger">{state.error}</Alert> : null}
       {state?.ok && state.message ? <Alert tone="success">{state.message}</Alert> : null}
-      <div className="sticky bottom-0 -mx-4 border-t border-line bg-surface/95 px-4 py-3 sm:static sm:mx-0 sm:border-0 sm:bg-transparent sm:p-0">
-        <SubmitButton pendingText="جارٍ الحفظ…">حفظ الإعدادات</SubmitButton>
+      <div className="sticky bottom-0 z-10 -mx-4 border-t border-line bg-surface/95 px-4 py-3 backdrop-blur sm:static sm:mx-0 sm:border-0 sm:bg-transparent sm:p-0 sm:backdrop-blur-none">
+        <SubmitButton pendingText="جارٍ الحفظ…" size="lg" className="max-sm:w-full">حفظ الإعدادات</SubmitButton>
       </div>
     </form>
   );

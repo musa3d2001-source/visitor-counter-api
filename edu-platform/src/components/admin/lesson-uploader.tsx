@@ -73,17 +73,38 @@ export function LessonUploader({ productId, provider = "file" }: { productId: st
         required
         hint={provider === "bunny" ? "يُرفع مباشرة إلى Bunny Stream ويُعالَج بجودات متعددة تلقائيًا" : undefined}
       >
-        <Input id="l-file" name="file" type="file" accept={provider === "bunny" ? "video/mp4,video/quicktime,video/webm" : "video/mp4"} className="pt-2" disabled={busy} data-testid="upload-lesson" />
+        <Input
+          id="l-file"
+          name="file"
+          type="file"
+          accept={provider === "bunny" ? "video/mp4,video/quicktime,video/webm" : "video/mp4"}
+          className="h-auto min-h-14 cursor-pointer border-2 border-dashed border-brand-200 bg-white py-2 ps-2 text-sm text-ink-soft file:me-3 file:min-h-10 file:cursor-pointer file:rounded-full file:border-0 file:bg-brand-50 file:px-4 file:font-display file:font-extrabold file:text-brand-800 hover:file:bg-brand-100"
+          disabled={busy}
+          data-testid="upload-lesson"
+        />
       </Field>
-      <div className="flex items-end pb-2">
-        <Checkbox name="isFreePreview" label="درس مجاني للمعاينة" disabled={busy} />
+      <div className="flex items-end">
+        <Checkbox
+          name="isFreePreview"
+          label="درس مجاني للمعاينة"
+          disabled={busy}
+          className="min-h-14 w-full rounded-[0.9rem] border-2 border-[#FFE08A] bg-[#FFFBEA] px-4 font-display font-bold text-[#6E4700]"
+        />
       </div>
       {busy ? (
         <div className="sm:col-span-2">
-          <div className="h-2 overflow-hidden rounded-full bg-line" role="progressbar" aria-valuenow={pct ?? 0} aria-valuemin={0} aria-valuemax={100}>
-            <div className="h-full bg-brand-600 transition-[width]" style={{ width: `${pct}%` }} />
+          <div className="h-3 overflow-hidden rounded-full bg-mist" role="progressbar" aria-label="تقدم رفع الفيديو" aria-valuenow={pct ?? 0} aria-valuemin={0} aria-valuemax={100}>
+            <div className="h-full rounded-full bg-linear-to-l from-brand-400 to-brand-600 transition-[width]" style={{ width: `${pct}%` }} />
           </div>
-          <p className="mt-1 text-xs text-muted">{phase === "processing" ? "جارٍ التحقق من الملف…" : <>جارٍ الرفع <span className="num">{pct}%</span>، لا تغلق الصفحة</>}</p>
+          <p className="mt-1 text-xs text-muted">
+            {phase === "processing" ? (
+              "جارٍ التحقق من الملف…"
+            ) : (
+              <>
+                جارٍ الرفع <span className="num">{pct}%</span>، لا تغلق الصفحة
+              </>
+            )}
+          </p>
         </div>
       ) : null}
       {result ? (
@@ -92,7 +113,7 @@ export function LessonUploader({ productId, provider = "file" }: { productId: st
         </Alert>
       ) : null}
       <div className="sm:col-span-2">
-        <Button type="submit" disabled={busy}>
+        <Button type="submit" size="lg" disabled={busy}>
           {busy ? <LoaderCircle className="animate-spin" aria-hidden /> : <Upload aria-hidden />} رفع وإضافة الدرس
         </Button>
       </div>

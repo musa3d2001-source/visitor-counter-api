@@ -1,13 +1,20 @@
 import { notFound, redirect } from "next/navigation";
-import { Banknote, FileText, Wallet } from "lucide-react";
+import { Banknote, FileText, FlaskConical, HandCoins, Info, Percent, Receipt, Wallet } from "lucide-react";
 import { requireStaff } from "@/server/auth/permissions";
 import { sql } from "@/server/db";
 import { listEarnings, listPayouts, teacherBalance, teacherSalesSummary } from "@/server/commerce/earnings";
-import { AdminPageHeader, Section, StatCard } from "@/components/admin/page-header";
-import { Badge } from "@/components/ui/badge";
+import { AdminPageHeader, Section, StatGrid, StatTile } from "@/components/admin/page-header";
+import { CellTitle, DataList, DataRow } from "@/components/admin/data-list";
+import { ToneIcon } from "@/components/admin/icon-tile";
+import { StatusPill } from "@/components/admin/status-badge";
+import { Button } from "@/components/ui/button";
+import { EmptyState } from "@/components/ui/empty-state";
 import { Table, TD, TH, THead, TR } from "@/components/ui/table";
+import { ar, count } from "@/lib/design";
 import { filsToKwdString } from "@/lib/money";
 import { formatDate, formatDateTime } from "@/lib/utils";
+import { PageBand } from "../_components/overview/bands";
+import { Kwd, PAYOUT, SALE } from "../_components/overview/money";
 
 export const metadata = { title: "أرباحي ومبيعاتي" };
 
@@ -34,34 +41,68 @@ export default async function TeacherEarningsPage({ searchParams }: { searchPara
     `,
   ]);
   const shareOn = t?.revenue_share_bps !== null && t?.revenue_share_bps !== undefined;
+  const sharePct = shareOn ? ar(String(t!.revenue_share_bps! / 100)) : null;
 
   return (
     <div className="space-y-6">
-      <AdminPageHeader
-        title="أرباحي ومبيعاتي"
-        description={includeTest ? "تشمل الطلبات التجريبية (بيئة الاختبار)، لا تُحتسب ضمن المستحقات الفعلية" : "مبيعات محتواك المدفوعة (الطلبات التجريبية مستبعدة)"}
-        actions={
-          <a href={includeTest ? "/admin/earnings" : "/admin/earnings?test=1"} className="rounded-lg border border-line-strong px-3 py-1.5 text-xs font-semibold text-ink-soft hover:bg-brand-50">
-            {includeTest ? "إخفاء البيانات التجريبية" : "إظهار البيانات التجريبية"}
-          </a>
-        }
-      />
-      <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
-        <StatCard label="عمليات بيع" value={<span className="num">{summary.items}</span>} icon={<FileText />} />
-        <StatCard label="قيمة المبيعات" value={<><span className="num">{filsToKwdString(summary.grossFils)}</span> <span className="text-sm text-muted">د.ك</span></>} icon={<Banknote />} />
+      <PageBand tone="gold" art="coins">
+        <AdminPageHeader
+          title="أرباحي ومبيعاتي"
+          description={includeTest ? "تشمل الطلبات التجريبية (بيئة الاختبار)، لا تُحتسب ضمن المستحقات الفعلية" : "مبيعات محتواك المدفوعة (الطلبات التجريبية مستبعدة)"}
+          actions={
+            <Button asChild variant="outline" size="sm">
+              <a href={includeTest ? "/admin/earnings" : "/admin/earnings?test=1"}>
+                <FlaskConical aria-hidden />
+                {includeTest ? "إخفاء البيانات التجريبية" : "إظهار البيانات التجريبية"}
+              </a>
+            </Button>
+          }
+          className="mb-0"
+        >
+          {sharePct ? (
+            <span className="chip chip-white min-h-9 px-3.5 text-[0.88rem]">
+              <Percent className="text-[#C98500]" aria-hidden /> نسبتي {sharePct}٪ من صافي كل بيع
+            </span>
+          ) : null}
+        </AdminPageHeader>
+      </PageBand>
+
+      <StatGrid>
+        <StatTile label="عمليات بيع" value={<span className="num">{ar(summary.items)}</span>} icon={<FileText />} />
+        <StatTile label="قيمة المبيعات" value={<Kwd fils={summary.grossFils} />} icon={<Banknote />} />
         {shareOn ? (
           <>
-            <StatCard label="أرباحي المستحقة" value={<><span className="num">{filsToKwdString(balance.earnedFils)}</span> <span className="text-sm text-muted">د.ك</span></>} hint={`نسبتي ${t!.revenue_share_bps! / 100}% من الصافي`} icon={<Wallet />} />
-            <StatCard label="الرصيد غير المسدد" value={<><span className="num">{filsToKwdString(balance.balanceFils)}</span> <span className="text-sm text-muted">د.ك</span></>} hint={`المسدد: ${filsToKwdString(balance.paidFils)} د.ك`} icon={<Wallet />} />
+            <StatTile label="أرباحي المستحقة" value={<Kwd fils={balance.earnedFils} />} hint={`نسبتي ${sharePct}٪ من الصافي`} icon={<Wallet />} />
+            <StatTile
+              label="الرصيد غير المسدد"
+              value={<Kwd fils={balance.balanceFils} />}
+              hint={
+                <>
+                  المسدد: <span className="num">{filsToKwdString(balance.paidFils)}</span> د.ك
+                </>
+              }
+              icon={<HandCoins />}
+              tone="teal"
+            />
           </>
         ) : null}
-      </div>
-      {!shareOn ? <p className="rounded-lg bg-canvas p-4 text-sm text-muted">لم يُفعَّل احتساب الأرباح لحسابك بعد. تواصل مع إدارة المنصة.</p> : null}
+      </StatGrid>
+
+      {!shareOn ? (
+        <p className="flex items-center gap-3 rounded-[1.4rem] border-2 border-sky/20 bg-sky-50 p-4 font-display text-[0.95rem] font-bold text-sky-700">
+          <ToneIcon tone="sky" size="sm">
+            <Info />
+          </ToneIcon>
+          لم يُفعَّل احتساب الأرباح لحسابك بعد. تواصل مع إدارة المنصة.
+        </p>
+      ) : null}
 
       {shareOn ? (
-        <Section title="تفاصيل الأرباح" description="الصافي = قيمة البيع − حصته من الخصم − الرسوم المعتمدة. المستردات تُعكس تلقائيًا.">
+        <Section title="تفاصيل الأرباح" description="الصافي = قيمة البيع − حصته من الخصم − الرسوم المعتمدة. المستردات تُعكس تلقائيًا." icon={<Wallet />} tone="gold" flush>
           {earnings.length === 0 ? (
-            <p className="rounded-lg bg-canvas p-4 text-center text-sm text-muted">لا توجد أرباح بعد.</p>
+            <div className="p-4 sm:p-6">
+              <EmptyState art="receipt" compact title="لا توجد أرباح بعد." />
+            </div>
           ) : (
             <Table>
               <THead>
@@ -80,16 +121,20 @@ export default async function TeacherEarningsPage({ searchParams }: { searchPara
                 {earnings.map((e) => (
                   <TR key={e.id}>
                     <TD>
-                      <span className="num font-semibold">{e.order_number}</span>
-                      <p className="text-xs text-muted">{formatDate(e.created_at)}</p>
+                      <span className="num font-display font-extrabold text-ink">{e.order_number}</span>
+                      <p className="text-xs whitespace-nowrap text-muted">{formatDate(e.created_at)}</p>
                     </TD>
-                    <TD className="max-w-56 text-xs">{e.product_title}</TD>
+                    <TD className="max-w-60">
+                      <CellTitle title={e.product_title} />
+                    </TD>
                     <TD className="num">{filsToKwdString(e.gross_fils)}</TD>
                     <TD className="num text-muted">{filsToKwdString(e.discount_fils)}</TD>
                     <TD className="num text-muted">{filsToKwdString(e.fee_fils)}</TD>
                     <TD className="num">{filsToKwdString(e.net_fils)}</TD>
-                    <TD className="num font-semibold">{filsToKwdString(e.teacher_fils)}</TD>
-                    <TD>{e.status === "reversed" ? <Badge tone="danger">معكوس (استرداد)</Badge> : <Badge tone="success">مستحق</Badge>}</TD>
+                    <TD>
+                      <span className="num inline-flex min-h-8 items-center rounded-full bg-[#FFF4D6] px-3 font-display font-black text-[#8A5A00]">{filsToKwdString(e.teacher_fils)}</span>
+                    </TD>
+                    <TD>{e.status === "reversed" ? <StatusPill tone="danger">معكوس (استرداد)</StatusPill> : <StatusPill tone="success">مستحق</StatusPill>}</TD>
                   </TR>
                 ))}
               </tbody>
@@ -97,51 +142,73 @@ export default async function TeacherEarningsPage({ searchParams }: { searchPara
           )}
         </Section>
       ) : (
-        <Section title="آخر المبيعات">
+        <Section title="آخر المبيعات" icon={<Receipt />} tone="green">
           {sales.length === 0 ? (
-            <p className="rounded-lg bg-canvas p-4 text-center text-sm text-muted">لا توجد مبيعات بعد.</p>
+            <EmptyState art="receipt" compact title="لا توجد مبيعات بعد." />
           ) : (
-            <Table>
-              <THead>
-                <tr>
-                  <TH>الطلب</TH>
-                  <TH>التاريخ</TH>
-                  <TH>المحتوى</TH>
-                  <TH>القيمة</TH>
-                </tr>
-              </THead>
-              <tbody>
-                {sales.map((s, i) => (
-                  <TR key={`${s.order_number}-${i}`}>
-                    <TD className="num font-semibold">{s.order_number}</TD>
-                    <TD className="text-xs text-muted">{formatDateTime(s.paid_at)}</TD>
-                    <TD className="text-xs">{s.title}</TD>
-                    <TD className="num">
-                      {filsToKwdString(s.unit_price_fils)} {s.status === "refunded" ? <Badge tone="danger">مسترد</Badge> : null}
-                    </TD>
-                  </TR>
-                ))}
-              </tbody>
-            </Table>
+            <DataList>
+              {sales.map((s, i) => (
+                <DataRow
+                  key={`${s.order_number}-${i}`}
+                  leading={
+                    <ToneIcon tone={s.status === "refunded" ? "violet" : "green"} size="sm">
+                      <Receipt />
+                    </ToneIcon>
+                  }
+                  title={s.title}
+                  sub={
+                    <>
+                      <span className="num">{s.order_number}</span> · <span className="whitespace-nowrap">{formatDateTime(s.paid_at)}</span>
+                    </>
+                  }
+                  aside={
+                    <div className="flex items-center gap-2">
+                      {s.status === "refunded" ? <StatusPill tone="danger">مسترد</StatusPill> : null}
+                      <Kwd fils={s.unit_price_fils} className="font-display text-[1.05rem] font-black text-ink" />
+                    </div>
+                  }
+                />
+              ))}
+            </DataList>
           )}
+          {sales.length ? <p className="mt-4 text-[0.82rem] text-muted">{count(sales.length, SALE)} معروضة، الأحدث أولًا.</p> : null}
         </Section>
       )}
 
       {shareOn ? (
-        <Section title="التسويات المستلمة">
+        <Section
+          title="التسويات المستلمة"
+          description={payouts.length ? count(payouts.length, PAYOUT) : undefined}
+          icon={<HandCoins />}
+          tone="green"
+        >
           {payouts.length === 0 ? (
-            <p className="rounded-lg bg-canvas p-4 text-center text-sm text-muted">لا توجد تسويات بعد.</p>
+            <EmptyState art="receipt" compact title="لا توجد تسويات بعد." />
           ) : (
-            <ul className="divide-y divide-line rounded-lg border border-line">
+            <DataList>
               {payouts.map((p) => (
-                <li key={p.id} className="flex flex-wrap items-center gap-x-4 gap-y-1 p-3 text-sm">
-                  <span className="num font-bold">{filsToKwdString(p.amount_fils)} د.ك</span>
-                  <span className="text-muted">{METHOD_LABELS[p.method] ?? p.method}</span>
-                  {p.reference ? <span className="num text-xs text-muted" dir="ltr">{p.reference}</span> : null}
-                  <span className="ms-auto text-xs text-muted">{formatDateTime(p.paid_at)}</span>
-                </li>
+                <DataRow
+                  key={p.id}
+                  leading={
+                    <ToneIcon tone="green" size="sm">
+                      <HandCoins />
+                    </ToneIcon>
+                  }
+                  title={<Kwd fils={p.amount_fils} className="text-[1.1rem]" />}
+                  sub={
+                    <span className="flex flex-wrap items-center gap-x-3 gap-y-1">
+                      <span>{METHOD_LABELS[p.method] ?? p.method}</span>
+                      {p.reference ? (
+                        <span className="num text-xs" dir="ltr">
+                          {p.reference}
+                        </span>
+                      ) : null}
+                    </span>
+                  }
+                  aside={<span className="text-xs whitespace-nowrap text-muted">{formatDateTime(p.paid_at)}</span>}
+                />
               ))}
-            </ul>
+            </DataList>
           )}
         </Section>
       ) : null}

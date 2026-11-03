@@ -1,21 +1,25 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import { PlayCircle } from "lucide-react";
+import { ArrowLeft, Clock3, Layers, MonitorPlay, PlayCircle, Quote } from "lucide-react";
 import { getTeacherBySlug, teacherContent } from "@/server/catalog/queries";
 import { getCurrentUser } from "@/server/auth/session";
 import { accessibleProductIds } from "@/server/access/entitlements";
 import { Breadcrumbs } from "@/components/ui/breadcrumbs";
 import { EmptyState } from "@/components/ui/empty-state";
 import { Alert } from "@/components/ui/alert";
+import { StatPill } from "@/components/ui/page-header";
+import { Sparkle, SubjectArt, SubjectIcon } from "@/components/art";
 import { TeacherAvatar } from "@/components/site/teacher-avatar";
-import { ProductList } from "@/components/site/product-card";
-import { formatTotalDuration } from "@/components/site/format";
-import { isPdfType, PRODUCT_TYPE_SECTION_LABELS } from "@/lib/labels";
+import { ProductCard } from "@/components/site/product-card";
+import { isPdfType } from "@/lib/labels";
+import { ar, count, duration, gradeClass, toneClass, W } from "@/lib/design";
+import { cn } from "@/lib/utils";
 import { env } from "@/server/env";
+import { pillCount, TypeSlots } from "../../grades/_components/browse";
+import { teacherStyles as s } from "../_components/teachers";
 
 type Params = { slug: string };
-
 
 export async function generateMetadata({ params }: { params: Promise<Params> }): Promise<Metadata> {
   const t = await getTeacherBySlug((await params).slug);
@@ -35,9 +39,11 @@ export default async function TeacherPage({ params }: { params: Promise<Params> 
   const teacher = await getTeacherBySlug(slug, { includeUnpublished: user?.role === "admin" });
   if (!teacher) notFound();
   const [groups, owned] = await Promise.all([teacherContent(teacher.id), user ? accessibleProductIds(user.id) : Promise.resolve(undefined)]);
-  const grades = [...new Set(teacher.subjects.map((s) => s.gradeName))];
-  const subjects = [...new Set(teacher.subjects.map((s) => s.name))];
-  const productCount = groups.reduce((n, g) => n + g.sections.reduce((m, s) => m + s.items.length, 0), 0);
+  const subjects = [...new Map(teacher.subjects.map((x) => [x.slug ?? x.name, x])).values()];
+  const grades = [...new Map(teacher.subjects.map((x) => [x.gradeSlug, x])).values()].sort((a, b) => a.gradeLevel - b.gradeLevel);
+  const productCount = groups.reduce((n, g) => n + g.sections.reduce((m, sec) => m + sec.items.length, 0), 0);
+  const mainSlug = subjects[0]?.slug ?? groups[0]?.subjectSlug ?? null;
+  const total = duration(teacher.totalDurationSeconds);
 
   const jsonLd = {
     "@context": "https://schema.org",
@@ -49,92 +55,173 @@ export default async function TeacherPage({ params }: { params: Promise<Params> 
     url: new URL(`/teachers/${teacher.slug}`, env().APP_URL).toString(),
   };
 
-  const stats = [
-    teacher.videoCount ? { n: teacher.videoCount, label: teacher.videoCount === 1 ? "درس مرئي" : teacher.videoCount === 2 ? "درسان مرئيان" : teacher.videoCount <= 10 ? "دروس مرئية" : "درسًا مرئيًا" } : null,
-    productCount ? { n: productCount, label: productCount <= 10 && productCount > 2 ? "محتويات للشراء" : "محتوى للشراء" } : null,
-  ].filter(Boolean) as { n: number; label: string }[];
-
   return (
-    <div className="pb-10">
+    <div className="pb-16">
       <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd).replace(/</g, "\\u003c") }} />
-      <section className="mx-auto max-w-6xl px-4 pt-6">
+      <section className="mx-auto max-w-7xl px-4 pt-5 sm:px-6 sm:pt-6" aria-labelledby="teacher-name">
         <Breadcrumbs items={[{ label: "الرئيسية", href: "/" }, { label: "المعلمون", href: "/teachers" }, { label: teacher.name }]} />
         {!teacher.isPublished ? (
           <Alert tone="warning" className="mt-4">
             معاينة للمالك: ملف هذا المعلم غير منشور للطلاب بعد.
           </Alert>
         ) : null}
-        <div className="mt-6 grid gap-8 border-b-2 border-ink pb-8 md:grid-cols-[1fr_15rem] md:items-end">
-          <div className="order-2 md:order-1">
-            <h1 className="text-[clamp(2.4rem,6vw,4.4rem)] leading-[1.05]">{teacher.name}</h1>
-            {teacher.headline ? <p className="mt-3 text-lg leading-8 text-ink-soft">{teacher.headline}</p> : null}
-            <p className="mt-3 text-sm text-muted">
-              {subjects.join("، ")}
-              {grades.length ? `، ${grades.join(" و")}` : ""}
-            </p>
-            {stats.length || teacher.totalDurationSeconds ? (
-              <dl className="mt-6 flex flex-wrap gap-x-10 gap-y-3">
-                {stats.map((st) => (
-                  <div key={st.label}>
-                    <dt className="sr-only">{st.label}</dt>
-                    <dd className="flex items-baseline gap-2">
-                      <span className="num font-display text-4xl leading-none font-semibold text-brand-700">{st.n}</span>
-                      <span className="text-sm text-ink-soft">{st.label}</span>
+
+        <div className={cn("panel mt-5", s.profile, toneClass(mainSlug))}>
+          <div className={cn("poster", s.cover)} aria-hidden>
+            <span className={s.coverArt}>
+              <SubjectArt slug={mainSlug} />
+            </span>
+            {subjects.slice(0, 3).map((x, i) => (
+              <span
+                key={x.id}
+                className={cn(s.coverBubble, toneClass(x.slug))}
+                style={[{ top: "22%", left: "38%" }, { top: "58%", left: "50%" }, { top: "18%", left: "62%" }][i]}
+              >
+                <SubjectIcon slug={x.slug} size={24} />
+              </span>
+            ))}
+            <span className={s.coverSpark} style={{ top: "16%", right: "34%" }}>
+              <Sparkle className="animate-twinkle size-full" />
+            </span>
+            <span className={s.coverSpark} style={{ bottom: "18%", right: "46%", width: 16, height: 16 }}>
+              <Sparkle className="animate-twinkle size-full [animation-delay:1.2s]" color="#fff" />
+            </span>
+          </div>
+
+          <div className={s.pbody}>
+            <div className={s.avatarWrap}>
+              <TeacherAvatar name={teacher.name} photoUrl={teacher.photoUrl} size={168} subjectSlug={mainSlug} ring="lg" className="max-sm:!size-[132px] max-sm:!text-[3.6rem]" />
+              {mainSlug ? (
+                <span className={s.avatarBadge} aria-hidden>
+                  <SubjectIcon slug={mainSlug} size={20} strokeWidth={2.4} />
+                </span>
+              ) : null}
+            </div>
+            <div className="min-w-0">
+              <h1 id="teacher-name" className={s.pname}>
+                {teacher.name}
+              </h1>
+              {teacher.headline ? <p className={s.headline}>{teacher.headline}</p> : null}
+              {subjects.length || grades.length ? (
+                <ul className={s.pchips} aria-label="المواد والصفوف">
+                  {subjects.map((x) => (
+                    <li key={x.id} className={toneClass(x.slug)}>
+                      <span aria-hidden>
+                        <SubjectIcon slug={x.slug} size={13} strokeWidth={2.6} />
+                      </span>
+                      {x.name}
+                    </li>
+                  ))}
+                  {grades.map((g) => (
+                    <li key={g.gradeSlug} className={cn(s.gchip, gradeClass(g.gradeLevel))}>
+                      <span aria-hidden>{ar(g.gradeLevel)}</span>
+                      {g.gradeName}
+                    </li>
+                  ))}
+                </ul>
+              ) : null}
+            </div>
+            {teacher.videoCount || productCount || total ? (
+              <dl className={s.pstats}>
+                {teacher.videoCount ? (
+                  <div>
+                    <dt className="sr-only">الدروس المرئية</dt>
+                    <dd>
+                      <StatPill tone="teal" icon={<MonitorPlay aria-hidden />} {...pillCount(teacher.videoCount, W.videoLesson)} />
                     </dd>
                   </div>
-                ))}
-                {teacher.totalDurationSeconds ? (
+                ) : null}
+                {productCount ? (
+                  <div>
+                    <dt className="sr-only">المحتوى المتاح للشراء</dt>
+                    <dd>
+                      <StatPill tone="gold" icon={<Layers aria-hidden />} {...pillCount(productCount, W.product)} />
+                    </dd>
+                  </div>
+                ) : null}
+                {total ? (
                   <div>
                     <dt className="sr-only">مدة الشرح</dt>
-                    <dd className="flex items-baseline gap-2">
-                      <span className="font-display text-2xl leading-none font-semibold text-brand-700">{formatTotalDuration(teacher.totalDurationSeconds)}</span>
-                      <span className="text-sm text-ink-soft">من الشرح</span>
+                    <dd>
+                      <StatPill tone="coral" icon={<Clock3 aria-hidden />} num={total} label="من الشرح" />
                     </dd>
                   </div>
                 ) : null}
               </dl>
             ) : null}
           </div>
-          <div className="order-1 md:order-2">
-            <TeacherAvatar name={teacher.name} photoUrl={teacher.photoUrl} size={168} className="mx-0 rounded-lg" />
-          </div>
+
+          {teacher.bio ? (
+            <div className={s.bio}>
+              <h2>
+                <Quote aria-hidden />
+                عن المعلم
+              </h2>
+              <p>{teacher.bio}</p>
+            </div>
+          ) : null}
         </div>
-        {teacher.bio ? <p className="mt-6 max-w-3xl leading-8 whitespace-pre-line text-ink-soft">{teacher.bio}</p> : null}
       </section>
 
       {groups.length === 0 ? (
-        <div className="mx-auto max-w-6xl px-4 pt-8">
+        <div className="mx-auto max-w-7xl px-4 pt-10 sm:px-6">
           <EmptyState icon={<PlayCircle />} title="لم يُنشر محتوى لهذا المعلم بعد" description="تظهر شروحاته ومراجعاته هنا فور نشرها." />
         </div>
       ) : (
         <>
           {groups.length > 1 ? (
-            <nav aria-label="انتقل إلى المادة" className="sticky top-16 z-20 mt-8 border-y border-line bg-surface no-print sm:top-[4.5rem]">
-              <div className="mx-auto flex max-w-6xl gap-6 overflow-x-auto px-4">
+            <nav aria-label="انتقل إلى المادة" className={cn(s.subnav, "no-print mx-auto max-w-7xl px-4 sm:px-6")}>
+              <div className={s.subnavInner}>
                 {groups.map((g) => (
-                  <a key={g.key} href={`#${g.subjectSlug ?? "all"}-${g.gradeSlug}`} className="border-b-2 border-transparent py-3 text-sm font-semibold whitespace-nowrap text-ink-soft hover:border-brand-600 hover:text-brand-700">
+                  <a key={g.key} href={`#${g.subjectSlug ?? "all"}-${g.gradeSlug}`} className={cn(s.snChip, toneClass(g.subjectSlug))}>
+                    <span aria-hidden>
+                      <SubjectIcon slug={g.subjectSlug} size={17} />
+                    </span>
                     {g.subjectName ?? "عام"}، {g.gradeName}
                   </a>
                 ))}
               </div>
             </nav>
           ) : null}
-          <div className="mx-auto max-w-6xl space-y-16 px-4 pt-10">
-            {groups.map((g) => (
-              <section key={g.key} id={`${g.subjectSlug ?? "all"}-${g.gradeSlug}`} className="scroll-mt-32" aria-labelledby={`h-${g.key}`}>
-                <h2 id={`h-${g.key}`} className="text-[clamp(1.9rem,3.4vw,2.6rem)]">
-                  {g.subjectName ?? "محتوى عام"}، {g.gradeName}
-                </h2>
-                <div className="mt-6 space-y-10">
-                  {g.sections.map((sec) => (
-                    <div key={sec.type} data-testid="teacher-section">
-                      <h3 className="mb-2 text-sm font-semibold text-brand-700">{PRODUCT_TYPE_SECTION_LABELS[sec.type]}</h3>
-                      <ProductList products={sec.items} ownedIds={owned} columns={isPdfType(sec.type) ? 2 : 1} showTeacher={false} />
+          <div className="mx-auto max-w-7xl space-y-16 px-4 pt-10 sm:space-y-20 sm:px-6 sm:pt-14">
+            {groups.map((g) => {
+              const n = g.sections.reduce((m, sec) => m + sec.items.length, 0);
+              return (
+                <section key={g.key} id={`${g.subjectSlug ?? "all"}-${g.gradeSlug}`} className={cn(s.group, toneClass(g.subjectSlug))} aria-labelledby={`h-${g.key}`}>
+                  <div className={s.ghead}>
+                    <span className={cn("icon-tile", s.gicon)} aria-hidden>
+                      <SubjectIcon slug={g.subjectSlug} size={30} />
+                    </span>
+                    <div className="min-w-[12rem] flex-1">
+                      <h2 id={`h-${g.key}`} className={s.gtitle}>
+                        {g.subjectName ?? "محتوى عام"}، {g.gradeName}
+                      </h2>
+                      <p className={s.gsub}>{count(n, W.product)}</p>
                     </div>
-                  ))}
-                </div>
-              </section>
-            ))}
+                    {g.subjectSlug ? (
+                      <Link href={`/grades/${g.gradeSlug}/${g.subjectSlug}`} className="btn btn-3d btn-light btn-md">
+                        كل محتوى المادة
+                        <ArrowLeft aria-hidden />
+                      </Link>
+                    ) : null}
+                  </div>
+                  <div className={s.gsections}>
+                    {[g.sections.filter((sec) => !isPdfType(sec.type)), g.sections.filter((sec) => isPdfType(sec.type))].map((secs, i) =>
+                      secs.length ? (
+                        <TypeSlots
+                          key={i}
+                          notes={i === 1}
+                          groups={secs}
+                          idPrefix={`${g.key.replace(":", "-")}-`}
+                          testId="teacher-section"
+                          renderItem={(x) => <ProductCard product={x} owned={owned?.has(x.id)} showGrade={false} headingLevel={4} />}
+                        />
+                      ) : null,
+                    )}
+                  </div>
+                </section>
+              );
+            })}
           </div>
         </>
       )}

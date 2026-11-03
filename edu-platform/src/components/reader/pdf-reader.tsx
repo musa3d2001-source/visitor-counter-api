@@ -2,7 +2,8 @@
 
 import Link from "next/link";
 import { useCallback, useEffect, useRef, useState } from "react";
-import { ArrowRight, Download, LoaderCircle, Maximize, Minus, Plus, TriangleAlert } from "lucide-react";
+import { ArrowRight, BookOpenText, Download, Eye, LoaderCircle, Maximize, Minus, Plus, ShieldCheck, ShoppingCart, TriangleAlert } from "lucide-react";
+import { ar } from "@/lib/design";
 import type { PDFDocumentProxy, PDFPageProxy } from "pdfjs-dist";
 
 /**
@@ -23,9 +24,13 @@ type Props = {
   downloadHref?: string | null;
   progressFileId?: string | null;
   badge?: string;
+  /** شكل الشارة فقط: «preview» ذهبية للمعاينة، وغير ذلك فيروزية فاتحة */
+  variant?: "preview" | "full";
+  /** زر إجراء اختياري في الشريط (مثل «اشترِ المذكرة» في المعاينة) */
+  cta?: { href: string; label: string };
 };
 
-export function PdfReader({ src, title, backHref, backLabel, initialPage = 1, watermark, downloadHref, progressFileId, badge }: Props) {
+export function PdfReader({ src, title, backHref, backLabel, initialPage = 1, watermark, downloadHref, progressFileId, badge, variant = "full", cta }: Props) {
   const containerRef = useRef<HTMLDivElement>(null);
   const [doc, setDoc] = useState<PDFDocumentProxy | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -118,66 +123,121 @@ export function PdfReader({ src, title, backHref, backLabel, initialPage = 1, wa
   const pageWidth = Math.max(240, Math.min(width - 16, 900) * zoom);
   const pages = doc ? Array.from({ length: doc.numPages }, (_, i) => i + 1) : [];
 
+  const zoomOut = () => setZoom((z) => Math.max(0.6, +(z - 0.2).toFixed(1)));
+  const zoomIn = () => setZoom((z) => Math.min(2.4, +(z + 0.2).toFixed(1)));
+  const progress = doc ? Math.min(100, Math.max(0, (current / doc.numPages) * 100)) : 0;
+  const preview = variant === "preview";
+  const dockBtn =
+    "grid size-11 shrink-0 place-items-center rounded-full text-white/90 transition-colors hover:bg-white/12 hover:text-white disabled:pointer-events-none disabled:opacity-35";
+
   return (
-    <div className="flex h-dvh flex-col bg-[#2b3233] select-none" onContextMenu={(e) => e.preventDefault()}>
-      <header className="flex h-14 shrink-0 items-center gap-2 border-b border-white/10 bg-[#1f2526] px-2 text-white sm:px-4">
-        <Link href={backHref} className="flex h-10 items-center gap-1.5 rounded-lg px-2 text-sm font-semibold hover:bg-white/10" aria-label={backLabel}>
-          <ArrowRight className="size-5" aria-hidden />
-          <span className="hidden sm:inline">{backLabel}</span>
-        </Link>
-        <div className="min-w-0 flex-1 px-1">
-          <h1 className="truncate text-sm font-bold sm:text-base">{title}</h1>
-          {badge ? <p className="text-[0.7rem] text-white/60">{badge}</p> : null}
-        </div>
-        {doc ? (
-          <span className="num rounded-md bg-white/10 px-2 py-1 text-xs" aria-live="polite" data-testid="reader-pages">
-            {current} / {doc.numPages}
+    <div className="flex h-dvh flex-col bg-[#0b2f2d] select-none" onContextMenu={(e) => e.preventDefault()}>
+      {/* شريط القراءة العلوي: فيروزي داكن بخط قوس قزح */}
+      <header className="bg-teal-night on-dark relative z-10 shrink-0 shadow-[0_10px_30px_-12px_rgb(0_0_0/0.6)]">
+        <div className="flex h-16 items-center gap-2 px-2 sm:gap-3 sm:px-4">
+          <Link
+            href={backHref}
+            className="inline-flex h-11 shrink-0 items-center gap-1.5 rounded-full border border-white/15 bg-white/10 px-3 font-display text-[0.92rem] font-bold text-white transition-colors hover:bg-white/18"
+            aria-label={backLabel}
+          >
+            <ArrowRight className="size-5" aria-hidden />
+            <span className="hidden sm:inline">{backLabel}</span>
+          </Link>
+          <span className="hidden size-10 shrink-0 place-items-center rounded-xl bg-linear-to-br from-[#ffd25e] to-[#eb9b00] text-[#3d2a00] shadow-[inset_0_-3px_0_rgb(0_0_0/0.15)] md:grid" aria-hidden>
+            <BookOpenText className="size-5" />
           </span>
-        ) : null}
-        <div className="flex items-center">
-          <button className="grid size-10 place-items-center rounded-lg hover:bg-white/10 disabled:opacity-40" onClick={() => setZoom((z) => Math.max(0.6, +(z - 0.2).toFixed(1)))} disabled={zoom <= 0.6} aria-label="تصغير">
-            <Minus className="size-4.5" aria-hidden />
-          </button>
-          <button className="grid size-10 place-items-center rounded-lg hover:bg-white/10 disabled:opacity-40" onClick={() => setZoom((z) => Math.min(2.4, +(z + 0.2).toFixed(1)))} disabled={zoom >= 2.4} aria-label="تكبير">
-            <Plus className="size-4.5" aria-hidden />
-          </button>
+          <div className="min-w-0 flex-1 px-1">
+            <h1 className="truncate font-display text-[0.98rem] leading-snug font-extrabold text-white sm:text-[1.08rem]">{title}</h1>
+            {badge ? (
+              <p className={`mt-0.5 inline-flex max-w-full items-center gap-1 truncate rounded-full px-2 text-[0.72rem] leading-5 font-bold sm:text-[0.78rem] ${preview ? "bg-[#ffc531] text-[#3d2a00]" : "bg-white/12 text-[#bdf3ea]"}`}>
+                {preview ? <Eye className="size-3.5 shrink-0" aria-hidden /> : <ShieldCheck className="size-3.5 shrink-0" aria-hidden />}
+                <span className="truncate">{badge}</span>
+              </p>
+            ) : null}
+          </div>
+          {cta ? (
+            <Link href={cta.href} className="btn btn-3d btn-accent btn-sm hidden shrink-0 sm:inline-flex">
+              <ShoppingCart aria-hidden />
+              {cta.label}
+            </Link>
+          ) : null}
           <button
-            className="hidden size-10 place-items-center rounded-lg hover:bg-white/10 sm:grid"
+            className="hidden size-11 shrink-0 place-items-center rounded-full text-white/90 transition-colors hover:bg-white/12 sm:grid"
             onClick={() => (document.fullscreenElement ? document.exitFullscreen() : document.documentElement.requestFullscreen?.())}
             aria-label="ملء الشاشة"
           >
-            <Maximize className="size-4.5" aria-hidden />
+            <Maximize className="size-5" aria-hidden />
           </button>
           {downloadHref ? (
-            <a href={downloadHref} className="grid size-10 place-items-center rounded-lg hover:bg-white/10" aria-label="تنزيل الملف" data-testid="reader-download">
-              <Download className="size-4.5" aria-hidden />
+            <a
+              href={downloadHref}
+              className="grid size-11 shrink-0 place-items-center rounded-full bg-linear-to-b from-[#ffd25e] to-[#f2ae12] text-[#3d2a00] shadow-[0_3px_0_#b77800] transition-transform active:translate-y-[2px] active:shadow-none"
+              aria-label="تنزيل الملف"
+              data-testid="reader-download"
+            >
+              <Download className="size-5" aria-hidden />
             </a>
           ) : null}
         </div>
+        <span className="block h-[3px] bg-linear-to-l from-[#ff6b5a] via-[#ffc531] via-40% to-[#9b5cf6]" aria-hidden />
       </header>
 
-      <div ref={containerRef} className="reader-scroll flex-1 overflow-auto px-2 py-4" data-testid="reader">
+      <div ref={containerRef} className="reader-scroll relative flex-1 overflow-auto px-2 pt-5 pb-28" data-testid="reader">
+        <span className="pointer-events-none fixed inset-x-0 top-16 bottom-0 bg-[radial-gradient(rgb(255_255_255/0.05)_1.2px,transparent_1.5px)] bg-[length:22px_22px]" aria-hidden />
         {error ? (
-          <div className="mx-auto mt-16 max-w-sm rounded-lg bg-surface p-6 text-center text-ink" role="alert">
-            <TriangleAlert className="mx-auto size-10 text-danger" aria-hidden />
-            <p className="mt-3 font-semibold">{error}</p>
-            <Link href={backHref} className="mt-4 inline-block text-sm font-semibold text-brand-700 underline">
+          <div className="relative mx-auto mt-16 max-w-sm rounded-[1.75rem] bg-surface p-7 text-center text-ink shadow-pop" role="alert">
+            <span className="mx-auto grid size-16 place-items-center rounded-[1.25rem] bg-linear-to-br from-[#ffa07a] to-[#e8483f] text-white shadow-[0_5px_0_#b4322a]">
+              <TriangleAlert className="size-8" aria-hidden />
+            </span>
+            <p className="mt-4 font-display text-[1.1rem] font-extrabold">{error}</p>
+            <Link href={backHref} className="btn btn-3d btn-primary btn-md mt-5">
+              <ArrowRight aria-hidden />
               {backLabel}
             </Link>
           </div>
         ) : !doc ? (
-          <div className="mt-24 flex flex-col items-center gap-3 text-white/80" role="status">
-            <LoaderCircle className="size-8 animate-spin" aria-hidden />
-            <p className="text-sm">جارٍ فتح الملف…</p>
+          <div className="relative mt-24 flex flex-col items-center gap-4 text-white/85" role="status">
+            <span className="grid size-16 place-items-center rounded-[1.25rem] bg-white/10 ring-1 ring-white/15">
+              <LoaderCircle className="size-8 animate-spin text-[#ffc531]" aria-hidden />
+            </span>
+            <p className="font-display text-[0.98rem] font-bold">جارٍ فتح الملف…</p>
           </div>
         ) : (
-          <div className="mx-auto flex flex-col items-center gap-3" dir="ltr">
+          <div className="relative mx-auto flex flex-col items-center gap-4" dir="ltr">
             {pages.map((n) => (
               <PdfPage key={n} doc={doc} n={n} width={pageWidth} ratio={ratio} watermark={watermark} onVisible={onVisible} />
             ))}
           </div>
         )}
       </div>
+
+      {/* لوحة التحكم العائمة: تصغير، رقم الصفحة وشريط التقدم، تكبير */}
+      {doc ? (
+        <div className="on-dark pointer-events-none fixed inset-x-0 bottom-4 z-20 flex justify-center px-3">
+          <div className="pointer-events-auto flex items-center gap-1 rounded-full border border-white/12 bg-[#06302e]/88 p-1.5 shadow-[0_18px_40px_-14px_rgb(0_0_0/0.7)] backdrop-blur-md">
+            <button className={dockBtn} onClick={zoomOut} disabled={zoom <= 0.6} aria-label="تصغير">
+              <Minus className="size-5" aria-hidden />
+            </button>
+            <div className="flex min-w-[7.5rem] flex-col items-center px-2">
+              <span className="flex items-baseline gap-1.5 font-display text-white">
+                <span className="text-[0.75rem] font-bold text-white/70">صفحة</span>
+                <span className="num text-[1rem] font-black" aria-live="polite" data-testid="reader-pages" dir="ltr">
+                  {current} / {doc.numPages}
+                </span>
+              </span>
+              <span className="mt-1 block h-1.5 w-full overflow-hidden rounded-full bg-white/15" aria-hidden>
+                <span className="block h-full rounded-full bg-linear-to-l from-[#ffd25e] to-[#ffc531] transition-[width] duration-300" style={{ width: `${progress}%` }} />
+              </span>
+            </div>
+            <span className="hidden min-w-12 text-center font-display text-[0.8rem] font-bold text-white/70 sm:block" aria-hidden>
+              {ar(Math.round(zoom * 100))}٪
+            </span>
+            <button className={dockBtn} onClick={zoomIn} disabled={zoom >= 2.4} aria-label="تكبير">
+              <Plus className="size-5" aria-hidden />
+            </button>
+          </div>
+        </div>
+      ) : null}
       <style>{`@media print { .reader-scroll { display: none !important; } }`}</style>
     </div>
   );
@@ -259,12 +319,12 @@ function PdfPage({
     <div
       id={`page-${n}`}
       ref={ref}
-      className="relative overflow-hidden bg-white shadow-lg"
+      className="relative overflow-hidden rounded-[4px] bg-white shadow-[0_18px_40px_-18px_rgb(0_0_0/0.7),0_0_0_1px_rgb(255_255_255/0.06)]"
       style={{ width, height: Math.round(width * ratio) }}
       aria-label={`صفحة ${n}`}
     >
       <canvas ref={canvasRef} className="block h-full w-full" />
-      {!rendered ? <div className="absolute inset-0 animate-pulse bg-neutral-100" aria-hidden /> : null}
+      {!rendered ? <div className="absolute inset-0 animate-pulse bg-[#f4efe6]" aria-hidden /> : null}
       {watermark ? (
         <div className="pointer-events-none absolute inset-0 flex flex-col items-center justify-around overflow-hidden opacity-[0.13]" aria-hidden>
           {[0, 1, 2].map((i) => (

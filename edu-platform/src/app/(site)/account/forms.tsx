@@ -1,6 +1,7 @@
 "use client";
 
 import { useActionState } from "react";
+import { KeyRound, Save } from "lucide-react";
 import { changePasswordAction, updateProfileAction } from "./actions";
 import { Field, Input, Select } from "@/components/ui/form";
 import { Alert } from "@/components/ui/alert";
@@ -10,9 +11,13 @@ export function ProfileForm({ user, grades }: { user: { fullName: string; phone:
   const [state, action] = useActionState(updateProfileAction, null);
   const fe = state?.fieldErrors ?? {};
   return (
-    <form action={action} className="flex flex-col gap-4">
-      {state?.ok ? <Alert tone="success">{state.message}</Alert> : null}
-      <Field label="الاسم" htmlFor="fullName" error={fe.fullName}>
+    <form action={action} className="grid gap-4 sm:grid-cols-2">
+      {state?.ok ? (
+        <Alert tone="success" className="sm:col-span-2">
+          {state.message}
+        </Alert>
+      ) : null}
+      <Field label="الاسم" htmlFor="fullName" error={fe.fullName} className="sm:col-span-2">
         <Input id="fullName" name="fullName" defaultValue={user.fullName} required />
       </Field>
       <Field label="رقم الهاتف" htmlFor="phone" error={fe.phone} hint="اختياري، رقم كويتي">
@@ -28,7 +33,11 @@ export function ProfileForm({ user, grades }: { user: { fullName: string; phone:
           ))}
         </Select>
       </Field>
-      <SubmitButton className="w-fit">حفظ</SubmitButton>
+      <div className="sm:col-span-2">
+        <SubmitButton size="lg" className="w-full sm:w-auto sm:min-w-44">
+          <Save aria-hidden /> حفظ
+        </SubmitButton>
+      </div>
     </form>
   );
 }
@@ -49,7 +58,9 @@ export function PasswordForm() {
       <Field label="تأكيد كلمة المرور الجديدة" htmlFor="confirmPassword" error={fe.confirmPassword}>
         <Input id="confirmPassword" name="confirmPassword" type="password" dir="ltr" autoComplete="new-password" required />
       </Field>
-      <SubmitButton className="w-fit">تغيير كلمة المرور</SubmitButton>
+      <SubmitButton size="lg" variant="accent" className="w-full sm:w-fit">
+        <KeyRound aria-hidden /> تغيير كلمة المرور
+      </SubmitButton>
     </form>
   );
 }
