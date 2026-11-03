@@ -75,7 +75,7 @@ const AR = "٠١٢٣٤٥٦٧٨٩";
 /** أرقام هندية عربية للأعداد والسنوات والخطوات (الأسعار بالأرقام اللاتينية) */
 export const ar = (n: number | string) => String(n).replace(/\d/g, (d) => AR[Number(d)]);
 
-export type CountWord = { one: string; two: string; plural: string; acc: string; single?: string; oneSuffix?: string; none?: string };
+export type CountWord = { one: string; two: string; plural: string; acc: string; single?: string; oneSuffix?: string; none?: string; oneAcc?: string; twoAcc?: string };
 
 /**
  * العدد والمعدود بقواعد العربية:
@@ -91,11 +91,23 @@ export function count(n: number, w: CountWord): string {
   return `${ar(n)} ${w.one}`;
 }
 
-/** الرقم والمعدود منفصلين (للأرقام البارزة): ٢٤ + «درسًا مرئيًا» */
-export function countParts(n: number, w: CountWord) {
+/**
+ * الرقم والمعدود منفصلين (للأرقام البارزة): ٢٤ + «درسًا مرئيًا».
+ * الواحد والاثنان لا يُكتبان برقم في العربية: ١ ← «معلم» + «واحد»، ٢ ← «معلمان».
+ */
+export function countParts(n: number, w: CountWord): { num: string; label: string } {
+  if (n === 1) return w.single ? { num: w.single, label: "" } : { num: w.one, label: w.oneSuffix ?? "واحد" };
+  if (n === 2) return { num: w.two, label: "" };
   const m = n % 100;
-  const label = n === 2 ? w.two : m >= 3 && m <= 10 ? w.plural : m >= 11 && m <= 99 ? w.acc : w.one;
+  const label = m >= 3 && m <= 10 ? w.plural : m >= 11 && m <= 99 ? w.acc : w.one;
   return { num: ar(n), label };
+}
+
+/** المعدود منصوبًا بعد فعل: «تضم منتجًا واحدًا» / «تضم منتجين» / «تضم ٤ منتجات» */
+export function countAcc(n: number, w: CountWord): string {
+  if (n === 1 && w.oneAcc) return w.oneAcc;
+  if (n === 2 && w.twoAcc) return w.twoAcc;
+  return count(n, w);
 }
 
 /** صيغ المعدودات الشائعة في المنصة */
@@ -105,7 +117,7 @@ export const W = {
   teacher: { one: "معلم", two: "معلمان", plural: "معلمين", acc: "معلمًا" },
   grade: { one: "صف", two: "صفّان", plural: "صفوف", acc: "صفًّا" },
   subject: { one: "مادة", two: "مادتان", plural: "مواد", acc: "مادة", oneSuffix: "واحدة" },
-  product: { one: "منتج", two: "منتجان", plural: "منتجات", acc: "منتجًا" },
+  product: { one: "منتج", two: "منتجان", plural: "منتجات", acc: "منتجًا", oneAcc: "منتجًا واحدًا", twoAcc: "منتجين" },
   page: { one: "صفحة", two: "صفحتان", plural: "صفحات", acc: "صفحة", oneSuffix: "واحدة" },
   note: { one: "مذكرة", two: "مذكرتان", plural: "مذكرات", acc: "مذكرة", oneSuffix: "واحدة" },
   item: { one: "عنصر", two: "عنصران", plural: "عناصر", acc: "عنصرًا" },

@@ -7,7 +7,7 @@ import { BadgeCheck, MonitorSmartphone, ShieldCheck, Zap } from "lucide-react";
 import { Sparkle, SpotArt, type SpotKind } from "@/components/art";
 import { ProductCover } from "@/components/site/product-cover";
 import { GradeCard, GradeGrid } from "@/components/site/grade-card";
-import { ar, type CountWord } from "@/lib/design";
+import { countParts, type CountWord } from "@/lib/design";
 import type { ProductType } from "@/lib/labels";
 import { filsToKwdString } from "@/lib/money";
 import { cn } from "@/lib/utils";
@@ -130,10 +130,7 @@ export function ProgressBar({ pct, tone = "subject", className }: { pct: number;
  * أجزاء رقم StatPill بعربية سليمة: ١ ← «منتج واحد»، ٢ ← «منتجان» (بلا رقم مكرر)، ٣+ ← رقم ومعدود.
  */
 export function pillParts(n: number, w: CountWord): { num: string; label: string } {
-  if (n === 1) return { num: w.single ?? w.one, label: w.single ? "" : (w.oneSuffix ?? "واحد") };
-  if (n === 2) return { num: w.two, label: "" };
-  const m = n % 100;
-  return { num: ar(n), label: m >= 3 && m <= 10 ? w.plural : m >= 11 && m <= 99 ? w.acc : w.one };
+  return countParts(n, w);
 }
 
 /**

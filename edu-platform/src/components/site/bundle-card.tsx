@@ -4,7 +4,7 @@ import type { ProductCard } from "@/server/catalog/queries";
 import { BundleStack, SubjectIcon } from "@/components/art";
 import { PRODUCT_TYPE_LABELS } from "@/lib/labels";
 import { filsToKwdString } from "@/lib/money";
-import { ar, count, gradeClass, gradeLevelFromSlug, gradeTone, savings, subjectTone, toneClass, W } from "@/lib/design";
+import { ar, countAcc, gradeClass, gradeLevelFromSlug, gradeTone, savings, subjectTone, toneClass, W } from "@/lib/design";
 import { cn } from "@/lib/utils";
 import { CompactPrice, Kicker, OwnedChip, catalogStyles as s } from "./card-parts";
 
@@ -53,7 +53,7 @@ function ItemIcons({ items }: { items?: ProductCard[] }) {
           <span className="sr-only">{i.subjectName ?? i.title}</span>
         </li>
       ))}
-      <li className={s.bcount}>{`تضم ${count(items.length, W.product)}`}</li>
+      <li className={s.bcount}>{`تضم ${countAcc(items.length, W.product)}`}</li>
     </ul>
   );
 }

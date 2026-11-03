@@ -73,8 +73,6 @@ const TYPE_ICON: Record<ProductType, React.ComponentType<{ "aria-hidden"?: boole
  * ١ ← «معلم واحد»، ٢ ← «معلمان»، وإلا ← «٦ مواد» / «٢٦ منتجًا».
  */
 export function pillCount(n: number, w: CountWord): { num: string; label: string } {
-  if (n === 1) return { num: w.one, label: w.oneSuffix ?? "واحد" };
-  if (n === 2) return { num: w.two, label: "" };
   return countParts(n, w);
 }
 

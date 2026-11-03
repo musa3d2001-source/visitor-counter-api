@@ -1,4 +1,4 @@
-import { count, W } from "@/lib/design";
+import { count, countAcc, W } from "@/lib/design";
 import { termLabel } from "@/lib/labels";
 
 /** «الفصل الأول» بدل «الفصل الدراسي الأول» */
@@ -16,7 +16,5 @@ export function previewLabel(pages: number | null) {
 
 /** «تضم منتجين» / «تضم ٤ منتجات» بإعراب صحيح بعد الفعل */
 export function includesLabel(n: number): string {
-  if (n === 1) return "تضم منتجًا واحدًا";
-  if (n === 2) return "تضم منتجين";
-  return `تضم ${count(n, W.product)}`;
+  return `تضم ${countAcc(n, W.product)}`;
 }
