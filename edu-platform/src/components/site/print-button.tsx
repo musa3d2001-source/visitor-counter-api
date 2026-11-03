@@ -5,7 +5,7 @@ import { Button } from "@/components/ui/button";
 
 export function PrintButton() {
   return (
-    <Button variant="outline" onClick={() => window.print()}>
+    <Button variant="outline" className="no-print" onClick={() => window.print()}>
       <Printer aria-hidden /> طباعة الفاتورة
     </Button>
   );

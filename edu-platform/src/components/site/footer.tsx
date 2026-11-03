@@ -1,9 +1,13 @@
 import Link from "next/link";
+import { CreditCard } from "lucide-react";
+import { Sparkle } from "@/components/art";
+import { ar } from "@/lib/design";
 import { getSettings } from "@/server/platform/settings";
 import { listGrades } from "@/server/catalog/queries";
 import { storage } from "@/server/storage";
 import { Logo } from "./logo";
 
+/** التذييل: فيروزي داكن بشريط قوس قزح المواد، روابط حقيقية، وسنة بالأرقام الهندية العربية */
 export async function SiteFooter() {
   const [settings, grades] = await Promise.all([getSettings(), listGrades()]);
   const logoUrl = settings.logo_key ? storage().publicUrl(settings.logo_key) : null;
@@ -14,11 +18,23 @@ export async function SiteFooter() {
     settings.instagram_url && { href: settings.instagram_url, label: "إنستغرام" },
   ].filter(Boolean) as { href: string; label: string }[];
   return (
-    <footer className="mt-24 bg-ink text-white/80 no-print">
-      <div className="mx-auto grid max-w-6xl gap-10 px-4 py-14 sm:grid-cols-2 md:grid-cols-[1.4fr_1fr_1fr_1fr]">
-        <div>
-          <Logo name={settings.site_name} logoUrl={logoUrl} tone="light" />
-          <p className="mt-4 max-w-xs text-sm leading-7 text-white/70">{settings.tagline}</p>
+    <footer
+      className="on-dark relative isolate mt-20 overflow-hidden text-white/80 no-print"
+      style={{
+        background:
+          "radial-gradient(45% 80% at 100% 0%, color-mix(in oklab, var(--brand-hi) 32%, transparent), transparent 65%), radial-gradient(40% 70% at 0% 100%, rgb(255 197 49 / 0.12), transparent 65%), var(--brand-night)",
+      }}
+    >
+      <span className="rainbow-rule absolute inset-x-0 top-0 rounded-none" aria-hidden />
+      <Sparkle className="animate-twinkle absolute end-[8%] top-14 -z-10 size-5 opacity-60" color="#FFE29A" />
+      <div className="mx-auto grid max-w-7xl grid-cols-2 gap-x-6 gap-y-10 px-4 pt-16 pb-12 sm:px-6 lg:grid-cols-[1.5fr_1fr_1fr_1fr] lg:pt-20">
+        <div className="col-span-2 lg:col-span-1">
+          <Logo name={settings.site_name} logoUrl={logoUrl} tone="light" subtitle={grades[0]?.stageName} />
+          {settings.tagline ? <p className="mt-4 max-w-sm text-[1rem] leading-8 text-white/78">{settings.tagline}</p> : null}
+          <p className="mt-5 inline-flex items-center gap-2.5 rounded-2xl border border-white/10 bg-white/6 px-4 py-2.5 text-[0.9rem] leading-6">
+            <CreditCard className="size-4.5 shrink-0 text-[#FFD25E]" aria-hidden />
+            دفع إلكتروني آمن عبر ماي فاتورة: كي نت والبطاقات البنكية
+          </p>
         </div>
         <FooterCol title="الصفوف" links={grades.map((g) => ({ href: `/grades/${g.slug}`, label: g.name }))} />
         <FooterCol
@@ -27,6 +43,7 @@ export async function SiteFooter() {
             { href: "/teachers", label: "المعلمون" },
             { href: "/bundles", label: "الباقات" },
             { href: "/library", label: "مكتبتي" },
+            { href: "/cart", label: "السلة" },
             { href: "/#faq", label: "الأسئلة الشائعة" },
           ]}
         />
@@ -41,9 +58,9 @@ export async function SiteFooter() {
           ]}
         />
       </div>
-      <div className="border-t border-white/10">
-        <p className="mx-auto max-w-6xl px-4 py-5 text-xs leading-6 text-white/60">
-          © <span className="num">{year}</span> {settings.site_name}. {settings.footer_note}
+      <div className="mx-auto max-w-7xl px-4 sm:px-6">
+        <p className="border-t border-white/10 py-6 text-[0.86rem] leading-7 text-white/68">
+          © <span className="num">{ar(year)}</span> {settings.site_name}. {settings.footer_note}
         </p>
       </div>
     </footer>
@@ -53,11 +70,15 @@ export async function SiteFooter() {
 function FooterCol({ title, links }: { title: string; links: { href: string; label: string }[] }) {
   return (
     <div>
-      <p className="mb-3 text-sm font-semibold text-white">{title}</p>
-      <ul className="text-sm">
+      <p className="mb-2 font-display text-[1.05rem] font-extrabold text-white">{title}</p>
+      <ul className="text-[0.98rem]">
         {links.map((l) => (
           <li key={l.href + l.label}>
-            <Link href={l.href} className="inline-flex min-h-10 items-center hover:text-white" {...(l.href.startsWith("http") ? { target: "_blank", rel: "noopener noreferrer" } : {})}>
+            <Link
+              href={l.href}
+              className="inline-flex min-h-11 items-center text-white/78 transition-colors hover:text-[#FFD25E]"
+              {...(l.href.startsWith("http") ? { target: "_blank", rel: "noopener noreferrer" } : {})}
+            >
               {l.label}
             </Link>
           </li>

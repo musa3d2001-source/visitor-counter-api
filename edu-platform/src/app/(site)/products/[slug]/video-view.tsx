@@ -308,7 +308,7 @@ export function VideoProductView({
         <div className="fixed inset-x-0 bottom-0 z-30 border-t border-line bg-surface p-3 lg:hidden no-print">
           <div className="mx-auto flex max-w-6xl items-center gap-3">
             <div className="shrink-0">
-              <Price fils={product.priceFils} compareAt={product.compareAtPriceFils} size="md" />
+              <Price fils={product.priceFils} compareAt={product.compareAtPriceFils} size="md" showPercent={false} />
               <p className="text-[0.7rem] text-muted">{accessPeriodText(product)}</p>
             </div>
             <AddToCart productId={product.id} compact className="flex-1" />

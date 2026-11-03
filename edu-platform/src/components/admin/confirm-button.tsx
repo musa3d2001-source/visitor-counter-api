@@ -3,11 +3,12 @@
 import { useActionState, useEffect, useId, useState } from "react";
 import { usePreservingAction } from "./use-preserving-action";
 import { AlertDialog } from "radix-ui";
-import { LoaderCircle } from "lucide-react";
+import { CircleCheck, LoaderCircle, TriangleAlert } from "lucide-react";
 import type * as React from "react";
 import type { ActionState } from "@/lib/action-state";
 import { Button, type ButtonProps } from "@/components/ui/button";
-import { Input, Textarea } from "@/components/ui/form";
+import { Input, Select, Textarea } from "@/components/ui/form";
+import { cn } from "@/lib/utils";
 
 type ServerAction = (prev: ActionState, fd: FormData) => Promise<ActionState>;
 
@@ -48,6 +49,7 @@ export function ConfirmButton({
   const { state, formAction, pending, formRef } = usePreservingAction(action);
   const [open, setOpen] = useState(false);
   const formId = useId();
+  const calm = variant === "primary" || variant === "accent";
   useEffect(() => {
     if (state?.ok) setOpen(false);
   }, [state]);
@@ -64,13 +66,27 @@ export function ConfirmButton({
           </Button>
         </AlertDialog.Trigger>
         <AlertDialog.Portal>
-          <AlertDialog.Overlay className="fixed inset-0 z-50 bg-ink/40" />
-          <AlertDialog.Content dir="rtl" className="fixed left-1/2 top-1/2 z-50 w-[92vw] max-w-md -translate-x-1/2 -translate-y-1/2 rounded-lg bg-surface p-6 shadow-lift outline-none">
-            <AlertDialog.Title className="text-lg font-bold">{title}</AlertDialog.Title>
-            {description ? <AlertDialog.Description className="mt-2 text-sm leading-7 text-ink-soft">{description}</AlertDialog.Description> : <AlertDialog.Description className="sr-only">{title}</AlertDialog.Description>}
+          <AlertDialog.Overlay className="fixed inset-0 z-50 bg-[rgb(6_30_29/0.45)] backdrop-blur-[3px]" />
+          <AlertDialog.Content
+            dir="rtl"
+            className="fixed left-1/2 top-1/2 z-50 max-h-[90dvh] w-[calc(100vw-2rem)] max-w-md -translate-x-1/2 -translate-y-1/2 overflow-y-auto rounded-[1.75rem] border border-white bg-surface p-6 shadow-pop outline-none sm:p-7"
+          >
+            <span
+              className={cn(
+                "mb-4 grid size-14 place-items-center rounded-[1.15rem] [&_svg]:size-7",
+                calm
+                  ? "bg-linear-to-br from-brand-400 to-brand-600 text-white shadow-[inset_0_-4px_0_rgb(0_0_0/0.14),0_12px_22px_-12px_var(--brand-edge)]"
+                  : "bg-linear-to-br from-[#FFA07A] to-[#D9412F] text-white shadow-[inset_0_-4px_0_rgb(0_0_0/0.14),0_12px_22px_-12px_#B4322A]",
+              )}
+              aria-hidden
+            >
+              {calm ? <CircleCheck /> : <TriangleAlert />}
+            </span>
+            <AlertDialog.Title className="font-display text-[1.35rem] leading-snug font-black text-ink">{title}</AlertDialog.Title>
+            {description ? <AlertDialog.Description className="mt-2 text-[0.95rem] leading-7 text-ink-soft">{description}</AlertDialog.Description> : <AlertDialog.Description className="sr-only">{title}</AlertDialog.Description>}
             {requireReason ? (
               <div className="mt-4">
-                <label htmlFor={`${formId}-reason`} className="mb-1.5 block text-sm font-semibold text-ink-soft">
+                <label htmlFor={`${formId}-reason`} className="mb-1.5 block font-display text-sm font-bold text-ink-soft">
                   {reasonLabel}
                 </label>
                 <Textarea id={`${formId}-reason`} name="reason" form={formId} required minLength={3} maxLength={500} rows={3} />
@@ -78,43 +94,38 @@ export function ConfirmButton({
             ) : null}
             {selectField ? (
               <div className="mt-4">
-                <label htmlFor={`${formId}-${selectField.name}`} className="mb-1.5 block text-sm font-semibold text-ink-soft">
+                <label htmlFor={`${formId}-${selectField.name}`} className="mb-1.5 block font-display text-sm font-bold text-ink-soft">
                   {selectField.label}
                 </label>
-                <select
-                  id={`${formId}-${selectField.name}`}
-                  name={selectField.name}
-                  form={formId}
-                  className="h-11 w-full rounded-lg border border-line-strong bg-surface px-3 text-[0.95rem]"
-                >
+                <Select id={`${formId}-${selectField.name}`} name={selectField.name} form={formId}>
                   {selectField.options.map((o) => (
                     <option key={o.value} value={o.value}>
                       {o.label}
                     </option>
                   ))}
-                </select>
+                </Select>
               </div>
             ) : null}
             {fields?.map((f) => (
               <div key={f.name} className="mt-4">
-                <label htmlFor={`${formId}-${f.name}`} className="mb-1.5 block text-sm font-semibold text-ink-soft">
+                <label htmlFor={`${formId}-${f.name}`} className="mb-1.5 block font-display text-sm font-bold text-ink-soft">
                   {f.label}
                 </label>
                 <Input id={`${formId}-${f.name}`} name={f.name} form={formId} placeholder={f.placeholder} dir={f.ltr ? "ltr" : undefined} className={f.ltr ? "num text-start" : undefined} />
               </div>
             ))}
             {state?.error ? (
-              <p role="alert" className="mt-3 text-sm text-danger">
+              <p role="alert" className="mt-3 rounded-xl bg-danger-50 px-3 py-2 text-sm font-bold text-danger">
                 {state.error}
               </p>
             ) : null}
-            <div className="mt-6 flex justify-end gap-2">
+            <div className="mt-7 flex flex-wrap-reverse justify-end gap-2.5">
               <AlertDialog.Cancel asChild>
-                <Button type="button" variant="ghost" size="sm">
+                <Button type="button" variant="outline" size="md">
                   إلغاء
                 </Button>
               </AlertDialog.Cancel>
-              <Button type="submit" form={formId} variant={variant === "primary" || variant === "accent" ? variant : "danger"} size="sm" disabled={pending}>
+              <Button type="submit" form={formId} variant={calm ? (variant as "primary" | "accent") : "danger"} size="md" disabled={pending}>
                 {pending ? <LoaderCircle className="animate-spin" aria-hidden /> : null}
                 {confirmLabel}
               </Button>
@@ -123,12 +134,12 @@ export function ConfirmButton({
         </AlertDialog.Portal>
       </AlertDialog.Root>
       {!open && state?.error ? (
-        <p role="alert" className="mt-1 text-xs text-danger">
+        <p role="alert" className="mt-1 text-xs font-bold text-danger">
           {state.error}
         </p>
       ) : null}
       {state?.ok && state.message ? (
-        <p role="status" className="mt-1 text-xs text-success">
+        <p role="status" className="mt-1 text-xs font-bold text-success">
           {state.message}
         </p>
       ) : null}
@@ -163,7 +174,7 @@ export function QuickAction({
         {label}
       </Button>
       {state?.error ? (
-        <p role="alert" className="mt-1 max-w-56 text-xs text-danger">
+        <p role="alert" className="mt-1 max-w-56 text-xs font-bold text-danger">
           {state.error}
         </p>
       ) : null}

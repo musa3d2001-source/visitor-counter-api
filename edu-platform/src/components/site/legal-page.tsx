@@ -1,13 +1,19 @@
-import { Breadcrumbs } from "@/components/ui/breadcrumbs";
+import { ScrollText } from "lucide-react";
+import { PageHeader } from "@/components/ui/page-header";
 
+/** الصفحات القانونية: رأس مشمس (PageHeader) + لوح أبيض بنص مريح (‎.prose-sunny‎) */
 export function LegalPage({ title, children }: { title: string; children: React.ReactNode }) {
   return (
-    <div className="mx-auto max-w-3xl px-4 py-8">
-      <Breadcrumbs items={[{ label: "الرئيسية", href: "/" }, { label: title }]} />
-      <h1 className="mt-4 text-3xl font-bold">{title}</h1>
-      <div className="mt-6 space-y-5 rounded-lg border border-line bg-surface p-6 leading-8 text-ink-soft [&_h2]:mt-6 [&_h2]:text-lg [&_h2]:font-bold [&_h2]:text-ink [&_li]:ms-5 [&_li]:list-disc">
-        {children}
+    <>
+      <PageHeader
+        title={title}
+        breadcrumbs={[{ label: "الرئيسية", href: "/" }, { label: title }]}
+        eyebrow={{ icon: <ScrollText aria-hidden />, label: "صفحات المنصة" }}
+        className="[&>div]:max-w-3xl"
+      />
+      <div className="mx-auto -mt-6 max-w-3xl px-4 sm:px-6">
+        <div className="panel panel-rainbow prose-sunny px-5 pt-10 pb-8 text-[1.02rem] sm:px-10 sm:pt-12 sm:pb-10">{children}</div>
       </div>
-    </div>
+    </>
   );
 }

@@ -40,8 +40,8 @@ export const DEFAULT_SETTINGS: PlatformSettings = {
   hero_subtitle:
     "شرح بالفيديو لكل وحدة، ومراجعات قبل الاختبارات القصيرة وليلة الاختبار، ومذكرات جاهزة للطباعة. ادفع لما تحتاجه فقط، ويظهر في مكتبتك فور تأكيد الدفع.",
   logo_key: null,
-  primary_color: "#0c6b66",
-  accent_color: "#f2c230",
+  primary_color: "#0a6b66",
+  accent_color: "#ffc531",
   whatsapp_number: "",
   contact_email: "",
   contact_phone: "",

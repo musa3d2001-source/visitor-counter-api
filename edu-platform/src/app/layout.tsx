@@ -28,7 +28,7 @@ export async function generateMetadata(): Promise<Metadata> {
 }
 
 export const viewport: Viewport = {
-  themeColor: "#0c6b66",
+  themeColor: "#0a6b66",
   width: "device-width",
   initialScale: 1,
 };
@@ -38,8 +38,8 @@ export default async function RootLayout({ children }: { children: React.ReactNo
   const style = { "--brand": s.primary_color, "--accent": s.accent_color } as React.CSSProperties;
   return (
     <html lang="ar" dir="rtl" style={style} data-scroll-behavior="smooth">
-      <body className="min-h-dvh font-sans">
-        <a href="#main" className="sr-only focus:not-sr-only focus:fixed focus:start-3 focus:top-3 focus:z-50 focus:rounded-lg focus:bg-surface focus:px-4 focus:py-2 focus:shadow-lift">
+      <body className="min-h-dvh bg-canvas font-sans text-ink">
+        <a href="#main" className="sr-only focus:not-sr-only focus:fixed focus:start-3 focus:top-3 focus:z-50 focus:rounded-full focus:bg-surface focus:px-5 focus:py-2.5 focus:font-display focus:font-bold focus:shadow-lift">
           تخطَّ إلى المحتوى
         </a>
         {children}

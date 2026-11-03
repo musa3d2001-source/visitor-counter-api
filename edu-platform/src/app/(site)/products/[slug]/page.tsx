@@ -353,7 +353,7 @@ export default async function ProductPage({ params }: { params: Promise<Params> 
       {!isOwned && product.status === "published" && !videosOff ? (
         <div className="fixed inset-x-0 bottom-0 z-30 border-t border-line bg-surface p-3 md:hidden no-print">
           <div className="mx-auto flex max-w-6xl items-center gap-3">
-            <Price fils={product.priceFils} compareAt={product.compareAtPriceFils} size="md" className="shrink-0" />
+            <Price fils={product.priceFils} compareAt={product.compareAtPriceFils} size="md" showPercent={false} className="shrink-0" />
             <AddToCart productId={product.id} compact className="flex-1" />
           </div>
         </div>

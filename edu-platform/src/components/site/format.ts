@@ -1,4 +1,6 @@
-/** تنسيق مدة الفيديو: 7:05 أو 1:02:30 */
+import { ar, count, W } from "@/lib/design";
+
+/** تنسيق مدة الفيديو: 7:05 أو 1:02:30 (أرقام المشغّل اللاتينية) */
 export function formatClock(sec: number | null | undefined): string {
   if (!sec || sec < 0) return "0:00";
   const s = Math.floor(sec);
@@ -8,25 +10,20 @@ export function formatClock(sec: number | null | undefined): string {
   return h ? `${h}:${String(m).padStart(2, "0")}:${String(r).padStart(2, "0")}` : `${m}:${String(r).padStart(2, "0")}`;
 }
 
-/** مدة إجمالية مقروءة: «45 دقيقة»، «3 ساعات و10 دقائق»، «أقل من دقيقة» */
+/** مدة إجمالية مقروءة: «٤٥ دقيقة»، «٣ ساعات و١٠ دقائق»، «أقل من دقيقة» */
 export function formatTotalDuration(sec: number | null | undefined): string {
   if (!sec || sec <= 0) return "";
+  if (sec < 60) return "أقل من دقيقة";
   const minutes = Math.round(sec / 60);
-  if (minutes < 1) return "أقل من دقيقة";
   const h = Math.floor(minutes / 60);
   const m = minutes % 60;
-  const mins = (n: number) => (n === 1 ? "دقيقة" : n === 2 ? "دقيقتان" : n <= 10 ? `${n} دقائق` : `${n} دقيقة`);
-  const hours = (n: number) => (n === 1 ? "ساعة" : n === 2 ? "ساعتان" : n <= 10 ? `${n} ساعات` : `${n} ساعة`);
-  if (!h) return mins(m);
-  return m ? `${hours(h)} و${mins(m)}` : hours(h);
+  if (!h) return count(m, W.minute);
+  return m ? `${count(h, W.hour)} و${count(m, W.minute)}` : count(h, W.hour);
 }
 
-/** «3 دروس» بصياغة عربية صحيحة */
+/** «٣ دروس» بصياغة عربية صحيحة (انظر count في src/lib/design.ts) */
 export function lessonsLabel(n: number): string {
-  if (n === 1) return "درس واحد";
-  if (n === 2) return "درسان";
-  if (n >= 3 && n <= 10) return `${n} دروس`;
-  return `${n} درسًا`;
+  return count(n, W.lesson);
 }
 
 export function initials(name: string): string {
@@ -43,10 +40,12 @@ export function initials(name: string): string {
     .join(" ");
 }
 
-/** صيغة العدد العربية: 1 مفرد، 2 مثنى، 3–10 جمع، 11+ مفرد منصوب */
+/** صيغة العدد العربية: 1 مفرد، 2 مثنى، 3–10 جمع، 11+ مفرد منصوب (أرقام هندية عربية) */
 export function arabicCount(n: number, forms: { one: string; two: string; few: string; many: string }): string {
   if (n === 1) return `${forms.one} واحد`.replace(/ة واحد$/, "ة واحدة");
   if (n === 2) return forms.two;
-  if (n >= 3 && n <= 10) return `${n} ${forms.few}`;
-  return `${n} ${forms.many}`;
+  const m = n % 100;
+  if (m >= 3 && m <= 10) return `${ar(n)} ${forms.few}`;
+  if (m >= 11 && m <= 99) return `${ar(n)} ${forms.many}`;
+  return `${ar(n)} ${forms.one}`;
 }
