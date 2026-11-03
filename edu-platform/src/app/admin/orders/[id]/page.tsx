@@ -26,7 +26,7 @@ import {
 import { getAdminOrder } from "@/server/admin/records";
 import { paymentsConfig } from "@/server/payments/service";
 import { Section } from "@/components/admin/page-header";
-import { InfoList } from "@/components/admin/data-list";
+import { EmptyValue, InfoList } from "@/components/admin/data-list";
 import { OrderStatusBadge, PaymentStatusBadge, StatusPill, TestBadge } from "@/components/admin/status-badge";
 import { ConfirmButton } from "@/components/admin/confirm-button";
 import { ToneIcon } from "@/components/admin/icon-tile";
@@ -203,7 +203,7 @@ export default async function AdminOrderPage({ params }: { params: Promise<{ id:
                       <Phone className="size-3.5" aria-hidden /> الهاتف
                     </span>
                   ),
-                  value: <span className="num">{order.customer_phone ? displayPhone(order.customer_phone) : "—"}</span>,
+                  value: order.customer_phone ? <span className="num">{displayPhone(order.customer_phone)}</span> : <EmptyValue label="غير مسجل" />,
                 },
               ]}
             />
@@ -272,9 +272,9 @@ export default async function AdminOrderPage({ params }: { params: Promise<{ id:
                   cols={2}
                   className="mt-1"
                   items={[
-                    { label: "رقم الفاتورة", value: <span className="num text-[0.88rem]">{p.gateway_invoice_id ?? "—"}</span> },
-                    { label: "رقم الدفع", value: <span className="num text-[0.88rem] break-all">{p.gateway_payment_id ?? "—"}</span> },
-                    { label: "الوسيلة", value: <span className="text-[0.88rem]">{p.payment_method ?? "—"}</span>, wide: true },
+                    { label: "رقم الفاتورة", value: p.gateway_invoice_id ? <span className="num text-[0.88rem]">{p.gateway_invoice_id}</span> : <EmptyValue className="text-[0.88rem]" /> },
+                    { label: "رقم الدفع", value: p.gateway_payment_id ? <span className="num text-[0.88rem] break-all">{p.gateway_payment_id}</span> : <EmptyValue className="text-[0.88rem]" /> },
+                    { label: "الوسيلة", value: p.payment_method ? <span className="text-[0.88rem]">{p.payment_method}</span> : <EmptyValue className="text-[0.88rem]" />, wide: true },
                   ]}
                 />
                 {p.error_message ? (

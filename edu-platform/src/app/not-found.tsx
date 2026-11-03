@@ -1,3 +1,4 @@
+import type { Metadata } from "next";
 import Link from "next/link";
 import { headers } from "next/headers";
 import { ArrowLeft, Compass, House, MapPinOff } from "lucide-react";
@@ -6,6 +7,9 @@ import { SiteFooter } from "@/components/site/footer";
 import { Sparkle } from "@/components/art";
 import { ar, gradeClass } from "@/lib/design";
 import { listGrades } from "@/server/catalog/queries";
+
+/** عنوان التبويب والسجل: «الصفحة غير موجودة | منصة درب» عبر قالب العنوان في التخطيط الجذري */
+export const metadata: Metadata = { title: "الصفحة غير موجودة", robots: { index: false } };
 
 /** بطاقات «٤٠٤» المائلة بألوان الصفوف (مثل بطاقات الدروس في الرئيسية) */
 const CARDS = [
@@ -99,7 +103,7 @@ export default async function NotFound() {
                 {grades.map((g) => (
                   <li key={g.id} className="min-w-0">
                     <Link href={`/grades/${g.slug}`} className={`${gradeClass(g.level)} tile-3d flex min-h-16 flex-col items-center gap-2 p-3 text-center sm:flex-row sm:gap-3 sm:p-2.5 sm:pe-4 sm:text-start`}>
-                      <span className="num-tile size-11 text-[1.4rem]" aria-hidden>
+                      <span className="num-tile size-11 bg-[linear-gradient(145deg,var(--b),var(--d)_55%,var(--tink))] text-[1.4rem] [text-shadow:0_2px_0_rgb(0_0_0/0.22)]" aria-hidden>
                         {ar(g.level)}
                       </span>
                       <span className="min-w-0 font-display text-[1rem] leading-snug font-black text-ink">{g.name}</span>

@@ -1,3 +1,4 @@
+import type * as React from "react";
 import { requireOwnerPage } from "@/server/auth/permissions";
 import { ChevronDown, Eye, EyeOff, GraduationCap, Layers, Pencil, Plus, Settings2, Trash2 } from "lucide-react";
 import { getCatalogTree } from "@/server/admin/catalog";
@@ -64,6 +65,40 @@ function IconPicker({ name, value }: { name: string; value: string }) {
   );
 }
 
+/** «مخفي» مطابقًا للمعدود: صف واحد مخفي، صفّان مخفيان، ٥ صفوف مخفية، ١١ صفًّا مخفيًّا */
+function hiddenAdj(n: number) {
+  const m = n % 100;
+  if (n === 2) return "مخفيان";
+  if (m >= 3 && m <= 10) return "مخفية";
+  if (m >= 11 && m <= 99) return "مخفيًّا";
+  return "مخفي";
+}
+
+/** صفوف مرحلة مخفية بلا منتجات: مطوية خلف ملخص واحد مع زر «عرض» */
+function DormantGrades({ n, children }: { n: number; children: React.ReactNode }) {
+  return (
+    <details className="group/dormant">
+      <summary className="m-3 flex min-h-16 cursor-pointer list-none flex-wrap items-center gap-3 rounded-[1.25rem] border-2 border-dashed border-line-strong bg-canvas p-3 transition-colors hover:border-brand-300 focus-visible:outline-[3px] focus-visible:outline-offset-2 focus-visible:outline-brand-600 focus-visible:outline-solid sm:m-5 [&::-webkit-details-marker]:hidden">
+        <span className="grid size-11 shrink-0 place-items-center rounded-[0.9rem] bg-mist text-ink-soft" aria-hidden>
+          <EyeOff className="size-5" />
+        </span>
+        <span className="min-w-[10rem] flex-1">
+          <span className="block font-display font-extrabold text-ink">
+            {count(n, W.grade)} {hiddenAdj(n)}، بلا منتجات
+          </span>
+          <span className="block text-[0.8rem] leading-6 text-muted">المرحلة لا تظهر للطلاب. افتحها للتعديل أو الإظهار.</span>
+        </span>
+        <span className="btn btn-3d btn-soft btn-sm pointer-events-none min-h-11" aria-hidden>
+          <span className="group-open/dormant:hidden">عرض</span>
+          <span className="hidden group-open/dormant:inline">طيّ</span>
+          <ChevronDown className="transition-transform group-open/dormant:rotate-180 motion-reduce:transition-none" />
+        </span>
+      </summary>
+      {children}
+    </details>
+  );
+}
+
 export default async function CatalogPage() {
   await requireOwnerPage();
   const tree = await getCatalogTree();
@@ -72,6 +107,8 @@ export default async function CatalogPage() {
   const allGrades = tree.flatMap((st) => st.grades);
   const shown = allGrades.filter((g) => g.is_published);
   const levels = (shown.length ? shown : allGrades).map((g) => g.level);
+  // المراحل الظاهرة أولًا (ترتيب العرض فقط، الترتيب المحفوظ يبقى داخل كل مجموعة)
+  const stages = [...tree].sort((a, b) => Number(b.is_published) - Number(a.is_published));
 
   return (
     <div className="space-y-6">
@@ -104,64 +141,10 @@ export default async function CatalogPage() {
       {tree.length === 0 ? <EmptyState icon={<Layers />} title="لا توجد مراحل بعد" description="أضف أول مرحلة دراسية من النموذج أدناه." /> : null}
 
       <div className="space-y-8">
-        {tree.map((stage) => (
-          <section key={stage.id} aria-labelledby={`st-${stage.id}`} className="overflow-hidden rounded-[1.9rem] border border-[rgb(23_32_38/0.06)] bg-surface shadow-card">
-            <div className="relative isolate flex flex-wrap items-center gap-3 bg-[linear-gradient(160deg,#DEF8EE,#fff_75%)] p-4 sm:p-6">
-              <span className="pointer-events-none absolute -end-14 -top-20 -z-10 size-48 rounded-full border-[18px] border-white/70" aria-hidden />
-              <ToneIcon tone="green" size="lg" className="max-sm:size-12">
-                <Layers />
-              </ToneIcon>
-              <div className="min-w-[12rem] flex-1">
-                <div className="flex flex-wrap items-center gap-2">
-                  <h2 id={`st-${stage.id}`} className="font-display text-[1.5rem] leading-tight font-black text-ink">
-                    {stage.name}
-                  </h2>
-                  {stage.is_published ? <StatusPill tone="success">ظاهرة</StatusPill> : <StatusPill tone="neutral">مخفية</StatusPill>}
-                  <span className="chip chip-white">{count(stage.grades.length, W.grade)}</span>
-                </div>
-                <p className="mt-0.5 text-sm text-ink-soft">{stage.description || "بدون وصف"}</p>
-              </div>
-              <div className="flex flex-wrap items-center gap-1">
-                <PublishToggle kind="stage" id={stage.id} published={stage.is_published} />
-                <ConfirmButton
-                  action={deleteCatalogAction}
-                  hidden={{ kind: "stage", id: stage.id }}
-                  label="حذف"
-                  icon={<Trash2 aria-hidden />}
-                  variant="ghost"
-                  title={`حذف «${stage.name}»؟`}
-                  description="يمكن حذف المرحلة فقط إذا لم تحتوِ صفوفًا."
-                  confirmLabel="حذف"
-                />
-              </div>
-            </div>
-
-            <details className="group border-y border-dashed border-line px-4 py-3 sm:px-6">
-              <summary className={SUMMARY_PILL}>
-                <Pencil aria-hidden /> تعديل بيانات المرحلة
-                <ChevronDown className="transition-transform group-open:rotate-180 motion-reduce:transition-none" aria-hidden />
-              </summary>
-              <ActionForm action={saveStageAction} className="mt-4 grid gap-3 rounded-[1.25rem] bg-canvas p-4 sm:grid-cols-4">
-                <input type="hidden" name="id" value={stage.id} />
-                <Field label="الاسم" htmlFor={`sn-${stage.id}`} className="sm:col-span-2">
-                  <Input id={`sn-${stage.id}`} name="name" defaultValue={stage.name} />
-                </Field>
-                <Field label="الرابط" htmlFor={`ss-${stage.id}`}>
-                  <Input id={`ss-${stage.id}`} name="slug" defaultValue={stage.slug} dir="ltr" className="text-start" />
-                </Field>
-                <Field label="الترتيب" htmlFor={`so-${stage.id}`}>
-                  <Input id={`so-${stage.id}`} name="sortOrder" type="number" defaultValue={stage.sort_order} className="num" />
-                </Field>
-                <Field label="الوصف" htmlFor={`sd-${stage.id}`} className="sm:col-span-4">
-                  <Textarea id={`sd-${stage.id}`} name="description" defaultValue={stage.description} rows={2} />
-                </Field>
-                <Checkbox name="isPublished" defaultChecked={stage.is_published} label="ظاهرة للطلاب" />
-                <div className="sm:col-span-4">
-                  <SubmitButton size="sm">حفظ</SubmitButton>
-                </div>
-              </ActionForm>
-            </details>
-
+        {stages.map((stage) => {
+          // مرحلة مخفية بلا أي منتج: صفوفها مطوية حتى لا تدفع المرحلة الحية تحت الطيّة
+          const dormant = !stage.is_published && stage.grades.length > 0 && stage.grades.every((g) => g.product_count === 0);
+          const gradeList = (
             <div className="space-y-5 p-3 sm:p-5">
               {stage.grades.map((g) => (
                 <article key={g.id} aria-labelledby={`gr-${g.id}`} className={cn("tile-3d overflow-hidden", gradeClass(g.level))}>
@@ -201,7 +184,7 @@ export default async function CatalogPage() {
 
                   <div className="p-3.5 sm:p-4">
                     {g.subjects.length ? (
-                      <ul className="mb-4 grid grid-cols-2 gap-2.5 sm:grid-cols-3 xl:grid-cols-4">
+                      <ul className="mb-4 grid grid-cols-1 gap-2.5 min-[420px]:grid-cols-2 sm:grid-cols-3 xl:grid-cols-4">
                         {g.subjects.map((s) => (
                           <li key={s.id} className="min-w-0 has-[details[open]]:col-span-full">
                             <details className={cn("group rounded-[1.25rem]", toneClass(s.slug))}>
@@ -218,7 +201,7 @@ export default async function CatalogPage() {
                                   <SubjectIcon name={s.icon} className="size-5" />
                                 </span>
                                 <span className="min-w-0 flex-1">
-                                  <span className={cn("block truncate font-display font-extrabold", s.is_published ? "text-[var(--tink)]" : "text-muted")}>{s.name}</span>
+                                  <span className={cn("line-clamp-2 block font-display leading-snug font-extrabold", s.is_published ? "text-[var(--tink)]" : "text-muted")}>{s.name}</span>
                                   <span className="block text-[0.75rem] leading-5 text-ink-soft">
                                     {count(s.product_count, {
                                       ...W.product,
@@ -336,6 +319,70 @@ export default async function CatalogPage() {
               ))}
               {stage.grades.length === 0 ? <p className="rounded-[1.25rem] border-2 border-dashed border-line-strong bg-canvas p-5 text-sm text-muted">لا توجد صفوف في هذه المرحلة.</p> : null}
             </div>
+          );
+          return (
+            <section key={stage.id} aria-labelledby={`st-${stage.id}`} className="overflow-hidden rounded-[1.9rem] border border-[rgb(23_32_38/0.06)] bg-surface shadow-card">
+            <div className="relative isolate flex flex-wrap items-center gap-3 bg-[linear-gradient(160deg,#DEF8EE,#fff_75%)] p-4 sm:p-6">
+              <span className="pointer-events-none absolute -end-14 -top-20 -z-10 size-48 rounded-full border-[18px] border-white/70" aria-hidden />
+              <ToneIcon tone="green" size="lg" className="max-sm:size-12">
+                <Layers />
+              </ToneIcon>
+              <div className="min-w-[12rem] flex-1">
+                <div className="flex flex-wrap items-center gap-2">
+                  <h2 id={`st-${stage.id}`} className="font-display text-[1.5rem] leading-tight font-black text-ink">
+                    {stage.name}
+                  </h2>
+                  {stage.is_published ? <StatusPill tone="success">ظاهرة</StatusPill> : <StatusPill tone="neutral">مخفية</StatusPill>}
+                  <span className="chip chip-white">{count(stage.grades.length, W.grade)}</span>
+                </div>
+                <p className="mt-0.5 text-sm text-ink-soft">{stage.description || "بدون وصف"}</p>
+              </div>
+              <div className="flex flex-wrap items-center gap-1">
+                <PublishToggle kind="stage" id={stage.id} published={stage.is_published} />
+                <ConfirmButton
+                  action={deleteCatalogAction}
+                  hidden={{ kind: "stage", id: stage.id }}
+                  label="حذف"
+                  icon={<Trash2 aria-hidden />}
+                  variant="ghost"
+                  title={`حذف «${stage.name}»؟`}
+                  description="يمكن حذف المرحلة فقط إذا لم تحتوِ صفوفًا."
+                  confirmLabel="حذف"
+                />
+              </div>
+            </div>
+
+            <details className="group border-y border-dashed border-line px-4 py-3 sm:px-6">
+              <summary className={SUMMARY_PILL}>
+                <Pencil aria-hidden /> تعديل بيانات المرحلة
+                <ChevronDown className="transition-transform group-open:rotate-180 motion-reduce:transition-none" aria-hidden />
+              </summary>
+              <ActionForm action={saveStageAction} className="mt-4 grid gap-3 rounded-[1.25rem] bg-canvas p-4 sm:grid-cols-4">
+                <input type="hidden" name="id" value={stage.id} />
+                <Field label="الاسم" htmlFor={`sn-${stage.id}`} className="sm:col-span-2">
+                  <Input id={`sn-${stage.id}`} name="name" defaultValue={stage.name} />
+                </Field>
+                <Field label="الرابط" htmlFor={`ss-${stage.id}`}>
+                  <Input id={`ss-${stage.id}`} name="slug" defaultValue={stage.slug} dir="ltr" className="text-start" />
+                </Field>
+                <Field label="الترتيب" htmlFor={`so-${stage.id}`}>
+                  <Input id={`so-${stage.id}`} name="sortOrder" type="number" defaultValue={stage.sort_order} className="num" />
+                </Field>
+                <Field label="الوصف" htmlFor={`sd-${stage.id}`} className="sm:col-span-4">
+                  <Textarea id={`sd-${stage.id}`} name="description" defaultValue={stage.description} rows={2} />
+                </Field>
+                <Checkbox name="isPublished" defaultChecked={stage.is_published} label="ظاهرة للطلاب" />
+                <div className="sm:col-span-4">
+                  <SubmitButton size="sm">حفظ</SubmitButton>
+                </div>
+              </ActionForm>
+            </details>
+
+            {dormant ? (
+              <DormantGrades n={stage.grades.length}>{gradeList}</DormantGrades>
+            ) : (
+              gradeList
+            )}
 
             <details className="group border-t border-dashed border-line bg-canvas/60 px-4 py-4 sm:px-6">
               <summary className={SUMMARY_PILL}>
@@ -370,7 +417,8 @@ export default async function CatalogPage() {
               </ActionForm>
             </details>
           </section>
-        ))}
+          );
+        })}
       </div>
 
       <section

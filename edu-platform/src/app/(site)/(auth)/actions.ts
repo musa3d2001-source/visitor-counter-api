@@ -57,7 +57,11 @@ const resetSchema = z.object({ token: z.string().min(10).max(100), password: pas
 
 export async function resetPasswordAction(_prev: ActionState, fd: FormData): Promise<ActionState> {
   const parsed = resetSchema.safeParse({ token: fd.get("token"), password: fd.get("password") });
-  if (!parsed.success) return { fieldErrors: fieldErrors(parsed.error) };
+  if (!parsed.success) {
+    // لا يوجد حقل يعرض خطأ الرمز، فنحوّله إلى رسالة عامة بدل أن يفشل الإرسال بصمت
+    if (parsed.error.issues.some((i) => i.path[0] === "token")) return { error: "الرابط غير صالح. اطلب رابطًا جديدًا." };
+    return { fieldErrors: fieldErrors(parsed.error) };
+  }
   if (fd.get("password") !== fd.get("passwordConfirm")) return { fieldErrors: { passwordConfirm: "كلمتا المرور غير متطابقتين" } };
   const res = await resetPassword(parsed.data.token, parsed.data.password);
   if (!res.ok) return { error: res.error };

@@ -29,7 +29,7 @@ import { BundleFanArt, NotePaperArt } from "./_components/hero-art";
 import { MobileBuyBar, PurchasePanel, type TrustItem } from "./_components/purchase";
 import { FactGrid, FileList, LearnList, SectionPanel, WideHead } from "./_components/sections";
 import { LessonTimeline } from "./_components/lesson-timeline";
-import { includesLabel, previewLabel, shortTermLabel } from "./_components/labels";
+import { aboutTitle, includesLabel, previewLabel, shortTermLabel } from "./_components/labels";
 
 type Params = { slug: string };
 
@@ -266,7 +266,7 @@ export default async function ProductPage({ params }: { params: Promise<Params> 
           ) : null}
 
           {product.description ? (
-            <SectionPanel id="about" title={`عن ${typeLabel}`} icon={<BookOpenText aria-hidden />}>
+            <SectionPanel id="about" title={aboutTitle(product.type)} icon={<BookOpenText aria-hidden />}>
               <p className="max-w-[68ch] text-[1.05rem] leading-9 whitespace-pre-line text-ink-soft">{product.description}</p>
             </SectionPanel>
           ) : null}

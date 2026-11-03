@@ -87,7 +87,7 @@ export default async function OrderPage({ params, searchParams }: { params: Prom
               ) : order.status === "pending" ? (
                 <>
                   <h1 className="font-display text-[clamp(1.9rem,1.3rem+2.4vw,3rem)] leading-tight font-black">بانتظار تأكيد الدفع</h1>
-                  <p className="mt-2 max-w-2xl text-[1.05rem] leading-8 font-semibold text-accent-900/90">إذا أتممت الدفع، اضغط «تحديث الحالة». لن تُضاف المذكرات قبل تأكيد البوابة.</p>
+                  <p className="mt-2 max-w-2xl text-[1.05rem] leading-8 font-semibold text-accent-900/90">إذا أتممت الدفع، اضغط «تحديث الحالة». لن تُضاف مشترياتك إلى مكتبتك قبل تأكيد بوابة الدفع.</p>
                   <div className="mt-6 flex flex-wrap justify-center gap-3 sm:justify-start">
                     <form action={refreshOrderStatusAction}>
                       <input type="hidden" name="orderId" value={order.id} />

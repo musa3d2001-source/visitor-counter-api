@@ -303,7 +303,7 @@ export function AdminMobileNav({
     .find((n) => isActive(n, pathname));
   return (
     <div className="glass sticky top-0 z-30 flex h-16 items-center gap-3 border-b border-line px-3 sm:px-5 lg:hidden">
-      <Link href="/admin" className="shrink-0 rounded-[15px]" aria-label={`${siteName}، ${roleLabel(role)}`}>
+      <Link href="/admin" className="grid size-11 shrink-0 place-items-center rounded-[15px]" aria-label={`${siteName}، ${roleLabel(role)}`}>
         {logoUrl ? (
           <span className="grid size-10 place-items-center overflow-hidden rounded-[13px] bg-white shadow-card">
             <Image src={logoUrl} alt="" width={40} height={40} className="size-full object-contain p-1" />

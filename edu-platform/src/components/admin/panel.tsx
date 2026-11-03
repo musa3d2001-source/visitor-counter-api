@@ -39,7 +39,7 @@ export function MoreLink({ href, children, className }: { href: string; children
     <Link
       href={href}
       className={cn(
-        "inline-flex min-h-10 items-center gap-1.5 rounded-full bg-brand-50 px-3.5 font-display text-[0.85rem] font-extrabold text-brand-800 transition-colors hover:bg-brand-100",
+        "inline-flex min-h-11 items-center gap-1.5 rounded-full bg-brand-50 px-3.5 font-display text-[0.85rem] font-extrabold text-brand-800 transition-colors hover:bg-brand-100",
         className,
       )}
     >

@@ -27,7 +27,7 @@
 /* سطر «المادة · الصف» بنقطة ملونة */
 .kicker {
   display: flex;
-  align-items: center;
+  align-items: flex-start;
   gap: 7px;
   min-width: 0;
   font-family: var(--font-display);
@@ -36,15 +36,29 @@
   line-height: 1.6;
   color: var(--tink);
 }
-.kicker > span:last-child {
+/* يلتف حتى سطرين (لا قصّ في منتصف الكلمة)؛ كل جزء لا ينكسر داخليًا إلا إن كان أعرض من السطر */
+.ktext {
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+  line-clamp: 2;
   overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+.kpart {
+  display: inline-block;
+  max-width: 100%;
+}
+.ksep {
+  opacity: 0.7;
 }
 .kdot {
   width: 8px;
   height: 8px;
   flex: none;
+  /* محاذاة النقطة مع منتصف السطر الأول (line-height 1.6) */
+  margin-top: calc(0.8em - 4px);
   border-radius: 50%;
   background: linear-gradient(135deg, var(--a), var(--b));
 }
@@ -327,8 +341,40 @@ a.footBtnGold:hover {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  flex-wrap: wrap;
+  flex-wrap: nowrap;
   gap: 8px;
+  /* ارتفاع ثابت يتسع للسعر المكدّس (السعر ثم المشطوب والخصم) فتتساوى تذييلات الصف الواحد */
+  min-height: 63px;
+  /* حاوية لاستعلام العرض أدناه: البطاقة الضيقة (رف الجوال ٨٠٪ على 360، أو شبكة ‎16.5rem‎ قرب 1180) */
+  container: vfoot / inline-size;
+}
+/* أضيق من نحو ‎268px‎ للبطاقة: زر التذييل يضيق حشوه قليلًا فلا يغطي «خصم ٪» بجانبه */
+@container vfoot (max-width: 231.98px) {
+  .vfoot > .footBtn {
+    gap: 4px;
+    padding-inline: 9px;
+  }
+}
+/* سطر واحد دائمًا: السعر المخفَّض يتكدّس (السعر، ثم المشطوب والخصم) بدل أن يدفع الزر لسطر ثانٍ */
+.vfoot > .price {
+  display: grid;
+  grid-template-columns: auto auto;
+  justify-content: start;
+  align-items: center;
+  gap: 0 6px;
+  min-width: 0;
+}
+.vfoot > .price > .priceNow {
+  grid-column: 1 / -1;
+  line-height: 1.2;
+}
+.vfoot > .price > .priceWas {
+  font-size: 12.5px;
+  line-height: 1.5;
+}
+.vfoot > .price > .pct {
+  font-size: 12px;
+  line-height: 1.6;
 }
 
 /* ═════════ المذكرة: ورقة مطوية (NoteCard) ═════════ */
@@ -650,7 +696,7 @@ a.footBtnGold:hover {
   justify-content: center;
 }
 .tstub .footBtn {
-  min-height: 40px;
+  min-height: 44px;
   padding-inline: 12px;
   font-size: 13.5px;
 }
@@ -859,11 +905,12 @@ a.footBtnGold:hover {
 }
 .tcoverArt {
   position: absolute;
-  inset-inline-end: -14px;
-  top: -18px;
-  width: 128px;
-  height: 128px;
-  opacity: 0.55;
+  inset-inline-end: -6px;
+  top: -10px;
+  width: 104px;
+  height: 104px;
+  opacity: 0.95;
+  filter: drop-shadow(0 8px 14px rgb(0 0 0 / 0.16));
   transform: rotate(12deg);
   transition: transform 0.35s cubic-bezier(0.2, 0.8, 0.2, 1);
 }
@@ -1289,6 +1336,16 @@ a.footBtnGold:hover {
   .ncard .pct {
     display: none;
   }
+  /* «أول الصفحات مجانًا» أعرض من عمود المذكرة الضيق على 360: تلتف داخل الكبسولة بدل أن تتجاوز البطاقة */
+  .ncard .metaChip {
+    max-width: 100%;
+  }
+  .ncard .metaChipFree {
+    white-space: normal;
+    line-height: 1.45;
+    padding-block: 4px;
+    border-radius: 14px;
+  }
 
   .trow {
     --pad: 12px;
@@ -1413,9 +1470,6 @@ a.footBtnGold:hover {
     font-size: 14.5px;
     white-space: nowrap;
   }
-  .ncard .kicker > span:last-child {
-    white-space: normal;
-  }
   .subj {
     gap: 10px;
     padding: 14px;
@@ -1441,6 +1495,26 @@ a.footBtnGold:hover {
   }
   .subjRow .subjGo {
     display: grid;
+  }
+}
+
+/*
+ * عمود واحد على الجوال: لا جيران لمحاذاة العنوان معهم، فلا يُحجز سطر ثانٍ فارغ.
+ * الإلغاء اختياري (vtitleFit تضعه ProductCard للشبكات والقوائم العمودية) لا عام، فالرفوف الأفقية
+ * (رف الرئيسية .rail و.shelf) تبقي حجز السطرين ليتحاذى سطر المعلم والكبسولات بين البطاقات المتجاورة.
+ */
+@media (max-width: 639.98px) {
+  .vtitleFit {
+    min-height: 0;
+  }
+  .shelf .vtitleFit {
+    min-height: 3.1em;
+  }
+}
+/* ‏.grid يصبح عمودين من ‎552px‎ للمحتوى (‎2×16.5rem + 24px‎)، أي من نحو ‎584px‎ مع حافتي ‎16px‎: يعود الحجز للمحاذاة */
+@media (min-width: 584px) and (max-width: 639.98px) {
+  .grid .vtitleFit {
+    min-height: 3.1em;
   }
 }
 

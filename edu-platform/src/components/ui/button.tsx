@@ -7,7 +7,7 @@ import { cn } from "@/lib/utils";
  * أزرار «الفصل المشمس»: الأصناف الفعلية في src/app/globals.css (.btn و .btn-*).
  * primary: فيروزي ثلاثي الأبعاد بحافة سفلية داكنة · accent: ذهبي بنص داكن · soft/secondary: مُلوَّن فاتح
  * outline: أبيض بحد دافئ وحافة صغيرة · light: أبيض للأسطح الداكنة · ghost · danger · danger-outline · link
- * الأحجام: sm (40px) · md (46px) · lg (56px) · xl (62px) · icon (44px)
+ * الأحجام: sm (44px، حشو وخط أصغر) · md (46px) · lg (56px) · xl (62px) · icon (44px)
  */
 export const buttonVariants = cva("btn", {
   variants: {

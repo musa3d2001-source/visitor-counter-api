@@ -6,7 +6,7 @@ import { getCurrentUser } from "@/server/auth/session";
 import { accessibleProductIds } from "@/server/access/entitlements";
 import { EmptyState } from "@/components/ui/empty-state";
 import { PageHeader, StatPill } from "@/components/ui/page-header";
-import { BundleCard } from "@/components/site/bundle-card";
+import { BundleCard, BundleWide } from "@/components/site/bundle-card";
 import { BundleStack, Sparkle } from "@/components/art";
 import { filsToKwdString } from "@/lib/money";
 import { ar, countParts, gradeClass, gradeLevelFromSlug, RAINBOW, savings, W } from "@/lib/design";
@@ -65,44 +65,51 @@ export default async function BundlesPage() {
             <StatPill icon={<GraduationCap aria-hidden />} {...countParts(byGrade.length, W.grade)} tone="teal" />
           </div>
         ) : null}
+        {/* القفز إلى صف: داخل البطل تحت الأرقام، فلا يقطعه حدّ خلفيته */}
+        {byGrade.length > 1 ? (
+          <nav aria-label="انتقل إلى صف" className="mt-5 flex flex-wrap gap-3 lg:grid lg:w-max lg:grid-cols-2">
+            {byGrade.map(({ grade }) => {
+              const lv = grade.level ?? gradeLevelFromSlug(grade.slug);
+              return (
+                <Link key={grade.id} href={`#g-${grade.slug}`} className={cn(s.jump, gradeClass(lv))}>
+                  <span className={cn("num-tile", s.jumpNum)} aria-hidden>
+                    {lv != null ? ar(lv) : <Sparkles className="size-4" />}
+                  </span>
+                  {grade.name}
+                </Link>
+              );
+            })}
+          </nav>
+        ) : null}
       </PageHeader>
 
-      <div className="mx-auto max-w-7xl px-4 pb-16 sm:px-6">
+      <div className="mx-auto max-w-7xl px-4 pt-4 pb-16 sm:px-6">
         {byGrade.length === 0 ? (
           <div className="panel p-6 sm:p-10">
-            <EmptyState title="لا توجد باقات حاليًا" description="عند نشر باقة جديدة تظهر هنا مع وفرها الفعلي." />
+            <EmptyState headingLevel={2} title="لا توجد باقات حاليًا" description="عند نشر باقة جديدة تظهر هنا مع وفرها الفعلي." />
           </div>
         ) : (
           <>
-            {byGrade.length > 1 ? (
-              <nav aria-label="انتقل إلى صف" className="-mt-2 mb-10 flex flex-wrap gap-3">
-                {byGrade.map(({ grade }) => {
-                  const lv = grade.level ?? gradeLevelFromSlug(grade.slug);
-                  return (
-                    <Link key={grade.id} href={`#g-${grade.slug}`} className={cn(s.jump, gradeClass(lv))}>
-                      <span className={cn("num-tile", s.jumpNum)} aria-hidden>
-                        {lv != null ? ar(lv) : <Sparkles className="size-4" />}
-                      </span>
-                      {grade.name}
-                    </Link>
-                  );
-                })}
-              </nav>
-            ) : null}
-
             <div className="space-y-14">
               {byGrade.map(({ grade, items }) => {
                 const lv = grade.level ?? gradeLevelFromSlug(grade.slug);
                 return (
-                  <section key={grade.id} aria-labelledby={`g-${grade.slug}`} className={s.row}>
+                  <section key={grade.id} aria-labelledby={`g-${grade.slug}`} className={cn(s.row, items.length === 1 && s.rowSingle)}>
                     <GradeBand id={`g-${grade.slug}`} level={lv} name={grade.name} slug={grade.slug} bundles={items.length} />
-                    <ul className={s.grid}>
-                      {items.map((b) => (
-                        <li key={b.id}>
-                          <BundleCard product={b} items={itemsById.get(b.id)} owned={owned?.has(b.id)} level={lv} showGrade={false} />
-                        </li>
-                      ))}
-                    </ul>
+                    {items.length === 1 ? (
+                      // باقة وحيدة: البطاقة العريضة تملأ الصف بدل خانة فارغة بجانبها
+                      <div className={s.single}>
+                        <BundleWide product={items[0]} items={itemsById.get(items[0].id)} owned={owned?.has(items[0].id)} showGrade={false} />
+                      </div>
+                    ) : (
+                      <ul className={s.grid}>
+                        {items.map((b) => (
+                          <li key={b.id}>
+                            <BundleCard product={b} items={itemsById.get(b.id)} owned={owned?.has(b.id)} level={lv} showGrade={false} />
+                          </li>
+                        ))}
+                      </ul>
+                    )}
                   </section>
                 );
               })}

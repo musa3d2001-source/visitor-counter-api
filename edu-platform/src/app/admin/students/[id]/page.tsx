@@ -26,7 +26,7 @@ import { getStudent, grantableProducts } from "@/server/admin/records";
 import { Section, StatGrid, StatTile } from "@/components/admin/page-header";
 import { ActionForm } from "@/components/admin/action-form";
 import { ConfirmButton } from "@/components/admin/confirm-button";
-import { DataList, DataRow } from "@/components/admin/data-list";
+import { DataList, DataRow, EmptyValue } from "@/components/admin/data-list";
 import { OrderStatusBadge, StatusPill, TestBadge } from "@/components/admin/status-badge";
 import { ToneIcon } from "@/components/admin/icon-tile";
 import type { AdminTone } from "@/components/admin/tones";
@@ -226,7 +226,8 @@ export default async function StudentPage({ params }: { params: Promise<{ id: st
             <ul className="space-y-1.5 px-3 pb-3 text-sm">
               {revoked.map((e) => (
                 <li key={e.id} className="rounded-xl bg-surface px-3 py-2 leading-7">
-                  <span className="font-semibold">{e.title}</span>، سُحبت {formatDateTime(e.revoked_at)}، السبب: {e.revoke_reason ?? "—"}
+                  <span className="font-semibold">{e.title}</span>، سُحبت {formatDateTime(e.revoked_at)}
+                  {e.revoke_reason ? <>، السبب: {e.revoke_reason}</> : null}
                 </li>
               ))}
             </ul>
@@ -248,7 +249,7 @@ export default async function StudentPage({ params }: { params: Promise<{ id: st
                     <Receipt />
                   </ToneIcon>
                 }
-                title={<span className="num">{o.number}</span>}
+                title={<span className="num whitespace-nowrap">{o.number}</span>}
                 sub={formatDateTime(o.created_at)}
                 aside={
                   <>
@@ -275,7 +276,7 @@ export default async function StudentPage({ params }: { params: Promise<{ id: st
                 const st = ACCESS_STYLE[a.action] ?? { tone: "slate" as AdminTone, icon: <Eye /> };
                 return (
                   <TimelineItem dense key={a.id} tone={st.tone} icon={st.icon} title={ACCESS_LABELS[a.action] ?? a.action} meta={formatDateTime(a.created_at)} last={i === access.length - 1}>
-                    {a.title ?? "—"}
+                    {a.title ?? <EmptyValue label="محتوى غير متوفر" />}
                   </TimelineItem>
                 );
               })}

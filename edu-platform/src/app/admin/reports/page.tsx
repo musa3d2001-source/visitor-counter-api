@@ -3,7 +3,7 @@ import Link from "next/link";
 import { Banknote, CalendarRange, ChartColumn, Download, GraduationCap, Layers, Package, Receipt, RotateCcw, ScrollText, Ticket, Wallet } from "lucide-react";
 import { auditLog, parseRange, reportByDay, reportByGrade, reportByProduct, reportByTeacher, reportSummary } from "@/server/admin/stats";
 import { AdminPageHeader, Section, StatGrid, StatTile } from "@/components/admin/page-header";
-import { CellTitle } from "@/components/admin/data-list";
+import { CellTitle, EmptyValue } from "@/components/admin/data-list";
 import { FilterBar, FilterSubmit, ResultCount, Segmented, Toolbar } from "@/components/admin/filter-bar";
 import { SalesBars } from "@/components/admin/sales-bars";
 import { Button } from "@/components/ui/button";
@@ -404,8 +404,8 @@ export default async function ReportsPage({ searchParams }: { searchParams: Prom
                       <TD>
                         <Kwd fils={t.revenueFils} className="font-display font-black text-ink" />
                       </TD>
-                      <TD>{t.teacherShareFils ? <Kwd fils={t.teacherShareFils} className="font-display font-bold text-[#A8256F]" /> : <span className="text-muted">—</span>}</TD>
-                      <TD>{t.platformShareFils ? <Kwd fils={t.platformShareFils} className="font-display font-bold text-brand-800" /> : <span className="text-muted">—</span>}</TD>
+                      <TD>{t.teacherShareFils ? <Kwd fils={t.teacherShareFils} className="font-display font-bold text-[#A8256F]" /> : <EmptyValue label="لا يوجد" />}</TD>
+                      <TD>{t.platformShareFils ? <Kwd fils={t.platformShareFils} className="font-display font-bold text-brand-800" /> : <EmptyValue label="لا يوجد" />}</TD>
                     </TR>
                   ))}
                 </tbody>
@@ -428,11 +428,11 @@ export default async function ReportsPage({ searchParams }: { searchParams: Prom
                     <dl className="mt-2.5 grid grid-cols-2 gap-2 text-[0.8rem]">
                       <div className="rounded-xl bg-[#FFE6F1]/70 px-3 py-1.5">
                         <dt className="font-bold text-[#A8256F]">حصة المعلم</dt>
-                        <dd>{t.teacherShareFils ? <Kwd fils={t.teacherShareFils} className="font-display font-black text-ink" /> : "—"}</dd>
+                        <dd>{t.teacherShareFils ? <Kwd fils={t.teacherShareFils} className="font-display font-black text-ink" /> : <EmptyValue label="لا يوجد" />}</dd>
                       </div>
                       <div className="rounded-xl bg-brand-50 px-3 py-1.5">
                         <dt className="font-bold text-brand-800">حصة المنصة</dt>
-                        <dd>{t.platformShareFils ? <Kwd fils={t.platformShareFils} className="font-display font-black text-ink" /> : "—"}</dd>
+                        <dd>{t.platformShareFils ? <Kwd fils={t.platformShareFils} className="font-display font-black text-ink" /> : <EmptyValue label="لا يوجد" />}</dd>
                       </div>
                     </dl>
                   ) : null}

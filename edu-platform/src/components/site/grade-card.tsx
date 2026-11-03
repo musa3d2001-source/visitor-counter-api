@@ -63,7 +63,11 @@ export function GradeCard({
   );
 }
 
-/** شبكة بطاقات الصفوف: عمودان على الجوال والأجهزة المتوسطة، وأربعة على الكبيرة */
-export function GradeGrid({ children, className }: { children: React.ReactNode; className?: string }) {
-  return <ul className={cn("grid grid-cols-2 gap-3.5 sm:gap-5 lg:grid-cols-4 lg:gap-6 [&>li]:min-w-0", className)}>{children}</ul>;
+/** شبكة بطاقات الصفوف: عمودان على الجوال والأجهزة المتوسطة، وأربعة على الكبيرة. تمرر بقية خصائص ul (data-testid، aria-*) */
+export function GradeGrid({ children, className, ...rest }: React.ComponentPropsWithoutRef<"ul">) {
+  return (
+    <ul {...rest} className={cn("grid grid-cols-2 gap-3.5 sm:gap-5 lg:grid-cols-4 lg:gap-6 [&>li]:min-w-0", className)}>
+      {children}
+    </ul>
+  );
 }

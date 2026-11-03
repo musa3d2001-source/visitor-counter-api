@@ -9,6 +9,7 @@ export default function RefundPolicyPage() {
   return (
     <LegalDoc
       page="refund"
+      updated="2026-11-02"
       sub="متى يحق لك استرجاع المبلغ، وكيف تقدّم الطلب خطوة بخطوة."
       intro={<p>لأن المنتجات رقمية وتصل فور الدفع، ننصحك باستخدام المعاينة المجانية قبل الشراء.</p>}
       sections={[

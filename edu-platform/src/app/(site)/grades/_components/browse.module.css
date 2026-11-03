@@ -768,6 +768,157 @@
   }
 }
 
+/* ═════════ شبكات متوازنة (balancedGrid): عدد أعمدة ثابت يملأ الصفوف ═════════ */
+/* الحدّ ‎1176px‎ هو حيث تتسع الحاوية (‎max-w-7xl‎) لأربع بطاقات فيديو بعرضها الأدنى ‎16.5rem‎؛ دونه ٤ أعمدة تقصّ العناوين */
+/* التكرار ‎.x.x‎ يرفع الأولوية فوق ‎.grid/.shelf/.noteGrid‎ في catalog.module.css أيًا كان ترتيب التحميل */
+@media (min-width: 768px) and (max-width: 1175.98px) {
+  .md2.md2 {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+  .md3.md3 {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+}
+/*
+ * بطاقات الفيديو (‎vmd3/vmd3e‎): ذيل البطاقة (السعر + «شاهد مجانًا») يحتاج نحو ‎268px‎، فثلاثة أعمدة تبدأ من ‎900px‎ فقط.
+ * بين ‎768‎ و‎899px‎: عدد زوجي ← عمودان كاملان؛ عدد فردي ← رف سحب أفقي (بطاقة ‎45%‎) بلا بطاقة يتيمة ولا انكماش.
+ * الهامش السالب ‎24px‎ يطابق ‎sm:px-6‎ في حاوية الصفحة فيمتد الرف إلى حافة الشاشة.
+ */
+@media (min-width: 900px) and (max-width: 1175.98px) {
+  .vmd3.vmd3,
+  .vmd3e.vmd3e {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+}
+@media (min-width: 768px) and (max-width: 899.98px) {
+  .vmd3e.vmd3e {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+  .vmd3.vmd3 {
+    grid-template-columns: none;
+    grid-auto-flow: column;
+    grid-auto-columns: 45%;
+    gap: 20px;
+    overflow-x: auto;
+    overscroll-behavior-x: contain;
+    scroll-snap-type: x mandatory;
+    scroll-padding-inline: 24px;
+    margin-inline: -24px;
+    padding: 8px 24px 28px;
+    scrollbar-width: none;
+  }
+  .vmd3.vmd3::-webkit-scrollbar {
+    display: none;
+  }
+  .vmd3.vmd3 > li {
+    scroll-snap-align: start;
+  }
+}
+@media (min-width: 1176px) {
+  .lg3.lg3 {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+  .lg4.lg4 {
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+  }
+  .lg5.lg5 {
+    grid-template-columns: repeat(5, minmax(0, 1fr));
+  }
+}
+
+/* ═════════ مروحة صفوف المرحلة (StageFan) ═════════ */
+.fan {
+  --w: clamp(112px, 10.6vw, 152px);
+  position: relative;
+  display: grid;
+  place-items: center;
+  min-height: 330px;
+  padding: 18px 0 34px;
+}
+.fanGlow {
+  position: absolute;
+  inset: 4% 6%;
+  border-radius: 50%;
+  background:
+    radial-gradient(closest-side, rgb(255 210 94 / 0.5), rgb(255 210 94 / 0.16) 60%, transparent),
+    radial-gradient(40% 50% at 20% 70%, rgb(24 185 167 / 0.16), transparent 70%);
+}
+.fanRow {
+  position: relative;
+  display: flex;
+  align-items: flex-start;
+  justify-content: center;
+}
+.fanCard {
+  position: relative;
+  isolation: isolate;
+  overflow: hidden;
+  flex: none;
+  width: var(--w);
+  aspect-ratio: 3 / 4;
+  border-radius: 28px;
+  border: 6px solid rgb(255 255 255 / 0.95);
+  color: var(--d);
+  background:
+    radial-gradient(90% 60% at 85% 0%, rgb(255 255 255 / 0.42), transparent 60%),
+    linear-gradient(155deg, var(--a), var(--m, var(--a)) 55%, var(--b));
+  box-shadow:
+    0 9px 0 color-mix(in oklab, var(--d) 70%, #000),
+    0 30px 40px -18px rgb(0 0 0 / 0.42);
+  rotate: var(--r, 0deg);
+  translate: 0 var(--y, 0px);
+  transform-origin: 50% 100%;
+}
+.fanCard + .fanCard {
+  margin-inline-start: calc(var(--w) * -0.2);
+}
+.fanCard::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  background-image: radial-gradient(rgb(255 255 255 / 0.24) 1.5px, transparent 2px);
+  background-size: 14px 14px;
+}
+.fanNum {
+  position: absolute;
+  top: 6px;
+  inset-inline-start: 14px;
+  font-family: var(--font-display);
+  font-weight: 900;
+  font-size: calc(var(--w) * 0.5);
+  line-height: 1.1;
+  color: #fff;
+  text-shadow:
+    0 3px 0 color-mix(in oklab, var(--d) 45%, var(--b)),
+    0 6px 0 color-mix(in oklab, var(--d) 80%, #000),
+    0 18px 24px rgb(0 0 0 / 0.25);
+}
+.fanArt {
+  position: absolute;
+  inset-inline-end: -10px;
+  bottom: -8px;
+  width: 74%;
+  aspect-ratio: 1;
+  filter: drop-shadow(0 10px 12px rgb(0 0 0 / 0.18));
+}
+.fanSpark1,
+.fanSpark2 {
+  position: absolute;
+}
+.fanSpark1 {
+  top: 6%;
+  inset-inline-start: 12%;
+  width: 28px;
+  height: 28px;
+}
+.fanSpark2 {
+  bottom: 8%;
+  inset-inline-end: 10%;
+  width: 18px;
+  height: 18px;
+}
+
 /* ═════════ الاستجابة ═════════ */
 @media (max-width: 1023.98px) {
   .band {

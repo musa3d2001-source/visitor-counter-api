@@ -63,10 +63,11 @@ export function MobilePerks({ className }: { className?: string }) {
   );
 }
 
+/** الرقم الأبيض على الطرفين الداكنين للمرجاني والفيروزي (تباين AA)، والذهبي بحبر بني داكن */
 const STEPS = [
-  { t: "أدخل بريدك", tone: "from-[#ffa07a] to-[#e8483f] text-white" },
+  { t: "أدخل بريدك", tone: "from-[#e8483f] to-[#b4322a] text-white" },
   { t: "افتح الرسالة", tone: "from-[#ffd25e] to-[#eb9b00] text-[#3d2a00]" },
-  { t: "كلمة جديدة", tone: "from-[#2dc2b3] to-[#0a6b66] text-white" },
+  { t: "كلمة جديدة", tone: "from-[#17a398] to-[#0a5f5b] text-white" },
 ];
 
 /** خطوات استعادة كلمة المرور الثلاث (توضيح بصري لما سيحدث) */

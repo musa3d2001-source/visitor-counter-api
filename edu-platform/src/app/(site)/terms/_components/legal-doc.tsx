@@ -1,6 +1,6 @@
 import Link from "next/link";
 import type * as React from "react";
-import { ArrowLeft, FileLock2, FileText, ListOrdered, MessagesSquare, RotateCcw, ScrollText, type LucideIcon } from "lucide-react";
+import { ArrowLeft, CalendarClock, FileLock2, FileText, ListOrdered, MessagesSquare, RotateCcw, ScrollText, type LucideIcon } from "lucide-react";
 import { Breadcrumbs } from "@/components/ui/breadcrumbs";
 import { Sparkle } from "@/components/art";
 import { ar, count, SUBJECT_ORDER, subjectVars } from "@/lib/design";
@@ -29,11 +29,40 @@ const BAND: Record<LegalKey, { cls: string; dark: boolean }> = {
 
 const SECTION_WORD = { one: "قسم", two: "قسمان", plural: "أقسام", acc: "قسمًا" };
 
-export function LegalDoc({ page, sub, intro, sections }: { page: LegalKey; sub: string; intro: React.ReactNode; sections: LegalSection[] }) {
+/**
+ * أرقام الفهرس: الرقم الأبيض يجلس على الطرفين الداكنين للنغمة (‎--b → --d‎) فيبلغ تباين AA،
+ * والنغمة الذهبية (الاجتماعيات) فاتحة حتى في طرفها الداكن فتأخذ حبرًا بنيًا داكنًا كبقية العناصر الذهبية.
+ */
+const LIGHT_TONES = new Set<string>(["social"]);
+const TILE_DARK = "from-[color-mix(in_oklab,var(--b)_65%,var(--d))] to-[var(--d)] text-white";
+const TILE_LIGHT = "from-[var(--a)] to-[var(--b)] text-[#3d2a00]";
+
+const MONTHS = ["يناير", "فبراير", "مارس", "أبريل", "مايو", "يونيو", "يوليو", "أغسطس", "سبتمبر", "أكتوبر", "نوفمبر", "ديسمبر"];
+/** «2026-11-03» ← «٣ نوفمبر ٢٠٢٦» */
+function legalDate(iso: string): string {
+  const [y, m, d] = iso.split("-").map(Number);
+  return `${ar(d)} ${MONTHS[m - 1]} ${ar(y)}`;
+}
+
+export function LegalDoc({
+  page,
+  sub,
+  intro,
+  sections,
+  updated,
+}: {
+  page: LegalKey;
+  sub: string;
+  intro: React.ReactNode;
+  sections: LegalSection[];
+  /** تاريخ آخر تعديل على نص الصفحة (YYYY-MM-DD) */
+  updated: string;
+}) {
   const meta = PAGES[page];
   const band = BAND[page];
   const others = (Object.keys(PAGES) as LegalKey[]).filter((k) => k !== page);
-  const toneOf = (i: number) => subjectVars(SUBJECT_ORDER[(i + 2) % SUBJECT_ORDER.length]);
+  const toneSlug = (i: number) => SUBJECT_ORDER[(i + 2) % SUBJECT_ORDER.length];
+  const toneOf = (i: number) => subjectVars(toneSlug(i));
 
   return (
     <div className="bg-sunny pb-20">
@@ -70,6 +99,10 @@ export function LegalDoc({ page, sub, intro, sections }: { page: LegalKey; sub: 
                   <meta.Icon aria-hidden />
                   {meta.blurb}
                 </li>
+                <li className={cn("chip min-h-8 px-3", band.dark ? "chip-glass" : "bg-white/70 text-[#5a3d00]")}>
+                  <CalendarClock aria-hidden />
+                  آخر تحديث: <time dateTime={updated}>{legalDate(updated)}</time>
+                </li>
               </ul>
             </div>
             <DocArt Icon={meta.Icon} tone={meta.tone} />
@@ -88,7 +121,12 @@ export function LegalDoc({ page, sub, intro, sections }: { page: LegalKey; sub: 
                 {sections.map((s, i) => (
                   <li key={s.id} style={toneOf(i)}>
                     <a href={`#${s.id}`} className="flex min-h-11 items-center gap-3 rounded-xl px-2 py-1.5 font-display text-[0.95rem] font-bold text-ink-soft transition-colors hover:bg-[var(--soft)] hover:text-[var(--tink)]">
-                      <span className="grid size-8 shrink-0 place-items-center rounded-[0.65rem] bg-linear-to-br from-[var(--a)] to-[var(--b)] text-[0.95rem] font-black text-white shadow-[inset_0_-2px_0_rgb(0_0_0/0.12)]">
+                      <span
+                        className={cn(
+                          "grid size-8 shrink-0 place-items-center rounded-[0.65rem] bg-linear-to-br text-[0.95rem] font-black shadow-[inset_0_-2px_0_rgb(0_0_0/0.12)]",
+                          LIGHT_TONES.has(toneSlug(i)) ? TILE_LIGHT : TILE_DARK,
+                        )}
+                      >
                         {ar(i + 1)}
                       </span>
                       {s.title}

@@ -43,7 +43,8 @@ export function ProductCard({
   if (v === "bundle") return <BundleCard product={p} owned={owned} items={items} showGrade={showGrade} headingLevel={headingLevel} />;
   if (v === "note") return <NoteCard product={p} owned={owned} showGrade={showGrade} headingLevel={headingLevel} />;
   if (v === "ticket") return <ExamTicket product={p} owned={owned} items={items} headingLevel={headingLevel} />;
-  return <VideoCard product={p} owned={owned} showGrade={showGrade} headingLevel={headingLevel} />;
+  // ‏ProductCard تعرضه الشبكات والقوائم العمودية؛ الرف الأفقي (.shelf) يعيد حجز السطرين في CSS
+  return <VideoCard product={p} owned={owned} showGrade={showGrade} headingLevel={headingLevel} fitTitle />;
 }
 
 /**

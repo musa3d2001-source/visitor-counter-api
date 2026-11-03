@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { useActionState } from "react";
-import { KeyRound, LockKeyhole, ShieldCheck } from "lucide-react";
+import { KeyRound, LockKeyhole, RotateCcw, ShieldCheck } from "lucide-react";
 import { resetPasswordAction } from "../actions";
 import { Field } from "@/components/ui/form";
 import { Alert } from "@/components/ui/alert";
@@ -15,9 +15,13 @@ export function ResetForm({ token }: { token: string }) {
     <form action={action} className="flex flex-col gap-5" noValidate>
       <input type="hidden" name="token" value={token} />
       {state?.error ? (
-        <Alert tone="danger">
-          {state.error} <Link href="/forgot-password">طلب رابط جديد</Link>
-        </Alert>
+        <div className="flex flex-col gap-3">
+          <Alert tone="danger">{state.error}</Alert>
+          <Link href="/forgot-password" className="btn btn-outline btn-md w-full">
+            <RotateCcw aria-hidden />
+            إرسال رابط جديد
+          </Link>
+        </div>
       ) : null}
       <Field label="كلمة المرور الجديدة" htmlFor="password" error={state?.fieldErrors?.password} hint="٨ أحرف على الأقل">
         <PasswordInput id="password" name="password" icon={<KeyRound />} autoComplete="new-password" dir="ltr" required minLength={8} />

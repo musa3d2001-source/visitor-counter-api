@@ -3,6 +3,7 @@
  * كبسولات الدروس والمدة والصفحات، رابط المعاينة، واستنتاج مفتاح المادة من اسمها.
  * كل القيم من بيانات حقيقية (ProductCard)؛ لا أرقام مخترعة.
  */
+import { Fragment } from "react";
 import type * as React from "react";
 import { CircleCheck, Clock3, FileText, PlayCircle, Sparkles } from "lucide-react";
 import type { ProductCard as ProductCardData } from "@/server/catalog/queries";
@@ -50,8 +51,8 @@ export function CompactPrice({ fils, compareAt, size = "md", showPercent = true,
       )}
       {save ? (
         <>
-          <s className={s.priceWas}>
-            <span className="sr-only">السعر قبل الخصم </span>
+          <span className="sr-only">بدلًا من {filsToKwdString(compareAt!)} د.ك</span>
+          <s className={s.priceWas} aria-hidden>
             <span className="num">{filsToKwdString(compareAt!)}</span>
           </s>
           {showPercent ? <span className={s.pct}>خصم {ar(save.pct)}٪</span> : null}
@@ -70,12 +71,28 @@ export function OwnedChip({ className }: { className?: string }) {
   );
 }
 
-/** «● الرياضيات · الصف التاسع» بلون المادة */
+/**
+ * «● الرياضيات · الصف التاسع» بلون المادة. يلتف حتى سطرين بدل قصّه؛ كل جزء لا ينكسر داخليًا،
+ * والنقطة الوسطى تلتصق بالجزء الذي يليها فلا يبقى سطر منتهيًا بـ«·». النص المقروء لم يتغير.
+ */
 export function Kicker({ children, className }: { children: React.ReactNode; className?: string }) {
+  const parts = typeof children === "string" ? children.split(" · ") : null;
   return (
     <p className={cn(s.kicker, className)}>
       <span className={s.kdot} aria-hidden />
-      <span>{children}</span>
+      <span className={s.ktext}>
+        {parts && parts.length > 1
+          ? parts.map((part, i) => (
+              <Fragment key={i}>
+                {i > 0 ? " " : null}
+                <span className={s.kpart}>
+                  {i > 0 ? <span className={s.ksep}>· </span> : null}
+                  {part}
+                </span>
+              </Fragment>
+            ))
+          : children}
+      </span>
     </p>
   );
 }

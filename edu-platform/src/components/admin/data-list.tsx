@@ -90,6 +90,7 @@ export function DataRow({
   badges,
   aside,
   leading,
+  footer,
   className,
 }: {
   title: React.ReactNode;
@@ -99,19 +100,23 @@ export function DataRow({
   aside?: React.ReactNode;
   /** عنصر في البداية (ToneIcon أو صورة مصغرة) */
   leading?: React.ReactNode;
+  /** تفاصيل إضافية بعرض البطاقة كاملًا تحت الصف (مثل أرقام صغيرة بعمودين) */
+  footer?: React.ReactNode;
   className?: string;
 }) {
   return (
     <li
       className={cn(
-        "relative flex min-w-0 flex-wrap items-center gap-x-3 gap-y-2 rounded-[1.25rem] border border-[rgb(23_32_38/0.06)] bg-surface p-3.5 shadow-xs transition-shadow sm:flex-nowrap",
+        "relative flex min-w-0 flex-wrap items-center gap-x-3 gap-y-2 rounded-[1.25rem] border border-[rgb(23_32_38/0.06)] bg-surface p-3.5 shadow-xs transition-shadow",
+        !footer && "sm:flex-nowrap",
         href && "hover:shadow-card",
         STRETCHED_FOCUS,
         className,
       )}
     >
       {leading}
-      <div className="min-w-0 flex-1">
+      {/* يحجز الجسم عرضًا أدنى فينزل الجانب (الكبسولات/المبالغ) إلى سطر خاص على الجوال بدل خنق العنوان */}
+      <div className="min-w-[min(100%,13rem)] flex-1">
         {href ? (
           <Link href={href} className="stretched line-clamp-2 font-display font-extrabold text-ink hover:text-brand-700">
             {title}
@@ -122,9 +127,18 @@ export function DataRow({
         {sub ? <div className="mt-0.5 text-[0.82rem] leading-6 text-muted">{sub}</div> : null}
         {badges ? <div className="mt-1.5 flex flex-wrap gap-1.5">{badges}</div> : null}
       </div>
-      {aside ? <div className="relative z-[2] flex shrink-0 items-center gap-2">{aside}</div> : null}
+      {aside ? <div className="relative z-[2] flex shrink-0 flex-wrap items-center gap-2 max-sm:w-full max-sm:justify-end">{aside}</div> : null}
+      {footer ? <div className="relative z-[2] min-w-0 basis-full">{footer}</div> : null}
     </li>
   );
+}
+
+/**
+ * قيمة غير متوفرة: نص خافت بدل الشرطة «—» (ممنوعة في نصوص الواجهة).
+ * label: «غير متوفر» افتراضيًا، أو «لا يوجد» / «بدون» حسب السياق.
+ */
+export function EmptyValue({ label = "غير متوفر", className }: { label?: string; className?: string }) {
+  return <span className={cn("font-medium text-muted", className)}>{label}</span>;
 }
 
 export function CellTitle({ href, title, sub, className }: { href?: string; title: React.ReactNode; sub?: React.ReactNode; className?: string }) {

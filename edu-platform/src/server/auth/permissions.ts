@@ -93,7 +93,7 @@ export async function assertProductAccess(actor: Actor, productId: string, need:
   if (p.teacher_id !== actor.teacherId) throw new PermissionError("المنتج غير موجود");
   if (need === "view") return p;
   if (!(TEACHER_EDITABLE_STATUSES as readonly string[]).includes(p.status)) {
-    throw new PermissionError(p.status === "in_review" ? "المحتوى قيد المراجعة ولا يمكن تعديله الآن" : "لا يمكن تعديل محتوى منشور — تواصل مع إدارة المنصة");
+    throw new PermissionError(p.status === "in_review" ? "المحتوى قيد المراجعة ولا يمكن تعديله الآن" : "لا يمكن تعديل محتوى منشور، تواصل مع إدارة المنصة");
   }
   if (need === "upload" && !actor.canUpload) throw new PermissionError("صلاحية الرفع موقوفة لحسابك حاليًا");
   return p;

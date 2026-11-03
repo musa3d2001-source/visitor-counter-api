@@ -1,6 +1,6 @@
 import Link from "next/link";
 import type * as React from "react";
-import { CircleDashed, Eye, EyeOff, FileText, Layers, Lock, Pencil, PlayCircle, Plus, Send, Undo2 } from "lucide-react";
+import { ArrowDownUp, Check, CircleDashed, Eye, EyeOff, FileText, Layers, Lock, Pencil, PlayCircle, Plus, Send, Undo2 } from "lucide-react";
 import { catalogOptions, listAdminProducts, teacherOptions, type AdminProductRow } from "@/server/admin/products";
 import { requireStaff } from "@/server/auth/permissions";
 import { storage } from "@/server/storage";
@@ -23,6 +23,7 @@ import { CatalogBand } from "../_components/catalog/band";
 import { PostersArt } from "../_components/catalog/art";
 import { PillTabs, type PillTab } from "../_components/catalog/pill-tabs";
 import { AdminThumb } from "../_components/catalog/thumb";
+import { Pager } from "../_components/catalog/pager";
 import { setStatusAction, updateSortAction } from "./actions";
 
 export const metadata = { title: "المذكرات والمنتجات" };
@@ -35,7 +36,13 @@ type SP = {
   status?: string;
   teacher?: string;
   deleted?: string;
+  page?: string;
+  /** وضع تعديل الترتيب (للمالك): يُظهر حقل الترتيب في كل صف */
+  sort?: string;
 };
+
+/** عدد المنتجات في الصفحة الواحدة */
+const PAGE_SIZE = 24;
 
 const FILE_WORD: CountWord = {
   one: "ملف",
@@ -73,6 +80,14 @@ export default async function AdminProductsPage({ searchParams }: { searchParams
   ]);
   const filtered = Boolean(filters.q || filters.gradeId || filters.subjectId || filters.type || filters.status || filters.teacherId);
   const levelOf = new Map(grades.map((g) => [g.id, g.level]));
+  const sorting = owner && sp.sort === "1";
+
+  // ترقيم صفحات للعرض فقط: نفس الاستعلام ونفس الترتيب، ثم شريحة بحجم PAGE_SIZE
+  const pages = Math.max(1, Math.ceil(products.length / PAGE_SIZE));
+  const page = Math.min(pages, Math.max(1, Number.parseInt(sp.page ?? "1", 10) || 1));
+  const pageItems = products.slice((page - 1) * PAGE_SIZE, page * PAGE_SIZE);
+  const gradeTotals = new Map<string, number>();
+  for (const p of products) gradeTotals.set(p.grade_id, (gradeTotals.get(p.grade_id) ?? 0) + 1);
 
   // أعداد حقيقية لكل حالة ضمن التصفية الحالية (المؤرشف لا يُعدّ إلا عند اختياره)
   const pool = unfiltered ?? products;
@@ -85,11 +100,22 @@ export default async function AdminProductsPage({ searchParams }: { searchParams
     subject: filters.subjectId,
     type: filters.type,
     teacher: filters.teacherId,
+    sort: sorting ? "1" : undefined,
   }))
     if (v) keep.set(k, v);
   const hrefFor = (status?: string) => {
     const p = new URLSearchParams(keep);
     if (status) p.set("status", status);
+    const s = p.toString();
+    return s ? `/admin/products?${s}` : "/admin/products";
+  };
+  const listHref = (patch: { page?: number; sort?: boolean }) => {
+    const p = new URLSearchParams(keep);
+    if (filters.status) p.set("status", filters.status);
+    const sortOn = patch.sort ?? sorting;
+    if (sortOn) p.set("sort", "1");
+    else p.delete("sort");
+    if (patch.page && patch.page > 1) p.set("page", String(patch.page));
     const s = p.toString();
     return s ? `/admin/products?${s}` : "/admin/products";
   };
@@ -117,7 +143,7 @@ export default async function AdminProductsPage({ searchParams }: { searchParams
     level: number | null;
     items: AdminProductRow[];
   }[] = [];
-  for (const p of products) {
+  for (const p of pageItems) {
     const last = groups.at(-1);
     if (last && last.id === p.grade_id) last.items.push(p);
     else
@@ -199,6 +225,7 @@ export default async function AdminProductsPage({ searchParams }: { searchParams
           ) : null}
           {/* الحالة تُختار من التبويبات أعلاه؛ تبقى مع النموذج عند التصفية */}
           {filters.status ? <input type="hidden" name="status" value={filters.status} /> : null}
+          {sorting ? <input type="hidden" name="sort" value="1" /> : null}
           <FilterSubmit resetHref="/admin/products" active={filtered} className="col-span-2 lg:col-span-1" />
         </FilterBar>
 
@@ -224,17 +251,42 @@ export default async function AdminProductsPage({ searchParams }: { searchParams
         ) : (
           <>
             <Toolbar
-              start={<ResultCount>{count(products.length, W.product)}</ResultCount>}
+              start={
+                <>
+                  <ResultCount>{count(products.length, W.product)}</ResultCount>
+                  {pages > 1 ? (
+                    <span className="text-[0.85rem] text-muted">
+                      المعروض <span className="font-display font-extrabold text-ink">{ar((page - 1) * PAGE_SIZE + 1)}</span> إلى{" "}
+                      <span className="font-display font-extrabold text-ink">{ar((page - 1) * PAGE_SIZE + pageItems.length)}</span>
+                    </span>
+                  ) : null}
+                </>
+              }
               end={
-                filters.status ? (
-                  <span className="text-[0.85rem] text-muted">
-                    الحالة: <b className="font-display font-extrabold text-ink">{PRODUCT_STATUS_LABELS[filters.status as ProductStatus]}</b>
-                  </span>
-                ) : (
-                  <span className="text-[0.85rem] text-muted">كل الحالات (عدا المؤرشف)</span>
-                )
+                <>
+                  {filters.status ? (
+                    <span className="text-[0.85rem] text-muted">
+                      الحالة: <b className="font-display font-extrabold text-ink">{PRODUCT_STATUS_LABELS[filters.status as ProductStatus]}</b>
+                    </span>
+                  ) : (
+                    <span className="text-[0.85rem] text-muted">كل الحالات (عدا المؤرشف)</span>
+                  )}
+                  {owner ? (
+                    <Button asChild size="sm" variant={sorting ? "primary" : "soft"} className="min-h-11">
+                      <Link href={listHref({ page, sort: !sorting })}>
+                        {sorting ? <Check aria-hidden /> : <ArrowDownUp aria-hidden />}
+                        {sorting ? "إنهاء تعديل الترتيب" : "تعديل الترتيب"}
+                      </Link>
+                    </Button>
+                  ) : null}
+                </>
               }
             />
+            {sorting ? (
+              <Alert tone="info" className="mb-4">
+                عدّل رقم الترتيب لأي منتج ثم اضغط «حفظ» بجانبه. الأصغر يظهر أولًا داخل مادته.
+              </Alert>
+            ) : null}
             <div className="space-y-7">
               {groups.map((g, gi) => (
                 <section key={`${g.id}-${gi}`} aria-labelledby={`grp-${gi}`}>
@@ -245,17 +297,24 @@ export default async function AdminProductsPage({ searchParams }: { searchParams
                     <h2 id={`grp-${gi}`} className="font-display text-[1.3rem] leading-tight font-black text-ink">
                       {g.name}
                     </h2>
-                    <span className="chip">{count(g.items.length, W.product)}</span>
+                    <span className="chip">{count(gradeTotals.get(g.id) ?? g.items.length, W.product)}</span>
                     <span className="h-1 min-w-6 flex-1 rounded-full bg-linear-to-l from-[var(--a)] via-[var(--m,var(--a))] to-transparent opacity-50" aria-hidden />
                   </div>
                   <ul className="flex flex-col gap-2.5">
                     {g.items.map((p) => (
-                      <ProductListRow key={p.id} p={p} owner={owner} level={g.level} />
+                      <ProductListRow key={p.id} p={p} owner={owner} sorting={sorting} level={g.level} />
                     ))}
                   </ul>
                 </section>
               ))}
             </div>
+            <Pager
+              page={page}
+              pages={pages}
+              hrefFor={(n) => listHref({ page: n })}
+              label="صفحات المنتجات"
+              className="mt-6 rounded-[1.5rem] border border-[rgb(23_32_38/0.06)] bg-surface p-3 shadow-card sm:p-4"
+            />
           </>
         )}
       </div>
@@ -263,7 +322,7 @@ export default async function AdminProductsPage({ searchParams }: { searchParams
   );
 }
 
-function ProductListRow({ p, owner, level }: { p: AdminProductRow; owner: boolean; level: number | null }) {
+function ProductListRow({ p, owner, sorting, level }: { p: AdminProductRow; owner: boolean; sorting: boolean; level: number | null }) {
   const slug = subjectSlugFromName(p.subject_name);
   const proposedOnly = p.teacher_id && p.status !== "published" && p.price_fils === 0 && p.proposed_price_fils !== null;
   const coverUrl = p.cover_key ? storage().publicUrl(p.cover_key) : null;
@@ -367,7 +426,7 @@ function ProductListRow({ p, owner, level }: { p: AdminProductRow; owner: boolea
           <div className="max-lg:ms-auto lg:min-w-[8.5rem]">
             <ProductStatusBadge status={p.status} />
           </div>
-          {owner ? (
+          {owner && sorting ? (
             <ActionForm action={updateSortAction} compact className="flex items-center gap-1 max-lg:basis-auto">
               <input type="hidden" name="id" value={p.id} />
               <span className="font-display text-[0.72rem] font-bold text-muted" aria-hidden>

@@ -92,6 +92,14 @@ export default async function WatchPage({ params, searchParams }: { params: Prom
   const showLoginCard = !user && Boolean(access?.ok) && !showFreeCta;
   const hasSide = showFreeCta || files.length > 0 || showLoginCard;
   const numberOf = (id: string) => lessons.findIndex((l) => l.id === id) + 1;
+  // أرخص خطوة للتحويل من شاشة القفل: الدرس المجاني في الوحدة نفسها أولًا، ثم أول درس مجاني في المحتوى
+  const freeAlt = (() => {
+    if (!selected || access?.ok || lockedReason === "not_ready") return null;
+    const isFree = (l: LessonInfo) => l.isFreePreview && l.id !== selected.id;
+    const sameGroup = playlist.find((g) => g.lessons.some((l) => l.id === selected.id));
+    const l = sameGroup?.lessons.find(isFree) ?? lessons.find(isFree);
+    return l ? { href: watchHref(l.id), title: l.title } : null;
+  })();
   const stateOf = (id: string) => {
     const l = lessons.find((x) => x.id === id)!;
     const p = progressBy.get(id);
@@ -180,6 +188,7 @@ export default async function WatchPage({ params, searchParams }: { params: Prom
                     priceFils={detail?.priceFils ?? null}
                     compareAtFils={detail?.compareAtPriceFils ?? null}
                     subjectSlug={subjectSlug}
+                    freeLesson={freeAlt}
                   />
                 )}
               </StageFrame>
@@ -303,7 +312,7 @@ export default async function WatchPage({ params, searchParams }: { params: Prom
                         {teacher.headline ? <p className="line-clamp-1 text-[0.88rem] text-ink-soft">{teacher.headline}</p> : null}
                       </div>
                       {teacher.slug ? (
-                        <Link href={`/teachers/${teacher.slug}`} className="btn btn-3d btn-outline btn-icon shrink-0 sm:h-auto sm:w-auto sm:min-h-10 sm:px-3.5 sm:text-[0.9rem]">
+                        <Link href={`/teachers/${teacher.slug}`} className="btn btn-3d btn-outline btn-icon shrink-0 sm:h-auto sm:w-auto sm:min-h-11 sm:px-3.5 sm:text-[0.9rem]">
                           <UserRound aria-hidden />
                           <span className="sr-only sm:not-sr-only">صفحة المعلم</span>
                         </Link>

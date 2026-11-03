@@ -158,7 +158,7 @@
 .btnPrimary {
   gap: 16px;
   padding-inline: 26px 9px;
-  background: linear-gradient(180deg, var(--brand-hi) 0%, var(--brand) 100%);
+  background: var(--brand-btn);
   color: #fff;
   box-shadow:
     0 5px 0 var(--brand-edge),
@@ -294,7 +294,11 @@
   font-size: 30px;
   line-height: 1;
   color: #fff;
-  text-shadow: 0 2px 0 color-mix(in oklab, var(--d) 70%, transparent);
+  /* حافة داكنة كاملة حول الرقم الأبيض حتى على التدرج الفاتح (الصف السادس) */
+  text-shadow:
+    0 2px 0 var(--d),
+    0 0 1.5px var(--d),
+    0 0 1.5px var(--d);
 }
 .gbtnName {
   flex: 1;
@@ -597,7 +601,7 @@
   display: flex;
   flex-direction: column;
   min-width: 0;
-  line-height: 1.35;
+  line-height: 1.6;
 }
 .fanMeta b {
   font-size: 15.5px;
@@ -652,7 +656,7 @@
     0 2px 6px rgb(23 32 38 / 0.05),
     0 24px 44px -18px rgb(23 32 38 / 0.3);
   border: 1px solid rgb(255 255 255 / 0.9);
-  line-height: 1.35;
+  line-height: 1.6;
   animation: bob 6s ease-in-out infinite;
 }
 .float b {
@@ -692,6 +696,7 @@
   justify-content: center;
   gap: 0;
   text-align: center;
+  line-height: 1.35;
   background: radial-gradient(circle at 35% 30%, #ffe7a0, #ffc531 60%, #f2a900);
   color: var(--accent-ink);
   border: 3px dashed rgb(255 255 255 / 0.75);
@@ -1053,7 +1058,8 @@
   border-radius: 50%;
   display: grid;
   place-items: center;
-  background: linear-gradient(135deg, var(--a), var(--b));
+  /* أرقام بيضاء صغيرة: على الدرجتين الداكنتين ‎--d/--tink‎ لتبلغ ≥ 4.5:1 */
+  background: linear-gradient(135deg, color-mix(in oklab, var(--d) 70%, var(--tink)), var(--tink));
   color: #fff;
   font-weight: 900;
   font-size: 17px;
@@ -1577,7 +1583,8 @@
   border-radius: 16px;
   display: grid;
   place-items: center;
-  background: linear-gradient(145deg, var(--a), var(--m, var(--b)), var(--b));
+  /* الرقم الأبيض على ‎--b/--d/--tink‎ (لا على ‎--a/--m‎ الفاتحتين) ليبلغ ≥ 3:1 */
+  background: linear-gradient(145deg, color-mix(in oklab, var(--b) 55%, var(--d)), var(--d) 60%, var(--tink));
   color: #fff;
   font-size: 27px;
   font-weight: 900;
@@ -1688,8 +1695,10 @@
   .gradeGrid {
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
+  /* المذكرات تبقى صفًا واحدًا كثيفًا حتى 640: 4 هنا، 3 تحت 900، وشبكة 2×2 للجوال فقط.
+     عمودان على اللوحي يحوّلان كل ورقة إلى لوح لوني ضخم بأيقونة صغيرة. */
   .noteGrid {
-    grid-template-columns: repeat(2, minmax(0, 1fr));
+    grid-template-columns: repeat(4, minmax(0, 1fr));
   }
   .noteGrid > li:nth-child(n + 5) {
     display: none;
@@ -1833,6 +1842,12 @@
   .examCols {
     grid-template-columns: minmax(0, 1fr);
   }
+  .noteGrid {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+  .noteGrid > li:nth-child(4) {
+    display: none;
+  }
 }
 
 /* الكعب ينتقل أسفل التذكرة (نفس نقطة تحوّل التذكرة المشتركة) */
@@ -1971,7 +1986,6 @@
     gap: 12px;
   }
   .noteGrid {
-    grid-template-columns: repeat(2, minmax(0, 1fr));
     gap: 26px 14px;
   }
   .explorer {
@@ -2136,5 +2150,15 @@
     height: 44px;
     font-size: 23px;
     border-radius: 14px;
+  }
+}
+
+/* الجوال: المذكرات شبكة 2×2 (تعود الرابعة التي أخفاها صف الثلاث) */
+@media (max-width: 639px) {
+  .noteGrid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+  .noteGrid > li:nth-child(4) {
+    display: block;
   }
 }

@@ -3,11 +3,13 @@
  * عرض فقط؛ الروابط ومعرّفات الاختبار (data-testid) كما هي.
  */
 import Link from "next/link";
-import { ArrowLeft, BookOpen, CalendarClock, Download, FileText, Play } from "lucide-react";
+import type * as React from "react";
+import { ArrowLeft, BookOpen, CalendarClock, Download, FileText, Moon, Play, RotateCcw, Sun } from "lucide-react";
 import type { LibraryItem } from "@/server/access/entitlements";
 import { coverUrl } from "@/server/catalog/queries";
 import { Button } from "@/components/ui/button";
 import { ProductCover } from "@/components/site/product-cover";
+import { NightSky, SubjectIcon, Sunrise } from "@/components/art";
 import { subjectSlugFromName } from "@/components/site/card-parts";
 import { PRODUCT_TYPE_LABELS, termLabel, type ProductType } from "@/lib/labels";
 import { ar, count, toneClass, W } from "@/lib/design";
@@ -22,11 +24,87 @@ export type ResumeEntry = {
   context: string;
   pct: number;
   status: string;
+  /** درس أكمله الطالب (يظهر بارزًا فقط إن لم يبقَ درس قيد المشاهدة) */
+  completed?: boolean;
   item: LibraryItem | null;
 };
 
 function itemSlug(item: LibraryItem | null) {
   return subjectSlugFromName(item?.subjectName);
+}
+
+/** play: موضع زر التشغيل (مركزه على النقطة المحددة) */
+type PosterVariant = { cls?: string; style?: React.CSSProperties; icon: React.ReactNode; art: React.ReactNode; play: string };
+
+/**
+ * ملصق الفيديو في المكتبة يتنوع بنوع المحتوى داخل لون المادة (مثل صفوف v2-c):
+ * مراجعة ليلة الاختبار ← سماء ليلية بنفسجية وهلال، مراجعة الاختبار القصير ← شروق مرجاني،
+ * الدرس المنفرد ← زر تشغيل كبير بحلقات. الوحدات والدورات ← ملصق المادة المعتاد.
+ */
+function posterVariant(type: ProductType, slug: string | null): PosterVariant | null {
+  if (type === "exam_review")
+    return {
+      style: {
+        background: "radial-gradient(60% 90% at 0% 100%, rgb(255 210 94 / 0.6), transparent 70%), linear-gradient(to left, #1d1a57, #33278f 38%, #6b36b3 72%, #d9507e)",
+        ["--b" as string]: "#5230b8",
+        ["--d" as string]: "#1d1a57",
+        ["--tink" as string]: "#4a2aa8",
+      },
+      icon: <Moon aria-hidden />,
+      art: <NightSky className="pointer-events-none absolute end-[2%] top-[16%] w-[58%]" />,
+      play: "end-[20%] top-[52%] -mt-[1.8rem] -me-[1.8rem]",
+    };
+  if (type === "quiz_review")
+    return {
+      cls: "poster-grade grade-6",
+      icon: <Sun aria-hidden />,
+      art: <Sunrise className="pointer-events-none absolute end-[4%] bottom-0 w-[46%] opacity-80" />,
+      play: "end-[22%] top-[34%] -mt-[1.8rem] -me-[1.8rem]",
+    };
+  if (type === "video_lesson")
+    return {
+      cls: toneClass(slug),
+      icon: <Play className="fill-current" aria-hidden />,
+      art: (
+        <span className="pointer-events-none absolute end-[6%] top-1/2 grid aspect-square w-[36%] -translate-y-1/2 place-items-center rounded-full border-[10px] border-white/18" aria-hidden>
+          <span className="absolute inset-[14%] rounded-full border-[8px] border-white/22" />
+          {slug ? <SubjectIcon slug={slug} className="absolute -end-[6%] -top-[6%] size-[34%] rotate-12 text-white/85" strokeWidth={2.2} /> : null}
+        </span>
+      ),
+      play: "end-[24%] top-1/2 -mt-[1.8rem] -me-[1.8rem]",
+    };
+  return null;
+}
+
+/** ملصق بطاقة الفيديو: صورة المالك إن وُجدت، وإلا ملصق متنوع بالنوع (أو ملصق المادة المعتاد) */
+function LibraryPoster({ item, title, slug, sizes, className }: { item: LibraryItem; title: string; slug: string | null; sizes: string; className?: string }) {
+  const type = item.type as ProductType;
+  const url = coverUrl(item.coverKey);
+  const v = url ? null : posterVariant(type, slug);
+  if (!v)
+    return <ProductCover coverUrl={url} title={title} type={type} subjectName={item.subjectName} subjectSlug={slug} gradeName={item.gradeName} sizes={sizes} wide className={className} />;
+  return (
+    <div className={cn("poster @container flex aspect-[16/10] flex-col justify-between p-4 sm:p-5", v.cls, className)} style={v.style} role="img" aria-label={title}>
+      <span className="chip chip-glass relative z-10 self-start">
+        {v.icon}
+        {PRODUCT_TYPE_LABELS[type]}
+      </span>
+      {v.art}
+      <span className={cn("play-dot absolute", v.play)} aria-hidden>
+        <Play className="-ms-0.5 size-6 fill-current" />
+      </span>
+      <span className="relative max-w-[58%]">
+        <span className="block font-display text-[clamp(1rem,7.5cqi,2rem)] leading-[1.3] font-black text-white [text-shadow:0_3px_0_color-mix(in_oklab,var(--d)_60%,transparent),0_8px_18px_rgb(0_0_0/0.22)]">
+          {item.subjectName ?? item.gradeName}
+        </span>
+        {item.subjectName ? (
+          <span className="mt-1 inline-block rounded-full bg-white/90 px-2.5 font-display text-[clamp(0.7rem,5cqi,0.85rem)] leading-7 font-extrabold" style={{ color: "var(--tink)" }}>
+            {item.gradeName}
+          </span>
+        ) : null}
+      </span>
+    </div>
+  );
 }
 
 /** بطاقة شرح فيديو في المكتبة: ملصق المادة، العنوان، التقدم الحقيقي، وزرا الفتح */
@@ -36,17 +114,7 @@ export function VideoLibraryCard({ item }: { item: LibraryItem }) {
   const slug = itemSlug(item);
   return (
     <article className={cn("tile-3d flex h-full flex-col p-2.5", toneClass(slug))} data-testid="library-video">
-      <ProductCover
-        coverUrl={coverUrl(item.coverKey)}
-        title={item.title}
-        type={item.type as ProductType}
-        subjectName={item.subjectName}
-        subjectSlug={slug}
-        gradeName={item.gradeName}
-        sizes="(max-width: 640px) 92vw, (max-width: 1280px) 45vw, 380px"
-        wide
-        className="rounded-[1.3rem]"
-      />
+      <LibraryPoster item={item} title={item.title} slug={slug} sizes="(max-width: 640px) 92vw, (max-width: 1280px) 45vw, 380px" className="rounded-[1.3rem]" />
       <div className="flex flex-1 flex-col px-2 pt-4 pb-2 sm:px-3">
         <div className="flex flex-wrap gap-1.5">
           <span className="chip">{PRODUCT_TYPE_LABELS[item.type as ProductType]}</span>
@@ -168,21 +236,25 @@ export function ResumeFeatured({ r }: { r: ResumeEntry }) {
       )}
       data-testid={r.kind === "video" ? "continue-watching-item" : "continue-reading-item"}
     >
-      <ProductCover
-        coverUrl={r.item ? coverUrl(r.item.coverKey) : null}
-        title={r.title}
-        type={(r.item?.type ?? (r.kind === "video" ? "video_lesson" : "final_notes")) as ProductType}
-        subjectName={r.item?.subjectName ?? null}
-        subjectSlug={slug}
-        gradeName={r.item?.gradeName ?? ""}
-        sizes="(max-width: 640px) 90vw, 420px"
-        wide
-        className="rounded-[1.35rem]"
-      />
+      {r.item ? (
+        <LibraryPoster item={r.item} title={r.title} slug={slug} sizes="(max-width: 640px) 90vw, 420px" className="rounded-[1.35rem]" />
+      ) : (
+        <ProductCover
+          coverUrl={null}
+          title={r.title}
+          type={(r.kind === "video" ? "video_lesson" : "final_notes") as ProductType}
+          subjectName={null}
+          subjectSlug={slug}
+          gradeName=""
+          sizes="(max-width: 640px) 90vw, 420px"
+          wide
+          className="rounded-[1.35rem]"
+        />
+      )}
       <span className="block px-2.5 pb-3 sm:px-0 sm:pe-5 sm:pb-0">
         <span className="chip">
           {r.kind === "video" ? <Play className="fill-current" aria-hidden /> : <BookOpen aria-hidden />}
-          {r.kind === "video" ? "آخر درس شاهدته" : "آخر ما قرأته"}
+          {r.kind === "video" ? (r.completed ? "آخر درس أكملته" : "آخر درس شاهدته") : "آخر ما قرأته"}
         </span>
         <span className="mt-2 block font-display text-[1.3rem] leading-snug font-black sm:text-[1.5rem]">{r.title}</span>
         <span className="mt-1 block text-[0.92rem] text-muted">{r.context}</span>
@@ -191,8 +263,8 @@ export function ResumeFeatured({ r }: { r: ResumeEntry }) {
           <span className="shrink-0 font-display text-[0.88rem] font-extrabold text-[var(--tink)]">{r.status}</span>
         </span>
         <span className="btn btn-3d btn-primary btn-md mt-5">
-          {r.kind === "video" ? "تابع المشاهدة" : "تابع القراءة"}
-          <ArrowLeft aria-hidden />
+          {r.kind === "video" ? (r.completed ? "راجع الدرس" : "تابع المشاهدة") : "تابع القراءة"}
+          {r.completed ? <RotateCcw aria-hidden /> : <ArrowLeft aria-hidden />}
         </span>
       </span>
     </Link>

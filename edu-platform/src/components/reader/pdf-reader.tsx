@@ -4,6 +4,7 @@ import Link from "next/link";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { ArrowRight, BookOpenText, Download, Eye, LoaderCircle, Maximize, Minus, Plus, ShieldCheck, ShoppingCart, TriangleAlert } from "lucide-react";
 import { ar } from "@/lib/design";
+import { Price } from "@/components/ui/price";
 import type { PDFDocumentProxy, PDFPageProxy } from "pdfjs-dist";
 
 /**
@@ -26,8 +27,11 @@ type Props = {
   badge?: string;
   /** شكل الشارة فقط: «preview» ذهبية للمعاينة، وغير ذلك فيروزية فاتحة */
   variant?: "preview" | "full";
-  /** زر إجراء اختياري في الشريط (مثل «اشترِ المذكرة» في المعاينة) */
-  cta?: { href: string; label: string };
+  /**
+   * زر إجراء اختياري في الشريط (مثل «اشترِ المذكرة» في المعاينة). shortLabel يظهر على الجوال.
+   * في المعاينة يُعاد استخدامه في بطاقة «انتهت المعاينة» بعد آخر صفحة، مع السعر إن وُجد.
+   */
+  cta?: { href: string; label: string; shortLabel?: string; priceFils?: number | null; compareAtPriceFils?: number | null };
 };
 
 export function PdfReader({ src, title, backHref, backLabel, initialPage = 1, watermark, downloadHref, progressFileId, badge, variant = "full", cta }: Props) {
@@ -156,9 +160,16 @@ export function PdfReader({ src, title, backHref, backLabel, initialPage = 1, wa
             ) : null}
           </div>
           {cta ? (
-            <Link href={cta.href} className="btn btn-3d btn-accent btn-sm hidden shrink-0 sm:inline-flex">
+            <Link href={cta.href} className="btn btn-3d btn-accent btn-sm min-h-11 shrink-0 px-3 sm:px-3.5">
               <ShoppingCart aria-hidden />
-              {cta.label}
+              {cta.shortLabel ? (
+                <>
+                  <span className="sm:hidden">{cta.shortLabel}</span>
+                  <span className="hidden sm:inline">{cta.label}</span>
+                </>
+              ) : (
+                cta.label
+              )}
             </Link>
           ) : null}
           <button
@@ -207,6 +218,7 @@ export function PdfReader({ src, title, backHref, backLabel, initialPage = 1, wa
             {pages.map((n) => (
               <PdfPage key={n} doc={doc} n={n} width={pageWidth} ratio={ratio} watermark={watermark} onVisible={onVisible} />
             ))}
+            {preview && cta ? <PreviewEndCard cta={cta} backHref={backHref} backLabel={backLabel} /> : null}
           </div>
         )}
       </div>
@@ -220,9 +232,15 @@ export function PdfReader({ src, title, backHref, backLabel, initialPage = 1, wa
             </button>
             <div className="flex min-w-[7.5rem] flex-col items-center px-2">
               <span className="flex items-baseline gap-1.5 font-display text-white">
-                <span className="text-[0.75rem] font-bold text-white/70">صفحة</span>
-                <span className="num text-[1rem] font-black" aria-live="polite" data-testid="reader-pages" dir="ltr">
-                  {current} / {doc.numPages}
+                <span className="text-[0.75rem] font-bold text-white/70" aria-hidden>
+                  صفحة
+                </span>
+                {/* العدّاد المرئي بالأرقام العربية الهندية مثل قراءة التكبير؛ النص المقروء لقارئ الشاشة في عنصر مخفي بصريًا */}
+                <span className="num text-[1rem] font-black" aria-hidden>
+                  {ar(current)} / {ar(doc.numPages)}
+                </span>
+                <span className="sr-only" aria-live="polite" data-testid="reader-pages">
+                  صفحة {current} / {doc.numPages}
                 </span>
               </span>
               <span className="mt-1 block h-1.5 w-full overflow-hidden rounded-full bg-white/15" aria-hidden>
@@ -240,6 +258,49 @@ export function PdfReader({ src, title, backHref, backLabel, initialPage = 1, wa
       ) : null}
       <style>{`@media print { .reader-scroll { display: none !important; } }`}</style>
     </div>
+  );
+}
+
+/** بطاقة ختام المعاينة: تبيع مثل شاشة قفل الفيديو (العنوان، السعر، زر الشراء الذهبي، والعودة). */
+function PreviewEndCard({
+  cta,
+  backHref,
+  backLabel,
+}: {
+  cta: NonNullable<Props["cta"]>;
+  backHref: string;
+  backLabel: string;
+}) {
+  return (
+    <section
+      dir="rtl"
+      aria-labelledby="preview-end-title"
+      className="relative mt-6 mb-2 w-full max-w-md overflow-hidden rounded-[1.75rem] bg-surface p-6 text-center text-ink shadow-pop sm:p-8"
+    >
+      <span className="absolute inset-x-0 top-0 block h-[5px] bg-linear-to-l from-[#ff6b5a] via-[#ffc531] via-40% to-[#9b5cf6]" aria-hidden />
+      <span className="mx-auto grid size-16 place-items-center rounded-[1.25rem] bg-linear-to-br from-[#ffd25e] to-[#eb9b00] text-[#3d2a00] shadow-[0_5px_0_#b77800]" aria-hidden>
+        <Eye className="size-8" />
+      </span>
+      <h2 id="preview-end-title" className="mt-4 font-display text-[1.4rem] leading-tight font-black">
+        انتهت المعاينة
+      </h2>
+      <p className="mt-2 text-[0.98rem] leading-7 text-ink-soft">
+        وصلت إلى آخر صفحة في المعاينة. النسخة الكاملة تظهر في «مكتبتي» فور تأكيد الدفع.
+      </p>
+      {cta.priceFils != null ? (
+        <Price fils={cta.priceFils} compareAt={cta.compareAtPriceFils} size="lg" className="mt-4 justify-center" />
+      ) : null}
+      <div className="mt-5 flex flex-col gap-3">
+        <Link href={cta.href} className="btn btn-3d btn-accent btn-lg w-full">
+          <ShoppingCart aria-hidden />
+          {cta.label}
+        </Link>
+        <Link href={backHref} className="btn btn-ghost btn-md w-full">
+          <ArrowRight aria-hidden />
+          {backLabel}
+        </Link>
+      </div>
+    </section>
   );
 }
 
@@ -321,7 +382,7 @@ function PdfPage({
       ref={ref}
       className="relative overflow-hidden rounded-[4px] bg-white shadow-[0_18px_40px_-18px_rgb(0_0_0/0.7),0_0_0_1px_rgb(255_255_255/0.06)]"
       style={{ width, height: Math.round(width * ratio) }}
-      aria-label={`صفحة ${n}`}
+      aria-label={`صفحة ${ar(n)}`}
     >
       <canvas ref={canvasRef} className="block h-full w-full" />
       {!rendered ? <div className="absolute inset-0 animate-pulse bg-[#f4efe6]" aria-hidden /> : null}

@@ -34,7 +34,7 @@ export default async function LibraryPage({ searchParams }: { searchParams: Prom
     .sort((a, b) => +new Date(b.lastActivity!) - +new Date(a.lastActivity!))
     .slice(0, 3);
 
-  // «تابع المشاهدة»: آخر الدروس التي شاهدها الطالب في منتجات يملكها
+  // «تابع المشاهدة»: الدروس التي لم يكملها الطالب أولًا (الأحدث فالأقدم)، ثم آخر ما أكمله
   const ownedIds = items.map((i) => i.productId);
   const watching = ownedIds.length
     ? await sql<{ lesson_id: string; product_id: string; title: string; product_title: string; position_seconds: number; duration_seconds: number | null; completed: boolean }[]>`
@@ -43,7 +43,7 @@ export default async function LibraryPage({ searchParams }: { searchParams: Prom
         join lessons l on l.id = lp.lesson_id and l.is_published and l.processing_status = 'ready'
         join products p on p.id = l.product_id
         where lp.user_id = ${user.id} and l.product_id = any(${ownedIds}::uuid[])
-        order by lp.updated_at desc
+        order by lp.completed asc, lp.updated_at desc
         limit 3
       `
     : [];
@@ -66,6 +66,7 @@ export default async function LibraryPage({ searchParams }: { searchParams: Prom
       kind: "video" as const,
       title: w.title,
       context: w.product_title,
+      completed: w.completed,
       pct: w.completed ? 100 : w.duration_seconds ? Math.min(100, Math.round((w.position_seconds / w.duration_seconds) * 100)) : 0,
       status: w.completed ? "مكتمل" : w.duration_seconds ? `${formatClock(w.position_seconds)} من ${formatClock(w.duration_seconds)}` : `توقفت عند ${formatClock(w.position_seconds)}`,
       item: byId.get(w.product_id) ?? null,
@@ -147,7 +148,7 @@ export default async function LibraryPage({ searchParams }: { searchParams: Prom
             {resume.length ? (
               <section className="bg-teal-night on-dark relative isolate overflow-hidden rounded-[2rem] p-4 sm:rounded-[2.5rem] sm:p-8 lg:p-10" aria-labelledby="resume-title">
                 <Sparkle className="animate-twinkle absolute end-[6%] top-8 size-6" />
-                <Sparkle className="animate-twinkle absolute start-[40%] top-6 size-3.5 [animation-delay:1.2s]" color="#ffffff" />
+                <Sparkle className="animate-twinkle absolute start-[55%] top-5 hidden size-3.5 sm:block [animation-delay:1.2s]" color="#ffffff" />
                 <span className="pointer-events-none absolute -end-16 -bottom-24 size-72 rounded-full border-[28px] border-white/6" aria-hidden />
                 <div className="mb-6 px-2 pt-2 sm:px-0 sm:pt-0">
                   <Eyebrow tone="light" icon={<PlayCircle />}>
@@ -159,9 +160,9 @@ export default async function LibraryPage({ searchParams }: { searchParams: Prom
                 </div>
                 <ResumeFeatured r={resume[0]} />
                 {resume.length > 1 ? (
-                  <ul className={cn("mt-4 grid gap-3", resume.length > 2 && "md:grid-cols-2")}>
+                  <ul className={cn("mt-4 grid grid-cols-1 gap-3", resume.length > 2 && "md:grid-cols-2")}>
                     {resume.slice(1).map((r) => (
-                      <li key={r.key}>
+                      <li key={r.key} className="min-w-0">
                         <ResumeRow r={r} />
                       </li>
                     ))}

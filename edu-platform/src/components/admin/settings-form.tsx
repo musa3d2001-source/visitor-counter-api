@@ -2,7 +2,7 @@
 
 import { usePreservingAction } from "./use-preserving-action";
 import { useState } from "react";
-import { ArrowDown, ArrowUp, BookOpen, CircleHelp, Palette, Percent, Phone, Plus, Sparkles, Trash2, Type } from "lucide-react";
+import { ArrowDown, ArrowUp, BookOpen, CheckCircle2, CircleHelp, Palette, Percent, Phone, Plus, Save, Sparkles, Trash2, Type } from "lucide-react";
 import { ToneIcon } from "./icon-tile";
 import type { AdminTone } from "./tones";
 import type { ActionState } from "@/lib/action-state";
@@ -235,7 +235,22 @@ export function SettingsForm({ action, values }: { action: ServerAction; values:
 
       {state?.error ? <Alert tone="danger">{state.error}</Alert> : null}
       {state?.ok && state.message ? <Alert tone="success">{state.message}</Alert> : null}
-      <div className="sticky bottom-0 z-10 -mx-4 border-t border-line bg-surface/95 px-4 py-3 backdrop-blur sm:static sm:mx-0 sm:border-0 sm:bg-transparent sm:p-0 sm:backdrop-blur-none">
+      {/* شريط حفظ ثابت أسفل الشاشة بكل المقاسات: الصفحة طويلة (الأسئلة الشائعة)، فلا حاجة للنزول إلى آخرها للحفظ */}
+      <div className="sticky bottom-3 z-10 flex flex-wrap items-center justify-between gap-3 rounded-[1.4rem] border border-white bg-white/95 p-3 shadow-dock backdrop-blur sm:p-4">
+        {/* الملاحظة مخفية بصريًا على الهاتف فقط (sr-only) لتبقى منطقة aria-live حاضرة وتُعلَن رسالة النجاح */}
+        <p className="flex items-center gap-2 text-[0.88rem] text-ink-soft max-sm:sr-only" aria-live="polite">
+          {state?.ok && state.message ? (
+            <>
+              <CheckCircle2 className="size-4 text-success" aria-hidden />
+              {state.message}
+            </>
+          ) : (
+            <>
+              <Save className="size-4 text-brand-700" aria-hidden />
+              التعديلات تُطبَّق فورًا بعد الحفظ
+            </>
+          )}
+        </p>
         <SubmitButton pendingText="جارٍ الحفظ…" size="lg" className="max-sm:w-full">حفظ الإعدادات</SubmitButton>
       </div>
     </form>

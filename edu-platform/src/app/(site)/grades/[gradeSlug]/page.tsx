@@ -13,7 +13,7 @@ import { previewHref, shortTerm } from "@/components/site/card-parts";
 import { termLabel } from "@/lib/labels";
 import { gradeClass, W } from "@/lib/design";
 import { cn } from "@/lib/utils";
-import { browseStyles as s, GradeWindow, NightPanel, offerPhrase, pillCount, splitByFamily, SubjectCard, ToneHero, typeFamily } from "../_components/browse";
+import { balancedGrid, browseStyles as s, GradeWindow, NightPanel, offerPhrase, pillCount, splitByFamily, SubjectCard, ToneHero, typeFamily } from "../_components/browse";
 
 export async function generateMetadata({ params }: { params: Promise<{ gradeSlug: string }> }): Promise<Metadata> {
   const grade = await getGradeBySlug((await params).gradeSlug);
@@ -25,8 +25,8 @@ export async function generateMetadata({ params }: { params: Promise<{ gradeSlug
   };
 }
 
-/** عدد المذكرات المعروضة في صفحة الصف (الباقي في صفحات المواد) */
-const NOTES_LIMIT = 10;
+/** عدد المذكرات المعروضة في صفحة الصف (الباقي في صفحات المواد): ١٢ يملأ صفوف ٢ و٣ و٤ أعمدة */
+const NOTES_LIMIT = 12;
 /** المذكرات النهائية أولًا (واحدة لكل مادة غالبًا) ثم ليلة الاختبار ثم النماذج */
 const NOTE_ORDER = ["final_notes", "exam_night", "review_notes", "exam_model", "answer_key"];
 
@@ -51,6 +51,7 @@ export default async function GradePage({ params }: { params: Promise<{ gradeSlu
 
   const { videos, night, quiz, notes: rawNotes } = splitByFamily(all);
   const notes = [...rawNotes].sort((a, b) => NOTE_ORDER.indexOf(a.type) - NOTE_ORDER.indexOf(b.type));
+  const shownNotes = notes.slice(0, NOTES_LIMIT);
   const offer = offerPhrase(all);
   const productTotal = all.length + bundles.length;
   const firstPreview = all.find((p) => p.previewLessonId);
@@ -164,21 +165,21 @@ export default async function GradePage({ params }: { params: Promise<{ gradeSlu
               }
               sub="شرح كل وحدة بصوت معلمك، وفي كثير منها درس مجاني تشاهده قبل الشراء."
             />
-            <ProductShelf products={videos} ownedIds={owned} showGrade={false} />
+            <ProductShelf products={videos} ownedIds={owned} showGrade={false} className={balancedGrid(videos.length, { md: [3, 2], lg: [4, 3], video: true })} />
           </section>
         ) : null}
 
         {popular.length ? (
           <section aria-labelledby="popular">
             <SectionHead id="popular" icon={<Flame aria-hidden />} tone="coral" eyebrow="من طلبات الطلاب" title="الأكثر طلبًا" sub={`أكثر ما اشتراه طلاب ${grade.name} على المنصة.`} />
-            <ProductShelf products={popular} ownedIds={owned} itemsById={itemsById} showGrade={false} />
+            <ProductShelf products={popular} ownedIds={owned} itemsById={itemsById} showGrade={false} className={balancedGrid(popular.length, { md: [3, 2], lg: [4, 3], video: true })} />
           </section>
         ) : null}
 
         {bundles.length ? (
           <section aria-labelledby="bundles">
             <SectionHead id="bundles" icon={<Package aria-hidden />} tone="violet" eyebrow="كل المواد معًا" title={`باقات ${grade.name}`} sub="اشترِ مجموعة كاملة مرة واحدة، وتظهر كل محتوياتها في مكتبتك." />
-            <ProductGrid products={bundles} ownedIds={owned} itemsById={itemsById} showGrade={false} />
+            <ProductGrid products={bundles} ownedIds={owned} itemsById={itemsById} showGrade={false} className={balancedGrid(bundles.length, { md: [3, 2], lg: [4, 3], video: true })} />
           </section>
         ) : null}
 
@@ -197,7 +198,7 @@ export default async function GradePage({ params }: { params: Promise<{ gradeSlu
               sub={notes.length > NOTES_LIMIT ? "مختارات من المذكرات والنماذج، وتجد كل مذكرات المادة في صفحتها." : "المذكرات النهائية ومذكرات ليلة الاختبار ونماذج الاختبارات."}
               more={notes.length > NOTES_LIMIT ? { href: "#subjects", label: "كل المواد" } : undefined}
             />
-            <ProductGrid products={notes.slice(0, NOTES_LIMIT)} ownedIds={owned} showGrade={false} />
+            <ProductGrid products={shownNotes} ownedIds={owned} showGrade={false} className={balancedGrid(shownNotes.length, { md: [3, 2], lg: [4, 5, 3] })} />
           </section>
         ) : null}
       </div>

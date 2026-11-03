@@ -846,10 +846,10 @@ export default async function EditProductPage({
                     {bundleItems.map((it) => (
                       <li
                         key={it.product_id}
-                        className="relative flex items-center gap-3 rounded-[1.25rem] border border-[rgb(23_32_38/0.07)] bg-surface p-2.5 pe-3 text-sm shadow-[0_3px_0_var(--color-line)]"
+                        className="relative flex flex-wrap items-center gap-x-3 gap-y-2 rounded-[1.25rem] border border-[rgb(23_32_38/0.07)] bg-surface p-2.5 pe-3 text-sm shadow-[0_3px_0_var(--color-line)]"
                       >
                         <AdminThumb type={it.type} subjectName={it.subject_name} gradeLevel={product.grade_level} size="sm" />
-                        <div className="min-w-0 flex-1">
+                        <div className="min-w-[min(100%,12rem)] flex-1">
                           <Link href={`/admin/products/${it.product_id}`} className="line-clamp-2 font-display font-extrabold text-ink hover:text-brand-700">
                             {it.title}
                           </Link>
@@ -858,10 +858,15 @@ export default async function EditProductPage({
                             {owner && it.teacher_name ? `، ${it.teacher_name}` : ""} {it.status !== "published" ? "، غير منشور" : ""}
                           </p>
                         </div>
-                        <span className="num font-display font-black whitespace-nowrap text-ink">{filsToKwdString(it.price_fils)} د.ك</span>
-                        {editable ? (
-                          <QuickAction action={removeBundleItemAction} hidden={{ bundleId: id, productId: it.product_id }} icon={<Trash2 aria-hidden />} variant="ghost" size="icon" title="إزالة" />
-                        ) : null}
+                        {/* على الهاتف: السعر وزر الإزالة ينزلان تحت العنوان حتى لا يضيق */}
+                        <div className="flex items-center gap-2 max-sm:w-full max-sm:justify-between max-sm:border-t max-sm:border-dashed max-sm:border-line max-sm:pt-2">
+                          <span className="font-display font-black whitespace-nowrap text-ink">
+                            <span className="num">{filsToKwdString(it.price_fils)}</span> <span className="text-[0.75rem] text-muted">د.ك</span>
+                          </span>
+                          {editable ? (
+                            <QuickAction action={removeBundleItemAction} hidden={{ bundleId: id, productId: it.product_id }} icon={<Trash2 aria-hidden />} variant="ghost" size="icon" title="إزالة" />
+                          ) : null}
+                        </div>
                       </li>
                     ))}
                   </ul>
@@ -892,8 +897,14 @@ export default async function EditProductPage({
                             {c.subject_name ?? "كل المواد"}، {PRODUCT_TYPE_LABELS[c.type]}
                             {owner && c.teacher_name ? `، ${c.teacher_name}` : ""} {c.status !== "published" ? "، غير منشور" : ""}
                           </span>
+                          {/* على الهاتف: السعر تحت العنوان حتى لا يضيق العنوان */}
+                          <span className="mt-0.5 block text-xs font-bold text-ink-soft sm:hidden">
+                            <span className="num">{filsToKwdString(c.price_fils)}</span> د.ك
+                          </span>
                         </span>
-                        <span className="num text-xs font-bold whitespace-nowrap text-ink-soft">{filsToKwdString(c.price_fils)}</span>
+                        <span className="text-xs font-bold whitespace-nowrap text-ink-soft max-sm:hidden">
+                          <span className="num">{filsToKwdString(c.price_fils)}</span> د.ك
+                        </span>
                       </label>
                     ))}
                   </div>

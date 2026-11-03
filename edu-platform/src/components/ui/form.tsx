@@ -1,9 +1,9 @@
 import type * as React from "react";
 import { cn } from "@/lib/utils";
 
-/** حقول دافئة: ارتفاع ٤٨px، تعبئة كريمية خفيفة، حلقة تركيز فيروزية، وحد أحمر عند الخطأ */
+/** حقول دافئة: ارتفاع ٤٨px، تعبئة كريمية خفيفة، نص تلميح بلون muted (تباين AA)، حد فيروزي داكن وحلقة واضحة عند التركيز، وحد أحمر عند الخطأ */
 const fieldBase =
-  "w-full rounded-[0.9rem] border border-line-strong bg-field px-4 text-base text-ink shadow-[inset_0_1px_2px_rgb(23_32_38/0.04)] placeholder:text-muted/75 transition-[border-color,box-shadow,background-color] duration-150 hover:border-brand-300 focus:border-brand-500 focus:bg-white focus:outline-none focus:ring-4 focus:ring-brand-100 disabled:cursor-not-allowed disabled:bg-sand disabled:text-muted aria-[invalid=true]:border-danger aria-[invalid=true]:ring-danger-50";
+  "w-full rounded-[0.9rem] border border-line-strong bg-field px-4 text-base text-ink shadow-[inset_0_1px_2px_rgb(23_32_38/0.04)] placeholder:text-muted transition-[border-color,box-shadow,background-color] duration-150 hover:border-brand-300 focus:border-brand-600 focus:bg-white focus:outline-none focus:ring-4 focus:ring-brand-200 disabled:cursor-not-allowed disabled:bg-sand disabled:text-muted aria-[invalid=true]:border-danger aria-[invalid=true]:ring-danger-50";
 
 export function Input({ className, ...props }: React.ComponentProps<"input">) {
   return <input className={cn(fieldBase, "h-12", className)} {...props} />;

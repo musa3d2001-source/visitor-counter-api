@@ -162,7 +162,8 @@
   width: 34px;
   height: 34px;
   border-radius: 12px;
-  font-size: 1.15rem;
+  /* ≥ 18.66px عريض = نص كبير، فيكفي 3:1 للرقم الأبيض */
+  font-size: 1.2rem;
 }
 .fpill > span:first-child svg {
   width: 18px;
@@ -563,7 +564,8 @@
     bottom: -10px;
     inset-inline-start: 2%;
   }
-  .coverChips {
+  .coverChips,
+  .coverBubble {
     display: none;
   }
   .coverArt {

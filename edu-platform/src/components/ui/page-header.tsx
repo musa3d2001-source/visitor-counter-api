@@ -32,7 +32,7 @@ export function PageHeader({
   return (
     <section className={cn("page-hero", className)} aria-labelledby={titleId}>
       <Sparkle className="animate-twinkle absolute end-[9%] top-10 size-6" />
-      <Sparkle className="animate-twinkle absolute start-[6%] bottom-12 size-3.5 [animation-delay:1.3s]" color="#17A398" />
+      <Sparkle className="animate-twinkle absolute start-[2%] bottom-4 size-3.5 [animation-delay:1.3s]" color="#17A398" />
       <div className={cn("mx-auto grid max-w-7xl items-center gap-8 px-4 sm:px-6", aside && "lg:grid-cols-[minmax(0,1.25fr)_minmax(0,1fr)]")}>
         <div className="min-w-0">
           {breadcrumbs?.length ? <Breadcrumbs items={breadcrumbs} className="mb-6" /> : null}

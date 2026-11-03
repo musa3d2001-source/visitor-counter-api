@@ -1,3 +1,4 @@
+import type * as React from "react";
 import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
@@ -11,15 +12,25 @@ import { Alert } from "@/components/ui/alert";
 import { StatPill } from "@/components/ui/page-header";
 import { Sparkle, SubjectArt, SubjectIcon } from "@/components/art";
 import { TeacherAvatar } from "@/components/site/teacher-avatar";
-import { ProductCard } from "@/components/site/product-card";
+import { ProductCard, ProductGrid, ProductShelf } from "@/components/site/product-card";
 import { isPdfType } from "@/lib/labels";
 import { ar, count, duration, gradeClass, toneClass, W } from "@/lib/design";
 import { cn } from "@/lib/utils";
 import { env } from "@/server/env";
-import { pillCount, TypeSlots } from "../../grades/_components/browse";
+import { balancedGrid, pillCount, TypeSlots } from "../../grades/_components/browse";
 import { teacherStyles as s } from "../_components/teachers";
 
 type Params = { slug: string };
+
+/** مواضع ملصقات المواد على الغلاف: من جهة نهاية السطر (يسار) بعيدًا عن رسم المادة في جهة البداية */
+const BUBBLE_SPOTS: React.CSSProperties[] = [
+  { top: "24%", insetInlineEnd: "40%" },
+  { top: "56%", insetInlineEnd: "27%" },
+  { top: "18%", insetInlineEnd: "14%" },
+];
+
+/** مجموعة صغيرة (≤٦ منتجات أو ≤٢ لكل نوع) تُعرض شبكة واحدة؛ شارات النوع على البطاقات تكفي بلا رؤوس أنواع */
+const FLAT_MAX = 6;
 
 export async function generateMetadata({ params }: { params: Promise<Params> }): Promise<Metadata> {
   const t = await getTeacherBySlug((await params).slug);
@@ -71,15 +82,15 @@ export default async function TeacherPage({ params }: { params: Promise<Params> 
             <span className={s.coverArt}>
               <SubjectArt slug={mainSlug} />
             </span>
-            {subjects.slice(0, 3).map((x, i) => (
-              <span
-                key={x.id}
-                className={cn(s.coverBubble, toneClass(x.slug))}
-                style={[{ top: "22%", left: "38%" }, { top: "58%", left: "50%" }, { top: "18%", left: "62%" }][i]}
-              >
-                <SubjectIcon slug={x.slug} size={24} />
-              </span>
-            ))}
+            {/* ملصقات المواد الأخرى فقط (المادة الأساسية مرسومة في الغلاف)، في النصف البعيد عن الرسم */}
+            {subjects
+              .filter((x) => x.slug !== mainSlug)
+              .slice(0, 3)
+              .map((x, i) => (
+                <span key={x.id} className={cn(s.coverBubble, toneClass(x.slug))} style={BUBBLE_SPOTS[i]}>
+                  <SubjectIcon slug={x.slug} size={24} />
+                </span>
+              ))}
             <span className={s.coverSpark} style={{ top: "16%", right: "34%" }}>
               <Sparkle className="animate-twinkle size-full" />
             </span>
@@ -165,7 +176,7 @@ export default async function TeacherPage({ params }: { params: Promise<Params> 
 
       {groups.length === 0 ? (
         <div className="mx-auto max-w-7xl px-4 pt-10 sm:px-6">
-          <EmptyState icon={<PlayCircle />} title="لم يُنشر محتوى لهذا المعلم بعد" description="تظهر شروحاته ومراجعاته هنا فور نشرها." />
+          <EmptyState headingLevel={2} icon={<PlayCircle />} title="لم يُنشر محتوى لهذا المعلم بعد" description="تظهر شروحاته ومراجعاته هنا فور نشرها." />
         </div>
       ) : (
         <>
@@ -206,8 +217,18 @@ export default async function TeacherPage({ params }: { params: Promise<Params> 
                     ) : null}
                   </div>
                   <div className={s.gsections}>
-                    {[g.sections.filter((sec) => !isPdfType(sec.type)), g.sections.filter((sec) => isPdfType(sec.type))].map((secs, i) =>
-                      secs.length ? (
+                    {[g.sections.filter((sec) => !isPdfType(sec.type)), g.sections.filter((sec) => isPdfType(sec.type))].map((secs, i) => {
+                      if (!secs.length) return null;
+                      const items = secs.flatMap((sec) => sec.items);
+                      if (items.length <= FLAT_MAX || secs.every((sec) => sec.items.length <= 2)) {
+                        // الفيديو رف سحب على الجوال (كما في صفحة الصف)، والمذكرات شبكة أوراق بعمودين
+                        return i === 0 ? (
+                          <ProductShelf key={i} products={items} ownedIds={owned} showGrade={false} className={balancedGrid(items.length, { md: [3, 2], lg: [4, 3], video: true })} />
+                        ) : (
+                          <ProductGrid key={i} products={items} ownedIds={owned} showGrade={false} className={balancedGrid(items.length, { md: [3, 2], lg: [4, 5, 3] })} />
+                        );
+                      }
+                      return (
                         <TypeSlots
                           key={i}
                           notes={i === 1}
@@ -216,8 +237,8 @@ export default async function TeacherPage({ params }: { params: Promise<Params> 
                           testId="teacher-section"
                           renderItem={(x) => <ProductCard product={x} owned={owned?.has(x.id)} showGrade={false} headingLevel={4} />}
                         />
-                      ) : null,
-                    )}
+                      );
+                    })}
                   </div>
                 </section>
               );

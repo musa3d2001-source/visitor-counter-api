@@ -61,7 +61,7 @@ import {
 import { BandChip, ProfileHero } from "../../_components/people/band";
 import { TeachersArt } from "../../_components/people/art";
 import { Kwd, SoftNote, TypeIcon } from "../../_components/people/bits";
-import { SALE_WORD, subjectSlugOf } from "../../_components/people/helpers";
+import { SALE_WORD, sharePct, subjectSlugOf } from "../../_components/people/helpers";
 
 export const metadata = { title: "ملف المعلم" };
 
@@ -120,7 +120,7 @@ export default async function TeacherAdminPage({ params, searchParams }: { param
             <BandChip tone="gold" icon={<Percent aria-hidden />}>
               {shareOn ? (
                 <>
-                  حصة المعلم <span className="num">{teacher.revenue_share_bps! / 100}</span>%
+                  حصة المعلم {sharePct(teacher.revenue_share_bps!)}
                 </>
               ) : (
                 "الأرباح غير مفعّلة"
@@ -283,7 +283,7 @@ export default async function TeacherAdminPage({ params, searchParams }: { param
         title="المبيعات والأرباح"
         icon={<Coins />}
         tone="gold"
-        description={shareOn ? `حصة المعلم ${teacher.revenue_share_bps! / 100}% من صافي المبيعات المؤهلة (بعد الخصم والرسوم المعتمدة)` : "نظام الأرباح غير مفعّل لهذا المعلم، حدد نسبة في الملف لتفعيله للمبيعات القادمة."}
+        description={shareOn ? `حصة المعلم ${sharePct(teacher.revenue_share_bps!)} من صافي المبيعات المؤهلة (بعد الخصم والرسوم المعتمدة)` : "نظام الأرباح غير مفعّل لهذا المعلم، حدد نسبة في الملف لتفعيله للمبيعات القادمة."}
         actions={
           <Link
             href={includeTest ? `/admin/teachers/${id}` : `/admin/teachers/${id}?test=1`}
@@ -349,6 +349,9 @@ export default async function TeacherAdminPage({ params, searchParams }: { param
         {earnings.length === 0 ? (
           <SoftNote icon={<Coins aria-hidden />}>لا توجد أرباح مسجلة بعد.</SoftNote>
         ) : (
+          <>
+          {/* الجدول الكامل للشاشات الواسعة (عشرة أعمدة لا تتسع لأقل من ذلك) */}
+          <div className="hidden min-[1320px]:block">
           <Table>
             <THead>
               <tr>
@@ -368,7 +371,7 @@ export default async function TeacherAdminPage({ params, searchParams }: { param
               {earnings.map((e) => (
                 <TR key={e.id}>
                   <TD>
-                    <Link href={`/admin/orders/${e.order_id}`} className="num font-display font-extrabold text-brand-700 hover:underline">
+                    <Link href={`/admin/orders/${e.order_id}`} className="num font-display font-extrabold whitespace-nowrap text-brand-700 hover:underline">
                       {e.order_number}
                     </Link>
                     <p className="text-xs text-muted">{formatDate(e.created_at)}</p>
@@ -378,7 +381,7 @@ export default async function TeacherAdminPage({ params, searchParams }: { param
                   <TD className="num text-muted">{filsToKwdString(e.discount_fils)}</TD>
                   <TD className="num text-muted">{filsToKwdString(e.fee_fils)}</TD>
                   <TD className="num">{filsToKwdString(e.net_fils)}</TD>
-                  <TD className="num text-xs">{e.share_bps / 100}%</TD>
+                  <TD className="text-xs font-bold whitespace-nowrap">{sharePct(e.share_bps)}</TD>
                   <TD className="num font-display font-black text-brand-800">{filsToKwdString(e.teacher_fils)}</TD>
                   <TD className="num">{filsToKwdString(e.platform_fils)}</TD>
                   <TD>
@@ -391,6 +394,61 @@ export default async function TeacherAdminPage({ params, searchParams }: { param
               ))}
             </tbody>
           </Table>
+          </div>
+          {/* بطاقات للجوال والأجهزة اللوحية: حصة المعلم والحالة ظاهرتان أولًا، والتفاصيل في شبكة صغيرة */}
+          <DataList className="min-[1320px]:hidden">
+            {earnings.map((e) => (
+              <DataRow
+                key={e.id}
+                href={`/admin/orders/${e.order_id}`}
+                leading={
+                  <ToneIcon tone={e.status === "reversed" ? "coral" : "gold"} size="sm">
+                    <Coins />
+                  </ToneIcon>
+                }
+                title={
+                  <>
+                    <span className="num whitespace-nowrap">{e.order_number}</span>{" "}
+                    <span className="font-sans text-[0.78rem] font-semibold whitespace-nowrap text-muted">{formatDate(e.created_at)}</span>
+                  </>
+                }
+                sub={<span className="line-clamp-2">{e.product_title}</span>}
+                aside={
+                  <>
+                    <span className="flex flex-wrap gap-1">
+                      {e.status === "reversed" ? <StatusPill tone="danger">معكوس (استرداد)</StatusPill> : <StatusPill tone="success">مستحق</StatusPill>}
+                      {e.is_test ? <StatusPill tone="info">تجريبي</StatusPill> : null}
+                    </span>
+                    <span className="text-end">
+                      <span className="block text-[0.7rem] font-bold text-muted">حصة المعلم</span>
+                      <Kwd fils={e.teacher_fils} className="font-display text-[1.05rem] font-black text-brand-800" />
+                    </span>
+                  </>
+                }
+                footer={
+                  <dl className="grid grid-cols-2 gap-1.5 text-[0.78rem] sm:grid-cols-3">
+                    {[
+                      { label: "القيمة", fils: e.gross_fils },
+                      { label: "الخصم", fils: e.discount_fils },
+                      { label: "الرسوم", fils: e.fee_fils },
+                      { label: "الصافي", fils: e.net_fils },
+                      { label: "حصة المنصة", fils: e.platform_fils },
+                    ].map((it) => (
+                      <div key={it.label} className="flex items-center justify-between gap-2 rounded-xl bg-canvas px-3 py-1.5">
+                        <dt className="font-bold text-muted">{it.label}</dt>
+                        <dd className="num font-display font-extrabold text-ink">{filsToKwdString(it.fils)}</dd>
+                      </div>
+                    ))}
+                    <div className="flex items-center justify-between gap-2 rounded-xl bg-accent-100/70 px-3 py-1.5">
+                      <dt className="font-bold text-accent-900">النسبة</dt>
+                      <dd className="font-display font-extrabold text-ink">{sharePct(e.share_bps)}</dd>
+                    </div>
+                  </dl>
+                }
+              />
+            ))}
+          </DataList>
+          </>
         )}
 
         <h3 className="mt-7 mb-3 flex items-center gap-2 font-display text-[1.1rem] font-black text-ink">
@@ -445,7 +503,7 @@ export default async function TeacherAdminPage({ params, searchParams }: { param
                 title={p.title}
                 sub={
                   <>
-                    {PRODUCT_TYPE_LABELS[p.type]}، {p.grade_name}، {p.subject_name ?? "—"}
+                    {[PRODUCT_TYPE_LABELS[p.type], p.grade_name, p.subject_name].filter(Boolean).join("، ")}
                   </>
                 }
                 aside={

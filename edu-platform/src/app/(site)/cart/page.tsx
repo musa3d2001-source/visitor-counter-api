@@ -14,7 +14,8 @@ import { PRODUCT_TYPE_LABELS } from "@/lib/labels";
 import { filsToKwdString } from "@/lib/money";
 import { ar, count, savings, toneClass, W } from "@/lib/design";
 import { cn } from "@/lib/utils";
-import { EmptyStart, Kwd, OwnedNote, SumRow, TiltedPosters, TrustList, pillParts } from "./_components/commerce";
+import { EmptyStart, Kwd, OwnedNote, SavedChip, SumRow, TiltedPosters, TrustList, pillParts } from "./_components/commerce";
+import { MobileCheckoutBar } from "./_components/mobile-checkout-bar";
 
 export const metadata: Metadata = { title: "سلة المشتريات", robots: { index: false } };
 
@@ -75,7 +76,7 @@ export default async function CartPage() {
             }
           />
         ) : (
-          <div className="grid gap-8 lg:grid-cols-[minmax(0,1fr)_24rem] lg:gap-10">
+          <div className="grid grid-cols-1 gap-8 lg:grid-cols-[minmax(0,1fr)_24rem] lg:gap-10">
             <section aria-labelledby="cart-items" className="flex min-w-0 flex-col gap-4">
               <div className="flex flex-wrap items-center justify-between gap-3">
                 <h2 id="cart-items" className="font-display text-[1.6rem] font-black sm:text-[1.9rem]">
@@ -124,20 +125,29 @@ export default async function CartPage() {
               </ul>
             </section>
 
-            <aside className="panel panel-rainbow h-fit p-6 pt-9 sm:p-7 sm:pt-10 lg:sticky lg:top-28" aria-labelledby="summary">
+            <aside className="panel panel-rainbow h-fit min-w-0 p-6 pt-9 sm:p-7 sm:pt-10 lg:sticky lg:top-28" aria-labelledby="summary">
               <h2 id="summary" className="font-display text-[1.6rem] font-black">
                 ملخص الطلب
               </h2>
               <dl className="mt-5 space-y-3">
                 <SumRow label="عدد المنتجات">{ar(cart.payableLines.length)}</SumRow>
-                <SumRow label="المجموع">
-                  <Kwd fils={cart.subtotalFils} className="font-extrabold" />
-                </SumRow>
                 {saved > 0 ? (
-                  <SumRow label="وفّرت من الخصومات" tone="success">
-                    <span className="num">{filsToKwdString(saved)}</span> د.ك
+                  <>
+                    {/* الحساب يُقرأ من أعلى لأسفل: السعر قبل الخصم − التوفير = الإجمالي */}
+                    <SumRow label="السعر قبل الخصم">
+                      <span className="text-muted">
+                      <s className="num decoration-2">{filsToKwdString(cart.subtotalFils + saved)}</s> د.ك
+                    </span>
+                    </SumRow>
+                    <SumRow label="وفّرت من الخصومات" tone="success">
+                      <span className="num">−{filsToKwdString(saved)}</span> د.ك
+                    </SumRow>
+                  </>
+                ) : (
+                  <SumRow label="المجموع">
+                    <Kwd fils={cart.subtotalFils} className="font-extrabold" />
                   </SumRow>
-                ) : null}
+                )}
                 <div className="flex items-baseline justify-between gap-3 border-t-2 border-dashed border-line-strong pt-4">
                   <dt className="font-display text-lg font-extrabold">الإجمالي</dt>
                   <dd>
@@ -150,8 +160,8 @@ export default async function CartPage() {
                 كود الخصم في الخطوة التالية.
               </p>
               {cart.payableLines.length ? (
-                <Button asChild size="xl" className="mt-6 w-full">
-                  <Link href="/checkout" data-testid="go-checkout">
+                <Button asChild size="xl" className="mt-6 w-full whitespace-normal text-center max-sm:px-5 max-sm:text-[1.05rem]">
+                  <Link href="/checkout" id="cart-summary-cta" data-testid="go-checkout">
                     {user ? "إتمام الشراء" : "سجّل الدخول وأتمم الشراء"}
                     <ArrowLeft aria-hidden />
                   </Link>
@@ -159,6 +169,14 @@ export default async function CartPage() {
               ) : null}
               <TrustList className="mt-6 border-t border-line pt-5" />
             </aside>
+            {cart.payableLines.length ? (
+              <MobileCheckoutBar
+                targetId="cart-summary-cta"
+                totalFils={cart.subtotalFils}
+                label={user ? "إتمام الشراء" : "سجّل الدخول للشراء"}
+                saved={saved > 0 ? <SavedChip fils={saved} className="mt-0.5" /> : null}
+              />
+            ) : null}
           </div>
         )}
       </div>

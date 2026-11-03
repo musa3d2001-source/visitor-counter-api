@@ -56,7 +56,7 @@ export async function SiteHeader() {
           {previewHref ? (
             <Link
               href={previewHref}
-              className="inline-flex min-h-11 shrink-0 items-center gap-1 font-display font-extrabold text-[#FFD25E] underline-offset-4 hover:underline"
+              className="inline-flex min-h-11 shrink-0 items-center gap-1 rounded-lg px-1.5 font-display font-extrabold text-[#FFD25E] underline-offset-4 hover:underline focus-visible:outline-offset-[-3px]"
             >
               جرّب درسًا مجانًا
               <ArrowLeft className="size-3.5" aria-hidden />

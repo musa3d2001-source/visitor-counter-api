@@ -16,7 +16,7 @@ import { cn } from "@/lib/utils";
 import { BandChip, BandChips, PeopleBand } from "../_components/people/band";
 import { TeachersArt } from "../_components/people/art";
 import { Kwd, Metric } from "../_components/people/bits";
-import { SALE_WORD, subjectSlugOf } from "../_components/people/helpers";
+import { SALE_WORD, sharePct, subjectSlugOf } from "../_components/people/helpers";
 
 export const metadata = { title: "المعلمون" };
 
@@ -119,7 +119,7 @@ export default async function TeachersPage({ searchParams }: { searchParams: Pro
                       <Link href={`/admin/teachers/${t.id}`} className="stretched line-clamp-1 font-display text-[1.2rem] font-black text-ink hover:text-brand-700">
                         {t.display_name}
                       </Link>
-                      <p className="line-clamp-1 text-[0.85rem] text-muted">{t.headline || "—"}</p>
+                      {t.headline ? <p className="line-clamp-1 text-[0.85rem] text-muted">{t.headline}</p> : null}
                       {t.mode === "self_managed" && t.account_email ? (
                         <p className="truncate text-end text-[0.78rem] text-muted" dir="ltr">
                           {t.account_email}
@@ -169,7 +169,7 @@ export default async function TeachersPage({ searchParams }: { searchParams: Pro
                         {t.revenue_share_bps !== null ? (
                           <>
                             {" "}
-                            · نسبة <span className="num">{(t.revenue_share_bps / 100).toString()}</span>%
+                            · نسبة {sharePct(t.revenue_share_bps)}
                           </>
                         ) : null}
                       </p>

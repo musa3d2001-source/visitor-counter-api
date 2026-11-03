@@ -33,7 +33,7 @@ export async function loginWithPassword(email: string, password: string, meta: {
   const acct = await hitRateLimit(accountKey, LOGIN_LIMIT.perAccount, LOGIN_LIMIT.windowSec);
   if (!acct.allowed) {
     await failIp();
-    return { ok: false, error: "تم إيقاف تسجيل الدخول مؤقتًا بسبب محاولات خاطئة متكررة. حاول بعد 15 دقيقة أو استعد كلمة المرور.", retryAfter: acct.retryAfterSeconds };
+    return { ok: false, error: "تم إيقاف تسجيل الدخول مؤقتًا بسبب محاولات خاطئة متكررة. حاول بعد ١٥ دقيقة أو استعد كلمة المرور.", retryAfter: acct.retryAfterSeconds };
   }
   if (!user) {
     await burnPasswordTime(password);
@@ -99,7 +99,7 @@ export async function requestPasswordReset(email: string, ip: string): Promise<v
   await sendMail({
     to: email,
     template: "password_reset",
-    subject: `استعادة كلمة المرور — ${settings.site_name}`,
+    subject: `استعادة كلمة المرور، ${settings.site_name}`,
     text: `مرحبًا ${user.full_name}،\n\nوصلنا طلب لاستعادة كلمة المرور لحسابك. افتح الرابط التالي خلال ساعة لتعيين كلمة مرور جديدة:\n${link}\n\nإذا لم تطلب ذلك، تجاهل هذه الرسالة وسيبقى حسابك آمنًا.\n\n${settings.site_name}`,
   });
 }

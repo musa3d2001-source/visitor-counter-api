@@ -132,7 +132,7 @@ export default async function ContactPage() {
                     <span dir={ltr ? "ltr" : undefined} className="num mt-1 block truncate text-end font-display text-[1.3rem] font-black text-ink">
                       {value}
                     </span>
-                    <span className="mt-5 inline-flex items-center gap-1.5 self-start rounded-full bg-[var(--soft)] px-3.5 py-1.5 font-display text-[0.9rem] font-extrabold text-[var(--tink)] transition-colors group-hover:bg-[var(--b)] group-hover:text-white">
+                    <span className="mt-5 inline-flex items-center gap-1.5 self-start rounded-full bg-[var(--soft)] px-3.5 py-1.5 font-display text-[0.9rem] font-extrabold text-[var(--tink)] transition-colors group-hover:bg-[var(--d)] group-hover:text-white">
                       {cta}
                       <ArrowLeft className="size-4" aria-hidden />
                     </span>

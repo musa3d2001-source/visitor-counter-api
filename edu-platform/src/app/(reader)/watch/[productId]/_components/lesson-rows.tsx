@@ -14,6 +14,7 @@ export type RowState = {
 
 /**
  * خط زمني ملوّن للدروس: عقدة مرقّمة (منجز/الحالي/مقفل/مجاني) مع المدة.
+ * الدرس الحالي المقفل يظهر بعقدة قفل (لا زر تشغيل) حتى يطابق ما يقوله المسرح.
  * المعرّفات: كل صف data-testid="lesson-item"، وأيقونة القفل data-testid="lesson-locked" (aria-label «مقفل»).
  */
 export function LessonRows({
@@ -70,7 +71,9 @@ export function LessonRows({
                     <Node n={n} current={current} done={st.done} open={st.open} />
                     <span className="min-w-0">
                       {current ? (
-                        <span className="mb-0.5 block font-display text-[0.72rem] font-extrabold text-[var(--tink)]">يُعرض الآن</span>
+                        <span className="mb-0.5 block font-display text-[0.72rem] font-extrabold text-[var(--tink)]">
+                          {st.open ? "يُعرض الآن" : "الدرس الحالي · مقفل"}
+                        </span>
                       ) : null}
                       <span
                         className={cn(
@@ -118,7 +121,7 @@ function Node({ n, current, done, open }: { n: number; current: boolean; done: b
         style={{ backgroundImage: "linear-gradient(145deg, var(--a), var(--b))" }}
         aria-hidden
       >
-        <Play className="size-4 translate-x-[-1px] fill-current" />
+        {open ? <Play className="size-4 translate-x-[-1px] fill-current" /> : <Lock className="size-[1.05rem]" strokeWidth={2.6} />}
       </span>
     );
   }

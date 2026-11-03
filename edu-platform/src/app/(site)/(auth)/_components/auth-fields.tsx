@@ -13,11 +13,11 @@ import { cn } from "@/lib/utils";
 export type FieldTone = "teal" | "gold" | "coral" | "sky" | "violet";
 
 const TONE: Record<FieldTone, string> = {
-  teal: "from-[#2dc2b3] to-[#0a6b66] text-white",
+  teal: "from-[#14a597] to-[#0a6b66] text-white",
   gold: "from-[#ffd25e] to-[#eb9b00] text-[#3d2a00]",
-  coral: "from-[#ffa07a] to-[#e8483f] text-white",
-  sky: "from-[#86cbff] to-[#4d6dff] text-white",
-  violet: "from-[#c09cff] to-[#6a3fe0] text-white",
+  coral: "from-[#f2674f] to-[#c7372f] text-white",
+  sky: "from-[#4d8dff] to-[#3e45d0] text-white",
+  violet: "from-[#9b6cf6] to-[#5a32c9] text-white",
 };
 
 export const BIG_INPUT = "h-13 pr-14 text-[1.02rem]";

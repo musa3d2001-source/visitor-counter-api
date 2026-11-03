@@ -1,6 +1,6 @@
 import { Crown } from "lucide-react";
 import { SpotArt } from "@/components/art";
-import { count, W } from "@/lib/design";
+import { ar, count, W } from "@/lib/design";
 import { filsToKwdString } from "@/lib/money";
 import { cn } from "@/lib/utils";
 
@@ -18,16 +18,27 @@ function shortDay(day: string) {
 export function SalesBars({ data, className }: { data: { day: string; orders: number; revenueFils: number }[]; className?: string }) {
   const max = Math.max(1, ...data.map((d) => d.revenueFils));
   const total = data.reduce((s, d) => s + d.revenueFils, 0);
+  const orders = data.reduce((s, d) => s + d.orders, 0);
   if (total === 0) {
+    // لا إيرادات: إمّا لا طلبات أصلًا، أو طلبات مؤكدة كلها بقيمة صفر (منتج مجاني أو كوبون بخصم كامل؛ لا نعرف السبب هنا). لا نناقض مربع «عدد الطلبات» بجوار المخطط.
     return (
       <div className={cn("bg-sunny flex flex-col items-center gap-1 rounded-[1.5rem] border border-white px-6 py-8 text-center shadow-xs sm:flex-row sm:gap-5 sm:text-start", className)}>
         <div className="h-20 w-24 shrink-0 text-brand-600">
           <SpotArt kind="receipt" />
         </div>
-        <div>
-          <p className="font-display text-[1.1rem] font-black text-ink">لا توجد مبيعات مدفوعة في هذه الفترة.</p>
-          <p className="mt-0.5 text-[0.88rem] leading-6 text-muted">سيظهر المخطط هنا فور تأكيد أول عملية دفع.</p>
-        </div>
+        {orders === 0 ? (
+          <div>
+            <p className="font-display text-[1.1rem] font-black text-ink">لا توجد مبيعات مدفوعة في هذه الفترة.</p>
+            <p className="mt-0.5 text-[0.88rem] leading-6 text-muted">سيظهر المخطط هنا فور تأكيد أول عملية دفع.</p>
+          </div>
+        ) : (
+          <div>
+            <p className="font-display text-[1.1rem] font-black text-ink">لا إيرادات في هذه الفترة، فكل الطلبات المؤكدة مجانية.</p>
+            <p className="mt-0.5 text-[0.88rem] leading-6 text-muted">
+              الطلبات المؤكدة: <span className="font-bold text-ink-soft">{ar(orders)}</span>، بقيمة <span className="num font-bold text-ink-soft">{filsToKwdString(0)}</span> د.ك (منتجات مجانية أو كوبون بخصم كامل). يظهر المخطط عند أول عملية دفع بقيمة.
+            </p>
+          </div>
+        )}
       </div>
     );
   }

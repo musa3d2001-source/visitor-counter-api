@@ -158,7 +158,7 @@ export default async function TeacherEarningsPage({ searchParams }: { searchPara
                   title={s.title}
                   sub={
                     <>
-                      <span className="num">{s.order_number}</span> · <span className="whitespace-nowrap">{formatDateTime(s.paid_at)}</span>
+                      <span className="num whitespace-nowrap">{s.order_number}</span> · <span className="whitespace-nowrap">{formatDateTime(s.paid_at)}</span>
                     </>
                   }
                   aside={

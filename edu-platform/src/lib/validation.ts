@@ -15,7 +15,7 @@ export const emailSchema = z
 
 export const passwordSchema = z
   .string({ error: "كلمة المرور مطلوبة" })
-  .min(8, "كلمة المرور يجب أن تكون 8 أحرف على الأقل")
+  .min(8, "كلمة المرور يجب أن تكون ٨ أحرف على الأقل")
   .max(128, "كلمة المرور طويلة جدًا");
 
 export const fullNameSchema = z
@@ -33,7 +33,7 @@ export const optionalPhoneSchema = z
     if (!v) return null;
     const n = normalizeKuwaitPhone(v);
     if (!n) {
-      ctx.addIssue({ code: "custom", message: "رقم الهاتف الكويتي غير صحيح (8 أرقام)" });
+      ctx.addIssue({ code: "custom", message: "رقم الهاتف الكويتي غير صحيح (٨ أرقام)" });
       return z.NEVER;
     }
     return n;
@@ -58,7 +58,7 @@ export const priceSchema = z
   .transform((v, ctx) => {
     const fils = parseKwdToFils(v);
     if (fils === null) {
-      ctx.addIssue({ code: "custom", message: "السعر غير صحيح — مثال: 2.500" });
+      ctx.addIssue({ code: "custom", message: "السعر غير صحيح، مثال: 2.500" });
       return z.NEVER;
     }
     return fils;

@@ -1,5 +1,5 @@
 import { count, countAcc, W } from "@/lib/design";
-import { termLabel } from "@/lib/labels";
+import { termLabel, type ProductType } from "@/lib/labels";
 
 /** «الفصل الأول» بدل «الفصل الدراسي الأول» */
 export function shortTermLabel(term: number | null | undefined): string {
@@ -17,4 +17,22 @@ export function previewLabel(pages: number | null) {
 /** «تضم منتجين» / «تضم ٤ منتجات» بإعراب صحيح بعد الفعل */
 export function includesLabel(n: number): string {
   return `تضم ${countAcc(n, W.product)}`;
+}
+
+/** عنوان قسم «نبذة» معرّفًا بحسب نوع المنتج: «عن هذه الباقة» بدل «عن باقة» */
+const ABOUT_TITLES: Record<ProductType, string> = {
+  final_notes: "عن هذه المذكرة",
+  exam_night: "عن هذه المذكرة",
+  review_notes: "عن هذه المذكرة",
+  exam_model: "عن هذا النموذج",
+  answer_key: "عن نموذج الإجابة",
+  video_lesson: "عن هذا الدرس",
+  unit: "عن شرح الوحدة",
+  quiz_review: "عن هذه المراجعة",
+  exam_review: "عن هذه المراجعة",
+  video_course: "عن هذه الدورة",
+  bundle: "عن هذه الباقة",
+};
+export function aboutTitle(type: ProductType): string {
+  return ABOUT_TITLES[type] ?? "نبذة عن المحتوى";
 }

@@ -15,7 +15,7 @@ import { PageHeader, StatPill } from "@/components/ui/page-header";
 import { ProductCover } from "@/components/site/product-cover";
 import { PRODUCT_TYPE_LABELS } from "@/lib/labels";
 import { filsToKwdString } from "@/lib/money";
-import { ar, initial, W } from "@/lib/design";
+import { ar, count, initial, savings, W } from "@/lib/design";
 import { cn } from "@/lib/utils";
 import { Kwd, SumRow, TiltedPosters, pillParts } from "../cart/_components/commerce";
 import { CheckoutForm } from "./checkout-form";
@@ -32,6 +32,8 @@ export default async function CheckoutPage({ searchParams }: { searchParams: Pro
   const coupon = couponCode ? await evaluateCoupon(couponCode, user.id, cart.subtotalFils) : null;
   const discount = coupon?.ok ? coupon.discountFils : 0;
   const total = cart.subtotalFils - discount;
+  // التوفير الحقيقي فقط (السعر قبل الخصم أعلى من الحالي)، بنفس حساب السلة
+  const saved = cart.payableLines.reduce((sum, l) => sum + (savings(l.priceFils, l.compareAtPriceFils)?.fils ?? 0), 0);
   const cfg = paymentsConfig();
   const settings = await getSettings();
 
@@ -68,6 +70,67 @@ export default async function CheckoutPage({ searchParams }: { searchParams: Pro
 
       <div className="mx-auto max-w-7xl px-4 pb-16 sm:px-6">
         <div className="grid gap-8 lg:grid-cols-[minmax(0,1fr)_24rem] lg:gap-10">
+          {/* الملخص أولًا في الترتيب: على الجوال يرى الطالب ما يشتريه قبل الخطوات وزر الدفع، وعلى الحاسوب يبقى عمودًا جانبيًا ثابتًا */}
+          <aside className="panel panel-rainbow h-fit p-5 pt-8 sm:p-7 sm:pt-10 lg:sticky lg:top-28 lg:order-last" aria-labelledby="summary">
+            <div className="flex items-center justify-between gap-3">
+              <h2 id="summary" className="font-display text-[1.6rem] font-black">
+                ملخص الطلب
+              </h2>
+              <span className="chip chip-mint">{count(cart.payableLines.length, W.product)}</span>
+            </div>
+            <ul className="mt-5 space-y-3">
+              {cart.payableLines.map((l) => (
+                <li key={l.id} className="flex items-center gap-3">
+                  <ProductCover coverUrl={l.coverUrl} title={l.title} type={l.type} subjectName={l.subjectName} subjectSlug={l.subjectSlug} gradeName={l.gradeName} sizes="52px" compact className="size-13 shrink-0 rounded-[0.9rem]" />
+                  <span className="min-w-0 flex-1">
+                    <span className="block text-[0.95rem] leading-6 font-bold text-ink">{l.title}</span>
+                    <span className="block text-[0.8rem] text-muted">{PRODUCT_TYPE_LABELS[l.type]}</span>
+                  </span>
+                  <span className="flex shrink-0 flex-col items-end leading-tight">
+                    <Kwd fils={l.priceFils} className="text-[1rem] text-ink" />
+                    {savings(l.priceFils, l.compareAtPriceFils) ? (
+                      <s className="text-[0.8rem] font-bold text-muted">
+                        <span className="num">{filsToKwdString(l.compareAtPriceFils!)}</span>
+                      </s>
+                    ) : null}
+                  </span>
+                </li>
+              ))}
+            </ul>
+            <dl className="mt-5 space-y-3 border-t-2 border-dashed border-line-strong pt-5">
+              {saved > 0 ? (
+                <>
+                  {/* السعر قبل الخصم − التوفير (− كود الخصم) = الإجمالي، كما في السلة */}
+                  <SumRow label="السعر قبل الخصم">
+                    <span className="text-muted">
+                      <s className="num decoration-2">{filsToKwdString(cart.subtotalFils + saved)}</s> د.ك
+                    </span>
+                  </SumRow>
+                  <SumRow label="وفّرت من الخصومات" tone="success">
+                    <span className="num">−{filsToKwdString(saved)}</span> د.ك
+                  </SumRow>
+                </>
+              ) : (
+                <SumRow label="المجموع">
+                  <span className="num">{filsToKwdString(cart.subtotalFils)}</span> د.ك
+                </SumRow>
+              )}
+              {discount ? (
+                <SumRow label={`الخصم${coupon?.ok ? ` (${couponCode.toUpperCase()})` : ""}`} tone="success">
+                  <span className="num">−{filsToKwdString(discount)}</span> د.ك
+                </SumRow>
+              ) : null}
+              <div className="flex items-baseline justify-between gap-3 rounded-2xl bg-brand-50 px-4 py-3">
+                <dt className="font-display text-lg font-extrabold text-brand-800">الإجمالي</dt>
+                <dd data-testid="checkout-total">
+                  <Kwd fils={total} className="text-[2rem] text-brand-800" unitClassName="text-[0.5em]" />
+                </dd>
+              </div>
+            </dl>
+            <Link href="/cart" className="btn btn-ghost btn-sm mt-4 text-brand-800">
+              <ArrowRight aria-hidden /> تعديل السلة
+            </Link>
+          </aside>
           <ol className="flex min-w-0 flex-col gap-6">
             <CheckoutStep n={1} title="الحساب" tone="grade-7">
               <div className="flex items-center gap-3.5">
@@ -133,45 +196,6 @@ export default async function CheckoutPage({ searchParams }: { searchParams: Pro
             </CheckoutStep>
           </ol>
 
-          <aside className="panel panel-rainbow h-fit p-6 pt-9 sm:p-7 sm:pt-10 lg:sticky lg:top-28" aria-labelledby="summary">
-            <div className="flex items-center justify-between gap-3">
-              <h2 id="summary" className="font-display text-[1.6rem] font-black">
-                ملخص الطلب
-              </h2>
-              <span className="chip chip-mint">{ar(cart.payableLines.length)}</span>
-            </div>
-            <ul className="mt-5 space-y-3">
-              {cart.payableLines.map((l) => (
-                <li key={l.id} className="flex items-center gap-3">
-                  <ProductCover coverUrl={l.coverUrl} title={l.title} type={l.type} subjectName={l.subjectName} subjectSlug={l.subjectSlug} gradeName={l.gradeName} sizes="52px" compact className="size-13 shrink-0 rounded-[0.9rem]" />
-                  <span className="min-w-0 flex-1">
-                    <span className="block text-[0.95rem] leading-6 font-bold text-ink">{l.title}</span>
-                    <span className="block text-[0.8rem] text-muted">{PRODUCT_TYPE_LABELS[l.type]}</span>
-                  </span>
-                  <span className="num shrink-0 font-display font-extrabold">{filsToKwdString(l.priceFils)}</span>
-                </li>
-              ))}
-            </ul>
-            <dl className="mt-5 space-y-3 border-t-2 border-dashed border-line-strong pt-5">
-              <SumRow label="المجموع">
-                <span className="num">{filsToKwdString(cart.subtotalFils)}</span> د.ك
-              </SumRow>
-              {discount ? (
-                <SumRow label={`الخصم${coupon?.ok ? ` (${couponCode.toUpperCase()})` : ""}`} tone="success">
-                  <span className="num">−{filsToKwdString(discount)}</span> د.ك
-                </SumRow>
-              ) : null}
-              <div className="flex items-baseline justify-between gap-3 rounded-2xl bg-brand-50 px-4 py-3">
-                <dt className="font-display text-lg font-extrabold text-brand-800">الإجمالي</dt>
-                <dd data-testid="checkout-total">
-                  <Kwd fils={total} className="text-[2rem] text-brand-800" unitClassName="text-[0.5em]" />
-                </dd>
-              </div>
-            </dl>
-            <Link href="/cart" className="btn btn-ghost btn-sm mt-4 text-brand-800">
-              <ArrowRight aria-hidden /> تعديل السلة
-            </Link>
-          </aside>
         </div>
       </div>
     </>

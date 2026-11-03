@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { BadgeCheck, CalendarClock, Clock, FileText, GraduationCap, Layers, Package, PlayCircle } from "lucide-react";
+import { EmptyValue } from "@/components/admin/data-list";
 import { ToneIcon } from "@/components/admin/icon-tile";
 import { StatusPill } from "@/components/admin/status-badge";
 import { STRETCHED_FOCUS, type AdminTone } from "@/components/admin/tones";
@@ -75,7 +76,7 @@ export function ReviewCard({ item: p }: { item: ReviewItem }) {
           <dt className="flex items-center gap-1 font-display text-[0.75rem] font-bold text-[#A8256F]">
             <GraduationCap className="size-3.5" aria-hidden /> المعلم
           </dt>
-          <dd className="line-clamp-2 font-display leading-snug font-extrabold text-ink">{p.teacher_name ?? "—"}</dd>
+          <dd className="line-clamp-2 font-display leading-snug font-extrabold text-ink">{p.teacher_name ?? <EmptyValue label="بدون معلم" />}</dd>
         </div>
         <div className="min-w-0 rounded-2xl bg-[#DEF8EE]/70 px-3 py-2">
           <dt className="flex items-center gap-1 font-display text-[0.75rem] font-bold text-[#0A6F52]">
@@ -88,11 +89,11 @@ export function ReviewCard({ item: p }: { item: ReviewItem }) {
         </div>
         <div className="min-w-0 rounded-2xl bg-[#E6EEFF]/70 px-3 py-2">
           <dt className="font-display text-[0.75rem] font-bold text-[#2B33B5]">المكونات</dt>
-          <dd className="font-display font-extrabold text-ink">{parts.length ? parts.join("، ") : "—"}</dd>
+          <dd className="font-display font-extrabold text-ink">{parts.length ? parts.join("، ") : <EmptyValue label="لا يوجد" />}</dd>
         </div>
         <div className="min-w-0 rounded-2xl bg-[#FFF4D6] px-3 py-2">
           <dt className="font-display text-[0.75rem] font-bold text-[#8A5A00]">السعر المقترح</dt>
-          <dd className="font-display font-black text-ink">{p.proposed_price_fils !== null ? <Kwd fils={p.proposed_price_fils} /> : "—"}</dd>
+          <dd className="font-display font-black text-ink">{p.proposed_price_fils !== null ? <Kwd fils={p.proposed_price_fils} /> : <EmptyValue label="لم يُحدَّد" />}</dd>
         </div>
       </dl>
 

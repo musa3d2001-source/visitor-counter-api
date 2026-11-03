@@ -166,7 +166,7 @@ export default async function AdminDashboard({ searchParams }: { searchParams: P
                     </ToneIcon>
                   }
                   title={
-                    <span className="num" dir="ltr">
+                    <span className="num whitespace-nowrap" dir="ltr">
                       {o.number}
                     </span>
                   }
@@ -343,7 +343,7 @@ async function TeacherHome({ actor }: { actor: Extract<Actor, { kind: "teacher" 
                 title={s.title}
                 sub={
                   <>
-                    <span className="num" dir="ltr">
+                    <span className="num whitespace-nowrap" dir="ltr">
                       {s.order_number}
                     </span>{" "}
                     · <span className="whitespace-nowrap">{formatDateTime(s.paid_at)}</span>

@@ -45,7 +45,7 @@ export default async function AccountPage({ searchParams }: { searchParams: Prom
     <>
       <section className="page-hero" aria-labelledby="account-title">
         <Sparkle className="animate-twinkle absolute end-[9%] top-10 size-6" />
-        <Sparkle className="animate-twinkle absolute start-[6%] bottom-12 size-3.5 [animation-delay:1.3s]" color="#17A398" />
+        <Sparkle className="animate-twinkle absolute start-[2%] bottom-4 size-3.5 [animation-delay:1.3s]" color="#17A398" />
         <div className="mx-auto grid max-w-7xl items-center gap-8 px-4 sm:px-6 lg:grid-cols-[minmax(0,1fr)_26rem]">
           <div className="min-w-0">
             <Breadcrumbs items={[{ label: "الرئيسية", href: "/" }, { label: "حسابي" }]} className="mb-6" />
@@ -120,7 +120,7 @@ export default async function AccountPage({ searchParams }: { searchParams: Prom
           <EmptyStart
             art="receipt"
             title="لا توجد طلبات بعد"
-            description="عند شراء أي مذكرة ستظهر فاتورتها هنا."
+            description="عند شراء أي شرح أو مذكرة ستظهر فاتورته هنا."
             grades={[]}
             actions={
               <Button asChild size="lg">

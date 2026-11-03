@@ -5,7 +5,7 @@ import { getStageBySlug, gradeStats, listSubjects } from "@/server/catalog/queri
 import { PageHeader, StatPill } from "@/components/ui/page-header";
 import { GradeCard, GradeGrid } from "@/components/site/grade-card";
 import { W } from "@/lib/design";
-import { pillCount } from "../../grades/_components/browse";
+import { pillCount, StageFan } from "../../grades/_components/browse";
 
 export async function generateMetadata({ params }: { params: Promise<{ slug: string }> }): Promise<Metadata> {
   const stage = await getStageBySlug((await params).slug);
@@ -27,6 +27,7 @@ export default async function StagePage({ params }: { params: Promise<{ slug: st
         eyebrow={{ icon: <GraduationCap aria-hidden />, label: "اختر صفك الدراسي", tone: "gold" }}
         title={stage.name}
         sub={stage.description || undefined}
+        aside={<StageFan levels={stage.grades.map((g) => g.level)} />}
       >
         <div className="flex flex-wrap gap-2.5">
           <StatPill tone="violet" icon={<GraduationCap aria-hidden />} {...pillCount(stage.grades.length, W.grade)} />

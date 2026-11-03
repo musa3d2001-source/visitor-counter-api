@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { Hourglass, Lock, LogIn, ShoppingCart, Sparkles } from "lucide-react";
+import { Hourglass, Lock, LogIn, Play, ShoppingCart, Sparkles } from "lucide-react";
 import { Price } from "@/components/ui/price";
 import { Sparkle, SubjectArt } from "@/components/art";
 import { cn } from "@/lib/utils";
@@ -23,6 +23,7 @@ type LockedReason = "not_ready" | "unauthenticated" | "forbidden";
 /**
  * لوحة الدرس المقفل (سطح داكن .on-dark): سبب القفل، وسعر حقيقي ودعوة واضحة للشراء.
  * المعرّفات: data-testid="lesson-locked-panel" و "buy-from-locked".
+ * إن كان في المحتوى درس مجاني يُعرض زر «شاهد الدرس المجاني» بجانب الشراء (أرخص خطوة للتحويل).
  */
 export function LockedStage({
   reason,
@@ -31,6 +32,7 @@ export function LockedStage({
   priceFils,
   compareAtFils,
   subjectSlug,
+  freeLesson = null,
 }: {
   reason: LockedReason;
   loginHref: string;
@@ -38,6 +40,8 @@ export function LockedStage({
   priceFils: number | null;
   compareAtFils: number | null;
   subjectSlug: string | null;
+  /** درس معاينة مجاني في المحتوى نفسه (غير الدرس الحالي) */
+  freeLesson?: { href: string; title: string } | null;
 }) {
   const processing = reason === "not_ready";
   return (
@@ -95,19 +99,50 @@ export function LockedStage({
               </Link>
             </div>
             {priceFils !== null ? <LockedPrice fils={priceFils} compareAt={compareAtFils} /> : null}
+            {freeLesson ? (
+              <p className="mt-4 flex flex-wrap items-center justify-center gap-x-2.5 gap-y-1.5 text-[0.92rem] text-white/80">
+                <span className="font-display font-bold">جرّب قبل الشراء</span>
+                <FreeLessonButton lesson={freeLesson} variant="glass" />
+              </p>
+            ) : null}
           </>
         ) : (
           <>
             <p className="mt-5 font-display text-[clamp(1.45rem,1.1rem+1.4vw,2rem)] leading-tight font-black">هذا الدرس لمن اشترى المحتوى</p>
             <p className="mt-2 text-[0.98rem] text-white/80">اشترِ المحتوى للوصول لكل الدروس ومتابعة التقدم.</p>
-            <Link href={productHref} className="btn btn-3d btn-accent btn-lg mt-6" data-testid="buy-from-locked">
-              <ShoppingCart aria-hidden /> اشترِ للوصول لكل الدروس
-            </Link>
+            <div className="mt-6 flex flex-wrap items-center justify-center gap-3">
+              <Link href={productHref} className="btn btn-3d btn-accent btn-lg" data-testid="buy-from-locked">
+                <ShoppingCart aria-hidden /> اشترِ للوصول لكل الدروس
+              </Link>
+              {freeLesson ? <FreeLessonButton lesson={freeLesson} variant="light" /> : null}
+            </div>
             {priceFils !== null ? <LockedPrice fils={priceFils} compareAt={compareAtFils} /> : null}
           </>
         )}
       </div>
     </div>
+  );
+}
+
+/**
+ * زر ثانوي يقود لدرس المعاينة المجاني (اسم الدرس للقارئ الآلي وفي التلميح).
+ * light: بجانب زر الشراء؛ glass: تحت أزرار الدخول/الشراء حين يكون الدخول هو الطلب الأول.
+ */
+function FreeLessonButton({ lesson, variant }: { lesson: { href: string; title: string }; variant: "light" | "glass" }) {
+  return (
+    <Link
+      href={lesson.href}
+      title={lesson.title}
+      className={cn(
+        "btn",
+        variant === "light"
+          ? "btn-3d btn-light btn-lg"
+          : "min-h-11 rounded-xl bg-white/12 px-3.5 text-[0.95rem] text-white ring-1 ring-white/25 transition-colors hover:bg-white/20",
+      )}
+    >
+      <Play className={cn("fill-current", variant === "light" ? "text-[var(--b)]" : "text-[#ffd25e]")} aria-hidden /> شاهد الدرس المجاني
+      <span className="sr-only">: {lesson.title}</span>
+    </Link>
   );
 }
 

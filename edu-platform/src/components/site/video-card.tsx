@@ -18,7 +18,25 @@ import { ProductList } from "./product-row";
  * وزر التذييل: «شاهد مجانًا» رابط مستقل للمعاينة، وإلا «التفاصيل».
  * البطاقة كلها قابلة للنقر برابط ممتد (حلقة التركيز على البطاقة)، وزر المعاينة فوقه.
  */
-export function VideoCard({ product: p, owned, showGrade = true, headingLevel = 3, priority }: { product: ProductCard; owned?: boolean; showGrade?: boolean; headingLevel?: 2 | 3 | 4; priority?: boolean }) {
+export function VideoCard({
+  product: p,
+  owned,
+  showGrade = true,
+  headingLevel = 3,
+  priority,
+  fitTitle,
+}: {
+  product: ProductCard;
+  owned?: boolean;
+  showGrade?: boolean;
+  headingLevel?: 2 | 3 | 4;
+  priority?: boolean;
+  /**
+   * في القوائم العمودية (عمود واحد على الجوال) لا جيران لمحاذاة العنوان معهم، فلا يُحجز سطر ثانٍ فارغ.
+   * يبقى معطّلًا للرفوف الأفقية (رف الرئيسية) حتى يتحاذى سطر المعلم والكبسولات بين البطاقات المتجاورة.
+   */
+  fitTitle?: boolean;
+}) {
   const titleId = useId();
   const H = `h${headingLevel}` as "h3";
   const preview = !owned ? previewHref(p) : null;
@@ -57,7 +75,7 @@ export function VideoCard({ product: p, owned, showGrade = true, headingLevel = 
           </span>
         ) : null}
         {meta ? <Kicker>{meta}</Kicker> : null}
-        <H className={s.vtitle}>
+        <H className={cn(s.vtitle, fitTitle && s.vtitleFit)}>
           <Link href={`/products/${p.slug}`} id={titleId} className="stretched">
             {p.title}
           </Link>

@@ -6,7 +6,7 @@ import { GradeArt, NightSky, Sparkle, SubjectArt, SubjectIcon, Sunrise } from "@
 import { Breadcrumbs } from "@/components/ui/breadcrumbs";
 import { ExamTicket } from "@/components/site/exam-ticket";
 import { TeacherAvatar } from "@/components/site/teacher-avatar";
-import { ar, count, countParts, shortName, toneClass, type CountWord, type Tone, W } from "@/lib/design";
+import { ar, count, countParts, gradeClass, shortName, toneClass, type CountWord, type Tone, W } from "@/lib/design";
 import { isPdfType, PRODUCT_TYPE_SECTION_LABELS, type ProductType } from "@/lib/labels";
 import { cn } from "@/lib/utils";
 import s from "./browse.module.css";
@@ -171,6 +171,44 @@ export function TypeSlots({
   );
 }
 
+/* ───────────── شبكات متوازنة (بلا بطاقة يتيمة في الصف الأخير) ───────────── */
+
+const MD_COLS = { 2: s.md2, 3: s.md3 } as const;
+const LG_COLS = { 3: s.lg3, 4: s.lg4, 5: s.lg5 } as const;
+
+/**
+ * يختار من الأعمدة المسموحة ما يملأ الصف الأخير أكثر: ‎n‎ يقبل القسمة ← صفوف كاملة؛
+ * وإلا الأكثر امتلاءً. التعادل للخيار الأول.
+ */
+export function balancedCols<C extends number>(n: number, options: readonly C[]): C {
+  let best = options[0];
+  let bestScore = -1;
+  for (const c of options) {
+    const r = n % c;
+    const score = n <= c ? n / c : r === 0 ? 1 : r / c;
+    if (score > bestScore + 1e-9) {
+      best = c;
+      bestScore = score;
+    }
+  }
+  return best;
+}
+
+/**
+ * صنف شبكة متوازنة لـ ProductGrid / ProductShelf: على اللوحي (‎768–1175px‎) و/أو الحاسوب (‎≥1176px‎)
+ * يُثبَّت عدد الأعمدة بحيث تمتلئ الصفوف (٣ فيديوهات ← ٣ أعمدة، ٦ ← ٣+٣، ١٢ مذكرة ← ٤×٣).
+ * إن كان العدد لا يتجاوز أصغر خيار يبقى صفًا واحدًا طبيعيًا بلا تثبيت. الجوال كما هو (رف سحب أو عمودان).
+ * ‎video‎: بطاقات فيديو/باقات، فالأعمدة الثلاثة على اللوحي تبدأ من ‎900px‎ (دونها عمودان أو رف سحب).
+ */
+export function balancedGrid(n: number, opts: { md?: readonly (2 | 3)[]; lg?: readonly (3 | 4 | 5)[]; video?: boolean }): string {
+  const pick = <C extends number>(options: readonly C[] | undefined, map: Record<C, string>) =>
+    options?.length && n > Math.min(...options) ? map[balancedCols(n, options)] : undefined;
+  let md = pick(opts.md, MD_COLS);
+  // بطاقات الفيديو أضيق من أن تُرصّ ثلاثًا تحت ‎900px‎ (يغطي الزر السعر)؛ انظر ‎.vmd3‎ في browse.module.css
+  if (opts.video && md === s.md3) md = n % 2 === 0 ? s.vmd3e : s.vmd3;
+  return cn(md, pick(opts.lg, LG_COLS));
+}
+
 /** شريحة القفز إلى قسم نوع (مع العدد) */
 export function JumpChip({ type, href, label, n }: { type: ProductType; href: string; label: string; n: number }) {
   const Icon = TYPE_ICON[type];
@@ -247,6 +285,38 @@ export function GradeWindow({ level }: { level: number }) {
         <GradeArt level={level} />
       </span>
       <Sparkle className={cn(s.windowSpark, "animate-twinkle")} color="#fff" />
+    </div>
+  );
+}
+
+/**
+ * مروحة بطاقات صفوف المرحلة (لبطل صفحة المرحلة): بطاقة لكل صف بنغمته، رقم عربي بارز ورسم الصف،
+ * مفرودة كأوراق اللعب. زخرفية بالكامل (الصفوف نفسها روابط في الشبكة أسفل البطل).
+ */
+export function StageFan({ levels }: { levels: number[] }) {
+  const mid = (levels.length - 1) / 2;
+  return (
+    <div className={s.fan} aria-hidden>
+      <span className={s.fanGlow} />
+      <div className={s.fanRow}>
+        {levels.map((lv, i) => {
+          const off = mid - i;
+          return (
+            <span
+              key={lv}
+              className={cn(s.fanCard, gradeClass(lv))}
+              style={{ "--r": `${off * 7}deg`, "--y": `${Math.abs(off) * Math.abs(off) * 9}px` } as React.CSSProperties}
+            >
+              <span className={s.fanNum}>{ar(lv)}</span>
+              <span className={s.fanArt}>
+                <GradeArt level={lv} />
+              </span>
+            </span>
+          );
+        })}
+      </div>
+      <Sparkle className={cn(s.fanSpark1, "animate-twinkle")} />
+      <Sparkle className={cn(s.fanSpark2, "animate-twinkle [animation-delay:1.1s]")} color="#18B9A7" />
     </div>
   );
 }

@@ -14,7 +14,7 @@ export async function refundOrderAction(_p: ActionState, fd: FormData): Promise<
     const orderId = str(fd, "orderId");
     const reason = str(fd, "reason");
     if (!isUuid(orderId)) throw new AdminError("طلب غير صالح");
-    if (reason.length < 3) throw new AdminError("اكتب سبب الاسترداد (3 أحرف على الأقل)");
+    if (reason.length < 3) throw new AdminError("اكتب سبب الاسترداد (٣ أحرف على الأقل)");
     const amountRaw = str(fd, "amount");
     let amountFils: number | undefined;
     if (amountRaw) {

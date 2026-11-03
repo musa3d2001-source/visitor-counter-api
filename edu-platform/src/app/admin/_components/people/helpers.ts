@@ -1,4 +1,5 @@
 import type { AdminTone } from "@/components/admin/tones";
+import { ar } from "@/lib/design";
 import { isPdfType, isVideoType } from "@/lib/labels";
 
 /**
@@ -60,4 +61,9 @@ const timeFmt = new Intl.DateTimeFormat("ar-KW-u-nu-latn", { timeStyle: "short",
 /** الوقت فقط بتوقيت الكويت (حين يظهر التاريخ بجواره) */
 export function formatTime(d: Date | string | null | undefined): string {
   return d ? timeFmt.format(new Date(d)) : "";
+}
+
+/** نسبة من نقاط الأساس (4000 ← «٤٠٪»): أرقام عربية ورمز ٪ العربي، بنفس صيغة صفحة أرباح المعلم */
+export function sharePct(bps: number): string {
+  return `${ar(String(bps / 100))}٪`;
 }

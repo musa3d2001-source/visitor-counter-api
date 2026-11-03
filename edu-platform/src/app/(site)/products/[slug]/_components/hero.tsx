@@ -32,7 +32,7 @@ export function ProductHero({
       <Sparkle className="animate-twinkle absolute bottom-[38%] left-[47%] hidden size-4 [animation-delay:1.2s] lg:block" color="#fff" />
       <div className={s.heroGrid}>
         <div className="min-w-0">
-          <Breadcrumbs items={breadcrumbs} className="mb-5" />
+          <Breadcrumbs items={breadcrumbs} tone="glass" className="mb-5" />
           {chips ? <div className="flex flex-wrap items-center gap-2">{chips}</div> : null}
           <h1 id="product-title" className={s.title}>
             {title}

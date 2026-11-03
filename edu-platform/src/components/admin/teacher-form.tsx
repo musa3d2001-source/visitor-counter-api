@@ -120,7 +120,7 @@ export function TeacherForm({
           <Field label="رابط الصفحة (slug)" htmlFor="slug" error={fe.slug} hint="أحرف إنجليزية، اتركه فارغًا ليُنشأ تلقائيًا">
             <Input id="slug" name="slug" defaultValue={val("slug")} dir="ltr" className="text-start" placeholder="ahmad-alkandari" />
           </Field>
-          <Field label="حصة المعلم من صافي المبيعات (%)" htmlFor="revenueShare" error={fe.revenueShare} hint="اتركها فارغة إن لم يُفعّل نظام الأرباح لهذا المعلم">
+          <Field label="حصة المعلم (%)" htmlFor="revenueShare" error={fe.revenueShare} hint="من صافي المبيعات. اتركها فارغة إن لم يُفعّل نظام الأرباح لهذا المعلم">
             <Input id="revenueShare" name="revenueShare" defaultValue={val("revenueShare")} inputMode="decimal" dir="ltr" className="num text-start" placeholder="40" />
           </Field>
           <Field label="ترتيب العرض" htmlFor="sortOrder" error={fe.sortOrder} hint="الأصغر يظهر أولًا">

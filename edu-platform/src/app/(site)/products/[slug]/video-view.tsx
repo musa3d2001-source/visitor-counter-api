@@ -13,7 +13,7 @@ import { BundleFanArt, VideoPosterArt } from "./_components/hero-art";
 import { MobileBuyBar, PurchasePanel, type TrustItem } from "./_components/purchase";
 import { FileList, LearnList, SectionPanel, WideHead } from "./_components/sections";
 import { LessonTimeline } from "./_components/lesson-timeline";
-import { includesLabel, shortTermLabel } from "./_components/labels";
+import { aboutTitle, includesLabel, shortTermLabel } from "./_components/labels";
 
 export function accessPeriodText(p: Pick<ProductDetail, "accessMode" | "accessUntil" | "accessDays">): string {
   if (p.accessMode === "until_date" && p.accessUntil) return `حتى ${formatDate(p.accessUntil)}`;
@@ -179,7 +179,7 @@ export function VideoProductView({
           ) : null}
 
           {product.description ? (
-            <SectionPanel id="about" title={`عن ${typeLabel}`} icon={<BookOpenText aria-hidden />}>
+            <SectionPanel id="about" title={aboutTitle(product.type)} icon={<BookOpenText aria-hidden />}>
               <p className="max-w-[68ch] text-[1.05rem] leading-9 whitespace-pre-line text-ink-soft">{product.description}</p>
             </SectionPanel>
           ) : null}
@@ -207,7 +207,8 @@ export function VideoProductView({
                 watchedIds={watchedIds}
                 groups={playlist.map((g) => ({
                   key: g.key,
-                  title: playlist.length > 1 || g.title !== product.title ? g.title : null,
+                  // مجموعة وحيدة باسم المنتج أو بالاسم الاحتياطي «الدروس» تكرّر عنوان القسم، فلا تُعنون
+                  title: playlist.length > 1 || (g.title !== product.title && g.title !== "الدروس") ? g.title : null,
                   lessons: g.lessons,
                 }))}
               />
@@ -227,11 +228,11 @@ export function VideoProductView({
         <section className="mt-16" aria-labelledby="included">
           <WideHead
             id="included"
-            eyebrow={isBundle ? "محتوى الباقة" : "اشترِ جزءًا وحده"}
+            eyebrow={isBundle ? count(included.length, W.product) : "اشترِ جزءًا وحده"}
             eyebrowIcon={<Layers aria-hidden />}
             tone="eyebrow-violet"
-            title={isBundle ? "تشمل الباقة" : "أجزاء الدورة"}
-            sub={isBundle ? "كل ما تحصل عليه عند شراء الباقة." : "تحتاج جزءًا واحدًا فقط؟ كل جزء متاح للشراء وحده."}
+            title={isBundle ? "محتويات الباقة" : "أجزاء الدورة"}
+            sub={isBundle ? "كل ما تحصل عليه عند شراء الباقة، ويظهر في مكتبتك بعد تأكيد الدفع." : "تحتاج جزءًا واحدًا فقط؟ كل جزء متاح للشراء وحده."}
           />
           <ProductGrid products={included} ownedIds={owned} />
         </section>

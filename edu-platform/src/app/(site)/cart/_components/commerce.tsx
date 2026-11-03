@@ -3,7 +3,7 @@
  * كلها عرض فقط: لا منطق ولا استعلامات. الأرقام من بيانات حقيقية تمرَّر إليها.
  */
 import type * as React from "react";
-import { BadgeCheck, MonitorSmartphone, ShieldCheck, Zap } from "lucide-react";
+import { BadgeCheck, BadgePercent, MonitorSmartphone, ShieldCheck, Zap } from "lucide-react";
 import { Sparkle, SpotArt, type SpotKind } from "@/components/art";
 import { ProductCover } from "@/components/site/product-cover";
 import { GradeCard, GradeGrid } from "@/components/site/grade-card";
@@ -69,6 +69,16 @@ export function Kwd({ fils, className, unitClassName }: { fils: number; classNam
   return (
     <span className={cn("font-display font-black whitespace-nowrap", className)}>
       <span className="num">{filsToKwdString(fils)}</span> <span className={cn("text-[0.7em] font-extrabold text-muted", unitClassName)}>د.ك</span>
+    </span>
+  );
+}
+
+/** شارة توفير حقيقي (فقط حين يكون السعر قبل الخصم أعلى): «وفّرت 1.000 د.ك» */
+export function SavedChip({ fils, className }: { fils: number; className?: string }) {
+  return (
+    <span className={cn("inline-flex items-center gap-1 rounded-full bg-success-50 px-2.5 py-0.5 font-display text-[0.8rem] font-extrabold text-success", className)}>
+      <BadgePercent className="size-3.5" aria-hidden />
+      وفّرت <span className="num">{filsToKwdString(fils)}</span> د.ك
     </span>
   );
 }

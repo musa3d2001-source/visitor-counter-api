@@ -130,7 +130,7 @@ export default async function SubjectPage({ params, searchParams }: { params: Pr
         ) : null}
 
         {groups.length === 0 ? (
-          <EmptyState className="mt-8" title="لا يوجد محتوى لهذا الفصل" description="اختر «كل الفصول» أو الفصل الآخر." />
+          <EmptyState headingLevel={2} className="mt-8" title="لا يوجد محتوى لهذا الفصل" description="اختر «كل الفصول» أو الفصل الآخر." />
         ) : (
           <div className="mt-12 space-y-16 sm:mt-14 sm:space-y-20">
             {videoGroups.length ? (

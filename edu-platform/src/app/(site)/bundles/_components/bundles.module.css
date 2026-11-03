@@ -10,10 +10,15 @@
   min-height: 8.5rem;
   padding: 1.25rem 1.25rem;
   border-radius: 2rem;
+  /* جانب النص داكن دائمًا (عمق الصف ممزوجًا بالأسود) ليبقى الأبيض فوق ٤٫٥:١ في كل الصفوف،
+     ولون الصف الزاهي يلمع في الطرف الآخر حيث الرسم والزر */
+  --deep: color-mix(in oklab, var(--d) 78%, black);
+  --deep2: color-mix(in oklab, var(--d) 88%, black);
   color: #fff;
   background:
-    radial-gradient(70% 90% at 10% 0%, rgb(255 255 255 / 0.32), transparent 60%),
-    linear-gradient(to left, var(--d), var(--b) 45%, var(--m, var(--a)));
+    radial-gradient(42% 120% at 0% 100%, color-mix(in oklab, var(--b) 85%, transparent), transparent 70%),
+    radial-gradient(60% 90% at 6% 0%, rgb(255 255 255 / 0.16), transparent 60%),
+    linear-gradient(to left, var(--deep), var(--deep2) 60%, var(--d));
   box-shadow:
     0 7px 0 color-mix(in oklab, var(--d) 70%, black),
     0 30px 50px -28px var(--d);
@@ -24,7 +29,17 @@
     border-radius: 2.25rem;
   }
 }
+.bandText {
+  min-width: 0;
+  flex: 1 1 0%;
+}
 @media (min-width: 1024px) {
+  .bandText {
+    flex: none;
+  }
+  .bandCta {
+    margin-top: auto;
+  }
   .band {
     align-self: stretch;
     flex-direction: column;
@@ -32,17 +47,19 @@
     min-height: 22rem;
     padding: 2rem 1.75rem 1.75rem;
     border-radius: 2.25rem;
+    /* عمودي: الرقم والعنوان والوصف فوق الداكن، ولون الصف الزاهي يتوهّج في الأسفل خلف الزر */
     background:
-      radial-gradient(90% 60% at 20% 0%, rgb(255 255 255 / 0.32), transparent 60%),
-      linear-gradient(170deg, var(--m, var(--a)), var(--b) 55%, var(--d));
+      radial-gradient(55% 30% at 12% 6%, rgb(255 255 255 / 0.16), transparent 70%),
+      radial-gradient(130% 48% at 50% 100%, var(--b), transparent 72%),
+      linear-gradient(180deg, var(--deep2), var(--deep) 58%, var(--d));
   }
+  /* الرسم في الزاوية العليا اليسرى بجانب الرقم، فلا يقع خلف العنوان أو الوصف */
   .band .art {
-    top: auto;
-    bottom: 4.5rem;
-    left: 0.75rem;
+    top: 1.25rem;
+    left: 1rem;
     translate: none;
-    width: 8.5rem;
-    height: 8.5rem;
+    width: 7rem;
+    height: 7rem;
   }
 }
 .band::before {
@@ -179,6 +196,16 @@
     gap: 2rem;
   }
 }
+/* صف بباقة وحيدة: البطاقة العريضة تأخذ عرض المحتوى كاملًا وتمتد بطول شريط الصف */
+.single {
+  display: grid;
+  min-width: 0;
+}
+@media (min-width: 1024px) {
+  .single {
+    align-self: stretch;
+  }
+}
 .grid {
   display: grid;
   gap: 1.5rem;
@@ -190,3 +217,39 @@
   }
 }
 
+
+/* صف بباقة وحيدة بين lg وxl: لا يتسع المحتوى للشريط العمودي بجانب البطاقة العريضة
+   (يضيق عمود نصها حتى ينكسر)، فيبقى الصف مكدّسًا: الشريط أفقي فوق والبطاقة العريضة تحته بعرض كامل */
+@media (min-width: 1024px) and (max-width: 1279.98px) {
+  .rowSingle {
+    grid-template-columns: minmax(0, 1fr);
+    gap: 1.75rem;
+  }
+  .rowSingle .band {
+    align-self: auto;
+    flex-direction: row;
+    align-items: center;
+    min-height: 8.5rem;
+    padding: 1.5rem 2rem;
+    background:
+      radial-gradient(42% 120% at 0% 100%, color-mix(in oklab, var(--b) 85%, transparent), transparent 70%),
+      radial-gradient(60% 90% at 6% 0%, rgb(255 255 255 / 0.16), transparent 60%),
+      linear-gradient(to left, var(--deep), var(--deep2) 60%, var(--d));
+  }
+  .rowSingle .band .art {
+    top: 50%;
+    left: 1rem;
+    translate: 0 -50%;
+    width: 9rem;
+    height: 9rem;
+  }
+  .rowSingle .bandText {
+    flex: 1 1 0%;
+  }
+  .rowSingle .bandCta {
+    margin-top: 0;
+  }
+  .rowSingle .single {
+    align-self: auto;
+  }
+}

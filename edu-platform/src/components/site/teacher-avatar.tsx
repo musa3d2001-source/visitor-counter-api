@@ -48,8 +48,10 @@ export function TeacherAvatar({
         height: size,
         fontSize: Math.max(14, Math.round(size * 0.44)),
         lineHeight: 1,
-        backgroundImage: "radial-gradient(circle at 30% 25%, rgb(255 255 255 / 0.4), transparent 45%), linear-gradient(145deg, var(--a, var(--brand-hi)), var(--b, var(--brand)))",
-        textShadow: size >= 64 ? "0 3px 10px rgb(0 0 0 / 0.18)" : undefined,
+        // الحرف الأبيض على الدرجتين الداكنتين ‎--b ثم --d‎ (لا على ‎--a‎ الفاتحة) فيبلغ تباينًا مقروءًا لكل الألوان
+        backgroundImage:
+          "radial-gradient(circle at 28% 20%, rgb(255 255 255 / 0.3), transparent 38%), linear-gradient(145deg, var(--b, var(--brand)), var(--d, var(--brand-edge)) 55%, var(--tink, var(--brand-deep)))",
+        textShadow: "0 2px 0 rgb(0 0 0 / 0.22)",
         boxShadow: ringShadow,
       }}
       aria-hidden
