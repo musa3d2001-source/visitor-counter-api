@@ -336,7 +336,9 @@
   height: 26px;
   border-radius: 9px;
   font-size: 0.95rem;
-  background: linear-gradient(145deg, var(--a), var(--m, var(--a)), var(--b));
+  /* الرقم الأبيض الصغير يحتاج 4.5:1: يبدأ التدرج من الدرجة العميقة للصف */
+  background: linear-gradient(145deg, var(--d, var(--b)), var(--tink, var(--d, var(--b))));
+  text-shadow: 0 1px 0 rgb(0 0 0 / 0.18);
 }
 .pstats {
   display: grid;
