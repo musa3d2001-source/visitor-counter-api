@@ -1,0 +1,9 @@
+/.env
+/.env.local
+/.env.*.local
+/storage
+/supabase/.temp
+/test-results
+/playwright-report
+/.next
+node_modules

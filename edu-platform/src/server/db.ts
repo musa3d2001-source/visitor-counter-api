@@ -16,6 +16,9 @@ function createClient(): Sql {
     connect_timeout: 10,
     // Supabase pooler بوضع transaction لا يدعم الاستعلامات المُحضّرة
     prepare: !e.DATABASE_PGBOUNCER,
+    // ولا يحتمل تمرير عدة استعلامات دفعة واحدة على اتصال واحد (pipelining):
+    // تتعلق الاستعلامات حتى statement timeout عندما تزيد عن عدد الاتصالات
+    ...(e.DATABASE_PGBOUNCER && { max_pipeline: 1 }),
     onnotice: () => {},
     connection: { application_name: "edu-platform" },
   });
