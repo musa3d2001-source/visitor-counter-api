@@ -278,6 +278,8 @@ function check(stage, spec, warnings) {
     if (rail && r.x1 > rail.x0 && r.y1 > rail.y0 && r.y0 < rail.y1)
       warnings.push(`KEY CONTENT UNDER THE REELS ACTION RAIL: "${describe(el)}"`);
   }
+  // mono slates are Latin/digits only: Arabic in a slate would be letter-spaced and set in a font without Arabic
+  for (const el of stage.querySelectorAll('.slate')) if (/[\u0600-\u06FF]/.test(el.textContent)) warnings.push(`ARABIC IN A MONO SLATE (letter-spaced Arabic): "${el.textContent.trim()}"`);
   // key elements must never sit on top of each other (text-over-text)
   const keys = [...stage.querySelectorAll('.key')].filter(el => el.getBoundingClientRect().width > 0);
   for (let i = 0; i < keys.length; i++) for (let j = i + 1; j < keys.length; j++) {

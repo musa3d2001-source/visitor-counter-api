@@ -175,10 +175,10 @@ export function makeEnv(renderer) {
 export function makeRoom(tex) {
   const g = new THREE.Group();
   const tg = new THREE.PlaneGeometry(14, 10, 1, 1);
-  tex.wood.wrapS = tex.wood.wrapT = THREE.RepeatWrapping; tex.wood.repeat.set(2.2, 1.6);
+  tex.wood.wrapS = tex.wood.wrapT = THREE.MirroredRepeatWrapping; tex.wood.repeat.set(2.2, 1.6);   // book-matched: the procedural grain is not periodic, mirroring hides the tile seam
   const table = new THREE.Mesh(tg, new THREE.MeshStandardMaterial({ map: tex.wood, roughness: 0.48, bumpMap: tex.wood, bumpScale: 0.6, envMapIntensity: 0.55 }));
   table.rotation.x = -Math.PI / 2; table.position.set(0, 0, 2.0); table.receiveShadow = true; g.add(table);
-  tex.wall.wrapS = tex.wall.wrapT = THREE.RepeatWrapping; tex.wall.repeat.set(2, 1.2);
+  tex.wall.wrapS = tex.wall.wrapT = THREE.MirroredRepeatWrapping; tex.wall.repeat.set(2, 1.2);
   const wall = new THREE.Mesh(new THREE.PlaneGeometry(16, 9), new THREE.MeshStandardMaterial({ map: tex.wall, roughness: 0.96, bumpMap: tex.wall, bumpScale: 0.8, envMapIntensity: 0.35 }));
   wall.position.set(0, 4.5, -3.0); wall.receiveShadow = true; g.add(wall);
   return { group: g, table, wall };

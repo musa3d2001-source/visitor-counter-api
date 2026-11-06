@@ -148,7 +148,8 @@ export function frameSpec(t, { clean = false, poster = false } = {}) {
     const k = (tT - SHOT.S5.at) / (C.duration - SHOT.S5.at);
     S.cam = orbit([-0.1, 0.62, 0.0], lerp(4.75, 4.25, E.outQuad(k)), lerp(4, -2, k) * deg, lerp(5, 7, k) * deg, 28);
     S.beans = beansAt(t, 'landed');
-    S.steam = steamAt(t, lerp(0.6, 0.32, tw(t, EV.logoIn - 0.3, 0.8, E.inOutSine)), 0.85);
+    const sk = tw(t, EV.logoIn - 0.4, 1.0, E.inOutSine);   // the steam settles low so it never runs through the lockup
+    S.steam = steamAt(t, lerp(0.6, 0.38, sk), lerp(0.85, 0.55, sk));
     S.dof = { focus: lerp(4.65, 4.15, k), ap: 10 };
     if (!clean && t >= EV.blindsClose) {               // the blinds close: light narrows to slits, room goes dark → TASH
       const c = tw(t, EV.blindsClose, EV.blindsCloseDur, E.inCubic);

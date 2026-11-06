@@ -15,6 +15,7 @@
   .you { position: absolute; left: 96px; z-index: 10; }
   .q { position: absolute; left: 96px; max-width: 760px; z-index: 10; padding: 30px 44px 34px; font-size: 44px; line-height: 1.45; text-wrap: balance; }
   .q .n { display: block; font-size: 20px; margin-bottom: 8px; color: #55574F; direction: ltr; text-align: right; }
+  .q .ar-n { font-size: 26px; line-height: 1.2; direction: rtl; }
   .a { position: absolute; right: 96px; left: 96px; z-index: 10; color: var(--fg); font-size: 52px; line-height: 1.5; text-wrap: pretty; }
 </style></head><body><div id="stage"></div>
 <script type="module">
@@ -40,7 +41,8 @@ run(async (d, { stage, T, rich, h, put, linesOf, bubble, typingBubble, fit }) =>
   }
   // answer
   const label = d.label ? h('div', { class: 'slate label', text: d.label }) : null;
-  const q = bubble([h('span', { class: 'slate n', text: d.qlabel || 'Q' }), h('span', { html: rich(d.question) })],
+  const ql = d.qlabel || 'Q', qlAr = /[\u0600-\u06FF]/.test(ql);          // Arabic label → text style (never a letter-spaced slate)
+  const q = bubble([h('span', { class: qlAr ? 'txt n ar-n' : 'slate n', text: ql }), h('span', { html: rich(d.question) })],
     { fill: COL.paper, color: COL.ink, side: 'left', cls: 'txt q key' });
   q.dataset.name = 'question';
   const v = d.verdict ? h('div', { class: 'disp verdict key', 'data-fit': '110,170', 'data-lines': '1', 'data-name': 'verdict', html: rich(d.verdict) }) : null;
