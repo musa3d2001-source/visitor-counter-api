@@ -34,7 +34,7 @@ export const settingsSchema = z.object({
 export type PlatformSettings = z.infer<typeof settingsSchema>;
 
 export const DEFAULT_SETTINGS: PlatformSettings = {
-  site_name: "منصة درب",
+  site_name: "منصة فرقد",
   tagline: "شروحات فيديو ومذكرات لطلاب الكويت",
   hero_title: "اختر صفك، وابدأ من الدرس الذي تحتاجه اليوم.",
   hero_subtitle:

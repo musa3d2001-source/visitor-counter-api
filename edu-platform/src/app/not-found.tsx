@@ -8,7 +8,7 @@ import { Sparkle } from "@/components/art";
 import { ar, gradeClass } from "@/lib/design";
 import { listGrades } from "@/server/catalog/queries";
 
-/** عنوان التبويب والسجل: «الصفحة غير موجودة | منصة درب» عبر قالب العنوان في التخطيط الجذري */
+/** عنوان التبويب والسجل: «الصفحة غير موجودة | منصة فرقد» عبر قالب العنوان في التخطيط الجذري */
 export const metadata: Metadata = { title: "الصفحة غير موجودة", robots: { index: false } };
 
 /** بطاقات «٤٠٤» المائلة بألوان الصفوف (مثل بطاقات الدروس في الرئيسية) */

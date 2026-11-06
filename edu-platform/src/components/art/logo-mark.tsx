@@ -1,7 +1,7 @@
 import { useId } from "react";
 
 /**
- * شعار «درب»: طريق متعرّج يصعد نحو شمس ذهبية.
+ * شعار «فرقد»: طريق متعرّج يصعد نحو نجمة ذهبية يهتدي بها، ومعها نجمة صغيرة (الفرقدان).
  * المعرّف الداخلي للتدرج فريد لكل نسخة (useId) فلا تتعارض شعارات متعددة في الصفحة.
  * ‎`id`‎ اختياري ومحفوظ للتوافق مع نماذج المختبر.
  */
@@ -18,7 +18,6 @@ export function LogoMark({ id, size = 44, className }: { id?: string; size?: num
       </defs>
       <rect width="48" height="48" rx="15" fill={`url(#${gid})`} />
       <rect x="1" y="1" width="46" height="46" rx="14" fill="none" stroke="#fff" strokeOpacity=".18" strokeWidth="2" />
-      <circle cx="32" cy="14.5" r="6.2" fill="#FFC531" />
       <circle cx="32" cy="14.5" r="9.5" fill="#FFC531" opacity=".22" />
       <path d="M13 41c0-8 13-7.5 13-14.5 0-5.2-6.6-5.3-6.6-9.8 0-3.4 3.4-4.6 6.6-4.4" fill="none" stroke="#fff" strokeWidth="4.2" strokeLinecap="round" />
       <path
@@ -30,6 +29,8 @@ export function LogoMark({ id, size = 44, className }: { id?: string; size?: num
         strokeDasharray="2 3.2"
         opacity=".55"
       />
+      <path d="M32 5.6Q33.9 12.6 40.4 14.5 33.9 16.4 32 23.4 30.1 16.4 23.6 14.5 30.1 12.6 32 5.6Z" fill="#FFC531" />
+      <path d="M40.2 23.4Q40.9 25.8 43.3 26.5 40.9 27.2 40.2 29.6 39.5 27.2 37.1 26.5 39.5 25.8 40.2 23.4Z" fill="#FFC531" opacity=".85" />
     </svg>
   );
 }
