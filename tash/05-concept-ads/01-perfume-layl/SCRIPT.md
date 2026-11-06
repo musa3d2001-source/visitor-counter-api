@@ -177,13 +177,24 @@ Pre-master: −14.1 LUFS, −1.6 dBTP true peak (WAV), so the mux's linear loudn
 | 1 | hard clip write-on cut letters mid-glyph | feathered RTL mask with padding for dots and descenders | reads like a pen |
 | 2 | S2 glow washed to pale cream | glow ceiling 0.85 → 0.72 | rich amber through the push |
 | 2 | ي of «تمشي…» nearly touching «ليل» | line 2 +20 px | clear leading |
-| QC | final MP4 | | −14.0 LUFS, −1.5 dBTP, LRA 3.0, no freeze > 0.6 s; blackdetect only flags the designed 0.17 s lights-out (13.47–13.63) and sting frames that are ~98% ink (14.40–15.07) |
-| QC | determinism | same frame from different seek orders | identical, except ≤ 4 px at ±1/255 (SwiftShader float noise) |
+| QC 2 | final MP4 (round 2) | | −14.0 LUFS, −1.5 dBTP, LRA 3.0, no freeze > 0.6 s; blackdetect only flags the designed 0.17 s lights-out (13.47–13.63) and sting frames that are ~98% ink (14.40–15.07) |
+| QC 2 | determinism | same frame from different seek orders | identical, except ≤ 4 px at ±1/255 (SwiftShader float noise) |
+| 3 · ECD | the TASH tail was cut off: «خلّهم يسولفون عنك!» fully on screen ≈0.6 s and the handle ≈0.3 s before the last frame; ≈0.5 s of near-black and 0.6 s of digital silence before the sting | final-only layers re-timed (end card 11.10, 0.22 s lights-out dip at 12.95, sting 13.15); tagline/handle cues 1.42 / 1.85 s; a faint low-passed bed (−20 dB) under the typing ticks | tagline fully assembled from ≈14.9 (≈1.0 s), handle from 15.0; no digital silence. **No shot time changed** |
+| 3 · ECD | brass cap rim stair-stepped in the macro hook (0–1.2 s) and S4: anisotropy used per-triangle derivative tangents on a 128-segment lathe | 384 segments + `computeTangents()` | smooth brushed sheen at 2× zoom |
+| 3 · ECD | the nozzle read as a swirl / blob in S4 | thinner polished bezel, darker hole | reads as a machined orifice |
+| 3 · ECD | the juice read as a flat backlit orange panel; S2 opened on a dull orange slab | wall absorption, meniscus line, crisper refracted env; in S2 the refraction ramps up with the glow | depth toward the walls and a fill line; S2 opens deep and dark, then lights from the base |
+| 3 · ECD | label hairline sat on the dots of ي | hairline moved between LAYL and the sub-line (same lockup as the end card) | clear at 3× |
+| 3 · ECD | 53 % of the mix below 150 Hz (mud on phones) | subs −3 dB, impacts −1.3 dB, music bus HP 34 Hz, sonic logo HP 30 Hz; true-peak-safe pre-master | 42 % below 150 Hz; WAV −14.1 LUFS / −1.6 dBTP |
+| QC 3 | final MP4 (round 3) | | 1080×1920, 30/1, 477 frames, 15.90 s, h264 + aac 48 k; −14.0 LUFS, −1.8 dBTP, LRA 3.0. freezedetect: only the designed end hold from 15.07 (the handle is still tracking in). blackdetect: the designed lights-out dip (13.13–13.30) and mostly-ink sting frames (14.03–14.60). Cut strips (cut −2 f … +1 f) clean at every cut. Determinism: t = 4.70 rendered fresh and after seeking 9.0 first is identical (0 px). BTS wire / clay / final re-rendered with the new cap and liquid (90 frames each, same camera) |
 
 Still weak / honest notes:
-- Builder-reviewed only; there was no separate fresh reviewer.
+- Round 3 was an independent ECD review of the rendered film (not the builder). It has not had a further fresh
+  verification pass.
 - S1's last 0.5 s is a dark "breath" (the liquid starting to glow) before the S2 reveal. Intentional, but a stranger may
   not read the macro until 1.5 s.
-- The low end is rich: 44–59 % of the energy is below 150 Hz in the film sections. That is fine on headphones; on phone
-  speakers the oud, bells and spray carry it.
-- Liquid refraction is an artistic shader (Three.js can't nest transmission), judged by eye.
+- The low end is still rich (42 % of the energy below 150 Hz, down from 53 %). The hero hits and the TASH snap keep a
+  deliberate sub; on phone speakers the oud, bells and spray carry it.
+- Liquid refraction is an artistic shader (Three.js can't nest transmission), judged by eye. It reads as a lit amber
+  volume, not as physically correct juice.
+- The end-card full hold is ≈0.65 s (the name is readable for ≈1.3 s from its write-on), traded for a readable TASH
+  tagline. The film keeps its 15.90 s length and every shot time.

@@ -124,9 +124,57 @@ export function photo(img, cls = 'photo') {
   if (!o.src) return box;
   const fx = o.fx ?? 50, fy = o.fy ?? 50, z = o.zoom ?? 1, dx = o.dx ?? 0, dy = o.dy ?? 0;
   const feather = o.feather ? `;-webkit-mask-image:linear-gradient(to right,transparent,#000 ${o.feather}%,#000 ${100 - o.feather}%,transparent);mask-image:linear-gradient(to right,transparent,#000 ${o.feather}%,#000 ${100 - o.feather}%,transparent)` : '';
-  box.append(h('img', { src: o.src, alt: '', decoding: 'sync',
+  box.append(h('img', { src: o.src, alt: '', decoding: 'sync', 'data-photo': '1',
+    'data-fx': fx, 'data-fy': fy, 'data-z': z, 'data-dx': dx, 'data-dy': dy, 'data-edge': o.edge || (o.fit === 'contain' ? 'none' : 'cover'),
     style: `position:absolute;inset:0;width:100%;height:100%;object-fit:${o.fit || 'cover'};object-position:${fx}% ${fy}%;transform:translate(${dx}px,${dy}px) scale(${z});transform-origin:${fx}% ${fy}%${feather}` }));
   return box;
+}
+
+/** dx/dy move a picture inside its slot, which would uncover the slot's edge (a hard bar of ground colour).
+ *  edge 'cover' (default): push in just enough that the picture still fills the slot.
+ *  edge 'fade': keep the scale and fade the uncovered side into the ground instead (dark pictures on ink).
+ *  Runs after layout, when the slot size is known. */
+function coverPhotos(root) {
+  for (const img of root.querySelectorAll('img[data-photo]')) {
+    const W = img.offsetWidth, H = img.offsetHeight, k = img.dataset;
+    const dx = +k.dx, dy = +k.dy, z = +k.z;
+    if (!W || !H || (!dx && !dy) || k.edge === 'none') continue;
+    if (k.edge === 'fade') {
+      const F = 260, g = [];
+      if (dy > 0) g.push(`linear-gradient(to bottom, transparent 0, #000 ${F}px)`);
+      if (dy < 0) g.push(`linear-gradient(to top, transparent 0, #000 ${F}px)`);
+      if (dx > 0) g.push(`linear-gradient(to right, transparent 0, #000 ${F}px)`);
+      if (dx < 0) g.push(`linear-gradient(to left, transparent 0, #000 ${F}px)`);
+      img.style.webkitMaskImage = img.style.maskImage = g.join(', ');
+      img.style.webkitMaskComposite = 'source-in'; img.style.maskComposite = 'intersect';
+      continue;
+    }
+    const ox = +k.fx / 100 * W, oy = +k.fy / 100 * H;   // transform-origin: p' = o + d + z·(p − o)
+    let need = z;
+    if (dx > 0) need = Math.max(need, 1 + dx / Math.max(ox, 1));
+    if (dx < 0) need = Math.max(need, 1 - dx / Math.max(W - ox, 1));
+    if (dy > 0) need = Math.max(need, 1 + dy / Math.max(oy, 1));
+    if (dy < 0) need = Math.max(need, 1 - dy / Math.max(H - oy, 1));
+    if (need > z) img.style.transform = `translate(${dx}px,${dy}px) scale(${(need + 0.002).toFixed(4)})`;
+  }
+}
+
+/** Hamza below (إ) hangs deep under its line. At display leading it lands on the tall letters of the next line and
+ *  reads as THEIR hamza («الإعلان / والسوالف» → «وألسوالف»). When any line but the last carries one, open the leading. */
+const HAMZA_BELOW = /[إٖ]/;
+function openLeading(el, min) {
+  const cs = getComputedStyle(el), lh = parseFloat(cs.lineHeight) / parseFloat(cs.fontSize);
+  if (!(lh >= min)) { el.style.lineHeight = String(min); el.dataset.hamza = 'open'; return true; }
+  return false;
+}
+function hamzaLeading(root, warnings, { min = 1.62, refit = false } = {}) {
+  for (const el of root.querySelectorAll('.disp')) {
+    if (!HAMZA_BELOW.test(el.innerText)) continue;
+    if (el.innerHTML.includes('<br')) {               // author's lines: any line but the last with إ
+      const lines = el.innerText.split('\n').filter(s => s.trim());
+      if (!refit && lines.slice(0, -1).some(s => HAMZA_BELOW.test(s))) openLeading(el, min);
+    } else if (refit && lineCount(el) > 1 && openLeading(el, min) && el.dataset.fit) fitOne(el, warnings);  // wrapped lines
+  }
 }
 
 /** Chat bubble in the sting's geometry (pill/rounded box + the little tail). side: 'right' (TASH) | 'left' (you).
@@ -332,8 +380,11 @@ export function run(build) {
     stage.style.width = spec.width + 'px'; stage.style.height = spec.height + 'px';
     const missing = await settle(stage);
     if (missing.length) warnings.push('FONTS NOT LOADED: ' + missing.join(', '));
+    hamzaLeading(stage, warnings);
     fitAll(stage, warnings);
+    hamzaLeading(stage, warnings, { refit: true });
     if (spec.after) await spec.after();
+    coverPhotos(stage);
     drawBubbles(stage);                 // template hook that needs final text metrics
     if (spec.ground !== false) ground(stage, spec.themeObj || T, spec);
     addGrain(stage, spec.width, spec.height, spec.grain ?? (spec.themeObj || T).grain);

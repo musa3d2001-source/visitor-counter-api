@@ -13,7 +13,11 @@ const W = 1080, H = 1920;
 const stage = document.getElementById('stage');
 const renderer = new THREE.WebGLRenderer({ antialias: false, preserveDrawingBuffer: true, powerPreference: 'high-performance' });
 renderer.setPixelRatio(1); renderer.setSize(W, H);
-renderer.shadowMap.enabled = true; renderer.shadowMap.type = THREE.VSMShadowMap;
+renderer.shadowMap.enabled = true;
+// PCF (packed full-precision depth), not VSM: VSM's half-float moments broke up into blocky dark squares where the rim
+// shadows the coffee a few mm below it (S1 hook, S3, hero still), and its light-bleeding made beans and saucer float.
+// A sharp-ish sun shadow is also the physically right one for objects touching the table.
+renderer.shadowMap.type = q.has('vsm') ? THREE.VSMShadowMap : THREE.PCFShadowMap;   // 17-tap PCF with hardware compare, radius below
 renderer.outputColorSpace = THREE.SRGBColorSpace;
 stage.prepend(renderer.domElement); renderer.domElement.id = 'gl';
 
@@ -46,7 +50,7 @@ const SUN_AIM = new THREE.Vector3(0.25, 0.25, -0.7);
 sun.position.copy(SUN_DIR.clone().multiplyScalar(-14)).add(SUN_AIM);
 sun.target.position.copy(SUN_AIM);
 sun.map = gobo.tex; sun.castShadow = true;
-sun.shadow.mapSize.set(1536, 1536); sun.shadow.bias = -0.0006; sun.shadow.normalBias = 0.01; sun.shadow.radius = 4; sun.shadow.blurSamples = 8;
+sun.shadow.mapSize.set(2048, 2048); sun.shadow.bias = -0.00025; sun.shadow.normalBias = 0.012; sun.shadow.radius = 2.6; sun.shadow.radius = 4; sun.shadow.blurSamples = 8;
 sun.shadow.camera.near = 6; sun.shadow.camera.far = 24;
 scene.add(sun, sun.target);
 const fill = new THREE.HemisphereLight(0xffe7cc, 0x5a3a26, 0.25); scene.add(fill);

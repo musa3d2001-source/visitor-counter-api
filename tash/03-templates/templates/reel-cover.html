@@ -66,12 +66,12 @@ run(async (d, { stage, T, rich, h, put, linesOf, photo, wordmark }) => {
   const line = d.line ? h('div', { class: 'txt line key', 'data-name': 'line', html: rich(d.line) }) : null;
   const c = d.concept || {};
   put(stage,
-    photo({ src: d.before, dy }, 'layer full'),
-    put(photo({ src: d.after, dy }, 'layer full'), null),
+    photo({ src: d.before, dy, edge: 'fade' }, 'layer full'),        // dark wireframe on ink: fade the uncovered top
+    put(photo({ src: d.after, dy, edge: 'fade' }, 'layer full'), null),
     h('div', { class: 'scrim' }),
     h('div', { class: 'band-edge', style: `top:${b0 - 3}px` }), h('div', { class: 'band-edge', style: `top:${b1 - 3}px` }),
     head, line,
-    h('div', { class: 'bts-concept key', 'data-name': 'concept label' }, h('div', { class: 'slate', text: c.slate || 'BEHIND THE SCENES' }), h('div', { class: 'concept-ar', text: c.ar || CONCEPT_AR })));
+    h('div', { class: 'bts-concept key', 'data-name': 'concept label' }, h('div', { class: 'slate', text: c.slate || 'BTS — CONCEPT AD' }), h('div', { class: 'concept-ar', text: c.ar || CONCEPT_AR })));
   stage.querySelectorAll('.full')[1].style.clipPath = `inset(${b0}px 0 ${1920 - b1}px 0)`;
   return { format: 'reel', ground: false, grain: 0.035, after: () => {
     if (line) line.style.top = (head.offsetTop + head.offsetHeight + 4) + 'px';

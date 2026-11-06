@@ -112,6 +112,10 @@ seg = tape_stop(seg, d=STING - (END + 0.55))
 mus_buf[n_(END):i1] = seg
 mus_buf[i1:] *= 0
 fo = n_(0.03); mus_buf[i1 - fo:i1] *= np.linspace(1, 0, fo)[:, None]
+# ECD pass: phones can't reproduce < ~100 Hz and the 808 + kick were most of the mix energy (sub band ≈ full band),
+# which ate the -14 LUFS budget. Gentle -3.5 dB low shelf on the music bus only (hero impacts keep their sub).
+mus_buf = mus_buf - (1 - db(-3.5)) * lp(mus_buf, 110)
+mus_buf = hp(mus_buf, 32)
 # sidechain: duck music under the big impacts
 duck_t = [C['smash'], D['patty'], D['patty2'], D['crown'], END]
 mus_buf *= duck_curve(len(mus_buf), duck_t, depth_db=-7, release=0.25)[:, None]

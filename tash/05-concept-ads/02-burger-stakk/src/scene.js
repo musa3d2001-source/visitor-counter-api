@@ -61,6 +61,7 @@ export async function createWorld(W, H, C) {
       const sxz = 1 + (1 - s.sy) * 0.45;
       o.scale.set(sxz, s.sy, sxz);
     }
+    { const hd = B.L.heel.position.y - B.L.heel.userData.restY; floor.userData.floor.material.opacity = 0.42 * lerp(1, 0.3, sm(0.25, 1.8, hd)); }
     // cheese melt: rigid while falling → drapes with its weight → keeps melting
     const melt = (land, slow) => { const a = t - land; if (a < 0) return [0, 0]; const d = 0.5 * spring(clamp(a / 0.5), { freq: 1.4, damp: 6 }) + 0.42 * sm(0.1, slow, a); return [Math.min(0.95, d), sm(0.45, slow + 0.4, a)]; };
     const [d1, r1] = melt(D.cheese, 1.4), [d2, r2] = melt(D.cheese2, 1.6);
@@ -85,9 +86,9 @@ export async function createWorld(W, H, C) {
   steam.emitters = [
     // hook: wisps off the hot griddle around the ball, the smash puff, then crust steam (edges only, not over the top)
     { ...pe(0.4, 0.75), y: 0.2, spread: 0.6, rate: 9, t0: -1.0, t1: 0.9, life: 1.3, rise: 0.7, size: 0.7, op: 0.12 },
-    { x: 0, z: -0.2, y: 0.12, spread: 1.3, rate: 60, t0: 0.4, t1: 0.75, life: 1.0, rise: 1.6, size: 1.0, op: 0.42, drift: 0.12 },
-    { ...pe(2.2, 1.25), y: 0.15, spread: 0.5, rate: 10, t0: 0.4, t1: 2.2, life: 1.2, rise: 0.8, size: 0.6, op: 0.1 },
-    { ...pe(-0.6, 1.25), y: 0.15, spread: 0.5, rate: 10, t0: 0.4, t1: 2.2, life: 1.2, rise: 0.8, size: 0.6, op: 0.1 },
+    { x: 0, z: -0.2, y: 0.12, spread: 1.3, rate: 60, t0: 0.4, t1: 0.75, life: 1.0, rise: 1.6, size: 1.0, op: 0.42, drift: 0.12, gain: t => (t < C.shots[1].at ? 1 : 0) }, // the smash puff belongs to the hook; over the top-down crust it read as fog
+    { ...pe(2.2, 1.25), y: 0.15, spread: 0.5, rate: 10, t0: 0.4, t1: 2.2, life: 1.2, rise: 0.8, size: 0.6, op: 0.1, gain: t => (t < C.shots[1].at ? 1 : 0.55) },
+    { ...pe(-0.6, 1.25), y: 0.15, spread: 0.5, rate: 10, t0: 0.4, t1: 2.2, life: 1.2, rise: 0.8, size: 0.6, op: 0.1, gain: t => (t < C.shots[1].at ? 1 : 0.55) },
     // macro inserts on charcoal (backlit wisps behind the patty edge)
     { x: 0.3, z: -0.4, y: 0.6, spread: 0.8, rate: 22, t0: 3.0, t1: 6.0, life: 1.3, rise: 0.7, size: 0.7, op: 0.16, gain: t => inShots(t, ['S04', 'S06']) },
     // hero: a soft breath of steam rising behind the bun (rim-lit)
@@ -131,7 +132,7 @@ export async function createWorld(W, H, C) {
     const id = s.id, lt = t - s.at, k = clamp(lt / (s.end - s.at));
     const [shx, shy] = shake(t);
     let dof = { focus: 10, aperture: 0 }, grade = { bg: BG.red, exposure: 0.8, bgSpot: new THREE.Vector3(0.5, 0.56, 0.2), vignette: 0.26 };
-    const gradeBase = { flash: 0, bgSpot: new THREE.Vector3(0.5, 0.6, 0.24) }; // matches the value the full render carried into the inserts
+    const gradeBase = { flash: 0, flashCol: new THREE.Vector3(1, 0.96, 0.88), bgSpot: new THREE.Vector3(0.5, 0.6, 0.24) }; // every look uniform is set every frame
     if (id === 'S01') {
       setWorld('griddle', 'charcoal');
       L.key.position.set(-2.0, 5.0, 3.2); L.key.intensity = 150;
@@ -150,7 +151,10 @@ export async function createWorld(W, H, C) {
       const tyw = 0.05 + E.inCubic(whip) * 6.5;
       orbit({ az: lerp(0.3, 0.5, k), el: lerp(1.05, 0.98, k) - whip * 0.2, d: lerp(3.1, 2.85, k), ty: tyw, fov: 32 });
       dof = { focus: 3.0, aperture: 12, maxR: 18 };
-      grade = { bg: BG.deep, exposure: 0.88, vignette: 0.4 };
+      // whip: the void the camera tilts into takes the next shot's red ("effect becomes ground"), so the cut lands on colour, not black
+      const wb = sm(C.whip[0] + 0.02, C.shots[1].end - 0.01, t);
+      // (the camera tilts onto the dark griddle plate, so the frame itself dips into the next shot's red on the way out)
+      grade = { bg: BG.deep.clone().lerp(BG.red, wb), exposure: 0.8, vignette: lerp(0.4, 0.24, wb), flash: 0.92 * E.inQuad(wb), flashCol: BG.red };
     } else if (id === 'S03' || id === 'S05' || id === 'S07' || id === 'S09' || id === 'S10' || id === 'S11' || id === 'S12') {
       const bgk = id === 'S07' ? 'charcoal' : 'red';
       setWorld('stage', bgk);
@@ -196,6 +200,9 @@ export async function createWorld(W, H, C) {
       dof = { focus: lerp(5.4, 5.0, k), aperture: 12, maxR: 18 };
       grade = { bg: BG.charcoal, exposure: 0.95, vignette: 0.36 };
     }
+    // crust relief: full bump where we look down on it (top-down crust, macro edge); softer side-on, where a strong
+    // derivative bump on a foreshortened surface streaks into 'fur'. Shared material, set every frame.
+    B.L.patty.children[0].material.bumpScale = (id === 'S01' || id === 'S02' || id === 'S04' || id === 'S08') ? 3.2 : 1.1;
     cam.updateMatrixWorld();
     return { id, dof, grade: { ...gradeBase, ...grade } };
   }
@@ -227,22 +234,36 @@ export async function createWorld(W, H, C) {
   }
 
   /** motion-blur policy: number of sub-frames for time t */
-  function subCount(t) {
-    if (t >= C.whip[0] && t <= C.whip[1]) return 6;
-    if (t > C.smash - 0.045 && t < C.smash + 0.045) return 9;   // the slam itself: smooth, not strobed
-    if (t > C.smash - 0.08 && t < C.smash + 0.12) return 5;
-    if (t > D.sauce && t < D.sauce + 0.18) return 4;
-    if (t > C.smash && t < C.smash + 0.25) return 4;
-    const THIN = ['cheese', 'cheese2', 'pickles', 'onions'];  // thin layers need dense sub-frames or the blur steps into ghost copies
-    for (const k of ORDER) { const l = D[k]; if (t > l - 0.16 && t < l - 0.005) return THIN.includes(k) ? 10 : 4; } // blur the visible fall; the impact frame stays crisp
-    return 1;
+  // ECD pass: sub-frame count follows the on-screen smear of the fastest falling layer (echo spacing ≤ ~11 px), so falls blur
+  // instead of stepping into ghost copies. Falls use a 108° shutter; the impact frame stays crisp.
+  const FALL = k => (k === 'crown' ? { fall: 0.25, h: 3.4 } : k === 'heel' ? { fall: 0.25, h: 3.0 } : k.startsWith('cheese') ? { fall: 0.2, h: 2.4 } : { fall: k === 'sauce' ? 0.25 : 0.22, h: 2.6 });
+  const FALL_SHUTTER = 0.3;
+  function fallSmear(t) {
+    let px = 0;
+    for (const k of ORDER) {
+      const l = D[k], { fall, h } = FALL(k);
+      if (t > l - fall && t < l - 0.005) { const p = (t - (l - fall)) / fall, v = 2 * h * p / fall; px = Math.max(px, v * FALL_SHUTTER / C.fps * 440); }
+    }
+    return px;
   }
+  function subCount(t) {
+    if (t >= 1.98 && t <= 2.12) return 12;                      // fastest part of the whip-out
+    if (t >= C.whip[0] && t <= C.whip[1]) return 8;
+    if (t > C.smash - 0.045 && t < C.smash + 0.045) return 9;   // the slam itself: smooth, not strobed
+    if (t > C.smash - 0.08 && t < C.smash + 0.12) return 6;
+    if (t > D.sauce && t < D.sauce + 0.1) return 8;              // splat spikes move fast
+    if (t >= D.sauce + 0.1 && t < D.sauce + 0.18) return 4;
+    if (t > C.smash && t < C.smash + 0.25) return 4;
+    const px = fallSmear(t);
+    return px > 6 ? Math.min(10, Math.ceil(px / 11) + 1) : 1;
+  }
+  const shutterFor = t => (fallSmear(t) > 6 && !(t >= C.whip[0] && t <= C.whip[1]) && !(t > C.smash - 0.08 && t < C.smash + 0.25) && !(t > D.sauce && t < D.sauce + 0.18) ? FALL_SHUTTER : 0.5);
 
   const state = t => { burgerState(t); hookState(t); steam.update(t); sauceSplash.update(t, D.sauce + 0.005, new THREE.Vector3(0, B.REST.sauce + 0.04, 0), { spread: 2.6, upK: 1.5, g: 9, life: 0.55, ring: 0.45 }); };
 
-  const POSTER_CAM = { az: 0.12, el: 0.07, d: 11.6, ty: 1.02, fov: 24 };
+  const POSTER_CAM = { az: 0.12, el: 0.07, d: 12.5, ty: 0.99, fov: 24 };   // burger sits between the title and the CTA row (slate stays reel-safe)
   function render(t, { clean = false, aa = 0, posterCam = false } = {}) {
-    const fps = C.fps, mb = posterCam ? 1 : subCount(t), N = Math.max(mb, aa || 1), shutter = mb > 1 ? 0.5 / fps : 0;
+    const fps = C.fps, mb = posterCam ? 1 : subCount(t), N = Math.max(mb, aa || 1), shutter = mb > 1 ? shutterFor(t) / fps : 0;
     const st = shotState(t);
     if (posterCam) { orbit(POSTER_CAM); cam.updateMatrixWorld(); st.dof = { focus: POSTER_CAM.d, aperture: 5, maxR: 10 }; }
     const sub = Array.from({ length: N }, (_, i) => () => {

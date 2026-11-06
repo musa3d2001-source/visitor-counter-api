@@ -2,7 +2,7 @@
 <!-- CLIENT AD POSTER — 4:5 (1080×1350) or 9:16 (1080×1920) from the same data. This one is in the CLIENT's palette and
      type; TASH appears only in the concept strip (CONCEPT AD slate + «إعلان تجريبي — علامة خيالية» + a small wordmark).
      slots: product (image src, or a generated placeholder shape) · headline · offer {label, value, unit} · cta · logo
-     data: size '4x5'|'9x16' · palette {ground, light, accent, deep, cream, metal} · motif 'slice'|'none'
+     data: size '4x5'|'9x16' · palette {ground, light, accent, deep, cream, metal, husk, rind, flesh} · motif 'slice'|'none'
            · product { src } | { placeholder: 'can', label: {en, ar} } · headline · offer · cta
            · logo { en, ar } | { src } · concept { slate, ar } -->
 <html lang="ar" dir="rtl"><head><meta charset="utf-8">
@@ -36,17 +36,36 @@
 import { run, COL, CONCEPT_AR, LOGO } from '/03-templates/src/tpl.js';
 
 // ---- generated shapes (obviously placeholders / client motifs, all code-made) ------------------------------------
-function slice({ r = 330, accent, deep, cream }) {           // a dried-lime (لومي) cross-section, geometric
-  const n = 10, s = [], ro = r * 0.80, ri = r * 0.07;
+function slice({ r = 330, husk = '#1C1009', rind = '#7A4C24', flesh = '#94592A', deep = '#3B2414' }) {
+  // a DRIED black lime (لومي) cut in half — not a fresh citrus: a wrinkled near-black husk, a thin tan rind, shrivelled
+  // amber-brown segments of uneven size around a hollow centre. Deterministic wobble (sums of sines), no randomness.
+  const C = r, f = v => v.toFixed(1);
+  const wob = (R, a, k, amt = 1) => R * (1 + amt * (0.017 * Math.sin(7 * a + k) + 0.011 * Math.sin(12 * a + 2.1 * k) + 0.006 * Math.sin(23 * a + 0.7 * k)));
+  const P = (R, a) => `${f(C + R * Math.cos(a))} ${f(C + R * Math.sin(a))}`;
+  const blob = (R, k, amt = 1, n = 160) => 'M' + Array.from({ length: n }, (_, i) => { const a = i / n * Math.PI * 2; return P(wob(R, a, k, amt), a); }).join(' L') + ' Z';
+  const n = 10, segs = [], fibres = [];
   for (let i = 0; i < n; i++) {
-    const a0 = (i / n) * Math.PI * 2 + 0.028, a1 = ((i + 1) / n) * Math.PI * 2 - 0.028;
-    const p = (rr, a) => `${(r + rr * Math.cos(a)).toFixed(1)} ${(r + rr * Math.sin(a)).toFixed(1)}`;
-    s.push(`<path d="M${p(ri, (a0 + a1) / 2)} L${p(ro, a0)} A${ro} ${ro} 0 0 1 ${p(ro, a1)} Z" fill="${accent}" stroke="${accent}" stroke-width="10" stroke-linejoin="round"/>`);
+    const shr = 0.9 + 0.1 * Math.sin(i * 2.37 + 0.6);           // dried segments shrink unevenly
+    const ro = r * 0.73 * shr, ri = r * 0.16, g = 0.045, a0 = (i / n) * Math.PI * 2 + g, a1 = ((i + 1) / n) * Math.PI * 2 - g;
+    const outer = Array.from({ length: 9 }, (_, j) => { const a = a0 + (a1 - a0) * j / 8; return P(wob(ro, a, i, 1.6), a); });
+    segs.push(`<path d="M${P(ri, a0 + 0.12)} L${outer.join(' L')} L${P(ri, a1 - 0.12)} Z" fill="url(#lf)" stroke="url(#lf)" stroke-width="10" stroke-linejoin="round"/>`);
+    for (const t of [0.34, 0.66]) { const a = a0 + (a1 - a0) * t; fibres.push(`<path d="M${P(ri * 1.35, a)} L${P(ro * 0.9, a + 0.02)}" stroke="#2A160A" stroke-opacity=".38" stroke-width="2.5" stroke-linecap="round"/>`); }
   }
+  const creases = Array.from({ length: 46 }, (_, i) => { const a = i / 46 * Math.PI * 2 + 0.05 * Math.sin(i * 3.1); const R0 = r * (0.885 + 0.02 * Math.sin(i * 1.7)); return `<path d="M${P(R0, a)} L${P(r * 0.985, a + 0.03 * Math.sin(i))}" stroke="#000" stroke-opacity=".45" stroke-width="2" stroke-linecap="round"/>`; }).join('');
   return `<svg width="${2 * r}" height="${2 * r}" viewBox="0 0 ${2 * r} ${2 * r}" style="display:block;overflow:visible">
-    <circle cx="${r}" cy="${r}" r="${r}" fill="${deep}"/>
-    <circle cx="${r}" cy="${r}" r="${r * 0.885}" fill="${cream}" opacity=".92"/>
-    ${s.join('')}<circle cx="${r}" cy="${r}" r="${r * 0.05}" fill="${cream}"/></svg>`;
+    <defs>
+      <radialGradient id="lh" cx="0.72" cy="0.24" r="0.9"><stop offset="0" stop-color="#5A3A20"/><stop offset=".45" stop-color="${husk}"/><stop offset="1" stop-color="#0E0703"/></radialGradient>
+      <radialGradient id="lf" gradientUnits="userSpaceOnUse" cx="${C}" cy="${C}" r="${r * 0.74}"><stop offset=".2" stop-color="#3A1F0C"/><stop offset=".75" stop-color="${flesh}"/><stop offset="1" stop-color="#A9712F"/></radialGradient>
+      <radialGradient id="ll" cx="0.7" cy="0.3" r="0.8"><stop offset="0" stop-color="#fff" stop-opacity=".16"/><stop offset=".6" stop-color="#fff" stop-opacity="0"/></radialGradient>
+    </defs>
+    <ellipse cx="${C + r * 0.06}" cy="${C + r * 0.96}" rx="${r * 0.86}" ry="${r * 0.1}" fill="#000" opacity=".22"/>
+    <clipPath id="lc"><path d="${blob(r, 0.4)}"/></clipPath>
+    <path d="${blob(r, 0.4)}" fill="url(#lh)"/><g clip-path="url(#lc)">${creases}</g>
+    <path d="${blob(r * 0.86, 1.3, 0.8)}" fill="${rind}"/>
+    <path d="${blob(r * 0.79, 2.2, 1.1)}" fill="#2B170B"/>
+    ${segs.join('')}${fibres.join('')}
+    <path d="${blob(r * 0.15, 3.1, 2.2)}" fill="#140A04"/>
+    <path d="${blob(r * 0.79, 2.2, 1.1)}" fill="url(#ll)"/></svg>`;
 }
 function can({ w = 270, h = 520, body, deep, metal, accent, en = 'BRAND', ar = 'علامة' }) {  // a plain can, flat-lit
   const e = w * 0.13;                                          // ellipse half-height (perspective)
@@ -83,7 +102,7 @@ const LAYOUT = {   // [x, y] are px; RTL anchors use right
 
 run(async (d, { stage, rich, h, put, linesOf, fit }) => {
   const L = LAYOUT[d.size || '4x5'];
-  const P = { ground: '#0F3D3A', light: 'rgba(255,240,200,0.10)', accent: '#E8A23A', deep: '#3B2414', cream: '#F3E9D2', metal: '#B9BEBD', ...(d.palette || {}) };
+  const P = { ground: '#0F3D3A', light: 'rgba(255,240,200,0.10)', accent: '#E8A23A', deep: '#3B2414', cream: '#F3E9D2', metal: '#B9BEBD', husk: '#1C1009', rind: '#7A4C24', flesh: '#94592A', ...(d.palette || {}) };
   for (const [k, v] of Object.entries(P)) stage.style.setProperty('--c-' + k, v);
   const pr = d.product || { placeholder: 'can' };
   const productEl = h('div', { class: 'product', style: `left:${L.product.left}px;top:${L.product.top}px;width:${L.product.w}px` });

@@ -2,7 +2,7 @@
 <!-- ANIMATED STORY 1080×1920 · 7 s · «شغل جديد» — template: same data file as templates/story-new-work.html.
      A (0–1.8): typing bubble + «شغل جديد» → the three dots grow into the brand dots-wipe (full lime cover, cut hidden)
      B (1.8–7): the dots shrink and fly into the headline as its ellipsis, revealing the new piece on its plate →
-     line resolves word by word → label → TASH signature → the dots type once more (people are talking).
+     line resolves word by word → label → one light sweep over the piece → TASH signature → the dots type once more (people are talking).
      Pure function of t. Timing: cues.json (shared with audio.py). Data: ?data=/03-templates/data/story-new-work-01.json -->
 <html lang="ar" dir="rtl"><head><meta charset="utf-8">
 <link rel="stylesheet" href="/_system/tokens.css"><link rel="stylesheet" href="/03-templates/src/base.css">
@@ -16,6 +16,8 @@
   #line .w { display: inline-block; }
   #plate { left: 96px; top: 600px; width: 888px; height: 790px; overflow: hidden; z-index: 5; background: #0D0C0A; }
   #plate img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; transform-origin: 50% 0%; }
+  #plate .sweep { position: absolute; top: -10%; bottom: -10%; left: 0; width: 100%; mix-blend-mode: overlay; pointer-events: none;
+                  background: linear-gradient(104deg, rgba(255,238,210,0) 42%, rgba(255,238,210,.42) 47.5%, rgba(255,240,215,.78) 50%, rgba(255,238,210,.42) 52.5%, rgba(255,238,210,0) 58%); }
   #plate .shade { position: absolute; left: 0; right: 0; bottom: 0; height: 220px; background: linear-gradient(to top, rgba(8,7,6,.7), rgba(8,7,6,0)); }
   #concept { left: 96px; right: 96px; top: 1562px; z-index: 9; display: flex; justify-content: flex-end; gap: 22px; align-items: baseline; direction: ltr; }
   #concept .slate { color: var(--smoke); font-size: 20px; }
@@ -48,7 +50,8 @@ stage.append(el('div', { id: 'light' }));
 const plate = el('div', { id: 'plate', class: 'abs' });
 const img = el('img', { src: D.image.src, alt: '' });
 img.style.objectPosition = `${D.image.fx ?? 50}% ${D.image.fy ?? 50}%`;
-plate.append(img, el('div', { class: 'shade' }));
+const sweep = el('div', { class: 'sweep' });                 // ONE light sweep across the piece (the hold stays alive)
+plate.append(img, sweep, el('div', { class: 'shade' }));
 stage.append(plate);
 const conc = el('div', { id: 'concept', class: 'abs' }, `<div class="slate">${esc(D.concept?.slate || 'CONCEPT AD')}</div><div class="concept-ar">${esc(D.concept?.ar || CONCEPT_AR)}</div>`);
 stage.append(conc);
@@ -145,6 +148,9 @@ function seek(t) {
   // plate: already moving at the cut, slow creep
   const creep = 1.0 + 0.055 * clamp((t - C.cut) / (C.duration - C.cut));
   css(img, { transform: `scale(${creep.toFixed(4)})` });
+  // light sweep: right → left (forward in Arabic), S-curve, once — brightens the glass and liquid, leaves the black alone
+  const sw = E.inOutSine(clamp((t - C.sweep.start) / C.sweep.dur));
+  css(sweep, { transform: `translateX(${lerp(105, -105, sw).toFixed(2)}%)`, opacity: sw > 0 && sw < 1 ? '1' : '0' });
   // line: blur-resolve per word, back to back (4 f each)
   lw.forEach((s, i) => {
     const p = clamp((t - C.line - i * 0.12) / 0.2);

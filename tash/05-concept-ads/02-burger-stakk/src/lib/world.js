@@ -172,7 +172,7 @@ export class Droplets {
       const vx = Math.cos(d.a) * d.v * spread, vz = Math.sin(d.a) * d.v * spread, vy = d.up * upK * 2.2;
       P.set(o.x + Math.cos(d.a) * ring + vx * a2, o.y + vy * a2 - 0.5 * g * a2 * a2, o.z + Math.sin(d.a) * ring + vz * a2);
       V.set(vx, vy - g * a2, vz);
-      const sp = V.length(); const stretch = 1 + Math.min(4.5, sp * 0.45); // long enough to bridge motion-blur sub-frames
+      const sp = V.length(); const stretch = 1 + Math.min(14, sp * 0.0065 / Math.max(1e-4, d.s)); // streak ≥ the sub-frame step: continuous, not beaded
       q.setFromUnitVectors(new THREE.Vector3(0, 1, 0), V.clone().normalize());
       const fade = 1 - smooth(0.7, 1, age / life);
       const s = a2 > 0 && P.y > -0.02 ? d.s * fade : 0;

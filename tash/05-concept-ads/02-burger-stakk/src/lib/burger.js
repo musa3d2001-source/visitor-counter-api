@@ -136,14 +136,14 @@ export function buildBun(kind, seed = 3) {
   // toasted cut face
   const R = crown ? 0.9 : 0.905;
   const ct = crumbTextures(seed + 11, { toast: crown ? 0.85 : 1.0, R });
-  const face = new THREE.Mesh(new THREE.CircleGeometry(R * 1.0, 128),
+  const face = new THREE.Mesh(new THREE.CircleGeometry(R * (crown ? 1.0 : 1.012), 128),
     new THREE.MeshPhysicalMaterial({ map: ct.map, bumpMap: ct.bump, bumpScale: 1.2, roughnessMap: ct.rough, roughness: 1, sheen: 0.3, sheenColor: new THREE.Color('#ffd28a'), envMapIntensity: 0.4, specularIntensity: 0.6 }));
   // CircleGeometry lies in XY facing +Z → rotate to lie in XZ
   face.geometry.rotateX(crown ? Math.PI / 2 : -Math.PI / 2);
   const uv = face.geometry.attributes.uv; // re-derive planar uv from xz so pores are not mirrored weirdly
   const fp = face.geometry.attributes.position;
   for (let k = 0; k < fp.count; k++) uv.setXY(k, fp.getX(k) / (2 * R) + 0.5, fp.getZ(k) / (2 * R) + 0.5);
-  face.position.y = crown ? 0.002 : 0.383;
+  face.position.y = crown ? 0.002 : 0.379;
   face.castShadow = false; face.receiveShadow = true; g.add(face);
 
   if (crown) g.add(buildSesame(curve, disp, seed));
@@ -212,16 +212,17 @@ export function buildPatty(seed = 5, { droop = 0.0, texRes = 2048 } = {}) {
     const r = u * S.R(ph) * 1.06, x = r * Math.cos(ph), z = r * Math.sin(ph);
     const d = droop * Math.max(0, r - 0.86) ** 2;
     const curl = 0.028 * smooth(0.86, 1.0, u) * (0.6 + 0.4 * nAng(ph, 3, seed + 9));
-    if (s === 0) return [x, S.top(x, z, u) - d + curl, z];
+    if (s === 0) return [x, S.top(x, z, u) - d + curl + 0.006 * (ridged(x * 26 + seed, z * 26, 4.1, 2) - 0.55) * (1 - 0.6 * u), z]; // fine crags
     return [x, -S.hh(u) * 0.9 - 0.004 * fbm(x * 6, z * 6, seed + 4, 2) - d + curl, z];
   };
   const geo = polarSolid({ rings: 110, segs: 300, pos, uvR: 1.3 });
   const tx = pattyTextures(S, seed, texRes, 1.3);
+  // ECD pass: no orange sheen veil (it read as smoke); dry matte crust + sparse wet fat glints via the clearcoat map
   const mat = new THREE.MeshPhysicalMaterial({
-    map: tx.map, roughnessMap: tx.rough, roughness: 1, bumpMap: tx.bump, bumpScale: 2.2,
+    map: tx.map, roughnessMap: tx.rough, roughness: 1, bumpMap: tx.bump, bumpScale: 3.2,
     alphaMap: tx.alpha, alphaTest: 0.5, side: THREE.DoubleSide,
-    clearcoat: 0.7, clearcoatMap: tx.wet, clearcoatRoughness: 0.12, sheen: 0.1, sheenRoughness: 0.5, sheenColor: new THREE.Color('#ff9a50'),
-    envMapIntensity: 0.35, specularIntensity: 0.45,
+    clearcoat: 0.85, clearcoatMap: tx.wet, clearcoatRoughness: 0.08, sheen: 0.0,
+    envMapIntensity: 0.3, specularIntensity: 0.35,
   });
   const m = new THREE.Mesh(geo, mat); m.castShadow = m.receiveShadow = true;
   m.customDepthMaterial = new THREE.MeshDepthMaterial({ depthPacking: THREE.RGBADepthPacking, alphaMap: tx.alpha, alphaTest: 0.5 });
@@ -230,35 +231,45 @@ export function buildPatty(seed = 5, { droop = 0.0, texRes = 2048 } = {}) {
 }
 
 function pattyTextures(S, seed, res, uvR) {
-  const dark = hex('#1C0C06'), mid = hex('#3A1A0B'), hi = hex('#653013'), cara = hex('#8F4F20'), red = hex('#561C10'), char = hex('#120703');
+  // ECD pass: a real smash crust is deep mahogany with fine craggy relief, dark lacy edges, caramel tips and a few wet fat glints.
+  const valley = hex('#3C281C'), mid = hex('#25170F'), deep = hex('#130B07'), char = hex('#0A0604'), cara = hex('#6A4022'), tip = hex('#9A6232');
   const [map, rough, bump, alpha, wetm] = paintMulti(res, res, [{ srgb: true }, {}, {}, {}, {}], (u, v, [c, r, b, a, w]) => {
     const x = (u - 0.5) * 2 * uvR, z = (v - 0.5) * 2 * uvR;
     const rr = Math.hypot(x, z), ph = Math.atan2(z, x), Rp = S.R(ph) * 1.06, uu = rr / Rp;
-    const cr = S.crust(x, z);
-    const f1 = fbm(x * 7, z * 7, seed + 5, 3), f2 = fbm(x * 3, z * 3, seed + 9, 3), f3 = fbm(x * 30, z * 30, seed + 2, 2);
-    let col = mixc(dark, mid, smooth(0.25, 0.55, cr));
-    col = mixc(col, hi, smooth(0.55, 0.8, cr));
-    col = mixc(col, cara, smooth(0.78, 0.95, cr) * 0.8);
-    col = mixc(col, red, smooth(0.15, 0.45, f2) * 0.35);
-    col = mixc(col, char, smooth(0.35, 0.6, f1) * 0.5);
-    // lacy edge: darker, crispier, golden filaments
-    const lace = ridged(x * 11 + seed, z * 11, 2.2, 3);
-    const blob = 0.5 + 0.5 * fbm(x * 6.5, z * 6.5, seed + 20, 3), holes = fbm(x * 18, z * 18, seed + 30, 2);
-    const edge = smooth(0.8, 0.97, uu);
-    col = mixc(col, mixc(hex('#1E0D06'), hex('#9A5626'), smooth(0.45, 0.9, lace) * 0.8), edge * 0.85);
-    const k = 1 + f3 * 0.12;
+    const cr = S.crust(x, z);                                         // large plates (matches the geometry)
+    const b1 = 0.5 + 0.5 * fbm(x * 21 + seed, z * 21, 0.9, 3);        // crust nubs
+    const b2 = 0.5 + 0.5 * fbm(x * 47, z * 47 + seed, 2.7, 2);        // grain
+    const cv = smooth(0.84, 0.97, ridged(x * 15, z * 15, seed + 4.4, 2)); // dark cracks between plates
+    const f3 = fbm(x * 90, z * 90, seed + 2, 1);                      // micro grain
+    const sear = 0.5 + 0.5 * fbm(x * 2.4, z * 2.4, seed + 9, 3);      // where the press seared hardest
+    const nub = smooth(0.45, 0.85, b1 * 0.7 + b2 * 0.3);
+    let col = mixc(valley, mid, smooth(0.3, 0.65, sear));
+    col = mixc(col, deep, smooth(0.55, 0.9, sear) * 0.6);
+    col = mixc(col, deep, (1 - nub) * 0.45);                          // low spots darker
+    col = mixc(col, cara, nub * 0.5);                                 // raised nubs caramelise
+    col = mixc(col, tip, smooth(0.8, 0.95, b1) * smooth(0.5, 0.9, b2) * 0.45);
+    col = mixc(col, char, cv * 0.75);                                 // cracks
+    col = mixc(col, char, smooth(0.7, 0.85, fbm(x * 31, z * 31, seed + 5, 2)) * 0.35); // tiny char flecks
+    // lacy edge: crisp, darker, with caramel filaments
+    const lace = ridged(x * 8 + seed, z * 8, 2.2, 3);
+    const blob = 0.5 + 0.5 * fbm(x * 4.2, z * 4.2, seed + 20, 3), holes = fbm(x * 9, z * 9, seed + 30, 2);
+    const edge = smooth(0.84, 0.98, uu);   // narrower, chunkier lace: seen edge-on, fine holes streaked into 'hair'
+    col = mixc(col, mixc(hex('#24120A'), hex('#8E5224'), smooth(0.5, 0.92, lace) * 0.85), edge * 0.85); // thin lace browns lighter + crisp
+    const k = 1 + f3 * 0.16;
     c[0] = clamp(col[0] * k, 0, 255); c[1] = clamp(col[1] * k, 0, 255); c[2] = clamp(col[2] * k, 0, 255);
-    // roughness: juicy wet patches
-    const wet = smooth(0.18, 0.42, fbm(x * 5, z * 5, seed + 13, 3)) * smooth(0.55, 0.75, cr) + 0.6 * smooth(0.7, 0.85, fbm(x * 22, z * 22, seed + 15, 2));
-    const ro = mix(0.84, 0.26, clamp(wet) * (1 - edge * 0.7)) + f3 * 0.04;
+    // wet fat: sparse glints on ridge tops + a few juicy pools
+    const glint = smooth(0.28, 0.46, fbm(x * 24, z * 24, seed + 15, 2)) * smooth(0.4, 0.8, nub);
+    const pool = smooth(0.3, 0.5, fbm(x * 5, z * 5, seed + 13, 3)) * 0.35;
+    const wet = clamp(glint + pool) * (1 - edge * 0.6);
+    const ro = mix(0.88, 0.3, wet) + f3 * 0.04;
     r[0] = r[1] = r[2] = clamp(ro * 255, 0, 255);
-    w[0] = w[1] = w[2] = clamp(clamp(wet) * (1 - edge * 0.7) * 255, 0, 255);
-    const bb = cr * 0.55 + 0.3 * ridged(x * 26, z * 26, seed, 3) + 0.15 * (0.5 + 0.5 * f3);
+    w[0] = w[1] = w[2] = clamp(wet * 255, 0, 255);
+    const bb = cr * 0.25 + 0.42 * b1 + 0.18 * b2 + 0.05 * (0.5 + 0.5 * f3) - 0.3 * cv + 0.15;
     b[0] = b[1] = b[2] = clamp(bb * 255, 0, 255);
     // alpha (lace holes): keep ridges near the rim
-    const thr = smooth(0.82, 1.0, uu);
-    const kv = blob + 0.28 * holes + 0.1 * lace - thr * 0.95;
-    const keep = uu < 0.82 ? 1 : (kv > 0.32 ? 1 : 0);
+    const thr = smooth(0.88, 1.0, uu);
+    const kv = blob + 0.22 * holes + 0.08 * lace - thr * 0.9;
+    const keep = uu < 0.88 ? 1 : (kv > 0.3 ? 1 : 0);
     a[0] = a[1] = a[2] = uu > 1.0 ? 0 : keep * 255;
   });
   return { map, rough, bump, alpha, wet: wetm };
@@ -289,26 +300,61 @@ export function buildSmashPatty(seed = 21) {
   const [map, bump, rough] = paintMulti(1024, 1024, [{ srgb: true }, {}, {}], (u, v, [c, b, ro]) => {
     const x = (u - 0.5) * 2.6, z = (v - 0.5) * 2.6, rr = Math.hypot(x, z);
     // ground beef: tangled strands of lean + flecks of fat
-    const st1 = ridged(x * 26 + seed, z * 26, 3.1, 3), st2 = ridged(x * 41, z * 41 + seed, 5.3, 2);
+    const st1 = ridged(x * 17 + seed, z * 17, 3.1, 3), st2 = ridged(x * 33, z * 33 + seed, 5.3, 2);
     const strands = Math.max(st1, st2 * 0.9);
     const fat = smooth(0.58, 0.74, fbm(x * 30, z * 30, seed + 3, 2)) * 0.9 + smooth(0.8, 0.9, st2) * 0.3;
-    let col = mixc(hex('#7A1C24'), hex('#BE3E48'), smooth(0.3, 0.85, strands));
-    col = mixc(col, hex('#D2565E'), smooth(0.85, 0.97, strands) * 0.6);
-    col = mixc(col, hex('#F2D2C8'), clamp(fat) * 0.85);
+    let col = mixc(hex('#4A0E14'), hex('#9A2430'), smooth(0.3, 0.85, strands));
+    col = mixc(col, hex('#B83A44'), smooth(0.85, 0.97, strands) * 0.5);
+    col = mixc(col, hex('#E8C4BA'), clamp(fat) * 0.8);
     col = mixc(col, hex('#4A1E10'), smooth(0.82, 1.05, rr / 1.1) * 0.9); // seared rim
     c[0] = col[0]; c[1] = col[1]; c[2] = col[2];
     b[0] = b[1] = b[2] = clamp((strands * 0.75 + fat * 0.25) * 255, 0, 255);
     ro[0] = ro[1] = ro[2] = clamp((0.5 - 0.25 * fat - 0.12 * strands) * 255, 0, 255);
   });
-  const mat = new THREE.MeshPhysicalMaterial({ map, bumpMap: bump, bumpScale: 4, roughnessMap: rough, roughness: 1, clearcoat: 0.25, clearcoatRoughness: 0.35, sheen: 0.3, sheenRoughness: 0.5, sheenColor: new THREE.Color('#ff7070'), envMapIntensity: 0.45, specularIntensity: 0.7 });
+  const mat = new THREE.MeshPhysicalMaterial({ map, bumpMap: bump, bumpScale: 6, roughnessMap: rough, roughness: 1, clearcoat: 0.35, clearcoatRoughness: 0.25, sheen: 0.12, sheenRoughness: 0.6, sheenColor: new THREE.Color('#c03040'), envMapIntensity: 0.4, specularIntensity: 0.6 });
   const m = new THREE.Mesh(g0, mat); m.castShadow = m.receiveShadow = true;
   m.morphTargetInfluences = [0];
   return m;
 }
 
+// ------------------------------------------------------------------ DRIP: closed root blob → thin neck → round bulb (bulb stays round at any length)
+export class Drip {
+  constructor(mat, { root = 0.034, neck = 0.012, bulb = 0.024, n = 44, segs = 22 } = {}) {
+    this.o = { root, neck, bulb }; this.n = n; this.segs = segs;
+    const V = n * (segs + 1), P = new Float32Array(V * 3), I = [];
+    for (let i = 0; i < n - 1; i++) for (let j = 0; j < segs; j++) {
+      const a = i * (segs + 1) + j, b = a + 1, c = a + segs + 1, d = c + 1; I.push(a, b, c, b, d, c); // outward-facing
+    }
+    this.geo = new THREE.BufferGeometry(); this.geo.setAttribute('position', new THREE.BufferAttribute(P, 3)); this.geo.setIndex(I);
+    this.mesh = new THREE.Mesh(this.geo, mat); this.mesh.castShadow = true; this.mesh.frustumCulled = false;
+    this.L = -1; this.set(0.05);
+  }
+  set(L) {
+    L = Math.max(0.02, L); if (Math.abs(L - this.L) < 1e-5) return; this.L = L;
+    const { root, neck, bulb } = this.o, n = this.n, segs = this.segs, P = this.geo.attributes.position.array;
+    const rb = Math.min(bulb * (0.8 + 0.8 * Math.min(1, L / 0.25)), L * 0.42, root * 0.78), top = root * 0.75, cy = -(L - rb);
+    const nk = mix(root * 0.82, neck, smooth(0.07, 0.24, L));   // short drips are one teardrop; long ones grow a neck
+    for (let i = 0; i < n; i++) {
+      const y = top - (top + L) * (i / (n - 1));
+      let r;
+      // neck: dome root → zero-slope taper to the neck → continues under the bulb; bulb: sphere. Joined with a polynomial smooth-max (no crease).
+      let rn;
+      if (y > 0) rn = root * Math.sqrt(Math.max(0, 1 - (y / top) ** 2));
+      else if (y >= cy) { const q = Math.min(1, -y / Math.max(1e-3, -cy)); rn = nk + (root - nk) * (1 - smooth(0, 1, q)); }
+      else rn = nk * Math.sqrt(Math.max(0, 1 - ((y - cy) / rb) ** 2));
+      const dy = y - cy, rs = Math.abs(dy) < rb ? Math.sqrt(rb * rb - dy * dy) : 0, kk = 0.012;
+      r = (rn + rs + Math.sqrt((rn - rs) ** 2 + kk * kk)) / 2 - kk / 2;
+      if (y <= cy - rb) r = 0;
+      if (i === n - 1) r = 0;
+      for (let j = 0; j <= segs; j++) { const a = j / segs * TAU, k = (i * (segs + 1) + j) * 3; P[k] = r * Math.cos(a); P[k + 1] = y; P[k + 2] = r * Math.sin(a); }
+    }
+    this.geo.attributes.position.needsUpdate = true; this.geo.computeVertexNormals(); this.geo.computeBoundingSphere();
+  }
+}
+
 // ------------------------------------------------------------------ CHEESE (thick sheet with gravity drape + drips)
 export class Cheese {
-  constructor(support, { size = 2.12, N = 72, thick = 0.03, rot = 0.38, seed = 8 } = {}) {
+  constructor(support, { size = 1.9, N = 72, thick = 0.03, rot = 0.38, seed = 8 } = {}) {
     this.S = support; this.size = size; this.N = N; this.thick = thick; this.rot = rot; this.seed = seed;
     const V = (N + 1) * (N + 1);
     this.pos = new Float32Array(V * 2 * 3);
@@ -350,9 +396,7 @@ export class Cheese {
     this.mesh = new THREE.Mesh(this.geo, this.mat); this.mesh.castShadow = this.mesh.receiveShadow = true;
     this.group = new THREE.Group(); this.group.add(this.mesh); this.group.name = 'cheese';
     // drips (teardrop lathes, scaled by length)
-    const prof = []; for (let k = 0; k <= 32; k++) { const s = k / 32; const r = 0.03 - 0.012 * smooth(0, 0.5, s) + 0.016 * smooth(0.55, 0.85, s); const end = s > 0.85 ? Math.sqrt(Math.max(0, 1 - ((s - 0.85) / 0.15) ** 2)) : 1; prof.push(new THREE.Vector2(Math.max(1e-4, r * end), -s)); }
-    this.dripGeo = new THREE.LatheGeometry(prof, 24);
-    this.drips = [0, 2].map(c => { const d = new THREE.Mesh(this.dripGeo, this.mat); d.castShadow = true; d.userData.corner = c; this.group.add(d); return d; });
+    this.drips = [0, 2].map(c => { const dr = new Drip(this.mat, { root: 0.038, neck: 0.017, bulb: 0.027 }); const d = dr.mesh; d.userData.drip = dr; d.userData.corner = c; this.group.add(d); return d; });
     this.update(0, 0);
   }
   /** drape: 0 = rigid flat slice, 1 = fully melted; drip: 0..1 drip length */
@@ -406,8 +450,8 @@ export class Cheese {
     this.drips.forEach((d, n) => {
       const [i, j] = corners[d.userData.corner]; const k = (i * (N + 1) + j) * 3;
       const L = 0.03 + drip * (n === 0 ? 0.26 : 0.17);
-      d.position.set(P[k] * 0.99, P[k + 1] + 0.01, P[k + 2] * 0.99);
-      d.scale.set(1, L, 1);
+      d.position.set(P[k] * 0.985, P[k + 1] - 0.004, P[k + 2] * 0.985);   // root blob sits on the corner tip
+      d.userData.drip.set(L);
       d.visible = drip > 0.01 && drape > 0.4;
     });
   }
@@ -419,18 +463,18 @@ export function buildPickles(seed = 31, layout) {
   const tex = paint(512, 512, (u, v, c) => {
     const x = (u - 0.5) * 2, z = (v - 0.5) * 2, rr = Math.hypot(x, z), ph = Math.atan2(z, x);
     const f = fbm(x * 5, z * 5, seed, 3);
-    let col = mixc(hex('#9EA640'), hex('#B8BA62'), smooth(0.7, 0.2, rr) + f * 0.2);
-    col = mixc(col, hex('#556317'), smooth(0.8, 0.9, rr));
-    col = mixc(col, hex('#34420E'), smooth(0.93, 0.98, rr));
+    let col = mixc(hex('#7E7A26'), hex('#9C9440'), smooth(0.7, 0.2, rr) + f * 0.2);
+    col = mixc(col, hex('#4E5214'), smooth(0.8, 0.9, rr));
+    col = mixc(col, hex('#2C320A'), smooth(0.93, 0.98, rr));
     // seeds around a ring
     const seg = TAU / 8, da = (((ph + seed) % seg) + seg) % seg - seg / 2;
     const e = Math.hypot((rr - 0.36) / 0.1, (rr * da) / 0.055);
     const seedMask = smooth(1.0, 0.6, e) * (0.7 + 0.3 * f);
-    col = mixc(col, hex('#E2DDA8'), seedMask * 0.8);
-    col = mixc(col, hex('#CBCB82'), smooth(0.25, 0.0, rr) * 0.5);
+    col = mixc(col, hex('#BDB36A'), seedMask * 0.6);
+    col = mixc(col, hex('#A9A256'), smooth(0.25, 0.0, rr) * 0.4);
     c[0] = col[0]; c[1] = col[1]; c[2] = col[2];
   });
-  const mat = new THREE.MeshPhysicalMaterial({ map: tex, roughness: 0.2, clearcoat: 1, clearcoatRoughness: 0.12, sheen: 0.3, sheenColor: new THREE.Color('#e8f0a0'), emissive: new THREE.Color('#4a5a10'), emissiveIntensity: 0.12 });
+  const mat = new THREE.MeshPhysicalMaterial({ map: tex, roughness: 0.2, clearcoat: 1, clearcoatRoughness: 0.12, sheen: 0.2, sheenColor: new THREE.Color('#d8d080'), emissive: new THREE.Color('#3a3a08'), emissiveIntensity: 0.1 });
   const g = new THREE.Group(); g.name = 'pickles';
   layout.forEach(([x, z, y, rad, tilt], n) => {
     const R0 = rad, th = 0.032;
@@ -459,8 +503,11 @@ export function buildOnions(seed = 41, layout) {
     for (let k = 0; k < p.count; k++) {
       // flatten tube (y in torus space is the ring plane's z after rotation) — torus lies in XY; flatten Z
       p.setZ(k, p.getZ(k) * 0.42);
+      { const a = Math.atan2(p.getY(k), p.getX(k)), ring = rad * (1 + 0.035 * nAng(a, 1.6, seed + rad * 7)), r0 = Math.hypot(p.getX(k), p.getY(k));
+        const th = 1 + 0.35 * nAng(a, 2.4, seed + rad * 13), off = (r0 - rad) * th; const rn = ring + off;
+        p.setX(k, Math.cos(a) * rn); p.setY(k, Math.sin(a) * rn); p.setZ(k, p.getZ(k) * th); }
       const x0 = p.getX(k), y0 = p.getY(k), rr = Math.hypot(x0, y0);
-      const outward = clamp((rr - rad) / 0.03 * 0.5 + 0.5);
+      const outward = clamp((rr - rad * (1 + 0.035 * nAng(Math.atan2(y0, x0), 1.6, seed + rad * 7))) / 0.03 * 0.5 + 0.5);
       c.copy(inner).lerp(outer, smooth(0.55, 0.95, outward));
       col[k * 3] = c.r; col[k * 3 + 1] = c.g; col[k * 3 + 2] = c.b;
     }
@@ -495,24 +542,23 @@ export function buildSauce(seed = 51) {
   const map = paint(512, 512, (u, v, c) => {
     const x = (u - 0.5) * 1.8, z = (v - 0.5) * 1.8;
     const f = fbm(x * 4, z * 4, seed, 3);
-    let col = mixc(hex('#E06A30'), hex('#F2945A'), 0.5 + 0.5 * f);
+    let col = mixc(hex('#C9542A'), hex('#E07A44'), 0.5 + 0.5 * f);
     const fl = fbm(x * 38, z * 38, seed + 7, 2), fl2 = fbm(x * 44, z * 44, seed + 17, 2);
     col = mixc(col, hex('#5E6B1E'), smooth(0.42, 0.55, fl) * 0.9);
     col = mixc(col, hex('#B8461E'), smooth(0.45, 0.6, fl2) * 0.6);
     c[0] = col[0]; c[1] = col[1]; c[2] = col[2];
   });
-  const mat = new THREE.MeshPhysicalMaterial({ map, roughness: 0.12, clearcoat: 1, clearcoatRoughness: 0.03, envMapIntensity: 1.3, sheen: 0.2, sheenColor: new THREE.Color('#ffd0b0'), emissive: new THREE.Color('#ff4a10'), emissiveIntensity: 0.06 });
+  const mat = new THREE.MeshPhysicalMaterial({ map, roughness: 0.16, clearcoat: 1, clearcoatRoughness: 0.04, envMapIntensity: 0.85, sheen: 0.1, sheenColor: new THREE.Color('#ffb080'), emissive: new THREE.Color('#ff4a10'), emissiveIntensity: 0.04 });
   const m = new THREE.Mesh(g0, mat); m.castShadow = m.receiveShadow = true; m.morphTargetInfluences = [1];
   const g = new THREE.Group(); g.add(m); g.name = 'sauce'; g.userData.mesh = m; g.userData.mat = mat;
   // drips over the rim (grow with 'ooze')
-  const prof = []; for (let k = 0; k <= 28; k++) { const s = k / 28; const r = 0.034 - 0.012 * smooth(0, 0.5, s) + 0.016 * smooth(0.55, 0.85, s); const end = s > 0.85 ? Math.sqrt(Math.max(0, 1 - ((s - 0.85) / 0.15) ** 2)) : 1; prof.push(new THREE.Vector2(Math.max(1e-4, r * end), -s)); }
-  const dg = new THREE.LatheGeometry(prof, 20);
+
   // drips at the burger's rim (visible under the crown) + a couple on the dollop edge
   g.userData.drips = [[1.25, 0.97, 0.2], [1.75, 0.95, 0.13], [0.55, 0.96, 0.16], [2.6, 0.95, 0.1], [0.3, 0.6, 0.06]].map(([ph, rr, len]) => {
-    const d = new THREE.Mesh(dg, mat);
-    d.position.set(Math.sin(ph) * rr, 0.0, Math.cos(ph) * rr); d.userData.len = len; d.castShadow = true; g.add(d); return d;
+    const dr = new Drip(mat, { root: 0.036, neck: 0.017, bulb: 0.025 }); const d = dr.mesh;
+    d.position.set(Math.sin(ph) * rr, 0.0, Math.cos(ph) * rr); d.userData.len = len; d.userData.drip = dr; g.add(d); return d;
   });
-  g.userData.ooze = k => g.userData.drips.forEach(d => { d.visible = k > 0.02; d.scale.set(1, Math.max(0.01, k * d.userData.len), 1); });
+  g.userData.ooze = k => g.userData.drips.forEach(d => { d.visible = k > 0.02; d.userData.drip.set(Math.max(0.02, k * d.userData.len)); });
   g.userData.ooze(1);
   return g;
 }

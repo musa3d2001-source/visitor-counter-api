@@ -42,7 +42,7 @@ const diag = await page.evaluate(() => {
         out.push({ page: i + 1, el: el.tagName.toLowerCase() + '.' + el.className, txt: 'CLIPPED CONTENT', over: `${el.scrollWidth}x${el.scrollHeight} > ${el.clientWidth}x${el.clientHeight}` });
     });
   });
-  for (const f of ['800 20px Alexandria', '400 12px "IBM Plex Sans Arabic"', '600 12px "IBM Plex Sans Arabic"', '800 12px Archivo', '600 12px "JetBrains Mono"'])
+  for (const f of ['800 20px "Alexandria Static"', '400 12px "IBM Plex Sans Arabic"', '600 12px "IBM Plex Sans Arabic"', '800 expanded 12px "Archivo Static"', '900 expanded 12px "Archivo Static"', '500 12px "JetBrains Mono Static"', '600 12px "JetBrains Mono Static"'])
     if (!document.fonts.check(f)) fontsMissing.push(f);
   const paths = [...document.querySelectorAll('[data-path]')].map(e => e.dataset.path);
   return { out, fontsMissing, paths, guide: window.GUIDE };

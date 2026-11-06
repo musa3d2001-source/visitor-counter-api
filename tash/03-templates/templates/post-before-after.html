@@ -28,7 +28,9 @@ run(async (d, { stage, T, rich, h, put, linesOf, concept, wordmark, dotsSVG }) =
   const Y0 = 404, PH = 780;                                  // picture area
   const s = d.scale ?? 0.78, [fx, fy] = d.focus || [540, 960], split = (d.split ?? 50) / 100 * 1080;
   const pic = h('div', { class: 'pic', style: `top:${Y0}px;height:${PH}px` });
-  const img = src => h('img', { src, alt: '', style: `width:${1080 * s}px;height:${1920 * s}px;left:${split - fx * s}px;top:${PH / 2 - fy * s}px` });
+  // each frame is narrower than the post: feather its own left/right edges so no picture edge shows inside the oval
+  const FEATHER = 'linear-gradient(to right, transparent 0%, #000 15%, #000 85%, transparent 100%)';
+  const img = src => h('img', { src, alt: '', style: `width:${1080 * s}px;height:${1920 * s}px;left:${split - fx * s}px;top:${PH / 2 - fy * s}px;-webkit-mask-image:${FEATHER};mask-image:${FEATHER}` });
   pic.append(
     h('div', { class: 'half', style: `clip-path: inset(0 ${1080 - split}px 0 0)` }, img(d.after.src)),   // left = after
     h('div', { class: 'half', style: `clip-path: inset(0 0 0 ${split}px)` }, img(d.before.src)),        // right = before

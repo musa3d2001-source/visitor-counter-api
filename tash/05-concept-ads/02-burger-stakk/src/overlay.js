@@ -82,10 +82,12 @@ export function createOverlay(root, C, { W = 1080, H = 1920, project } = {}) {
 
   const anchorScreen = a => project(a[0], a[1], a[2]);
 
-  function labelFrame(L, t, [t0, t1], extra = null) {
+  const WIDE = ['S03', 'S05', 'S07', 'S09'];
+  function labelFrame(L, t, [t0, t1], extra = null, sid = '') {
     const on = t >= t0 - 0.01 && t < t1;
     L.box.style.display = on ? 'block' : 'none';
-    L.line.style.display = L.dot.style.display = L.ring.style.display = on ? 'block' : 'none';
+    const lineOn = on && WIDE.includes(sid);
+    L.line.style.display = L.dot.style.display = L.ring.style.display = lineOn ? 'block' : 'none';
     if (!on) return;
     const heroStart = extra != null && L.key === 'cheese' ? t0 : t0 + 0.05;
     const supStart = extra != null ? extra : t0;
@@ -120,18 +122,18 @@ export function createOverlay(root, C, { W = 1080, H = 1920, project } = {}) {
       tWords.forEach((s, i) => {
         const st = T.title[0] + i * 0.125, a = t - st;
         if (a < 0) { s.style.opacity = '0'; return; }
-        const fall = clamp(a / 0.09), y = (1 - E.inQuad(fall)) * -70;   // short drop: never overlaps the line above
-        const sq = a > 0.09 ? 1 - 0.22 * Math.exp(-(a - 0.09) * 14) * Math.cos((a - 0.09) * 30) : 1;
+        const fall = clamp(a / 0.11), y = (1 - E.outCubic(fall)) * 54;  // rises into the empty slot below: never crosses the word above
+        const sq = a > 0.11 ? 1 - 0.16 * Math.exp(-(a - 0.11) * 14) * Math.cos((a - 0.11) * 30) : 1;
         css(s, { opacity: String(clamp(a / 0.05)), transform: `translateY(${y.toFixed(1)}px) scale(${(2 - sq).toFixed(3)}, ${sq.toFixed(3)})` });
       });
       const wk = E.inCubic(sm(C.whip[0], T.title[1], t));
       css(title, { transform: `translateY(${(wk * 1500).toFixed(1)}px)`, filter: wk > 0.02 ? `blur(${(wk * 18).toFixed(1)}px)` : 'none' });
     }
-    labelFrame(LB.heel, t, T.heel);
-    labelFrame(LB.patty, t, T.patty);
-    labelFrame(LB.cheese, t, T.cheese, T.cheeseSlow);
-    labelFrame(LB.crunch, t, T.crunch);
-    labelFrame(LB.sauce, t, T.sauce);
+    labelFrame(LB.heel, t, T.heel, null, sid);
+    labelFrame(LB.patty, t, T.patty, null, sid);
+    labelFrame(LB.cheese, t, T.cheese, T.cheeseSlow, sid);
+    labelFrame(LB.crunch, t, T.crunch, null, sid);
+    labelFrame(LB.sauce, t, T.sauce, null, sid);
     // «دبل!» — one word, big, lands with patty 2
     const dOn = t >= T.double[0] && t < T.double[1];
     dbl.style.display = dOn ? 'block' : 'none';
@@ -154,12 +156,18 @@ export function createOverlay(root, C, { W = 1080, H = 1920, project } = {}) {
     ec.style.display = eOn ? 'block' : 'none';
     if (eOn) {
       const a = t - C.endcard;
+      // match cut: frame 1 of the card shows the mark at the hero burger's size and place (≈ x 540, y 1010, 860 px wide),
+      // then it flies up and settles into the lockup (outExpo, 0.5 s). The three layers keep a little stagger (drag).
+      const mk = E.outExpo(clamp(a / 0.5)), drift = 1 + 0.025 * clamp((a - 0.5) / 0.5);
+      const ms = lerp(2.85, 1, mk) * drift, mx = lerp(540, 540, mk), my = lerp(1010, 585, mk);
+      css(mark, { transform: `translate(${(mx - 540).toFixed(1)}px, ${(my - 585).toFixed(1)}px) scale(${ms.toFixed(4)})`, transformOrigin: '50% 50%' });
       ['m-bot', 'm-mid', 'm-top'].forEach((id, i) => {
-        const e = mark.querySelector('#' + id), st = i * 0.07, k = clamp((a - st) / 0.12);
-        const y = (1 - E.inQuad(k)) * -260, sq = a - st > 0.12 ? 1 - 0.18 * Math.exp(-(a - st - 0.12) * 16) * Math.cos((a - st - 0.12) * 32) : 1;
-        e.setAttribute('transform', `translate(0 ${y.toFixed(1)}) translate(150 230) scale(${(2 - sq).toFixed(3)} ${sq.toFixed(3)}) translate(-150 -230)`);
-        e.setAttribute('opacity', a - st < 0 ? '0' : '1');
+        const e = mark.querySelector('#' + id), st = i * 0.035, k = E.outCubic(clamp((a - st) / 0.3));
+        const y = (1 - k) * (1 - i) * 30;                                  // layers start spread (exploded: bun down, crown up) and close up
+        e.setAttribute('transform', `translate(0 ${y.toFixed(1)})`);
+        e.setAttribute('opacity', '1');
       });
+      css(ecWord, { transform: `scale(${drift.toFixed(4)})` });
       popWords(ecW, t, C.endcard + 0.2, { stagger: 0.09, rise: 50, rot: 3 });
       const lk = tw(t, C.endcard + 0.38, 0.4);
       css(ecLat, { opacity: String(lk), letterSpacing: `${lerp(0.5, 0.16, lk).toFixed(3)}em` });
@@ -195,9 +203,8 @@ export function createPoster(root, { W = 1080, H = 1920 } = {}) {
   const brand = el('div', 'po-brand', ui);
   el('div', 'po-ar', brand, 'ستاك برجر'); el('div', 'po-lat', brand, 'STAKK BURGER');
   const cta = el('div', 'cta po-cta', ui); const ci = el('div', 'cta-in', cta); el('span', 'cta-t', ci, 'اطلب الحين'); el('span', 'cta-a', ci, '←');
-  const sl = el('div', 'po-slate', ui);
-  el('div', 'po-sl-mono', sl, 'CONCEPT AD — 02 / BURGER');
+  const sl = el('div', 'po-slate', ui);   // inside the reel-safe area and the 3:4 grid crop
+  el('div', 'po-sl-mono', sl, 'CONCEPT AD — 02 / BURGER   ·   TASH / 2026');
   el('div', 'po-sl-ar', sl, 'إعلان تجريبي — علامة خيالية');
-  el('div', 'po-sl-tash', sl, 'TASH / 2026');
   return { el: ui };
 }

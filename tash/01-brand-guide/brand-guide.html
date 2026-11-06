@@ -8,8 +8,21 @@
      /_system/brand/logo.mjs, /_system/motion/kit.js, endcard-cues.json and the studio's own renders. -->
 <link rel="stylesheet" href="/_system/tokens.css">
 <style>
+/* Static instances (src/prep-fonts.py) of the exact weights this guide uses, cut from the same OFL variable fonts.
+   Chromium's PDF backend embeds them as TrueType, whereas variable fonts fall back to Type 3. They carry their own
+   family names (a tie with the variable face in tokens.css would be resolved arbitrarily) and the role variables list
+   them first, with the token family as fallback. Same outlines and metrics, so nothing moves. */
+@font-face { font-family: "Alexandria Static"; src: url("src/fonts/Alexandria-ExtraBold.ttf") format("truetype"); font-weight: 800; font-display: block; }
+@font-face { font-family: "Archivo Static"; src: url("src/fonts/Archivo-ExpandedExtraBold.ttf") format("truetype"); font-weight: 800; font-stretch: 125%; font-display: block; }
+@font-face { font-family: "Archivo Static"; src: url("src/fonts/Archivo-ExpandedBlack.ttf") format("truetype"); font-weight: 900; font-stretch: 125%; font-display: block; }
+@font-face { font-family: "JetBrains Mono Static"; src: url("src/fonts/JetBrainsMono-Regular.ttf") format("truetype"); font-weight: 400; font-display: block; }
+@font-face { font-family: "JetBrains Mono Static"; src: url("src/fonts/JetBrainsMono-Medium.ttf") format("truetype"); font-weight: 500; font-display: block; }
+@font-face { font-family: "JetBrains Mono Static"; src: url("src/fonts/JetBrainsMono-SemiBold.ttf") format("truetype"); font-weight: 600; font-display: block; }
+@font-face { font-family: "JetBrains Mono Static"; src: url("src/fonts/JetBrainsMono-Bold.ttf") format("truetype"); font-weight: 700; font-display: block; }
 @page { size: 297mm 210mm; margin: 0; }
 :root { --meta-p:#55574F; --meta-l:#3A4A00; --rule-p:#D9D9CC; }
+:root { --f-display-ar: "Alexandria Static", "Alexandria", "IBM Plex Sans Arabic", sans-serif; --f-display-en: "Archivo Static", "Archivo", sans-serif;
+        --f-mono: "JetBrains Mono Static", "JetBrains Mono", ui-monospace, monospace; }
 * { box-sizing: border-box; }
 html, body { margin: 0; padding: 0; }
 body { background: #2a2a27; font-family: var(--f-text-ar); font-weight: 400; -webkit-print-color-adjust: exact; print-color-adjust: exact; text-rendering: geometricPrecision; font-kerning: normal; }
@@ -45,7 +58,7 @@ p { font-size: 12.5px; line-height: 1.78; margin: 0 0 8px; }
 p.lead { font-size: 14px; line-height: 1.7; }
 p.sm, .sm { font-size: 11.5px; line-height: 1.65; }
 .pe { font-family: var(--f-text-ar); font-size: 10px; line-height: 1.5; color: var(--mute); direction: ltr; text-align: right; margin: -4px 0 8px; }
-.lbl { font-family: var(--f-mono); font-weight: 600; font-size: 7.5px; letter-spacing: .2em; text-transform: uppercase; color: var(--mute); direction: ltr; unicode-bidi: isolate; }
+.lbl { font-family: var(--f-mono); font-weight: 600; font-size: 8px; letter-spacing: .2em; text-transform: uppercase; color: var(--mute); direction: ltr; unicode-bidi: isolate; }
 .k { font-family: var(--f-mono); font-weight: 500; font-size: 9px; letter-spacing: .03em; direction: ltr; unicode-bidi: isolate; white-space: nowrap; }
 .mute { color: var(--mute); }
 .w6 { font-weight: 600; }
@@ -71,6 +84,8 @@ ul.dots li { position: relative; padding-right: 16px; font-size: 12.5px; line-he
 ul.dots li::before { content: ''; position: absolute; right: 2px; top: .66em; width: 6px; height: 6px; border-radius: 50%; background: var(--fg); }
 .ink ul.dots.lime li::before { background: var(--lime); }
 .item { margin-bottom: 11px; }
+.roomy .item { margin-bottom: 21px; }
+.roomy #o-specs { line-height: 2.3 !important; }
 .item h3 { display: flex; gap: 6px; align-items: baseline; }
 .item p { margin: 1px 0 0; font-size: 11.5px; line-height: 1.65; }
 .item .en { font-size: 8px; margin-top: 1px; }
@@ -78,10 +93,10 @@ ul.dots li::before { content: ''; position: absolute; right: 2px; top: .66em; wi
 
 /* tables */
 table { border-collapse: collapse; width: 100%; }
-th { font-family: var(--f-mono); font-weight: 600; font-size: 7px; letter-spacing: .18em; text-transform: uppercase; color: var(--mute); text-align: right; padding: 0 0 6px 10px; border-bottom: 1px solid var(--fg); }
+th { font-family: var(--f-mono); font-weight: 600; font-size: 7.5px; letter-spacing: .18em; text-transform: uppercase; color: var(--mute); text-align: right; padding: 0 0 6px 10px; border-bottom: 1px solid var(--fg); }
 th .ar { font-family: var(--f-text-ar); letter-spacing: 0; text-transform: none; font-size: 9px; color: var(--fg); display: block; margin-bottom: 1px; }
 td { font-size: 11px; line-height: 1.5; padding: 6px 0 6px 10px; border-bottom: 1px solid var(--rule); vertical-align: top; }
-td .en { font-size: 7.5px; }
+td .en { font-size: 8px; }
 .badge { display: inline-block; font-family: var(--f-text-ar); font-weight: 600; font-size: 9px; padding: 1px 7px 2px; border: 1px solid var(--fg); border-radius: 20px; white-space: nowrap; }
 .badge.solid { background: var(--fg); color: var(--paper); }
 .ink .badge.solid { color: var(--ink); }
@@ -99,7 +114,7 @@ td .en { font-size: 7.5px; }
 .cover-foot .tag { font-family: var(--f-display-ar); font-weight: 800; font-size: 22px; line-height: 1.4; margin: 0 0 14px; }
 
 /* ---------- TOC ---------- */
-.toc-row { display: grid; grid-template-columns: 34px 1fr 40px; align-items: baseline; padding: 13px 0 12px; border-bottom: 1px solid var(--rule); }
+.toc-row { display: grid; grid-template-columns: 34px 1fr 40px; align-items: baseline; padding: 17px 0 16px; border-bottom: 1px solid var(--rule); }
 .toc-row .n { font-family: var(--f-display-en); font-weight: 800; font-stretch: 125%; font-size: 11px; direction: ltr; text-align: right; }
 .toc-row .t { font-weight: 600; font-size: 16px; line-height: 1.3; }
 .toc-row .t .en { display: inline; font-size: 8.5px; margin-right: 8px; }
@@ -155,7 +170,7 @@ td .en { font-size: 7.5px; }
 </section>
 
 <!-- =============================================================== 01 CRITICAL REVIEW (a) -->
-<section class="page" data-sec="01">
+<section class="page roomy" data-sec="01">
   <div class="run"><span><b class="n">01</b><span class="s">مراجعة نقدية</span><span class="e">Critical review</span></span><span class="pg"></span></div>
   <div class="b g12">
     <div style="grid-column:1 / span 4; display:flex; flex-direction:column">
@@ -253,7 +268,7 @@ td .en { font-size: 7.5px; }
       <h1>الفكرة:<br>النقاط الثلاث</h1>
       <p class="en" style="margin-bottom:18px">The idea: the three dots</p>
       <p>نقاط الشين الثلاث مرسومة دوائر كاملة بصف واحد: نفس علامة «يكتب…» اللي تطلع بأي محادثة.</p>
-      <p>ثابت، الشعار ينقرا «طشّ» عادي. يتحرك، النقاط تنطّ من اليمين لليسار مثل أحد قاعد يكتب: الناس يسولفون عنك. وهذا بالضبط اللي نسويه لعملائنا.</p>
+      <p>ثابت، الشعار ينقرا «طشّ» عادي. وإذا تحرّك، النقاط تنطّ من اليمين لليسار مثل أحد قاعد يكتب: الناس يسولفون عنك. وهذا بالضبط اللي نسويه لعملائنا.</p>
       <p class="pe">Static, the logo reads طشّ. In motion the dots bounce right→left like someone typing: people are talking about you.</p>
       <div class="hr" style="margin:14px 0"></div>
       <h3>الاسم</h3>
@@ -313,7 +328,7 @@ td .en { font-size: 7.5px; }
 </section>
 
 <!-- =============================================================== 03 LOGO (a) construction -->
-<section class="page ink" data-sec="03">
+<section class="page ink roomy" data-sec="03">
   <div class="run"><span><b class="n">03</b><span class="s">الشعار</span><span class="e">Logo</span></span><span class="pg"></span></div>
   <div class="b g12">
     <div style="grid-column:1 / span 4">
@@ -498,7 +513,7 @@ td .en { font-size: 7.5px; }
         <li class="sm">ثلاث مستويات بالكثير بالإطار الواحد، وكل مستوى أكبر من اللي تحته بمرة ونص لمرتين.</li>
         <li class="sm">العنوان الكبير كلمة لين ثلاث. على الشاشة ست كلمات بالكثير.</li>
         <li class="sm">وزنين بالكثير بالتصميم. لا عريض مزيّف ولا مائل للعربي.</li>
-        <li class="sm">ارتفاع السطر للعناوين <bdi dir="ltr">1.25–1.5</bdi> عشان الشدّة والهمزة، وللنص <bdi dir="ltr">1.7</bdi>.</li>
+        <li class="sm" style="text-wrap:balance">ارتفاع السطر: <bdi dir="ltr">1.7</bdi> للنص، و<bdi dir="ltr">1.25–1.5</bdi> للعناوين عشان الشدّة والهمزة.</li>
         <li class="sm">صغّر التصميم لربع حجمه: إذا ما انقرا، الخط صغير.</li>
       </ul>
       <div class="hr" style="margin:14px 0"></div>
@@ -514,7 +529,7 @@ td .en { font-size: 7.5px; }
   <div class="run"><span><b class="n">05</b><span class="s">الخطوط</span><span class="e">Typography</span></span><span class="pg"></span></div>
   <div class="b">
     <h2 style="font-size:22px">قواعد الحرف العربي</h2><p class="en" style="margin-bottom:14px">Arabic typesetting rules</p>
-    <div style="display:grid; grid-template-columns:1fr 1fr; gap:16px 28px" id="v-arrules"></div>
+    <div style="display:grid; grid-template-columns:1fr 1fr; gap:40px 28px" id="v-arrules"></div>
   </div>
 </section>
 
@@ -548,7 +563,7 @@ td .en { font-size: 7.5px; }
   <div class="b g12">
     <div style="grid-column:1 / span 4">
       <div class="sn">07</div><h1>التخطيط</h1><p class="en" style="margin-bottom:16px">Layout · feed post 4:5</p>
-      <p class="sm">البوست <bdi dir="ltr" class="k">1080×1350</bdi>، بس البروفايل يعرضه <bdi dir="ltr" class="k">3:4</bdi> من النص: يقص حوالي <bdi dir="ltr" class="k">34 px</bdi> من كل جنب. فأي شي مهم يكون داخل العرض الأوسط <bdi dir="ltr" class="k">1012 px</bdi>.</p>
+      <p class="sm">البوست <bdi dir="ltr" class="k">1080×1350</bdi>، بس البروفايل يعرضه <bdi dir="ltr" class="k">3:4</bdi> من الوسط: يقص حوالي <bdi dir="ltr" class="k">34 px</bdi> من كل جنب. فأي شي مهم يكون داخل العرض الأوسط <bdi dir="ltr" class="k">1012 px</bdi>.</p>
       <p class="pe">The profile grid shows a centred 3:4 crop: 34 px lost each side.</p>
       <table style="margin-top:6px">
         <tbody>
@@ -617,13 +632,13 @@ td .en { font-size: 7.5px; }
     <div class="g12" style="margin-bottom:12px">
       <div style="grid-column:1 / span 5"><div class="sn">09</div><h1>التوقيع المتحرّك</h1><p class="en">The sting · 4.2 s · timings from endcard-cues.json</p></div>
       <div style="grid-column:7 / span 6; align-self:end">
-        <p class="sm" style="margin:0">أحد يكتب… النقاط تطير وتنزل بالشين، الكلمة تنضرب، الشدّة تنزل آخر شي، ثم الشعار والحساب. التوقيت كله من ملف واحد يقراه الفيديو والصوت، فالصوت يطيح على نفس الفريم.</p>
+        <p class="sm" style="margin:0">أحد يكتب… النقاط تطير وتنزل بالشين، الكلمة تطيح بقوة، الشدّة تنزل آخر شي، ثم الجملة والحساب. التوقيت كله من ملف واحد يقراه الفيديو والصوت، فالصوت يطيح على نفس الفريم.</p>
         <p class="pe" style="margin:4px 0 0">One cue file drives picture and sound, so the sonic logo lands on the exact frames.</p>
       </div>
     </div>
     <div id="v-film"></div>
     <div id="v-timeline" class="fig" style="margin-top:8px"></div>
-    <div style="display:grid; grid-template-columns:repeat(4,1fr) 1.5fr; gap:14px; margin-top:12px" id="v-ease"></div>
+    <div style="display:grid; grid-template-columns:repeat(4,1fr) 1.5fr; gap:14px; margin-top:22px" id="v-ease"></div>
   </div>
 </section>
 

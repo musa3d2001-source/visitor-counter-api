@@ -41,6 +41,12 @@ for name, (rel, times) in ads.items():
     pal = q.getpalette()[:18]; counts = sorted(q.getcolors(), reverse=True)
     palettes[name] = [{'hex': '#%02X%02X%02X' % tuple(pal[i * 3:i * 3 + 3]), 'share': round(c / (180 * 320), 3)} for c, i in counts[:6]]
 
+# ---------------------------------------------------------------- misuse "busy image": a real frame of our own work
+# (HABBA hero: hard window-light stripes over cup, saucer and wood). Cropped to the misuse tile's 480:450.
+im = Image.open(os.path.join(TASH, '05-concept-ads/03-coffee-habba/still-hero.png')).convert('RGB')
+cw = 1080; ch = round(cw * 450 / 480); y0 = 330
+im.crop((0, y0, cw, y0 + ch)).resize((960, 900), Image.LANCZOS).save(os.path.join(ASSETS, 'misuse-busy.jpg'), quality=88, optimize=True, progressive=True)
+
 # ---------------------------------------------------------------- sonic logo: waveform + measured loudness
 wav = os.path.join(TASH, '02-logo/motion/tash-sonic-logo.wav')
 sr, x = wavfile.read(wav)

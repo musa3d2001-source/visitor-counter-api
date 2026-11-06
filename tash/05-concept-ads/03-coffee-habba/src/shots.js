@@ -16,8 +16,9 @@ const LAND = { x: 1.55, z: 1.15 };
 const R = rng(2024);
 const BEANS = [];
 // heroes: «حبّة» … «حبّة»
-BEANS.push({ tl: EV.bean1, x: LAND.x + 0.02, z: LAND.z + 0.02, vs: 0.55, yaw: 0.7, ax: [0.3, 1, 0.2], w: 2.4, ph: 0.4, hero: true, flip: true });
-BEANS.push({ tl: EV.bean2, x: LAND.x + 0.15, z: LAND.z - 0.06, vs: 0.55, yaw: 2.2, ax: [1, 0.4, -0.3], w: -2.1, ph: 1.9, hero: true, flip: true });
+// (vs 0.26: bean one is already falling into the top of frame at the cut, 7.0, and bean two follows from 7.7)
+BEANS.push({ tl: EV.bean1, x: LAND.x + 0.02, z: LAND.z + 0.02, vs: 0.26, yaw: 0.7, ax: [0.3, 1, 0.2], w: 2.4, ph: 0.4, hero: true, flip: true });
+BEANS.push({ tl: EV.bean2, x: LAND.x + 0.15, z: LAND.z - 0.06, vs: 0.26, yaw: 2.2, ax: [1, 0.4, -0.3], w: -2.1, ph: 1.9, hero: true, flip: true });
 // the rest of the slow pour: further back (soft), and a couple close to the lens (big bokeh shapes)
 const others = [
   [-0.14, -0.38], [0.14, -0.60], [-0.04, -0.75], [0.22, -0.30], [-0.20, -0.50], [0.15, -0.95], [0.10, 0.36], [-0.30, -1.20],
@@ -113,7 +114,7 @@ export function frameSpec(t, { clean = false, poster = false } = {}) {
     S.latte = { uMilk: milk, uPull: pull, uStream: 1 - off, uImp: imp, uT: t, uRot: 0 };
     S.cupRot = 0.0; S.heartYaw = 0;
     const az = lerp(-4, 5, k) * deg;
-    const tg = [0, SY, 0.27];
+    const tg = [0, SY, 0.47];                            // cup framed high: «على مهلك.» sits on the shaded table below the saucer, never on it
     const c = orbit(tg, lerp(4.35, 4.05, k), az, 80 * deg, 30);
     c.up = [Math.sin(az) * -1, 0, -Math.cos(az)];
     S.cam = c;

@@ -70,6 +70,10 @@ for name, bt in mot:
         m.add(pluck(nf(name), 0.9, bright=0.5), t0 + r.uniform(-.004, .004), gain=0.3, pan=-0.15, bus='music')
 m.add(pad([nf('D3'), nf('F3'), nf('A3')], D - cut, cutoff=1100, attack=0.6, release=0.4), cut + 0.1, gain=0.12, bus='music')
 
+# the light sweep over the piece: a faint glass glint riding it (no hit — the groove carries the bar)
+sw = C['sweep']
+m.add(shimmer(1.3, base=nf('A6'), n=5, seed_=12), sw['start'] + sw['dur'] * 0.35, gain=0.06, pan=0.2)
+
 # ---------------------------------------------------------------- 4 · signature + the last typing wave + resolve
 m.add(whoosh(0.32, 900, 6000, pan_from=-0.2, pan_to=0.3, peak=0.6), C['signature'] - 0.06, gain=0.14)
 for i in range(3):                                 # peaks of typing(t - pulse, i, period .62, phase .12)

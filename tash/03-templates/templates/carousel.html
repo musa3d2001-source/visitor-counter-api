@@ -69,6 +69,9 @@ run(async (d, { stage, T, rich, h, put, linesOf, typingBubble, wordmark }) => {
     ic.style.top = y0 + 'px';
     title.style.top = (y0 + ic.offsetHeight + 64) + 'px';
     body.style.top = (title.offsetTop + title.offsetHeight + 12) + 'px';
+    // icons are drawn centred in a square; RTL anchors on the right, so set the drawing's own right edge on the margin
+    const svg = ic.querySelector('svg'), bb = svg && svg.getBBox();
+    if (bb && bb.width) ic.style.transform = `translateX(${((600 - bb.x - bb.width) * ic.offsetWidth / 600).toFixed(1)}px)`;
   } };
 });
 </script></body></html>

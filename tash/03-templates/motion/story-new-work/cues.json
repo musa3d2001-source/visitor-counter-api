@@ -35,6 +35,10 @@
   "line": 2.62,
   "concept": 2.75,
   "label": 3.05,
+  "sweep": {
+    "start": 3.5,
+    "dur": 1.2
+  },
   "signature": 5.3,
   "pulse": 6.0,
   "bpm": 120,

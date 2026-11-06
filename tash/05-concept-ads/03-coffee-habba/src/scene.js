@@ -200,8 +200,10 @@ export function makeCup(tex, env) {
   mo.castShadow = mi.castShadow = true; mo.receiveShadow = mi.receiveShadow = true;
   cup.add(mo, mi);
   // handle: an ear loop in the +x half-plane, slightly flattened
-  const hc = new THREE.CatmullRomCurve3([[0.40, 0.50, 0], [0.52, 0.535, 0], [0.625, 0.47, 0], [0.645, 0.36, 0], [0.585, 0.25, 0], [0.48, 0.205, 0], [0.37, 0.205, 0]].map(p => new THREE.Vector3(...p)));
-  const hg = new THREE.TubeGeometry(hc, 80, 0.034, 20, false);
+  // both ends run on into the body (the open tube ends sit inside the cup, under the coffee): the old ends stopped at
+  // the glaze surface, so the top showed an open, hollow tube end and the lower end a flat cut floating off the body.
+  const hc = new THREE.CatmullRomCurve3([[0.31, 0.478, 0], [0.40, 0.50, 0], [0.52, 0.535, 0], [0.625, 0.47, 0], [0.645, 0.36, 0], [0.585, 0.25, 0], [0.48, 0.205, 0], [0.37, 0.203, 0], [0.285, 0.205, 0]].map(p => new THREE.Vector3(...p)));
+  const hg = new THREE.TubeGeometry(hc, 110, 0.034, 20, false);
   hg.scale(1, 1, 1.35);
   const glazeH = new THREE.MeshPhysicalMaterial({ color: new THREE.Color('#B55E40'), roughness: 0.34, clearcoat: 0.9, clearcoatRoughness: 0.08, envMapIntensity: 1.0 });
   const handle = new THREE.Mesh(hg, glazeH); handle.castShadow = true; handle.receiveShadow = true; cup.add(handle);

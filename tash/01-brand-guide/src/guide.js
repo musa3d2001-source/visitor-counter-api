@@ -23,8 +23,9 @@ const svg = (vb, inner, extra = '') => `<svg ${NS} viewBox="${vb}" style="direct
 const S = 1 / L.VB.w;                                                     // wordmark unit → width fraction
 const wmAt = (x, y, w, o = {}) => `<g transform="translate(${x} ${y}) scale(${w * S})">${L.wordmarkInner(o)}</g>`;
 const wmH = w => w * L.VB.h / L.VB.w;
+const STATIC = { Alexandria: "'Alexandria Static', Alexandria", Archivo: "'Archivo Static', Archivo", 'JetBrains Mono': "'JetBrains Mono Static', 'JetBrains Mono'" }; // PDF-safe static cuts first (brand-guide.html)
 const T = (x, y, s, { size = 30, fill = SMOKE, font = 'JetBrains Mono', anchor = 'start', weight = 600, ls = 0, rtl = false, op = 1 } = {}) =>
-  `<text x="${x}" y="${y}" font-family="${font}" font-size="${size}" font-weight="${weight}" fill="${fill}" text-anchor="${anchor}" letter-spacing="${ls}" opacity="${op}"${rtl ? ' direction="rtl"' : ''}>${s}</text>`;
+  `<text x="${x}" y="${y}" font-family="${STATIC[font] || font}" font-size="${size}" font-weight="${weight}"${font === 'Archivo' ? ' font-stretch="125%"' : ''} fill="${fill}" text-anchor="${anchor}" letter-spacing="${ls}" opacity="${op}"${rtl ? ' direction="rtl"' : ''}>${s}</text>`;  // Archivo always in its brand width (125%)
 
 // colour science (WCAG 2.x relative luminance, CIELAB D65, naive CMYK)
 const rgb = h => [1, 3, 5].map(i => parseInt(h.slice(i, i + 2), 16));
@@ -87,7 +88,7 @@ put('v-back', L.symbolSVG({ pad: 0 }));
 // ------------------------------------------------------------------ 01 critical review
 put('v-described', [
   ['أسود', 'Black', '#0B0B0B'], ['ليموني كهربائي', 'Electric lime', '#C6FF00'], ['كريمي', 'Cream', '#F5F5E9'], ['رمادي', 'Grey', '#9AA0A6'],
-].map(([ar, en, hex]) => `<div><div style="height:44px;background:${hex};box-shadow:inset 0 0 0 1px ${RULE_P}"></div>
+].map(([ar, en, hex]) => `<div><div style="height:100px;background:${hex};box-shadow:inset 0 0 0 1px ${RULE_P}"></div>
   <div style="font-size:9.5px;font-weight:600;margin-top:5px;line-height:1.3">${ar}</div><div class="en s">${en}</div><div class="k" style="font-size:8px;text-align:right">${hex}</div></div>`).join(''));
 
 function evTemp() {
@@ -100,7 +101,7 @@ function evTemp() {
 }
 put('v-ev-temp', evTemp());
 put('v-ev-contrast', `<div style="padding:12px 14px">` + [[LIME, PAPER, 'no'], ['#9AA0A6', PAPER, 'no'], [INK, PAPER, 'ok']].map(([fg, bg, m]) =>
-  `<div style="display:flex;align-items:center;gap:10px;margin-bottom:7px"><div style="width:74px;height:36px;background:${bg};box-shadow:inset 0 0 0 1px ${RULE_P};display:flex;align-items:center;justify-content:center;font-family:Alexandria;font-weight:800;font-size:19px;color:${fg}">طشّ</div>
+  `<div style="display:flex;align-items:center;gap:10px;margin-bottom:7px"><div style="width:74px;height:36px;background:${bg};box-shadow:inset 0 0 0 1px ${RULE_P};display:flex;align-items:center;justify-content:center;font-family:'Alexandria Static',Alexandria;font-weight:800;font-size:19px;color:${fg}">طشّ</div>
    <span class="${m}"></span><span class="k" style="font-size:9.5px">${crs(fg, bg)}</span></div>`).join('') + `</div>`);
 
 const glowFilter = id => `<filter id="${id}" x="-40%" y="-60%" width="180%" height="220%"><feGaussianBlur in="SourceAlpha" stdDeviation="9" result="b"/><feFlood flood-color="${LIME}" flood-opacity=".95"/><feComposite in2="b" operator="in" result="g"/><feMerge><feMergeNode in="g"/><feMergeNode in="g"/><feMergeNode in="SourceGraphic"/></feMerge></filter>`;
@@ -257,7 +258,7 @@ put('services', [
 
 // ------------------------------------------------------------------ 03d colour versions
 (function colourways() {
-  const t = (bg, o, ok, ar, en, file, border = false) => `<div><div style="height:196px;background:${bg};display:flex;align-items:center;justify-content:center;${border ? `box-shadow:inset 0 0 0 1px ${RULE_P}` : ''}"><div class="fig" style="width:170px">${L.wordmarkSVG(o)}</div></div>
+  const t = (bg, o, ok, ar, en, file, border = false) => `<div><div style="height:248px;background:${bg};display:flex;align-items:center;justify-content:center;${border ? `box-shadow:inset 0 0 0 1px ${RULE_P}` : ''}"><div class="fig" style="width:204px">${L.wordmarkSVG(o)}</div></div>
     <div class="cap"><span class="${ok ? 'ok' : 'no'}"></span><div><div class="w6">${ar}</div><div class="en">${en}</div><div class="k" style="font-size:7.5px;color:${META_P};margin-top:2px">${file}</div></div></div></div>`;
   put('v-colourways', [
     t(INK, { body: PAPER, dot: LIME }, 1, 'الأساسي: ورقي + نقاط ليموني على الحبر', 'Primary on Ink', 'tash-wordmark--on-ink'),
@@ -318,14 +319,6 @@ put('services', [
     `<g transform="translate(${-shift} 0)" clip-path="url(#ls-a)">${L.wordmarkInner({ ...std, dotOffsets: [[0, 0], [-70, 0], [-140, 0]] })}</g>` +
     `<g clip-path="url(#ls-b)">${L.wordmarkInner(std)}</g></g>`;
   const lsDefs = `<clipPath id="ls-a"><rect x="-200" y="-200" width="${split + 200}" height="2000"/></clipPath><clipPath id="ls-b"><rect x="${split}" y="-200" width="1200" height="2000"/></clipPath>`;
-  function busy() {
-    const r = rng(2026), cols = ['#E8452C', '#F2C14E', '#2E86AB', '#7FB069', '#D7263D', '#F49D37', '#3F88C5', '#140F2D', '#F5F5E9', '#9B5DE5', '#00BBF9', '#FEE440', '#0B0B0B'];
-    let s = ''; for (let i = 0; i < 170; i++) { const c = cols[Math.floor(r() * cols.length)], x = r() * VW, y = r() * VH, t = r();
-      if (t < 0.45) s += `<rect x="${x}" y="${y}" width="${16 + r() * 110}" height="${16 + r() * 110}" fill="${c}" transform="rotate(${r() * 90} ${x} ${y})"/>`;
-      else if (t < 0.8) s += `<circle cx="${x}" cy="${y}" r="${6 + r() * 46}" fill="${c}"/>`;
-      else s += `<line x1="${x}" y1="${y}" x2="${x + (r() - 0.5) * 300}" y2="${y + (r() - 0.5) * 300}" stroke="${c}" stroke-width="${3 + r() * 14}"/>`; }
-    return s;
-  }
   const items = [
     [tileSvg(INK, centred('scale(1.45 0.74)', std)), 'لا تمطّه ولا تضغطه', 'Don\'t stretch or squash'],
     [tileSvg(INK, `<g filter="url(#mis-glow)">${centred('', std)}</g>`, glowFilter('mis-glow')), 'لا توهّج ولا نيون', 'No glow, no neon'],
@@ -334,7 +327,7 @@ put('services', [
     [tileSvg(INK, centred('rotate(-14)', std)), 'لا تميّله', 'Don\'t rotate it'],
     [tileSvg(INK, `<g transform="translate(${wx} ${wy}) scale(${k})">${recol}</g>`), 'لا تلوّن النقاط', 'Don\'t recolour the dots'],
     [tileSvg(INK, ls, lsDefs), 'لا تباعد بين حروفه', 'Don\'t letter-space it'],
-    [tileSvg(INK, busy() + centred('', std)), 'لا تحطّه على صورة مزحومة', 'Not on a busy image'],
+    [tileSvg(INK, `<image href="assets/misuse-busy.jpg" width="${VW}" height="${VH}" preserveAspectRatio="xMidYMid slice"/>` + centred('', std)), 'لا تحطّه على صورة مزحومة', 'Not on a busy image · use an Ink plate'],
   ];
   put('v-misuse', items.map(([s, ar, en], i) => `<div><div class="fig" style="position:relative">${s}<span class="no${i === 2 || i === 7 ? '' : ' inv'}" style="position:absolute;top:8px;right:8px;width:16px;height:16px"></span></div>
     <div class="cap"><div><div class="w6" style="font-size:11px">${ar}</div><div class="en">${en}</div></div></div></div>`).join(''));
@@ -344,7 +337,7 @@ put('services', [
 const CORE = [
   ['حبر', 'Ink', INK, 'الأرضية الأساسية، حوالي 60% من أي قطعة.', 'Primary ground'],
   ['ورقي', 'Paper', PAPER, 'الكلام على الحبر، وأرضية الطباعة. حوالي 25%.', 'Type on Ink, light grounds'],
-  ['ليموني طشّ', 'Lime', LIME, 'الإشارة: النقاط، كلمة وحدة، زر، مسحة. 10% بالكثير. أبداً نص على الورقي.', 'The signal'],
+  ['ليموني طشّ', 'Lime', LIME, 'الإشارة: النقاط، كلمة وحدة، زر، مسحة. 10% بالكثير. <span style="white-space:nowrap">ولا نص على الورقي أبداً.</span>', 'The signal'],
   ['دخاني', 'Smoke', SMOKE, 'نص ثانوي ومعلومات، على الحبر والفحمي بس.', 'Secondary text on Ink'],
 ];
 const SUPPORT = [
@@ -355,7 +348,7 @@ const SUPPORT = [
 ];
 put('v-swatches', CORE.map(([ar, en, hex, role, roleEn]) => { const [r, g, b] = rgb(hex), [c, m, y, k] = cmyk(hex);
   return `<div><div style="height:196px;background:${hex};${hex === INK ? `box-shadow:inset 0 0 0 1px ${LINE}` : ''};position:relative">
-      <span class="k" style="position:absolute;bottom:10px;right:12px;font-size:9px;color:${textOn(hex)};opacity:.8">${crs(textOn(hex), hex)}</span></div>
+      <span class="k" style="position:absolute;bottom:10px;right:12px;font-size:9px;color:${textOn(hex)};opacity:.8">${textOn(hex) === INK ? 'INK' : 'PAPER'} TEXT · ${crs(textOn(hex), hex)}</span></div>
     <div style="display:flex;justify-content:space-between;align-items:baseline;margin-top:9px"><span style="font-family:var(--f-display-ar);font-weight:800;font-size:20px">${ar}</span><span class="en">${en}</span></div>
     <div class="k" style="font-size:8.5px;line-height:1.75;margin-top:4px;color:${PAPER}"><div style="display:flex;justify-content:space-between"><span>${hex}</span><span style="color:${SMOKE}">HEX</span></div>
       <div style="display:flex;justify-content:space-between"><span>${r} ${g} ${b}</span><span style="color:${SMOKE}">RGB</span></div>
@@ -376,7 +369,7 @@ put('v-support', SUPPORT.map(([ar, en, hex, role]) => `<div style="display:flex;
   const bgs = [['حبر', 'INK', INK], ['فحمي', 'CHAR', CHAR], ['ورقي', 'PAPER', PAPER], ['ليموني', 'LIME', LIME]];
   const cell = (fg, bg) => { if (fg === bg) return `<td style="text-align:center;color:${META_P}">—</td>`;
     const r = cr(fg, bg), v = verdict(r);
-    return `<td style="padding:5px 4px 5px 8px"><div style="height:40px;background:${bg};box-shadow:inset 0 0 0 1px ${RULE_P};display:flex;align-items:center;justify-content:center;gap:6px;color:${fg};font-family:Alexandria;font-weight:800;font-size:17px">طشّ <span style="font-family:Archivo;font-stretch:125%;font-size:12px">Aa</span></div>
+    return `<td style="padding:7px 4px 7px 8px"><div style="height:50px;background:${bg};box-shadow:inset 0 0 0 1px ${RULE_P};display:flex;align-items:center;justify-content:center;gap:6px;color:${fg};font-family:'Alexandria Static',Alexandria;font-weight:800;font-size:17px">طشّ <span style="font-family:'Archivo Static',Archivo;font-stretch:125%;font-size:12px">Aa</span></div>
       <div style="display:flex;justify-content:space-between;margin-top:3px"><span class="k" style="font-size:8.5px">${f2(r)}</span><span class="k" style="font-size:7px;letter-spacing:.12em;${v === 'FAIL' ? `background:${INK};color:${PAPER};padding:0 4px` : `color:${META_P}`}">${v}</span></div></td>`; };
   put('v-contrast', `<table><thead><tr><th style="width:15%"><span class="ar">النص ↓ / الأرضية ←</span>FG / BG</th>${bgs.map(([a, e, h]) => `<th><span class="ar">${a}</span>${e} ${h}</th>`).join('')}</tr></thead><tbody>` +
     fgs.map(([a, h]) => `<tr><td style="vertical-align:middle"><span class="chip" style="background:${h}"></span> <span class="w6">${a}</span><div class="k" style="font-size:7.5px;color:${META_P}">${h}</div></td>${bgs.map(b => cell(h, b[2])).join('')}</tr>`).join('') + `</tbody></table>`);
@@ -385,45 +378,45 @@ put('v-support', SUPPORT.map(([ar, en, hex, role]) => `<div style="display:flex;
     [INK, PAPER, 1, 'حبر على ورقي', 'الصفحات الهادية والطباعة'], [SMOKE, INK, 1, 'دخاني على حبر', 'معلومات ثانوية'], [META_P, PAPER, 1, 'دخاني غامق على ورقي', 'معلومات ثانوية على الفاتح'],
     [LIME, PAPER, 0, 'ليموني على ورقي', 'أبداً'], [PAPER, LIME, 0, 'ورقي على ليموني', 'أبداً'], [SMOKE, PAPER, 0, 'دخاني على ورقي', 'مو للنص'],
   ];
-  put('v-pairs', pairs.map(([fg, bg, ok, ar, use]) => `<div style="display:flex;gap:10px;align-items:center;padding:8px 0;border-bottom:1px solid ${RULE_P}">
-    <div style="width:56px;height:30px;flex:0 0 56px;background:${bg};box-shadow:inset 0 0 0 1px ${RULE_P};display:flex;align-items:center;justify-content:center;color:${fg};font-family:Alexandria;font-weight:800;font-size:14px">طشّ</div>
+  put('v-pairs', pairs.map(([fg, bg, ok, ar, use]) => `<div style="display:flex;gap:10px;align-items:center;padding:12px 0;border-bottom:1px solid ${RULE_P}">
+    <div style="width:56px;height:30px;flex:0 0 56px;background:${bg};box-shadow:inset 0 0 0 1px ${RULE_P};display:flex;align-items:center;justify-content:center;color:${fg};font-family:'Alexandria Static',Alexandria;font-weight:800;font-size:14px">طشّ</div>
     <span class="${ok ? 'ok' : 'no'}"></span><div style="flex:1"><div class="w6" style="font-size:10.5px">${ar}</div><div class="sm mute" style="line-height:1.3">${use}</div></div><span class="k" style="font-size:8.5px">${f2(cr(fg, bg))}</span></div>`).join(''));
 })();
 
 // ------------------------------------------------------------------ 05 typography
 put('v-families', [
   { name: 'Alexandria', role: 'العناوين العربية', roleEn: 'Arabic display', w: 'WEIGHTS 600–900 · WE USE 800', file: 'Alexandria-VF.ttf', lic: 'OFL-Alexandria.txt',
-    spec: `<div style="font-family:Alexandria;font-weight:800;font-size:60px;line-height:1.35">سالفة</div>`,
-    glyphs: `<div style="font-family:Alexandria;font-weight:800;font-size:13px;line-height:1.75">أ ب ت ث ج ح خ د ذ ر ز س ش ص ض ط ظ ع غ ف ق ك ل م ن ه و ي <bdi dir="ltr">٠١٢٣٤٥٦٧٨٩</bdi></div>`, use: 'كلمة لين ست كلمات. وهو أساس الشعار (<bdi dir="ltr">Black</bdi>).' },
+    spec: `<div style="font-family:'Alexandria Static',Alexandria;font-weight:800;font-size:60px;line-height:1.35">سالفة</div>`,
+    glyphs: `<div style="font-family:'Alexandria Static',Alexandria;font-weight:800;font-size:13px;line-height:1.75">أ ب ت ث ج ح خ د ذ ر ز س ش ص ض ط ظ ع غ ف ق ك ل م ن ه و ي <bdi dir="ltr">٠١٢٣٤٥٦٧٨٩</bdi></div>`, use: 'كلمة لين ست كلمات. وهو أساس الشعار (<bdi dir="ltr">Black</bdi>).' },
   { name: 'IBM Plex Sans Arabic', role: 'النص العربي', roleEn: 'Arabic text', w: 'WEIGHTS 400–700 · WE USE 400 + 600', file: 'IBMPlexSansArabic-*.ttf', lic: 'OFL-IBMPlexSansArabic.txt',
     spec: `<div style="font-family:'IBM Plex Sans Arabic';font-weight:400;font-size:21px;line-height:1.6">نسوي الإعلان نفسه، من الفكرة لين <span style="font-weight:600">الملف النهائي.</span></div>`,
     glyphs: `<div style="font-family:'IBM Plex Sans Arabic';font-size:12px;line-height:1.75">أبجد هوز حطي كلمن سعفص قرشت ثخذ ضظغ <bdi dir="ltr">٠١٢٣٤٥٦٧٨٩</bdi> <bdi dir="ltr">0123456789</bdi></div>`, use: 'الشرح، السطور الثانوية، الكابشن، والواجهات.' },
   { name: 'Archivo', role: 'العناوين اللاتينية', roleEn: 'Latin display', w: 'WEIGHTS 800–900 · WIDTH 125%', file: 'Archivo-VF.ttf', lic: 'OFL-Archivo.txt',
-    spec: `<div style="font-family:Archivo;font-weight:900;font-stretch:125%;font-size:58px;line-height:1.2;direction:ltr;text-align:right">TASH</div>`,
-    glyphs: `<div style="font-family:Archivo;font-weight:800;font-stretch:125%;font-size:12px;line-height:1.75;direction:ltr;text-align:right;overflow-wrap:anywhere">ABCDEFGHIJKLM NOPQRSTUVWXYZ 0123456789</div>`, use: 'الاسم اللاتيني، الأرقام الكبيرة، والعناوين الإنجليزية.' },
+    spec: `<div style="font-family:'Archivo Static',Archivo;font-weight:900;font-stretch:125%;font-size:58px;line-height:1.2;direction:ltr;text-align:right">TASH</div>`,
+    glyphs: `<div style="font-family:'Archivo Static',Archivo;font-weight:800;font-stretch:125%;font-size:12px;line-height:1.75;direction:ltr;text-align:right;overflow-wrap:anywhere">ABCDEFGHIJKLM NOPQRSTUVWXYZ 0123456789</div>`, use: 'الاسم اللاتيني، الأرقام الكبيرة، والعناوين الإنجليزية.' },
   { name: 'JetBrains Mono', role: 'اللوحات والمواصفات', roleEn: 'Labels · slates', w: 'WEIGHTS 500–700 · CAPS · .24EM', file: 'JetBrainsMono-VF.ttf', lic: 'OFL-JetBrainsMono.txt',
     spec: `<div class="lbl" style="font-size:15px;color:${INK};letter-spacing:.24em;line-height:2.1;text-align:right">SC 03 · TK 1<br>TASH / 2026</div>`,
-    glyphs: `<div style="font-family:'JetBrains Mono';font-weight:600;font-size:11px;line-height:1.75;direction:ltr;text-align:right;letter-spacing:.06em;overflow-wrap:anywhere">ABCDEFGHIJKLM NOPQRSTUVWXYZ 0123456789 — / ·</div>`, use: 'لاتيني وأرقام بس، أبداً عربي.' },
+    glyphs: `<div style="font-family:'JetBrains Mono Static','JetBrains Mono';font-weight:600;font-size:11px;line-height:1.75;direction:ltr;text-align:right;letter-spacing:.06em;overflow-wrap:anywhere">ABCDEFGHIJKLM NOPQRSTUVWXYZ 0123456789 — / ·</div>`, use: 'لاتيني وأرقام بس، ولا عربي أبداً.' },
 ].map(f => `<div style="border-top:1.5px solid ${INK};padding-top:10px;min-width:0">
    <div style="display:flex;justify-content:space-between;align-items:baseline;gap:8px"><span class="w6" style="font-size:12.5px">${f.role}</span><span class="en s">${f.roleEn}</span></div>
    <div style="height:116px;display:flex;align-items:center;justify-content:flex-start;overflow:hidden">${f.spec}</div>
    ${f.glyphs}
    <div class="hr"></div>
-   <div style="font-family:Archivo;font-weight:800;font-stretch:125%;font-size:12px;direction:ltr;text-align:right">${f.name}</div>
+   <div style="font-family:'Archivo Static',Archivo;font-weight:800;font-stretch:125%;font-size:12px;direction:ltr;text-align:right">${f.name}</div>
    <p class="sm" style="margin:4px 0 6px">${f.use}</p>
    <div class="k" style="font-size:8px;line-height:1.85;color:${META_P};text-align:right;white-space:normal"><div>${f.w}</div><div>SIL OFL 1.1 · COMMERCIAL USE OK</div><div>_system/fonts/${f.file}</div><div>_system/fonts/${f.lic}</div></div>
  </div>`).join(''));
 put('v-together', `<div style="background:${INK};color:${PAPER};padding:16px 22px 14px;display:flex;justify-content:space-between;align-items:flex-end;gap:24px">
     <div><div class="lbl" style="color:${SMOKE};text-align:right;margin-bottom:16px">TASH / 2026</div>
-      <div style="font-family:Alexandria;font-weight:800;font-size:38px;line-height:1.3">خلّ إعلانك علينا.</div>
+      <div style="font-family:'Alexandria Static',Alexandria;font-weight:800;font-size:38px;line-height:1.3">خلّ إعلانك علينا.</div>
       <div style="font-size:14px;color:${SMOKE};margin-top:2px">نسوي الإعلان نفسه، من الفكرة لين الملف النهائي.</div></div>
-    <div style="direction:ltr;text-align:left"><div style="font-family:Archivo;font-weight:900;font-stretch:125%;font-size:30px;line-height:1">TASH</div><div class="lbl" style="color:${SMOKE};margin-top:6px">CREATIVE STUDIO · KUWAIT</div></div></div>
+    <div style="direction:ltr;text-align:left"><div style="font-family:'Archivo Static',Archivo;font-weight:900;font-stretch:125%;font-size:30px;line-height:1">TASH</div><div class="lbl" style="color:${SMOKE};margin-top:6px">CREATIVE STUDIO · KUWAIT</div></div></div>
   <div class="cap"><span class="ok"></span><span class="sm">الأربعة مع بعض: عنوان بـ<bdi dir="ltr">Alexandria</bdi>، سطر بـ<bdi dir="ltr">Plex</bdi>، الاسم بـ<bdi dir="ltr">Archivo</bdi>، ولوحة بـ<bdi dir="ltr">Mono</bdi>. وزنين لكل عائلة بالكثير.</span></div>`);
 (function scale() {
   const k = 0.3, rows = [
-    ['--t-hero', 168, 'Alexandria 800', '<bdi dir="ltr">1–3</bdi> كلمات', `<span style="font-family:Alexandria;font-weight:800">طشّ!</span>`],
-    ['--t-h1', 112, 'Alexandria 800', 'عنوان', `<span style="font-family:Alexandria;font-weight:800">خلّ إعلانك علينا</span>`],
-    ['--t-h2', 72, 'Alexandria 800', 'عنوان فرعي', `<span style="font-family:Alexandria;font-weight:800">مو بس فيديو… فكرة.</span>`],
+    ['--t-hero', 168, 'Alexandria 800', '<bdi dir="ltr">1–3</bdi> كلمات', `<span style="font-family:'Alexandria Static',Alexandria;font-weight:800">طشّ!</span>`],
+    ['--t-h1', 112, 'Alexandria 800', 'عنوان', `<span style="font-family:'Alexandria Static',Alexandria;font-weight:800">خلّ إعلانك علينا</span>`],
+    ['--t-h2', 72, 'Alexandria 800', 'عنوان فرعي', `<span style="font-family:'Alexandria Static',Alexandria;font-weight:800">مو بس فيديو… فكرة.</span>`],
     ['--t-h3', 48, 'Plex Arabic 600', 'سطر داعم', `<span style="font-family:'IBM Plex Sans Arabic';font-weight:600">من الفكرة لين الملف النهائي</span>`],
     ['--t-body', 34, 'Plex Arabic 400', 'أقل نص قابل للقراءة', `<span style="font-family:'IBM Plex Sans Arabic';font-weight:400">نكتب لك سالفة يفهمها جمهورك من أول ثانية.</span>`],
     ['--t-meta', 22, 'JetBrains Mono 600', 'لوحات، تباعد <bdi dir="ltr">0.24em</bdi>', `<span class="lbl" style="font-size:inherit;color:${PAPER}">CONCEPT AD — 01 / PERFUME</span>`],
@@ -431,18 +424,18 @@ put('v-together', `<div style="background:${INK};color:${PAPER};padding:16px 22p
   put('v-scale', rows.map(([tok, px, fam, use, sample]) => `<div style="display:grid;grid-template-columns:1fr 150px;gap:16px;align-items:center;border-bottom:1px solid ${LINE};padding:11px 0">
      <div style="font-size:${px * k}px;line-height:1.35;color:${PAPER};white-space:nowrap">${sample}</div>
      <div class="k" style="font-size:8.5px;line-height:1.6;color:${SMOKE}"><div style="color:${PAPER};font-size:11px">${px} px</div><div>${tok}</div><div>${fam}</div><div style="font-family:'IBM Plex Sans Arabic';letter-spacing:0;direction:rtl;text-align:left">${use}</div></div></div>`).join(''));
-  put('v-mix', `<div style="display:flex;align-items:center;gap:8px;margin-bottom:6px"><span class="ok"></span><span style="font-family:Alexandria;font-weight:800;font-size:24px">إعلان <bdi style="font-family:Archivo;font-weight:800;font-stretch:125%;font-size:88%">3D</bdi> من الصفر</span><span class="k" style="color:${SMOKE}">88%</span></div>
-    <div style="display:flex;align-items:center;gap:8px"><span class="no"></span><span style="font-family:Alexandria;font-weight:800;font-size:24px">إعلان <bdi style="font-family:Archivo;font-weight:900;font-stretch:125%;font-size:122%">3D</bdi> من الصفر</span><span class="k" style="color:${SMOKE}">122%</span></div>`);
+  put('v-mix', `<div style="display:flex;align-items:center;gap:8px;margin-bottom:6px"><span class="ok"></span><span style="font-family:'Alexandria Static',Alexandria;font-weight:800;font-size:24px">إعلان <bdi style="font-family:'Archivo Static',Archivo;font-weight:800;font-stretch:125%;font-size:88%">3D</bdi> من الصفر</span><span class="k" style="color:${SMOKE}">88%</span></div>
+    <div style="display:flex;align-items:center;gap:8px"><span class="no"></span><span style="font-family:'Alexandria Static',Alexandria;font-weight:800;font-size:24px">إعلان <bdi style="font-family:'Archivo Static',Archivo;font-weight:900;font-stretch:125%;font-size:122%">3D</bdi> من الصفر</span><span class="k" style="color:${SMOKE}">122%</span></div>`);
 })();
 (function arRules() {
-  const big = (s, extra = '') => `<span style="font-family:Alexandria;font-weight:800;font-size:30px;line-height:1.6;${extra}">${s}</span>`;
+  const big = (s, extra = '') => `<span style="font-family:'Alexandria Static',Alexandria;font-weight:800;font-size:30px;line-height:1.6;${extra}">${s}</span>`;
   const zwj = '‍';
   const tracked = ['ي' + zwj, zwj + 'س' + zwj, zwj + 'و', 'ل' + zwj, zwj + 'ف' + zwj, zwj + 'و', 'ن'].map(p => `<span style="display:inline-block;margin-left:.2em">${p}</span>`).join('');
   const letters = [...'خلّهم'].map(ch => `<span style="display:inline-block;margin-left:.12em">${ch}</span>`).join('');
   const wordsBox = ['خلّهم', 'يسولفون', 'عنك!'].map((w, i) => `<span style="display:inline-block;border:1.5px dashed ${INK};padding:0 8px;margin-left:8px;position:relative">${w}<span class="k" style="position:absolute;top:-9px;right:-6px;background:${PAPER};padding:0 3px;font-size:8px">${i + 1}</span></span>`).join('');
-  const row = (ok, content, note = '') => `<div style="display:flex;align-items:center;gap:10px;min-height:44px"><span class="${ok ? 'ok' : 'no'}"></span>${content}${note ? `<span class="sm mute" style="margin-right:auto">${note}</span>` : ''}</div>`;
+  const row = (ok, content, note = '') => `<div style="display:flex;align-items:center;gap:10px;min-height:52px"><span class="${ok ? 'ok' : 'no'}"></span>${content}${note ? `<span class="sm mute" style="margin-right:auto">${note}</span>` : ''}</div>`;
   const block = (title, en, rows, note) => `<div style="border-top:1.5px solid ${INK};padding-top:9px"><div style="display:flex;justify-content:space-between;align-items:baseline"><h3 style="font-size:13px">${title}</h3><span class="en s">${en}</span></div>
-     <div style="margin:4px 0 6px">${rows}</div><p class="sm" style="margin:0">${note}</p></div>`;
+     <div style="margin:10px 0 10px">${rows}</div><p class="sm" style="margin:0">${note}</p></div>`;
   put('v-arrules', [
     block('لا تباعد بين الحروف، ولا مطّ', 'No letter-spacing, no kashida stretching',
       row(1, big('يسولفون')) + row(0, big(tracked), 'تباعد يقطع الوصل') + row(0, big('يســولــفــون'), 'كشيدة'),
@@ -452,7 +445,7 @@ put('v-together', `<div style="background:${INK};color:${PAPER};padding:16px 22p
       'نحرّك الكلمة أو السطر: قناع، حركة، شفافية، تمويه. إذا تبي تلوّن جزء من كلمة، كرّر الكلمة كاملة بطبقة فوقها وقصّها بقناع.'),
     block('علامات الترقيم', 'Punctuation',
       row(1, big('شلون أطلب؟', 'font-size:23px;white-space:nowrap') + `<span style="width:18px"></span>` + big('طشّ… خلّهم', 'font-size:23px;white-space:nowrap') + `<span style="width:18px"></span>` + big('«يسولفون»', 'font-size:23px;white-space:nowrap')) +
-      row(0, `<span dir="ltr" style="font-family:Alexandria;font-weight:800;font-size:23px;unicode-bidi:isolate;white-space:nowrap">خلّهم يسولفون عنك!</span>`, 'حقل <bdi dir="ltr">LTR</bdi>: «!» طاحت يمين') +
+      row(0, `<span dir="ltr" style="font-family:'Alexandria Static',Alexandria;font-weight:800;font-size:23px;unicode-bidi:isolate;white-space:nowrap">خلّهم يسولفون عنك!</span>`, 'حقل <bdi dir="ltr">LTR</bdi>: «!» طاحت يمين') +
       row(0, big('شلون أطلب? طشّ... خلّهم', 'font-size:23px;white-space:nowrap'), 'علامات لاتينية'),
       'العلامات تكون على يسار آخر السطر. «،» و«؟» عربية وثابتة بمكانها، بس «!» و«.» تطيح يمين إذا الحقل <bdi dir="ltr">LTR</bdi>: صلّح الحقل مو النص. «» للاقتباس، و«…» حرف واحد لاصق بالكلمة قبله.'),
     block('نظام أرقام واحد بالقطعة', 'One numeral system per piece',
@@ -475,8 +468,8 @@ put('v-together', `<div style="background:${INK};color:${PAPER};padding:16px 22p
       T(x0 + 20, 132, t.toFixed(2), { size: 10, anchor: 'middle' }); }).join('') + `<line x1="14" y1="100" x2="286" y2="100" stroke="${LINE}" stroke-width="1"/>` + T(150, 164, 'PERIOD ' + CUES.typingPeriod + ' S · PHASE ' + CUES.typingPhase + ' S', { size: 9, anchor: 'middle', ls: 1.5 })));
   // dots-wipe: three dots grow right→left (ease-in, staggered) until they cover; the cut hides under lime; they exit left and reveal B
   function wipeFrame(p, n) {
-    const w = 54, h = 96, A = `<rect width="${w}" height="${h}" fill="${INK}"/><text x="${w / 2}" y="${h / 2 + 5}" font-family="Alexandria" font-weight="800" font-size="13" fill="${PAPER}" text-anchor="middle" direction="rtl">قبل</text>`;
-    const B = `<rect width="${w}" height="${h}" fill="${PAPER}"/><text x="${w / 2}" y="${h / 2 + 5}" font-family="Alexandria" font-weight="800" font-size="13" fill="${INK}" text-anchor="middle" direction="rtl">بعد</text>`;
+    const w = 54, h = 96, A = `<rect width="${w}" height="${h}" fill="${INK}"/><text x="${w / 2}" y="${h / 2 + 5}" font-family="'Alexandria Static', Alexandria" font-weight="800" font-size="13" fill="${PAPER}" text-anchor="middle" direction="rtl">قبل</text>`;
+    const B = `<rect width="${w}" height="${h}" fill="${PAPER}"/><text x="${w / 2}" y="${h / 2 + 5}" font-family="'Alexandria Static', Alexandria" font-weight="800" font-size="13" fill="${INK}" text-anchor="middle" direction="rtl">بعد</text>`;
     let s = p < 0.5 ? A : B; const out = E.inQuad(clamp((p - 0.5) / 0.5));
     if (p > 0.02 && p < 0.999) [0, 1, 2].forEach(i => { // i = 0 is the rightmost dot
       const k = E.inCubic(clamp((p - 0.06 - i * 0.06) / 0.34)), rr = p < 0.5 ? lerp(4, 74, k) : 74;
@@ -499,7 +492,7 @@ put('v-together', `<div style="background:${INK};color:${PAPER};padding:16px 22p
      <div style="width:84px;flex:0 0 84px">${svg('0 0 120 50', inner)}</div><span class="sm">${ar}</span></div>`;
   const row3 = (rs, gap, col = LIME) => rs.map((r_, i) => `<circle cx="${92 - i * gap}" cy="25" r="${r_}" fill="${Array.isArray(col) ? col[i] : col}"/>`).join('');
   put('v-dots-dd', `<div style="display:grid;grid-template-columns:1fr 3fr;gap:14px">
-    <div>${head('علامة مائية', 'Watermark')}${wm}<p class="sm" style="margin-top:8px">بصور الكواليس حقتنا بس: صغيرة، تحت يسار. أبداً على شغل العميل.</p></div>
+    <div>${head('علامة مائية', 'Watermark')}${wm}<p class="sm" style="margin-top:8px">بصور الكواليس حقتنا بس: صغيرة، تحت يسار. ولا مرة على شغل العميل.</p></div>
     <div>${head('النقاط دايماً ثلاث، متساوية، بصف', 'Always three, equal, in a row')}<div style="display:grid;grid-template-columns:1fr 1fr;gap:10px">${[
       dd(1, row3([10, 10, 10], 29), 'ثلاث نقاط متساوية بصف'),
       dd(0, [0, 1, 2, 3].map(i => `<circle cx="${104 - i * 27}" cy="25" r="10" fill="${LIME}"/>`).join(''), 'عدد ثاني'),
@@ -525,8 +518,8 @@ put('v-together', `<div style="background:${INK};color:${PAPER};padding:16px 22p
       <div style="position:absolute;inset:0" class="fill">${svg('0 0 1080 1920', cn(170, 430, 1, 1) + cn(910, 430, -1, 1) + cn(170, 1490, 1, -1) + cn(910, 1490, -1, -1), 'preserveAspectRatio="xMidYMid slice"')}</div></div></div>`;
   // ✕ minis, drawn
   const mini = inner => `<div style="width:52px;flex:0 0 52px">${svg('0 0 108 192', `<rect width="108" height="192" fill="${INK}"/>` + inner)}</div>`;
-  const hud = mini(`<g font-family="JetBrains Mono" font-size="7" fill="${PAPER}" letter-spacing="1"><text x="6" y="12">SC 03</text><text x="102" y="12" text-anchor="end">TK 1</text><text x="6" y="186">00:00:03:12</text><text x="102" y="186" text-anchor="end">REC</text><text x="54" y="100" text-anchor="middle">CONCEPT AD</text></g>`);
-  const clutter = mini(`${cn(14, 30, 1, 1, PAPER, 2, 14)}${cn(94, 30, -1, 1, PAPER, 2, 14)}${cn(14, 162, 1, -1, PAPER, 2, 14)}${cn(94, 162, -1, -1, PAPER, 2, 14)}<g stroke="${LINE}">${[36, 54, 72].map(x => `<line x1="${x}" y1="0" x2="${x}" y2="192"/>`).join('')}</g><circle cx="20" cy="178" r="3" fill="${LIME}"/><circle cx="29" cy="178" r="3" fill="${LIME}"/><circle cx="38" cy="178" r="3" fill="${LIME}"/><text x="54" y="16" font-family="JetBrains Mono" font-size="7" fill="${PAPER}" text-anchor="middle">TASH / 2026</text>`);
+  const hud = mini(`<g font-family="'JetBrains Mono Static', 'JetBrains Mono'" font-size="7" fill="${PAPER}" letter-spacing="1"><text x="6" y="12">SC 03</text><text x="102" y="12" text-anchor="end">TK 1</text><text x="6" y="186">00:00:03:12</text><text x="102" y="186" text-anchor="end">REC</text><text x="54" y="100" text-anchor="middle">CONCEPT AD</text></g>`);
+  const clutter = mini(`${cn(14, 30, 1, 1, PAPER, 2, 14)}${cn(94, 30, -1, 1, PAPER, 2, 14)}${cn(14, 162, 1, -1, PAPER, 2, 14)}${cn(94, 162, -1, -1, PAPER, 2, 14)}<g stroke="${LINE}">${[36, 54, 72].map(x => `<line x1="${x}" y1="0" x2="${x}" y2="192"/>`).join('')}</g><circle cx="20" cy="178" r="3" fill="${LIME}"/><circle cx="29" cy="178" r="3" fill="${LIME}"/><circle cx="38" cy="178" r="3" fill="${LIME}"/><text x="54" y="16" font-family="'JetBrains Mono Static', 'JetBrains Mono'" font-size="7" fill="${PAPER}" text-anchor="middle">TASH / 2026</text>`);
   put('v-devices2', [
     col('فقاعة المحادثة', 'Device 2 · the chat bubble', chat,
       rule(1, 'فقاعة «يكتب…» نفس شكل التوقيع، أو سطر محادثة مُمثَّل.') + rule(1, 'واجهة محادثة عامة: بدون أسماء، بدون أرقام، بدون ادعاءات.') + rule(0, 'لا شعارات أو واجهات منصات حقيقية.'),
@@ -565,9 +558,9 @@ put('v-together', `<div style="background:${INK};color:${PAPER};padding:16px 22p
 (function safe() {
   const W = 1080, H = 1920;
   const hatch = id => `<pattern id="${id}" width="22" height="22" patternUnits="userSpaceOnUse" patternTransform="rotate(45)"><line x1="0" y1="0" x2="0" y2="22" stroke="${SMOKE}" stroke-width="5" stroke-opacity=".5"/></pattern>`;
-  const sample = (y) => `<text x="540" y="${y}" font-family="Alexandria" font-weight="800" font-size="104" fill="${PAPER}" text-anchor="middle" direction="rtl">خلّ إعلانك علينا</text>`;
-  const frame = (id, inner, label, ar, en) => `<div><div style="border:1px solid ${LINE}" class="fig">${svg(`0 0 ${W} ${H}`, `<defs>${hatch(id)}</defs><rect width="${W}" height="${H}" fill="${CHAR}"/>${inner}`)}</div>
-    <div style="margin-top:8px"><h3>${ar}</h3><p class="en s">${en}</p><div class="k" style="font-size:8px;color:${SMOKE};margin-top:4px;line-height:1.7;text-align:right">${label}</div></div></div>`;
+  const sample = (y) => `<text x="540" y="${y}" font-family="'Alexandria Static', Alexandria" font-weight="800" font-size="104" fill="${PAPER}" text-anchor="middle" direction="rtl">خلّ إعلانك علينا</text>`;
+  const frame = (id, inner, label, ar, en, rule) => `<div><div style="border:1px solid ${LINE}" class="fig">${svg(`0 0 ${W} ${H}`, `<defs>${hatch(id)}</defs><rect width="${W}" height="${H}" fill="${CHAR}"/>${inner}`)}</div>
+    <div style="margin-top:8px"><h3>${ar}</h3><p class="en s">${en}</p><p class="sm" style="margin:6px 0 0">${rule}</p><div class="k" style="font-size:8.5px;color:${SMOKE};margin-top:6px;line-height:1.7;text-align:right">${label}</div></div></div>`;
   const dim = (x, y, s, a = 'start') => T(x, y, s, { size: 34, fill: PAPER, ls: 3, anchor: a });
   const wm = (y) => wmAt(540 - 130, y, 260, { body: PAPER, dot: LIME });
   const reel = `<rect width="${W}" height="220" fill="url(#h1)"/><rect y="1500" width="${W}" height="420" fill="url(#h1)"/><rect x="${W - 120}" y="960" width="120" height="540" fill="url(#h1)"/>
@@ -586,10 +579,10 @@ put('v-together', `<div style="background:${INK};color:${PAPER};padding:16px 22p
     <circle cx="540" cy="960" r="330" fill="none" stroke="${LIME}" stroke-width="6"/>${L.symbolSVG({ pad: 0 }).replace(/^<svg[^>]*>/, `<svg x="${540 - 170}" y="${960 - 60}" width="340" height="120" viewBox="${(() => { const ds = DOTS; return `${ds[2].cx - R} ${ds[0].cy - R} ${ds[0].cx - ds[2].cx + 2 * R} ${2 * R}`; })()}">`)}
     ${dim(540, 1380, 'Ø 660', 'middle')}`;
   put('v-safe', [
-    frame('h1', reel, 'TEXT X 72→1008 · Y 220→1500<br>RIGHT RAIL 120 PX · LOWER HALF', 'ريل', 'Reel · in-feed UI'),
-    frame('h2', cover, 'GRID SHOWS Y 240→1680<br>KEY TEXT Y 240→1500', 'غلاف ريل', 'Reel cover · profile crop'),
-    frame('h3', story, 'TEXT X 72→1008 · Y 250→1620', 'ستوري', 'Story'),
-    frame('h4', hl, 'CIRCLE Ø 660 · CENTRED', 'غلاف هايلايت', 'Highlight cover'),
+    frame('h1', reel, 'TEXT X 72→1008 · Y 220→1500<br>RIGHT RAIL 120 PX · LOWER HALF', 'ريل', 'Reel · in-feed UI', 'الكلام المهم داخل الخط. بالنص التحتي خلّه بعيد عن عمود الأزرار يمين.'),
+    frame('h2', cover, 'GRID SHOWS Y 240→1680<br>KEY TEXT Y 240→1500', 'غلاف ريل', 'Reel cover · profile crop', 'البروفايل يقص الغلاف <bdi dir="ltr">3:4</bdi>، فالعنوان والمنتج <span style="white-space:nowrap">بين <bdi dir="ltr">240</bdi> و<bdi dir="ltr">1500</bdi>.</span>'),
+    frame('h3', story, 'TEXT X 72→1008 · Y 250→1620', 'ستوري', 'Story', 'فوق لاسم الحساب، وتحت لخانة الرد. الكلام بالنص، مو على الحواف.'),
+    frame('h4', hl, 'CIRCLE Ø 660 · CENTRED', 'غلاف هايلايت', 'Highlight cover', 'دائرة <bdi dir="ltr">660</bdi> بالنص: رمز واحد واضح. الاسم ينكتب بإنستغرام، مو على الصورة.'),
   ].join(''));
 })();
 
@@ -637,14 +630,14 @@ put('v-ad-frames', [
   // labels sit above the axis, so the deepest tier goes nearest the axis: a leader then only crosses rows whose labels start to its right
   const mark = m => { const ly = y - 22 - (maxT - m.tier) * 15; return `<line x1="${X(m.t)}" y1="${ly + 3}" x2="${X(m.t)}" y2="${y + 16}" stroke="${m.col}" stroke-width="2"/>` + T(m.x - (m.t === CUES.duration ? 0 : 0), ly, m.text, { size: 10, anchor: m.t === CUES.duration ? 'end' : 'start', fill: m.col, ls: 1 }); };
   let ticks = ''; for (let t = 0; t <= CUES.duration + 1e-6; t += 0.5) ticks += `<line x1="${X(t)}" y1="${y + 40}" x2="${X(t)}" y2="${y + 46}" stroke="${SMOKE}"/>` + T(X(t), y + 60, t.toFixed(1), { size: 9, anchor: 'middle' });
-  put('v-timeline', svg('0 0 1000 134', `<line x1="${X(0)}" y1="${y}" x2="${X(CUES.duration)}" y2="${y}" stroke="${LINE}" stroke-width="2"/>` +
+  put('v-timeline', svg('0 0 1000 156', `<line x1="${X(0)}" y1="${y}" x2="${X(CUES.duration)}" y2="${y}" stroke="${LINE}" stroke-width="2"/>` +
     seg(CUES.typingStart, CUES.converge, CHAR, 'TYPING') + seg(CUES.converge, CUES.snap, SMOKE, 'CONVERGE') + seg(CUES.pulse, CUES.pulse + 0.62 + 0.3, CHAR, 'PULSE') +
     CUES.ticks.map(t => `<circle cx="${X(t)}" cy="${y}" r="4" fill="${LIME}"/>`).join('') +
     mk.map(mark).join('') +
     `<rect x="${X(CUES.snap)}" y="${y - 7}" width="${X(CUES.shadda) - X(CUES.snap)}" height="14" rx="3" fill="${LIME}" opacity=".35"/>` + ticks +
     T(X(0), y + 84, 'SECONDS · ENDCARD-CUES.JSON · TIME RUNS LEFT → RIGHT', { size: 9, ls: 1.5 })));
   // easing curves straight from kit.js
-  const plot = (fn, ar, en, frames_, lo = 0, hi = 1) => { const w = 200, h = 128, px = t => 12 + t * (w - 24), py = v => h - 14 - (v - lo) / (hi - lo) * (h - 34);
+  const plot = (fn, ar, en, frames_, lo = 0, hi = 1) => { const w = 200, h = 168, px = t => 12 + t * (w - 24), py = v => h - 14 - (v - lo) / (hi - lo) * (h - 34);
     let d = ''; for (let i = 0; i <= 80; i++) { const t = i / 80; d += (i ? 'L' : 'M') + px(t).toFixed(1) + ' ' + py(fn(t)).toFixed(1); }
     return `<div>${svg(`0 0 ${w} ${h}`, `<line x1="12" y1="${py(0)}" x2="${w - 12}" y2="${py(0)}" stroke="${LINE}"/><line x1="12" y1="${py(1)}" x2="${w - 12}" y2="${py(1)}" stroke="${LINE}" stroke-dasharray="3 4"/><path d="${d}" fill="none" stroke="${LIME}" stroke-width="2.5"/>`)}
       <div style="display:flex;justify-content:space-between;align-items:baseline;margin-top:3px"><span class="w6" style="font-size:10px">${ar}</span><span class="k" style="font-size:7.5px;color:${SMOKE}">${frames_}</span></div><div class="en s">${en}</div></div>`; };
@@ -669,7 +662,7 @@ put('v-ad-frames', [
     [0.02, 'POP', 'فقاعة', 'pop(300→700 Hz)', 'الفقاعة تطلع'],
     ...CUES.ticks.map((t, i) => [t, 'TICK', i === 1 ? 'تكّ تكّ تكّ' : '', ['2.2', '2.5', '2.8'][i] + ' kHz', 'النقاط تكتب']),
     [CUES.snap - 0.42 + 0.5 * 0.6, 'WHOOSH', 'هوا', 'whoosh 0.5 s · peak', 'النقاط تطير'],
-    [CUES.snap - 0.004, 'HIT', 'طشّ!', 'tash_hit(): impact + Khaleeji group clap + air', 'الكلمة تنضرب، قبل الفريم بـ4 ms'],
+    [CUES.snap - 0.004, 'HIT', 'طشّ!', 'tash_hit(): impact + Khaleeji group clap + air', 'الكلمة تطيح، قبل الفريم بـ4 ms'],
     [CUES.shadda + 0.06, 'POP', 'الشدّة', 'pop(500→1300 Hz)', 'الشدّة تنزل'],
     [CUES.pulse + 0.18, 'TICKS', 'نبضة', '2.6 / 2.9 / 3.2 kHz', 'النقاط تنبض'],
   ];
@@ -683,13 +676,13 @@ put('v-ad-frames', [
     [[0.02, 'فقاعة', 'pop(300→700 Hz)', 'الفقاعة تطلع'],
      [CUES.ticks.map(t => t.toFixed(2)).join(' · '), 'تكّ تكّ تكّ', 'tick() · 2.2 / 2.5 / 2.8 kHz', 'النقاط تكتب'],
      [(CUES.snap - 0.42).toFixed(2), 'هوا', 'whoosh(0.5 s) · peak ≈ ' + (CUES.snap - 0.42 + 0.3).toFixed(2) + ' s', 'النقاط تطير'],
-     [(CUES.snap - 0.004).toFixed(3), '<b>طشّ!</b>', 'tash_hit(): impact + claps_ensemble + air', 'الكلمة تنضرب'],
+     [(CUES.snap - 0.004).toFixed(3), '<b>طشّ!</b>', 'tash_hit(): impact + claps_ensemble + air', 'الكلمة تطيح'],
      [(CUES.shadda + 0.06).toFixed(2), 'بوب', 'pop(500→1300 Hz)', 'الشدّة تنزل'],
      [`${(CUES.pulse + 0.18).toFixed(2)}–${(CUES.pulse + 0.42).toFixed(2)}`, 'تكّات خفيفة', 'tick() · 2.6 / 2.9 / 3.2 kHz', 'النقاط تنبض']]
       .map(([t, a, s, p]) => `<tr><td class="k" style="font-size:9px">${t}</td><td class="w6">${a}</td><td class="k" style="font-size:8px;color:${META_P}">${s}</td><td>${p}</td></tr>`).join('') + `</tbody></table>
     <p class="sm" style="margin-top:10px">بالإعلان الكامل: نزّل الموسيقى <bdi dir="ltr">10–15 dB</bdi> قبل الضربة بـ<bdi dir="ltr">0.2–0.3 s</bdi>، أو خلّ الموسيقى تقفل قبل التوقيع. وإذا مقام الأغنية يتعارض مع التكّات، غيّر طبقتها.</p>`);
   const L1 = MEDIA.loudness;
-  const box_ = (v, k, sub) => `<div style="border:1.5px solid ${INK};padding:8px 10px 7px"><div style="font-family:Archivo;font-weight:800;font-stretch:125%;font-size:20px;direction:ltr;text-align:right">${v}</div><div class="lbl" style="text-align:right;color:${INK}">${k}</div><div class="sm mute" style="margin-top:2px">${sub}</div></div>`;
+  const box_ = (v, k, sub) => `<div style="border:1.5px solid ${INK};padding:8px 10px 7px"><div style="font-family:'Archivo Static',Archivo;font-weight:800;font-stretch:125%;font-size:20px;direction:ltr;text-align:right">${v}</div><div class="lbl" style="text-align:right;color:${INK}">${k}</div><div class="sm mute" style="margin-top:2px">${sub}</div></div>`;
   const ok = (I, TP) => Math.abs(I + 14) <= 1 && TP <= -1;
   put('v-loud', `<div style="display:grid;grid-template-columns:1fr 1fr;gap:8px">${box_('−14 LUFS', 'INTEGRATED', 'الهدف')}${box_('≤ −1 dBTP', 'TRUE PEAK', 'الحد')}</div>
     <table style="margin-top:10px"><thead><tr><th><span class="ar">مقاس فعلياً</span>MEASURED · EBU R128</th><th>I</th><th>TP</th><th>LRA</th><th></th></tr></thead><tbody>
@@ -723,11 +716,11 @@ put('v-examples', [
   ['نحن الأفضل في الكويت.', 'خلّ الشغل يسولف عنّا.'],
   ['احجز الآن ولا تفوّت الفرصة!', 'متى ما جهزت، الخاص مفتوح.'],
   ['إعلان ترويجي لمنتج عطري فاخر.', 'عطر يبقى… بعد ما تمشي.'],
-].map(([b, a]) => `<div style="display:grid;grid-template-columns:4fr 40px 7fr;align-items:center;padding:19px 0;border-bottom:1px solid ${LINE}">
+].map(([b, a]) => `<div style="display:grid;grid-template-columns:4fr 40px 7fr;align-items:center;padding:27px 0;border-bottom:1px solid ${LINE}">
    <div style="display:flex;gap:10px;align-items:center;color:${SMOKE};font-size:14.5px"><span class="no"></span>${b}</div>
    <div style="color:${LIME};font-size:18px;text-align:center;font-family:'IBM Plex Sans Arabic'">←</div>
-   <div style="display:flex;gap:10px;align-items:center"><span class="ok"></span><span style="font-family:Alexandria;font-weight:800;font-size:25px;line-height:1.4;text-wrap:balance">${a}</span></div></div>`).join('') +
-  `<p class="sm mute" style="margin-top:10px">الأمثلة من <bdi dir="ltr" class="k">06-copy/voice-and-tone.md</bdi>. لاحظ إن «نحن الأفضل» ما انصلحت، انشالت.</p>`);
+   <div style="display:flex;gap:10px;align-items:center"><span class="ok"></span><span style="font-family:'Alexandria Static',Alexandria;font-weight:800;font-size:25px;line-height:1.4;text-wrap:balance">${a}</span></div></div>`).join('') +
+  `<p class="sm mute" style="margin-top:10px">الأمثلة من <bdi dir="ltr" class="k">06-copy/voice-and-tone.md</bdi>. لاحظ إن «نحن الأفضل» ما انصلحت: الادعاء انشال، وصار الشغل هو اللي يتكلم.</p>`);
 
 // ------------------------------------------------------------------ 11 files & licences
 put('v-files', `<table><thead><tr><th style="width:36%"><span class="ar">المسار</span>PATH</th><th><span class="ar">شنو فيه</span>CONTENTS</th></tr></thead><tbody>` + [
@@ -749,7 +742,7 @@ put('v-files', `<table><thead><tr><th style="width:36%"><span class="ar">الم�
   ['_system/tools/', '<bdi dir="ltr">render.mjs</bdi>، <bdi dir="ltr">contact.sh</bdi>، <bdi dir="ltr">audio-check.sh</bdi>، <bdi dir="ltr">export-logo.mjs</bdi>'],
 ].map(([p, d]) => `<tr><td class="k" style="font-size:8.5px;text-align:right" data-path="${p}">${p}</td><td class="sm">${d}</td></tr>`).join('') + `</tbody></table>`);
 put('v-licences', [
-  ['الخطوط', 'Fonts', 'SIL OFL 1.1', 'Alexandria، IBM Plex Sans Arabic، Archivo، JetBrains Mono. الاستخدام التجاري والتضمين مسموح؛ ما ينباع الخط بروحه، والرخصة ترافقه.', '_system/fonts/OFL-*.txt'],
+  ['الخطوط', 'Fonts', 'SIL OFL 1.1', 'Alexandria، IBM Plex Sans Arabic، Archivo، JetBrains Mono. الاستخدام التجاري والتضمين مسموح؛ ما ينباع الخط بروحه، والرخصة ترافقه. الـ<bdi dir="ltr">PDF</bdi> يضمّن نسخ ثابتة مقصوصة من نفس الملفات، ومعاها رخصها.', '_system/fonts/OFL-*.txt · 01-brand-guide/src/fonts/'],
   ['الشعار', 'Logo', 'TASH', 'رسم من حروف Alexandria محوّلة لمسارات ومعدّلة. الأعمال المصمّمة بخط OFL (ومنها الشعارات) ما تخضع لرخصة الخط.', '_system/brand/'],
   ['Three.js', '3D', 'MIT', 'مكتبة الـ3D بالإعلانات التجريبية.', '_system/vendor/three/LICENSE'],
   ['GSAP 3.13', 'Animation', 'GreenSock Standard', 'موجودة بالنظام؛ شروطها برأس الملف.', '_system/vendor/gsap/'],
