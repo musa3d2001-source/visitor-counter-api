@@ -82,7 +82,7 @@ for b in range(0, 6):
         t = g.t(b, beat)
         if t < C['smash'] - 1e-6 or muted(t):
             continue
-        music.add(sub808(f, d, glide_from=f * 1.5 if beat == 0 else None), t, gain=0.62)
+        music.add(sub808(f, d * 0.85, glide_from=f * 1.5 if beat == 0 else None), t, gain=0.5)
 # half-time: one long sustained 808 + low pad
 music.add(sub808(D2, 0.95, glide_from=D2 * 0.75, decay=0.5), HALF[0], gain=0.55)
 music.add(pad([nf('D3'), nf('A3'), nf('Eb4')], 1.0, cutoff=1300, attack=0.15, release=0.4), HALF[0], gain=0.22)

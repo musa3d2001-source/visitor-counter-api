@@ -65,7 +65,6 @@ export function createOverlay(root, C, { W = 1080, H = 1920, project } = {}) {
     <rect id="m-bot" x="30" y="172" width="240" height="46" rx="23" fill="${C_.mustard}"/>`;
   const ecWord = el('div', 'ec-word', ec); const ecW = words(el('div', 'ec-ar', ecWord, 'ستاك برجر'));
   const ecLat = el('div', 'ec-lat', ec, 'STAKK BURGER');
-  const ecTag = el('div', 'ec-tag', ec); const ecTagW = words(el('div', null, ecTag, 'كل طبقة لها سالفة'));
 
   // ------------------------------------------------ concept slate (visible from the end card to the last frame)
   const slate = el('div', 'slate', ui);
@@ -139,7 +138,7 @@ export function createOverlay(root, C, { W = 1080, H = 1920, project } = {}) {
     if (dOn) { popWords(dblW, t, T.double[0], { rise: 120, rot: -8, from: 0.3 }); outWords(dblW, t, T.double[1] - 0.12, { dur: 0.12 }); }
     // hero offer
     const hOn = t >= T.product && t < C.endcard;
-    prod.style.display = badge.style.display = cta.style.display = hOn ? 'block' : 'none';
+    prod.style.display = cta.style.display = hOn ? 'block' : 'none'; badge.style.display = hOn ? 'flex' : 'none';
     if (hOn) {
       popWords(prodW, t, T.product, { stagger: 0.08, rise: 50, rot: 3 });
       const bk = t < T.price ? 0 : spring(clamp((t - T.price) / 0.7), { freq: 1.8, damp: 5.5 });
@@ -164,7 +163,6 @@ export function createOverlay(root, C, { W = 1080, H = 1920, project } = {}) {
       popWords(ecW, t, C.endcard + 0.2, { stagger: 0.09, rise: 50, rot: 3 });
       const lk = tw(t, C.endcard + 0.38, 0.4);
       css(ecLat, { opacity: String(lk), letterSpacing: `${lerp(0.5, 0.16, lk).toFixed(3)}em` });
-      popWords(ecTagW, t, C.endcard + 0.48, { stagger: 0.06, rise: 24, rot: 0, from: 0.9 });
     }
     // slate on the client end card
     const sOn = t >= T.slate && t < C.sting;
@@ -184,4 +182,22 @@ export function createOverlay(root, C, { W = 1080, H = 1920, project } = {}) {
     }
   }
   return { render, el: ui };
+}
+
+/** Poster / cover (static): same hero world, designed layout, concept slate. */
+export function createPoster(root, { W = 1080, H = 1920 } = {}) {
+  const ui = el('div', 'ui poster', root);
+  const t1 = el('div', 'po-title', ui);
+  el('div', 'po-l1', t1, 'كل طبقة');
+  el('div', 'po-l2', t1, 'لها سالفة');
+  const badge = el('div', 'badge po-badge', ui);
+  const bIn = el('div', 'b-in', badge); el('div', 'b-num', bIn, '٢٫٧٥٠'); el('div', 'b-cur', bIn, 'د.ك');
+  const brand = el('div', 'po-brand', ui);
+  el('div', 'po-ar', brand, 'ستاك برجر'); el('div', 'po-lat', brand, 'STAKK BURGER');
+  const cta = el('div', 'cta po-cta', ui); const ci = el('div', 'cta-in', cta); el('span', 'cta-t', ci, 'اطلب الحين'); el('span', 'cta-a', ci, '←');
+  const sl = el('div', 'po-slate', ui);
+  el('div', 'po-sl-mono', sl, 'CONCEPT AD — 02 / BURGER');
+  el('div', 'po-sl-ar', sl, 'إعلان تجريبي — علامة خيالية');
+  el('div', 'po-sl-tash', sl, 'TASH / 2026');
+  return { el: ui };
 }

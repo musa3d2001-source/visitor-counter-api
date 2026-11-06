@@ -63,7 +63,7 @@ def ping(note, t0, gain=0.08, pan=0.0, d=2.0, bright=0.45):
 
 
 # ------------------------------------------------------------------------------------------ S1 — darkness, light sweep (0.00–1.50)
-sub_swell('D2', 0.0, 1.7, gain=0.15, rise=0.4)
+sub_swell('D2', 0.0, 1.7, gain=0.08, rise=0.4)
 oud('D2', 0.0, vel=0.55, d=2.6)                 # frame 0: a low open string under the first light
 # the strip of light travels right→left: an airy sweep panned R→L
 sw = whoosh(1.45, f_lo=700, f_hi=6500, q=3.2, pan_from=0.85, pan_to=-0.85, peak=0.5)
@@ -80,7 +80,7 @@ oud('Eb4', CUT['S2'] + 0.375, vel=0.65, pan=-0.05)
 oud('F#4', CUT['S2'] + 0.75, vel=0.85, pan=0.0, trem=True)
 oud('G4', CUT['S2'] + 1.125, vel=0.6, pan=0.05)
 pad_seg(['D3', 'A3'], CUT['S2'] - 0.2, CUT['S3'] + 0.3, cutoff=750, gain=0.20, attack=0.9)
-sub_swell('D2', CUT['S2'] + 0.2, 1.8, gain=0.17, rise=1.0)
+sub_swell('D2', CUT['S2'] + 0.2, 1.8, gain=0.12, rise=1.0)
 m.add(riser(1.2, f_lo=300, f_hi=3500, tonal=False) * 0.07, CUT['S3'] - 1.2, bus='sfx')
 
 # ------------------------------------------------------------------------------------------ S3 — orbit, gold dust (3.00–6.00)
@@ -118,7 +118,7 @@ oud('D3', CUT['S5'], vel=0.75, d=3.0, trem=True)
 pad_seg(['D3', 'A3'], CUT['S5'], CUT['S6'], cutoff=520, gain=0.14, attack=0.6)
 ping('A5', T_LINE1 + 0.05, gain=0.04, pan=0.2, d=2.4, bright=0.3)
 ping('D6', T_LINE2 + 0.10, gain=0.06, pan=-0.2, d=2.6, bright=0.3)
-sub_swell('D2', 9.2, 1.4, gain=0.14, rise=1.1)
+sub_swell('D2', 9.2, 1.4, gain=0.07, rise=1.1)
 m.add(riser(1.1, f_lo=250, f_hi=4000, tonal=True) * 0.05, CUT['S6'] - 1.1, bus='sfx')
 
 # ------------------------------------------------------------------------------------------ S6 — hero (10.50–13.50)

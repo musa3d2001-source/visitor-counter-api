@@ -61,7 +61,7 @@ export function makeOverlay(stage, { W, H, clean, poster }) {
 
   // ---- S5: the line — «تمشي…» / «ويبقى ليل.»
   const l1 = line(ui, ['تمشي…'], { top: 985, size: 132 });
-  const l2 = line(ui, [{ text: 'ويبقى' }, { text: 'ليل.', color: HONEY }], { top: 1160, size: 132 });
+  const l2 = line(ui, [{ text: 'ويبقى' }, { text: 'ليل.', color: HONEY }], { top: 1180, size: 132 });
 
   // ---- client end card (over the hero)
   const ec = el(ui, 'div', null, { position: 'absolute', inset: '0' });
@@ -78,10 +78,12 @@ export function makeOverlay(stage, { W, H, clean, poster }) {
   el(slate, 'div', 'mono', {}, 'CONCEPT AD — 01 / PERFUME');
   el(slate, 'div', 'ar', {}, 'إعلان تجريبي — علامة خيالية');
 
-  // poster-only: small TASH mark at the foot of the slate area
+  // poster (designed cover): TASH mark + slate as one compact credit block on top, client lockup below, bottle under it
   if (poster) {
-    const pm = el(ui, 'div', null, { position: 'absolute', left: '0', right: '0', top: '1408px', display: 'flex', justifyContent: 'center' });
-    pm.innerHTML = wordmarkSVG({ width: 112, body: '#F5F5E9', dot: '#C6FF00' }); // static, our own logo markup
+    const pm = el(ui, 'div', null, { position: 'absolute', left: '0', right: '0', top: '236px', display: 'flex', justifyContent: 'center' });
+    pm.innerHTML = wordmarkSVG({ width: 84, body: '#F5F5E9', dot: '#C6FF00' }); // static, our own logo markup
+    css(slate, { top: '310px' });
+    css(ecAr.box, { top: '418px' }); css(ecLat, { top: '664px' }); css(ecRule, { top: '742px' }); css(ecSub, { top: '764px' });
   }
 
   api.render = (t) => {

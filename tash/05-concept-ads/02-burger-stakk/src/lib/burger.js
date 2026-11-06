@@ -82,8 +82,8 @@ function bunTextures(kind, seed) {
   const crown = kind === 'crown';
   const col = crown
     ? ramp([[0, '#E2B878'], [0.05, '#D19A52'], [0.16, '#BB7A33'], [0.3, '#A05A1C'], [0.48, '#8A4714'], [0.75, '#7A3B0F'], [1, '#70350D']])
-    : ramp([[0, '#8E4A18'], [0.3, '#9E5A22'], [0.5, '#AE6A2A'], [0.7, '#BE803A'], [0.88, '#CC9550'], [1, '#D6A866']]);
-  const [map, rough, bump] = paintMulti(1024, 512, [{ srgb: true, repeatU: true }, { repeatU: true }, { repeatU: true }], (u, v, [c, r, b]) => {
+    : ramp([[0, '#5A2A0C'], [0.3, '#6A3210'], [0.46, '#7A3A12'], [0.58, '#8A4616'], [0.7, '#9A541C'], [0.82, '#AA6424'], [0.92, '#B6722E'], [1, '#BE7E38']]);
+  const [map, rough, bump] = paintMulti(2048, 1024, [{ srgb: true, repeatU: true }, { repeatU: true }, { repeatU: true }], (u, v, [c, r, b]) => {
     const a = u * TAU, cx = Math.cos(a), sx = Math.sin(a);
     const m1 = fbm(cx * 2.2, sx * 2.2, v * 6 + seed, 4);          // large mottling
     const m2 = fbm(cx * 9, sx * 9, v * 26 + seed, 3);              // fine
@@ -92,10 +92,10 @@ function bunTextures(kind, seed) {
     base = mixc(base, hex(crown ? '#6E3410' : '#9A5A22'), blot * 0.35);
     const k = 1 + m1 * 0.1 + m2 * 0.05;
     c[0] = clamp(base[0] * k, 0, 255); c[1] = clamp(base[1] * k, 0, 255); c[2] = clamp(base[2] * k, 0, 255);
-    const glossy = crown ? smooth(0.2, 0.45, v) : smooth(0.6, 0.2, v) * 0.5;
+    const glossy = crown ? smooth(0.2, 0.45, v) : 0.15;
     const rr = mix(0.7, 0.42, glossy) + m2 * 0.06;
     r[0] = r[1] = r[2] = clamp(rr * 255, 0, 255);
-    const bb = 0.5 + 0.35 * fbm(cx * 22, sx * 22, v * 60 + seed, 3) + 0.15 * m2;
+    const bb = 0.5 + (crown ? 0.25 : 0.4) * fbm(cx * 22, sx * 22, v * 60 + seed, 3) + (crown ? 0.2 : 0.35) * fbm(cx * 70, sx * 70, v * 190 + seed, 2) + 0.12 * m2;
     b[0] = b[1] = b[2] = clamp(bb * 255, 0, 255);
   });
   return { map, rough, bump };
@@ -108,9 +108,9 @@ function crumbTextures(seed, { toast = 1, R = 0.92 } = {}) {
     const pores = ridged(x * 26 + seed, z * 26, 1.3, 3), cells = fbm(x * 60, z * 60, seed, 2);
     const pit = smooth(0.72, 0.92, pores) * 0.8 + smooth(0.25, 0.6, cells) * 0.3;
     const t = toast * (0.55 + 0.45 * smooth(0.0, 0.95, rr)) + 0.15 * fbm(x * 3, z * 3, seed + 2, 3);
-    let base = mixc(hex('#F0D7A2'), hex('#C78A44'), clamp(t));
-    base = mixc(base, hex('#9A5A24'), smooth(0.9, 1.0, rr) * 0.9);   // crust ring
-    base = mixc(base, hex('#7E4A1E'), pit * 0.45);
+    let base = mixc(hex('#D2A060'), hex('#93501C'), clamp(t));
+    base = mixc(base, hex('#64300E'), smooth(0.9, 1.0, rr) * 0.9);   // crust ring
+    base = mixc(base, hex('#5E2E10'), pit * 0.55);
     c[0] = base[0]; c[1] = base[1]; c[2] = base[2];
     const h = 0.62 - pit * 0.5 + 0.08 * cells;
     b[0] = b[1] = b[2] = clamp(h * 255, 0, 255);
@@ -127,9 +127,9 @@ export function buildBun(kind, seed = 3) {
   const { geo, curve } = lathe(ctrl, crown ? 110 : 70, 180, disp);
   const tx = bunTextures(kind, seed);
   const mat = new THREE.MeshPhysicalMaterial({
-    map: tx.map, roughnessMap: tx.rough, roughness: 1, bumpMap: tx.bump, bumpScale: crown ? 0.7 : 0.9,
+    map: tx.map, roughnessMap: tx.rough, roughness: 1, bumpMap: tx.bump, bumpScale: crown ? 1.0 : 3.2,
     clearcoat: crown ? 0.22 : 0.08, clearcoatRoughness: 0.38, sheen: 0.3, sheenRoughness: 0.6, sheenColor: new THREE.Color('#ffc890'),
-    emissive: new THREE.Color('#6a2600'), emissiveIntensity: 0.06,
+    emissive: new THREE.Color('#6a2600'), emissiveIntensity: 0.06, envMapIntensity: crown ? 0.75 : 0.5, specularIntensity: crown ? 0.9 : 0.6,
   });
   const g = new THREE.Group(); g.name = kind;
   const body = new THREE.Mesh(geo, mat); body.castShadow = body.receiveShadow = true; g.add(body);
@@ -137,7 +137,7 @@ export function buildBun(kind, seed = 3) {
   const R = crown ? 0.9 : 0.905;
   const ct = crumbTextures(seed + 11, { toast: crown ? 0.85 : 1.0, R });
   const face = new THREE.Mesh(new THREE.CircleGeometry(R * 1.0, 128),
-    new THREE.MeshPhysicalMaterial({ map: ct.map, bumpMap: ct.bump, bumpScale: 1.2, roughnessMap: ct.rough, roughness: 1, sheen: 0.4, sheenColor: new THREE.Color('#ffd28a') }));
+    new THREE.MeshPhysicalMaterial({ map: ct.map, bumpMap: ct.bump, bumpScale: 1.2, roughnessMap: ct.rough, roughness: 1, sheen: 0.3, sheenColor: new THREE.Color('#ffd28a'), envMapIntensity: 0.4, specularIntensity: 0.6 }));
   // CircleGeometry lies in XY facing +Z → rotate to lie in XZ
   face.geometry.rotateX(crown ? Math.PI / 2 : -Math.PI / 2);
   const uv = face.geometry.attributes.uv; // re-derive planar uv from xz so pores are not mirrored weirdly
@@ -198,7 +198,7 @@ function buildSesame(curve, disp, seed) {
 }
 
 // ------------------------------------------------------------------ PATTY (smashed, lacy crispy edge)
-export function pattyShape(seed = 5, R0 = 1.13) {
+export function pattyShape(seed = 5, R0 = 1.17) {
   const R = ph => R0 * (1 + 0.05 * nAng(ph, 1.3, seed) + 0.03 * nAng(ph, 4.2, seed + 3) + 0.014 * nAng(ph, 11, seed + 6));
   const crust = (x, z) => 0.62 * ridged(x * 4.2 + seed, z * 4.2, 0.7, 4) + 0.38 * (0.5 + 0.5 * fbm(x * 11, z * 11, seed + 1, 3));
   const hh = u => 0.075 * (1 - 0.8 * smooth(0.66, 1.0, u));
@@ -211,15 +211,17 @@ export function buildPatty(seed = 5, { droop = 0.0, texRes = 2048 } = {}) {
   const pos = (s, u, ph) => {
     const r = u * S.R(ph) * 1.06, x = r * Math.cos(ph), z = r * Math.sin(ph);
     const d = droop * Math.max(0, r - 0.86) ** 2;
-    if (s === 0) return [x, S.top(x, z, u) - d, z];
-    return [x, -S.hh(u) * 0.9 - 0.004 * fbm(x * 6, z * 6, seed + 4, 2) - d, z];
+    const curl = 0.028 * smooth(0.86, 1.0, u) * (0.6 + 0.4 * nAng(ph, 3, seed + 9));
+    if (s === 0) return [x, S.top(x, z, u) - d + curl, z];
+    return [x, -S.hh(u) * 0.9 - 0.004 * fbm(x * 6, z * 6, seed + 4, 2) - d + curl, z];
   };
   const geo = polarSolid({ rings: 110, segs: 300, pos, uvR: 1.3 });
   const tx = pattyTextures(S, seed, texRes, 1.3);
   const mat = new THREE.MeshPhysicalMaterial({
     map: tx.map, roughnessMap: tx.rough, roughness: 1, bumpMap: tx.bump, bumpScale: 2.2,
     alphaMap: tx.alpha, alphaTest: 0.5, side: THREE.DoubleSide,
-    clearcoat: 0.35, clearcoatRoughness: 0.28, sheen: 0.2, sheenColor: new THREE.Color('#ff9a50'),
+    clearcoat: 0.7, clearcoatMap: tx.wet, clearcoatRoughness: 0.12, sheen: 0.1, sheenRoughness: 0.5, sheenColor: new THREE.Color('#ff9a50'),
+    envMapIntensity: 0.35, specularIntensity: 0.45,
   });
   const m = new THREE.Mesh(geo, mat); m.castShadow = m.receiveShadow = true;
   m.customDepthMaterial = new THREE.MeshDepthMaterial({ depthPacking: THREE.RGBADepthPacking, alphaMap: tx.alpha, alphaTest: 0.5 });
@@ -228,8 +230,8 @@ export function buildPatty(seed = 5, { droop = 0.0, texRes = 2048 } = {}) {
 }
 
 function pattyTextures(S, seed, res, uvR) {
-  const dark = hex('#24100A'), mid = hex('#4C2412'), hi = hex('#7C3F1C'), cara = hex('#A2602C'), red = hex('#6A2616'), char = hex('#170A05');
-  const [map, rough, bump, alpha] = paintMulti(res, res, [{ srgb: true }, {}, {}, {}], (u, v, [c, r, b, a]) => {
+  const dark = hex('#1C0C06'), mid = hex('#3A1A0B'), hi = hex('#653013'), cara = hex('#8F4F20'), red = hex('#561C10'), char = hex('#120703');
+  const [map, rough, bump, alpha, wetm] = paintMulti(res, res, [{ srgb: true }, {}, {}, {}, {}], (u, v, [c, r, b, a, w]) => {
     const x = (u - 0.5) * 2 * uvR, z = (v - 0.5) * 2 * uvR;
     const rr = Math.hypot(x, z), ph = Math.atan2(z, x), Rp = S.R(ph) * 1.06, uu = rr / Rp;
     const cr = S.crust(x, z);
@@ -241,22 +243,25 @@ function pattyTextures(S, seed, res, uvR) {
     col = mixc(col, char, smooth(0.35, 0.6, f1) * 0.5);
     // lacy edge: darker, crispier, golden filaments
     const lace = ridged(x * 11 + seed, z * 11, 2.2, 3);
-    const edge = smooth(0.78, 0.97, uu);
-    col = mixc(col, mixc(hex('#2A1308'), hex('#8E5224'), smooth(0.6, 0.95, lace)), edge * 0.85);
+    const blob = 0.5 + 0.5 * fbm(x * 6.5, z * 6.5, seed + 20, 3), holes = fbm(x * 18, z * 18, seed + 30, 2);
+    const edge = smooth(0.8, 0.97, uu);
+    col = mixc(col, mixc(hex('#1E0D06'), hex('#9A5626'), smooth(0.45, 0.9, lace) * 0.8), edge * 0.85);
     const k = 1 + f3 * 0.12;
     c[0] = clamp(col[0] * k, 0, 255); c[1] = clamp(col[1] * k, 0, 255); c[2] = clamp(col[2] * k, 0, 255);
     // roughness: juicy wet patches
-    const wet = smooth(0.1, 0.35, fbm(x * 5, z * 5, seed + 13, 3));
-    const ro = mix(0.58, 0.2, wet * (1 - edge * 0.6)) + f3 * 0.05;
+    const wet = smooth(0.18, 0.42, fbm(x * 5, z * 5, seed + 13, 3)) * smooth(0.55, 0.75, cr) + 0.6 * smooth(0.7, 0.85, fbm(x * 22, z * 22, seed + 15, 2));
+    const ro = mix(0.84, 0.26, clamp(wet) * (1 - edge * 0.7)) + f3 * 0.04;
     r[0] = r[1] = r[2] = clamp(ro * 255, 0, 255);
+    w[0] = w[1] = w[2] = clamp(clamp(wet) * (1 - edge * 0.7) * 255, 0, 255);
     const bb = cr * 0.55 + 0.3 * ridged(x * 26, z * 26, seed, 3) + 0.15 * (0.5 + 0.5 * f3);
     b[0] = b[1] = b[2] = clamp(bb * 255, 0, 255);
     // alpha (lace holes): keep ridges near the rim
-    const thr = smooth(0.88, 1.0, uu);
-    const keep = uu < 0.88 ? 1 : (lace + 0.18 * f3 > 0.3 + thr * 0.55 ? 1 : 0);
+    const thr = smooth(0.82, 1.0, uu);
+    const kv = blob + 0.28 * holes + 0.1 * lace - thr * 0.95;
+    const keep = uu < 0.82 ? 1 : (kv > 0.32 ? 1 : 0);
     a[0] = a[1] = a[2] = uu > 1.0 ? 0 : keep * 255;
   });
-  return { map, rough, bump, alpha };
+  return { map, rough, bump, alpha, wet: wetm };
 }
 
 // raw ball → smashed disc (morph target) for the hook
@@ -265,30 +270,37 @@ export function buildSmashPatty(seed = 21) {
   const rb = 0.5;
   const ball = (s, u, ph) => {
     const th = u * Math.PI / 2;
-    const k = 1 + 0.04 * fbm(Math.cos(ph) * 2, Math.sin(ph) * 2, u * 3 + s * 5 + seed, 3);
-    if (s === 0) return [rb * Math.sin(th) * Math.cos(ph) * k, rb + rb * Math.cos(th) * k * 0.96, rb * Math.sin(th) * Math.sin(ph) * k];
-    const yb = rb - rb * Math.cos(th) * 0.92;
-    return [rb * Math.sin(th) * Math.cos(ph) * k, Math.max(0.0, yb), rb * Math.sin(th) * Math.sin(ph) * k];
+    const ux = Math.sin(th) * Math.cos(ph), uz = Math.sin(th) * Math.sin(ph), uy = (s === 0 ? 1 : -1) * Math.cos(th);
+    // noise from the 3D direction → top/bottom sheets meet without a seam; lumpy hand-formed ball
+    const k = 1 + 0.07 * fbm(ux * 1.6 + seed, uy * 1.6, uz * 1.6, 3) + 0.02 * fbm(ux * 7, uy * 7, uz * 7 + seed, 2);
+    const y = rb + uy * rb * k * (uy > 0 ? 0.94 : 0.9);
+    return [ux * rb * k, Math.max(0.0, y), uz * rb * k];
   };
   const disc = (s, u, ph) => {
-    const r = u * S.R(ph) * 1.02, x = r * Math.cos(ph), z = r * Math.sin(ph);
-    if (s === 0) return [x, 0.15 + S.top(x, z, u) * 0.8, z];
+    const rag = 1 + 0.06 * nAng(ph, 6, seed + 4) + 0.03 * nAng(ph, 17, seed + 8);
+    const r = u * S.R(ph) * 1.02 * rag, x = r * Math.cos(ph), z = r * Math.sin(ph);
+    if (s === 0) return [x, 0.012 + 0.135 * (1 - smooth(0.55, 1.0, u)) + (S.crust(x, z) - 0.5) * 0.035 * (1 - 0.5 * u), z];
     return [x, 0.002, z];
   };
   const g0 = polarSolid({ rings: 70, segs: 220, pos: ball, uvPos: disc, uvR: 1.3 });
   const g1 = polarSolid({ rings: 70, segs: 220, pos: disc, uvR: 1.3 });
   g0.morphAttributes.position = [g1.attributes.position];
   g0.morphAttributes.normal = [g1.attributes.normal];
-  const [map, bump] = paintMulti(1024, 1024, [{ srgb: true }, {}], (u, v, [c, b]) => {
+  const [map, bump, rough] = paintMulti(1024, 1024, [{ srgb: true }, {}, {}], (u, v, [c, b, ro]) => {
     const x = (u - 0.5) * 2.6, z = (v - 0.5) * 2.6, rr = Math.hypot(x, z);
-    const strands = ridged(x * 18 + seed, z * 18, 3.1, 3), fat = smooth(0.62, 0.8, fbm(x * 22, z * 22, seed + 3, 2));
-    let col = mixc(hex('#8E2430'), hex('#C04450'), strands);
-    col = mixc(col, hex('#E9C4BC'), fat * 0.85);
-    col = mixc(col, hex('#5A2414'), smooth(0.8, 1.05, rr / 1.1) * 0.85); // seared rim
+    // ground beef: tangled strands of lean + flecks of fat
+    const st1 = ridged(x * 26 + seed, z * 26, 3.1, 3), st2 = ridged(x * 41, z * 41 + seed, 5.3, 2);
+    const strands = Math.max(st1, st2 * 0.9);
+    const fat = smooth(0.58, 0.74, fbm(x * 30, z * 30, seed + 3, 2)) * 0.9 + smooth(0.8, 0.9, st2) * 0.3;
+    let col = mixc(hex('#7A1C24'), hex('#BE3E48'), smooth(0.3, 0.85, strands));
+    col = mixc(col, hex('#D2565E'), smooth(0.85, 0.97, strands) * 0.6);
+    col = mixc(col, hex('#F2D2C8'), clamp(fat) * 0.85);
+    col = mixc(col, hex('#4A1E10'), smooth(0.82, 1.05, rr / 1.1) * 0.9); // seared rim
     c[0] = col[0]; c[1] = col[1]; c[2] = col[2];
-    b[0] = b[1] = b[2] = clamp((strands * 0.7 + fat * 0.3) * 255, 0, 255);
+    b[0] = b[1] = b[2] = clamp((strands * 0.75 + fat * 0.25) * 255, 0, 255);
+    ro[0] = ro[1] = ro[2] = clamp((0.5 - 0.25 * fat - 0.12 * strands) * 255, 0, 255);
   });
-  const mat = new THREE.MeshPhysicalMaterial({ map, bumpMap: bump, bumpScale: 2.5, roughness: 0.38, clearcoat: 0.6, clearcoatRoughness: 0.3, sheen: 0.3, sheenColor: new THREE.Color('#ff8080') });
+  const mat = new THREE.MeshPhysicalMaterial({ map, bumpMap: bump, bumpScale: 4, roughnessMap: rough, roughness: 1, clearcoat: 0.25, clearcoatRoughness: 0.35, sheen: 0.3, sheenRoughness: 0.5, sheenColor: new THREE.Color('#ff7070'), envMapIntensity: 0.45, specularIntensity: 0.7 });
   const m = new THREE.Mesh(g0, mat); m.castShadow = m.receiveShadow = true;
   m.morphTargetInfluences = [0];
   return m;
@@ -325,14 +337,16 @@ export class Cheese {
     this.geo.setAttribute('position', new THREE.BufferAttribute(this.pos, 3));
     this.geo.setAttribute('uv', new THREE.BufferAttribute(uv, 2));
     this.geo.setIndex(I);
-    const [map, rough] = paintMulti(512, 512, [{ srgb: true }, {}], (u, v, [c, r]) => {
-      const f = fbm(u * 6, v * 6, seed, 3), g = fbm(u * 30, v * 30, seed + 4, 2);
-      const col = mixc(hex('#F08C00'), hex('#FAA21C'), 0.5 + 0.5 * f);
-      const k = 1 + g * 0.05;
+    const [map, rough, bump] = paintMulti(512, 512, [{ srgb: true }, {}, {}], (u, v, [c, r, b]) => {
+      const f = fbm(u * 5, v * 5, seed, 3), g = fbm(u * 30, v * 30, seed + 4, 2), bl = smooth(0.35, 0.6, fbm(u * 46, v * 46, seed + 9, 2));
+      let col = mixc(hex('#E97F00'), hex('#F8A214'), 0.5 + 0.5 * f);
+      col = mixc(col, hex('#FFC04A'), bl * 0.35);
+      const k = 1 + g * 0.06;
       c[0] = clamp(col[0] * k, 0, 255); c[1] = clamp(col[1] * k, 0, 255); c[2] = clamp(col[2] * k, 0, 255);
-      r[0] = r[1] = r[2] = clamp((0.3 + 0.08 * f + 0.05 * g) * 255, 0, 255);
+      r[0] = r[1] = r[2] = clamp((0.48 + 0.1 * f - 0.14 * bl + 0.05 * g) * 255, 0, 255);
+      b[0] = b[1] = b[2] = clamp((0.5 + 0.3 * bl + 0.15 * g) * 255, 0, 255);
     });
-    this.mat = new THREE.MeshPhysicalMaterial({ map, roughnessMap: rough, roughness: 1, clearcoat: 0.55, clearcoatRoughness: 0.22, sheen: 0.5, sheenColor: new THREE.Color('#ffc040'), emissive: new THREE.Color('#ff6a00'), emissiveIntensity: 0.1, side: THREE.DoubleSide });
+    this.mat = new THREE.MeshPhysicalMaterial({ map, roughnessMap: rough, roughness: 1, bumpMap: bump, bumpScale: 0.5, clearcoat: 0.3, clearcoatRoughness: 0.3, specularIntensity: 0.7, envMapIntensity: 0.7, sheen: 0.5, sheenRoughness: 0.4, sheenColor: new THREE.Color('#ffb030'), emissive: new THREE.Color('#ff5a00'), emissiveIntensity: 0.12, side: THREE.DoubleSide });
     this.mesh = new THREE.Mesh(this.geo, this.mat); this.mesh.castShadow = this.mesh.receiveShadow = true;
     this.group = new THREE.Group(); this.group.add(this.mesh); this.group.name = 'cheese';
     // drips (teardrop lathes, scaled by length)
@@ -388,6 +402,7 @@ export class Cheese {
     this.geo.computeVertexNormals(); this.geo.computeBoundingSphere();
     // drips hang from two corners
     const corners = [[0, 0], [0, N], [N, N], [N, 0]];
+    this.cornerPts = corners.map(([i, j]) => { const k = (i * (N + 1) + j) * 3; return [P[k], P[k + 1], P[k + 2]]; });
     this.drips.forEach((d, n) => {
       const [i, j] = corners[d.userData.corner]; const k = (i * (N + 1) + j) * 3;
       const L = 0.03 + drip * (n === 0 ? 0.26 : 0.17);
@@ -408,9 +423,9 @@ export function buildPickles(seed = 31, layout) {
     col = mixc(col, hex('#556317'), smooth(0.8, 0.9, rr));
     col = mixc(col, hex('#34420E'), smooth(0.93, 0.98, rr));
     // seeds around a ring
-    const sr = 0.36 + 0.05 * Math.sin(ph * 3 + seed);
-    const sx = Math.cos(ph * 7) * 0.5 + 0.5;
-    const seedMask = smooth(0.09, 0.03, Math.abs(rr - sr)) * smooth(0.55, 0.85, sx);
+    const seg = TAU / 8, da = (((ph + seed) % seg) + seg) % seg - seg / 2;
+    const e = Math.hypot((rr - 0.36) / 0.1, (rr * da) / 0.055);
+    const seedMask = smooth(1.0, 0.6, e) * (0.7 + 0.3 * f);
     col = mixc(col, hex('#E2DDA8'), seedMask * 0.8);
     col = mixc(col, hex('#CBCB82'), smooth(0.25, 0.0, rr) * 0.5);
     c[0] = col[0]; c[1] = col[1]; c[2] = col[2];
@@ -462,7 +477,7 @@ export function buildOnions(seed = 41, layout) {
 
 // ------------------------------------------------------------------ SAUCE (dollop → splat morph) with relish flecks
 export function buildSauce(seed = 51) {
-  const R = ph => 0.9 * (1 + 0.12 * nAng(ph, 1.6, seed) + 0.06 * nAng(ph, 5, seed + 2));
+  const R = ph => 0.6 * (1 + 0.2 * nAng(ph, 1.8, seed) + 0.08 * nAng(ph, 5, seed + 2));
   const blob = (s, u, ph) => {
     const th = u * Math.PI / 2, rb = 0.2;
     if (s === 0) return [rb * Math.sin(th) * Math.cos(ph), rb + rb * Math.cos(th) * 1.15, rb * Math.sin(th) * Math.sin(ph)];
@@ -470,7 +485,7 @@ export function buildSauce(seed = 51) {
   };
   const splat = (s, u, ph) => {
     const r = u * R(ph), x = r * Math.cos(ph), z = r * Math.sin(ph);
-    const h = 0.042 * Math.sqrt(Math.max(0, 1 - u ** 6)) + 0.008 * fbm(x * 6, z * 6, seed, 2) * (1 - u);
+    const h = 0.11 * Math.pow(Math.max(0, 1 - u ** 3), 0.55) + 0.022 * fbm(x * 4, z * 4, seed, 2) * (1 - u);
     return s === 0 ? [x, h, z] : [x, -0.006 + 0.004 * u, z];
   };
   const g0 = polarSolid({ rings: 40, segs: 160, pos: blob, uvPos: splat, uvR: 0.9 });
@@ -480,21 +495,22 @@ export function buildSauce(seed = 51) {
   const map = paint(512, 512, (u, v, c) => {
     const x = (u - 0.5) * 1.8, z = (v - 0.5) * 1.8;
     const f = fbm(x * 4, z * 4, seed, 3);
-    let col = mixc(hex('#EE9560'), hex('#F4AE78'), 0.5 + 0.5 * f);
+    let col = mixc(hex('#E06A30'), hex('#F2945A'), 0.5 + 0.5 * f);
     const fl = fbm(x * 38, z * 38, seed + 7, 2), fl2 = fbm(x * 44, z * 44, seed + 17, 2);
     col = mixc(col, hex('#5E6B1E'), smooth(0.42, 0.55, fl) * 0.9);
     col = mixc(col, hex('#B8461E'), smooth(0.45, 0.6, fl2) * 0.6);
     c[0] = col[0]; c[1] = col[1]; c[2] = col[2];
   });
-  const mat = new THREE.MeshPhysicalMaterial({ map, roughness: 0.14, clearcoat: 1, clearcoatRoughness: 0.06, sheen: 0.3, sheenColor: new THREE.Color('#ffd0b0'), emissive: new THREE.Color('#ff5a20'), emissiveIntensity: 0.05 });
+  const mat = new THREE.MeshPhysicalMaterial({ map, roughness: 0.12, clearcoat: 1, clearcoatRoughness: 0.03, envMapIntensity: 1.3, sheen: 0.2, sheenColor: new THREE.Color('#ffd0b0'), emissive: new THREE.Color('#ff4a10'), emissiveIntensity: 0.06 });
   const m = new THREE.Mesh(g0, mat); m.castShadow = m.receiveShadow = true; m.morphTargetInfluences = [1];
   const g = new THREE.Group(); g.add(m); g.name = 'sauce'; g.userData.mesh = m; g.userData.mat = mat;
   // drips over the rim (grow with 'ooze')
   const prof = []; for (let k = 0; k <= 28; k++) { const s = k / 28; const r = 0.034 - 0.012 * smooth(0, 0.5, s) + 0.016 * smooth(0.55, 0.85, s); const end = s > 0.85 ? Math.sqrt(Math.max(0, 1 - ((s - 0.85) / 0.15) ** 2)) : 1; prof.push(new THREE.Vector2(Math.max(1e-4, r * end), -s)); }
   const dg = new THREE.LatheGeometry(prof, 20);
-  g.userData.drips = [0.35, 1.25, 2.1, -0.6].map((ph, i) => {
-    const d = new THREE.Mesh(dg, mat); const rr = R(ph) * 0.98;
-    d.position.set(Math.cos(ph) * rr, 0.01, Math.sin(ph) * rr); d.userData.len = [0.16, 0.11, 0.14, 0.09][i]; d.castShadow = true; g.add(d); return d;
+  // drips at the burger's rim (visible under the crown) + a couple on the dollop edge
+  g.userData.drips = [[1.25, 0.97, 0.2], [1.75, 0.95, 0.13], [0.55, 0.96, 0.16], [2.6, 0.95, 0.1], [0.3, 0.6, 0.06]].map(([ph, rr, len]) => {
+    const d = new THREE.Mesh(dg, mat);
+    d.position.set(Math.sin(ph) * rr, 0.0, Math.cos(ph) * rr); d.userData.len = len; d.castShadow = true; g.add(d); return d;
   });
   g.userData.ooze = k => g.userData.drips.forEach(d => { d.visible = k > 0.02; d.scale.set(1, Math.max(0.01, k * d.userData.len), 1); });
   g.userData.ooze(1);

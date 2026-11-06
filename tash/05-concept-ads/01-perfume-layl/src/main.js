@@ -1,6 +1,6 @@
 // LAYL — concept ad #1 (luxury perfume). Page = pure function of time. ?clean=1 · ?pass=wire|clay · ?poster=1
 import * as THREE from 'three';
-import { boot, grain, css, clamp } from '/_system/motion/kit.js';
+import { boot, grain } from '/_system/motion/kit.js';
 import { makeStudio, makeBottle, makeFloor, makeBackdrop, makeParticles, makePost, DIM } from './scene.js';
 import { frameSpec, T } from './shots.js';
 import { makeOverlay } from './overlay.js';
@@ -92,7 +92,6 @@ const overlay = makeOverlay(stage, { W, H, clean: CLEAN, poster: POSTER });
 const grainCv = document.getElementById('grain');
 
 // ---------------------------------------------------------------------------------------------- render one frame
-const tmpShift = new THREE.Matrix4();
 function applyCamera(c) {
   camera.fov = c.fov; camera.position.set(...c.pos); camera.up.set(0, 1, 0); camera.lookAt(...c.target);
   camera.updateProjectionMatrix();
@@ -105,6 +104,9 @@ function applyCamera(c) {
 
 function renderFrame(t) {
   const s = frameSpec(t);
+  if (POSTER && s.shot === 'S6') { // cover framing: a touch wider so the lockup + slate sit above the cap
+    const a = 0.07, r = 7.7; s.cam = { ...s.cam, pos: [r * Math.sin(a), 0.36, r * Math.cos(a)], shiftY: 0.403 }; s.focus = r;
+  }
   applyCamera(s.cam);
 
   // environment (bake on change; the hook re-bakes every frame as the strip travels)
@@ -126,7 +128,7 @@ function renderFrame(t) {
   const nozzle = bottle.nozzleWorld();
   for (const p of PARTS) {
     const u = p.material.uniforms;
-    u.uTime.value = t; u.uFocus.value = s.focus; u.uAperture.value = s.aperture * 1.0; u.uPx.value = H / (2 * Math.tan(THREE.MathUtils.degToRad(s.cam.fov) / 2));
+    u.uTime.value = t; u.uFocus.value = s.focus; u.uAperture.value = PASS === 'wire' ? 0 : s.aperture; u.uPx.value = H / (2 * Math.tan(THREE.MathUtils.degToRad(s.cam.fov) / 2));
     u.tDepth.value = post.rtMain.depthTexture; u.uNear.value = camera.near; u.uFar.value = camera.far;
     u.uSim.value = s.sim; u.uOrigin.value.copy(nozzle).add(new THREE.Vector3(-0.012, 0, 0));
     u.uDirMist.value.set(-1, 0.16, 0.12).normalize(); u.uLightDir.value.set(-0.45, 0.25, -1).normalize();

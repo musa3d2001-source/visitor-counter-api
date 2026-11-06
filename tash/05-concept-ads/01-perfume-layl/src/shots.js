@@ -53,7 +53,7 @@ export function frameSpec(t) {
     spec.env = { keyL: [...WARM, 1.6], keyR: [...NEUTRAL, 0.9], back: [...AMBER, 1.0], top: [...WARM, 0.8], fill: [...WARM, 1.0], sideR: [...COOL, 1.6], sideL: [...WARM, 1.4], rimL: [...WARM, 0.8], rimR: [...COOL, 0.8], frontL: [...NEUTRAL, 15], frontR: [...NEUTRAL, 10] };
     spec.envKey = 'S2';
     spec.key = 0.6; spec.rim = 0.5;
-    spec.glow = lerp(0.12, 0.85, E.outCubic(clamp(k * 1.25))); spec.glowY = lerp(0.2, 1.6, E.inOutSine(clamp(k * 1.15)));
+    spec.glow = lerp(0.12, 0.72, E.outCubic(clamp(k * 1.25))); spec.glowY = lerp(0.2, 1.6, E.inOutSine(clamp(k * 1.15)));
     spec.floor = false; spec.focus = lerp(2.85, 2.48, cruise(k)); spec.aperture = 10; spec.backdrop = 0.7;
   } else if (s.id === 'S3') {
     // Slow 50° orbit; gold dust drifts through the frame — the notes. Env stays fixed, reflections slide.

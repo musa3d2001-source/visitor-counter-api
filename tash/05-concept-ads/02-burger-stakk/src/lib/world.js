@@ -16,14 +16,15 @@ export function makeRenderer(W, H) {
 }
 
 /** Softbox studio environment, prefiltered with PMREM. bounce = colour of the floor/walls bouncing into food. */
-export function studioEnv(renderer, { bounce = '#E23B2E', bounceK = 0.35, warm = 1.0 } = {}) {
+export function studioEnv(renderer, { bounce = '#E23B2E', bounceK = 0.35, warm = 1.0, top = true } = {}) {
   const s = new THREE.Scene();
   s.background = new THREE.Color(0x000000);
   const box = (w, h, col, k, pos, look) => {
     const m = new THREE.Mesh(new THREE.PlaneGeometry(w, h), new THREE.MeshBasicMaterial({ color: new THREE.Color(col).multiplyScalar(k), side: THREE.DoubleSide }));
     m.position.set(...pos); m.lookAt(...look); s.add(m); return m;
   };
-  box(7, 5, '#FFF4E6', 3.2 * warm, [-1.5, 6, 3], [0, 0, 0]);          // big overhead softbox (front-left)
+  if (top) box(7, 5, '#FFF4E6', 3.2 * warm, [-1.5, 6, 3], [0, 0, 0]);          // big overhead softbox (front-left)
+  else box(3, 6, '#FFE2C0', 2.2 * warm, [-6, 2.0, 1.5], [0, 0.3, 0]);           // low side softbox (raking)
   box(1.2, 7, '#FFFFFF', 4.0, [5.5, 2.5, -2.5], [0, 1, 0]);          // right rim strip
   box(1.2, 7, '#FFE6C8', 2.6, [-5.5, 2.0, -3.0], [0, 1, 0]);         // left rim strip
   box(5, 1.5, '#FFD7A0', 1.2, [0, 1.0, 6.0], [0, 1, 0]);             // warm front card (catchlight)
@@ -46,7 +47,7 @@ export function foodLights(scene) {
   L.rimR = new THREE.SpotLight('#FFF1DC', 260, 0, 0.55, 0.9, 2); L.rimR.position.set(3.6, 3.4, -4.2); L.rimR.target.position.set(0, 0.7, 0);
   L.rimL = new THREE.SpotLight('#FFD2A0', 140, 0, 0.6, 0.9, 2); L.rimL.position.set(-4.2, 2.6, -3.4); L.rimL.target.position.set(0, 0.7, 0);
   L.fill = new THREE.HemisphereLight('#FFF1E2', '#E23B2E', 0.12);
-  L.front = new THREE.SpotLight('#FFE9D0', 70, 0, 0.6, 1.0, 2); L.front.position.set(0.8, 1.1, 7.5); L.front.target.position.set(0, 0.75, 0); // fill card at lens height
+  L.front = new THREE.SpotLight('#FFE9D0', 45, 0, 0.6, 1.0, 2); L.front.position.set(0.8, 1.1, 7.5); L.front.target.position.set(0, 0.75, 0); // fill card at lens height
   for (const k in L) { scene.add(L[k]); if (L[k].target) scene.add(L[k].target); }
   return L;
 }
@@ -76,7 +77,7 @@ export function griddleSet(scene) {
     r[0] = r[1] = r[2] = 255 * Math.min(1, Math.max(0, 0.32 + 0.22 * sm + 0.1 * scr - 0.15 * sp));
   });
   map.wrapS = map.wrapT = rough.wrapS = rough.wrapT = THREE.RepeatWrapping; map.repeat.set(3, 3); rough.repeat.set(3, 3);
-  const plate = new THREE.Mesh(new THREE.PlaneGeometry(40, 40), new THREE.MeshPhysicalMaterial({ map, roughnessMap: rough, roughness: 1, metalness: 0.6, clearcoat: 0.5, clearcoatRoughness: 0.12 }));
+  const plate = new THREE.Mesh(new THREE.PlaneGeometry(120, 120), new THREE.MeshPhysicalMaterial({ map, roughnessMap: rough, roughness: 1, metalness: 0.6, clearcoat: 0.5, clearcoatRoughness: 0.12 }));
   plate.rotation.x = -Math.PI / 2; plate.receiveShadow = true; g.add(plate);
   // grease pool around the patty (glossy dark film)
   const gp = paint(512, 512, (u, v, c) => { const x = (u - .5) * 2, z = (v - .5) * 2, r = Math.hypot(x, z) * (1 + 0.25 * fbm(x * 3, z * 3, 2, 3)); c[0] = 40; c[1] = 24; c[2] = 10; c[3] = 255 * smooth(1.0, 0.55, r) * 0.9; }, { srgb: true });
@@ -97,12 +98,12 @@ export function griddleSet(scene) {
 
 export function buildPress() {
   const g = new THREE.Group();
-  const steel = new THREE.MeshPhysicalMaterial({ color: '#C9CCCF', metalness: 1, roughness: 0.2, clearcoat: 0.3, clearcoatRoughness: 0.2 });
-  const plateGeo = new THREE.CylinderGeometry(1.32, 1.34, 0.09, 96, 1);
-  const plate = new THREE.Mesh(plateGeo, steel); plate.position.y = 0.045; plate.castShadow = true; g.add(plate);
-  const brush = new THREE.Mesh(new THREE.CylinderGeometry(0.2, 0.26, 0.5, 48), new THREE.MeshPhysicalMaterial({ color: '#1A1816', roughness: 0.55, metalness: 0.0, clearcoat: 0.4 }));
-  brush.position.y = 0.34; brush.castShadow = true; g.add(brush);
-  const knob = new THREE.Mesh(new THREE.SphereGeometry(0.3, 32, 20), brush.material); knob.scale.set(1, 0.7, 1); knob.position.y = 0.64; g.add(knob);
+  const steel = new THREE.MeshPhysicalMaterial({ color: '#E2E5E8', metalness: 1, roughness: 0.26, clearcoat: 0.4, clearcoatRoughness: 0.1, envMapIntensity: 1.6 });
+  const plateGeo = new THREE.CylinderGeometry(0.64, 0.66, 0.06, 96, 1);
+  const plate = new THREE.Mesh(plateGeo, steel); plate.position.y = 0.03; plate.castShadow = true; g.add(plate);
+  const stem = new THREE.Mesh(new THREE.CylinderGeometry(0.055, 0.085, 1.8, 32), steel); stem.position.y = 0.95; g.add(stem); // tall rod: the grip stays out of frame
+  const knob = new THREE.Mesh(new THREE.SphereGeometry(0.16, 32, 20), new THREE.MeshPhysicalMaterial({ color: '#1A1816', roughness: 0.45, clearcoat: 0.5 }));
+  knob.scale.set(1.2, 0.8, 1.2); knob.position.y = 1.9; knob.castShadow = true; g.add(knob);
   return g;
 }
 
@@ -154,7 +155,7 @@ export class Droplets {
     this.r = rng(seed); this.count = count;
     const geo = new THREE.SphereGeometry(1, 12, 8);
     const mat = new THREE.MeshPhysicalMaterial({ color, roughness: rough, clearcoat: 1, clearcoatRoughness: 0.03, metalness: 0.0 });
-    if (emissive) { mat.emissive = new THREE.Color(emissive); mat.emissiveIntensity = 0.15; }
+    if (emissive) { mat.emissive = new THREE.Color(emissive); mat.emissiveIntensity = 0.5; }
     this.mesh = new THREE.InstancedMesh(geo, mat, count); this.mesh.frustumCulled = false; this.mesh.castShadow = false;
     this.p = Array.from({ length: count }, () => ({ a: this.r() * Math.PI * 2, v: 0.6 + this.r() * 1.0, up: 0.6 + this.r() * 1.6, s: (0.4 + this.r() * 0.9) * size, d: this.r() * 0.05 }));
     scene.add(this.mesh); this.m = new THREE.Matrix4(); this.hide();

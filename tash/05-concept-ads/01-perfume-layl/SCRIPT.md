@@ -105,7 +105,7 @@ the left. Proofread twice.
 | 12.05 → 15.90 | `CONCEPT AD — 01 / PERFUME` + «إعلان تجريبي — علامة خيالية» | JetBrains Mono 600, 22 px · IBM Plex Sans Arabic 400, 26 px | fade in, top safe area (y 232) |
 | 13.50 → 15.90 | TASH sting: typing bubble → dots land in ش → طشّ → «خلّهم يسولفون عنك!» → @tash.creative.kw | TASH brand | `createSting` behaviour, damped pops |
 
-Safe zones: all text is within x 72–1008 and y 232–1300; nothing sits in the bottom 420 px.
+Safe zones: all text sits within x 72–1008 and y 232–1350 (lower lines centred, clear of the right-side action rail); nothing sits in the bottom 420 px.
 
 ## 7. Sound | الصوت (original, `src/audio.py` → `src/audio.wav`)
 80 BPM, **Hijaz on D** (D Eb F# G A Bb C). It uses oud-like Karplus–Strong plucks (darkened, with risha tremolo re-strikes), a
