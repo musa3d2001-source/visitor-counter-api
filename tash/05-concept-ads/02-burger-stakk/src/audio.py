@@ -167,9 +167,10 @@ def crunch(t, lo=1800, hi=7000, gain=0.5, seed_=1):
 
 crunch(D['pickles'], 1500, 6000, 0.6, 3); thud(D['pickles'], 120, 0.25, 0.4)
 crunch(D['onions'], 2200, 8000, 0.55, 7); thud(D['onions'], 140, 0.22, 0.4)
-# sauce (photoreal cut): the stream is already pouring when S08 cuts in, makes contact on the cue with a thick plop,
-# then pours into a glossy pool (the CGI dollop's whoosh + splat no longer matches the picture)
-sfx.add(lp(pour(D['sauce'] - C['shots'][7]['at'] + 0.04, seed_=19), 2200), C['shots'][7]['at'], gain=0.2)
+# sauce (photoreal cut): a thin stream sound from the moment the sauce enters the top of the frame (cues sauceIn; S08 is one
+# top-down take from 6.55, the pour enters at 7.00), a thick plop on contact on the cue, then a glossy pour into the pool
+SIN = C.get('sauceIn', C['shots'][7]['at'])
+sfx.add(lp(pour(D['sauce'] - SIN + 0.04, seed_=19), 2200), SIN, gain=0.2)
 sfx.add(pop(300, 120, 0.13), D['sauce'], gain=0.62); thud(D['sauce'], 85, 0.32, 0.25)
 sfx.add(pour(0.62, seed_=21), D['sauce'] + 0.02, gain=0.34)
 # riser into the top bun, then the drop
@@ -189,9 +190,13 @@ sfx.add(impact(1.4, sub_f=50, bright=0.7, space=0.2), END - 0.003, gain=0.7)
 sfx.add(claps_ensemble(9, 0.45, seed_=31), END, gain=0.5)
 
 # ------------------------------------------------------------------ TASH signature (sonic logo, matched to createSting cues)
-logo = sonic_logo()
+# the picture runs the sting from stingOffset (the cut lands on the typing bubble), so the sonic logo starts there too;
+# its bubble pop (at 0.02) is re-placed on the cut and the trimmed head gets a 5 ms fade-in (no click)
+STO = C.get('stingOffset', 0.0)
+logo = sonic_logo()[n_(STO):]
 L = n_(DUR - STING)
 logo = logo[:L].copy()
+logo[:n_(0.005)] *= np.linspace(0, 1, n_(0.005))[:, None]
 fo = n_(0.35); logo[-fo:] *= np.linspace(1, 0, fo)[:, None] ** 1.5
 
 # ------------------------------------------------------------------ mix
@@ -205,4 +210,6 @@ fz = n_(0.12); s[n_(STING) - fz:n_(STING)] *= np.linspace(1, 0, fz)[:, None]
 s[n_(STING):] *= 0                       # keep the signature clean
 put(s, 0.85)
 out.add(logo, STING, gain=0.95)
+if STO > 0.02:
+    out.add(pop(300, 700, 0.09), STING + 0.003, gain=0.4)
 y = out.master(os.path.join(HERE, 'audio.wav'), ceiling_db=-1.0)

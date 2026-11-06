@@ -39,8 +39,8 @@ const LABELS = [
   { key: 'cheese', top: 236, sup: '…على مهله', hero: 'تشيدر يذوب', heroFirst: true, supAt: 'cheeseSlow', heroAt: 0, out: 'end',
     anchors: { S05: [92, 1190], S06: [565, 1108] } },               // slice corner, then the drip as it leaves the cheese
   { key: 'crunch', top: 236, sup: 'مخلل وبصل…', hero: 'يقرمشون', supAt: 'pickles', heroAt: 'onions', out: 7.01,
-    anchors: { S07b: [262, 792], S07c: [300, 995] } },              // the left pickle (landed, then settled); «يقرمشون» on the onion's landing;
-                                                                     // gone on the S08 cut: the sauce stream falls right where «يقرمشون» sits
+    anchors: { S07b: [262, 792], S08: [190, 880] } },               // the left pickle as it lands (side), then the left pickle lying flat (top-down);
+                                                                     // gone (7.01-7.15) before the sauce, which enters at the top at 7.00, reaches the label's band (~7.17)
   { key: 'sauce', top: 236, sup: 'صوص ستاك', hero: 'السرّي', supAt: 'sauce', heroAt: +0.05, out: 8.06,
     anchors: { S08: [560, 760] } },                                  // the pool; exits before the crown falls through (8.17)
 ];
@@ -141,7 +141,7 @@ export function createOverlay(ui, C, { W = 1080, H = 1920, toScreen, whipShift, 
     const sx = tb.x0 - rb.left + (tb.x1 - tb.x0) * 0.3, sy = tb.y1 - rb.top + 16;
     const [ax, ay] = toScreen(seq, t, A[0], A[1]);
     // draw-on starts with the label or with the shot, whichever is later
-    const shotStart = { S04: 3.9, S06: 4.9, S07c: 6.65 }[seq] ?? first;
+    const shotStart = { S04: 3.9, S06: 4.9, S08: C.shots[7].at }[seq] ?? first;
     const s0 = Math.max(first, shotStart);
     const dk = E.outCubic(clamp((t - s0 - 0.04) / 0.28)) * exitK;
     const ex = lerp(sx, ax, dk), ey = lerp(sy, ay, dk);
@@ -159,7 +159,7 @@ export function createOverlay(ui, C, { W = 1080, H = 1920, toScreen, whipShift, 
     for (const e of [ui, ec, sg]) e.style.display = clean ? 'none' : (e === ui ? 'block' : e.style.display);
     if (clean) return;
     // title (S02): words rise into place on 16ths, squash on landing; exit riding the whip (same travel, vertical blur)
-    const tOn = t >= T.title[0] && t < C.drops.heel;
+    const tOn = t >= T.title[0] && t < C.shots[2].at;   // the title lives on S02's plate: it leaves with the plate at the whip's cut (no smear left on the red stage)
     title.style.display = tOn ? 'block' : 'none';
     if (tOn) {
       tWords.forEach((s, i) => {
@@ -217,7 +217,7 @@ export function createOverlay(ui, C, { W = 1080, H = 1920, toScreen, whipShift, 
     sg.style.display = gOn ? 'block' : 'none';
     if (gOn) {
       const st = t - C.sting;
-      sting.render(st);
+      sting.render(st + (C.stingOffset || 0));   // 0.1 s in: the cut lands on the typing bubble, not on empty Ink (audio.py shifts the sonic logo the same)
       const k1 = tw(st, 1.32, 0.5), k2 = tw(st, 1.45, 0.5), k3 = tw(st, 1.6, 0.5);
       css(sgAr, { opacity: String(k1), transform: `translateY(${f1((1 - k1) * 16)}px)` });
       css(sgMo, { opacity: String(k2), letterSpacing: `${f3(lerp(0.4, 0.24, k2))}em` });
@@ -232,10 +232,10 @@ export function createOverlay(ui, C, { W = 1080, H = 1920, toScreen, whipShift, 
  *  Everything that must read sits inside the reel-safe area (220–1500) and inside the profile grid's centre 3:4 (240–1680). */
 export async function createPoster(root) {
   const ui = el('div', 'poster', root);
-  const sl = el('div', 'po-sl', ui); css(sl, { top: '296px' });
+  const sl = el('div', 'po-sl', ui); css(sl, { top: '268px' });
   el('div', 'po-sl-mono', sl, 'CONCEPT AD — 02 / BURGER   ·   TASH / 2026');
   el('div', 'po-sl-ar', sl, 'إعلان تجريبي — علامة خيالية');
-  const t1 = el('div', 'po-title', ui); css(t1, { top: '386px' });
+  const t1 = el('div', 'po-title', ui); css(t1, { top: '350px' });
   el('div', 'po-l1', t1, 'كل طبقة'); el('div', 'po-l2', t1, 'لها سالفة');
   const brand = el('div', 'po-brand', ui); css(brand, { position: 'absolute', top: '1362px', left: '0', right: '0', textAlign: 'center' });
   const ar = el('div', 'ec-ar', brand, 'ستاك برجر'); css(ar, { fontSize: '84px', lineHeight: '1.15', textShadow: '0 6px 0 #1F1C19' });

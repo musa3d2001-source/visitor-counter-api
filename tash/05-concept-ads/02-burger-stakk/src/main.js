@@ -14,9 +14,9 @@ const W = 1080, H = 1920, D = C.drops;
 const cv = document.getElementById('pic'); cv.width = W; cv.height = H;
 const g = cv.getContext('2d', { alpha: false }); g.imageSmoothingEnabled = true; g.imageSmoothingQuality = 'high';
 const tmp = document.createElement('canvas'); tmp.width = W; tmp.height = H;
-const tg = tmp.getContext('2d', { alpha: POSTER });   // the poster composites a feathered plate; the film never needs alpha tg.imageSmoothingEnabled = true; tg.imageSmoothingQuality = 'high';
+const tg = tmp.getContext('2d', { alpha: POSTER });   // the poster composites a feathered plate; the film never needs alpha
+tg.imageSmoothingEnabled = true; tg.imageSmoothingQuality = 'high';
 const S = Object.fromEntries(C.shots.map(s => [s.id, s]));
-const S07C = 6.65;                       // S07's second jump cut (on the 8th after the pickle): the settled stack
 const shotAt = t => { let s = C.shots[0]; for (const x of C.shots) if (t >= x.at - 1e-6) s = x; return s; };
 
 // ------------------------------------------------------------------------------------------- camera
@@ -33,7 +33,7 @@ function bump(t, at, amt = 0.006) { const a = t - at; return a >= 0 && a < 0.6 ?
 
 /** camera for a sequence at time t: scale s about focal point (fx, fy) + offset (x, y) in px */
 export function camera(id, t) {
-  const sh = { S07a: 'S07', S07b: 'S07', S07c: 'S07' }[id] ?? id;
+  const sh = { S07a: 'S07', S07b: 'S07' }[id] ?? id;
   const k = (a, b) => clamp((t - a) / (b - a));
   let s = BASE, fx = 540, fy = 960, x = 0, y = 0;
   switch (id) {
@@ -46,9 +46,8 @@ export function camera(id, t) {
     case 'S07a': { // two punch-ins on the beat: «دبل!» (patty2) and the second cheese
       const st = (at, amt) => (t >= at ? amt * (1 - Math.exp(-(t - at) * 22) * Math.cos((t - at) * 18)) : 0);
       s += st(D.patty2, 0.05) + st(D.cheese2, 0.035); fx = 520; fy = 1300; break; }
-    case 'S07b': s += 0.01 * k(D.pickles, S07C) + bump(t, D.onions, 0.004); fy = 900; break;
-    case 'S07c': s += 0.025 * E.outCubic(k(S07C, 7.15)); fx = 520; fy = 1150; break;
-    case 'S08': s += 0.035 * E.inOutCubic(k(7.15, 7.9)); fx = 600; fy = 760; break;
+    case 'S07b': s += 0.01 * k(D.pickles, S.S08.at) + bump(t, D.onions, 0.004); fy = 900; break;
+    case 'S08': s += 0.045 * E.inOutCubic(k(S.S08.at, 7.9)); fx = 600; fy = 760; break;   // one top-down take: flat pickles + onion, then the pour
     case 'S09': s += -0.01 * k(7.9, D.crown) + punch(t, D.crown, 0.04) + 0.015 * E.inOutSine(k(D.crown, C.endcard)) + 0.02 * E.inOutSine(k(C.endcard, C.duration)); fy = 1100; break;
   }
   if (sh === 'S01' || sh === 'S09') { const [a, b] = shake(t); x += a; y += b; }
@@ -111,7 +110,7 @@ async function drawWhip(t) {
 // ------------------------------------------------------------------------------------------- per-shot picture
 function seqFor(t) {
   const id = shotAt(t).id;
-  if (id === 'S07') return t < D.pickles - 1e-6 ? 'S07a' : t < S07C - 1e-6 ? 'S07b' : 'S07c';   // cuts on the pickle's contact frame and the 8th after
+  if (id === 'S07') return t < D.pickles - 1e-6 ? 'S07a' : 'S07b';   // cut on the pickle's contact frame; S07b ends on the onion ring's contact frame (S08 at 6.55)
   if (id === 'S09' || id === 'S10' || id === 'S11' || id === 'S12') return 'S09';
   return id;
 }
@@ -129,7 +128,7 @@ async function drawPicture(t) {
 // continued with the frame's own edge colour and a wide feather (no visible seam under grain + vignette).
 async function drawPoster() {
   const PT = parseFloat(q.get('poster')) || 10.3667, img = await F.frame('S09', PT);
-  const k = 0.62, cx = 540, cy = 1024, sx = 556, sy = 1102;          // burger centre in the frame → poster centre
+  const k = 0.62, cx = 540, cy = 1036, sx = 556, sy = 1102;          // burger centre in the frame → poster centre
   const ec = document.createElement('canvas'); ec.width = 8; ec.height = 8; const eg = ec.getContext('2d');
   eg.drawImage(img, 0, 40, W, 200, 0, 0, 8, 8); const d = eg.getImageData(0, 0, 8, 8).data;
   let r = 0, gg = 0, b = 0; for (let i = 0; i < d.length; i += 4) { r += d[i]; gg += d[i + 1]; b += d[i + 2]; }
