@@ -41,8 +41,8 @@ export function frameSpec(t) {
     const sw = E.inOutSine(clamp((t + 0.05) / 1.5));
     const camPos = V([-0.30, 1.00, 1.30], [-0.24, 1.04, 1.14], ease(k));
     spec.cam = { pos: camPos, target: V([-0.16, 1.10, 0.0], [-0.14, 1.12, 0.0], ease(k)), fov: 38 };
-    const stripX = lerp(1.05, -1.25, sw), stripZ = -1.5;
-    spec.sweepBack = { x: stripX, z: stripZ, I: 5.0 * clamp(t / 0.12) };
+    const stripX = lerp(0.55, -0.95, sw), stripZ = -1.5;
+    spec.sweepBack = { x: stripX, z: stripZ, I: 2.4 * clamp(t / 0.12) };
     // where the bar is seen through the liquid plane (z≈0), in bottle-local x
     spec.stripX = camPos[0] + (stripX - camPos[0]) * camPos[2] / (camPos[2] - stripZ);
     spec.stripI = 1.25 * clamp(t / 0.2);
@@ -55,12 +55,12 @@ export function frameSpec(t) {
     spec.bloom = 0.22;
   } else if (s.id === 'S2') {
     // The liquid wakes: amber light rises through it from the base. Slow crane up the front face.
-    spec.cam = { pos: V([0.78, 0.10, 1.55], [0.70, 0.22, 1.40], ease(k)), target: V([0.02, 0.62, 0.0], [0.0, 0.72, 0.0], ease(k)), fov: 40 };
-    spec.env = { keyL: [...WARM, 1.4], keyR: [...NEUTRAL, 0.5], back: [...AMBER, 2.4], top: [...WARM, 0.8], fill: [...WARM, 0.8], sideR: [...COOL, 1.0], sideL: [...WARM, 0.8] };
+    spec.cam = { pos: V([0.0, 0.70, 3.05], [0.0, 0.74, 2.70], ease(k)), target: V([0.0, 0.70, 0.0], [0.0, 0.74, 0.0], ease(k)), fov: 30 };
+    spec.env = { keyL: [...WARM, 1.2], keyR: [...NEUTRAL, 0.5], back: [...AMBER, 1.0], top: [...WARM, 0.8], fill: [...WARM, 1.0], sideR: [...COOL, 1.6], sideL: [...WARM, 1.4], rimL: [...WARM, 0.8], rimR: [...COOL, 0.8] };
     spec.envKey = 'S2';
     spec.key = 0.6; spec.rim = 0.5;
-    spec.glow = lerp(0.15, 0.95, E.outCubic(clamp(k * 1.3))); spec.glowY = lerp(0.2, 1.9, E.inOutSine(clamp(k * 1.2)));
-    spec.floor = true; spec.refl = 0.5; spec.focus = 1.62; spec.aperture = 22; spec.backdrop = 0.8;
+    spec.glow = lerp(0.10, 0.85, E.outCubic(clamp(k * 1.25))); spec.glowY = lerp(0.18, 1.6, E.inOutSine(clamp(k * 1.15)));
+    spec.floor = false; spec.focus = lerp(2.85, 2.5, ease(k)); spec.aperture = 10; spec.backdrop = 0.7;
   } else if (s.id === 'S3') {
     // Slow orbit; gold dust drifts through the frame — the notes.
     const a = lerp(-0.62, 0.30, ease(k));

@@ -38,7 +38,7 @@ const floor = makeFloor(W, H); scene.add(floor);
 const backdrop = makeBackdrop(); scene.add(backdrop);
 
 // the physical sweep strip (seen refracted through the glass during the hook)
-const sweepBack = new THREE.Mesh(new THREE.PlaneGeometry(0.1, 6), new THREE.MeshBasicMaterial({ color: 0xffffff }));
+const sweepBack = new THREE.Mesh(new THREE.PlaneGeometry(0.07, 6), new THREE.MeshBasicMaterial({ color: 0xffffff }));
 sweepBack.position.set(0, 1, -1.6); sweepBack.name = 'sweepStrip'; scene.add(sweepBack);
 
 // direct lights: warm key (shapes brass + liquid), cool rim
@@ -113,7 +113,7 @@ function renderFrame(t) {
   floor.material.uniforms.uRefl.value = s.refl; floor.material.uniforms.uPool.value = s.pool;
   backdrop.material.uniforms.uAmt.value = s.backdrop;
   sweepBack.visible = !!s.sweepBack;
-  if (s.sweepBack) { sweepBack.position.set(s.sweepBack.x, 1, s.sweepBack.z); sweepBack.material.color.setScalar(PASS === 'final' ? s.sweepBack.I : 1); sweepBack.lookAt(camera.position.x, 1, camera.position.z); }
+  if (s.sweepBack) { sweepBack.position.set(s.sweepBack.x, 1, s.sweepBack.z); sweepBack.material.color.setRGB(1, 0.86, 0.66).multiplyScalar(PASS === 'final' ? s.sweepBack.I : 1); sweepBack.lookAt(camera.position.x, 1, camera.position.z); }
   renderer.toneMappingExposure = s.exposure;
 
   // particles
