@@ -11,7 +11,7 @@
 | # | Folder | Upload files | Format |
 |---|---|---|---|
 | 1 | `01-habba-concept-reel/` | `reel.mp4` + `cover.png` | Reel 9:16, 15.6 s (photoreal cut, re-delivered 6 Nov 18:51) · **AI label ON** |
-| 2 | `02-stakk-concept-reel/` | `reel.mp4` + `cover.png` | Reel 9:16, 13.8 s (photoreal cut, 6 Nov 19:48, with the owner-approved smash retake) · **AI label ON** |
+| 2 | `02-stakk-concept-reel/` | `reel.mp4` + `cover.png` | Reel 9:16, 13.8 s (photoreal **one-stage cut**, 6 Nov 23:20: one burger built on one red stage, with the owner-approved smash retake) · **AI label ON** |
 | 3 | `03-layl-concept-reel/` | `reel.mp4` + `cover.png` | Reel 9:16, 15.9 s |
 | 4 | `04-ehna-tash-carousel/` | `slide-01.png` … `slide-06.png` | Carousel 4:5, 6 slides |
 | 5 | `05-bts-reel/` | `reel.mp4` + `cover.png` | Reel 9:16, 13.07 s, original score (new for this package) |
@@ -23,7 +23,7 @@
 | — | `stories/new-work-stakk.png` | | Story 9:16, STAKK «شغل جديد» (photoreal; for later, see §4). The other first stories reuse `03-templates/examples/`, see §4 |
 
 Every post folder also has a `caption.md` with the caption to paste, the alt text, and that post's own checks.
-Reels 1, 2, 3 and 9 are the teams' masters, copied byte for byte (`cmp`, 6 Nov 20:12). Their covers are the teams' posters. Two were moved down a little so their top line clears the 3:4 profile-grid crop: 3 by 30 px and 9 by 24 px, with only the empty background above the type stretched to fill. 1 and 2 are pixel-identical to their posters: their top type already starts at y 292 (HABBA's TASH pill) and y 271 (STAKK's slate), inside the crop (240). See `src/sources.json`.
+Reels 1, 2, 3 and 9 are the teams' masters, copied byte for byte (`cmp`, 6 Nov 20:12; post 2 again at 23:26 after STAKK's one-stage re-edit). Their covers are the teams' posters. Two were moved down a little so their top line clears the 3:4 profile-grid crop: 3 by 30 px and 9 by 24 px, with only the empty background above the type stretched to fill. 1 and 2 are pixel-identical to their posters: their top type already starts at y 292 (HABBA's TASH pill) and y 271 (STAKK's slate), inside the crop (240). See `src/sources.json`.
 
 ---
 
@@ -143,12 +143,12 @@ Every story showing a concept ad keeps its `CONCEPT AD` slate and «إعلان �
 
 ## 6. What was checked (numbers measured on the files in this folder)
 
-**Reels:** all are H.264 High, yuv420p, 1080×1920, 30 fps, AAC 48 kHz stereo, with 1080×1920 PNG covers. Frame counts by `ffprobe -count_frames`; loudness by `_system/tools/audio-check.sh` on the packaged files (posts 1, 2, 9 re-measured 6 Nov, 20:15). Contact sheets of 1, 2 and 9 at 2 fps were looked at frame by frame: photoreal footage throughout, the `CONCEPT AD` slate + «إعلان تجريبي — علامة خيالية» in the tails of 1 and 2, «نماذج تجريبية · CONCEPT WORK» on the burger and coffee in 9.
+**Reels:** all are H.264 High, yuv420p, 1080×1920, 30 fps, AAC 48 kHz stereo, with 1080×1920 PNG covers. Frame counts by `ffprobe -count_frames`; loudness by `_system/tools/audio-check.sh` on the packaged files (posts 1, 2, 9 re-measured 6 Nov, 20:15; post 2 again at 23:30 on the one-stage cut). Contact sheets of 1, 2 and 9 at 2 fps were looked at frame by frame (post 2 again on the one-stage cut): photoreal footage throughout, the `CONCEPT AD` slate + «إعلان تجريبي — علامة خيالية» in the tails of 1 and 2, «نماذج تجريبية · CONCEPT WORK» on the burger and coffee in 9.
 
 | Post | Frames · length | Loudness · true peak | Notes |
 |---|---|---|---|
 | 1 HABBA | 468 · 15.60 s | −14.0 LUFS · −1.5 dBTP · LRA 3.2 | byte-identical (`cmp`) to `05-concept-ads/03-coffee-habba/HABBA-concept-9x16.mp4`, photoreal cut re-delivered 18:51 (sha1 84b7d460…) |
-| 2 STAKK | 414 · 13.80 s | −14.0 LUFS · −1.4 dBTP · LRA 2.8 | byte-identical (`cmp`) to `05-concept-ads/02-burger-stakk/STAKK-concept-9x16.mp4`, photoreal cut with the S01 retake, 19:48 (sha1 f90b8edd…) |
+| 2 STAKK | 414 · 13.80 s | −13.6 LUFS · −1.6 dBTP · LRA 2.8 | byte-identical (`cmp`) to `05-concept-ads/02-burger-stakk/STAKK-concept-9x16.mp4`, the one-stage cut, 23:20 (sha1 98fc5df3…, 37.4 MB). STAKK's loudness step now stays linear, so it sits 0.4 LU above −14 (inside ±1; STAKK `SCRIPT.md` §5) |
 | 3 LAYL | 477 · 15.90 s | −14.0 LUFS · −1.8 dBTP | byte-identical (`cmp`) to the team master (unchanged in this refresh) |
 | 5 BTS | 392 · 13.07 s | −14.0 LUFS · −2.2 dBTP · LRA 5.5 | see below |
 | 9 Launch | 810 · 27.00 s | −14.0 LUFS · −1.5 dBTP · LRA 3.2 | byte-identical (`cmp`) to `04-launch-ad/TASH-launch-9x16.mp4`, the cut with the photoreal burger and coffee, 19:52 (sha1 5c16cf81…) |
@@ -173,6 +173,8 @@ Every story showing a concept ad keeps its `CONCEPT AD` slate and «إعلان �
 - `profile-preview.png` and `-light.png` were looked at in full-size tiles. Row 3 is now 4 ink · 2 photoreal red · 1 photoreal beige. The reel icon on tile 2 sits right of the slate and clear of «كل».
 - A second full `build.sh` run gave byte-identical files throughout (sha1 of every PNG, JPEG, MP4 and JSON here, plus the 03-templates STAKK story). One small caveat, not ours: across three renders of STAKK's clean page at 9.40 s, one differed from the others in 4 pixels by 1 level, so the STAKK story can occasionally change by that much.
 
+**STAKK one-stage refresh (6 Nov, 23:26).** The burger team re-edited STAKK (23:20): from 2.40 to the hero it is now one burger built on one red stage (four chained clips + the crown clip), replacing the cut that showed three or four different burgers on red and charcoal. `package_reels.py --check` reported only post 2 changed (its video; `poster.png` is the same file). `build.sh` then changed exactly two files here: `02-stakk-concept-reel/reel.mp4` (now byte-identical, `cmp`, to the new master) and `src/sources.json`. Every other file came out byte-identical to before the run (sha1 of every PNG, JPEG, MP4, JSON and MD in this folder and in `03-templates/examples/`): cover 2, both profile previews, all carousels and posts, and the STAKK story. The story is built from STAKK's clean frame at 9.40 s, inside the crown section the re-edit did not touch, so neither `stories/new-work-stakk.png` nor `03-templates/examples/story-new-work-02.png` changed. Post 2's caption and alt text stay true of the new cut. Only its team notes (source, credit, beat list) were updated.
+
 **Grid rhythm (pinned state, as in the preview)**
 
 | | left | middle | right |
@@ -191,7 +193,7 @@ Every story showing a concept ad keeps its `CONCEPT AD` slate and «إعلان �
 
 ## 7. Open decisions and known weaknesses
 
-1. **Posts 1, 2 and 9 are now the photoreal cuts** (packaged 6 Nov, 20:11; §6). Their pictures include owner-approved AI footage, so **the AI label goes ON for exactly these three** (§5). Their captions now say it once, after «المزيد»: post 1 line 5, post 2 line 5, post 9 line 4. Lines 5 in posts 1 and 2 are new and optional (delete them if the owner prefers the label alone). **Owner or lead to confirm the three lines.** If a team re-delivers again, run `package_reels.py --check`, then `build.sh`.
+1. **Posts 1, 2 and 9 are now the photoreal cuts** (packaged 6 Nov, 20:11; post 2 re-packaged 23:26 with STAKK's one-stage cut; §6). Their pictures include owner-approved AI footage, so **the AI label goes ON for exactly these three** (§5). Their captions now say it once, after «المزيد»: post 1 line 5, post 2 line 5, post 9 line 4. Lines 5 in posts 1 and 2 are new and optional (delete them if the owner prefers the label alone). **Owner or lead to confirm the three lines.** If a team re-delivers again, run `package_reels.py --check`, then `build.sh`.
 2. **Post 9 caption, line 4 was rewritten again**: «المنتجات بالإعلان كلها خيالية، والأكل ومشاهد الناس سويناها بالذكاء الاصطناعي.» The earlier line said the product shots came from our concept ads and only the people were AI. Since the burger and coffee became AI footage, that line implied they weren't, and the ring was never from a concept ad. `09-launch-reel/caption.md` has the shot-by-shot reasoning and a softer alternative. `06-copy/grid-captions.md` was synced to this line in the final QA.
 3. **The display name** (brief vs copy team, §2.3). Owner decides once.
 4. **The same bottle shows in four tiles** (9, 3, 6, 5). 3 and 5 are LAYL by the brief, and 6 has to be LAYL to stay honest: it's the only concept product we own as a model, so it's the only one where we could make a true "ordinary photo" of the same product from the same camera. The remedy is the slot-2 rotation in §3a (STAKK is final now; owner's call), and future posts.

@@ -10,6 +10,7 @@ sys.path.insert(0, os.path.join(HERE, '..', '..', '..', '_system', 'audio'))
 from tashaudio import *  # noqa
 
 C = json.load(open(os.path.join(HERE, 'cues.json')))
+S = {x['id']: x for x in C['shots']}
 T0, BPM, DUR = C['t0'], C['bpm'], C['duration']
 D = C['drops']; X = C['text']
 g = Grid(BPM, T0)
@@ -134,6 +135,18 @@ sfx.add(claps_ensemble(9, 0.45, seed_=2), C['smash'], gain=0.55)
 for k in range(4):
     sfx.add(mirwas_tak(), X['title'][0] + k * 0.125, gain=0.42, pan=0.15 - 0.1 * k)
     sfx.add(pop(260 + 70 * k, 520 + 120 * k, 0.06), X['title'][0] + k * 0.125, gain=0.3)
+# S02 is now the spatula lift (b2_lift): a short gritty steel-on-griddle scrape on the 0.90 cut, under the first thock.
+# Its noise comes from its own seeded generator, so the global noise stream (and every SFX after it) is unchanged.
+def scrape(d=0.34, seed_=41):
+    r = np.random.default_rng(seed_); N = n_(d); t = np.arange(N) / SR
+    grit = np.zeros(N); idx = r.integers(0, N, int(700 * d)); grit[idx] = r.uniform(0.3, 1.0, len(idx))
+    grit = np.clip(lp(grit, 140) * 60, 0, 2.2)                     # the edge catching on the crust: bumpy amplitude
+    x = bp(r.standard_normal(N), 1700, 6200) * (0.35 + grit)
+    e = np.minimum(1, t / 0.015) * (1 - t / d) ** 1.6
+    return stereo(x * e * 0.5, 0.25, width=0.6)
+
+
+sfx.add(scrape(), S['S02']['at'] - 0.01, gain=0.45)
 # (the S02 -> S03 whip is gone: a hard cut on the 2.40 beat; the heel's short whoosh below leads into it)
 # layer drops
 
@@ -174,7 +187,12 @@ crunch(D['onions'], 2200, 8000, 0.55, 7); thud(D['onions'], 140, 0.22, 0.4)
 SIN = C.get('sauceIn', C['shots'][7]['at'])
 sfx.add(lp(pour(D['sauce'] - SIN + 0.04, seed_=19), 2200), SIN, gain=0.2)
 sfx.add(pop(300, 120, 0.13), D['sauce'], gain=0.62); thud(D['sauce'], 85, 0.32, 0.25)
-sfx.add(pour(M['roll'] - D['sauce'] - 0.02, seed_=21), D['sauce'] + 0.02, gain=0.34)
+# the picture speed-ramps the rest of the pour after contact (1.25 -> 7.3x): the stream breaks on sauceBreak (7.833), so the glossy pour
+# fades out there. Same length and seed as before (the global noise stream is untouched), only its tail is shaped.
+gp = pour(M['roll'] - D['sauce'] - 0.02, seed_=21)
+SB = C['sauceBreak'] - (D['sauce'] + 0.02)
+gp[n_(SB):] *= 0; fo = n_(0.07); gp[n_(SB) - fo:n_(SB)] *= np.linspace(1, 0, fo)[:, None] ** 1.5
+sfx.add(gp, D['sauce'] + 0.02, gain=0.34)
 # riser into the top bun, then the drop
 sfx.add(riser(0.5, 200, 9000), D['crown'] - 0.5, gain=0.5)
 fall(D['crown'], 0.25, 0.4)

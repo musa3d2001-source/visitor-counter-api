@@ -9,7 +9,7 @@ Pipeline per output frame:
   pixels             : the two neighbouring 24 fps source frames, blended in linear light (slow motion),
                        or the nearest frame (crisp: real-speed action and every event frame)
   framing            : cover crop at zoom z around (cx, cy), one Lanczos resample to 1080x1920
-                       (S02: frame lowered with a dark falloff on top, see edl.json)
+                       (S02 b2_lift: frame lowered with a dark falloff on top, see edl.json)
   grade (shared)     : 0) the one-stage chain (c1..c4) is first matched to b7_crown: they end / start on the same
                           frame (c4 f120 = b7 f0, pixel-aligned), so a quadratic RGB transfer is fitted on that pair
                        1) per-clip black match (dark clips)  2) one look (sat trim, gentle S, highlight roll-off to cream)
@@ -43,10 +43,10 @@ CHAIN = ('c1_patty', 'c2_double', 'c3_toppings', 'c4_sauce')
 CHAIN_PAIR = ('c4_sauce', 120, 'b7_crown', 0)      # the shared frame: c4 ends where b7 starts
 # stage-red sample region (source px) of the red-seamless clips (nothing falls through it on the reference frames)
 STAGE = {c: (100, 100, 980, 500) for c in CHAIN + ('b7_crown',)}
-DARK = {'b1_smash_v3', 'b2_crust'}
+DARK = {'b1_smash_v3', 'b2_lift'}
 # the frame each clip's correction is measured on (clean stage, nothing falling through the sample region),
 # so every sequence cut from the same clip gets identical numbers
-REF = {'b1_smash_v3': 40, 'b2_crust': 60, 'c1_patty': 40, 'c2_double': 50, 'c3_toppings': 100, 'c4_sauce': 110, 'b7_crown': 60}
+REF = {'b1_smash_v3': 40, 'b2_lift': 20, 'c1_patty': 40, 'c2_double': 50, 'c3_toppings': 100, 'c4_sauce': 110, 'b7_crown': 60}
 
 
 def smooth(e0, e1, x):

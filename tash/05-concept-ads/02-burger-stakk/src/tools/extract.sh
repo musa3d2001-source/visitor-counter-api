@@ -7,7 +7,7 @@
 # The one-stage build (S03a–S08c) is cut from the four chained clips c1–c4, colour-matched to b7 (see conform.py).
 set -euo pipefail
 HERE="$(cd "$(dirname "$0")" && pwd)"
-for c in b1_smash_v3 b2_crust c1_patty c2_double c3_toppings c4_sauce b7_crown; do
+for c in b1_smash_v3 b2_lift c1_patty c2_double c3_toppings c4_sauce b7_crown; do
   [ -f "$HERE/../../footage/ai/$c.mp4" ] || { echo "missing footage/ai/$c.mp4"; exit 1; }
 done
 python3 "$HERE/conform.py" "$@"

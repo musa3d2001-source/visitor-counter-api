@@ -4,7 +4,7 @@
  "fps": 30,
  "clips": {
   "b1_smash_v3": "footage/ai/b1_smash_v3.mp4",
-  "b2_crust": "footage/ai/b2_crust.mp4",
+  "b2_lift": "footage/ai/b2_lift.mp4",
   "c1_patty": "footage/ai/c1_patty.mp4",
   "c2_double": "footage/ai/c2_double.mp4",
   "c3_toppings": "footage/ai/c3_toppings.mp4",
@@ -48,30 +48,30 @@
   },
   {
    "id": "S02",
-   "clip": "b2_crust",
+   "clip": "b2_lift",
    "from": 0.9,
    "to": 2.4,
    "keys": [
     [
      0.9,
-     0.8,
-     1.0,
-     1.0
+     0.0417,
+     1.25,
+     1.25
     ],
     [
-     2.3,
-     2.2,
-     1.0,
-     1.0
+     2.3667,
+     1.875,
+     1.25,
+     1.25
     ]
    ],
-   "blend": true,
+   "blend": false,
    "frame": {
     "z": 1.0,
-    "shiftY": 450,
-    "fadeTop": 300
+    "shiftY": 300,
+    "fadeTop": 260
    },
-   "why": "top-down crust; frame lowered 450 px with a dark falloff on top (the light pool ends) so the stacked title sits on calm griddle, never on crust. One-stage cut: runs to the hard cut on the 2.40 beat (no whip), b2 0.80 -> 2.27 s at 1.0x"
+   "why": "owner: the old top-down crust (b2_crust) looked ugly («شكل البرجر قبيح»); replaced by the CD-approved b2_lift: low griddle-level side view, the black-gloved hand's spatula lifts a thin smash patty and shows its deep mahogany, lacy crust; fat sizzling, steam, warm kitchen bokeh (same glove and kitchen as the S01 hook). One source frame per output frame (1.25x, nearest, no blends): f1 (0.042 s) at 0.90 -> f45 (1.875 s) at 2.367, then the hard cut on the 2.40 beat. f0 is a held start frame (f0->f1 differs by 0.5/255) and is skipped; after f45 the lifted patty stands up into a cone (AI) and the steam thins. Frame lowered 300 px into a dark falloff so the stacked title sits on the steam and bokeh, above the spatula blade"
   },
   {
    "id": "S03a",
@@ -363,9 +363,9 @@
     ],
     [
      7.8667,
-     3.1334,
-     2.0,
-     2.0
+     4.375,
+     7.3,
+     7.3
     ]
    ],
    "blend": false,
@@ -375,7 +375,7 @@
    "frame": {
     "z": 1.0
    },
-   "why": "c3 f58 -> c4 f42 on the 6.90 beat (the stack is at rest on both, an invisible join): the sauce tip enters the top f43 (6.933), falls one source frame per output frame, touches the onion f57 on the sauce cue 7.40, then the pour ramps 1.25 -> 2.0x into the 7.90 cut to b7 (same burger, same framing: c4 ends on the frame b7 starts from)"
+   "why": "c3 f58 -> c4 f42 on the 6.90 beat (the stack is at rest on both; the rings settle a few px and steam starts): the sauce tip enters the top f43 (6.933), falls one source frame per output frame, touches the onion f57 on the sauce cue 7.40, then a speed ramp (linear acceleration 1.25 -> 7.3x, nearest frames) runs the rest of the pour: the stream thins (f94, the last attached frame, on 7.80), breaks, a last drip falls (f99 on 7.833) and the pool settles (f105 on 7.867). So the 7.90 jump cut to b7 f4 (same burger, same framing: c4 ends on the frame b7 starts from) only skips the pool settling, not the stream (ECD: before, the full stream vanished on that cut)"
   },
   {
    "id": "S09",

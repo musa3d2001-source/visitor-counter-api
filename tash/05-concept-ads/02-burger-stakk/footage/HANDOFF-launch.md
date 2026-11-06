@@ -41,24 +41,27 @@ lands at 0.79 s (0.50 s in). That is ungraded and has no punch or shake.
 | What | Clean range | Source (clip, s, frames) | Speed | Notes |
 |---|---|---|---|---|
 | **SMASH** (gloved press slams a compact, finely ground beef ball on a black griddle) | **0.000 → 0.900** | `b1_smash_v3.mp4` 1.250 (f30) → 2.333 (f56) | 1.25×, nearest, no blends | unchanged: ball whole and sharp 0.000–0.367; first compressed frame on **0.400** (f42); first sharp pressed frame 0.500 (f45). Dark griddle, not red. Never blend f36–f44 (the press's motion blur doubles into a ghost rim) |
-| **CRUST** (top-down seared patty, lacy edge, fat bubbling) | **0.900 → 2.400** | `b2_crust.mp4` 0.800 (f19) → 2.267 (f54/55) | 1.0×, frame-blended | the whole shot is usable now (the whip is gone; it ends on a hard cut at 2.40). The frame is lowered 450 px for the title, so the top quarter is a dark falloff |
+| **SPATULA LIFT** (griddle-level side view: the gloved hand's spatula lifts a thin smash patty, mahogany lacy crust, sizzle, steam, kitchen bokeh) | **0.900 → 2.400** | `b2_lift.mp4` 0.042 (f1) → 1.875 (f45) | 1.25×, nearest, no blends | **new in the ECD pass** (replaces the top-down CRUST, which the owner disliked; `b2_crust.mp4` is deleted). Same glove and kitchen as SMASH; ends on a hard cut at 2.40. The frame is lowered 300 px for the title, so the top 300 px are a graded dark falloff. Raw source: don't use it past f45 (1.88 s), where the lifted patty stands up into a cone |
 | **HEEL → PATTY SLAM** (empty toasted brioche heel on red, the patty drops onto it) | **2.400 → 3.633** | `c1_patty.mp4` 0.000 (f0) → 0.292 (f7, on 3.233) at 0.35× blended, then f8 → f11 one-to-one, **jump f11 → f18** on 3.400, then f18 → f25 | 0.35× → 1.25× | the stage opens with a 4.5 % scale settle on 2.400; the patty enters the top on 3.267 and touches on **3.367** (f11, motion smear); 3.400 first clean landed frame. Raw source if you conform it yourself: don't use f12–f17 (the patty slides, curls and ghosts its edges) |
 | **LACE PUNCH-IN** (the patty's charred, crispy rim over the brioche, 1.31× crop) | **3.667 → 4.233** | `c1_patty.mp4` 1.083 (f26) → 1.792 (f43) | 1.25× | same burger, slow creep; a little soft at 1.31× |
 | **CHEDDAR LANDS** (slice drops onto the patty on red) | **4.267 → 4.900** | `c1_patty.mp4` 2.833 (f68) → 3.583 (f86) | 1.25×, nearest | the slice is falling on the first frame; corner touches 4.333 (f70), slaps down, **flat on 4.400** (f72, one frame of flap blur), then the melt starts |
 | **CHEESE MELT** (cheddar drip growing down the patty over the heel, 1.31× crop, red stage) | **4.900 → 5.750** | `c1_patty.mp4` 4.167 (f100) → 4.667 (f112) | 0.6×, frame-blended | the calmest, most appetising beat. Replaces the old charcoal `b4_melt` range |
 | **DOUBLE** (second patty drops onto the cheddar, then the second slice) | **5.767 → 6.233** | `c2_double.mp4` 1.167 (f28) → 1.583 (f38), **jump** to 2.750 (f66) → 2.875 (f69) on 6.133 | 1.25×, nearest | patty 2 touches 5.867, **down on 5.900** (f32); the jump cut lands on the second slice slumping, lying down on **6.167** (f67). The falling patty (5.767–5.867) is heavy AI motion smear |
 | **PICKLES + ONION** (pickle rain, then an onion ring lands) | **6.267 → 6.900** | `c3_toppings.mp4` 0.583 (f14) → 0.875 (f21), **jump** to 2.000 (f48) → 2.417 (f58) on 6.533 | 1.25×, nearest | pickle **down on 6.400** (f18); onion ring **lands on 6.667** (f52). Raw source: c3 f43–f45 show broken ring-shaped motion smears |
-| **SAUCE POUR** (sauce stream onto the onion, side view on red) | **6.900 → 7.900** | `c4_sauce.mp4` 1.750 (f42) → 3.133 (f75) | 1.25× one-to-one, ramping to 2.0× after contact | the tip enters the top on 6.933 (f43) and **touches the onion on 7.400** (f57). The 6.900 frame is a small jump from c3 (rings settle a few px). Raw source: the stream breaks ≈4.0 s (f96), the pool settles by f120 = `b7_crown` f0 |
+| **SAUCE POUR** (sauce stream onto the onion, side view on red) | **6.900 → 7.900** | `c4_sauce.mp4` 1.750 (f42) → 4.375 (f105) | 1.25× one-to-one to the contact, then a speed ramp 1.25 → 7.3× (nearest frames) | the tip enters the top on 6.933 (f43) and **touches the onion on 7.400** (f57). From the ECD pass the rest of the pour is ramped: the stream's last attached frame is on 7.800 (f94), the last drip is on 7.833 (f99) and the pool has settled on 7.867 (f105), so the cut into the BURGER range at 7.90 is nearly seamless. The 6.900 frame is a small jump from c3 (rings settle a few px). Raw source: the stream is broken from f95 (3.96 s), drips fall to f104, and the pool settles by f120 = `b7_crown` f0 |
 | **HERO HANDLE** (finished burger on red, slow push, steam) | **10.400 → 13.800** | `b7_crown.mp4` 2.440 (f58) → 4.976 (f120) | 0.8 → 0.7×, frame-blended | unchanged; clean only (the film shows the end card here). Best single frame ≈ **11.600** (source ≈ 3.38 s) = `still-hero.png` |
 
 ## 3. Avoid
 
-- Clean **6.867 → 6.900** and **7.867 → 7.900** as transitions inside your own cut: they are jump cuts inside the locked shot (rings settle;
-  then the sauce stream vanishes and the pool is suddenly complete). Fine in STAKK on its beats, odd if they land mid-phrase elsewhere.
+- Clean **6.867 → 6.900** as a transition inside your own cut: it is a jump cut inside the locked shot (the rings settle, steam appears). Fine
+  in STAKK on its beat, odd if it lands mid-phrase elsewhere. (7.867 → 7.900 is now only the pool settling: since the ECD pass the stream has
+  already broken before it.)
+- Clean **7.400 → 7.867** played slower than 1×: it is a speed ramp up to 7.3×, and slowing it shows the frame steps.
+- `b2_lift.mp4` after f45 (1.88 s): the lifted patty stands up into a cone (AI).
 - `c1_patty.mp4` f12–f17 (0.50–0.71 s): the landed patty slides, its tips curl and its edges ghost (AI). STAKK jumps f11 → f18.
 - `c3_toppings.mp4` f43–f45 (1.79–1.88 s): broken ring-shaped motion smears.
 - Never frame-blend anything that falls (patties, slices, pickles, rings, the sauce tip, the crown): blending doubles it into a ghost. Use
   1.25× (24 → 30 fps one-to-one) or nearest frames.
 - `b1_smash_v3.mp4` 1.50–1.83 s (f36–f44) slowed down with frame blending: the press's motion blur doubles into a ghost rim.
-- The deleted clips (`b1_smash.mp4`, `b3_heel.mp4`, `b4_melt.mp4`, `b5_stack.mp4`, `b6_sauce.mp4`) — even from an old export: they show
-  different burgers on a different background.
+- The deleted clips (`b1_smash.mp4`, `b2_crust.mp4`, `b3_heel.mp4`, `b4_melt.mp4`, `b5_stack.mp4`, `b6_sauce.mp4`), even from an old export.
+  They show different burgers on a different background (and the owner disliked the top-down crust).
