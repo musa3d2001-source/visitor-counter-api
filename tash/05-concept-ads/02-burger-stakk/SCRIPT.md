@@ -5,7 +5,10 @@
 >
 > **Footage: AI-generated with Higgsfield (GPT Image 2.6 start frames → Kling 3.0 Turbo), art-directed and approved by TASH. Edit, type, sound design and signature by TASH.**
 > The owner approved Higgsfield for this ad after judging the CGI version «كرتوني مو حقيقي». The CD generated and approved
-> the seven clips in `footage/ai/`; the edit team did not generate anything. All type is live Chromium text from OFL fonts,
+> the seven clips in `footage/ai/`; the edit team did not generate anything.
+> `footage/ai/` also holds `b1_smash_v2.mp4` and `b1_smash_v3.mp4` (and their start frames in `footage/ai/frames/`), which
+> appeared on 2026-11-06 at 19:15 and 19:18 during the ECD review. No notes or job ids came with them, so they are not
+> listed below, and this cut does not use them. All type is live Chromium text from OFL fonts,
 > and the score and sound design are synthesised with `_system/audio`.
 
 | Shot | Image job (start frame) | Video job |
