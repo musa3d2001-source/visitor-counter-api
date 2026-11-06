@@ -67,8 +67,53 @@ async function drawFootage(t, extra = {}) {
   const fsx = fx, fsy = fy - oy;                         // the focus point's screen position
   const sx = clamp(fx - fsx / z, 0, W - sw), sy = clamp(fy - fsy / z, 0, SH - sh);
   g.drawImage(img, sx, sy, sw, sh, 0, 0, W, H);
+  softenPrint(seg.id, f - Math.round(seg.t0 * FPS), (x, y) => [(x - sx) * z, (y - sy) * z], z);
   grade(g, { match: MATCH[seg.clip], shades: CLEAN ? [] : (LY.shades[seg.id] || []), ...extra });
   return { seg, f, map: { sx, sy, z } };
+}
+
+// ---------------------------------------------------------------- the cups' small printed Arabic (CD review)
+// The AI misprinted it (m3: garbled; m7: «الكميت» for «الكويت»). tools/track_patch.py tracks the block per frame;
+// here it is softened past legibility with a feathered, deterministic box blur. English and «مور MOR» stay sharp.
+const PATCH = await (await fetch(new URL('./assets/patches.json', import.meta.url))).json();
+const PAD = { C: [44, 14, 24, 30], G: [24, 22, 26, 24] };            // left, top, right, bottom (source px)
+function blurBox(d, w, h, r) {                                     // 3-pass separable box blur, in place (RGB)
+  const tmp = new Float32Array(Math.max(w, h) * 3);
+  for (let pass = 0; pass < 3; pass++) {
+    for (let y = 0; y < h; y++) {                                  // horizontal
+      for (let x = 0; x < w; x++) for (let c = 0; c < 3; c++) {
+        let a = 0, n = 0;
+        for (let k = -r; k <= r; k++) { const xx = Math.min(w - 1, Math.max(0, x + k)); a += d[(y * w + xx) * 4 + c]; n++; }
+        tmp[x * 3 + c] = a / n;
+      }
+      for (let x = 0; x < w; x++) for (let c = 0; c < 3; c++) d[(y * w + x) * 4 + c] = tmp[x * 3 + c];
+    }
+    for (let x = 0; x < w; x++) {                                  // vertical
+      for (let y = 0; y < h; y++) for (let c = 0; c < 3; c++) {
+        let a = 0, n = 0;
+        for (let k = -r; k <= r; k++) { const yy = Math.min(h - 1, Math.max(0, y + k)); a += d[(yy * w + x) * 4 + c]; n++; }
+        tmp[y * 3 + c] = a / n;
+      }
+      for (let y = 0; y < h; y++) for (let c = 0; c < 3; c++) d[(y * w + x) * 4 + c] = tmp[y * 3 + c];
+    }
+  }
+}
+function softenPrint(segId, i, toScreen, scale, ctx = g) {
+  const T = PATCH[segId]; if (!T) return;
+  const [bx, by, bw, bh] = T[Math.max(0, Math.min(T.length - 1, i))], [pl, pt, pr, pb] = PAD[segId];
+  const [x0, y0] = toScreen(bx - pl, by - pt), [x1, y1] = toScreen(bx + bw + pr, by + bh + pb);
+  const fe = Math.round(12 * scale), X = Math.max(0, Math.floor(x0) - fe), Y = Math.max(0, Math.floor(y0) - fe);
+  const Wd = Math.min(ctx.canvas.width, Math.ceil(x1) + fe) - X, Hd = Math.min(ctx.canvas.height, Math.ceil(y1) + fe) - Y;
+  if (Wd <= 2 || Hd <= 2) return;
+  const im = ctx.getImageData(X, Y, Wd, Hd), orig = new Uint8ClampedArray(im.data);
+  blurBox(im.data, Wd, Hd, Math.max(3, Math.round(6 * scale)));
+  for (let y = 0; y < Hd; y++) for (let x = 0; x < Wd; x++) {      // feathered rectangle: blur inside, original outside
+    const dx = Math.min(x, Wd - 1 - x) / fe, dy = Math.min(y, Hd - 1 - y) / fe;
+    let m = Math.min(1, dx, dy); m = m * m * (3 - 2 * m);
+    const p = (y * Wd + x) * 4;
+    for (let c = 0; c < 3; c++) im.data[p + c] = orig[p + c] + (im.data[p + c] - orig[p + c]) * m;
+  }
+  ctx.putImageData(im, X, Y);
 }
 
 // ---------------------------------------------------------------- MOR's keyhole (from the logo plate)
@@ -187,13 +232,21 @@ function cardAt(t) {
   return { ax, ay, S };
 }
 
-const POSTER_T = POSTER ? (await import('./poster.js')).POSTER_T : 0;
+const { POSTER_T = 0, POSTER_PIC = null } = POSTER ? await import('./poster.js') : {};
 async function seek(t) {
   if (POSTER) t = POSTER_T;
   let info = null;
   const tail = !POSTER && t >= EV.sting + 0.2;        // the ink TASH tail covers the frame from here
   if (tail) { g.fillStyle = '#0B0B0B'; g.fillRect(0, 0, W, H); }
-  else if (t < EV.through) {                          // HOOK: through the keyhole
+  else if (POSTER) {                                  // COVER: the keyhole frames MOR's cup (correct mark), not the AI sign
+    const P = POSTER_PIC, seg = SEG[P.seg], img = await F.frame(P.seg, Math.round(seg.t0 * FPS) + P.i);
+    const X0 = P.at[0] - P.src[0] * P.k, Y0 = P.at[1] - P.src[1] * P.k;
+    g.fillStyle = '#14080B'; g.fillRect(0, 0, W, H);
+    g.drawImage(img, 0, 0, 1080, SH, X0, Y0, 1080 * P.k, SH * P.k);
+    softenPrint(P.seg, P.i, (x, y) => [X0 + x * P.k, Y0 + y * P.k], P.k);
+    grade(g, { match: MATCH[seg.clip], exp: 1.1 });
+    const h = hookAt(t); drawDoor(h.ax, h.ay, h.S); g.drawImage(door, 0, 0);
+  } else if (t < EV.through) {                          // HOOK: through the keyhole
     const h = hookAt(t);
     const unlockLift = 1 + 0.28 * tw(t, EV.unlock, 0.18, E.outCubic);  // the lock gives and the light inside comes up
     info = await drawFootage(t, { exp: unlockLift * lerp(0.82, 1, tw(t, EV.push, 0.6, E.inOutSine)) });
