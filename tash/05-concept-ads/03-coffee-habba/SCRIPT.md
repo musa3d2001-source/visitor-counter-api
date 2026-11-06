@@ -1,7 +1,7 @@
 # HABBA «حبّة» — Concept ad 03 / Specialty coffee (photoreal cut)
 
 `CONCEPT AD — 03 / COFFEE` · «إعلان تجريبي — علامة خيالية». HABBA is a fictional brand made up for this piece.
-9:16 · 1080×1920 · 30 fps · 15.6 s · H.264 + AAC 48 kHz · −14 LUFS (measured −13.9 LUFS, true peak −1.5 dBTP)
+9:16 · 1080×1920 · 30 fps · 15.6 s · H.264 + AAC 48 kHz · −14 LUFS (measured −14.0 LUFS, true peak −1.5 dBTP)
 
 > **Footage: AI-generated with Higgsfield (GPT Image 2.6 start frames → Kling 3.0 Turbo), art-directed and approved by
 > TASH. Edit, type, sound design and signature by TASH.**
@@ -83,7 +83,7 @@ frame index. The same timeline renders with `?clean=1`.
 | S2 | 2.10–4.20 | k2_steam · 0.150–1.830 s · 0.8× | Side view at rim height, the cream lip in the foreground, and steam curling up through one diagonal bar of sun against the dark room. Push ×1.03 → 1.055. Cut from S1 on the rising steam | — |
 | S3 | 4.20–7.00 | k3_pour · 1.196–4.556 s · 1.2× | Top-down. The milk stream is already falling at the cut, and a real latte-art heart grows under it. The stream **breaks between source frames 93 and 94 (3.896 s) = 6.45**, and then the pitcher lifts up and out of the top of frame (clean from 6.93). A graduated falloff darkens the lower table under the line | streamOff 6.45 |
 | S4a | 7.00–7.70 | k4_beans · 2.121–2.621 s (source frames 50.9–62.9) · 0.75× | Low at table level, shallow focus, the barred wall behind. Push ×1.03 → 1.04 (the camera is locked off). Bean A enters the top of frame at 7.07 and falls into the beans; **the shot ends on its contact with the hero bean (source frames 63/64) = 7.70**. The cut comes before frame 64, where the AI makes the bean it hits jump to a new pose in one frame, and before the bounce and the fused double bean that follow (source frames 64–89) | bean1 7.70 |
-| S4b | 7.70–9.80 | k4_beans · 3.958–4.982 s (source frames 95.0–119.6) · ≈0.42× then ≈0.54× (3-key monotone map, frame blend) | **Scale cut ON bean 1** (×1.30 → 1.33, bottom-anchored). The cut lands on bean A's contact and opens on bean D already sharp in the air above the beans. Its fall before frame 95 (source frames 86–94) is a translucent AI smear and is never shown. Bean D **touches the table at source frame 102 = 8.40**, rocks up onto its edge, then rolls back and **settles flat at about source frame 114.5 = 9.38** | bean2 8.40 |
+| S4b | 7.70–9.80 | k4_beans · 3.958–4.982 s (source frames 95.0–119.6) · ≈0.42× then ≈0.54× (3-key monotone map, frame blend) | **Scale cut ON bean 1** (×1.30 → 1.33, bottom-anchored). The cut lands on bean A's contact and opens on bean D already sharp in the air above the beans. Its fall before frame 95 (source frames 86–94) is a translucent AI smear and is never shown. Bean D **touches the table at source frame 102 = 8.40**, rocks up onto its edge, then rolls back and **lies flat at about source frame 114 = 9.33** | bean2 8.40 |
 | S5 | 9.80–12.75 | k5_hero · from 0.050 s · 0.85× | Low hero angle: cup and saucer at table height, the clip's gentle arc and push, and the sunlit limewash wall with light bars above. A soft sun pool on the wall (+0.55 stop, static) sits behind the **client end card**: the mark writes on right→left (10.80–11.70), its terracotta bean **lands in the ب slot at 11.50**, HABBA tracks in (11.55), then SPECIALTY COFFEE (11.80). Full lockup to 12.75 | logoIn 10.80 · beanDot 11.50 |
 | S6 | 12.75–15.60 | (S5 continues under the tail; source to 4.98 s) | **The blinds close:** the same light-bar mask narrows to slits and the room drops 4 stops (12.75–13.10). The TASH signature (local `sting-short.js`, same dots and cues as `createSting`) runs from **13.00**: typing → converge → **snap 14.12** → shadda 14.30 → «خلّهم يسولفون عنك!» 14.55 → @tash.creative.kw 15.10. The `CONCEPT AD — 03 / COFFEE` + «إعلان تجريبي — علامة خيالية» slate is visible from 13.10 to the end | `?clean=1`: S5 keeps rolling to 15.60 (light stays on; no close, sting or slate) |
 
@@ -128,15 +128,17 @@ Only the SFX whose picture changed were moved (`cues.json` → `ev._sfxNote`):
 | 0.26 | blinds open: slat ripple + air swish, keys' low-pass opening with the light | unchanged (on the light-bar wipe) |
 | 4.15–6.70 | milk pour, thinning as the stream lifts | unchanged: the footage was retimed so the stream breaks on 6.45 |
 | 7.70 · 8.40 | bean taps (tick + wooden knock) + pluck D5 on each landing | unchanged times. 7.70 is bean A's contact, on the S4 scale cut. 8.40 is bean D touching the table (source frame 102). Before the ECD review, 8.40 fell 0.62 s before that contact, while the bean was still in the air |
-| 9.38 | soft secondary contact (a knock low-passed at 3 kHz, about −18 dB under the landing tap) | **new**: bean D rolls back and settles flat (measured). The v1 "+0.42 s bounces", the eight out-of-focus taps and the builder's 7.80 graze were removed because those contacts are not on screen |
+| 9.32 | soft secondary contact (a knock low-passed at 3 kHz, about −18 dB under the landing tap) | **new**: bean D rolls back and lies flat (measured on the rendered film: flat at f280 = 9.333). The v1 "+0.42 s bounces", the eight out-of-focus taps and the builder's 7.80 graze were removed because those contacts are not on screen |
 | 9.90–11.20 | ceramic scrape of the turning cup | **removed**: the AI cup does not turn |
 | 11.20 | ceramic clink (v1 hero hit) | **removed**: it had no cause. The Dmaj9 resolve still lands here |
 | **11.50** | **hero: the bean drops into the mark** | **promoted** from a small tap to the hero hit (layered wooden tok + a little body + room send), with a −2.5 dB breath in the music just before it (it replaces v1's dip before the clink) |
 | 12.75 | blinds close (slat ripple); music bows out −15 dB | unchanged |
 | 13.00 | `sonic_logo()` → طشّ hit at 14.12 | unchanged |
 
-Master: `audio.wav` is pre-mastered to −14.1 LUFS with a true peak of −1.5 dBTP (LRA 3.2 LU). The renderer's two-pass loudnorm gives the MP4
-**−13.9 LUFS, −1.5 dBTP**. `audio-check.sh` spectrogram: no clicks and no harsh 2–5 kHz build-up; the sub of the TASH hit decays
+Master: `audio.py` reports `audio.wav` at −14.2 LUFS with a true peak of −1.5 dBTP (ffmpeg loudnorm measures −14.4 LUFS, −1.5 dBTP, LRA 3.5 LU).
+The renderer's two-pass loudnorm gives the MP4 **−14.0 LUFS, −1.5 dBTP, LRA 3.2 LU** (`audio-check.sh`). After the ECD review moved the settle
+tap from 9.38 to 9.32, the MP4 was re-muxed with the same two-pass loudnorm settings as `render.mjs`; the video stream is byte-identical to the render.
+Measured hit onsets in the final: 7.707 · 8.408 · 11.503 s. `audio-check.sh` spectrogram: no clicks and no harsh 2–5 kHz build-up; the sub of the TASH hit decays
 under the end hold.
 
 ---
@@ -159,7 +161,7 @@ under the end hold.
 1. **The blinds never move in the footage.** "The blinds open/close" is a grade effect (a light-bar mask), not a real slat move. It
    reads as light, but it is not a shot of blinds.
 2. **S4 is built around the take's flaws.** k4 has only two usable moments: bean A falling in (source frames 51–63) and bean D in the air and landing
-   (95–120). Between them come a one-frame pose jump, a bounce, a fused double bean and a translucent smear. S4b is therefore a ×1.30–1.33
+   (95–120). Between them come a one-frame pose jump, a bounce, a fused double bean and a translucent smear. S4b is also a ×1.30–1.33
    punch-in on 1080p AI footage. It is softer than the rest at full size, and we never see bean D fall from the top; it is already in the air.
 3. **AI artifacts still visible frame by frame:** bean A's motion blur in S4a has a streaky, slightly see-through texture for its last ~0.2 s
    before the cut. In S3 the heart's outline "breathes" slightly in the final source frames.
@@ -184,7 +186,8 @@ under the end hold.
 |---|---|---|
 | 1 | contact sheet at 4 fps (r1), cut strips f−1/f/f+1 for every cut, 12 full-size stills, freeze/black/scene detect, audio-check | (a) the pitcher ghosted at 6.75 (frame blend) → S3 switched to the motion-adaptive blend; (b) bean B crossed «حبّة…» → depth matte (bean in front of the type); (c) bean D sat behind the word at the scale cut → matte extended to S4b; (d) roasted type measured 2.1–2.7:1 on the darker wall bars → static sun pool on the wall + SPECIALTY COFFEE in roasted; (e) the blinds-close slits were invisible (inCubic) → inOutSine; (f) DOM blur differed by seek order → `will-change` removed |
 | 2 | contact sheet at 4 fps (r2/final), cut strips from the encoded MP4, full-size tail strings, clean-mode stills, determinism re-test, luminance across cuts | the 7.00 brightness step (71 → 100) → k4 −0.35 stop (98 now; remaining step accepted and listed above). Freeze detect: only the designed end hold (14.93–15.60). Black detect: only the TASH tail on ink. Final MP4: −13.9 LUFS, −1.5 dBTP |
-| 3 (ECD, independent) | the builder's final MP4: contact sheet at 4 fps, 50+ full-size frames incl. every cut ±1, the k4 source frame by frame, the poster at full size + its 3:4 crop, `?clean=1` stills, audio-check | (a) **S4b opened on 8 frames of bean D as a translucent, rectangular AI smear**, magnified ×1.3 and passing over «حبّة…» → S4 re-cut: S4a ends on bean A's contact at 7.70 and S4b opens there on bean D already sharp (source 95); the smear, the hit bean's one-frame pose jump (63→64), the upright mid-air bounce and the fused double bean are all off screen; the depth matte is no longer needed and was removed. (b) **Desync:** the builder's "bean D lands at 94/95" was the frame where the smear turns sharp; the bean actually touches the table at frame 102, so «حبّة.» and its tap came 0.62 s early → 102 now maps to 8.40, and the secondary tap moved to the measured settle (9.38). (c) S4b at 0.42× in adaptive mode stepped at 10 fps → frame blend. (d) **Poster:** the bottom 90 px were a mirror image of the table with a visible chevron seam on the full 9:16 cover → re-framed ×1.25 about the bottom centre, real footage to the edge, cup and saucer still inside the 3:4 crop. Not changed (checked, fine at speed): the k1 steam puff in the first second (a plausible thermal plume), the blinds-close stripes across the cup (0.35 s) |
+| 3 (ECD, independent) | the builder's final MP4: contact sheet at 4 fps, 54 frames pulled at full size (every cut ±1 as strips, key frames and type crops at 100%), the k4 source frame by frame, the poster at full size + its 3:4 crop, `?clean=1` stills, audio-check | (a) **S4b opened on 8 frames of bean D as a translucent, rectangular AI smear**, magnified ×1.3 and passing over «حبّة…» → S4 re-cut: S4a ends on bean A's contact at 7.70 and S4b opens there on bean D already sharp (source 95); the smear, the hit bean's one-frame pose jump (63→64), the upright mid-air bounce and the fused double bean are all off screen; the depth matte is no longer needed and was removed. (b) **Desync:** the builder's "bean D lands at 94/95" was the frame where the smear turns sharp; the bean actually touches the table at frame 102, so «حبّة.» and its tap came 0.62 s early → 102 now maps to 8.40, and the secondary tap moved to the measured settle (9.32). (c) S4b at 0.42× in adaptive mode stepped at 10 fps → frame blend. (d) **Poster:** the bottom 90 px were a mirror image of the table with a visible chevron seam on the full 9:16 cover → re-framed ×1.25 about the bottom centre, real footage to the edge, cup and saucer still inside the 3:4 crop. Not changed (checked, fine at speed): the k1 steam puff in the first second (a plausible thermal plume), the blinds-close stripes across the cup (0.35 s) |
+| 3b (ECD, after the fixes) | the re-rendered MP4: contact sheet at 4 fps, strips of f229–233 (the new S4 cut), f248–260 (bean D's landing), f266–293 (the settle), f293–346 (S5 + bean into the mark); `?clean=1` stills; poster + 3:4 crop with guides; audio-check + measured hit onsets | no smear or pose jump on screen; «حبّة.» and its tap land on frame 252 with bean D's table contact; the settle tap nudged 9.38 → 9.32 to the frame the bean lies flat (re-mux only); `still-hero.png` re-rendered pixel-identical (S3 untouched, so `footage/HANDOFF-launch.md` stays valid); final −14.0 LUFS, −1.5 dBTP |
 
 ---
 
@@ -193,7 +196,7 @@ under the end hold.
 - `HABBA-concept-9x16.mp4`: the final with audio (1080×1920, 30 fps, H.264 High + AAC 48 kHz, 15.60 s)
 - `poster.png`: designed reel cover from a photoreal k5 frame (edit 10.6 s, ×1.25 about the bottom centre). It has a TASH pill + `CONCEPT AD — 03 / COFFEE` +
   «إعلان تجريبي — علامة خيالية», the HABBA mark, HABBA, «قهوتك… على مهلك.» and the cup in the low sun. Everything sits inside the
-  profile grid's centre 3:4 (y 240–1680; the saucer's lowest point is at about y 1646) and the slate is inside the safe area (`?poster=1`). It is real
+  profile grid's centre 3:4 (y 240–1680; the saucer's lowest point is at about y 1655) and the slate is inside the safe area (`?poster=1`). It is real
   footage edge to edge (no mirrored or stretched extension)
 - `still-hero.png`: the clean top-down heart at 6.9333 (`?clean=1`, the frame after the pitcher clears)
 - `contact-sheet.png`: 2 fps

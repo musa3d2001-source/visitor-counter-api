@@ -31,7 +31,7 @@
     },
     {
       "id": "S5",
-      "name": "cup turns on its saucer — mark comes round",
+      "name": "low hero on the sunlit wall — the client mark writes on, its bean drops into the ب",
       "at": 9.8,
       "dur": 2.95
     },
@@ -65,9 +65,9 @@
     "blindsCloseDur": 0.35,
     "sting": 13.0,
     "beanTapsBehind": [
-      9.38
+      9.32
     ],
-    "_sfxNote": "Photoreal cut (picture changed, music unchanged): bean1 7.70 = bean A's contact (on the S4a→S4b scale cut); bean2 8.40 = bean D touching the table (source frame 102, measured); beanTapsBehind = bean D settling flat after it rocks upright and rolls back (source frame ~114.5 = 9.38, measured on the conformed footage). The cup no longer turns in k5, so the turn scrape and the 11.20 clink are gone; the hero hit is the bean dropping into the mark at beanDot 11.50. 'settle' 11.20 stays as the Dmaj9 resolve."
+    "_sfxNote": "Photoreal cut (picture changed, music unchanged): bean1 7.70 = bean A's contact (on the S4a→S4b scale cut); bean2 8.40 = bean D touching the table (source frame 102, measured); beanTapsBehind = bean D settling flat after it rocks upright and rolls back (lies flat at edit frame 280 = 9.333, source frame ~114; tap at 9.32, measured on the rendered film). The cup no longer turns in k5, so the turn scrape and the 11.20 clink are gone; the hero hit is the bean dropping into the mark at beanDot 11.50. 'settle' 11.20 stays as the Dmaj9 resolve."
   },
   "footage": {
     "_note": "keys: [[edit_t, source_s], ...] (source clips are 24 fps, 5.04 s; source frame index = s*24). Linear between two keys, monotone cubic for 3+. mode: blend = linear frame blend between the two nearest source frames; adaptive = blend where the picture is still, nearest frame where it moves fast (no ghost beans). Two keys = a straight line, extended past the keys to t0/t1. Cuts sit on whole frames (t*30 integer).",

@@ -38,8 +38,9 @@ const LABELS = [
                                                                      // gone on the S05 cut so the falling cheddar never passes under it
   { key: 'cheese', top: 236, sup: '…على مهله', hero: 'تشيدر يذوب', heroFirst: true, supAt: 'cheeseSlow', heroAt: 0, out: 'end',
     anchors: { S05: [92, 1190], S06: [565, 1108] } },               // slice corner, then the drip as it leaves the cheese
-  { key: 'crunch', top: 236, sup: 'مخلل وبصل…', hero: 'يقرمشون', supAt: 'pickles', heroAt: 'onions', out: 'end',
-    anchors: { S07b: [262, 792], S07c: [300, 995] } },              // the left pickle (landed, then settled); «يقرمشون» on the onion's landing
+  { key: 'crunch', top: 236, sup: 'مخلل وبصل…', hero: 'يقرمشون', supAt: 'pickles', heroAt: 'onions', out: 7.01,
+    anchors: { S07b: [262, 792], S07c: [300, 995] } },              // the left pickle (landed, then settled); «يقرمشون» on the onion's landing;
+                                                                     // gone on the S08 cut: the sauce stream falls right where «يقرمشون» sits
   { key: 'sauce', top: 236, sup: 'صوص ستاك', hero: 'السرّي', supAt: 'sauce', heroAt: +0.05, out: 8.06,
     anchors: { S08: [560, 760] } },                                  // the pool; exits before the crown falls through (8.17)
 ];

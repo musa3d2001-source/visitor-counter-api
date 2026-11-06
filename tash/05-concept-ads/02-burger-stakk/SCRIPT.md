@@ -59,7 +59,7 @@ Speeds are source seconds per edit second. "f" = source frame (24 fps). Every ev
 | S04 | 3.90 → 4.25 | `b2_crust` 3.00 s (f72) → 3.33 · 1.0× · **1.6× punch-in** | Macro on the patty's crispy lace and bubbling fat, slow lateral slide | the crisp claim's leader lands on a real lace tip; label out by the S05 cut | close sizzle |
 | S05 | 4.25 → 4.90 | `b3_heel` 3.23 s (f77) → 3.83 · 1.0× | Cheddar slice falls (real motion blur) and **lands f81 on 4.40** | 4.40 «تشيدر يذوب» → leader to the slice corner | soft squish pop + thud + short pour |
 | S06 | 4.90 → 5.75 | `b4_melt` 4.53 s (f108) → 4.95 · **0.5×**, frame-blended | **Half-time**: cheddar folded over a lacy edge, the drip grows down the brioche; slow push toward the drip | 4.90 «…على مهله» joins (leader to the drip) | groove drops to half-time: one dum, slow clap, long 808, pad · riser back in |
-| S07 | 5.75 → 7.15 | `b5_stack`, three cuts: **a** 0.00 s (f0) → 0.31 at 0.5× · **b** 2.25 s (f54) → 2.48 at 1.0× · **c** 3.33 s (f80) → 3.58 at 0.5× | **a** the finished double stack, punch-ins on 5.90 («دبل!») and 6.15 (cheese2). **b** cut on contact: the centre pickle lands **f54 on 6.40**, the first onion ring **f57 on 6.533**. **c** jump cut on the 8th (6.65) to the settled stack | 5.90–6.36 «دبل!» · 6.40 «مخلل وبصل…» → leader to a pickle · 6.525 «يقرمشون» | thud + group clap + sizzle 5.90 · squish 6.15 · crunch 6.40 · **onion crunch 6.525** (was 6.65, see §5) |
+| S07 | 5.75 → 7.15 | `b5_stack`, three cuts: **a** 0.00 s (f0) → 0.31 at 0.5× · **b** 2.25 s (f54) → 2.48 at 1.0× · **c** 3.33 s (f80) → 3.58 at 0.5× | **a** the finished double stack, punch-ins on 5.90 («دبل!») and 6.15 (cheese2). **b** cut on contact: the centre pickle lands **f54 on 6.40**, the first onion ring **f57 on 6.533**. **c** jump cut on the 8th (6.65) to the settled stack | 5.90–6.36 «دبل!» · 6.40 «مخلل وبصل…» → leader to a pickle · 6.525 «يقرمشون» (out on the S08 cut) | thud + group clap + sizzle 5.90 · squish 6.15 · crunch 6.40 · **onion crunch 6.525** (was 6.65, see §5) |
 | S08 | 7.15 → 7.90 | `b6_sauce` 0.64 s (f15) → 1.39 · 1.0 → 1.2× | Top-down on red: a stream of orange sauce **makes contact f21 on 7.40** and pools over pickles and onion | 7.40 «صوص ستاك» / «السرّي» (left of the stream) → leader to the pool; exits 8.06–8.20, before the crown falls through | stream pour · **thick plop on contact 7.40** · glossy pour |
 | S09 | 7.90 → 8.40 | `b7_crown` 0.165 s (f4) → 0.79 · 1.25× | The finished stack on red; the sesame crown falls into frame at 8.17 (silence 8.15–8.40) | — | riser + snare roll → gap · crown fall whoosh |
 | S10 | 8.40 → 10.40 | `b7_crown` 0.79 s (f19) → 2.44 · 0.85 → 0.8×, frame-blended | **Crown lands f19 on 8.40**: +4 % punch and 11 px shake, then a slow hero push, steam | all in the red band above the crown, never on the food: 8.55 «ستاك دبل» · 8.90 badge «٢٫٧٥٠ د.ك» · 9.40 CTA «اطلب الحين ←» (press on 9.90) | **drop**: impact + group clap + tabl, full groove, Hijaz pluck hook · pop/bell on price · pop + click on CTA |
@@ -77,7 +77,7 @@ Clean plate only: 10.40 → 13.80 continues S10 (`b7_crown` 2.44 → 4.98 s, 0.8
 | سماش… · أطرافه مقرمشة | smash… · its edges are crispy | 3.40–4.25 |
 | تشيدر يذوب · …على مهله | cheddar melting · …taking its time | 4.40–5.75 |
 | دبل! | double! | 5.90–6.36 |
-| مخلل وبصل… · يقرمشون | pickles and onion… · crunching | 6.40–7.35 |
+| مخلل وبصل… · يقرمشون | pickles and onion… · crunching | 6.40–7.15 |
 | صوص ستاك · السرّي | STAKK sauce · the secret one | 7.40–8.20 |
 | ستاك دبل · ٢٫٧٥٠ د.ك · اطلب الحين ← | STAKK double · 2.750 KD (fictional price) · order now | 8.55–10.40 |
 | ستاك برجر · STAKK BURGER | client logo (fictional) | 10.60–11.40 |
@@ -111,10 +111,12 @@ source frame(s).
 
 - **Decode:** BT.709, tv range → full-range RGB (the clips are BT.709; decoding them as BT.601 had made the red look crimson).
 - **Retime:** each sequence is a cubic Hermite through `[edit t, source t, speed in, speed out]` keys, so ramps are smooth and
-  measurable. Event frames are always shown crisp. Slow sections (≤0.85×) blend the two neighbouring source frames in linear
-  light; real-speed and fast action uses nearest frames. At 1.25×, 24 fps maps one-to-one onto 30 fps.
-- **Framing:** a single Lanczos resample per frame (cover crop, punch-ins 1.18–1.6×). The page adds a constant 1.03 overscan
-  (hides AI edge artefacts), slow pushes, two impact shakes (smash and crown only) and the whip.
+  measurable. Event frames are always shown crisp. Calm or slow content blends the two neighbouring source frames in linear
+  light (S01 after the hit, the near-static crust S02/S04, S03's bun before the drop, S05 after the landing, S06, S07a, S07c,
+  S10). Anything that falls or moves fast uses nearest frames (the S03 patty drop, the S05 slice, S07b, S08, S09).
+  At 1.25×, 24 fps maps one-to-one onto 30 fps.
+- **Framing:** a single Lanczos resample per frame (cover crop, punch-ins 1.18–1.6×). The page adds a 1.02–1.07 overscan
+  (1.03 base; it hides AI edge artefacts), slow pushes, two impact shakes (smash and crown only) and the whip.
 - **Grade (one for all seven clips):** (1) a per-clip black match measured on a clean reference frame (0.5th percentile → 10/9/7);
   (2) a shared look: saturation 0.93 (AI clips run hot), a gentle S-curve, and highlights rolled off toward the client cream
   (white → ≈245/240/225, never pure white); (3) a red-stage secondary on b3/b6/b7 that pulls the seamless to `#E23B2E`.
@@ -181,3 +183,24 @@ nearest-frame only.
 | 1 | 4.60: «تشيدريذوب»: the pop spring overshot the word scale to 1.10 and closed the word space | overshoot kept in rise/rotation; scale capped at 1 | the space stays |
 | 2 | 4.27: the patty label was still fading while the cheddar fell under it | label leaves on the S05 cut (4.11–4.25) | no text over moving food |
 | 2 | «أطرافه / مقرمشة» lines nearly touching | line-height 0.96 → 1.0 (still clears the lace) | — |
+| 2 | 7.17–7.20 (every cut ±1 f): «يقرمشون» still on screen in S08 with the sauce stream falling through it | crunch label leaves on the S08 cut (7.01–7.15) | no text over the stream |
+| 2 | vignette −30 % at the corners (the addendum says −10 to −20 %); the red card's corners went muddy | −20 % | — |
+
+## 10. Verification (measured on the delivered files)
+
+- `STAKK-concept-9x16.mp4`: 414 frames, 13.80 s, 1080×1920, 30 fps, H.264 High (yuv420p, BT.709), AAC-LC 48 kHz stereo,
+  38.2 MB. Rendered by `_system/tools/render.mjs --workers 2 --audio src/audio.wav` (two-pass linear loudnorm).
+- Loudness (`audio-check.sh`): **−14.0 LUFS** integrated, **−1.2 dBTP**, LRA 2.9 LU. The spectrogram shows no clicks: the
+  only thin vertical lines are the sting's typing ticks, and the sonic logo's sub fades out by the last frame.
+- Event frames (from `src/footage/manifest.json`, shown crisp): smash f29 @ 0.400 · patty f21 @ 3.400 · cheddar f81 @ 4.400 ·
+  pickle f54 @ 6.400 · onion ring f57 @ 6.533 · sauce f21 @ 7.400 · crown f19 @ 8.400.
+- The clean range **7.90 → 9.40** rendered with `--from/--to` from `?clean=1`: 45 frames; the crown enters on frame 8
+  (+0.267 s) and lands crisp on frame 15 (**+0.500 s**).
+- Large frame-to-frame luma changes happen only at planned cuts (0.90, 2.17, 3.90, 4.27, 4.90, 5.77, 6.40, 6.67, 7.17,
+  11.40), not inside shots. No black or flash frames. The only near-static stretch is the designed end hold on the TASH mark
+  (≤0.83 s, ending 13.77).
+- Every cut checked at −1/0/+1 frame (the strip in the review folder). Every Arabic string proofread at full size
+  (shaping, shadda, ellipsis/«!» side, word spacing). `?clean=1` checked at 1.3, 3.6, 4.6, 6.1, 9.6, 10.4, 11.6, 12.9 and
+  13.77 s: picture only.
+- Poster: slate, title, burger and brand all sit inside the reel-safe area (y 220–1500, x 72–1008) and inside the profile
+  grid's centre 3:4 (y 240–1680).
