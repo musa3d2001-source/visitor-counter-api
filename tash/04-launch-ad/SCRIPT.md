@@ -90,8 +90,8 @@ the snap. Pre-mastered to −14 LUFS / −1.5 dBTP (`Mix.master`), then the rend
   claims. Cut a 4:5 version that keeps the faces in frame. Only the CD generates; the edit team never calls Higgsfield.
 - **Concept-ad footage (STAKK, HABBA):** taken only from their `?clean=1` renders, inside the ranges recommended in their
   `footage/HANDOFF-launch.md`. None of the AI glitches those hand-offs list falls inside 7.90–9.40 (STAKK). For HABBA, the only
-  caveat inside 5.9667–6.9667 is a speck of the pitcher on the top edge at x ≈ 1000 on HABBA f207 (launch 5.933), one frame
-  before the cut and far from the rim.
+  caveat inside 5.9667–6.9667 is a speck of the pitcher on the top edge of HABBA f207 (launch 5.933, one frame before the cut).
+  Measured here at x ≈ 718–790, y < 22 (the hand-off says x ≈ 1000); it is far from the rim and inside the reel's top UI band.
 
 ## 6. Formats
 - **9:16:** key text inside x 72–1008, y 220–1500; bubbles keep 120 px off the right rail in the lower half (`?guides=1` overlays them).
@@ -157,17 +157,29 @@ at 25 %, 100 % and cut strips (cut−2f / cut / cut+1f) → fix → re-check.
 - poster.png: 1080×1920; «هذا منتجك.» on the clean wall, «وهذا إعلانه.» on ink; wordmark, handle and CONCEPT WORK line inside y 240–1680.
 
 ## 9. Known weaknesses (honest)
-- **Footage policy needs the lead's confirmation.** BRIEF §3.5 still says "only our own code-generated visuals … no paid AI
-  generators", while the launch-ad note in the same BRIEF and `_CD-NOTES.md` say the owner subscribed and the CD approved the
-  Higgsfield clips. I followed the launch-specific instruction and credited the clips. If they are rejected, shots 1, 13–15
-  and 17 need replacing (the generic phone + bubbles at 15.50 already carry the payoff idea without people).
+- **Footage policy.** The note at the top of BRIEF.md now records the owner-approved Higgsfield exception to §3.5 for both
+  uses in this film: (a) the launch ad's people/hands shots and (b) the STAKK and HABBA concept footage. §3.5 itself still reads
+  "no paid AI generators", with that exception. If the AI footage is ever withdrawn, shots 1, 3, 4, 13–15 and 17 need
+  replacing. The generic phone and bubbles at 15.50 already carry the payoff idea without people.
 - The hook clip's phone shows its own camera viewfinder (generic shutter/thumbnail layout, no logo; I did not composite UI on
   it) and the phone backs in the diwaniya/café shots have a triple-lens bump reminiscent of a known phone (no logos). Flagged
   for legal taste; the hook's screen is covered by the shutter blink on the cut.
 - Cuts and pops on 8th notes (7.25, 11.75, 15.75, 16.25, 17.25, 17.75) fall on half frames at 30 fps; the picture event lands
   on the next frame (≤ 17 ms, within ±1 f of the sound).
-- The concept ads are still being revised by teammates; the edit uses snapshots rendered/cut during this session
-  (`footage/clean`, `footage/final`), so later improvements to STAKK/HABBA/LAYL are not in this cut until re-extracted.
+- The montage uses snapshots. The burger and coffee pulls were rendered on 2026-11-06 (≈19:35) from the photoreal STAKK and
+  HABBA pages and match their delivered films (mean absolute difference ≈1.1–1.5 of 255, which is grain and encoding). A teammate
+  was editing STAKK's S01 (0–0.9 s) at the time, outside the range used. The LAYL clips are earlier snapshots. Later changes to
+  the concept ads only reach this cut if they are re-pulled (§7).
+- **Pour foley vs the new picture.** The pour (`audio.py`: a flat 1.0 s pour from 5.02) was timed to the CGI pour, which ran
+  through the whole shot. In the photoreal plate the stream breaks at 5.48 and the pitcher lifts out, so about 0.5 s of pour sound
+  plays over no stream (at gain 0.35, under the groove). Sound was kept unchanged in this pass; the fix is one line (pour length
+  ≈0.46 s, ending on the break).
+- The GLORY → BURGER whip still jumps GLORY's frame from 1× to the smear's 1.28× overscan at 3.43, under about 70 px of smear.
+  GLORY was left unchanged in this pass; the BURGER landing no longer pops.
+- The montage slate sits on the burger's bottom bun in both formats, as it did on the CGI burger. The clean plates carry their
+  own grain (and STAKK's corner vignette) under the launch ad's grain, as the v1 plates did.
+- `cues.json` `ev.heart` (5.40) no longer names a picture event (the stream now breaks at 5.48). Neither picture nor sound reads
+  it, and it was kept so the cue grid stays untouched.
 - Audio judged by meters, band energy and spectrogram, not by ear. The low end was rebalanced in the ECD pass; LRA stays modest (≈3–4 LU).
 - The jewellery shot is on screen 1.25 s; the engraved frieze is subtle at phone size. In ASK the header logo still sits over
   the owner's ghutra, now under a near-ink gradient.

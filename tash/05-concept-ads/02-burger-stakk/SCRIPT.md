@@ -16,7 +16,7 @@
 
 | Shot | Image job (start frame) | Video job |
 |---|---|---|
-| **b1 smash v3** (in the film, S01) | 00d793d0-37d2-4aea-be36-530395853661 (references: the owner's smash-ball photo for texture + the old b1 frame) | e346f504-4a19-4178-a151-a51551a50c5b (Kling 3.0 Turbo) |
+| **b1 smash v3** (in the film, S01) | 00d793d0-37d2-4aea-be36-530395853661 (references: the owner's smash-ball photo for texture + the old b1 frame; the image model wasn't named in the hand-off) | e346f504-4a19-4178-a151-a51551a50c5b (Kling 3.0 Turbo) |
 | b1 smash (original, **replaced** at the owner's request; clip deleted, start frame kept) | cce37c0b-16d9-4ebf-9311-f19b9b042617 | 80e1d8d0-9051-4e3f-a4ec-f14764bb1ef6 |
 | b2 crust | ccf1c92d-105f-4aa1-af87-a745454893bd | 21783c54-54eb-469c-8740-0722b8cd65e8 |
 | b3 heel | 9e3dd31f-fb02-41ae-ad6c-2310949fc4b2 | ff8b7e30-e12b-4e4a-9ba6-fc61dc6094a7 |
@@ -60,7 +60,7 @@ Speeds are source seconds per edit second. "f" = source frame (24 fps). Every ev
 
 | # | In → Out | Source · in-point · speed | Picture / edit | On-screen (hidden in `?clean=1`) | Sound |
 |---|---|---|---|---|---|
-| S01 | 0.00 → 0.90 | `b1_smash` 0.77 s (f18) → 1.56 · 1.1× into the hit, 1.25× one-to-one through the compression (f29 → f33, 0.40–0.53), then 0.5× frame-blended steam | Gloved steel press over a raw ball on a black griddle; **contact f29 on 0.40**; +3.5 % punch and 11 px shake (τ 55 ms); slow push | — | sizzle from frame 0 · press whoosh · **impact + sizzle burst + group clap 0.40** |
+| S01 | 0.00 → 0.90 | `b1_smash_v3` (owner-approved retake) 1.250 s (f30) → 2.333 s (f56) · **1.25× throughout = one source frame per output frame, nearest, no blends** | Gloved steel press descending onto a compact, finely ground ball on a black griddle. The ball is whole and sharp 0.00–0.37 (f30–f41, 12 frames); f41 is the kiss; **first compressed frame f42 on 0.40**; f43–f44 flatten it (the press's own motion blur, shown once each); f45 (0.50) is the first sharp pressed frame, then the press holds while steam starts; +3.5 % punch and 11 px shake (τ 55 ms); slow push | — | sizzle from frame 0 · press whoosh · **impact + sizzle burst + group clap 0.40** (unchanged) |
 | S02 | 0.90 → 2.15 | `b2_crust` 0.80 s (f19) → 2.05 · 1.0× | Top-down seared crust, fat bubbling. Frame lowered 450 px into a dark falloff so the title sits on griddle, not crust. **Whip 1.95 →**: the red stage rides in above the plate with a vertical smear sized to the per-frame travel | «كل» «طبقة» «لها» «سالفة» rise into four stacked slots on 16ths (0.900 / 1.025 / 1.150 / 1.275) and ride the whip out (vertical blur) | four wooden thocks · Hijaz pluck tease · whip whoosh |
 | S03 | 2.15 → 3.90 | `b3_heel` f0 held under the whip (the source opens on a locked-off bun) · 0.5× · then 1.25× for the fall | The whip lands the camera on the heel **at 2.40** with a short bounce. The heel "drops" onto its beat. The patty enters at 2.89 and **lands f21 on 3.40**; nearest frames (1.25× = one source frame per output frame) | 2.40 «بريوش» / «محمّص بالزبدة» (left, above the heel; exits 3.12–3.26, before the falling patty reaches its band) · 3.40 «سماش…» → leader to the patty · 3.62 «أطرافه مقرمشة» | fall whoosh + thud + tabl 2.40 · 0.45 s fall whoosh + thud + sizzle 3.40 |
 | S04 | 3.90 → 4.25 | `b2_crust` 3.00 s (f72) → 3.33 · 1.0× · **1.6× punch-in** | Macro on the patty's crispy lace and bubbling fat, slow lateral slide | the crisp claim's leader lands on a real lace tip; label out by the S05 cut | close sizzle |
@@ -124,9 +124,10 @@ source frame(s).
 - **Decode:** BT.709, tv range → full-range RGB (the clips are BT.709; decoding them as BT.601 had made the red look crimson).
 - **Retime:** each sequence is a cubic Hermite through `[edit t, source t, speed in, speed out]` keys, so ramps are smooth and
   measurable. Event frames are always shown crisp. Calm or slow content blends the two neighbouring source frames in linear
-  light (S01 once the press is down, the near-static crust S02/S04, S03's bun before the drop, S05 after the landing, S06, S07a,
-  S08's still plate, S10). Anything that falls or moves fast uses nearest frames (the S01 compression, the S03 patty drop, the
-  S05 slice, S07b, the S08 pour, S09). AI glitch frames are skipped outright (S05 jumps f78 → f83).
+  light (the near-static crust S02/S04, S03's bun before the drop, S05 after the landing, S06, S07a,
+  S08's still plate, S10). Anything that falls or moves fast uses nearest frames (all of S01: the press's descent, the
+  compression and the hold; the S03 patty drop, the S05 slice, S07b, the S08 pour, S09). AI glitch frames are skipped
+  outright (S05 jumps f78 → f83).
   At 1.25×, 24 fps maps one-to-one onto 30 fps.
 - **Framing:** a single Lanczos resample per frame (cover crop, punch-ins 1.18–1.6×). The page adds a 1.02–1.07 overscan
   (1.03 base; it hides AI edge artefacts), slow pushes, two impact shakes (smash and crown only) and the whip.
@@ -134,14 +135,16 @@ source frame(s).
   (2) a shared look: saturation 0.93 (AI clips run hot), a gentle S-curve, and highlights rolled off toward the client cream
   (white → ≈245/240/225, never pure white); (3) a red-stage secondary on b3/b6/b7 that pulls the seamless to `#E23B2E`.
   Measured after grading: stage red (225–226, 58–59, 45–46) on S03, S09 early, mid and late. Dark-clip 0.5th percentiles
-  (7–15, 7–10, 3–7). Grain .04 and a constant vignette (−20 % at the corners, also over the client card, so the match cut
+  (7–15, 7–10, 3–7); the S01 retake (b1_smash_v3, black match measured on its f40) reads 5–13 / 4–11 / 6–7 from the dark
+  pre-impact frames to the steam, in the same family as the old b1 (6–9 / 5–9 / 5–7). Grain .04 and a constant vignette (−20 % at the corners, also over the client card, so the match cut
   keeps its corners).
 
 ### Events: CD notes vs measured (frame by frame, at full resolution)
 
 | Clip | CD note | Measured / used | Note |
 |---|---|---|---|
-| b1 smash | contact ≈1.21 s | f28 touches, **f29 (1.208 s)** compresses → on 0.40 | ✓ · f30–f32 carry heavy AI motion smear (a doubled press rim): shown one-to-one, never blended at slow speed |
+| b1 smash **v3** (retake) | press descends from ≈1.5 s, contacts the ball ≈1.79 s (≈f43); ball fully visible 0–1.75 s; patty flat by ≈2.8 s with steam | Press underside tracked frame by frame: it bobs at y≈542–555 to f24, starts down at ≈f25 (1.04 s) and accelerates (f30 614 → f36 738 → f40 968 → f41 1047 px). **f41 (1.708 s)** is the last frame with the ball whole (the press's blurred underside is at its top); **f42 (1.750 s)** is the first compressed frame → on 0.40; f43 about half height; f44 flat; **f45 (1.875 s)** first sharp pressed frame; press held f45–f62; it lifts from ≈f63 (2.63 s) and the flat patty shows under it with steam from f66 (2.75 s) | contact is one frame earlier than the note (f42, not f43), and the ball is fully visible to f41 (1.708 s), not 1.75 s. f36–f44 carry real motion blur on the press: each shown once (1.25×, nearest), never blended. The lift (f63 on) isn't used |
+| b1 smash (original, replaced) | contact ≈1.21 s | f28 touches, f29 (1.208 s) compressed | no longer in the film (the owner: «جنه مخ»); clip deleted |
 | b3 patty | lands ≈0.875 s | **f21 (0.875 s)** → 3.40 | ✓ |
 | b3 cheddar | lands ≈3.375 s | f79–f82 are a **ghost duplicate**: a flat slice already lies on the patty while the falling slice is still above it, then a translucent bump as one morphs into the other. **f83 (3.458 s)** is the first clean flat frame → 4.40 | glitch not in the notes; the edit jumps f78 → f83 (ECD review) |
 | b5 pickles | first land ≈1.50 s | f37 (1.54 s) lands, but **f22–f35 a pickle hovers and drifts up** and **f38–f48 a pale upright disc morphs into a pickle**. Used the centre pickle **f54 (2.25 s)** → 6.40 | glitches not in the notes; avoided |
@@ -172,6 +175,14 @@ nearest-frame only.
   ghost frames skipped), which reads as a hard slap. The b3 patty is a regular round patty, not a lacy smash patty,
   so the crisp claim is shown on b2's lace (S04), not on it. The b2 crust's texture is a little too even, pebbly and
   'perfect' at full size.
+- **S01 (the v3 retake).** The ball now reads as a compact, finely ground smash ball. It is framed wider than the old b1:
+  about 370 px across, roughly a third of the frame width, with the press above it. The impact is real AI motion blur. On
+  0.40 (f42) the ball goes pale and soft under the press, and 0.43–0.47 (f43–f44) are mostly blur. Between 0.47 and 0.50
+  (f44 → f45) the source camera jolts: the press drops about 200 px and the glove fills the top half. Under the punch and
+  shake it reads as part of the slam, not as a cut (scene detect doesn't flag it). After the slam, 0.53–0.87 is a sharp hold
+  dominated by the glove and press, with the flat patty a thin band under the press and only a little steam. The clip's
+  lift-off reveal of the flat patty (source f63 on, patty clear from f66) would need about 2.5× through the hold to fit
+  before the 0.90 cut, so it isn't used.
 - **Three burgers, three sets.** The build is the b3 single on the red stage, the melt and the double on charcoal (b4, b5),
   then the top-down and the hero back on red (b6, b7). The cuts are on action and the grade matches, but a careful eye can
   see these are different burgers.
@@ -218,17 +229,22 @@ nearest-frame only.
 | 3 | 11.40–11.43: two empty Ink frames at the cut into the sting (the bubble is char on ink, the dots not yet in) | sting picture and sonic logo both start 0.1 s in (`stingOffset`) | the cut lands on the bubble and the first lime dot |
 | 3 | poster: the dot under «طبقة»'s ب sat between «سالفة»'s ا/ل ascenders (line-height 1.08, text over text) | line-height 1.36, slate 268, title 338, burger 12 px lower | lines clearly apart; still inside the reel-safe area and the centre 3:4 |
 | 3 | `main.js`: the `tg` smoothing settings sat inside a comment (whip and poster plate resampled at the default quality) | moved onto their own line | — |
+| 4 (owner) | 0.00–0.40: the raw beef in the hook «جنه مخ» (lumpy chunks, like a brain) | S01 swapped to the owner-approved retake `b1_smash_v3` (made to match the owner's reference of real smash balls). The whole shot is now 1.25× one-to-one (f30 → f56, nearest, no blends): first compressed frame f42 on 0.40, ball whole and sharp 0.00–0.37. Cue grid, type, sound and everything from 0.90 on unchanged. Old `b1_smash.mp4`, `b1_smash_v2.mp4` and the v2 start frames deleted | compact, finely ground ball on screen for 0.37 s before the hit. Frames from 0.90 on are bit-identical to the previous render or within encoder noise (≥47.7 dB PSNR) |
+| 4 | hostile check of 0.00–1.50 and the 0.87/0.90/0.93 cut: no blended frames, no doubled rim (f42–f44 each shown once with their own blur), no flash frame, no freeze (−50 dB, 0.3 s); blacks at the cut 16/14/10 → 15/13/6 | — | see §8 (S01) for what remains |
 
 ## 10. Verification (measured on the delivered files)
 
 - `STAKK-concept-9x16.mp4`: 414 frames, 13.80 s, 1080×1920, 30 fps, H.264 High (yuv420p, BT.709), AAC-LC 48 kHz stereo,
-  38.0 MB (re-rendered after the ECD review). Rendered by `_system/tools/render.mjs --workers 2 --audio src/audio.wav` (two-pass linear loudnorm).
+  38.0 MB (re-rendered after the S01 swap to `b1_smash_v3`). Rendered by `_system/tools/render.mjs --workers 2 --audio src/audio.wav` (two-pass linear loudnorm).
 - Loudness (`audio-check.sh`): **−14.0 LUFS** integrated, **−1.4 dBTP**, LRA 2.8 LU. The spectrogram shows no clicks: the
   only thin vertical lines are the sting's typing ticks, and the sonic logo's sub fades out by the last frame.
-- Event frames (from `src/footage/manifest.json`, shown crisp): smash f29 @ 0.400 · patty f21 @ 3.400 · cheddar f83 @ 4.400 ·
+- Event frames (from `src/footage/manifest.json`, shown crisp): smash `b1_smash_v3` f42 @ 0.400 (f41 @ 0.367, f43 @ 0.433; every
+  S01 frame is a single source frame) · patty f21 @ 3.400 · cheddar f83 @ 4.400 ·
   pickle f54 @ 6.400 · onion ring f57 @ 6.533 · sauce enters f9 @ 7.000 · sauce contact f21 @ 7.400 · crown f19 @ 8.400.
   Audio onsets measured on the final MP4 (steepest 40–400 Hz envelope rise): +9 to +19 ms after each hit frame (0.40, 2.40, 3.40,
-  4.40, 6.40, 7.40, 8.40, 10.40); MP4 vs WAV lag 0 samples.
+  4.40, 6.40, 7.40, 8.40, 10.40); MP4 vs WAV lag 0 samples. After the S01 swap (audio unchanged) the smash was re-measured on the
+  new MP4: the impact's leading edge (40–400 Hz envelope, 2 ms window, 30 % of peak) is at **+5.6 ms** after the 0.400 frame
+  (f42), and the MP4 vs WAV lag is still 0 samples.
 - The clean range **7.90 → 9.40** rendered with `--from/--to` from `?clean=1`: 45 frames; the crown enters on frame 8
   (+0.267 s) and lands crisp on frame 15 (**+0.500 s**).
 - Large frame-to-frame luma changes happen only at planned cuts (scene detect: 0.90, 3.90, 4.27, 4.90, 5.77, 6.40, 6.57, 7.90,
@@ -236,6 +252,11 @@ nearest-frame only.
   small bubble, dots or mark sit on Ink (11.40–11.47, 11.73–12.03, 12.17–12.70); the 11.40 frame itself now shows the bubble and
   the first lime dot. `freezedetect` at −60 dB finds no still stretch ≥0.6 s; at a looser −50 dB, only the typing bubble
   (11.77–12.20, the dots still bob) and the end hold on the TASH mark (12.73–13.80, the slate fading in).
+  Re-run on the new MP4 after the S01 swap: same scene-detect list (the slam at 0.40–0.50 is not flagged), same `blackdetect`
+  frames, nothing from `freezedetect` at −60 dB / 0.6 s, and nothing in 0–2 s even at −50 dB / 0.3 s (the S01 hold keeps moving).
+- After the S01 swap: every frame 0.00–1.00 rendered as a full-size still and checked; S01 in `?clean=1` equals the film
+  (≤1/255) at 0.00, 0.40 and 0.867. `poster.png` (S09 at 10.37) and `still-hero.png` (clean 11.60) don't use S01 and were not
+  re-rendered.
 - Every cut checked at −1/0/+1 frame (the strip in the review folder). Every Arabic string proofread at full size
   (shaping, shadda, ellipsis/«!» side, word spacing). `?clean=1` checked at 1.3, 3.6, 4.6, 6.1, 9.6, 10.4, 11.6, 12.9 and
   13.77 s: picture only; re-checked after the ECD review at 1.30, 2.27, 3.23, 6.60, 7.20, 7.90, 8.40, 10.40, 11.60 and 13.77.
