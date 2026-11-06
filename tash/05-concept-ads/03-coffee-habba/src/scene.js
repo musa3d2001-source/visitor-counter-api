@@ -189,7 +189,7 @@ function profile(pts, n) { // resample a polyline profile by arc length (so lath
   const curve = new THREE.SplineCurve(pts.map(p => new THREE.Vector2(p[0], p[1])));
   return curve.getSpacedPoints(n);
 }
-export function makeCup(tex, env) {
+export function makeCup(tex, env, sunDir = new THREE.Vector3(0.8, -0.5, -0.34).normalize()) {
   const cup = new THREE.Group();
   const glazeT = new THREE.MeshPhysicalMaterial({ map: tex.terra, roughness: 0.3, clearcoat: 1.0, clearcoatRoughness: 0.06, envMapIntensity: 1.5 });
   const glazeC = new THREE.MeshPhysicalMaterial({ map: tex.cream, roughness: 0.32, clearcoat: 0.8, clearcoatRoughness: 0.1, envMapIntensity: 1.0 });
@@ -211,14 +211,43 @@ export function makeCup(tex, env) {
   const liqR = 0.4405;
   const liqMat = new THREE.MeshPhysicalMaterial({ color: 0xffffff, roughness: 0.22, clearcoat: 0.6, clearcoatRoughness: 0.05, envMapIntensity: 0.9 });
   const liq = new THREE.Mesh(new THREE.CircleGeometry(liqR, 96), liqMat);
-  liq.rotation.x = -Math.PI / 2; liq.position.y = DIM.liqY; liq.receiveShadow = true; cup.add(liq);
+  liq.rotation.x = -Math.PI / 2; liq.position.y = DIM.liqY; cup.add(liq);
+  // The coffee does not sample the shadow map: the rim sits ~4 mm above it and the light grazes in at 30°, so any shadow
+  // map (VSM: blocky half-float squares; PCF: stair-steps) broke up along the crescent. Its shadows are analytic instead:
+  // the rim crescent (ray toward the sun vs. the cup wall) and the milk stream's thin line. The gobo bars still apply
+  // (the spot light's map does not depend on receiveShadow).
+  const toSun = sunDir.clone().negate(); const hz = Math.hypot(toSun.x, toSun.z);
+  const liqU = { uSunH: { value: new THREE.Vector2(toSun.x / hz, toSun.z / hz) }, uSunTan: { value: toSun.y / hz },
+    uRimH: { value: 0.039 }, uLiqR: { value: 0.442 }, uStr: { value: new THREE.Vector4(0, 0, 0, 0) } };
+  liqMat.onBeforeCompile = sh => {
+    Object.assign(sh.uniforms, liqU);
+    sh.vertexShader = 'varying vec3 vHW;\n' + sh.vertexShader.replace('#include <worldpos_vertex>', '#include <worldpos_vertex>\n  vHW = (modelMatrix * vec4(transformed, 1.0)).xyz;');
+    sh.fragmentShader = 'varying vec3 vHW; uniform vec2 uSunH; uniform float uSunTan, uRimH, uLiqR; uniform vec4 uStr;\n' + sh.fragmentShader.replace('#include <aomap_fragment>', `
+      {
+        vec2 p = vHW.xz; float pd = dot(p, uSunH);
+        float ex = -pd + sqrt(max(pd * pd - dot(p, p) + uLiqR * uLiqR, 0.0));      // distance to the wall, toward the sun
+        float vis = smoothstep(uRimH - 0.005, uRimH + 0.007, ex * uSunTan);        // the ray clears the rim?
+        if (uStr.w > 0.5) {                                                         // the falling milk (leans to −z as it rises)
+          vec2 c = uStr.xy; float s = dot(c - p, uSunH);
+          c += vec2(0.04, -0.22) * (max(s, 0.0) * uSunTan / 2.6); s = dot(c - p, uSunH);
+          vec2 q = p + uSunH * s - c;
+          vis *= 1.0 - 0.85 * step(0.0, s) * (1.0 - smoothstep(uStr.z * 0.7, uStr.z * 1.6, length(q)));
+        }
+        reflectedLight.directDiffuse *= vis; reflectedLight.directSpecular *= vis;
+        #ifdef USE_CLEARCOAT
+          clearcoatSpecularDirect *= vis;
+        #endif
+      }
+      #include <aomap_fragment>`);
+  };
+  liqMat.customProgramCacheKey = () => 'habba-liq';
   // logo decal band on the glaze (phi centred on -z when cup.rotation.y = 0 → faces away; we rotate the cup)
   const band = profile([[0.442, 0.44], [0.452, 0.50], [0.458, 0.55]], 24).map(p => new THREE.Vector2(p.x * 1.004, p.y));
   const bandG = new THREE.LatheGeometry(band, 48, Math.PI - 0.42, 0.84);
   const logoTex = makeCupLogoTexture();
   const bandM = new THREE.MeshPhysicalMaterial({ map: logoTex, transparent: true, roughness: 0.34, clearcoat: 0.9, clearcoatRoughness: 0.08, polygonOffset: true, polygonOffsetFactor: -2, depthWrite: false });
   const bandMesh = new THREE.Mesh(bandG, bandM); bandMesh.receiveShadow = true; cup.add(bandMesh);
-  return { group: cup, liq, liqMat, handle, logoTex };
+  return { group: cup, liq, liqMat, handle, logoTex, setStreamShadow: v => liqU.uStr.value.set(...v) };
 }
 
 function makeCupLogoTexture() {

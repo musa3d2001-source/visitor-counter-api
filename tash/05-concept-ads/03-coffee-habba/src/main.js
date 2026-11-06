@@ -17,7 +17,7 @@ renderer.shadowMap.enabled = true;
 // PCF (packed full-precision depth), not VSM: VSM's half-float moments broke up into blocky dark squares where the rim
 // shadows the coffee a few mm below it (S1 hook, S3, hero still), and its light-bleeding made beans and saucer float.
 // A sharp-ish sun shadow is also the physically right one for objects touching the table.
-renderer.shadowMap.type = q.has('vsm') ? THREE.VSMShadowMap : THREE.PCFShadowMap;   // 17-tap PCF with hardware compare, radius below
+renderer.shadowMap.type = q.has('vsm') ? THREE.VSMShadowMap : THREE.PCFSoftShadowMap;
 renderer.outputColorSpace = THREE.SRGBColorSpace;
 stage.prepend(renderer.domElement); renderer.domElement.id = 'gl';
 
@@ -28,6 +28,7 @@ await Promise.all([
 await document.fonts.ready;
 
 // ---------------------------------------------------------------- world
+const SUN_DIR = new THREE.Vector3(0.80, -0.50, -0.34).normalize();   // the sun through the blinds (one light logic)
 const scene = new THREE.Scene();
 scene.background = new THREE.Color(0.035, 0.022, 0.015);
 const tex = bakeTextures(renderer);
@@ -36,7 +37,7 @@ scene.environment = env; scene.environmentIntensity = 0.42;
 const gobo = makeGobo(renderer);
 const room = makeRoom(tex); scene.add(room.group);
 const saucer = makeSaucer(tex); scene.add(saucer);
-const cup = makeCup(tex, env); cup.group.position.y = DIM.saucerY; scene.add(cup.group);
+const cup = makeCup(tex, env, SUN_DIR); cup.group.position.y = DIM.saucerY; scene.add(cup.group);
 await cup.logoTex.ready;
 const beans = makeBeans(16); scene.add(beans.group);
 const steam = makeSteam(gobo); const steamScene = new THREE.Scene(); steamScene.add(steam.group);
@@ -44,13 +45,12 @@ const latte = makeLatte(renderer); cup.liqMat.map = latte.rt.texture; cup.liqMat
 const stream = makeStream(); scene.add(stream.mesh);
 
 // the sun through the blinds: a far, narrow spot with the blinds as its gobo (map needs castShadow)
-const SUN_DIR = new THREE.Vector3(0.80, -0.50, -0.34).normalize();
 const sun = new THREE.SpotLight(0xffdcb0, 9, 0, 0.20, 0.3, 0);
 const SUN_AIM = new THREE.Vector3(0.25, 0.25, -0.7);
 sun.position.copy(SUN_DIR.clone().multiplyScalar(-14)).add(SUN_AIM);
 sun.target.position.copy(SUN_AIM);
 sun.map = gobo.tex; sun.castShadow = true;
-sun.shadow.mapSize.set(2048, 2048); sun.shadow.bias = -0.00025; sun.shadow.normalBias = 0.012; sun.shadow.radius = 2.6; sun.shadow.radius = 4; sun.shadow.blurSamples = 8;
+sun.shadow.mapSize.set(2048, 2048); sun.shadow.bias = -0.00025; sun.shadow.normalBias = 0.012;
 sun.shadow.camera.near = 6; sun.shadow.camera.far = 24;
 scene.add(sun, sun.target);
 const fill = new THREE.HemisphereLight(0xffe7cc, 0x5a3a26, 0.25); scene.add(fill);
@@ -83,6 +83,7 @@ function apply(S, t) {
   // stream
   stream.mesh.visible = !!S.stream;
   if (S.stream) stream.set(S.stream);
+  cup.setStreamShadow(S.stream ? [S.stream.x, S.stream.z, 0.0105 * S.stream.width, S.stream.lift > 0.3 ? 0 : 1] : [0, 0, 0, 0]);
   // beans
   beans.beans.forEach((b, i) => {
     const st = S.beans[i];
