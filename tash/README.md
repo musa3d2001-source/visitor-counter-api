@@ -18,8 +18,8 @@
 | المجلد | شنو فيه | أهم الملفات | الحالة |
 |---|---|---|---|
 | `01-brand-guide/` | دليل الهوية · *Brand guide*، 29 صفحة A4 عرضي | `TASH-Brand-Guide.pdf` · `brand-guide.html` · `pages/page-01…29.png` | جاهز |
-| `02-logo/` | الشعار والتوقيع المتحرّك · *Logo & sting* | `svg/` (15 ملف) · `png/` (15) · `avatar/` (ليموني وحبر: SVG و1080 و320) · `motion/tash-logo-sting-9x16.mp4` و`-9x16-lime.mp4` و`-1x1.mp4` · `motion/tash-sonic-logo.wav` | جاهز |
-| `03-templates/` | قوالب إنستغرام · *Templates*: 13 قالب + ستوري متحرّك | `README.md` · `templates/*.html` · `data/*.json` · `examples/` (ونظرة شاملة `_overview.png`) · `render.mjs` | جاهز |
+| `02-logo/` | الشعار والتوقيع المتحرّك · *Logo & sting* | `svg/` (15 ملف) · `png/` (15) · `avatar/` (ليموني وحبر: SVG و1080 و320) · `motion/tash-logo-sting-9x16.mp4` · `motion/tash-logo-sting-9x16-lime.mp4` · `motion/tash-logo-sting-1x1.mp4` · `motion/tash-sonic-logo.wav` | جاهز |
+| `03-templates/` | قوالب إنستغرام · *Templates*: 13 قالب + ستوري متحرّك | `README.md` · `templates/*.html` · `data/*.json` · `examples/` · `examples/_overview.png` (نظرة شاملة) · `render.mjs` | جاهز |
 | `04-launch-ad/` | إعلان الإطلاق «هذا منتجك. / وهذا إعلانه.» · *Launch ad* | `TASH-launch-9x16.mp4` · `TASH-launch-4x5.mp4` · `poster.png` · `contact-sheet.png` · `SCRIPT.md` | جاهز، ويحتاج تأكيد المالك على لقطات الذكاء الاصطناعي (§7) |
 | `05-concept-ads/01-perfume-layl/` | «ليل» عطر · *LAYL perfume*، مبني 3D بالكامل | `LAYL-concept-9x16.mp4` · `poster.png` · `still-hero.png` · `contact-sheet.png` · `bts/` (wire / clay / final) · `SCRIPT.md` | جاهز |
 | `05-concept-ads/02-burger-stakk/` | «ستاك برجر» · *STAKK burger* | `STAKK-concept-9x16.mp4` (نسخة CGI) · `poster.png` · `still-hero.png` · `contact-sheet.png` · `SCRIPT.md` · `footage/ai/` | **قيد الشغل:** نسخة بلقطات واقعية بدال الـCGI |
@@ -28,7 +28,7 @@
 | `07-ops/` | تشغيل العملاء · *Client ops* | `README.md` · `01…09-*.md` · `10-project-tracker.csv` · `rate-card.png` · `rate-card-story.png` · `order-form.png` · `order-form.pdf` | جاهز. الأسعار مبدئية لين يعتمدها المالك |
 | `08-instagram/` | حزمة الإطلاق · *Instagram launch package*: 9 بوستات | `POSTING-PLAN.md` · `01…09-*/` (ملفات الرفع + `caption.md`) · `profile-preview.png` · `profile-preview-light.png` · `stories/day2-new-work-habba.png` | جاهز ما عدا بوست 2 (ينتظر «ستاك» الجديد) |
 | `09-pitch-mor/` | مقترح غير رسمي لمقهى «مور» · *MOR spec pitch* | `BRIEF-MOR.md` · `footage/ai/frames/` | **قيد الشغل** (فريمات أولية بس). علامة حقيقية: **مو للنشر** على حسابنا، يتعرض على «مور» بس |
-| `_system/` | النظام المشترك · *Shared system* | `BRIEF.md` · `CRAFT-ADDENDUM.md` · `tokens.css` · `brand/` · `motion/` · `audio/` · `fonts/` · `tools/` · `vendor/` (و`README.md` للتراخيص) | ثابت. لا تعدّلونه |
+| `_system/` | النظام المشترك · *Shared system* | `BRIEF.md` · `CRAFT-ADDENDUM.md` · `tokens.css` · `brand/` · `motion/` · `audio/` · `fonts/` · `tools/` · `vendor/` · `vendor/README.md` (التراخيص) | ثابت. لا تعدّلونه |
 | `review/` | مسودات ولقطات مراجعة · *Scratch* (6.3 GB) | — | مستبعد من git (`.gitignore`) |
 
 ---
@@ -42,7 +42,7 @@
 | `04-launch-ad/TASH-launch-9x16.mp4` | 1080×1920 | 27.0 ث | −14.0 · −1.5 | ريل، والماستر لبوست 9 |
 | `04-launch-ad/TASH-launch-4x5.mp4` | 1080×1350 | 27.0 ث | −14.0 · −1.5 | مو قصّة: كل لقطة متركّبة من جديد للمقاس |
 | `05-concept-ads/01-perfume-layl/LAYL-concept-9x16.mp4` | 1080×1920 | 15.9 ث | −14.0 · −1.8 | |
-| `05-concept-ads/02-burger-stakk/STAKK-concept-9x16.mp4` | 1080×1920 | 13.8 ث | −14.0 · −1.2 | نسخة CGI |
+| `05-concept-ads/02-burger-stakk/STAKK-concept-9x16.mp4` | 1080×1920 | 13.8 ث | −14.0 · −1.2 | نسخة CGI (ملف 15:42). النسخة الواقعية كانت تنرندر وقت الفحص: عيدوا القياس، وشغّلوا `package_reels.py` لبوست 2 |
 | `05-concept-ads/03-coffee-habba/HABBA-concept-9x16.mp4` | 1080×1920 | 15.6 ث | −13.9 · −1.5 | |
 | `02-logo/motion/tash-logo-sting-9x16.mp4` (و`-lime`) | 1080×1920 | 4.2 ث | −13.6 · −1.5 | |
 | `02-logo/motion/tash-logo-sting-1x1.mp4` | 1080×1080 | 4.2 ث | −13.6 · −1.5 | |
@@ -96,7 +96,7 @@ cd tash && python3 -m http.server 8000
 | حزمة إنستغرام · *Instagram* | `python3 08-instagram/src/package_reels.py --check` ← `bash 08-instagram/src/build.sh` (و`--bts` لريل الكواليس، حوالي 8 دقايق) |
 | فحص الصوت والشيت · *checks* | `bash _system/tools/audio-check.sh <file.mp4> review/<اسمك>/spec.png` · `bash _system/tools/contact.sh <file.mp4> <out.png>` |
 
-المُخرِج (`render.mjs`) يضبط الصوت تلقائياً على −14 LUFS وذروة −1.5 dBTP وقت الدمج.
+سكربت الرندر (`render.mjs`) يضبط الصوت تلقائياً على −14 LUFS وذروة −1.5 dBTP وقت الدمج.
 
 ---
 
