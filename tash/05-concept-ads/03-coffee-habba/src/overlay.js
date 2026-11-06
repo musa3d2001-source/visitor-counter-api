@@ -71,7 +71,7 @@ export async function makeOverlay(stage, { W, H, poster }) {
   svg.innerHTML = `<defs><linearGradient id="hwipe" x1="1" y1="0" x2="0" y2="0"><stop id="hw0" offset="0" stop-color="#fff"/><stop id="hw1" offset="0" stop-color="#000"/></linearGradient>
     <mask id="hmask" maskUnits="userSpaceOnUse" x="${LVB.x - 200}" y="${LVB.y - 400}" width="${LVB.w + 400}" height="${LVB.h + 800}"><rect x="${LVB.x - 200}" y="${LVB.y - 400}" width="${LVB.w + 400}" height="${LVB.h + 800}" fill="url(#hwipe)"/></mask></defs>
     <g id="hbody" mask="url(#hmask)">${markInner({ color: HC.roast, ids: true, showBean: false })}</g>
-    <g id="hbean">${markInner({ color: HC.roast, ids: true }).replace(/<path id="habba-body"[^>]*\/>/, '')}</g>`;
+    <g id="hbean">${markInner({ color: HC.roast, beanColor: HC.terra, ids: true }).replace(/<path id="habba-body"[^>]*\/>/, '')}</g>`;
   ec.appendChild(svg);
   const hw0 = svg.querySelector('#hw0'), hw1 = svg.querySelector('#hw1'), hbody = svg.querySelector('#hbody');
   const beanG = svg.querySelector('#habba-bean'); const beanBase = beanG.getAttribute('transform');
@@ -104,16 +104,17 @@ export async function makeOverlay(stage, { W, H, poster }) {
     hw0.setAttribute('offset', clamp(pos - f).toFixed(4)); hw1.setAttribute('offset', clamp(pos).toFixed(4));
     hbody.setAttribute('transform', `translate(${((1 - kw) * 40).toFixed(1)} 0)`);
     ec.style.opacity = (kw > 0 ? 1 - out : 0).toFixed(3);
-    // bean: falls on an ease-in (gravity), tumbling; lands at EV.beanDot with a ≤2% settle, no squash (calm brand)
-    const fallDur = 0.5, tf = (t - (EV.beanDot - fallDur)) / fallDur;
+    // bean (the one terracotta accent): appears just under the letter body, drops into the ب slot on an ease-in
+    // (gravity) with a quarter turn, lands at EV.beanDot with a ≤2% settle, no squash (calm brand)
+    const fallDur = 0.42, tf = (t - (EV.beanDot - fallDur)) / fallDur;
     if (tf <= 0) beanG.setAttribute('opacity', '0');
     else {
       const k = E.inQuad(clamp(tf));
       const st = Math.max(0, t - EV.beanDot);
       const settle = st > 0 ? Math.exp(-st * 9) * Math.sin(st * 22) : 0;
-      const dy = lerp(-900, 0, k) + settle * -10;
-      const rot = lerp(-150, 0, E.outCubic(clamp(tf))) + settle * 4;
-      beanG.setAttribute('opacity', clamp(tf * 6).toFixed(3));
+      const dy = lerp(-130, 0, k) + settle * -8;
+      const rot = lerp(-75, 0, E.outCubic(clamp(tf))) + settle * 4;
+      beanG.setAttribute('opacity', clamp(tf * 3.5).toFixed(3));
       beanG.setAttribute('transform', `${beanBase} translate(0 0)`.replace(/translate\(([-\d.]+) ([-\d.]+)\)/, (m, x, y) => `translate(${x} ${(+y + dy).toFixed(2)})`) + ` rotate(${rot.toFixed(2)})`);
     }
     const kl = tw(t, EV.beanDot + 0.05, 0.9, E.outCubic);
