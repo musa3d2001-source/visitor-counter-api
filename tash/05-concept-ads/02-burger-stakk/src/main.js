@@ -47,7 +47,8 @@ export function camera(id, t) {
       const st = (at, amt) => (t >= at ? amt * (1 - Math.exp(-(t - at) * 22) * Math.cos((t - at) * 18)) : 0);
       s += st(D.patty2, 0.05) + st(D.cheese2, 0.035); fx = 520; fy = 1300; break; }
     case 'S07b': s += 0.01 * k(D.pickles, S.S08.at) + bump(t, D.onions, 0.004); fy = 900; break;
-    case 'S08': s += 0.045 * E.inOutCubic(k(S.S08.at, 7.9)); fx = 600; fy = 760; break;   // one top-down take: flat pickles + onion, then the pour
+    case 'S08': s += 0.045 * E.inOutCubic(k(S.S08.at, 7.9)); fx = 600; fy = 300; break;   // one top-down take: flat pickles + onion, then the pour;
+                                                     // the push grows from the top so the bun's rim moves down, away from the labels
     case 'S09': s += -0.01 * k(7.9, D.crown) + punch(t, D.crown, 0.04) + 0.015 * E.inOutSine(k(D.crown, C.endcard)) + 0.02 * E.inOutSine(k(C.endcard, C.duration)); fy = 1100; break;
   }
   if (sh === 'S01' || sh === 'S09') { const [a, b] = shake(t); x += a; y += b; }
