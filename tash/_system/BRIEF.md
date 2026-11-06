@@ -8,6 +8,11 @@ run paid campaigns, sell followers, or promise sales/views. Never show or imply 
 Goal: when a Kuwaiti business owner opens @tash.creative.kw they think: «أبي نفس هالمستوى حق مشروعي. شلون أطلب؟»
 The work itself is the proof. Quality bar = a real studio reel, not "someone using AI tools".
 
+> **Also read `tash/_system/CRAFT-ADDENDUM.md` (if present)** — a distillation of the best community skills
+> (Anthropic official skills, video-shotcraft, OpenMontage, ui-ux-pro-max, motionmaxxing, motion-video-kit, …):
+> product-shot vocabulary, edit grammar, motion principles, Arabic kinetic type, sting craft, sound-to-picture,
+> and the critic rubric. Apply it; the rules in this bible still win where they differ.
+
 ---------------------------------------------------------------------------------------------------
 ## 1. Brand idea (the thing every piece must express)
 
