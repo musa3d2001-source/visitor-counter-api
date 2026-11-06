@@ -82,13 +82,19 @@
     [
      2.4,
      0.0,
-     0.385,
-     0.385
+     0.35,
+     0.35
+    ],
+    [
+     3.2333,
+     0.2917,
+     0.35,
+     1.25
     ],
     [
      3.2667,
      0.3333,
-     0.385,
+     1.25,
      1.25
     ],
     [
@@ -101,7 +107,7 @@
    "blend": [
     [
      2.4,
-     3.24
+     3.2
     ]
    ],
    "crisp": [
@@ -113,7 +119,7 @@
    "frame": {
     "z": 1.0
    },
-   "why": "the red stage opens on the empty toasted heel (c1 f0-f7, a locked-off plate, 0.385x blended) under the heel label; the patty drops through the frame one source frame per output frame: f8 (top) 3.267, f9 3.300, f10 3.333, f11 (contact, motion-smeared) 3.367"
+   "why": "the red stage opens on the empty toasted heel (c1 f0-f7, a locked-off plate with nothing in frame, 0.35x frame-blended) under the heel label; f7 is reached on 3.233 and shown crisp, so no blend ever mixes in the patty (it first appears in f8). The patty drops through the frame one source frame per output frame: f8 (top edge) 3.267, f9 3.300, f10 3.333, f11 (contact, motion-smeared) 3.367"
   },
   {
    "id": "S03b",
@@ -178,13 +184,13 @@
    "keys": [
     [
      4.2667,
-     2.875,
+     2.8333,
      1.25,
      1.25
     ],
     [
      4.8667,
-     3.625,
+     3.5833,
      1.25,
      1.25
     ]
@@ -196,7 +202,7 @@
    "frame": {
     "z": 1.0
    },
-   "why": "back to the wide on action: the cheddar is already low (f69), touches f70, drapes f71-f72, first flat frame f73 on the cheese cue 4.40, then the melt starts at 1.25x one-to-one"
+   "why": "back to the wide on action (scale cut, same locked shot): the cheddar is still falling (f68), its corner touches the patty f70, the slice slaps down f71 and lies flat on the cheese cue 4.40 (f72, the crown rule: first landed frame on the beat; its flap's last trace is one frame of blur), clean f73, then the melt starts at 1.25x one-to-one (to f86)"
   },
   {
    "id": "S06",
@@ -229,16 +235,16 @@
    "id": "S07a",
    "clip": "c2_double",
    "from": 5.75,
-   "to": 6.05,
+   "to": 6.12,
    "keys": [
     [
      5.7667,
-     1.25,
+     1.1667,
      1.25,
      1.25
     ],
     [
-     6.0333,
+     6.1,
      1.5833,
      1.25,
      1.25
@@ -251,23 +257,23 @@
    "frame": {
     "z": 1.0
    },
-   "why": "the second patty's last fall (c2 f30-f31, real motion smear), contact f32, f33 settling (its left edge still smeared), first crisp landed frame f34 on the patty2 cue 5.90 («دبل!»), one source frame per output frame"
+   "why": "the second patty falls through the frame (c2 f28-f30, real motion smear), touches the cheddar f31 and is down on the patty2 cue 5.90 (f32, «دبل!» pops on that frame), settles f33 (left edge smeared) and is crisp from f34; one source frame per output frame to f38 (6.10)"
   },
   {
    "id": "S07b",
    "clip": "c2_double",
-   "from": 6.05,
+   "from": 6.12,
    "to": 6.25,
    "keys": [
     [
-     6.0667,
+     6.1333,
      2.75,
      1.25,
      1.25
     ],
     [
      6.2333,
-     2.9583,
+     2.875,
      1.25,
      1.25
     ]
@@ -279,7 +285,7 @@
    "frame": {
     "z": 1.0
    },
-   "why": "jump cut on the 16th (same locked shot): the second cheddar is already draping (f66 low, f67-f68 settle), first flat frame f69 on 6.167 (cue 6.15). Skips f38-f65 (the stack at rest, then the slice falling through the «دبل!» band)"
+   "why": "jump cut (same locked shot) straight onto the second cheddar slumping onto the patty (f66, already below the «دبل!» band), lying down on the cheese2 cue 6.15 (f67 at 6.167), f68 drape, f69 flat. Skips f39-f65 (the double at rest, then the slice falling through the «دبل!» band)"
   },
   {
    "id": "S08a",

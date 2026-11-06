@@ -40,9 +40,10 @@ const LABELS = [
                                                                      // gone on the S05 cut (4.267), where the cheddar is already in the band
   { key: 'cheese', top: 600, sup: '…على مهله', hero: 'تشيدر يذوب', heroFirst: true, supAt: 'cheeseSlow', heroAt: 0, out: 'end',
     anchors: { S05: [420, 1248], S06: [603, 1262] } },              // the slice, then its drip in the half-time punch-in; gone before patty 2 falls in (5.767)
-  { key: 'crunch', top: 300, sup: 'مخلل وبصل…', hero: 'يقرمشون', supAt: 6.525, heroAt: 'onions', out: 7.16,
-    anchors: { S08b: [190, 975], S08c: [190, 975] } },              // a landed pickle; arrives on the 6.525 cut, after the pickle rain (f16-f41 fill the band),
-                                                                     // and stays left of the sauce stream (x ≥ 472) until 7.30
+  { key: 'crunch', top: 300, sup: 'مخلل وبصل…', hero: 'يقرمشون', supAt: 6.525, heroAt: 'onions', out: 7.0,
+    anchors: { S08b: [190, 975], S08c: [190, 975] } },              // a landed pickle; arrives on the 6.525 cut, after the pickle rain (f16-f41 fill the band);
+                                                                     // gone by 7.14: the sauce blob (c4 f43 on, source x 472-655) reaches the pill's row at 7.13
+                                                                     // and the hero's row at 7.17 (measured per frame)
   { key: 'sauce', top: 300, sup: 'صوص ستاك', hero: 'السرّي', supAt: 'sauce', heroAt: +0.05, out: 8.06,
     anchors: { S08c: [565, 878], S09: [565, 870] } },               // the pool under the stream (c4 → b7 is one framing); exits before the crown falls through (8.17)
 ];
@@ -62,7 +63,8 @@ export function createOverlay(ui, C, { W = 1080, H = 1920, toScreen, seqFor, seq
     const box = el('div', 'label left', ui); box.style.top = cfg.top + 'px';
     const a = el('div', 'l-sup pill', null, cfg.sup); const b = el('div', 'l-hero', null, cfg.hero);
     if (cfg.heroSize) css(b, { fontSize: cfg.heroSize + 'px' }); if (cfg.heroLH) css(b, { lineHeight: String(cfg.heroLH) });
-    if (cfg.heroFirst) { box.appendChild(b); box.appendChild(el('div', '')).appendChild(a); } else { box.appendChild(el('div', '')).appendChild(a); box.appendChild(b); }
+    // hero first (the melt): the pill sits 22 px under the hero so it clears «يذوب»'s descenders and the 9 px drop shadow
+    if (cfg.heroFirst) { box.appendChild(b); const w = box.appendChild(el('div', '')); w.style.marginTop = '22px'; w.appendChild(a); } else { box.appendChild(el('div', '')).appendChild(a); box.appendChild(b); }
     const line = document.createElementNS(NS, 'path'); line.setAttribute('class', 'leader'); svg.appendChild(line);
     const dot = document.createElementNS(NS, 'circle'); dot.setAttribute('class', 'ldot'); svg.appendChild(dot);
     const ring = document.createElementNS(NS, 'circle'); ring.setAttribute('class', 'lring'); svg.appendChild(ring);

@@ -1,5 +1,7 @@
-"""STAKK BURGER — concept ad soundtrack (photoreal cut: same score; only SFX timing/character changed where the picture did). Original, synthesised with the TASH engine (no samples).
+"""STAKK BURGER — concept ad soundtrack (one-stage re-edit: same score; only SFX timing/character changed where the picture did). Original, synthesised with the TASH engine (no samples).
 120 BPM. Beat k lands at t0 + 0.5k (t0 = 0.4 s = the smash). Cue times come from cues.json (same file as the picture).
+The music reads its own landmarks (cues.json → music: intro end, half-time, gap, snare roll), kept where the previous cut had them,
+so the score is bit-identical to the previous cut; the SFX read the drops and shots (the picture).
 Khaleeji group claps + mirwas over a modern 808/hat groove, Hijaz-on-D pluck hook, every layer drop gets its own SFX.
 Writes src/audio.wav."""
 import os, sys, json
@@ -19,8 +21,9 @@ music = Mix(DUR, tail=2.0)
 sfx = Mix(DUR, tail=2.5)
 
 STING, END = C['sting'], C['endcard']
-HALF = (D['cheese'] + 0.5, C['shots'][5]['end'])       # 4.90–5.75 'على مهله' half-time
-GAP = (C['shots'][8]['at'] + 0.25, D['crown'])          # 8.15–8.40 silence before the top bun
+M = C['music']
+HALF = tuple(M['half'])                                  # 4.90–5.75 'على مهله' half-time
+GAP = tuple(M['gap'])                                    # 8.15–8.40 silence before the top bun
 
 
 def muted(t, extra=()):
@@ -44,7 +47,7 @@ for b in range(0, 6):
         t = bar_t(b, i)
         if t < C['smash'] - 1e-6 or muted(t):
             continue
-        intro = t < C['shots'][2]['at']                    # lighter during the title
+        intro = t < M['introEnd']                          # lighter during the title (lifts into the 2.40 cut)
         drop_sec = D['crown'] <= t < END + 1.0
         if KICK[i] == 'x':
             drums.add(kick_s, t, gain=0.95 if not intro else 0.8)
@@ -71,7 +74,7 @@ for k in range(6):
     drums.add(mirwas_tak(), HALF[1] - 0.25 + k * B / 4 * 0.5 - 0.01, gain=0.25 + 0.06 * k, pan=0.2)
 # snare roll into the top bun (7.90 → 8.15), then silence
 for k in range(8):
-    t = C['shots'][8]['at'] + k * (0.25 / 8)
+    t = M['roll'] + k * (0.25 / 8)
     drums.add(snare(0.18, 220 + k * 12), t, gain=0.16 + 0.05 * k, pan=0.1)
 
 # ------------------------------------------------------------------ 808 + harmony (Hijaz on D)
@@ -131,8 +134,7 @@ sfx.add(claps_ensemble(9, 0.45, seed_=2), C['smash'], gain=0.55)
 for k in range(4):
     sfx.add(mirwas_tak(), X['title'][0] + k * 0.125, gain=0.42, pan=0.15 - 0.1 * k)
     sfx.add(pop(260 + 70 * k, 520 + 120 * k, 0.06), X['title'][0] + k * 0.125, gain=0.3)
-# whip pan up
-sfx.add(whoosh(0.42, 300, 6500, pan_from=-0.3, pan_to=0.3, peak=0.55), C['whip'][0], gain=0.55)
+# (the S02 -> S03 whip is gone: a hard cut on the 2.40 beat; the heel's short whoosh below leads into it)
 # layer drops
 
 
@@ -144,10 +146,10 @@ def fall(t, d=0.25, gain=0.3):
     sfx.add(whoosh(d, 900, 3000, pan_from=0.1, pan_to=-0.1, peak=0.85), t - d, gain=gain)
 
 
-fall(D['heel']); thud(D['heel'], 62, 0.65, 0.3); sfx.add(tabl(), D['heel'], gain=0.5)
-# photoreal cut: the patty drop is a 0.5 s slow-motion fall, so its whoosh is longer
-fall(D['patty'], 0.45, 0.32); thud(D['patty'], 52, 0.8, 0.6); sfx.add(sizzle(1.2, density=2200, seed_=11), D['patty'], gain=0.6)
-sfx.add(sizzle(0.5, density=3000, seed_=13), C['shots'][3]['at'], gain=0.55)                    # crust macro
+fall(D['heel']); thud(D['heel'], 62, 0.65, 0.3); sfx.add(tabl(), D['heel'], gain=0.5)          # hard cut onto the heel, the stage 'sets' it down
+# one-stage cut: the patty falls through the frame in 4 frames (real speed), so its whoosh is short again
+fall(D['patty'], 0.25, 0.32); thud(D['patty'], 52, 0.8, 0.6); sfx.add(sizzle(1.2, density=2200, seed_=11), D['patty'], gain=0.6)
+sfx.add(sizzle(0.5, density=3000, seed_=13), C['shots'][3]['at'], gain=0.55)                    # punch-in on the lacy rim (S04)
 fall(D['cheese'], 0.2, 0.22); sfx.add(pop(180, 90, 0.14), D['cheese'], gain=0.6); thud(D['cheese'], 80, 0.4, 0.15)
 sfx.add(pour(0.8, seed_=4), D['cheese'] + 0.05, gain=0.18)
 sfx.add(pour(0.9, seed_=6), HALF[0] + 0.05, gain=0.16)                                                # slow melt
@@ -167,12 +169,12 @@ def crunch(t, lo=1800, hi=7000, gain=0.5, seed_=1):
 
 crunch(D['pickles'], 1500, 6000, 0.6, 3); thud(D['pickles'], 120, 0.25, 0.4)
 crunch(D['onions'], 2200, 8000, 0.55, 7); thud(D['onions'], 140, 0.22, 0.4)
-# sauce (photoreal cut): a thin stream sound from the moment the sauce enters the top of the frame (cues sauceIn; S08 is one
-# top-down take from 6.55, the pour enters at 7.00), a thick plop on contact on the cue, then a glossy pour into the pool
+# sauce: a thin stream sound from the cut where the sauce enters the top of the frame (cues sauceIn 6.90), a thick plop on
+# contact on the cue, then a glossy pour into the pool that ends on the 7.90 jump cut to the finished stack (the stream is gone there)
 SIN = C.get('sauceIn', C['shots'][7]['at'])
 sfx.add(lp(pour(D['sauce'] - SIN + 0.04, seed_=19), 2200), SIN, gain=0.2)
 sfx.add(pop(300, 120, 0.13), D['sauce'], gain=0.62); thud(D['sauce'], 85, 0.32, 0.25)
-sfx.add(pour(0.62, seed_=21), D['sauce'] + 0.02, gain=0.34)
+sfx.add(pour(M['roll'] - D['sauce'] - 0.02, seed_=21), D['sauce'] + 0.02, gain=0.34)
 # riser into the top bun, then the drop
 sfx.add(riser(0.5, 200, 9000), D['crown'] - 0.5, gain=0.5)
 fall(D['crown'], 0.25, 0.4)
@@ -212,4 +214,6 @@ put(s, 0.85)
 out.add(logo, STING, gain=0.95)
 if STO > 0.02:
     out.add(pop(300, 700, 0.09), STING + 0.003, gain=0.4)
-y = out.master(os.path.join(HERE, 'audio.wav'), ceiling_db=-1.0)
+# true peak <= -2.1 dBTP: ffmpeg's loudnorm measures this mix ~0.5 LU quieter than ebur128 and adds that gain, so at -2.1 the
+# renderer's second pass stays in LINEAR mode (one static gain, no pumping); at -1.0 it fell back to dynamic mode
+y = out.master(os.path.join(HERE, 'audio.wav'), ceiling_db=-2.1)
