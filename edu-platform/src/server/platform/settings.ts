@@ -29,6 +29,8 @@ export const settingsSchema = z.object({
   /** الرسوم المعتمدة لحساب صافي أرباح المعلمين: نسبة (نقاط أساس 100 = 1%) + مبلغ ثابت لكل طلب بالفلس */
   fee_percent_bps: z.number().int().min(0).max(2000),
   fee_fixed_fils: z.number().int().min(0).max(10000),
+  /** مفتاح المالك: يخفي فورًا كل أسئلة «تمرين من الكتاب» من التقديم للطلاب (لا يحذفها) */
+  hide_textbook_exercises: z.boolean(),
 });
 
 export type PlatformSettings = z.infer<typeof settingsSchema>;
@@ -82,6 +84,7 @@ export const DEFAULT_SETTINGS: PlatformSettings = {
   footer_note: "جميع الحقوق محفوظة. المحتوى مخصص للاستخدام الشخصي للطالب فقط.",
   fee_percent_bps: 0,
   fee_fixed_fils: 0,
+  hide_textbook_exercises: false,
 };
 
 export const getSettings = cache(async (): Promise<PlatformSettings> => {
