@@ -1,4 +1,3 @@
-import type { Viewport } from "next";
 import { Boxes } from "lucide-react";
 import { requireOwnerPage } from "@/server/auth/permissions";
 import { AdminPageHeader, Panel } from "@/components/admin/page-header";
@@ -10,8 +9,6 @@ import { Spike3dClient } from "./spike3d-client";
 
 export const metadata = { title: "تجربة اللعبة ثلاثية الأبعاد" };
 
-/** ملء الشاشة على iPhone: الطبقة تمتد تحت الشق وشريط المنزل، وenv(safe-area-inset-*) يعمل فقط مع cover */
-export const viewport: Viewport = { themeColor: "#0a6b66", width: "device-width", initialScale: 1, viewportFit: "cover" };
 
 /**
  * تجربة 3D للمالك فقط (المرحلة 2، قبل كود الإنتاج): تقيس على جهاز المالك أحجام التحميل، وزمن الجاهزية،
