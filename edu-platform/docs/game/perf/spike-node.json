@@ -1,0 +1,190 @@
+{
+  "node": "v22.20.0",
+  "platform": "win32-x64",
+  "layouts": {
+    "first-light": {
+      "bodies": 4,
+      "shots": 3,
+      "steps": 1484,
+      "freed": "1/1",
+      "finalHash": "9bbac036",
+      "inProcessStable": true,
+      "childProcessMatch": true,
+      "p50ms": 11.1,
+      "p95ms": 18.8,
+      "maxMs": 18.8,
+      "usPerStep": 7.5,
+      "hashes": [
+        "5c9657b9",
+        "de82bb82",
+        "5d19c89b",
+        "9bbac036"
+      ]
+    },
+    "frond-wall": {
+      "bodies": 14,
+      "shots": 4,
+      "steps": 1819,
+      "freed": "0/2",
+      "finalHash": "704bfa53",
+      "inProcessStable": true,
+      "childProcessMatch": true,
+      "p50ms": 22.5,
+      "p95ms": 24.8,
+      "maxMs": 24.8,
+      "usPerStep": 12.4,
+      "hashes": [
+        "3578645d",
+        "b4f0b091",
+        "e455cd94",
+        "db763991",
+        "704bfa53"
+      ]
+    },
+    "glass-tower": {
+      "bodies": 15,
+      "shots": 4,
+      "steps": 2479,
+      "freed": "3/3",
+      "finalHash": "70e7a61c",
+      "inProcessStable": true,
+      "childProcessMatch": true,
+      "p50ms": 25.4,
+      "p95ms": 27.3,
+      "maxMs": 27.3,
+      "usPerStep": 10.3,
+      "hashes": [
+        "73ef0f52",
+        "ef342408",
+        "29414d7f",
+        "2e170531",
+        "70e7a61c"
+      ]
+    },
+    "stone-arch": {
+      "bodies": 6,
+      "shots": 4,
+      "steps": 2327,
+      "freed": "1/2",
+      "finalHash": "d0c07c26",
+      "inProcessStable": true,
+      "childProcessMatch": true,
+      "p50ms": 16.6,
+      "p95ms": 17.8,
+      "maxMs": 17.8,
+      "usPerStep": 7.1,
+      "hashes": [
+        "0528c649",
+        "97c15e02",
+        "251337b6",
+        "1976668e",
+        "d0c07c26"
+      ]
+    },
+    "cloud-bounce": {
+      "bodies": 7,
+      "shots": 4,
+      "steps": 1797,
+      "freed": "2/2",
+      "finalHash": "42f161b4",
+      "inProcessStable": true,
+      "childProcessMatch": true,
+      "p50ms": 14.1,
+      "p95ms": 15.6,
+      "maxMs": 15.6,
+      "usPerStep": 7.8,
+      "hashes": [
+        "a077354e",
+        "47492778",
+        "628a4609",
+        "2d559f11",
+        "42f161b4"
+      ]
+    },
+    "lightbox-heart": {
+      "bodies": 11,
+      "shots": 4,
+      "steps": 2129,
+      "freed": "3/4",
+      "finalHash": "633ffeb9",
+      "inProcessStable": true,
+      "childProcessMatch": true,
+      "p50ms": 20.3,
+      "p95ms": 21,
+      "maxMs": 21,
+      "usPerStep": 9.5,
+      "hashes": [
+        "5e575f5d",
+        "e1e7baa4",
+        "018c98a4",
+        "8463c9b9",
+        "633ffeb9"
+      ]
+    },
+    "twin-beacons": {
+      "bodies": 21,
+      "shots": 5,
+      "steps": 1938,
+      "freed": "2/2",
+      "finalHash": "7495ca54",
+      "inProcessStable": true,
+      "childProcessMatch": true,
+      "p50ms": 23.7,
+      "p95ms": 25.6,
+      "maxMs": 25.6,
+      "usPerStep": 12.2,
+      "hashes": [
+        "bbacf5b2",
+        "92c213d8",
+        "6afce94b",
+        "1fd3f1a8",
+        "075f1964",
+        "7495ca54"
+      ]
+    },
+    "pyramid": {
+      "bodies": 23,
+      "shots": 5,
+      "steps": 2654,
+      "freed": "3/3",
+      "finalHash": "5961ec48",
+      "inProcessStable": true,
+      "childProcessMatch": true,
+      "p50ms": 29.6,
+      "p95ms": 31.7,
+      "maxMs": 31.7,
+      "usPerStep": 11.1,
+      "hashes": [
+        "a73630e3",
+        "18e0c196",
+        "f1c3e0f1",
+        "1e9780ae",
+        "82ce58c6",
+        "5961ec48"
+      ]
+    },
+    "stress-90": {
+      "bodies": 90,
+      "shots": 6,
+      "steps": 3901,
+      "freed": "6/6",
+      "finalHash": "df940828",
+      "inProcessStable": true,
+      "childProcessMatch": true,
+      "p50ms": 168.7,
+      "p95ms": 170.6,
+      "maxMs": 170.6,
+      "usPerStep": 43.2,
+      "hashes": [
+        "b758ddcd",
+        "b077da4f",
+        "99ce2972",
+        "cee3194f",
+        "9fbe7689",
+        "36fb8a31",
+        "df940828"
+      ]
+    }
+  },
+  "allDeterministic": true
+}

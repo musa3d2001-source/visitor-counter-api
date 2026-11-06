@@ -1,0 +1,852 @@
+{
+  "base": "http://localhost:3100",
+  "at": "2026-11-06T16:24:21.737Z",
+  "runs": [
+    {
+      "engine": "chromium",
+      "version": "153.0.8010.12",
+      "query": "auto=1&flavors=split,compat",
+      "throttle": null,
+      "wallMs": 13794,
+      "errors": [],
+      "res": {
+        "ua": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) HeadlessChrome/153.0.8010.12 Safari/537.36",
+        "dpr": 1,
+        "cores": 24,
+        "viewport": "1280x800",
+        "webgl2": true,
+        "serverNode": "v22.20.0",
+        "flavors": [
+          {
+            "flavor": "split",
+            "ok": true,
+            "loadMs": 111,
+            "bytes": {
+              "transfer": 975681,
+              "encoded": 975081,
+              "decoded": 2717252,
+              "files": [
+                "3pncybfg3u04c.js 49KB",
+                "23_rm5ep3f99q.wasm 903KB"
+              ]
+            },
+            "allMatch": true,
+            "replay": [
+              {
+                "key": "first-light",
+                "ms": 63.8,
+                "match": true,
+                "firstMismatchShot": -1
+              },
+              {
+                "key": "frond-wall",
+                "ms": 31.3,
+                "match": true,
+                "firstMismatchShot": -1
+              },
+              {
+                "key": "glass-tower",
+                "ms": 42.4,
+                "match": true,
+                "firstMismatchShot": -1
+              },
+              {
+                "key": "stone-arch",
+                "ms": 21.5,
+                "match": true,
+                "firstMismatchShot": -1
+              },
+              {
+                "key": "cloud-bounce",
+                "ms": 17.5,
+                "match": true,
+                "firstMismatchShot": -1
+              },
+              {
+                "key": "lightbox-heart",
+                "ms": 27.6,
+                "match": true,
+                "firstMismatchShot": -1
+              },
+              {
+                "key": "twin-beacons",
+                "ms": 26.3,
+                "match": true,
+                "firstMismatchShot": -1
+              },
+              {
+                "key": "pyramid",
+                "ms": 36.9,
+                "match": true,
+                "firstMismatchShot": -1
+              },
+              {
+                "key": "stress-90",
+                "ms": 200,
+                "match": true,
+                "firstMismatchShot": -1
+              }
+            ],
+            "usPerStep": 23
+          },
+          {
+            "flavor": "compat",
+            "ok": true,
+            "loadMs": 101,
+            "bytes": {
+              "transfer": 1295536,
+              "encoded": 1295236,
+              "decoded": 3449903,
+              "files": [
+                "1o168rozd1yp6.js 1265KB"
+              ]
+            },
+            "allMatch": true,
+            "replay": [
+              {
+                "key": "first-light",
+                "ms": 13,
+                "match": true,
+                "firstMismatchShot": -1
+              },
+              {
+                "key": "frond-wall",
+                "ms": 21.6,
+                "match": true,
+                "firstMismatchShot": -1
+              },
+              {
+                "key": "glass-tower",
+                "ms": 25.3,
+                "match": true,
+                "firstMismatchShot": -1
+              },
+              {
+                "key": "stone-arch",
+                "ms": 16.2,
+                "match": true,
+                "firstMismatchShot": -1
+              },
+              {
+                "key": "cloud-bounce",
+                "ms": 13.3,
+                "match": true,
+                "firstMismatchShot": -1
+              },
+              {
+                "key": "lightbox-heart",
+                "ms": 19.2,
+                "match": true,
+                "firstMismatchShot": -1
+              },
+              {
+                "key": "twin-beacons",
+                "ms": 23.2,
+                "match": true,
+                "firstMismatchShot": -1
+              },
+              {
+                "key": "pyramid",
+                "ms": 28.7,
+                "match": true,
+                "firstMismatchShot": -1
+              },
+              {
+                "key": "stress-90",
+                "ms": 157.8,
+                "match": true,
+                "firstMismatchShot": -1
+              }
+            ],
+            "usPerStep": 16
+          }
+        ],
+        "threeLoadMs": 113,
+        "threeBytes": {
+          "transfer": 142772,
+          "encoded": 142472,
+          "decoded": 573025,
+          "files": [
+            "1h5liodcp6jjt.js 139KB"
+          ]
+        },
+        "engineReadyMs": 1251,
+        "visual": [
+          {
+            "quality": "high",
+            "seconds": 6,
+            "fps": 59.5,
+            "medianMs": 16.8,
+            "p95Ms": 18.1,
+            "drawCalls": 31,
+            "triangles": 7208,
+            "dpr": 1,
+            "frames": 362
+          },
+          {
+            "quality": "low",
+            "seconds": 6,
+            "fps": 59.5,
+            "medianMs": 16.8,
+            "p95Ms": 18,
+            "drawCalls": 25,
+            "triangles": 5144,
+            "dpr": 1,
+            "frames": 361
+          }
+        ],
+        "done": true
+      }
+    },
+    {
+      "engine": "chrome",
+      "version": "156.0.8078.80",
+      "query": "auto=1&flavors=split,compat",
+      "throttle": null,
+      "wallMs": 14339,
+      "errors": [],
+      "res": {
+        "ua": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) HeadlessChrome/156.0.0.0 Safari/537.36",
+        "dpr": 1,
+        "cores": 24,
+        "viewport": "1280x800",
+        "webgl2": true,
+        "serverNode": "v22.20.0",
+        "flavors": [
+          {
+            "flavor": "split",
+            "ok": true,
+            "loadMs": 109,
+            "bytes": {
+              "transfer": 975681,
+              "encoded": 975081,
+              "decoded": 2717252,
+              "files": [
+                "3pncybfg3u04c.js 49KB",
+                "23_rm5ep3f99q.wasm 903KB"
+              ]
+            },
+            "allMatch": true,
+            "replay": [
+              {
+                "key": "first-light",
+                "ms": 61.2,
+                "match": true,
+                "firstMismatchShot": -1
+              },
+              {
+                "key": "frond-wall",
+                "ms": 39.3,
+                "match": true,
+                "firstMismatchShot": -1
+              },
+              {
+                "key": "glass-tower",
+                "ms": 36.3,
+                "match": true,
+                "firstMismatchShot": -1
+              },
+              {
+                "key": "stone-arch",
+                "ms": 21.5,
+                "match": true,
+                "firstMismatchShot": -1
+              },
+              {
+                "key": "cloud-bounce",
+                "ms": 17.1,
+                "match": true,
+                "firstMismatchShot": -1
+              },
+              {
+                "key": "lightbox-heart",
+                "ms": 22.3,
+                "match": true,
+                "firstMismatchShot": -1
+              },
+              {
+                "key": "twin-beacons",
+                "ms": 26.6,
+                "match": true,
+                "firstMismatchShot": -1
+              },
+              {
+                "key": "pyramid",
+                "ms": 33,
+                "match": true,
+                "firstMismatchShot": -1
+              },
+              {
+                "key": "stress-90",
+                "ms": 175.3,
+                "match": true,
+                "firstMismatchShot": -1
+              }
+            ],
+            "usPerStep": 21
+          },
+          {
+            "flavor": "compat",
+            "ok": true,
+            "loadMs": 122,
+            "bytes": {
+              "transfer": 1295536,
+              "encoded": 1295236,
+              "decoded": 3449903,
+              "files": [
+                "1o168rozd1yp6.js 1265KB"
+              ]
+            },
+            "allMatch": true,
+            "replay": [
+              {
+                "key": "first-light",
+                "ms": 17.2,
+                "match": true,
+                "firstMismatchShot": -1
+              },
+              {
+                "key": "frond-wall",
+                "ms": 25.3,
+                "match": true,
+                "firstMismatchShot": -1
+              },
+              {
+                "key": "glass-tower",
+                "ms": 25.7,
+                "match": true,
+                "firstMismatchShot": -1
+              },
+              {
+                "key": "stone-arch",
+                "ms": 16.2,
+                "match": true,
+                "firstMismatchShot": -1
+              },
+              {
+                "key": "cloud-bounce",
+                "ms": 13.6,
+                "match": true,
+                "firstMismatchShot": -1
+              },
+              {
+                "key": "lightbox-heart",
+                "ms": 19.4,
+                "match": true,
+                "firstMismatchShot": -1
+              },
+              {
+                "key": "twin-beacons",
+                "ms": 22.7,
+                "match": true,
+                "firstMismatchShot": -1
+              },
+              {
+                "key": "pyramid",
+                "ms": 28.5,
+                "match": true,
+                "firstMismatchShot": -1
+              },
+              {
+                "key": "stress-90",
+                "ms": 157.4,
+                "match": true,
+                "firstMismatchShot": -1
+              }
+            ],
+            "usPerStep": 16
+          }
+        ],
+        "threeLoadMs": 28,
+        "threeBytes": {
+          "transfer": 142772,
+          "encoded": 142472,
+          "decoded": 573025,
+          "files": [
+            "1h5liodcp6jjt.js 139KB"
+          ]
+        },
+        "engineReadyMs": 1746,
+        "visual": [
+          {
+            "quality": "high",
+            "seconds": 6,
+            "fps": 99,
+            "medianMs": 10.1,
+            "p95Ms": 11.3,
+            "drawCalls": 31,
+            "triangles": 7208,
+            "dpr": 1,
+            "frames": 578
+          },
+          {
+            "quality": "low",
+            "seconds": 6,
+            "fps": 126.6,
+            "medianMs": 7.9,
+            "p95Ms": 9.2,
+            "drawCalls": 25,
+            "triangles": 5144,
+            "dpr": 1,
+            "frames": 600
+          }
+        ],
+        "done": true
+      }
+    },
+    {
+      "engine": "webkit",
+      "version": "26.6",
+      "query": "auto=1&flavors=split,compat",
+      "throttle": null,
+      "wallMs": 14234,
+      "errors": [
+        "WebGL: INVALID_OPERATION: texImage3D: FLIP_Y or PREMULTIPLY_ALPHA isn't allowed for uploading 3D textures",
+        "WebGL: INVALID_OPERATION: texImage3D: FLIP_Y or PREMULTIPLY_ALPHA isn't allowed for uploading 3D textures"
+      ],
+      "res": {
+        "ua": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/26.6 Safari/605.1.15",
+        "dpr": 1,
+        "cores": 8,
+        "viewport": "1280x800",
+        "webgl2": true,
+        "serverNode": "v22.20.0",
+        "flavors": [
+          {
+            "flavor": "split",
+            "ok": true,
+            "loadMs": 95,
+            "bytes": {
+              "transfer": 975681,
+              "encoded": 975081,
+              "decoded": 2717252,
+              "files": [
+                "3pncybfg3u04c.js 49KB",
+                "23_rm5ep3f99q.wasm 903KB"
+              ]
+            },
+            "allMatch": true,
+            "replay": [
+              {
+                "key": "first-light",
+                "ms": 31,
+                "match": true,
+                "firstMismatchShot": -1
+              },
+              {
+                "key": "frond-wall",
+                "ms": 30,
+                "match": true,
+                "firstMismatchShot": -1
+              },
+              {
+                "key": "glass-tower",
+                "ms": 41,
+                "match": true,
+                "firstMismatchShot": -1
+              },
+              {
+                "key": "stone-arch",
+                "ms": 23,
+                "match": true,
+                "firstMismatchShot": -1
+              },
+              {
+                "key": "cloud-bounce",
+                "ms": 19,
+                "match": true,
+                "firstMismatchShot": -1
+              },
+              {
+                "key": "lightbox-heart",
+                "ms": 26,
+                "match": true,
+                "firstMismatchShot": -1
+              },
+              {
+                "key": "twin-beacons",
+                "ms": 31,
+                "match": true,
+                "firstMismatchShot": -1
+              },
+              {
+                "key": "pyramid",
+                "ms": 40,
+                "match": true,
+                "firstMismatchShot": -1
+              },
+              {
+                "key": "stress-90",
+                "ms": 213,
+                "match": true,
+                "firstMismatchShot": -1
+              }
+            ],
+            "usPerStep": 22
+          },
+          {
+            "flavor": "compat",
+            "ok": true,
+            "loadMs": 113,
+            "bytes": {
+              "transfer": 1295536,
+              "encoded": 1295236,
+              "decoded": 3449903,
+              "files": [
+                "1o168rozd1yp6.js 1265KB"
+              ]
+            },
+            "allMatch": true,
+            "replay": [
+              {
+                "key": "first-light",
+                "ms": 31,
+                "match": true,
+                "firstMismatchShot": -1
+              },
+              {
+                "key": "frond-wall",
+                "ms": 32,
+                "match": true,
+                "firstMismatchShot": -1
+              },
+              {
+                "key": "glass-tower",
+                "ms": 36,
+                "match": true,
+                "firstMismatchShot": -1
+              },
+              {
+                "key": "stone-arch",
+                "ms": 23,
+                "match": true,
+                "firstMismatchShot": -1
+              },
+              {
+                "key": "cloud-bounce",
+                "ms": 19,
+                "match": true,
+                "firstMismatchShot": -1
+              },
+              {
+                "key": "lightbox-heart",
+                "ms": 26,
+                "match": true,
+                "firstMismatchShot": -1
+              },
+              {
+                "key": "twin-beacons",
+                "ms": 31,
+                "match": true,
+                "firstMismatchShot": -1
+              },
+              {
+                "key": "pyramid",
+                "ms": 37,
+                "match": true,
+                "firstMismatchShot": -1
+              },
+              {
+                "key": "stress-90",
+                "ms": 215,
+                "match": true,
+                "firstMismatchShot": -1
+              }
+            ],
+            "usPerStep": 22
+          }
+        ],
+        "threeLoadMs": 35,
+        "threeBytes": {
+          "transfer": 142772,
+          "encoded": 142472,
+          "decoded": 573025,
+          "files": [
+            "1h5liodcp6jjt.js 139KB"
+          ]
+        },
+        "engineReadyMs": 1432,
+        "visual": [
+          {
+            "quality": "high",
+            "seconds": 6,
+            "fps": 21.3,
+            "medianMs": 47,
+            "p95Ms": 48,
+            "drawCalls": 31,
+            "triangles": 7208,
+            "dpr": 1,
+            "frames": 127
+          },
+          {
+            "quality": "low",
+            "seconds": 6,
+            "fps": 21.3,
+            "medianMs": 47,
+            "p95Ms": 48,
+            "drawCalls": 25,
+            "triangles": 5144,
+            "dpr": 1,
+            "frames": 126
+          }
+        ],
+        "done": true
+      }
+    },
+    {
+      "engine": "chromium-throttled-x4-fast4g",
+      "version": "153.0.8010.12",
+      "query": "auto=1&flavors=split",
+      "throttle": {
+        "cpu": 4,
+        "net": true
+      },
+      "wallMs": 17744,
+      "errors": [],
+      "res": {
+        "ua": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) HeadlessChrome/153.0.8010.12 Safari/537.36",
+        "dpr": 1,
+        "cores": 24,
+        "viewport": "390x844",
+        "webgl2": true,
+        "serverNode": "v22.20.0",
+        "flavors": [
+          {
+            "flavor": "split",
+            "ok": true,
+            "loadMs": 1368,
+            "bytes": {
+              "transfer": 975681,
+              "encoded": 975081,
+              "decoded": 2717252,
+              "files": [
+                "3pncybfg3u04c.js 49KB",
+                "23_rm5ep3f99q.wasm 903KB"
+              ]
+            },
+            "allMatch": true,
+            "replay": [
+              {
+                "key": "first-light",
+                "ms": 274.8,
+                "match": true,
+                "firstMismatchShot": -1
+              },
+              {
+                "key": "frond-wall",
+                "ms": 135.7,
+                "match": true,
+                "firstMismatchShot": -1
+              },
+              {
+                "key": "glass-tower",
+                "ms": 165.8,
+                "match": true,
+                "firstMismatchShot": -1
+              },
+              {
+                "key": "stone-arch",
+                "ms": 84.4,
+                "match": true,
+                "firstMismatchShot": -1
+              },
+              {
+                "key": "cloud-bounce",
+                "ms": 67,
+                "match": true,
+                "firstMismatchShot": -1
+              },
+              {
+                "key": "lightbox-heart",
+                "ms": 92.1,
+                "match": true,
+                "firstMismatchShot": -1
+              },
+              {
+                "key": "twin-beacons",
+                "ms": 112.6,
+                "match": true,
+                "firstMismatchShot": -1
+              },
+              {
+                "key": "pyramid",
+                "ms": 136.6,
+                "match": true,
+                "firstMismatchShot": -1
+              },
+              {
+                "key": "stress-90",
+                "ms": 752.1,
+                "match": true,
+                "firstMismatchShot": -1
+              }
+            ],
+            "usPerStep": 89
+          }
+        ],
+        "threeLoadMs": 378,
+        "threeBytes": {
+          "transfer": 142772,
+          "encoded": 142472,
+          "decoded": 573025,
+          "files": [
+            "1h5liodcp6jjt.js 139KB"
+          ]
+        },
+        "engineReadyMs": 4155,
+        "visual": [
+          {
+            "quality": "high",
+            "seconds": 6,
+            "fps": 59.9,
+            "medianMs": 16.7,
+            "p95Ms": 18.3,
+            "drawCalls": 31,
+            "triangles": 7208,
+            "dpr": 1,
+            "frames": 362
+          },
+          {
+            "quality": "low",
+            "seconds": 6,
+            "fps": 59.9,
+            "medianMs": 16.7,
+            "p95Ms": 18.5,
+            "drawCalls": 25,
+            "triangles": 5144,
+            "dpr": 1,
+            "frames": 361
+          }
+        ],
+        "done": true
+      }
+    },
+    {
+      "engine": "chromium-throttled-x4-fast4g",
+      "version": "153.0.8010.12",
+      "query": "auto=1&flavors=compat",
+      "throttle": {
+        "cpu": 4,
+        "net": true
+      },
+      "wallMs": 17801,
+      "errors": [],
+      "res": {
+        "ua": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) HeadlessChrome/153.0.8010.12 Safari/537.36",
+        "dpr": 1,
+        "cores": 24,
+        "viewport": "390x844",
+        "webgl2": true,
+        "serverNode": "v22.20.0",
+        "flavors": [
+          {
+            "flavor": "compat",
+            "ok": true,
+            "loadMs": 1558,
+            "bytes": {
+              "transfer": 1295536,
+              "encoded": 1295236,
+              "decoded": 3449903,
+              "files": [
+                "1o168rozd1yp6.js 1265KB"
+              ]
+            },
+            "allMatch": true,
+            "replay": [
+              {
+                "key": "first-light",
+                "ms": 272.7,
+                "match": true,
+                "firstMismatchShot": -1
+              },
+              {
+                "key": "frond-wall",
+                "ms": 132.4,
+                "match": true,
+                "firstMismatchShot": -1
+              },
+              {
+                "key": "glass-tower",
+                "ms": 165.4,
+                "match": true,
+                "firstMismatchShot": -1
+              },
+              {
+                "key": "stone-arch",
+                "ms": 76.5,
+                "match": true,
+                "firstMismatchShot": -1
+              },
+              {
+                "key": "cloud-bounce",
+                "ms": 64.1,
+                "match": true,
+                "firstMismatchShot": -1
+              },
+              {
+                "key": "lightbox-heart",
+                "ms": 92.9,
+                "match": true,
+                "firstMismatchShot": -1
+              },
+              {
+                "key": "twin-beacons",
+                "ms": 104.9,
+                "match": true,
+                "firstMismatchShot": -1
+              },
+              {
+                "key": "pyramid",
+                "ms": 133.2,
+                "match": true,
+                "firstMismatchShot": -1
+              },
+              {
+                "key": "stress-90",
+                "ms": 745.3,
+                "match": true,
+                "firstMismatchShot": -1
+              }
+            ],
+            "usPerStep": 87
+          }
+        ],
+        "threeLoadMs": 373,
+        "threeBytes": {
+          "transfer": 142772,
+          "encoded": 142472,
+          "decoded": 573025,
+          "files": [
+            "1h5liodcp6jjt.js 139KB"
+          ]
+        },
+        "engineReadyMs": 4246,
+        "visual": [
+          {
+            "quality": "high",
+            "seconds": 6,
+            "fps": 59.9,
+            "medianMs": 16.7,
+            "p95Ms": 18.5,
+            "drawCalls": 31,
+            "triangles": 7208,
+            "dpr": 1,
+            "frames": 361
+          },
+          {
+            "quality": "low",
+            "seconds": 6,
+            "fps": 59.9,
+            "medianMs": 16.7,
+            "p95Ms": 18.6,
+            "drawCalls": 25,
+            "triangles": 5144,
+            "dpr": 1,
+            "frames": 361
+          }
+        ],
+        "done": true
+      }
+    }
+  ]
+}
