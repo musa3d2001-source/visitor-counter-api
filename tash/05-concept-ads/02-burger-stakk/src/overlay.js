@@ -120,9 +120,9 @@ export function createOverlay(root, C, { W = 1080, H = 1920, project } = {}) {
       tWords.forEach((s, i) => {
         const st = T.title[0] + i * 0.125, a = t - st;
         if (a < 0) { s.style.opacity = '0'; return; }
-        const fall = clamp(a / 0.1), y = (1 - E.inQuad(fall)) * -160;
-        const sq = a > 0.1 ? 1 - 0.22 * Math.exp(-(a - 0.1) * 14) * Math.cos((a - 0.1) * 30) : 1;
-        css(s, { opacity: '1', transform: `translateY(${y.toFixed(1)}px) scale(${(2 - sq).toFixed(3)}, ${sq.toFixed(3)})` });
+        const fall = clamp(a / 0.09), y = (1 - E.inQuad(fall)) * -70;   // short drop: never overlaps the line above
+        const sq = a > 0.09 ? 1 - 0.22 * Math.exp(-(a - 0.09) * 14) * Math.cos((a - 0.09) * 30) : 1;
+        css(s, { opacity: String(clamp(a / 0.05)), transform: `translateY(${y.toFixed(1)}px) scale(${(2 - sq).toFixed(3)}, ${sq.toFixed(3)})` });
       });
       const wk = E.inCubic(sm(C.whip[0], T.title[1], t));
       css(title, { transform: `translateY(${(wk * 1500).toFixed(1)}px)`, filter: wk > 0.02 ? `blur(${(wk * 18).toFixed(1)}px)` : 'none' });

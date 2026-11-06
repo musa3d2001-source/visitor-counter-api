@@ -131,6 +131,7 @@ export async function createWorld(W, H, C) {
     const id = s.id, lt = t - s.at, k = clamp(lt / (s.end - s.at));
     const [shx, shy] = shake(t);
     let dof = { focus: 10, aperture: 0 }, grade = { bg: BG.red, exposure: 0.8, bgSpot: new THREE.Vector3(0.5, 0.56, 0.2), vignette: 0.26 };
+    const gradeBase = { flash: 0, bgSpot: new THREE.Vector3(0.5, 0.6, 0.24) }; // matches the value the full render carried into the inserts
     if (id === 'S01') {
       setWorld('griddle', 'charcoal');
       L.key.position.set(-2.0, 5.0, 3.2); L.key.intensity = 150;
@@ -140,7 +141,8 @@ export async function createWorld(W, H, C) {
       orbit({ az: lerp(-0.3, -0.2, k), el: lerp(0.16, 0.22, k), d, ty, fov: 26, roll: shx * 0.006 });
       cam.position.y += shy * 0.025; cam.position.x += shx * 0.02;
       dof = { focus: d, aperture: 16, maxR: 22 };
-      grade = { bg: BG.deep, exposure: 0.95, vignette: 0.4 };
+      const fl = t >= C.smash && t < C.smash + 0.2 ? 0.3 * Math.exp(-(t - C.smash) * 30) : 0; // impact flash
+      grade = { bg: BG.deep, exposure: 0.95, vignette: 0.4, flash: fl };
     } else if (id === 'S02') {
       setWorld('griddle', 'griddle');
       L.key.position.set(-3.6, 1.5, 1.2); // raking light reveals the crust relief
@@ -167,7 +169,7 @@ export async function createWorld(W, H, C) {
       orbit(o);
       cam.position.y += shy * 0.03; cam.position.x += shx * 0.025;
       dof = { focus: o.d, aperture: 0, maxR: 10 }; // flat brand backdrop: DOF would be invisible here
-      grade = { bg: bgk === 'charcoal' ? BG.charcoal : BG.red, exposure: bgk === 'charcoal' ? 1.15 : 0.8, bgSpot: new THREE.Vector3(0.5, 0.6, 0.24), vignette: bgk === 'charcoal' ? 0.3 : 0.24 };
+      grade = { bg: bgk === 'charcoal' ? BG.charcoal : BG.red, exposure: bgk === 'charcoal' ? 1.15 : 0.8, bgSpot: new THREE.Vector3(0.5, 0.6, 0.24), vignette: bgk === 'charcoal' ? 0.3 : 0.24, flash: t >= D.crown && t < D.crown + 0.02 ? 0.2 : 0 };
       if (bgk === 'charcoal') { L.front.intensity = 80; L.key.intensity = 190; } else { L.front.intensity = 45; L.key.intensity = 150; }
     } else if (id === 'S04') {
       setWorld('stage', 'charcoal');
@@ -195,7 +197,7 @@ export async function createWorld(W, H, C) {
       grade = { bg: BG.charcoal, exposure: 0.95, vignette: 0.36 };
     }
     cam.updateMatrixWorld();
-    return { id, dof, grade };
+    return { id, dof, grade: { ...gradeBase, ...grade } };
   }
 
   // ---------------------------------------------------------------- hook (griddle) state
@@ -227,10 +229,12 @@ export async function createWorld(W, H, C) {
   /** motion-blur policy: number of sub-frames for time t */
   function subCount(t) {
     if (t >= C.whip[0] && t <= C.whip[1]) return 6;
+    if (t > C.smash - 0.045 && t < C.smash + 0.045) return 9;   // the slam itself: smooth, not strobed
     if (t > C.smash - 0.08 && t < C.smash + 0.12) return 5;
     if (t > D.sauce && t < D.sauce + 0.18) return 4;
     if (t > C.smash && t < C.smash + 0.25) return 4;
-    for (const k of ORDER) { const l = D[k]; if (t > l - 0.16 && t < l + 0.02) return 4; } // visible part of each fall
+    const THIN = ['cheese', 'cheese2', 'pickles', 'onions'];  // thin layers need dense sub-frames or the blur steps into ghost copies
+    for (const k of ORDER) { const l = D[k]; if (t > l - 0.16 && t < l - 0.005) return THIN.includes(k) ? 10 : 4; } // blur the visible fall; the impact frame stays crisp
     return 1;
   }
 

@@ -9,6 +9,7 @@ export const srgb = h => new THREE.Vector3(...[1, 3, 5].map(i => parseInt(h.slic
 export function makeRenderer(W, H) {
   const r = new THREE.WebGLRenderer({ antialias: false, preserveDrawingBuffer: true, alpha: false, powerPreference: 'high-performance' });
   r.setPixelRatio(1); r.setSize(W, H);
+  r.autoClear = false; // passes clear explicitly; auto-clear would wipe the motion-blur accumulation buffer
   r.shadowMap.enabled = true; r.shadowMap.type = THREE.PCFSoftShadowMap;
   r.toneMapping = THREE.NoToneMapping; // tone mapping happens in the final pass
   r.outputColorSpace = THREE.LinearSRGBColorSpace;
@@ -171,7 +172,7 @@ export class Droplets {
       const vx = Math.cos(d.a) * d.v * spread, vz = Math.sin(d.a) * d.v * spread, vy = d.up * upK * 2.2;
       P.set(o.x + Math.cos(d.a) * ring + vx * a2, o.y + vy * a2 - 0.5 * g * a2 * a2, o.z + Math.sin(d.a) * ring + vz * a2);
       V.set(vx, vy - g * a2, vz);
-      const sp = V.length(); const stretch = 1 + Math.min(3, sp * 0.06 * 30 / 30 * 2.5);
+      const sp = V.length(); const stretch = 1 + Math.min(4.5, sp * 0.45); // long enough to bridge motion-blur sub-frames
       q.setFromUnitVectors(new THREE.Vector3(0, 1, 0), V.clone().normalize());
       const fade = 1 - smooth(0.7, 1, age / life);
       const s = a2 > 0 && P.y > -0.02 ? d.s * fade : 0;

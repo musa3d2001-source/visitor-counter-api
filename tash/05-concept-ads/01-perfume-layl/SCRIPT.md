@@ -48,8 +48,8 @@ A **CGI product film** built entirely in code:
 - **Floor.** A glossy black floor (`Reflector`) with a custom falloff shader.
 - **Finish.** ACES tone map, warm lifted blacks, vignette, seeded ±1-LSB dither (no 8-bit banding in near-black
   gradients) and grain at 0.06.
-- **Luxury pacing.** Shots of 1.5–3 s on an 80 BPM grid, one light sweep, one speed ramp and one rack of focus, with
-  text kept sparse.
+- **Luxury pacing.** Shots of 1.5–3 s on an 80 BPM grid, one light sweep and one speed ramp, with text kept sparse.
+  Focus tracks the camera pushes; there is no separate rack-focus pull.
 
 ## 3. The product (fictional) | المنتج
 - **Bottle.** A thick glass block, 10 × 14 × 4.2 cm in scene scale. Its silhouette is a softly bevelled **pointed
@@ -75,6 +75,7 @@ uses TASH's slate style (JetBrains Mono + IBM Plex Sans Arabic, smoke).
 ## 5. Shot list — LOCKED timings | قائمة اللقطات (التوقيتات ثابتة)
 The launch-ad editor cuts from `?clean=1`: **same timeline, same frames, no text / slate / end card / sting.**
 Times in seconds; frames at 30 fps (first frame of the shot). Cuts sit on an 80 BPM grid (1 beat = 0.75 s).
+8.25 s falls between frames, so the first S5 frame is f248 (8.267 s). Every other cut is frame-exact.
 
 | # | start → end (s) | frames | shot | camera / lens | light | buys (what the viewer now believes) |
 |---|---|---|---|---|---|---|
@@ -98,9 +99,9 @@ the left. Proofread twice.
 
 | time (s) | text | type | motion |
 |---|---|---|---|
-| 3.20 → 5.48 (+0.3 exit) | «عود · عنبر · زعفران» (oud · amber · saffron) | Alexandria 300, 50 px, brass dots | rise + unblur per word, right→left; exits upward |
-| 8.30 → 10.08 (+0.3 exit) | «تمشي…» | Alexandria 300, 132 px, ivory | feathered right→left write-on (like a pen), leftward drift |
-| 8.65 → 10.12 (+0.3 exit) | «ويبقى ليل.» (ليل. in honey) | Alexandria 300, 132 px | same write-on, words 0.24 s apart; both lines leave before the cut at 10.50 |
+| 3.20 → 5.48 (exit done by 5.90) | «عود · عنبر · زعفران» (oud · amber · saffron) | Alexandria 300, 50 px, brass dots | rise + unblur per word, right→left; exits upward |
+| 8.30 → 10.08 (exit done by 10.36) | «تمشي…» | Alexandria 300, 132 px, ivory | feathered right→left write-on (like a pen), leftward drift |
+| 8.65 → 10.12 (exit done by 10.44) | «ويبقى ليل.» (ليل. in honey) | Alexandria 300, 132 px | same write-on, words 0.24 s apart; both lines leave before the cut at 10.50 |
 | 11.25 → 13.20 | «ليل» / LAYL / ─── / EAU DE PARFUM · No.07 | Alexandria 300, 168 px · Archivo exp. 300, 44 px, .62em · 400, 22 px, .34em | the name writes on as the push settles; Latin tracks in from .95em; the hairline draws from the centre |
 | 12.05 → 15.90 | `CONCEPT AD — 01 / PERFUME` + «إعلان تجريبي — علامة خيالية» | JetBrains Mono 600, 22 px · IBM Plex Sans Arabic 400, 26 px | fade in, top safe area (y 232) |
 | 13.50 → 15.90 | TASH sting: typing bubble → dots land in ش → طشّ → «خلّهم يسولفون عنك!» → @tash.creative.kw | TASH brand | `createSting` behaviour, damped pops |
@@ -145,3 +146,35 @@ Pre-master: −14.5 LUFS, −1.5 dBTP (WAV). The mux applies loudnorm −14 LUFS
 - Fictional brand. It shows no claims, numbers, reviews or real products. The bottle is an original design.
 - `_system` is untouched. The sting is a local copy (`src/sting-short.js`) with the same cues and dot behaviour; only the
   bubble and dot-pop springs are damped, so the shadda drop is the one visible spring.
+
+## 10. Deliverables (this folder)
+| file | what |
+|---|---|
+| `LAYL-concept-9x16.mp4` | final film with audio: 1080×1920, 30 fps, 477 frames, 15.90 s, H.264 + AAC 48 k |
+| `poster.png` | designed cover 1080×1920 (`?poster=1`, t = 12.30): tiny TASH credit, `CONCEPT AD — 01 / PERFUME` + «إعلان تجريبي — علامة خيالية», LAYL lockup, hero bottle |
+| `still-hero.png` | best clean frame (`?clean=1`, t = 4.70, S3 orbit) |
+| `contact-sheet.png` | 2 fps sheet of the final film |
+| `bts/wire.mp4`, `bts/clay.mp4`, `bts/final.mp4` | 3.00–6.00 s (S3), 90 frames each, no audio, identical camera |
+| `src/` | page + modules, `cues.json`, `audio.py` → `audio.wav` |
+
+## 11. Self-review ledger (measured, not certified)
+| round | finding | change | result |
+|---|---|---|---|
+| 0 | facet stair-steps in refraction; blocky env streaks | smooth side normals, soft-edged strips, PMREM 512 | clean bevel lines at 2× zoom |
+| 0 | 8-bit banding in the near-black backdrop | own output pass with seeded ±1 LSB dither, vignette moved into GL | no visible rings |
+| 1 | frame 0 near-black; camera eases stopped dead on cuts; bloom 0.2 | bar in frame at f0, cruise ease, bloom 0.07 | composed f0; motion carries through cuts |
+| 1 | notes / line text still exiting across cuts | exits re-timed (5.48 / 10.08) | no text over the next shot |
+| 1 | end-card hold ≈0.6 s | end card moved to 11.25 | ≈1.2 s full hold with the push still alive |
+| 1 | hard clip write-on cut letters mid-glyph | feathered RTL mask with padding for dots and descenders | reads like a pen |
+| 2 | S2 glow washed to pale cream | glow ceiling 0.85 → 0.72 | rich amber through the push |
+| 2 | ي of «تمشي…» nearly touching «ليل» | line 2 +20 px | clear leading |
+| QC | final MP4 | | −14.0 LUFS, −1.5 dBTP, LRA 3.0, no freeze > 0.6 s; blackdetect only flags the designed 0.17 s lights-out (13.47–13.63) and sting frames that are ~98% ink (14.40–15.07) |
+| QC | determinism | same frame from different seek orders | identical, except ≤ 4 px at ±1/255 (SwiftShader float noise) |
+
+Still weak / honest notes:
+- Builder-reviewed only; there was no separate fresh reviewer.
+- S1's last 0.5 s is a dark "breath" (the liquid starting to glow) before the S2 reveal. Intentional, but a stranger may
+  not read the macro until 1.5 s.
+- The low end is rich: 44–59 % of the energy is below 150 Hz in the film sections. That is fine on headphones; on phone
+  speakers the oud, bells and spray carry it.
+- Liquid refraction is an artistic shader (Three.js can't nest transmission), judged by eye.
