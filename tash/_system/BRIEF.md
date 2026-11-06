@@ -13,9 +13,11 @@ The work itself is the proof. Quality bar = a real studio reel, not "someone usi
 > product-shot vocabulary, edit grammar, motion principles, Arabic kinetic type, sting craft, sound-to-picture,
 > and the critic rubric. Apply it; the rules in this bible still win where they differ.
 
-> **Launch ad (tash/04-launch-ad) only:** the owner subscribed to Higgsfield, and the CD generated and approved
-> photoreal clips of people and hands for the launch ad. They are in `tash/04-launch-ad/footage/ai/`.
-> **Read `tash/04-launch-ad/_CD-NOTES.md` before planning the edit**: it says where each clip goes and the rules for using it.
+> **AI footage (owner-approved exception to §3.5):** the owner subscribed to Higgsfield and approved photoreal AI footage
+> for (a) the launch ad's people/hands shots (`tash/04-launch-ad/footage/ai/`) and (b) the STAKK burger and HABBA coffee
+> concept ads, after the owner judged their CGI "cartoonish, not real" (`tash/05-concept-ads/{02-burger-stakk,03-coffee-habba}/footage/ai/`).
+> Only the CD generates (the credits are the owner's); teammates never call Higgsfield. Before editing, read the folder's `_CD-NOTES.md`:
+> it gives event times, usable ranges, flaws and the credit line. Type, edit, sound and the TASH signature stay ours.
 
 ---------------------------------------------------------------------------------------------------
 ## 1. Brand idea (the thing every piece must express)
@@ -65,7 +67,8 @@ Use the device with intent — once or twice per piece, not sprinkled everywhere
    real restaurant names, real people, celebrity look-alikes, or trademarks (no Apple UI, no Instagram/TikTok logos —
    generic phone/chat UI only).
 5. **Licensing.** Only our OFL fonts, our own code-generated visuals, and our own synthesised audio (`_system/audio`).
-   No downloaded stock footage, images, music or SFX. No paid AI generators (Higgsfield account has 0 credits).
+   No downloaded stock footage, images, music or SFX. No paid AI generators, except the owner-approved Higgsfield footage named
+   in the note at the top (CD-generated only, credited in each SCRIPT.md).
 6. **Determinism.** Video pages must be pure functions of time (see §5). No CSS animations/transitions, no `Math.random()`
    (use `rng(seed)` from kit.js), no real-time clocks.
 7. **Do not edit `/_system/`** (shared by parallel teammates). Extend locally in your own `src/` folder. If you find a real

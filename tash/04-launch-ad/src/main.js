@@ -51,6 +51,16 @@ function cover(img, x, y, w, h, { fx = 0.5, fy: fyy = 0.5, zoom = 1 } = {}) {
   g.drawImage(img, (iw - sw) * fx, (ih - sh) * fyy, sw, sh, x, y, w, h);
 }
 const full = (img, id, o = {}) => cover(img, 0, 0, W, H, { fy: fy(id), ...o });
+// Canvas filters (blur/saturate) are run on a software-rasterised canvas (willReadFrequently), then composited: on the
+// main canvas their result depended on seek history (≈50k px differed at 22.4 s between forward and reverse renders).
+const flt = document.createElement('canvas'); flt.width = W; flt.height = H;
+const fg = flt.getContext('2d', { alpha: false, willReadFrequently: true }); fg.imageSmoothingQuality = 'high';
+function fullFiltered(img, id, filter, o = {}) {
+  const iw = img.naturalWidth || img.width, ih = img.naturalHeight || img.height, z = o.zoom ?? 1;
+  const s = Math.max(W / iw, H / ih) * z, sw = W / s, sh = H / s;
+  fg.filter = filter; fg.drawImage(img, (iw - sw) * (o.fx ?? 0.5), (ih - sh) * (o.fy ?? fy(id)), sw, sh, 0, 0, W, H); fg.filter = 'none';
+  g.drawImage(flt, 0, 0);
+}
 /** horizontal smear: running average of n shifted copies (directional blur for whips); overscanned so edges never show */
 function smear(img, id, shift, spread, n = 11) {
   const os = 0.14, ow = W * (1 + 2 * os), oh = H * (1 + 2 * os);
@@ -243,7 +253,7 @@ function exitUp(ws, t, t0, { gap = 0.033, dur = 0.16, lift = 70 } = {}) {
 // ---------------------------------------------------------------------------------------------- sections
 async function drawHook(t) {
   const s = S.HOOK, img = await clip(s, t);
-  g.filter = 'saturate(0.82) contrast(0.93) brightness(1.03)'; full(img, 'HOOK', { zoom: 1.09, fx: 0.92 }); g.filter = 'none'; // chair slides out from under the line
+  fullFiltered(img, 'HOOK', 'saturate(0.82) contrast(0.93) brightness(1.03)', { zoom: 1.09, fx: 0.92 }); // chair slides out from under the line
   phoneNoise(Math.round(t * 30), 0.10);
   // the shutter: a fast white blink on the phone's screen on the frames before the cut
   const k = t >= EV.shutter ? [0.55, 1, 0.75][Math.min(2, Math.round((t - EV.shutter) * 30))] : 0;
@@ -398,7 +408,7 @@ async function drawPeople(s, t) {
 async function drawAsk(t) {
   const s = S.ASK, img = await clip(s, t);
   const kin = E.outCubic(prog(t, s.at, 0.5)), kout = E.inOutSine(prog(t, s.end - 0.12, 0.3));
-  g.filter = 'blur(5px) saturate(0.85)'; full(img, 'ASK', { zoom: 1.08 + 0.03 * prog(t, s.at, 1.5) }); g.filter = 'none';
+  fullFiltered(img, 'ASK', 'blur(5px) saturate(0.85)', { zoom: 1.08 + 0.03 * prog(t, s.at, 1.5) });
   gradeAI(); ink(lerp(1, 0.5, kin) + 0.5 * kout);
   const gr = g.createLinearGradient(0, 0, 0, H * 0.62); gr.addColorStop(0, 'rgba(11,11,11,.94)'); gr.addColorStop(0.55, 'rgba(11,11,11,.78)'); gr.addColorStop(1, 'rgba(11,11,11,0)');
   g.fillStyle = gr; g.globalAlpha = kin; g.fillRect(0, 0, W, H); g.globalAlpha = 1;

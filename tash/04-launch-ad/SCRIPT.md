@@ -88,7 +88,7 @@ stakk-crown 7.80–9.60) · `bts/` (LAYL wire/clay/final 3.00–6.00) · `final/
 `built/ring.mp4` (from `src/built/ring/index.html`, 1.8 s).
 
 ## 8. Self-review ledger
-Builder-reviewed in the rounds below, then independently reviewed and fixed by the ECD (last two rows). Every round = stills or full render → look
+Builder-reviewed in the rounds below, then independently reviewed and fixed by the ECD (last three rows). Every round = stills or full render → look
 at 25 %, 100 % and cut strips (cut−2f / cut / cut+1f) → fix → re-check.
 
 | round | what I looked at | top findings | change | measured after |
@@ -103,19 +103,25 @@ at 25 %, 100 % and cut strips (cut−2f / cut / cut+1f) → fix → re-check.
 | final v1 | 20 frames from the MP4 at 25 % and 100 % | chat tails rendered as square slivers (CSS `clip-path` tail) | SVG tails curling out of the bubble corner (paper; lime ×1.3 on the reply) | re-rendered both formats |
 | **ECD review** (independent, on the delivered v1 files) | 4 fps sheet + 43 full-size stills (9:16), 2 fps sheet + 9 stills (4:5), poster at 100 %, 1/30 s strips at the drop, dots-wipe, collapse and ASK→CTA, band energy per 0.5 s | (1) «عندك مشروع؟» at 136 px ran x 55–1020: outside the 72 px margins and into the right action rail; (2) text over text 23.07–23.13 (the lime reply popped over the exiting ask line); (3) the typing bubble sat on full-size chat bubbles for ~7 f (18.40–18.63); (4) poster: «هذا» black on the black phone bezel, «منتجك.» on the dark chair; in the hook (both formats) «ك.» sat on the chair arm; (5) the whole CTA card was assembled for only ≈1.5 s (brief: ≥2 s); (6) the sub (<60 Hz) sat 10–12 dB over the 150 Hz–2 kHz band in every groove: the energy phones can't play was eating the −14 LUFS headroom; (7) the vignette over the full-lime wipe made olive corners | (1) 120 px, centre nudged left; (2) the ask exits 23.29–23.48 and the reply pops ON the bar-11 downbeat (23.50); (3) the bubbles fly in and shrink first (inOutCubic 18.22–18.52), then the typing bubble grows; (4) poster photo at 1:1 with both lines set from the RTL start on the clean wall; hook/glory 128 px from the RTL start; 4:5 hook focus 0.46→0.20; (5) ASK = one full bar (21.5–23.5), CTA 23.5–27.0, so the film is now 27.0 s; score re-timed (reply pop + resolving stab on 23.50, reading dip in bar 11, bar-12 outro, 0.6 s fade); (6) kicks −3 dB, pure 808 sub ×0.6, saturated 808 harmonics ×0.3; (7) the vignette fades out while the dots cover the frame | ASK line x ≈ 101–951; collapse and ASK→CTA strips clean; sub−mid gap now 4–8 dB in the grooves, mids +3 dB at the same −14 LUFS |
 | ECD render 1 | full 9:16 (blackdetect, freezedetect, cuts, sync) | one near-empty ink frame at 23.50: the cut frame before the reply became visible | the reply is visible from the cut frame (pops from 0.4×) | see final QC |
+| ECD determinism | 6 frames in forward / reverse / single seek order | 22.4 s (ASK) differed on 49,069 px between orders (59–64k vs a single render): the canvas `filter: blur()` on the main canvas depended on seek history | filtered draws (hook grade, ASK blur) run on a software canvas (`willReadFrequently`) and are composited; both formats re-rendered (ECD render 2) | see final QC |
 
-**Final QC (measured on the delivered files):**
-- `TASH-launch-9x16.mp4`: H.264 High yuv420p BT.709, 1080×1920, 30/1, **765 frames = 25.500 s**; AAC LC 48 kHz stereo, 25.500 s.
-  **−14.0 LUFS** integrated, **true peak −1.2 dBTP**, LRA 3.2 LU (ffmpeg ebur128, peak=true; `audio-check.sh` agrees).
-  freezedetect (−60 dB, 0.6 s): none. blackdetect: only 18.93–19.13 and 19.27–19.47 (the designed typing dots on ink before
-  the snap). Scene cuts detected at 1.50 · 3.50 · 6.00 · 9.40/9.70 (dots-wipe) · 11.77 · 16.27 · 17.00 · 17.77 = the cue sheet
-  (the burn, the hard cut into the dark spray and the fades are below the detector's threshold by design).
-- `TASH-launch-4x5.mp4`: 1080×1350, 765 frames = 25.500 s, same audio: −14.0 LUFS, −1.2 dBTP, LRA 3.2; no freezes;
-  blackdetect only 19.30–19.47.
-- Determinism: frames 1.6 / 9.9 / 20.4 / 23.3 / 24.6 rendered in forward and in reverse seek order → 0 pixels different.
-- Score sections (`src/audio.wav`, LUFS): hook -24.1 · glory -13.2 · montage -12.9 · breath -16.1 · process -13.4 · bubbles -15.8 · pre-snap -18.3 · sting -17.6 · ask -15.4 · cta -17.2.
+**Final QC (ECD pass, measured on the delivered files):**
+- `TASH-launch-9x16.mp4`: H.264 High yuv420p BT.709, 1080×1920, 30/1, **810 frames = 27.000 s**; AAC LC 48 kHz stereo, 27.000 s.
+  **−14.0 LUFS** integrated, **true peak −1.5 dBTP**, LRA 3.2 LU (`audio-check.sh`). freezedetect (−60 dB, 0.6 s): none.
+  blackdetect: only 18.93–19.13 and 19.27–19.47 (the sting's own typing dots on ink before the snap; the one-frame empty-ink
+  cut at 23.50 found in ECD render 1 is gone). Scene cuts detected at 1.50 · 3.50 · 6.00 · 9.40/9.70 (dots-wipe) · 11.77 ·
+  16.27 · 17.00 · 17.77 = the cue sheet (the burn, the cut into the dark spray, the sting and the ink cuts are below the detector's threshold).
+- A/V sync on the MP4 (audio onset at half-amplitude vs the picture event): drop +9 ms, snap +9 ms, reply pop +12 ms (< ⅓ frame).
+- `TASH-launch-4x5.mp4`: 1080×1350, 810 frames = 27.000 s, same audio: −14.0 LUFS, −1.5 dBTP, LRA 3.2; no freezes;
+  blackdetect only 19.30–19.47 (sting dots).
+- Determinism (ECD): frames 1.6 / 9.45 / 18.45 / 22.4 / 23.5 / 25.9 rendered in forward order, in reverse order and alone →
+  0 px different; 0.6 and 21.8 → ≤ 2 px at 1 level (right-edge column, words mid-blur).
+- Score sections (`src/audio.wav`, LUFS, ECD boundaries): hook −21.1 · glory −12.8 · montage −12.4 · breath −14.6 · process −13.5 ·
+  bubbles −15.2 · pre-snap −16.3 · sting −17.1 · ask −15.1 · cta −17.4. Band balance: sub (<60 Hz) 4–8 dB over the 150 Hz–2 kHz
+  band in the grooves (was 10–12 dB); the last 50 ms sit at −70 dB (0.6 s fade, no hanging sub).
 - Footage: all five AI ranges are inside the CD-approved windows (s1 0.22–1.72, s2 1.70–2.38, s3 0.80–1.48, s4 0.55–1.77,
-  s5 0.40–1.75); hands at 100 % checked (correct fingers, no morph), no logos on phone backs.
+  s5 0.40–2.20); hands and faces checked at 100 % on the frames used.
+- poster.png: 1080×1920; «هذا منتجك.» on the clean wall, «وهذا إعلانه.» on ink; wordmark, handle and CONCEPT WORK line inside y 240–1680.
 
 ## 9. Known weaknesses (honest)
 - **Footage policy needs the lead's confirmation.** BRIEF §3.5 still says "only our own code-generated visuals … no paid AI
