@@ -228,7 +228,8 @@ arc = (lin(EV['through'] - 0.05, EV['through'] + 0.2, db(-18), 1) * lin(T(2) - 0
        * lin(EV['sting'] - 0.25, EV['sting'] + 0.25, 1, db(-16)) * lin(EV['sting'] + 0.9, EV['sting'] + 1.1, 1, db(-10)))
 read = lin(EV['text1'] - 0.1, EV['text1'] + 0.2, 1, db(-1.5)) * lin(EV['text1Out'], EV['text1Out'] + 0.3, 1, db(1.5))
 for bus in ('keys', 'oud', 'bass', 'drums'): m.process_bus(bus, lambda b: b * duck * arc * read)
-m.process_bus('bass', lambda b: hp(b, 38) * db(-2))
+m.process_bus('bass', lambda b: hp(b, 55) * db(-1))      # phones: keep the bass's harmonics, trim the inaudible sub (review note)
+m.process_bus('drums', lambda b: hp(b, 48))
 m.process_bus('sfx', lambda b: peak_eq(b, 3500, -2.0, 1.2))
 
 endf = lin(DUR - 0.12, DUR, 1, 0)

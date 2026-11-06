@@ -10,13 +10,13 @@ export function makePosterOverlay({ ui, lines, info, slate, stingRoot, MC }) {
   for (const l of lines) l.box.style.display = 'none';
   stingRoot.style.display = 'none'; info.style.display = 'none';
   const head = document.createElement('div'); head.className = 'm-ar';
-  css(head, { top: '1262px', fontSize: '96px', fontWeight: '500', color: MC.cream, textShadow: '0 2px 18px rgba(20,6,9,.6)' });
+  css(head, { top: '1300px', fontSize: '96px', fontWeight: '500', color: MC.cream, textShadow: '0 2px 18px rgba(20,6,9,.6)' });
   head.textContent = 'الباب مفتوح… تفضّل.'; ui.appendChild(head);
   const pill = document.createElement('div');
   css(pill, { position: 'absolute', left: '50%', top: '268px', transform: 'translateX(-50%)', background: '#0B0B0B', borderRadius: '26px', padding: '11px 22px 9px', lineHeight: '0' });
   pill.innerHTML = wordmarkSVG({ width: 62, body: '#F5F5E9', dot: '#C6FF00' });
   ui.appendChild(pill);
-  slate.style.cssText = 'position:absolute;left:0;right:0;top:1440px;opacity:1;text-align:center';
+  slate.style.cssText = 'position:absolute;left:0;right:0;top:1474px;opacity:1;text-align:center';
   css(slate.querySelector('.mono'), { color: '#D9C9B4', fontSize: '22px' });
   css(slate.querySelector('.ar'), { color: '#F3E7D3', fontSize: '32px', marginTop: '10px' });
   return { render() {} };

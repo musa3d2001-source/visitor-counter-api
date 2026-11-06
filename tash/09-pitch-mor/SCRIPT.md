@@ -8,8 +8,8 @@ version ends on the spec slate, and so does the poster.
 
 | File | Format |
 |---|---|
-| `MOR-spec-ad-9x16.mp4` | 1080×1920 · 30 fps · H.264 High + AAC 48 kHz · __DUR916__ s · __LOUD916__ |
-| `MOR-spec-ad-4x5.mp4` | 1080×1350 re-layout (every line re-placed inside the frame, m3 re-framed as a tilt) · same cut and sound · __LOUD45__ |
+| `MOR-spec-ad-9x16.mp4` | 1080×1920 · 30 fps · H.264 High + AAC 48 kHz · 20.40 s · −14.0 LUFS, −1.5 dBTP |
+| `MOR-spec-ad-4x5.mp4` | 1080×1350 re-layout (every line re-placed inside the frame, m3 re-framed as a tilt) · same cut and sound · −14.0 LUFS, −1.5 dBTP |
 | `poster.png` | 1080×1920 reel cover (the hook frame + payoff line + spec slate, all inside the centre 3:4 profile crop) |
 | `contact-sheet.png` | the 9:16 film at 4 fps |
 | `src/` | the reproducible source (see the end of this file) |
@@ -78,9 +78,9 @@ Source of truth: `src/cues.json` (cue times, the edit list `footage.segs`, read 
 | S4 | 8.267–9.60 | m4_espresso · 1.60 → 3.20 s · 1.2× | Two espressos on striped saucers on the red tray, push-in | — |
 | S5 | 9.60–10.60 | m5_red · 1.80 → 3.30 s · 1.5× (half-beat cut) | Top-down, the pink-red drink turning clockwise on the red tray with its embossed keyhole | — |
 | S6 | 10.60–11.60 | m6_pecan · 2.40 → 3.60 s · 1.2× | Pecan bar macro on MOR wax paper, the iced cup behind | — |
-| S7 | 11.60–14.933 | m7_mirror · 0.40 → (continues) · 1.07× | Lateral dolly past the oval mirror on its brass stand, gerbera and its reflection, cactus, the MOR cup | «الباب مفتوح…» 11.95–13.15 · «تفضّل.» 13.60–14.75 |
+| S7 | 11.60–14.933 | m7_mirror · 0.40 → (continues) · 1.07× | Lateral dolly past the oval mirror on its brass stand, gerbera and its reflection, cactus, the MOR cup | «الباب مفتوح…» 11.95–13.15 · «تفضّل.» 13.60–14.68 |
 | S8 END CARD | 14.933–17.60 | m7_mirror · → 4.94 s (inside the keyhole until ≈15.7) | **Back out through the keyhole:** the keyhole shrinks from ×24 to the plate's size (log scale, outCubic, 0.62 s) over MOR's flat plate colour; the footage inside fades to the plate (15.32–15.74); the **rosette turns in** (−24° → 0, outCubic) and the **plant grows up** from its base (15.40–16.15); **«مور MOR» writes on right→left** (15.85–16.65, 12 px drift); «الكويت · الجهراء» + `@morkwt` (16.30). Live hold with a 1.2 % creep to 17.6 | «الكويت · الجهراء» · @morkwt |
-| S9 TASH | 17.60–20.40 | — | TASH signature on ink (local `sting-short.js`: typing dots → converge → snap 18.72 → shadda → «خلّهم يسولفون عنك!» → @tash.creative.kw) + the spec slate from 17.75 | `SPEC AD — NOT COMMISSIONED BY MOR` · «إعلان تجريبي غير رسمي — مقترح من طشّ لـ مور» |
+| S9 TASH | 17.60–20.40 | — | a 0.2 s dip to ink lands on the beat at 17.6, then the TASH signature (local `sting-short.js`: typing dots → converge → snap 18.72 → shadda → «خلّهم يسولفون عنك!» → @tash.creative.kw) + the spec slate from 17.75 | `SPEC AD — NOT COMMISSIONED BY MOR` · «إعلان تجريبي غير رسمي — مقترح من طشّ لـ مور» |
 
 **Hand-offs:** S0 → S1 is one continuous shot (the cut is hidden inside the door clearing frame on the downbeat). S1 → S2
 and S2 → S3 are hard cuts on the bar line. The montage S4–S6 cuts on beat / half-beat with lengths 1.33 / 1.0 / 1.0, and then
@@ -96,10 +96,10 @@ All MOR shots are slow camera moves, so no optical flow was needed.
 | Time | Text | Type / place |
 |---|---|---|
 | 1.95–3.85 | **فيه باب بالجهراء…** | Alexandria 500, cream `#F3E7D3`, 96 px (9:16) / 100 px (4:5), one line, top of frame over a graduated night-sky falloff. Rise + unblur per word, RTL order, uneven gaps. The ellipsis sits at the left end |
-| 4.50–5.90 | **…وراه قهوة** | cream 104 px, low over the brass bar in a graduated falloff. Feathered right→left write-on per word. The leading ellipsis sits at the right (start) |
+| 4.50–5.90 | **…وراه قهوة** | cream 104 px, low over the brass bar (glyphs y 1355–1470) in a graduated falloff. Feathered right→left write-on per word. The leading ellipsis sits at the right (start) |
 | 6.55–7.90 | **تسوى المشوار.** | cream 120 px, above the cup's rim in a top falloff. Rise + unblur. Full stop at the left end |
 | 11.95–13.15 | **الباب مفتوح…** | cream 112 px over the wall above the mirror (top falloff −1.5 stops). RTL write-on |
-| 13.60–14.75 | **تفضّل.** | cream Alexandria **600**, 168 px. The one "arrive from oversize" in the piece (1.55× → 1, outExpo, unblur). Shadda on ض |
+| 13.60–14.68 | **تفضّل.** | cream Alexandria **600**, 168 px. The one "arrive from oversize" in the piece (1.55× → 1, outExpo, unblur). Shadda on ض |
 | 14.93–17.60 | emblem + **مور MOR** (the plate's own artwork) · **الكويت · الجهراء** · `@morkwt` | keyed layers from `logo_plate.png`; info line IBM Plex Sans Arabic 500 cream |
 | 17.75–20.40 | `SPEC AD — NOT COMMISSIONED BY MOR` · **إعلان تجريبي غير رسمي — مقترح من طشّ لـ مور** | TASH slate (JetBrains Mono / IBM Plex Sans Arabic) |
 | 18.72–20.40 | **طشّ** · **خلّهم يسولفون عنك!** · @tash.creative.kw | TASH signature (the only lime in the film) |
@@ -140,7 +140,7 @@ sine bass, mirwas groove with swing, shaker, and soft `claps_ensemble` on 2 & 4 
 | 17.35–17.85 | music bows out (−16 dB) |
 | 17.60 | `sonic_logo()` → طشّ hit on the snap (18.72) |
 
-Master: `audio.wav` is pre-mastered to −14.1 LUFS, true peak −1.5 dBTP, LRA 3.4 LU. Final MP4: __LOUDDETAIL__.
+Master: `audio.wav` is pre-mastered to −14.1 LUFS, true peak −1.5 dBTP, LRA 3.4 LU. Final MP4: −14.0 LUFS integrated, −1.5 dBTP, LRA 3.2 LU (both MP4s; two-pass linear loudnorm, as in `render.mjs`). After the review the bass bus is high-passed at 55 Hz and the drums at 48 Hz to trim the sub phones cannot play.
 
 ---
 
@@ -156,13 +156,25 @@ Master: `audio.wav` is pre-mastered to −14.1 LUFS, true peak −1.5 dBTP, LRA 
 
 ## Known weaknesses (honest)
 
-__WEAKNESSES__
+1. **The MOR sign's "O" is an AI artefact.** In m1 the O folds like a heart around the corner of the sign box (MOR's real sign has a plain O). The edit only uses m1's *wide* part, as the CD notes advise, but the hook (0–1.4 s), S1 and especially the **poster** show the sign large enough to notice. Only regenerating the footage can fix it, which wasn't allowed here. **The CD should decide whether the poster may show the sign this big.**
+2. **Garbled micro-Arabic on the cup in m3** (the small print on the right side of the cup, around x 800–900, y 790–890, 6.3–8.2 s). It is an AI artefact. It is small and the shot is short, so it was left.
+3. **The hook's first 12 frames barely move** (5 % creep). The first event is the key turn at 0.42 s and the knock and light-up at 0.62 s. A stronger event in 0–0.4 s would sharpen the hook.
+4. **«…وراه قهوة» sits on the brass bar beside the white scale.** m2 has no clean dark area wide enough for a centred line, so it is seated with a graduated falloff and a soft shadow. It is legible, but it isn't on a clean field.
+5. **The low end is still bass-heavy.** About −7 dB of the mix sits at 20–60 Hz. That is mostly the bass line's own roots (G1, A1, B♭1), which phones play through their harmonics. The mix is within spec.
+6. **The door in the hook is procedural** (a lacquered-burgundy grain texture plus a light falloff), not real wood footage. It reads as a dark lacquered door, not as a carved Kuwaiti door.
+7. **The end card → TASH tail joins with a 0.2 s dip to ink** (not a designed transition). It is clean (no overlap) but plain.
+8. Small slate type (22 px mono, 30 px Arabic) is legible and within the brief's label sizes, but it is small.
 
 ---
 
 ## Review ledger
 
-__LEDGER__
+| Round | Looked at | Findings → change |
+|---|---|---|
+| Self 1 (builder, stills) | 16 full-size stills, text crops at 100 % | «فيه باب بالجهراء…» wrapped onto the sign → one line, 96 px. «…وراه قهوة» sat on the glass server → lower, with a deeper falloff. Cream type on m7's beige wall failed contrast → a top falloff on m7. The door texture didn't reach the frame bottom → filled. 4:5 «تسوى المشوار.» hit the cup rim, and the reframe then lost the wordmark → m3 became a tilt (holds for the line, accelerates down to the wordmark into the cut). Stray cream tips of the inner art floated inside the keyhole (hook and poster) → the outline layer is owned by a morphological opening |
+| Self 2 (builder, MP4) | 4 fps contact sheet, cut strips f−1/f/f+1 at every cut, freeze/black detect, per-section RMS, spectrogram | text exits moved 50 ms earlier so no word survives a cut; night ambience +4 dB; the arc measured −29 (night) → −15 (montage) → −33 (breath) → −16 («تفضّل.») → −19 dBFS (tail) |
+| Independent (fresh agent, did not build it) | brief + rubric + the rendered MP4s and poster; ≥30 full-size stills in both formats, cut strips, determinism re-test, loudness | Score **77.5 before fixes → ≈80 after, no line below 3; verdict SHIP**. **Hard-gate fail fixed:** at frames 530–532 the TASH bubble overlapped the fading MOR mark → the ink dip now completes on 17.6 before the bubble. Also fixed: «تفضّل.» was still visible on the first pull-back frame (`welcomeOut` 14.75 → 14.68). In 9:16, «…وراه قهوة» reached y 1535 (bottom safe zone) → top 1336, glyphs y 1355–1470. The «تفضّل.» shadda sat at y 188 (top safe zone) → top 258. The poster headline was crowding the keyhole → lowered. Left alone: weaknesses 1–3 and 5 above |
+| Post-review (builder) | spectrogram, sub share | bass HP 55 Hz, drums HP 48 Hz (20–60 Hz share −6.4 → −7.0 dB); audio re-muxed into both MP4s with no picture change: −14.0 LUFS / −1.5 dBTP |
 
 ---
 

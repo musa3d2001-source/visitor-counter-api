@@ -83,11 +83,11 @@ export async function makeOverlay(stage, { W, H, LY, poster }) {
       riseIn(t3.spans, t, EV.text3, EV.text3Out, { gaps: [0, 0.16] });
       writeOn(t4.spans, t, EV.text4, EV.text4Out, { per: 0.6, gap: 0.28 });
       arrive(t5.spans[0], t, EV.welcome, EV.welcomeOut);
-      const ki = tw(t, EV.info, 0.7, E.outCubic), out = tw(t, EV.sting - 0.15, 0.25, E.inOutSine);
+      const ki = tw(t, EV.info, 0.7, E.outCubic), out = tw(t, EV.sting - 0.2, 0.2, E.inOutSine);
       css(info, { opacity: (ki * (1 - out)).toFixed(3), transform: `translateY(${((1 - ki) * 18).toFixed(1)}px)` });
       const st = t - EV.sting;
       stingRoot.style.display = st >= -0.2 ? 'block' : 'none';
-      stingRoot.style.opacity = tw(t, EV.sting - 0.05, 0.25, E.inOutSine).toFixed(3);
+      stingRoot.style.opacity = tw(t, EV.sting - 0.2, 0.2, E.inOutSine).toFixed(3);   // dip to ink lands on the beat, before the bubble pops (no TASH over MOR)
       sting.render(Math.max(0, st));
       css(slate, { opacity: tw(t, EV.sting + 0.15, 0.5, E.outCubic).toFixed(3) });
     },
