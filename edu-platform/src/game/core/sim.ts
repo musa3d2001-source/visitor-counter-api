@@ -43,6 +43,8 @@ export type ForceTrace = { opening: Partial<Record<MaterialKey, number>>; shots:
 
 export type Sim = ReturnType<typeof createSim>;
 
+const NO_EVENTS: { breaks: readonly BreakEvent[]; activations: readonly ActivationEvent[] } = Object.freeze({ breaks: Object.freeze([]), activations: Object.freeze([]) });
+
 export function createSim(R: Rapier, level: Level, opts: { trace?: ForceTrace } = {}) {
   const trace = opts.trace;
   const world: World = new R.World({ x: 0, y: GRAVITY, z: 0 });
@@ -180,8 +182,12 @@ export function createSim(R: Rapier, level: Level, opts: { trace?: ForceTrace } 
       activationLog.push({ kind: currentAmmo, x: pos.x, y: pos.y, z: pos.z });
       if (currentAmmo === "comet") {
         const { c, s, offset } = COMET_SPLIT;
-        spawnProjectile(pos.x - offset, pos.y, pos.z, v.x * c - v.z * s, v.y, v.x * s + v.z * c);
-        spawnProjectile(pos.x + offset, pos.y, pos.z, v.x * c + v.z * s, v.y, -v.x * s + v.z * c);
+        // العمودي الأفقي على المسار: (−vz, 0, vx)/|v_h|. القطعة المستدارة +12° تتجه نحوه، فتوضع على جانبه
+        const hv = Math.sqrt(v.x * v.x + v.z * v.z);
+        const px = hv > 1e-6 ? -v.z / hv : 1;
+        const pz = hv > 1e-6 ? v.x / hv : 0;
+        spawnProjectile(pos.x + px * offset, pos.y, pos.z + pz * offset, v.x * c - v.z * s, v.y, v.x * s + v.z * c);
+        spawnProjectile(pos.x - px * offset, pos.y, pos.z - pz * offset, v.x * c + v.z * s, v.y, -v.x * s + v.z * c);
       } else if (currentAmmo === "pulse") {
         radialPulse(pos.x, pos.y, pos.z, PULSE_BURST.radius, PULSE_BURST.impulse, projectiles[0].i);
       }
@@ -350,7 +356,9 @@ export function createSim(R: Rapier, level: Level, opts: { trace?: ForceTrace } 
       return freed[i] === 1;
     },
     /** أحداث الكسر والتفعيل منذ آخر استدعاء (للعرض فقط) */
-    takeEvents(): { breaks: BreakEvent[]; activations: ActivationEvent[] } {
+    takeEvents(): { breaks: readonly BreakEvent[]; activations: readonly ActivationEvent[] } {
+      // بلا تخصيص في الإطارات الهادئة: المصفوفتان الفارغتان المشتركتان للقراءة فقط
+      if (!breakLog.length && !activationLog.length) return NO_EVENTS;
       const out = { breaks: breakLog, activations: activationLog };
       breakLog = [];
       activationLog = [];
