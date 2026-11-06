@@ -62,9 +62,10 @@ function fullFiltered(img, id, filter, o = {}) {
   fg.filter = filter; fg.drawImage(img, (iw - sw) * (o.fx ?? 0.5), (ih - sh) * (o.fy ?? fy(id)), sw, sh, 0, 0, W, H); fg.filter = 'none';
   g.drawImage(flt, 0, 0);
 }
-/** horizontal smear: running average of n shifted copies (directional blur for whips); overscanned so edges never show */
-function smear(img, id, shift, spread, n = 11) {
-  const os = 0.14, ow = W * (1 + 2 * os), oh = H * (1 + 2 * os);
+/** horizontal smear: running average of n shifted copies (directional blur for whips); overscanned so edges never show.
+ *  The first copy (alpha 1, offset shift − spread/2) always covers the frame while os·W ≥ |shift − spread/2|. */
+function smear(img, id, shift, spread, n = 11, os = 0.14) {
+  const ow = W * (1 + 2 * os), oh = H * (1 + 2 * os);
   for (let i = 0; i < n; i++) {
     const k = n === 1 ? 0 : i / (n - 1) - 0.5;
     g.globalAlpha = 1 / (i + 1);
@@ -272,7 +273,8 @@ async function drawGlory(t) {
 async function drawBurger(t) {
   const s = S.BURGER, img = await clip(s, t);
   const kIn = prog(t, s.at, 0.2); // whip landing: starts smeared, resolves over 6 f
-  if (kIn < 1) smear(img, 'BURGER', lerp(110, 0, E.outCubic(kIn)), lerp(240, 0, E.outCubic(kIn)));
+  // the overscan settles with the smear (1.28× → 1×), so the landing frame no longer pops from 1.28× to 1× at 3.70
+  if (kIn < 1) { const e = E.outCubic(kIn); smear(img, 'BURGER', lerp(110, 0, e), lerp(240, 0, e), 11, 0.14 * (1 - e)); }
   else full(img, 'BURGER');
   const b = burn(t); if (b > 0) burnFx(b);
 }

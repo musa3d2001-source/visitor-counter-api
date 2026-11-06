@@ -20,9 +20,9 @@ Story in Kuwaiti: هذا منتجك. وهذا إعلانه. — نسوّي عط�
 |---|---|---|---|---|---|
 | 1 HOOK | 0.00–1.50 | AI clip `s1_hook` src 0.22–1.72 (1.0×), flat grade + phone sensor noise | «هذا منتجك.» (ink, 128 px, set from the RTL start side on the clean wall — clear of the office chair; rises in 0.17) | room tone + fluorescent hum, a dry tick on the line, a held-breath swell; **shutter click 1.40** with a white blink on the phone screen (1.40–1.47); 2 f of silence | this is an ordinary photo of an ordinary product — yours |
 | 2 GLORY | 1.50–3.50 | LAYL clean orbit (`layl-final_3.00-6.00`, src 3.30–5.30), scale-cut tail 1.06→1 | «وهذا إعلانه.» in the same place as the hook line — «إعلانه.» lime, arrives from 1.45× ON the drop frame; exits 3.22 | **DROP**: impact + group clap + Hijaz stab + shimmer; groove starts | this is what its ad looks like |
-| 3 BURGER | 3.50–5.00 | STAKK clean (`stakk-crown_7.80-9.60`, src 7.90–9.40): top bun lands 4.00 on the beat, hero turntable | slate «مطاعم · FOOD» + «نماذج تجريبية · CONCEPT WORK» | **whip pan** in (smear 6 f, swish peaking on the cut); crown hit 4.00 | we do food |
-| 4 COFFEE | 5.00–6.00 | HABBA clean (`habba-pour_5.00-6.60`, src 5.58–6.58): the pour draws the heart | «قهوة · COFFEE» | **light-sweep burn** 4.70–5.40 (swell); pour foley | and coffee |
-| 5 RING | 6.00–7.25 | **new build** (`src/built/ring/`): 21K-style gold band, engraved khatam frieze, emerald, lacquer floor | «مجوهرات · JEWELLERY» | **match cut**: cup rim → ring (same centre, same Ø ≈ 780 px), then expo settle; one glass 'ting' | and jewellery — and this is editing, not a slideshow |
+| 3 BURGER | 3.50–5.00 | **STAKK photoreal** clean plate (`stakk-crown_7.90-9.40` = STAKK `?clean=1` 7.90–9.40, 45 f; Higgsfield `b7_crown`, source 0.165–1.600 s): the finished stack on the red seamless; the sesame crown falls in (3.73–3.97) and **lands on the 4.00 beat**, with a +4 % punch and a short shake already in STAKK's plate; then a slow hero push with steam | slate «مطاعم · FOOD» + «نماذج تجريبية · CONCEPT WORK» | **whip pan** in (smear 6 f, swish peaking on the cut; the smear's 1.28× overscan settles to 1× as it resolves); crown hit 4.00 | we do food |
+| 4 COFFEE | 5.00–6.00 | **HABBA photoreal** clean plate (`habba-pour_5.9667-6.9667` = HABBA `?clean=1` 5.9667–6.9667, f179–f208, 30 f; Higgsfield `k3_pour`, source 3.316–4.476 s at 1.2×): top-down in striped morning sun, the last pour into a latte heart; the stream breaks at 5.48 and the pitcher lifts out of the top of frame; the exit frame (5.967) is a clean cup with the whole rim visible | «قهوة · COFFEE» | **light-sweep burn** 4.70–5.40 (swell); pour foley | and coffee |
+| 5 RING | 6.00–7.25 | **new build** (`src/built/ring/`): 21K-style gold band, engraved khatam frieze, emerald, lacquer floor; its first frame is framed on the photoreal cup | «مجوهرات · JEWELLERY» | **match cut**: cup rim → ring (the band's outer edge sits on the cup's outer lip: centre ≈ (524, 654), r ≈ 310 px; in 4:5 ≈ (524, 506)), then an expo settle to the hero framing; one glass 'ting' | and jewellery — and this is editing, not a slideshow |
 | 6 SPRAY | 7.25–9.50 | LAYL clean spray (`layl-spray_6.00-8.00`, src 6.08–7.99 at 0.85×) | «عطور · PERFUME» | the breath: drums out, pad + oud-like Hijaz pluck phrase, spray foley, riser 7.75→9.50 | back to your perfume; breathe before the how |
 | — | 9.02–9.78 | **dots-wipe** (the brand transition, once): three lime dots appear at the end of the mist, *type*, grow right→left to cover, exit left | — | three typing ticks + swish | |
 | 7 IDEA | 9.50–10.50 | script card (paper) on ink | step bar «فكرة ← سيناريو ← إنتاج ← تسليم» (active word paper + lime dot); «تمشي… ويبقى ليل.» per word, lime marker on «ليل.»; `LAYL · NO.07 — SCRIPT V3` | process groove (4-on-floor, rim, shaker, bass); a rim tick per word | it starts as a line on paper |
@@ -59,16 +59,44 @@ the snap. Pre-mastered to −14 LUFS / −1.5 dBTP (`Mix.master`), then the rend
 - **Concept work, labelled.** LAYL, STAKK BURGER and HABBA are our teammates' fictional concept ads (05-concept-ads). The
   montage shows them as clean plates (`?clean=1`) with «نماذج تجريبية · CONCEPT WORK» on screen for the whole montage
   (3.50–9.22); the phone shows LAYL's own end card with its CONCEPT AD slate. No real clients, names, numbers or claims.
-- **People shots** (`footage/ai/`): generated with Higgsfield (Kling 3.0) from CD-art-directed frames — supplied by the CD per
-  `_CD-NOTES.md`; used only inside the CD-approved ranges, generated audio discarded, never composited onto phone screens
+- **Burger and coffee shots (3.50–6.00): AI footage, via the rebuilt concept ads.** The owner rejected the CGI burger and coffee
+  as «كرتوني», so STAKK and HABBA were rebuilt on photoreal footage, and the montage now cuts from those films' clean plates.
+  Their footage is *AI-generated with Higgsfield (GPT Image 2.6 start frames → Kling 3.0 Turbo), art-directed and approved by
+  TASH*. The CD generated it; the full credit and every job id are in
+  [STAKK SCRIPT.md](../05-concept-ads/02-burger-stakk/SCRIPT.md) and [HABBA SCRIPT.md](../05-concept-ads/03-coffee-habba/SCRIPT.md).
+  The two clips on screen here: STAKK `b7_crown` (image job 621fc520-a580-4775-a8d7-b2d49b49e00f → video job
+  f7ee3a67-011f-44e4-baf4-61825934d7d2) and HABBA `k3_pour` (image job d9f7c227-cbce-4e0e-ab6e-e0e00d8dafaf → video job
+  e5c4869f-0cfc-4461-9e39-f71a10b89183). Grade, retime and punch/shake are the concept teams' (they come from their `?clean=1`
+  renders). This edit generated nothing and uses only the ranges recommended in their `footage/HANDOFF-launch.md`. The brands
+  are fictional and still carry the «نماذج تجريبية · CONCEPT WORK» label.
+- **People shots** (`footage/ai/`): generated with Higgsfield (Kling 3.0) from CD-art-directed frames, supplied by the CD
+  (the CD's rules and approved windows are in §5b); used only inside the CD-approved ranges, generated audio discarded, never composited onto phone screens
   (the hook's camera viewfinder is the clip's own image and is covered by the shutter blink at the cut). Dramatised chat
   bubbles only — no names, no numbers, no "real reactions" claim.
 - **Built for this film:** the jewellery shot (Three.js), the storyboard sketches (filtered from our own frames), every
   piece of type, UI, phone, bubble and transition, and the whole score/sound design.
 
+### 5b. AI footage: the CD's rules and approved windows (carried over from the retired `_CD-NOTES.md`)
+- **Source:** `footage/ai/s1_hook … s5_owner.mp4`, 1076×1924 at 24 fps, about 5 s each, made with Kling 3.0 from CD-art-directed
+  start frames (kept in `footage/ai/frames/`). All five passed CD review on the first take. They are cover-cropped to 1080×1920
+  and conformed to 30 fps by frame index, and their generated audio is discarded.
+- **CD-approved windows (source s) → used here:** s1_hook 0.00–1.80 → 0.22–1.72 · s2_diwaniya 0.25–3.25 (best 1.75–2.75) →
+  1.70–2.38 · s3_cafe 0.00–4.00 (best 0.75–2.25) → 0.80–1.48 · s4_car 0.50–3.75 → 0.55–1.77 · s5_owner 0.00–4.50 → 0.40–2.20.
+- **Rules:** never show or fake what is on a phone screen (the phone backs face the camera by design; no UI is composited
+  onto them). Speed 0.8–1.0×, with no speed ramps. Inspect every frame used at full size (hands, fingers, teeth, faces) and
+  shorten any range with an artifact. Use one light shared grade (warm, slightly lifted blacks), the ad's grain, and a
+  1.02–1.05 scale to hide edge drift. The hook's tap is subtle, so sell it with a white blink on the phone screen and a dry
+  click on the cut. Chat bubbles are set in code (RTL) and never baked into footage. No names, no numbers, no "real reactions"
+  claims. Cut a 4:5 version that keeps the faces in frame. Only the CD generates; the edit team never calls Higgsfield.
+- **Concept-ad footage (STAKK, HABBA):** taken only from their `?clean=1` renders, inside the ranges recommended in their
+  `footage/HANDOFF-launch.md`. None of the AI glitches those hand-offs list falls inside 7.90–9.40 (STAKK). For HABBA, the only
+  caveat inside 5.9667–6.9667 is a speck of the pitcher on the top edge at x ≈ 1000 on HABBA f207 (launch 5.933), one frame
+  before the cut and far from the rim.
+
 ## 6. Formats
 - **9:16:** key text inside x 72–1008, y 220–1500; bubbles keep 120 px off the right rail in the lower half (`?guides=1` overlays them).
-- **4:5 (`?fmt=45`, 1080×1350):** not a crop of the 9:16 — each shot has its own vertical focus (faces stay in frame); the hook /
+- **4:5 (`?fmt=45`, 1080×1350):** not a crop of the 9:16 — each shot has its own vertical focus (faces stay in frame; COFFEE and
+  RING share one focus, 0.26, so the rim → ring match lands on the same pixels, ≈ (524, 506)); the hook /
   glory lines are set from the RTL start side so the office chair never sits under the type; the
   type, step bar, card, editor, phone, bubbles, sting (logo 560 px, cy 0.42) and CTA are re-laid out for the shorter frame.
 - **poster.png (`?poster=1`):** before / after split with the three dots on the seam; «هذا منتجك.» on the clean office wall of the phone photo (not on the phone bezel or the chair),
@@ -77,15 +105,20 @@ the snap. Pre-mastered to −14 LUFS / −1.5 dBTP (`Mix.master`), then the rend
 ## 7. Reproduce
 ```
 python3 04-launch-ad/src/tools/sketch.py            # storyboard boards → src/assets/
+# montage plates from the photoreal concept ads (clean renders, only the ranges used) + the ring build
+node _system/tools/render.mjs --page "05-concept-ads/02-burger-stakk/src/index.html?clean=1" --from 7.9 --to 9.4 --out 04-launch-ad/footage/clean/stakk-crown_7.90-9.40.mp4 --workers 2
+node _system/tools/render.mjs --page "05-concept-ads/03-coffee-habba/src/index.html?clean=1" --from 5.9667 --to 6.9667 --out 04-launch-ad/footage/clean/habba-pour_5.9667-6.9667.mp4 --workers 2
+node _system/tools/render.mjs --page 04-launch-ad/src/built/ring/index.html --out 04-launch-ad/footage/built/ring.mp4 --workers 2
 bash 04-launch-ad/src/tools/extract.sh              # footage/ mp4s → review/launch-footage/ JPEG sequences + manifest
 python3 04-launch-ad/src/audio.py                   # score → src/audio.wav (+ src/assets/wave.json for the editor UI)
 node _system/tools/render.mjs --page 04-launch-ad/src/index.html --out 04-launch-ad/TASH-launch-9x16.mp4 --audio 04-launch-ad/src/audio.wav --workers 2
 node _system/tools/render.mjs --page "04-launch-ad/src/index.html?fmt=45" --out 04-launch-ad/TASH-launch-4x5.mp4 --audio 04-launch-ad/src/audio.wav --workers 2
 node _system/tools/render.mjs --page "04-launch-ad/src/index.html?poster=1" --stills 0 --stills-dir review/launch/poster
 ```
-Footage kept in `footage/`: `ai/` (CD) · `clean/` (`?clean=1` renders: habba-pour 5.00–6.60, layl-spray 6.00–8.00,
-stakk-crown 7.80–9.60) · `bts/` (LAYL wire/clay/final 3.00–6.00) · `final/layl-final_10.50-12.60.mp4` (snapshot of LAYL's finished end card, for the phone) ·
-`built/ring.mp4` (from `src/built/ring/index.html`, 1.8 s).
+Footage kept in `footage/`: `ai/` (CD) · `clean/` (`?clean=1` renders: `stakk-crown_7.90-9.40` and `habba-pour_5.9667-6.9667`
+from the photoreal STAKK / HABBA, `layl-spray_6.00-8.00`) · `bts/` (LAYL wire/clay/final 3.00–6.00) · `final/layl-final_10.50-12.60.mp4` (snapshot of LAYL's finished end card, for the phone) ·
+`built/ring.mp4` (from `src/built/ring/index.html`, 1.8 s; its start is framed on the photoreal cup rim).
+`extract.sh` rebuilds only the clips in `footage/`; delete stale folders in `review/launch-footage/` when a clip is renamed.
 
 ## 8. Self-review ledger
 Builder-reviewed in the rounds below, then independently reviewed and fixed by the ECD (last three rows). Every round = stills or full render → look
