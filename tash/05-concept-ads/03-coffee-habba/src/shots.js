@@ -152,6 +152,7 @@ export function frameSpec(t, { clean = false, poster = false } = {}) {
     const sk = tw(t, EV.logoIn - 0.4, 1.0, E.inOutSine);   // the steam settles low so it never runs through the lockup
     S.steam = steamAt(t, lerp(0.6, 0.38, sk), lerp(0.85, 0.55, sk));
     S.dof = { focus: lerp(4.65, 4.15, k), ap: 10 };
+    S.sunAim = [0.0, 0.85, -1.3]; S.blinds.pool = [0.29, 0.54];   // the end-card wall sits in the sun (same direction, pool lifted)
     if (!clean && t >= EV.blindsClose) {               // the blinds close: light narrows to slits, room goes dark → TASH
       const c = tw(t, EV.blindsClose, EV.blindsCloseDur, E.inCubic);
       S.blinds.open = lerp(1, 0.0, c);
