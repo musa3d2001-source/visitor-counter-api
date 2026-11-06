@@ -281,7 +281,7 @@ test.describe("بنك الأسئلة", () => {
       await expect(page.getByText("تم حفظ السؤال كمسودة").first()).toBeVisible();
       // المرجع الكامل: المادة والصف والفصل والوحدة والدرس والصفحة والتمرين
       await expect(
-        page.getByText(`كتاب العلوم، الصف السابع، الفصل الثاني، الوحدة ${ar(lesson.unitNumber)}، الدرس ${ar(lesson.number)}، ص ${ar(qPage)}، تمرين ٣`).first(),
+        page.getByText(`كتاب العلوم، الصف السابع، الفصل الدراسي الثاني، الوحدة ${ar(lesson.unitNumber)}، الدرس ${ar(lesson.number)}، ص ${ar(qPage)}، تمرين ٣`).first(),
       ).toBeVisible();
       await expect(page.getByRole("heading", { name: "كما يراه الطالب" })).toBeVisible();
 

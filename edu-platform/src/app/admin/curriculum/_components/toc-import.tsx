@@ -234,6 +234,11 @@ function PreviewResult({ preview, labels }: { preview: TocPreview; labels?: TocS
                 </span>
               </span>
               <span className="min-w-0 max-md:col-span-2">
+                {r.chapterNumber ? (
+                  <span className="block text-[0.8rem] leading-5 text-muted" dir="auto">
+                    الفصل {ar(r.chapterNumber)}: {r.chapterTitle}
+                  </span>
+                ) : null}
                 <span className="font-display text-[0.78rem] font-bold text-muted md:sr-only">الدرس: </span>
                 <span className="font-bold text-ink">{r.lessonNumber ? `${ar(r.lessonNumber)}. ` : ""}</span>
                 <span className="break-words text-ink" dir="auto">

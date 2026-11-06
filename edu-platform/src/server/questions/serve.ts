@@ -183,7 +183,16 @@ export async function gradeAnswer(attemptId: string, userId: string, clientChoic
     chosenChoiceId: clientChoice,
     explanation: q.explanation,
     reference: ctx
-      ? formatReference({ subjectName: ctx.subject_name, gradeName: ctx.grade_name, term: ctx.term, unitNumber: ctx.unit_number, lessonNumber: ctx.lesson_number, page: q.page, exerciseRef: q.exercise_ref })
+      ? formatReference({
+          subjectName: ctx.subject_name,
+          gradeName: ctx.grade_name,
+          term: ctx.term,
+          unitNumber: ctx.unit_number,
+          chapterNumber: ctx.chapter_number,
+          lessonNumber: ctx.lesson_number,
+          page: q.page,
+          exerciseRef: q.exercise_ref,
+        })
       : "",
     isChallenge: a.is_challenge,
     firstAttempt: updated.first_attempt,

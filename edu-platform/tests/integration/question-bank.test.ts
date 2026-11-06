@@ -3,6 +3,8 @@
  * نطاق المعلم، وسير الاعتماد، والنسخ المعدّلة، والحذف والأرشفة، وحواجز القاعدة، والتدقيق،
  * و RLS، والصفوف المخفية، واستيراد فهرس الكتاب، والتقديم والتصحيح.
  */
+import { readFileSync } from "node:fs";
+import { join } from "node:path";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
 import { AdminError } from "@/server/admin/common";
 import { PermissionError, type Actor } from "@/server/auth/permissions";
@@ -39,6 +41,7 @@ import {
   subjectOptions,
   updateTextbook,
 } from "@/server/questions/curriculum";
+import { decodeCsvBytes } from "@/server/questions/csv";
 import { clientChoiceId, gradeAnswer, markShown, previewClientQuestion, QuestionNotServableError, serveQuestion, servableQuestions } from "@/server/questions/serve";
 import { closeDb, resetDb, sql } from "../helpers/db";
 import { createTeacherWithSubjects, createTextbookWithLessons, createUser, gradeAndSubject, type TestTeacher, type TestTextbook } from "../helpers/factories";
@@ -694,7 +697,7 @@ describe("المراحل والصفوف المخفية — المنهج يُبن
     const cq = await serveQuestion({ userId: student.id, questionId: ownerQ, contextType: "questions_only" });
     const [correct] = await sql<{ id: string }[]>`select id from question_choices where question_id = ${ownerQ} and is_correct`;
     const graded = await gradeAnswer(cq.attemptId, student.id, clientChoiceId(cq.attemptId, correct.id));
-    expect(graded).toMatchObject({ correct: true, reference: "كتاب الفيزياء، الصف الحادي عشر، الفصل الثاني، الوحدة ١، الدرس ٢، ص ٣٤" });
+    expect(graded).toMatchObject({ correct: true, reference: "كتاب الفيزياء، الصف الحادي عشر، الفصل الدراسي الثاني، الوحدة ١، الدرس ٢، ص ٣٤" });
 
     // معلم العلوم لا يدخل أسئلة في المادة المخفية
     const sciTeacher = await createTeacherWithSubjects({ subjectIds: [sciSubjectId] });
@@ -1047,7 +1050,7 @@ describe("التقديم والتصحيح — serveQuestion و gradeAnswer", () 
       correctChoiceId: cid,
       chosenChoiceId: cid,
       explanation: EXPLANATION,
-      reference: "كتاب العلوم، الصف السابع، الفصل الأول، الوحدة ٢، الدرس ٣، ص ٤٥",
+      reference: "كتاب العلوم، الصف السابع، الفصل الدراسي الأول، الوحدة ٢، الدرس ٣، ص ٤٥",
       isChallenge: false,
       firstAttempt: true,
     });
@@ -1113,7 +1116,7 @@ describe("التقديم والتصحيح — serveQuestion و gradeAnswer", () 
     expect(r).toMatchObject({
       correct: true,
       isChallenge: true,
-      reference: "كتاب العلوم، الصف السابع، الفصل الأول، الوحدة ٢، الدرس ٣، ص ٤١، تمرين ٤",
+      reference: "كتاب العلوم، الصف السابع، الفصل الدراسي الأول، الوحدة ٢، الدرس ٣، ص ٤١، تمرين ٤",
     });
   });
 
@@ -1190,5 +1193,123 @@ describe("استيراد الفهرس بأرقام عربية", () => {
     const p = await previewTocImport(tb, `${TOC_HEADER}\n١,الطاقة,١,أشكال الطاقة,١٠,١٨\n`);
     expect(p.summary).toMatchObject({ errors: 0, lessonsCreate: 1 });
     expect(p.rows[0]).toMatchObject({ unitNumber: 1, lessonNumber: 1, pageStart: 10, pageEnd: 18 });
+  });
+});
+
+describe("الفصول — الوحدة ← الفصل ← الدرس كما في كتب العلوم الجديدة", () => {
+  const CH_HEADER = "unit_number,unit_title,chapter_number,chapter_title,lesson_number,lesson_title,page_start,page_end";
+  /** فهرس كتاب العلوم للصف السابع، الفصل الدراسي الأول (طبعة 2026/2027) المحفوظ في الوثائق للاستيراد */
+  function scienceIndex(): string {
+    const decoded = decodeCsvBytes(new Uint8Array(readFileSync(join(process.cwd(), "docs/game/toc/science-g7-term1.csv"))));
+    if ("error" in decoded) throw new Error(decoded.error);
+    return decoded.text;
+  }
+  /** كتاب فارغ للصف السادس (غير حالي افتراضيًا كي لا يزاحم كتب الاختبارات الأخرى؛ الحالي للفصل الثاني) */
+  async function emptyBook(current = false): Promise<string> {
+    const subjectId = (await gradeAndSubject(6, "science")).subjectId;
+    return createTextbook({ subjectId, term: current ? 2 : 1, title: `علوم ٦ ${++seq}`, edition: "2026/2027", isCurrent: current, rightsConfirmed: true }, owner);
+  }
+
+  it("imports the real grade 7 science index: 4 units, 7 chapters, 18 lessons, lesson numbers restarting per chapter", async () => {
+    const tb = await emptyBook();
+    const p = await previewTocImport(tb, scienceIndex());
+    expect(p.fileError).toBeUndefined();
+    expect(p.summary).toEqual({ units: 4, lessonsCreate: 18, lessonsUpdate: 0, errors: 0 });
+    expect(await applyTocImport(tb, scienceIndex(), owner)).toEqual({ units: 4, lessonsCreate: 18, lessonsUpdate: 0, errors: 0 });
+
+    const book = (await getTextbook(tb))!;
+    expect(book.unitsList.map((u) => [u.number, u.lessons.length])).toEqual([[1, 6], [2, 2], [3, 6], [4, 4]]);
+    const physics = book.unitsList[2];
+    expect(physics.lessons.map((l) => [l.chapter_number, l.number, l.page_start, l.page_end])).toEqual([
+      [1, 1, 120, 126],
+      [1, 2, 127, 136],
+      [2, 1, 138, 144],
+      [2, 2, 145, 150],
+      [2, 3, 151, 155],
+      [2, 4, 156, 165],
+    ]);
+    expect(new Set(physics.lessons.map((l) => l.chapter_title))).toEqual(new Set(["ضغط السوائل", "الطفو"]));
+
+    // إعادة الاستيراد بلا تغيير: لا شيء يُكتب
+    expect((await previewTocImport(tb, scienceIndex())).rows.every((r) => r.action === "same")).toBe(true);
+  });
+
+  it("the student reference names the chapter, and the lesson picker carries it", async () => {
+    const tb = await emptyBook(true);
+    await applyTocImport(tb, scienceIndex(), owner);
+    const [archimedes] = await sql<{ id: string }[]>`
+      select l.id from curriculum_lessons l join curriculum_units u on u.id = l.unit_id where u.textbook_id = ${tb} and l.title = 'قاعدة أرخميدس'
+    `;
+    const qid = await createQuestion(mcqInput(archimedes.id, { page: 146, exerciseRef: "2" }), owner);
+    const detail = (await getQuestion(qid, owner))!;
+    expect(detail.reference).toMatch(/^كتاب العلوم، .+، الفصل الدراسي الثاني، الوحدة ٣، الفصل ٢، الدرس ٢، ص ١٤٦، تمرين ٢$/);
+    const option = (await curriculumOptions(owner)).find((o) => o.textbookId === tb)!;
+    expect(option.units[2].lessons.find((l) => l.id === archimedes.id)).toMatchObject({ chapterNumber: 2, chapterTitle: "الطفو", number: 2 });
+  });
+
+  it("flags chapter mistakes in the index file row by row", async () => {
+    const tb = await emptyBook();
+    const csv = [
+      CH_HEADER,
+      "1,الحركة,1,السرعة,1,المسافة,10,14",
+      "1,الحركة,1,السرعة والتسارع,2,الإزاحة,15,19", // عنوان الفصل نفسه مختلف
+      "1,الحركة,2,القوى,1,الدفع,20,24", // رقم الدرس ١ مرة أخرى لكن في فصل آخر: صحيح
+      "1,الحركة,2,القوى,1,الجذب,25,29", // مكرر داخل الفصل نفسه
+      "1,الحركة,,,3,بلا فصل,30,34", // خلط فصول وبلا فصول في الوحدة
+      "2,الطاقة,3,,1,الحرارة,40,44", // رقم فصل بلا عنوان
+    ].join("\n");
+    const p = await previewTocImport(tb, csv);
+    expect(p.rows.map((r) => r.errors)).toEqual([
+      [],
+      ["عنوان الفصل ١ يختلف عن صف سابق في الملف"],
+      [],
+      ["الدرس مكرر في الملف"],
+      ["دروس الوحدة ١ في الملف بعضها بفصول وبعضها بلا فصول"],
+      ["اكتب عنوان الفصل"],
+    ]);
+    await expect(applyTocImport(tb, csv, owner)).rejects.toThrow("في الملف أخطاء في ٤ صفوف");
+  });
+
+  it("an index without chapter columns still works, and cannot add chaptered lessons to a chapterless unit", async () => {
+    const tb = await emptyBook();
+    expect(await applyTocImport(tb, `${TOC_HEADER}\n1,الأعداد,1,الجمع,10,15\n`, owner)).toMatchObject({ lessonsCreate: 1, errors: 0 });
+    const p = await previewTocImport(tb, `${CH_HEADER}\n1,الأعداد,1,العمليات,2,الطرح,16,20\n`);
+    expect(p.rows[0].errors).toEqual(["دروس الوحدة ١ المحفوظة بلا فصول"]);
+  });
+
+  it("saveLesson: chapter number and title together, one title per chapter, no mixing inside a unit", async () => {
+    const tb = await emptyBook();
+    const unitId = await saveUnit({ textbookId: tb, number: 1, title: "المادة" }, owner);
+    const first = await saveLesson({ unitId, chapterNumber: "١", chapterTitle: "الحالات", number: 1, title: "الصلب", pageStart: 10, pageEnd: 12 }, owner);
+    const second = await saveLesson({ unitId, chapterNumber: 1, chapterTitle: "الحالات", number: 2, title: "السائل", pageStart: 13, pageEnd: 15 }, owner);
+    // الرقم ١ نفسه في فصل آخر مسموح
+    await saveLesson({ unitId, chapterNumber: 2, chapterTitle: "التغيرات", number: 1, title: "الانصهار", pageStart: 16, pageEnd: 18 }, owner);
+
+    expect(await rejectionOf(saveLesson({ unitId, chapterNumber: 3, chapterTitle: "", number: 1, title: "التبخر", pageStart: 19, pageEnd: 20 }, owner))).toMatchObject({
+      fieldErrors: { chapterTitle: "اكتب عنوان الفصل" },
+    });
+    expect(await rejectionOf(saveLesson({ unitId, number: 9, title: "بلا فصل", pageStart: 21, pageEnd: 22 }, owner))).toMatchObject({
+      message: "دروس هذه الوحدة مقسّمة إلى فصول",
+      fieldErrors: { chapterNumber: "اكتب رقم الفصل كما في الكتاب" },
+    });
+
+    // تعديل عنوان الفصل من درس واحد يعدّله في بقية دروسه
+    await saveLesson({ id: first, unitId, chapterNumber: 1, chapterTitle: "حالات المادة", number: 1, title: "الصلب", pageStart: 10, pageEnd: 12 }, owner);
+    expect(await sql`select id, chapter_title from curriculum_lessons where id in (${first}, ${second}) order by number`).toEqual([
+      { id: first, chapter_title: "حالات المادة" },
+      { id: second, chapter_title: "حالات المادة" },
+    ]);
+  });
+
+  it("the database rejects a chapter number without a title and a duplicate lesson inside one chapter", async () => {
+    const tb = await emptyBook();
+    const unitId = await saveUnit({ textbookId: tb, number: 1, title: "الكهرباء" }, owner);
+    await expect(sql`insert into curriculum_lessons (unit_id, chapter_number, number, title, page_start, page_end) values (${unitId}, 1, 1, 'التيار', 1, 2)`).rejects.toThrow();
+    await sql`insert into curriculum_lessons (unit_id, chapter_number, chapter_title, number, title, page_start, page_end) values (${unitId}, 1, 'الدوائر', 1, 'التيار', 1, 2)`;
+    await expect(
+      sql`insert into curriculum_lessons (unit_id, chapter_number, chapter_title, number, title, page_start, page_end) values (${unitId}, 1, 'الدوائر', 1, 'الجهد', 3, 4)`,
+    ).rejects.toThrow(/curriculum_lessons_number_idx/);
+    // الرقم نفسه في فصل آخر مقبول
+    await sql`insert into curriculum_lessons (unit_id, chapter_number, chapter_title, number, title, page_start, page_end) values (${unitId}, 2, 'المغناطيس', 1, 'الأقطاب', 5, 6)`;
   });
 });

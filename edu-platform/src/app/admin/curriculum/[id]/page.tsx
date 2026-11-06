@@ -3,7 +3,7 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { BookOpen, ChevronDown, CircleHelp, EyeOff, FileSpreadsheet, Layers, ListOrdered, Pencil, Plus, ShieldAlert, ShieldCheck, Star, Trash2 } from "lucide-react";
 import { requireOwnerPage } from "@/server/auth/permissions";
-import { getTextbook, TOC_COLUMNS, type CurriculumUnit } from "@/server/questions/curriculum";
+import { getTextbook, TOC_CHAPTER_COLUMNS, TOC_COLUMNS, type CurriculumLesson, type CurriculumUnit } from "@/server/questions/curriculum";
 import { AdminPageHeader, Section } from "@/components/admin/page-header";
 import { ConfirmButton } from "@/components/admin/confirm-button";
 import { StatusPill } from "@/components/admin/status-badge";
@@ -30,20 +30,24 @@ const SUMMARY_PILL = "btn btn-3d btn-soft btn-sm min-h-11 w-fit cursor-pointer l
 const UNIT_TONES: AdminTone[] = ["sky", "violet", "green", "coral", "pink", "teal"];
 
 /** شرح أعمدة ملف الفهرس بالترتيب نفسه في الخادم */
-const COLUMN_HELP: Record<(typeof TOC_COLUMNS)[number], string> = {
+const COLUMN_HELP: Record<(typeof TOC_COLUMNS)[number] | (typeof TOC_CHAPTER_COLUMNS)[number], string> = {
   unit_number: "رقم الوحدة",
   unit_title: "عنوان الوحدة",
-  lesson_number: "رقم الدرس داخل الوحدة",
+  chapter_number: "رقم الفصل داخل الوحدة (اختياري)",
+  chapter_title: "عنوان الفصل (اختياري)",
+  lesson_number: "رقم الدرس داخل الفصل أو الوحدة",
   lesson_title: "عنوان الدرس",
   page_start: "صفحة البداية",
   page_end: "صفحة النهاية",
 };
+/** ترتيب العرض: الفصل بين الوحدة والدرس كما في الكتاب (ترتيب الأعمدة في الملف حر لأنها تُقرأ بأسمائها) */
+const COLUMNS_SHOWN = ["unit_number", "unit_title", "chapter_number", "chapter_title", "lesson_number", "lesson_title", "page_start", "page_end"] as const;
 
 const CSV_EXAMPLE = [
-  TOC_COLUMNS.join(","),
-  "1,الأعداد والعمليات,1,القيمة المنزلية,8,13",
-  "1,الأعداد والعمليات,2,مقارنة الأعداد,14,19",
-  "2,الهندسة,1,الزوايا,40,46",
+  COLUMNS_SHOWN.join(","),
+  "1,علوم الحياة,1,تصنيف الكائنات الحيّة,1,التصنيف,24,29",
+  "1,علوم الحياة,1,تصنيف الكائنات الحيّة,2,الممالك الخمس,30,40",
+  "1,علوم الحياة,2,الفيروسات ومملكة البدائيات,1,الفيروسات,42,48",
 ].join("\n");
 
 export default async function TextbookPage({ params, searchParams }: { params: Promise<{ id: string }>; searchParams: Promise<{ created?: string }> }) {
@@ -188,7 +192,7 @@ export default async function TextbookPage({ params, searchParams }: { params: P
               ملف <b className="text-ink">CSV بترميز UTF-8</b>، صفه الأول <b className="text-ink">عناوين الأعمدة (إلزامي)</b>، ثم صف لكل درس بهذه الأعمدة بالترتيب:
             </p>
             <ol className="grid gap-2 sm:grid-cols-2">
-              {TOC_COLUMNS.map((c, i) => (
+              {COLUMNS_SHOWN.map((c, i) => (
                 <li key={c} className="flex min-w-0 items-center gap-2.5 rounded-[1rem] border border-line bg-canvas px-2.5 py-2">
                   <span className="grid size-7 shrink-0 place-items-center rounded-lg bg-linear-to-br from-[#7CC4FF] to-[#3B6FE0] font-display text-[0.8rem] font-black text-white" aria-hidden>
                     {ar(i + 1)}
@@ -203,8 +207,9 @@ export default async function TextbookPage({ params, searchParams }: { params: P
               ))}
             </ol>
             <ul className="list-disc space-y-1 ps-5 text-[0.88rem]">
-              <li>تتكرر الوحدة في كل صف من صفوف دروسها بنفس العنوان.</li>
-              <li>الدرس الموجود بنفس رقم الوحدة والدرس يُحدَّث، والجديد يُضاف، ولا يُحذف شيء.</li>
+              <li>تتكرر الوحدة (والفصل) في كل صف من صفوف دروسها بنفس العنوان.</li>
+              <li>عمودا الفصل للكتب التي تقسّم الوحدة إلى فصول ويبدأ ترقيم دروسها في كل فصل. لغيرها اتركهما فارغين أو احذفهما.</li>
+              <li>الدرس الموجود بنفس رقم الوحدة والفصل والدرس يُحدَّث، والجديد يُضاف، ولا يُحذف شيء.</li>
               <li>من Excel: «حفظ باسم» ثم «CSV UTF-8 (مفصول بفواصل)». ملفات Windows-1256 تُرفض.</li>
             </ul>
           </div>
@@ -221,10 +226,24 @@ export default async function TextbookPage({ params, searchParams }: { params: P
   );
 }
 
+/** دروس الوحدة مجمّعة بفصولها (مجموعة واحدة بلا عنوان لكتاب بلا فصول) */
+function chapterGroups(lessons: CurriculumLesson[]): { number: number | null; title: string | null; lessons: CurriculumLesson[] }[] {
+  const groups: { number: number | null; title: string | null; lessons: CurriculumLesson[] }[] = [];
+  for (const l of lessons) {
+    const g = groups.at(-1);
+    if (g && g.number === l.chapter_number) g.lessons.push(l);
+    else groups.push({ number: l.chapter_number, title: l.chapter_title, lessons: [l] });
+  }
+  return groups;
+}
+
 function UnitSection({ unit, tone, textbookId }: { unit: CurriculumUnit; tone: AdminTone; textbookId: string }) {
   const questions = unit.lessons.reduce((n, l) => n + l.questions, 0);
-  const nextLesson = Math.min(99, unit.lessons.reduce((m, l) => Math.max(m, l.number), 0) + 1);
   const last = unit.lessons.at(-1);
+  const chaptered = unit.lessons.some((l) => l.chapter_number !== null);
+  // الدرس التالي في آخر فصل (أو في الوحدة لكتاب بلا فصول)
+  const nextLesson = Math.min(99, unit.lessons.filter((l) => l.chapter_number === (last?.chapter_number ?? null)).reduce((m, l) => Math.max(m, l.number), 0) + 1);
+  const groups = chapterGroups(unit.lessons);
   return (
     <Section
       id={`unit-${unit.id}`}
@@ -259,48 +278,58 @@ function UnitSection({ unit, tone, textbookId }: { unit: CurriculumUnit; tone: A
               <span>الأسئلة</span>
               <span />
             </div>
-            <ul className="space-y-2" aria-label={`دروس الوحدة ${ar(unit.number)}`}>
-              {unit.lessons.map((l) => (
-                <li key={l.id} className="overflow-hidden rounded-[1.15rem] border border-[rgb(23_32_38/0.07)] bg-surface shadow-[0_3px_0_var(--color-line)]">
-                  <details className="group">
-                    <summary className="grid min-h-14 cursor-pointer list-none grid-cols-[2.75rem_minmax(0,1fr)_auto] items-center gap-x-3 gap-y-2 p-2.5 transition-colors hover:bg-canvas focus-visible:outline-[3px] focus-visible:-outline-offset-[3px] focus-visible:outline-brand-600 focus-visible:outline-solid md:grid-cols-[2.75rem_minmax(0,1fr)_9rem_7.5rem_2.75rem] [&::-webkit-details-marker]:hidden">
-                      <span className="num-tile size-10 rounded-[0.8rem] text-[1.1rem]" aria-hidden>
-                        {ar(l.number)}
-                      </span>
-                      <span className="min-w-0 font-display font-extrabold text-ink">
-                        <span className="sr-only">الدرس {ar(l.number)}: </span>
-                        {l.title}
-                      </span>
-                      <span className="flex flex-wrap items-center gap-1.5 max-md:col-span-2 max-md:col-start-2 max-md:row-start-2 md:contents">
-                        <span className="chip min-h-7 bg-mist text-[0.78rem] text-ink-soft md:w-fit">{pagesLabel(l.page_start, l.page_end)}</span>
-                        <span className={cn("chip min-h-7 text-[0.78rem] md:w-fit", l.questions ? "" : "bg-sand text-ink-soft")}>
-                          <CircleHelp aria-hidden /> {count(l.questions, { ...QUESTION, none: "بلا أسئلة" })}
-                        </span>
-                      </span>
-                      <span className="col-start-3 row-start-1 grid size-10 place-items-center justify-self-end rounded-xl bg-[var(--soft)] text-[var(--tink)] md:col-start-auto md:row-start-auto" aria-hidden>
-                        <Pencil className="size-4 group-open:hidden" />
-                        <ChevronDown className="hidden size-5 rotate-180 group-open:block" />
-                      </span>
-                      <span className="sr-only">تعديل الدرس</span>
-                    </summary>
-                    <div className="space-y-3 border-t border-dashed border-line bg-canvas/50 p-3 sm:p-4">
-                      <LessonForm textbookId={textbookId} unitId={unit.id} lesson={l} />
-                      <div className="border-t border-dashed border-line pt-3">
-                        <ConfirmButton
-                          action={deleteLessonAction}
-                          hidden={{ id: l.id, textbookId }}
-                          label="حذف الدرس"
-                          icon={<Trash2 aria-hidden />}
-                          title={`حذف درس «${l.title}»؟`}
-                          description={l.questions ? "في هذا الدرس أسئلة، لذلك لا يمكن حذفه." : "سيُحذف الدرس نهائيًا من الوحدة."}
-                          confirmLabel="حذف"
-                        />
-                      </div>
-                    </div>
-                  </details>
-                </li>
-              ))}
-            </ul>
+            {groups.map((g) => (
+              <div key={g.number ?? 0} className="mt-3 first:mt-0">
+                {g.number !== null ? (
+                  <h3 className="mb-2 flex items-center gap-2 font-display text-[0.95rem] font-extrabold text-[var(--tink)]">
+                    <span className="chip min-h-7 bg-[var(--soft)] text-[0.78rem] text-[var(--tink)]">الفصل {ar(g.number)}</span>
+                    <span className="min-w-0">{g.title}</span>
+                  </h3>
+                ) : null}
+                <ul className="space-y-2" aria-label={g.number !== null ? `دروس الفصل ${ar(g.number)} من الوحدة ${ar(unit.number)}` : `دروس الوحدة ${ar(unit.number)}`}>
+                  {g.lessons.map((l) => (
+                    <li key={l.id} className="overflow-hidden rounded-[1.15rem] border border-[rgb(23_32_38/0.07)] bg-surface shadow-[0_3px_0_var(--color-line)]">
+                      <details className="group">
+                        <summary className="grid min-h-14 cursor-pointer list-none grid-cols-[2.75rem_minmax(0,1fr)_auto] items-center gap-x-3 gap-y-2 p-2.5 transition-colors hover:bg-canvas focus-visible:outline-[3px] focus-visible:-outline-offset-[3px] focus-visible:outline-brand-600 focus-visible:outline-solid md:grid-cols-[2.75rem_minmax(0,1fr)_9rem_7.5rem_2.75rem] [&::-webkit-details-marker]:hidden">
+                          <span className="num-tile size-10 rounded-[0.8rem] text-[1.1rem]" aria-hidden>
+                            {ar(l.number)}
+                          </span>
+                          <span className="min-w-0 font-display font-extrabold text-ink">
+                            <span className="sr-only">الدرس {ar(l.number)}: </span>
+                            {l.title}
+                          </span>
+                          <span className="flex flex-wrap items-center gap-1.5 max-md:col-span-2 max-md:col-start-2 max-md:row-start-2 md:contents">
+                            <span className="chip min-h-7 bg-mist text-[0.78rem] text-ink-soft md:w-fit">{pagesLabel(l.page_start, l.page_end)}</span>
+                            <span className={cn("chip min-h-7 text-[0.78rem] md:w-fit", l.questions ? "" : "bg-sand text-ink-soft")}>
+                              <CircleHelp aria-hidden /> {count(l.questions, { ...QUESTION, none: "بلا أسئلة" })}
+                            </span>
+                          </span>
+                          <span className="col-start-3 row-start-1 grid size-10 place-items-center justify-self-end rounded-xl bg-[var(--soft)] text-[var(--tink)] md:col-start-auto md:row-start-auto" aria-hidden>
+                            <Pencil className="size-4 group-open:hidden" />
+                            <ChevronDown className="hidden size-5 rotate-180 group-open:block" />
+                          </span>
+                          <span className="sr-only">تعديل الدرس</span>
+                        </summary>
+                        <div className="space-y-3 border-t border-dashed border-line bg-canvas/50 p-3 sm:p-4">
+                          <LessonForm textbookId={textbookId} unitId={unit.id} lesson={l} chapters={chaptered ? "required" : "none"} />
+                          <div className="border-t border-dashed border-line pt-3">
+                            <ConfirmButton
+                              action={deleteLessonAction}
+                              hidden={{ id: l.id, textbookId }}
+                              label="حذف الدرس"
+                              icon={<Trash2 aria-hidden />}
+                              title={`حذف درس «${l.title}»؟`}
+                              description={l.questions ? "في هذا الدرس أسئلة، لذلك لا يمكن حذفه." : "سيُحذف الدرس نهائيًا من الوحدة."}
+                              confirmLabel="حذف"
+                            />
+                          </div>
+                        </div>
+                      </details>
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            ))}
           </>
         ) : (
           <p className="rounded-[1.1rem] border-2 border-dashed border-line-strong bg-canvas/70 p-4 text-sm text-muted">لا توجد دروس في هذه الوحدة بعد.</p>
@@ -312,7 +341,14 @@ function UnitSection({ unit, tone, textbookId }: { unit: CurriculumUnit; tone: A
               <Plus aria-hidden /> إضافة درس
             </summary>
             <div className="mt-3 rounded-[1.25rem] bg-[var(--soft)] p-3 sm:p-4">
-              <LessonForm textbookId={textbookId} unitId={unit.id} nextNumber={nextLesson} pageHint={last ? `ص ${ar(last.page_end + 1)}` : undefined} />
+              <LessonForm
+                textbookId={textbookId}
+                unitId={unit.id}
+                nextNumber={nextLesson}
+                pageHint={last ? `ص ${ar(last.page_end + 1)}` : undefined}
+                chapters={!unit.lessons.length ? "optional" : chaptered ? "required" : "none"}
+                defaultChapter={last?.chapter_number ? { number: last.chapter_number, title: last.chapter_title ?? "" } : undefined}
+              />
             </div>
           </details>
           <details className="group/edit w-full sm:w-auto [&[open]]:w-full">

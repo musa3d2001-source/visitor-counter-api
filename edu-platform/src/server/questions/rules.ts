@@ -157,15 +157,31 @@ export type QuestionInput = z.output<typeof questionInputSchema>;
 
 /* ───────────── مرجع الكتاب ───────────── */
 
-export type BookReference = { subjectName: string; gradeName: string; term: 1 | 2; unitNumber: number; lessonNumber: number; page: number; exerciseRef?: string | null };
+export type BookReference = {
+  subjectName: string;
+  gradeName: string;
+  term: 1 | 2;
+  unitNumber: number;
+  /** الفصل داخل الوحدة في الكتب التي تقسّم وحداتها إلى فصول (null لغيرها) */
+  chapterNumber?: number | null;
+  lessonNumber: number;
+  page: number;
+  exerciseRef?: string | null;
+};
 
 const AR_DIGITS = "٠١٢٣٤٥٦٧٨٩";
 const arNum = (n: number | string) => String(n).replace(/\d/g, (d) => AR_DIGITS[Number(d)]);
-const TERM_NAMES = { 1: "الفصل الأول", 2: "الفصل الثاني" } as const;
+/** «الفصل الدراسي» كاملًا، لأن «الفصل» وحدها في الكتب الجديدة اسم لقسم داخل الوحدة */
+const TERM_NAMES = { 1: "الفصل الدراسي الأول", 2: "الفصل الدراسي الثاني" } as const;
 
-/** «كتاب العلوم، الصف السابع، الفصل الأول، الوحدة ٢، الدرس ٣، ص ٤٥» (ثم «تمرين ٤» إن وُجد) */
+/**
+ * «كتاب العلوم، الصف السابع، الفصل الدراسي الأول، الوحدة ٣، الفصل ٢، الدرس ٢، ص ١٤٥» (ثم «تمرين ٤» إن وُجد).
+ * يُحذف «الفصل ٢» لكتاب بلا فصول.
+ */
 export function formatReference(r: BookReference): string {
-  const parts = [`كتاب ${r.subjectName}`, r.gradeName, TERM_NAMES[r.term], `الوحدة ${arNum(r.unitNumber)}`, `الدرس ${arNum(r.lessonNumber)}`, `ص ${arNum(r.page)}`];
+  const parts = [`كتاب ${r.subjectName}`, r.gradeName, TERM_NAMES[r.term], `الوحدة ${arNum(r.unitNumber)}`];
+  if (r.chapterNumber) parts.push(`الفصل ${arNum(r.chapterNumber)}`);
+  parts.push(`الدرس ${arNum(r.lessonNumber)}`, `ص ${arNum(r.page)}`);
   if (r.exerciseRef) parts.push(`تمرين ${arNum(r.exerciseRef)}`);
   return parts.join("، ");
 }

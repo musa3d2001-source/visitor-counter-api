@@ -134,12 +134,21 @@ export async function saveLessonAction(_prev: ActionState, fd: FormData): Promis
     if (!isUuid(textbookId) || !isUuid(unitId) || (id && !isUuid(id))) throw new AdminError("طلب غير صالح");
     try {
       await saveLesson(
-        { unitId, number: digits(fd, "number"), title: str(fd, "title"), pageStart: digits(fd, "pageStart"), pageEnd: digits(fd, "pageEnd"), id: id || undefined },
+        {
+          unitId,
+          chapterNumber: digits(fd, "chapterNumber"),
+          chapterTitle: str(fd, "chapterTitle"),
+          number: digits(fd, "number"),
+          title: str(fd, "title"),
+          pageStart: digits(fd, "pageStart"),
+          pageEnd: digits(fd, "pageEnd"),
+          id: id || undefined,
+        },
         actor,
         ip,
       );
     } catch (err) {
-      if (isUniqueViolation(err)) throw new AdminError("رقم الدرس مستخدم في هذه الوحدة", { number: "اختر رقمًا آخر للدرس" });
+      if (isUniqueViolation(err)) throw new AdminError("رقم الدرس مستخدم في هذا الفصل من الوحدة", { number: "اختر رقمًا آخر للدرس" });
       throw err;
     }
     revalidateCurriculum(textbookId);

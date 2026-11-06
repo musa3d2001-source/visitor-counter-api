@@ -54,7 +54,9 @@ export default async function QuestionsPage({ searchParams }: { searchParams: Pr
     if (!filters.lessonId) return null;
     for (const tb of options)
       for (const u of tb.units)
-        for (const l of u.lessons) if (l.id === filters.lessonId) return `${tb.label} · الوحدة ${ar(u.number)} · الدرس ${ar(l.number)}: ${l.title}`;
+        for (const l of u.lessons) {
+          if (l.id === filters.lessonId) return `${tb.label} · الوحدة ${ar(u.number)}${l.chapterNumber ? ` · الفصل ${ar(l.chapterNumber)}` : ""} · الدرس ${ar(l.number)}: ${l.title}`;
+        }
     return "درس محدد";
   })();
 
@@ -259,7 +261,7 @@ function QuestionRow({ q, owner }: { q: QuestionListRow; owner: boolean }) {
           <span>
             {q.subject_name} · {q.grade_name}
           </span>
-          <span className="font-display font-bold text-ink-soft">{shortRef(q.unit_number, q.lesson_number, q.page)}</span>
+          <span className="font-display font-bold text-ink-soft">{shortRef(q)}</span>
           {owner ? <span>· {q.teacher_name ?? "إدارة المنصة"}</span> : null}
         </span>
       }

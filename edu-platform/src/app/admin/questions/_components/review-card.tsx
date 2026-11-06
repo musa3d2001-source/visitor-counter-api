@@ -65,7 +65,7 @@ export function QuestionReviewCard({ item: q }: { item: QuestionReviewItem }) {
           <dt className="flex items-center gap-1 font-display text-[0.75rem] font-bold text-[#2B33B5]">
             <BookOpenText className="size-3.5" aria-hidden /> المرجع
           </dt>
-          <dd className="font-display leading-snug font-extrabold text-ink">{shortRef(q.unit_number, q.lesson_number, q.page)}</dd>
+          <dd className="font-display leading-snug font-extrabold text-ink">{shortRef(q)}</dd>
         </div>
         <div className="min-w-0 rounded-2xl bg-[#FFF4D6] px-3 py-2">
           <dt className="font-display text-[0.75rem] font-bold text-[#8A5A00]">المصدر</dt>

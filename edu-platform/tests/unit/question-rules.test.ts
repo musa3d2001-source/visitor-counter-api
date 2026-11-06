@@ -237,17 +237,27 @@ describe("questionInputSchema — مدخلات السؤال", () => {
 describe("formatReference — مرجع الكتاب", () => {
   it("formats the exact reference with Arabic-Indic digits", () => {
     expect(formatReference({ subjectName: "العلوم", gradeName: "الصف السابع", term: 1, unitNumber: 2, lessonNumber: 3, page: 45 })).toBe(
-      "كتاب العلوم، الصف السابع، الفصل الأول، الوحدة ٢، الدرس ٣، ص ٤٥",
+      "كتاب العلوم، الصف السابع، الفصل الدراسي الأول، الوحدة ٢، الدرس ٣، ص ٤٥",
     );
   });
 
   it("second term, multi-digit numbers and an exercise number", () => {
     expect(formatReference({ subjectName: "الرياضيات", gradeName: "الصف الحادي عشر", term: 2, unitNumber: 10, lessonNumber: 12, page: 120, exerciseRef: "4" })).toBe(
-      "كتاب الرياضيات، الصف الحادي عشر، الفصل الثاني، الوحدة ١٠، الدرس ١٢، ص ١٢٠، تمرين ٤",
+      "كتاب الرياضيات، الصف الحادي عشر، الفصل الدراسي الثاني، الوحدة ١٠، الدرس ١٢، ص ١٢٠، تمرين ٤",
     );
     expect(formatReference({ subjectName: "العلوم", gradeName: "الصف السابع", term: 1, unitNumber: 1, lessonNumber: 1, page: 9, exerciseRef: "3-ب" })).toBe(
-      "كتاب العلوم، الصف السابع، الفصل الأول، الوحدة ١، الدرس ١، ص ٩، تمرين ٣-ب",
+      "كتاب العلوم، الصف السابع، الفصل الدراسي الأول، الوحدة ١، الدرس ١، ص ٩، تمرين ٣-ب",
     );
     expect(formatReference({ subjectName: "العلوم", gradeName: "الصف السابع", term: 1, unitNumber: 1, lessonNumber: 1, page: 9, exerciseRef: null })).not.toContain("تمرين");
+  });
+
+  it("adds the chapter between the unit and the lesson for books split into chapters", () => {
+    expect(formatReference({ subjectName: "العلوم", gradeName: "الصف السابع", term: 1, unitNumber: 3, chapterNumber: 2, lessonNumber: 2, page: 145, exerciseRef: "3" })).toBe(
+      "كتاب العلوم، الصف السابع، الفصل الدراسي الأول، الوحدة ٣، الفصل ٢، الدرس ٢، ص ١٤٥، تمرين ٣",
+    );
+    // كتاب بلا فصول: لا «الفصل» بعد الوحدة
+    expect(formatReference({ subjectName: "العلوم", gradeName: "الصف السابع", term: 1, unitNumber: 3, chapterNumber: null, lessonNumber: 2, page: 145 })).toBe(
+      "كتاب العلوم، الصف السابع، الفصل الدراسي الأول، الوحدة ٣، الدرس ٢، ص ١٤٥",
+    );
   });
 });

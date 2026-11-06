@@ -43,6 +43,24 @@ const MIN_CHOICES = 2;
 const MAX_CHOICES = 4;
 
 type ChoiceRow = { key: number; text: string };
+type LessonOption = CurriculumOption["units"][number]["lessons"][number];
+
+/** خيارات الدرس، مجمّعة تحت فصولها في الكتب التي تقسّم الوحدة إلى فصول */
+function lessonOptions(lessons: LessonOption[]): React.ReactNode {
+  const option = (l: LessonOption) => (
+    <option key={l.id} value={l.id}>
+      {`الدرس ${ar(l.number)}: ${l.title}`}
+    </option>
+  );
+  if (!lessons.some((l) => l.chapterNumber !== null)) return lessons.map(option);
+  const chapters = new Map<number, LessonOption[]>();
+  for (const l of lessons) chapters.set(l.chapterNumber ?? 0, [...(chapters.get(l.chapterNumber ?? 0) ?? []), l]);
+  return [...chapters].map(([n, list]) => (
+    <optgroup key={n} label={`الفصل ${ar(n)}: ${list[0].chapterTitle ?? ""}`}>
+      {list.map(option)}
+    </optgroup>
+  ));
+}
 
 /** يجد الكتاب والوحدة لدرس معيّن داخل شجرة المنهج */
 function locate(options: CurriculumOption[], lessonId: string) {
@@ -192,11 +210,7 @@ export function QuestionForm({
               aria-describedby={fe.lessonId ? "q-lesson-error" : undefined}
             >
               <option value="">{unit ? "اختر الدرس" : "اختر الوحدة أولًا"}</option>
-              {unit?.lessons.map((l) => (
-                <option key={l.id} value={l.id}>
-                  {`الدرس ${ar(l.number)}: ${l.title}`}
-                </option>
-              ))}
+              {unit ? lessonOptions(unit.lessons) : null}
             </Select>
           </Field>
         </div>

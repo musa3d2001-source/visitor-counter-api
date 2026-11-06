@@ -133,24 +133,41 @@ export function UnitForm({ textbookId, unit, nextNumber }: { textbookId: string;
 }
 
 // ---------------------------------------------------------------- الدرس
+/**
+ * «chapters»: كتب العلوم الجديدة تقسّم الوحدة إلى فصول ويبدأ ترقيم الدروس في كل فصل من جديد.
+ * required = دروس الوحدة بفصول، none = بلا فصول (الحقلان مخفيان)، optional = وحدة فارغة يحدّدها أول درس.
+ */
 export function LessonForm({
   textbookId,
   unitId,
   lesson,
   nextNumber,
   pageHint,
+  chapters = "optional",
+  defaultChapter,
 }: {
   textbookId: string;
   unitId: string;
-  lesson?: { id: string; number: number; title: string; page_start: number; page_end: number };
+  lesson?: { id: string; chapter_number: number | null; chapter_title: string | null; number: number; title: string; page_start: number; page_end: number };
   nextNumber?: number;
   /** صفحة مقترحة للبداية (بعد نهاية آخر درس) تظهر تلميحًا فقط */
   pageHint?: string;
+  chapters?: "required" | "none" | "optional";
+  /** فصل آخر درس، يُقترح للدرس الجديد */
+  defaultChapter?: { number: number; title: string };
 }) {
   // معرّفات الإضافة ثابتة لكل وحدة، ومعرّفات التعديل لكل درس
   const ids = lesson
-    ? { number: `edit-lesson-number-${lesson.id}`, title: `edit-lesson-title-${lesson.id}`, start: `edit-lesson-start-${lesson.id}`, end: `edit-lesson-end-${lesson.id}` }
-    : { number: `lesson-number-${unitId}`, title: `lesson-title-${unitId}`, start: `lesson-start-${unitId}`, end: `lesson-end-${unitId}` };
+    ? {
+        number: `edit-lesson-number-${lesson.id}`, title: `edit-lesson-title-${lesson.id}`, start: `edit-lesson-start-${lesson.id}`, end: `edit-lesson-end-${lesson.id}`,
+        chapter: `edit-lesson-chapter-${lesson.id}`, chapterTitle: `edit-lesson-chapter-title-${lesson.id}`,
+      }
+    : {
+        number: `lesson-number-${unitId}`, title: `lesson-title-${unitId}`, start: `lesson-start-${unitId}`, end: `lesson-end-${unitId}`,
+        chapter: `lesson-chapter-${unitId}`, chapterTitle: `lesson-chapter-title-${unitId}`,
+      };
+  const chapterNumber = lesson ? (lesson.chapter_number ? String(lesson.chapter_number) : "") : defaultChapter ? String(defaultChapter.number) : "";
+  const chapterTitle = lesson ? (lesson.chapter_title ?? "") : (defaultChapter?.title ?? "");
   return (
     <ActionForm action={saveLessonAction} resetOnSuccess={!lesson} compact={Boolean(lesson)} className="grid gap-3">
       {(state) => (
@@ -158,6 +175,22 @@ export function LessonForm({
           <input type="hidden" name="textbookId" value={textbookId} />
           <input type="hidden" name="unitId" value={unitId} />
           {lesson ? <input type="hidden" name="id" value={lesson.id} /> : null}
+          {chapters !== "none" ? (
+            <div className="grid grid-cols-[5.5rem_minmax(0,1fr)] gap-3">
+              <Field label="رقم الفصل" htmlFor={ids.chapter} error={state?.fieldErrors?.chapterNumber} required={chapters === "required"}>
+                <NumberInput id={ids.chapter} name="chapterNumber" defaultValue={chapterNumber} maxLength={2} {...invalid(state, "chapterNumber", ids.chapter)} />
+              </Field>
+              <Field
+                label="عنوان الفصل"
+                htmlFor={ids.chapterTitle}
+                error={state?.fieldErrors?.chapterTitle}
+                required={chapters === "required"}
+                hint={chapters === "optional" ? "اتركهما فارغين إن لم يقسّم الكتاب الوحدة إلى فصول" : undefined}
+              >
+                <Input id={ids.chapterTitle} name="chapterTitle" defaultValue={chapterTitle} maxLength={160} {...invalid(state, "chapterTitle", ids.chapterTitle)} />
+              </Field>
+            </div>
+          ) : null}
           {/* الجوال: الرقم والعنوان في صف، والصفحتان في صف. العريض: كلها في صف واحد */}
           <div className="grid gap-3 md:grid-cols-[minmax(0,1fr)_15rem]">
             <div className="grid grid-cols-[5.5rem_minmax(0,1fr)] gap-3">

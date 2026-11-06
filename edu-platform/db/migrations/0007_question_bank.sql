@@ -1,6 +1,6 @@
 -- =====================================================================
 -- 0007: بنك أسئلة الكتاب
---   الكتب ← الوحدات ← دروس المنهج ← الأسئلة وخياراتها، والبلاغات، ومحاولات الإجابة العامة.
+--   الكتب ← الوحدات ← (الفصول اختيارًا) ← دروس المنهج ← الأسئلة وخياراتها، والبلاغات، ومحاولات الإجابة العامة.
 --   جداول جديدة فقط: لا يُغيَّر أي صف قائم. دروس الفيديو (lessons) منفصلة تمامًا عن دروس المنهج.
 --   سير الاعتماد: draft → in_review → published، أو عودة إلى draft بملاحظة، أو archived.
 --   المنشور لا يُعدَّل: التعديل نسخة جديدة (revision_of) تحل محله عند اعتمادها.
@@ -37,18 +37,25 @@ create table curriculum_units (
 );
 create trigger curriculum_units_updated before update on curriculum_units for each row execute function set_updated_at();
 
+-- الفصل (chapter) مستوى اختياري بين الوحدة والدرس كما في كتب العلوم الجديدة: الوحدة ← الفصل ← الدرس،
+-- وترقيم الدروس يبدأ من جديد في كل فصل. يُخزَّن في صف الدرس (رقمه وعنوانه) لأنه لا يحمل بيانات أخرى،
+-- والخادم يوحّد عنوان الفصل في كل دروسه. كتاب بلا فصول يتركهما فارغين.
 create table curriculum_lessons (
   id uuid primary key default gen_random_uuid(),
   unit_id uuid not null references curriculum_units(id) on delete cascade,
+  chapter_number smallint check (chapter_number between 1 and 20),
+  chapter_title text check (char_length(chapter_title) between 2 and 160),
   number smallint not null check (number between 1 and 99),
   title text not null check (char_length(title) between 2 and 160),
   page_start integer not null check (page_start between 1 and 2000),
   page_end integer not null check (page_end between 1 and 2000),
   created_at timestamptz not null default now(),
   updated_at timestamptz not null default now(),
-  unique (unit_id, number),
-  check (page_end >= page_start)
+  check (page_end >= page_start),
+  check ((chapter_number is null) = (chapter_title is null))
 );
+-- رقم الدرس فريد داخل الفصل (أو داخل الوحدة لكتاب بلا فصول)
+create unique index curriculum_lessons_number_idx on curriculum_lessons (unit_id, (coalesce(chapter_number, 0)), number);
 create trigger curriculum_lessons_updated before update on curriculum_lessons for each row execute function set_updated_at();
 
 -- ---------------------------------------------------------------------

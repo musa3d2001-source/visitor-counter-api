@@ -36,8 +36,9 @@ export function QuestionStatusBadge({ status }: { status: QuestionStatus }) {
 }
 
 /** «الوحدة ٢ · الدرس ٣ · ص ٤٥» */
-export function shortRef(unitNumber: number, lessonNumber: number, page: number): string {
-  return `الوحدة ${ar(unitNumber)} · الدرس ${ar(lessonNumber)} · ص ${ar(page)}`;
+export function shortRef(r: { unit_number: number; chapter_number: number | null; lesson_number: number; page: number }): string {
+  const chapter = r.chapter_number ? ` · الفصل ${ar(r.chapter_number)}` : "";
+  return `الوحدة ${ar(r.unit_number)}${chapter} · الدرس ${ar(r.lesson_number)} · ص ${ar(r.page)}`;
 }
 
 /** كبسولة ملوّنة صغيرة بلون من ألوان اللوحة */

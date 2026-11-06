@@ -324,6 +324,7 @@ export type QuestionListRow = {
   grade_name: string;
   term: 1 | 2;
   unit_number: number;
+  chapter_number: number | null;
   lesson_number: number;
   lesson_title: string;
   page: number;
@@ -366,7 +367,7 @@ export async function listQuestions(actor: Actor, f: QuestionFilters = {}, page:
   return sql<QuestionListRow[]>`
     select q.id, q.stem, q.status, q.type, q.difficulty, q.source_kind, q.paused, q.version, q.review_note,
            te.display_name as teacher_name, s.name as subject_name, g.name as grade_name, t.term,
-           u.number as unit_number, l.number as lesson_number, l.title as lesson_title, q.page, q.updated_at
+           u.number as unit_number, l.chapter_number, l.number as lesson_number, l.title as lesson_title, q.page, q.updated_at
     from questions q
     join curriculum_lessons l on l.id = q.lesson_id
     join curriculum_units u on u.id = l.unit_id
@@ -454,7 +455,16 @@ export async function getQuestion(id: string, actor: Actor): Promise<QuestionDet
     ...q,
     choices,
     context,
-    reference: formatReference({ subjectName: context.subject_name, gradeName: context.grade_name, term: context.term, unitNumber: context.unit_number, lessonNumber: context.lesson_number, page: q.page, exerciseRef: q.exercise_ref }),
+    reference: formatReference({
+      subjectName: context.subject_name,
+      gradeName: context.grade_name,
+      term: context.term,
+      unitNumber: context.unit_number,
+      chapterNumber: context.chapter_number,
+      lessonNumber: context.lesson_number,
+      page: q.page,
+      exerciseRef: q.exercise_ref,
+    }),
   };
 }
 
@@ -465,13 +475,13 @@ export async function pendingQuestionCount(): Promise<number> {
   return n;
 }
 
-export type QuestionReviewItem = { id: string; stem: string; type: QuestionType; difficulty: 1 | 2 | 3; source_kind: SourceKind; version: number; teacher_name: string | null; subject_name: string; grade_name: string; unit_number: number; lesson_number: number; page: number; submitted_at: Date | null };
+export type QuestionReviewItem = { id: string; stem: string; type: QuestionType; difficulty: 1 | 2 | 3; source_kind: SourceKind; version: number; teacher_name: string | null; subject_name: string; grade_name: string; unit_number: number; chapter_number: number | null; lesson_number: number; page: number; submitted_at: Date | null };
 
 /** قائمة المراجعة (بلا فحص صلاحية: يستدعيها مَن نفّذ requireOwnerPage) */
 export async function questionReviewQueue(): Promise<QuestionReviewItem[]> {
   return sql<QuestionReviewItem[]>`
     select q.id, q.stem, q.type, q.difficulty, q.source_kind, q.version, te.display_name as teacher_name, s.name as subject_name, g.name as grade_name,
-           u.number as unit_number, l.number as lesson_number, q.page, q.submitted_at
+           u.number as unit_number, l.chapter_number, l.number as lesson_number, q.page, q.submitted_at
     from questions q
     join curriculum_lessons l on l.id = q.lesson_id
     join curriculum_units u on u.id = l.unit_id
