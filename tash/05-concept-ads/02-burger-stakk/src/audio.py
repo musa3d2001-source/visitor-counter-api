@@ -1,4 +1,4 @@
-"""STAKK BURGER — concept ad soundtrack. Original, synthesised with the TASH engine (no samples).
+"""STAKK BURGER — concept ad soundtrack (photoreal cut: same score; only SFX timing/character changed where the picture did). Original, synthesised with the TASH engine (no samples).
 120 BPM. Beat k lands at t0 + 0.5k (t0 = 0.4 s = the smash). Cue times come from cues.json (same file as the picture).
 Khaleeji group claps + mirwas over a modern 808/hat groove, Hijaz-on-D pluck hook, every layer drop gets its own SFX.
 Writes src/audio.wav."""
@@ -145,7 +145,8 @@ def fall(t, d=0.25, gain=0.3):
 
 
 fall(D['heel']); thud(D['heel'], 62, 0.65, 0.3); sfx.add(tabl(), D['heel'], gain=0.5)
-fall(D['patty']); thud(D['patty'], 52, 0.8, 0.6); sfx.add(sizzle(1.2, density=2200, seed_=11), D['patty'], gain=0.6)
+# photoreal cut: the patty drop is a 0.5 s slow-motion fall, so its whoosh is longer
+fall(D['patty'], 0.45, 0.32); thud(D['patty'], 52, 0.8, 0.6); sfx.add(sizzle(1.2, density=2200, seed_=11), D['patty'], gain=0.6)
 sfx.add(sizzle(0.5, density=3000, seed_=13), C['shots'][3]['at'], gain=0.55)                    # crust macro
 fall(D['cheese'], 0.2, 0.22); sfx.add(pop(180, 90, 0.14), D['cheese'], gain=0.6); thud(D['cheese'], 80, 0.4, 0.15)
 sfx.add(pour(0.8, seed_=4), D['cheese'] + 0.05, gain=0.18)
@@ -166,9 +167,11 @@ def crunch(t, lo=1800, hi=7000, gain=0.5, seed_=1):
 
 crunch(D['pickles'], 1500, 6000, 0.6, 3); thud(D['pickles'], 120, 0.25, 0.4)
 crunch(D['onions'], 2200, 8000, 0.55, 7); thud(D['onions'], 140, 0.22, 0.4)
-# sauce: dollop falls, splats
-sfx.add(whoosh(0.3, 500, 2500, pan_from=0, pan_to=0, peak=0.9), D['sauce'] - 0.28, gain=0.3)
-sfx.add(pop(420, 140, 0.16), D['sauce'], gain=0.65); sfx.add(pour(0.7, seed_=21), D['sauce'], gain=0.3); thud(D['sauce'], 90, 0.35, 0.3)
+# sauce (photoreal cut): the stream is already pouring when S08 cuts in, makes contact on the cue with a thick plop,
+# then pours into a glossy pool (the CGI dollop's whoosh + splat no longer matches the picture)
+sfx.add(lp(pour(D['sauce'] - C['shots'][7]['at'] + 0.04, seed_=19), 2200), C['shots'][7]['at'], gain=0.2)
+sfx.add(pop(300, 120, 0.13), D['sauce'], gain=0.62); thud(D['sauce'], 85, 0.32, 0.25)
+sfx.add(pour(0.62, seed_=21), D['sauce'] + 0.02, gain=0.34)
 # riser into the top bun, then the drop
 sfx.add(riser(0.5, 200, 9000), D['crown'] - 0.5, gain=0.5)
 fall(D['crown'], 0.25, 0.4)

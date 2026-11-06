@@ -6,9 +6,10 @@ import { css } from '/_system/motion/kit.js';
 import { wordmarkSVG } from '/_system/brand/logo.mjs';
 import { HC } from './habba-logo.mjs';
 
-// the picture: k5 at edit 10.6 s (cup centred, steam rising), lifted 90 px so cup + saucer sit inside the 3:4 crop
-// (main.js extends the defocused table under it by stretching the clip's last rows; that strip is outside the crop)
-export const POSTER_FRAME = { t: 10.6, z: 1.03, fx: 540, fy: 1920, dy: -90 };
+// the picture: k5 at edit 10.6 s (cup centred, steam rising), scaled ×1.25 about the bottom centre so cup + saucer sit
+// inside the 3:4 crop with real footage all the way to the bottom edge (no mirrored or stretched extension: the ECD
+// review found the mirror seam in the bottom 90 px of the full 9:16 cover)
+export const POSTER_FRAME = { t: 10.6, z: 1.25, fx: 540, fy: 1920, dy: 0 };
 
 export function makePosterOverlay({ ui, t1, t2, t3, ec, svg, hw0, hw1, beanG, beanBase, lat, sub, slate, stingRoot }) {
   for (const l of [t1, t2, t3]) l.box.style.display = 'none';

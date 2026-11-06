@@ -38,8 +38,8 @@ function framing(id, t) {
     case 'S1': return { z: 1.03, fx: 540, fy: 1040 };                                   // the clip pushes in by itself
     case 'S2': return { z: lerp(1.03, 1.055, u), fx: 540, fy: 1500 };                    // gentle push toward the rim
     case 'S3': return { z: 1.03, fx: 540, fy: 660 };
-    case 'S4a': return { z: lerp(1.03, 1.05, u), fx: 600, fy: 1150 };                    // locked-off clip: slow push
-    case 'S4b': return { z: lerp(1.30, 1.33, E.outQuad(u)), fx: 560, fy: H };            // scale cut in on bean 2 (bottom-anchored: bean 2 enters where bean B left)
+    case 'S4a': return { z: lerp(1.03, 1.04, u), fx: 600, fy: 1150 };                    // locked-off clip: slow push
+    case 'S4b': return { z: lerp(1.30, 1.33, E.outQuad(u)), fx: 560, fy: H };            // scale cut in ON bean 1's contact (bottom-anchored): bean 2 already in the air
     default: return { z: lerp(1.03, 1.05, u), fx: 560, fy: 1500 };                       // S5: the clip arcs; tiny creep
   }
 }
@@ -68,20 +68,6 @@ const shadeFor = id => (id === 'S3' ? { y0: 1120, y1: 1460, k: 0.42 } : null);
 const liftFor = id => (id === 'S4a' || id === 'S4b' ? pool('S4', { cx: 540, cy: 440, rx: 660, ry: 320, stops: 0.5 })
   : id === 'S5' ? pool('S5', { cx: 540, cy: 560, rx: 620, ry: 420, stops: 0.55 }) : null);
 
-// ---------------------------------------------------------------- depth matte (S4a)
-// Bean B falls through the wall exactly where «حبّة…» sits (x 500–750, y 0–650, 7.73–8.13), and bean D enters the
-// scale cut there (8.13–8.25). Instead of letting type sit on top of a falling bean, the bean passes IN FRONT of the
-// word: its pixels are lifted onto #fg (above the type) with an alpha from the difference to a clean plate of the same
-// locked-off wall.
-const fgCv = document.getElementById('fg'), fgx = fgCv.getContext('2d', { willReadFrequently: true });
-const plCv = document.createElement('canvas'); plCv.width = W; plCv.height = H;
-const plx = plCv.getContext('2d', { alpha: false, willReadFrequently: true }); plx.imageSmoothingQuality = 'high';
-const MB = { y0: 200, y1: 720 };
-let fgDirty = false;
-// plate per segment: S4a's first frame (before bean A enters) · S4b's last frame (bean D has landed, the wall is clear)
-const PLATE = { S4a: s => Math.round(s.t0 * FPS), S4b: s => Math.round(s.t1 * FPS) - 1 };
-const needMatte = (seg, t) => !CLEAN && !POSTER && PLATE[seg.id] && t >= EV.bean1 - 0.1;
-
 async function drawFootage(t) {
   const f = Math.round(t * FPS);
   const seg = segAt(f);
@@ -90,30 +76,8 @@ async function drawFootage(t) {
   // scale about the focus point, clamped so the frame is always covered
   const sw = W / z, sh = H / z;
   const sx = clamp(fx - sw * (fx / W), 0, img.naturalWidth - sw), sy = clamp(fy - sh * (fy / H), 0, img.naturalHeight - sh);
-  const dy = POSTER ? POSTER_FRAME.dy || 0 : 0;
-  g.drawImage(img, sx, sy, sw, sh, 0, dy, W, H);
-  if (dy < 0) {   // poster only: continue the table under the lifted picture with its own mirror image (outside the 3:4 crop)
-    const bh = -dy / z;
-    g.save(); g.translate(0, 2 * (H + dy)); g.scale(1, -1);
-    g.drawImage(img, sx, img.naturalHeight - bh, sw, bh, 0, H + dy + dy, W, -dy); g.restore();
-  }
-  const matte = needMatte(seg, t);
-  let raw = null, pl = null;
-  if (matte) {
-    const plate = await F.frame(seg.id, PLATE[seg.id](seg));
-    plx.drawImage(plate, sx, sy, sw, sh, 0, 0, W, H);
-    raw = g.getImageData(0, MB.y0, W, MB.y1 - MB.y0); pl = plx.getImageData(0, MB.y0, W, MB.y1 - MB.y0);
-  }
+  g.drawImage(img, sx, sy, sw, sh, 0, 0, W, H);
   gradeCanvas(g, { match: MATCH[seg.clip], shade: shadeFor(seg.id), lift: liftFor(seg.id), ...lightAt(seg, t) });
-  if (matte) {
-    const gr = g.getImageData(0, MB.y0, W, MB.y1 - MB.y0), a = raw.data, b = pl.data, o = gr.data;
-    for (let i = 0; i < o.length; i += 4) {
-      const d = Math.abs(a[i] - b[i]) + Math.abs(a[i + 1] - b[i + 1]) + Math.abs(a[i + 2] - b[i + 2]);
-      let k = (d - 42) / 70; k = k < 0 ? 0 : k > 1 ? 1 : k * k * (3 - 2 * k);
-      o[i + 3] = Math.round(k * 255);
-    }
-    fgx.clearRect(0, 0, W, H); fgx.putImageData(gr, 0, MB.y0); fgDirty = true;
-  } else if (fgDirty) { fgx.clearRect(0, 0, W, H); fgDirty = false; }
   return { seg, f };
 }
 

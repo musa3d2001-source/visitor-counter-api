@@ -22,7 +22,7 @@
 | — | `stories/day2-new-work-habba.png` | | Story 9:16 for day 2 (the other first stories reuse `03-templates/examples/`, see §4) |
 
 Every post folder also has a `caption.md` with the caption to paste, the alt text, and that post's own checks.
-Reels 1, 2, 3 and 9 are the teams' masters, copied byte for byte. Only three covers were adjusted for the grid: 1 no longer needs it, 3 is moved down 30 px and 9 is moved down 24 px, so the top line clears the 3:4 crop. See `src/sources.json`.
+Reels 1, 2, 3 and 9 are the teams' masters, copied byte for byte. Their covers are the teams' posters. Two were moved down a little so their top line clears the 3:4 profile-grid crop: 3 by 30 px and 9 by 24 px, with only the empty background above the type stretched to fill. 1 and 2 are unchanged. See `src/sources.json`.
 
 ---
 

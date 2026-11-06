@@ -155,11 +155,11 @@ m.add(shimmer(1.6, base=1760, n=5, seed_=8), EV['blindsOpen'] + 0.45, gain=0.10,
 p = pour(EV['streamOff'] - EV['milkStart'] + 0.25, seed_=21)
 p = lp(p, 3200) * np.linspace(1, 0.55, len(p))[:, None]
 m.add(p, EV['milkStart'] - 0.05, gain=0.85, bus='sfx')                                       # the milk pour
-m.add(bean_tap(1, 1.0), EV['bean1'], gain=1.0, bus='sfx', pan=0.1)                          # bean one hits the hero bean
-m.add(bean_tap(3, 1.0), EV['bean2'], gain=0.95, bus='sfx', pan=-0.05)                         # bean two lands
-# the secondary contacts measured on the footage: bean one grazing off, bean two tipping onto its side
-for k, (tb, gn) in enumerate(zip(EV['beanTapsBehind'], (0.16, 0.32))):
-    m.add(lp(bean_tap(10 + k, 0.5), 3000), tb, gain=gn, bus='sfx', pan=(0.1, -0.1)[k])
+m.add(bean_tap(1, 1.0), EV['bean1'], gain=1.0, bus='sfx', pan=0.1)                          # bean one hits the hero bean (on the scale cut)
+m.add(bean_tap(3, 1.0), EV['bean2'], gain=0.95, bus='sfx', pan=-0.05)                         # bean two touches the table
+# the secondary contact measured on the footage: bean two rolls back and settles flat (a soft, muffled knock)
+for k, tb in enumerate(EV['beanTapsBehind']):
+    m.add(lp(bean_tap(10 + k, 0.5), 3000), tb, gain=0.24, bus='sfx', pan=-0.05)
 # (the v1 cup turn scrape and the 11.20 clink are gone: in the footage the cup does not turn, so they had no cause)
 # hero: the bean drops into the mark (the one terracotta accent lands in the ب slot), a layered wooden tok + room
 m.add(bean_tap(7, 1.0), EV['beanDot'] - 0.003, gain=0.8, bus='sfx')

@@ -60,7 +60,7 @@ export async function makeOverlay(stage, { W, H, poster }) {
 
   // ---- the three calm lines, placed for the photoreal framing (never over food detail or a bright light bar)
   // S2: paper in the dark room above the steam · S3: paper on the shaded table below the saucer (grade.js shade) ·
-  // S4: roasted on the sunlit wall, above the beans (the falling bean passes IN FRONT of it: main.js depth matte)
+  // S4: roasted on the sunlit wall, above the beans (no bean crosses it: S4 cuts on bean 1, bean 2 lands below the line)
   const t1 = line(ui, ['قهوتك…'], { top: 250, size: 150 });
   const t2 = line(ui, ['على', 'مهلك.'], { top: 1300, size: 140, shadow: '0 2px 18px rgba(23,17,14,.55)' });
   const t3 = line(ui, ['حبّة…', 'حبّة.'], { top: 330, size: 150, color: HC.roast });

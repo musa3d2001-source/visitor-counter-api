@@ -16,7 +16,8 @@ function popWords(spans, t, start, { stagger = 0.06, rise = 60, rot = 6, from = 
     const a = t - (start + i * stagger);
     if (a < 0) { css(s, { opacity: '0', transform: 'translateY(40px) scale(.6)' }); return; }
     const k = spring(clamp(a / 0.6), { freq: 2.0, damp: 6.5 });
-    css(s, { opacity: String(clamp(a / 0.06)), transform: `translateY(${f1((1 - k) * rise)}px) rotate(${f3((1 - k) * rot)}deg) scale(${f3(lerp(from, 1, k))})` });
+    // the spring overshoots in rise/rotation only: scale stops at 1 so neighbouring words never eat the space between them
+    css(s, { opacity: String(clamp(a / 0.06)), transform: `translateY(${f1((1 - k) * rise)}px) rotate(${f3((1 - k) * rot)}deg) scale(${f3(lerp(from, 1, Math.min(1, k)))})` });
   });
 }
 function outWords(spans, t, start, { dur = 0.14, drop = -30 } = {}) {
@@ -31,13 +32,14 @@ function outWords(spans, t, start, { dur = 0.14, drop = -30 } = {}) {
 // arrive on different beats (the claim lands with the shot that proves it). anchors: per sequence, frame-space px.
 const LABELS = [
   { key: 'heel', top: 820, sup: 'بريوش', hero: 'محمّص بالزبدة', supAt: 'heel', heroAt: +0.05, out: 'end',
-    anchors: { S03: [230, 1300] } },
-  { key: 'patty', top: 236, sup: 'سماش…', hero: 'أطرافه مقرمشة', supAt: 'patty', heroAt: 3.62, out: 'end',
-    anchors: { S03: [200, 1212], S04: [300, 572] } },               // «سماش…» on the landed patty; the crisp claim on the lace (S04)
+    anchors: { S03: [230, 1300] } },                                 // the toasted top of the heel; the patty falls in after it exits
+  { key: 'patty', top: 222, sup: 'سماش…', hero: 'أطرافه مقرمشة', heroSize: 120, heroLH: 1.0, supAt: 'patty', heroAt: 3.62, out: 4.11,
+    anchors: { S03: [200, 1212], S04: [385, 600] } },               // «سماش…» on the landed patty; the crisp claim on the real lace (S04);
+                                                                     // gone on the S05 cut so the falling cheddar never passes under it
   { key: 'cheese', top: 236, sup: '…على مهله', hero: 'تشيدر يذوب', heroFirst: true, supAt: 'cheeseSlow', heroAt: 0, out: 'end',
     anchors: { S05: [92, 1190], S06: [565, 1108] } },               // slice corner, then the drip as it leaves the cheese
   { key: 'crunch', top: 236, sup: 'مخلل وبصل…', hero: 'يقرمشون', supAt: 'pickles', heroAt: 'onions', out: 'end',
-    anchors: { S07b: [262, 792] } },                                 // the left pickle (landed); «يقرمشون» on the onion's landing
+    anchors: { S07b: [262, 792], S07c: [300, 995] } },              // the left pickle (landed, then settled); «يقرمشون» on the onion's landing
   { key: 'sauce', top: 236, sup: 'صوص ستاك', hero: 'السرّي', supAt: 'sauce', heroAt: +0.05, out: 8.06,
     anchors: { S08: [560, 760] } },                                  // the pool; exits before the crown falls through (8.17)
 ];
@@ -58,6 +60,7 @@ export function createOverlay(ui, C, { W = 1080, H = 1920, toScreen, whipShift, 
   const LB = LABELS.map(cfg => {
     const box = el('div', 'label left', ui); box.style.top = cfg.top + 'px';
     const a = el('div', 'l-sup pill', null, cfg.sup); const b = el('div', 'l-hero', null, cfg.hero);
+    if (cfg.heroSize) css(b, { fontSize: cfg.heroSize + 'px' }); if (cfg.heroLH) css(b, { lineHeight: String(cfg.heroLH) });
     if (cfg.heroFirst) { box.appendChild(b); box.appendChild(el('div', '')).appendChild(a); } else { box.appendChild(el('div', '')).appendChild(a); box.appendChild(b); }
     const line = document.createElementNS(NS, 'path'); line.setAttribute('class', 'leader'); svg.appendChild(line);
     const dot = document.createElementNS(NS, 'circle'); dot.setAttribute('class', 'ldot'); svg.appendChild(dot);
@@ -71,11 +74,11 @@ export function createOverlay(ui, C, { W = 1080, H = 1920, toScreen, whipShift, 
   const dbl = el('div', 'double', ui); css(dbl, { top: '560px' }); const dblW = words(el('div', 'd-hero', dbl, 'دبل!'));
 
   // ------------------------------------------------ hero offer: all in the red band above the crown (never on the food)
-  const prod = el('div', 'product', ui); css(prod, { right: '72px', top: '232px', textAlign: 'right' });
-  const prodW = words(el('div', 'p-hero', prod, 'ستاك دبل'));
-  const badge = el('div', 'badge', ui); css(badge, { left: '80px', top: '252px' });
+  const prod = el('div', 'product', ui); css(prod, { right: '72px', top: '236px', textAlign: 'right' });
+  const prodEl = el('div', 'p-hero', prod, 'ستاك دبل'); css(prodEl, { fontSize: '120px' }); const prodW = words(prodEl);
+  const badge = el('div', 'badge', ui); css(badge, { left: '84px', top: '246px' });
   const bIn = el('div', 'b-in', badge); el('div', 'b-num', bIn, '٢٫٧٥٠'); el('div', 'b-cur', bIn, 'د.ك');
-  const cta = el('div', 'cta', ui); css(cta, { right: '72px', top: '436px' });
+  const cta = el('div', 'cta', ui); css(cta, { right: '72px', top: '414px' });
   const ctaIn = el('div', 'cta-in', cta); el('span', 'cta-t', ctaIn, 'اطلب الحين'); const arr = el('span', 'cta-a', ctaIn, '←');
 
   // ------------------------------------------------ client end card (under the vignette, like the footage)
@@ -137,7 +140,7 @@ export function createOverlay(ui, C, { W = 1080, H = 1920, toScreen, whipShift, 
     const sx = tb.x0 - rb.left + (tb.x1 - tb.x0) * 0.3, sy = tb.y1 - rb.top + 16;
     const [ax, ay] = toScreen(seq, t, A[0], A[1]);
     // draw-on starts with the label or with the shot, whichever is later
-    const shotStart = seq === 'S04' ? 3.9 : seq === 'S06' ? 4.9 : first;
+    const shotStart = { S04: 3.9, S06: 4.9, S07c: 6.65 }[seq] ?? first;
     const s0 = Math.max(first, shotStart);
     const dk = E.outCubic(clamp((t - s0 - 0.04) / 0.28)) * exitK;
     const ex = lerp(sx, ax, dk), ey = lerp(sy, ay, dk);
@@ -197,8 +200,8 @@ export function createOverlay(ui, C, { W = 1080, H = 1920, toScreen, whipShift, 
       const mx = lerp(HERO_BOX.cx, MARK.cx, mk), my = lerp(HERO_BOX.cy, MARK.cy, mk);
       css(mark, { transform: `translate(${f1(mx - MARK.cx)}px, ${f1(my - MARK.cy)}px) scale(${f3(sx)}, ${f3(sy)})`, transformOrigin: '50% 49.6%' });
       ['m-bot', 'm-mid', 'm-top'].forEach((id, i) => {
-        const e = mark.querySelector('#' + id), k = E.outCubic(clamp((a - i * 0.035) / 0.3));
-        e.setAttribute('transform', `translate(0 ${f1((1 - k) * (1 - i) * 30)})`);   // layers start exploded and close up
+        const e = mark.querySelector('#' + id);
+        e.setAttribute('transform', `translate(0 ${f1(Math.sin(Math.PI * mk) * (1 - i) * 7)})`);   // born in place (over the real burger); the layers drag a little in flight
       });
       css(ecWord, { transform: `scale(${f3(drift)})` });
       popWords(ecW, t, C.endcard + 0.2, { stagger: 0.09, rise: 50, rot: 3 });
@@ -224,8 +227,17 @@ export function createOverlay(ui, C, { W = 1080, H = 1920, toScreen, whipShift, 
   return { render };
 }
 
-/** Poster / reel cover (static) — built in main.js poster mode from a hero frame; type here. */
-export async function createPoster(stage, { W = 1080, H = 1920 } = {}) {
-  const ui = el('div', 'poster', stage.querySelector('#ui'));
+/** Poster / reel cover (static): photoreal hero on its own seamless, designed type, concept slate.
+ *  Everything that must read sits inside the reel-safe area (220–1500) and inside the profile grid's centre 3:4 (240–1680). */
+export async function createPoster(root) {
+  const ui = el('div', 'poster', root);
+  const sl = el('div', 'po-sl', ui); css(sl, { top: '296px' });
+  el('div', 'po-sl-mono', sl, 'CONCEPT AD — 02 / BURGER   ·   TASH / 2026');
+  el('div', 'po-sl-ar', sl, 'إعلان تجريبي — علامة خيالية');
+  const t1 = el('div', 'po-title', ui); css(t1, { top: '386px' });
+  el('div', 'po-l1', t1, 'كل طبقة'); el('div', 'po-l2', t1, 'لها سالفة');
+  const brand = el('div', 'po-brand', ui); css(brand, { position: 'absolute', top: '1362px', left: '0', right: '0', textAlign: 'center' });
+  const ar = el('div', 'ec-ar', brand, 'ستاك برجر'); css(ar, { fontSize: '84px', lineHeight: '1.15', textShadow: '0 6px 0 #1F1C19' });
+  const lat = el('div', 'ec-lat', brand, 'STAKK BURGER'); css(lat, { position: 'static', fontSize: '32px', marginTop: '6px' });
   return { el: ui };
 }

@@ -747,7 +747,7 @@ put('v-licences', [
   ['Three.js', '3D', 'MIT', 'مكتبة الـ3D بالإعلانات التجريبية.', '_system/vendor/three/LICENSE'],
   ['GSAP 3.13', 'Animation', 'GreenSock Standard', 'موجودة بالنظام؛ شروطها برأس الملف.', '_system/vendor/gsap/'],
   ['الصوت', 'Audio', 'TASH · original', 'كله مركّب بالكود من الصفر: بدون عيّنات، بدون موسيقى أو مؤثرات منزّلة.', '_system/audio/tashaudio.py'],
-  ['الصور', 'Visuals', 'TASH · original', 'صور الهوية والإعلانات التجريبية كلها مولّدة بالكود (<bdi dir="ltr">SVG / Canvas / Three.js</bdi>)، بدون صور ستوك. الاستثناء: لقطات الناس بإعلان الإطلاق، مولّدة بـ<bdi dir="ltr">Higgsfield (Kling 3.0)</bdi> باشتراك المالك وموافقته، وتنذكر بالكريدت.', '04-launch-ad/footage/ai/'],
+  ['الصور', 'Visuals', 'TASH · original', 'صور الهوية و«ليل» مولّدة بالكود (<bdi dir="ltr">SVG / Canvas / Three.js</bdi>)، بدون صور ستوك. الاستثناء: لقطات مولّدة بـ<bdi dir="ltr">Higgsfield (Kling 3.0)</bdi> باشتراك المالك وموافقته — الناس بإعلان الإطلاق، وفيلم «حبّة»، ونسخة «ستاك» الجديدة — وتنذكر بالكريدت.', '04-launch-ad/footage/ai/ · 05-concept-ads/*/footage/ai/'],
 ].map(([a, e, l, t, f]) => `<div style="padding:7px 0 6px;border-bottom:1px solid ${RULE_P}"><div style="display:flex;justify-content:space-between;align-items:baseline"><span class="w6" style="font-size:11.5px">${a} <span class="en s" style="display:inline">${e}</span></span><span class="k" style="font-size:8px">${l}</span></div>
   <div class="sm" style="line-height:1.55;margin-top:2px">${t}</div><div class="k" style="font-size:7.5px;color:${META_P};text-align:right">${f}</div></div>`).join(''));
 

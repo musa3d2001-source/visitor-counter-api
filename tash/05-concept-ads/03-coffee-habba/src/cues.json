@@ -1,5 +1,5 @@
 {
-  "_note": "HABBA concept ad — single source of truth for picture and sound. Seconds. 85.714 BPM → 1 beat = 0.7 s = 21 frames @30fps; cuts sit on beats (S4's scale cut sits on the 8th before bean 2). 'footage' = the photoreal edit list: which AI clip plays where, and the time map edit-time → source-seconds (src/tools/conform.py bakes it into 30 fps JPEG sequences in src/footage/<seg>/).",
+  "_note": "HABBA concept ad — single source of truth for picture and sound. Seconds. 85.714 BPM → 1 beat = 0.7 s = 21 frames @30fps; cuts sit on beats (S4's scale cut sits on bean 1, the beat it lands on). 'footage' = the photoreal edit list: which AI clip plays where, and the time map edit-time → source-seconds (src/tools/conform.py bakes it into 30 fps JPEG sequences in src/footage/<seg>/).",
   "fps": 30,
   "bpm": 85.714,
   "beat": 0.7,
@@ -65,10 +65,9 @@
     "blindsCloseDur": 0.35,
     "sting": 13.0,
     "beanTapsBehind": [
-      7.8,
-      9.02
+      9.38
     ],
-    "_sfxNote": "Photoreal cut (picture changed, music unchanged): beanTapsBehind = the secondary contacts measured on the footage (7.80 bean A grazes off the hero bean it hit; 9.02 bean D tips onto its side). The cup no longer turns in k5, so the turn scrape and the 11.20 clink are gone; the hero hit is the bean dropping into the mark at beanDot 11.50. 'settle' 11.20 stays as the Dmaj9 resolve."
+    "_sfxNote": "Photoreal cut (picture changed, music unchanged): bean1 7.70 = bean A's contact (on the S4a→S4b scale cut); bean2 8.40 = bean D touching the table (source frame 102, measured); beanTapsBehind = bean D settling flat after it rocks upright and rolls back (source frame ~114.5 = 9.38, measured on the conformed footage). The cup no longer turns in k5, so the turn scrape and the 11.20 clink are gone; the hero hit is the bean dropping into the mark at beanDot 11.50. 'settle' 11.20 stays as the Dmaj9 resolve."
   },
   "footage": {
     "_note": "keys: [[edit_t, source_s], ...] (source clips are 24 fps, 5.04 s; source frame index = s*24). Linear between two keys, monotone cubic for 3+. mode: blend = linear frame blend between the two nearest source frames; adaptive = blend where the picture is still, nearest frame where it moves fast (no ghost beans). Two keys = a straight line, extended past the keys to t0/t1. Cuts sit on whole frames (t*30 integer).",
@@ -136,7 +135,7 @@
         "shot": "S4",
         "clip": "k4_beans",
         "t0": 7.0,
-        "t1": 8.1333,
+        "t1": 7.7,
         "keys": [
           [
             7.0,
@@ -148,26 +147,30 @@
           ]
         ],
         "mode": "adaptive",
-        "why": "0.75x: bean A hits the hero bean between source frames 63/64 (2.646 s) on bean1 7.70"
+        "why": "0.75x: bean A falls into the beans; the cut lands on its contact with the hero bean (source frames 63/64 = 7.70), before the AI pose-pop of the bean it hits (64+) is ever on screen"
       },
       {
         "id": "S4b",
         "shot": "S4",
         "clip": "k4_beans",
-        "t0": 8.1333,
+        "t0": 7.7,
         "t1": 9.8,
         "keys": [
           [
+            7.7,
+            3.958333
+          ],
+          [
             8.4,
-            3.9375
+            4.25
           ],
           [
             9.8,
-            4.6375
+            5.0
           ]
         ],
-        "mode": "adaptive",
-        "why": "0.5x, scale cut: bean D lands between source frames 94/95 (3.9375 s) on bean2 8.40"
+        "mode": "blend",
+        "why": "scale cut ON bean 1 (7.70): bean D already sharp in the air (source frame 95; frames 86-94 are a translucent AI smear and are never shown), touches the table at source frame 102 = bean2 8.40 (~0.42x), then rocks upright and tips back onto its side (~0.54x) · blend (not adaptive): bean D moves only 10-20 px per source frame here, so a frame blend reads as a soft slow-motion blur instead of the 10 fps steps the adaptive mode gave (minterpolate was re-tested on this range and still dropped block artifacts beside the bean)"
       },
       {
         "id": "S5",

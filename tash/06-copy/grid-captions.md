@@ -1,5 +1,9 @@
 # Grid captions: the 9 launch posts
 
+> **QA note (final lead):** this is the copywriter's draft. The **final, verified captions to paste** are in
+> `08-instagram/NN-*/caption.md`. Posts 5, 6, 7 and 9 were changed there to match the finished files; the two lines below
+> that had become untrue (post 5 line 3, post 9 line 4) are corrected here too, so nothing false is left in either place.
+
 Posting order is 1 → 9. Instagram shows the newest first, so on launch day the grid reads:
 
 | Row | | | |
@@ -155,7 +159,7 @@ For the other slides, use the slide text itself as the alt text.
 
 ورا الكواليس من إعلان «ليل» — العطر الخيالي من إعلاناتنا التجريبية.
 
-من الهيكل… للمجسّم الخام… للقطة النهائية. ومن الستوري بورد… للإعلان.
+من الرسمة… للهيكل… للمجسّم الخام… للقطة النهائية. وآخر شي: الإعلان.
 
 كل خطوة فيها قرار، عشان اللقطة الأخيرة تقول كل شي.
 
@@ -305,7 +309,7 @@ For the other slides, use the slide text itself as the alt text.
 
 نسوي الإعلان كامل: فكرة وسكربت، فيديو، ريلز وستوري، تصميم، وموشن ومونتاج.
 
-اللقطات اللي بالإعلان من إعلاناتنا التجريبية لعلامات خيالية.
+لقطات المنتجات من إعلاناتنا التجريبية لعلامات خيالية، ومشاهد الناس سويناها بالذكاء الاصطناعي.
 
 عندك مشروع؟ خلّ إعلانك علينا. الخاص مفتوح •••
 
@@ -321,5 +325,5 @@ For the other slides, use the slide text itself as the alt text.
 **Alternative hook** (if the owner wants to echo the ad): «هذا منتجك. وهذا إعلانه… بس هالمرة، المنتج إحنا.»
 **Notes:**
 - The hook says «يبيله إعلان», not «أول إعلان سويناه». The concept ads were made first, so "first ad" would be untrue.
-- **(تحقق)** Line 4 assumes the capability montage uses footage from the concept ads. If the montage includes anything else, make sure it's also fictional and keep the line.
+- Line 4 (corrected in QA): the final cut's people shots (hook hand, diwaniya, café, car, owner) are owner-approved AI footage, so the line says so once. Same wording as `08-instagram/09-launch-reel/caption.md`; owner/lead to confirm.
 - The chat bubbles («منو مسوي هالإعلان؟») are dramatised inside the ad. Never echo them in captions as if real people said them.

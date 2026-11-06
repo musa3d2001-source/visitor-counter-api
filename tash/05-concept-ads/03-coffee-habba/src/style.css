@@ -3,7 +3,6 @@ html, body { margin: 0; background: #17110E; overflow: hidden; }
 #pic { position: absolute; inset: 0; width: 1080px; height: 1920px; display: block; }
 #grain { position: absolute; inset: 0; width: 1080px; height: 1920px; opacity: .04; mix-blend-mode: overlay; pointer-events: none; }
 #ui { position: absolute; inset: 0; pointer-events: none; }
-#fg { position: absolute; inset: 0; width: 1080px; height: 1920px; pointer-events: none; }   /* S4: the falling bean in front of «حبّة…» */
 
 /* HABBA client type — Alexandria Light for the calm lines (Arabic), Archivo expanded for Latin. Two weights max per layout. */
 .h-ar { position: absolute; left: 72px; right: 72px; text-align: center; direction: rtl; font-family: "Alexandria"; font-weight: 300;

@@ -31,6 +31,9 @@ fi
 echo "── BTS cover"
 node $T $S/templates/reel-cover-bts.html $S/data/05-bts-cover.json 08-instagram/05-bts-reel/cover.png
 
+echo "── day-2 story (HABBA «شغل جديد», from the coffee team's current hero still)"
+node $T 03-templates/templates/story-new-work.html $S/data/story-new-work-habba.json 08-instagram/stories/day2-new-work-habba.png
+
 echo "── profile previews (dark = profile-preview.png, light = profile-preview-light.png)"
 node _system/tools/render.mjs --page $S/profile/index.html --stills 0 --stills-dir $R/profile --prefix dark >/dev/null
 node _system/tools/render.mjs --page "$S/profile/index.html?mode=light" --stills 0 --stills-dir $R/profile --prefix light >/dev/null
