@@ -6,14 +6,18 @@
 > **Footage: AI-generated with Higgsfield (GPT Image 2.6 start frames → Kling 3.0 Turbo), art-directed and approved by TASH. Edit, type, sound design and signature by TASH.**
 > The owner approved Higgsfield for this ad after judging the CGI version «كرتوني مو حقيقي». The CD generated and approved
 > the seven clips in `footage/ai/`; the edit team did not generate anything.
-> `footage/ai/` also holds `b1_smash_v2.mp4` and `b1_smash_v3.mp4` (and their start frames in `footage/ai/frames/`), which
-> appeared on 2026-11-06 at 19:15 and 19:18 during the ECD review. No notes or job ids came with them, so they are not
-> listed below, and this cut does not use them. All type is live Chromium text from OFL fonts,
-> and the score and sound design are synthesised with `_system/audio`.
+> **S01 was replaced at the owner's request.** The owner said the raw beef in the original b1 hook «جنه مخ» (looked like a
+> brain: lumpy chunks) and sent a reference photo of real smash balls (compact, finely ground, matte pink-red, dense white
+> fat specks). The CD made the retake `footage/ai/b1_smash_v3.mp4` to match it, and the owner approved it. Its start frame
+> used the owner's reference photo as a **texture reference** (plus the old b1 frame for the set and framing). The original
+> `b1_smash.mp4` and the unused `b1_smash_v2.mp4` (+ its start frames) were deleted as superseded. The start frames
+> `footage/ai/frames/b1_smash.png` (original) and `b1_smash_v3.png` (retake) stay as provenance. All type is live Chromium
+> text from OFL fonts, and the score and sound design are synthesised with `_system/audio`.
 
 | Shot | Image job (start frame) | Video job |
 |---|---|---|
-| b1 smash | cce37c0b-16d9-4ebf-9311-f19b9b042617 | 80e1d8d0-9051-4e3f-a4ec-f14764bb1ef6 |
+| **b1 smash v3** (in the film, S01) | 00d793d0-37d2-4aea-be36-530395853661 (references: the owner's smash-ball photo for texture + the old b1 frame) | e346f504-4a19-4178-a151-a51551a50c5b (Kling 3.0 Turbo) |
+| b1 smash (original, **replaced** at the owner's request; clip deleted, start frame kept) | cce37c0b-16d9-4ebf-9311-f19b9b042617 | 80e1d8d0-9051-4e3f-a4ec-f14764bb1ef6 |
 | b2 crust | ccf1c92d-105f-4aa1-af87-a745454893bd | 21783c54-54eb-469c-8740-0722b8cd65e8 |
 | b3 heel | 9e3dd31f-fb02-41ae-ad6c-2310949fc4b2 | ff8b7e30-e12b-4e4a-9ba6-fc61dc6094a7 |
 | b4 melt | a61e78e2-61a3-486b-a1c7-936ea2ccbe22 | a8d0f2d0-0b1c-441f-96a1-e25f5680e1cc |
