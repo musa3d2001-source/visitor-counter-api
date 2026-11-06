@@ -11,6 +11,7 @@ Posting order is 1 → 9. Instagram shows the newest first, so on launch day the
 (Pinning changes the top row. See `pinned-posts.md`.)
 
 ## Rules used in every caption
+- **Each paragraph is one caption line.** Blank lines between them are fine on Instagram; tighten them if you prefer.
 - **Line 1 is the hook.** It has to work alone, because Instagram cuts the caption after about 125 characters.
 - **Concept ads say so by line 2**, so the label shows before «المزيد»: «إعلان تجريبي لعلامة خيالية — ونقدر نسوي مثله لمشروعك.» The video carries the visible `CONCEPT AD` slate as well.
 - **One CTA per caption**, closed with our «•••» (the typing dots). Never more than once per caption.

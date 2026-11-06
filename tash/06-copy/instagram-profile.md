@@ -28,8 +28,11 @@
 <div dir="rtl">
 
 > 🎬 نصنع إعلانات تخليهم يسولفون عنك!
+>
 > ⚡ فيديوهات إعلانية | ريلز | تيك توك
+>
 > 🇰🇼 صناعة إعلانية بإبداع كويتي
+>
 > 📩 اطلب إعلانك بالخاص
 
 </div>
@@ -49,13 +52,16 @@
 ## 3. Bio options (≤150 characters, measured)
 
 All three cover only our five services, use at most two emoji, and promise nothing we can't control.
+Each paragraph below is one bio line. Paste them as consecutive lines with no empty lines between. The counts include the line breaks.
 
 ### A: «الواضح» (Clear). 135 characters
 
 <div dir="rtl">
 
 نسوي الإعلان نفسه: من الفكرة لين الملف النهائي.
+
 فيديو · ريلز وتيك توك وستوري · تصميم · أفكار وسكربت · موشن ومونتاج
+
 📩 اطلب إعلانك بالخاص
 
 </div>
@@ -67,7 +73,9 @@ Says exactly what we do and where it stops. It's safe, but it has the least pers
 <div dir="rtl">
 
 خلّهم يسولفون عنك •••
+
 نسوي الإعلان نفسه: فكرة وسكربت، فيديو، تصميم، موشن ومونتاج — للريلز والتيك توك والستوري.
+
 🇰🇼 الخاص مفتوح، أو واتساب ↓
 
 </div>
@@ -77,8 +85,11 @@ Says exactly what we do and where it stops. It's safe, but it has the least pers
 <div dir="rtl">
 
 هذا منتجك. وهذا إعلانه.
+
 فيديو، ريلز وتيك توك وستوري، تصميم، أفكار وسكربت، موشن ومونتاج.
+
 إحنا نسويه… وإنت تنزّله.
+
 📩 الخاص مفتوح
 
 </div>
