@@ -16,11 +16,11 @@ html, body { margin: 0; background: var(--ink); overflow: hidden; }
 .slate { position: absolute; left: 50%; transform: translateX(-50%); display: flex; flex-direction: column; align-items: center; gap: 8px; white-space: nowrap; }
 .slate .cat { display: flex; align-items: center; gap: 14px; padding: 10px 22px 11px; border-radius: 999px; background: rgba(11,11,11,.72); color: var(--paper); }
 .slate .cat .ar { font-family: 'IBM Plex Sans Arabic'; font-weight: 600; font-size: 27px; line-height: 1; }
-.slate .cat .mono { font-size: 21px; line-height: 1; }
+.slate .cat .mono { font-size: 22px; line-height: 1; }
 .slate .cat i { width: 7px; height: 7px; border-radius: 50%; background: var(--lime); display: inline-block; }
 .slate .note { display: flex; align-items: center; gap: 12px; padding: 7px 16px 8px; border-radius: 999px; background: rgba(11,11,11,.55); color: #B9BAB2; }
-.slate .note .ar { font-family: 'IBM Plex Sans Arabic'; font-weight: 500; font-size: 22px; line-height: 1; }
-.slate .note .mono { font-size: 17px; line-height: 1; letter-spacing: .2em; }
+.slate .note .ar { font-family: 'IBM Plex Sans Arabic'; font-weight: 500; font-size: 24px; line-height: 1; }
+.slate .note .mono { font-size: 22px; line-height: 1; letter-spacing: .2em; }
 
 /* process step bar */
 .steps { position: absolute; left: 0; right: 0; display: flex; justify-content: center; align-items: center; gap: 22px; direction: rtl; }
@@ -46,18 +46,16 @@ html, body { margin: 0; background: var(--ink); overflow: hidden; }
 .ed .ph { position: absolute; width: 3px; background: var(--paper); }
 .ed .ph i { position: absolute; left: -8px; top: -12px; width: 19px; height: 19px; border-radius: 50%; background: var(--lime); }
 .fmtlab { position: absolute; left: 0; right: 0; display: flex; justify-content: center; gap: 34px; direction: ltr; }
+.fmtlab.passes { left: 50%; right: auto; transform: translateX(-50%); padding: 14px 30px; border-radius: 999px; background: rgba(11,11,11,.72); }
 .fmtlab span { font-family: 'JetBrains Mono'; font-weight: 600; font-size: 26px; letter-spacing: .16em; color: #55574F; }
 
 /* chat bubbles */
 .bub { position: absolute; padding: 20px 36px 26px; border-radius: 42px; background: var(--paper); color: var(--ink); font-family: 'IBM Plex Sans Arabic'; font-weight: 600; font-size: 54px; line-height: 1.25; white-space: nowrap; direction: rtl; box-shadow: 0 14px 40px rgba(0,0,0,.28); transform-origin: var(--ox, 90%) 100%; }
-.bub::after { content: ''; position: absolute; bottom: -2px; width: 34px; height: 34px; background: var(--paper); }
-.bub.r::after { right: -8px; border-bottom-left-radius: 30px; clip-path: path('M0 34 C 14 30 24 22 26 0 L 34 0 L 34 34 Z'); }
-.bub.l::after { left: -8px; clip-path: path('M34 34 C 20 30 10 22 8 0 L 0 0 L 0 34 Z'); }
+.tail { position: absolute; display: block; overflow: visible; }
 
 /* CTA: TASH replies — one lime 'sent' bubble */
 .reply { position: absolute; padding: 26px 50px 36px; border-radius: 60px; background: var(--lime); color: var(--ink); font-family: 'Alexandria'; font-weight: 800; line-height: 1.3; white-space: nowrap; transform-origin: 6% 100%; }
-.reply::after { content: ''; position: absolute; left: -10px; bottom: -2px; width: 44px; height: 44px; background: var(--lime); clip-path: path('M44 44 C 26 40 14 30 12 0 L 0 0 L 0 44 Z'); }
-.handle { position: absolute; left: 0; right: 0; text-align: center; font-family: 'JetBrains Mono'; font-weight: 600; font-size: 32px; letter-spacing: .22em; color: var(--paper); direction: ltr; }
+.handle { position: absolute; left: 0; right: 0; text-align: center; font-family: 'JetBrains Mono'; font-weight: 600; font-size: 36px; letter-spacing: .2em; color: var(--paper); direction: ltr; }
 .pill { position: absolute; left: 50%; transform: translateX(-50%); padding: 18px 34px 20px; border-radius: 999px; background: var(--lime); color: var(--ink); font-family: 'JetBrains Mono'; font-weight: 700; font-size: 34px; letter-spacing: .08em; direction: ltr; white-space: nowrap; }
 
 .guides { position: absolute; inset: 0; pointer-events: none; }

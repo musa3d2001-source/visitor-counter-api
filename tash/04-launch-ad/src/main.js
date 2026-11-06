@@ -16,7 +16,7 @@ const W = 1080, H = V ? 1920 : 1350;
 const stage = document.getElementById('stage');
 stage.style.setProperty('--H', H + 'px');
 const S = Object.fromEntries(C.shots.map(s => [s.id, s]));
-const EV = C.ev, T0 = C.sting.t0;
+const EV = C.ev, T0 = C.sting.t0, SNAP = C.sting.snap;
 const COL = { ink: '#0B0B0B', paper: '#F5F5E9', lime: '#C6FF00', smoke: '#8E9088', char: '#1A1A18', line: '#2C2C29' };
 const shotAt = t => { let s = C.shots[0]; for (const x of C.shots) if (t >= x.at) s = x; return s; };
 const clipT = (s, t) => s.in + (t - s.at) * (s.speed ?? 1) - (s.srcAt ?? 0);   // seconds from the clip's first frame
@@ -29,12 +29,12 @@ const f2 = n => n.toFixed(2);
 const LY = V ? {
   heroTop: 262, hero: 136, slateTop: 1404, stepsTop: 222, card: { x: 100, y: 560 }, viewer: { cx: 540, cy: 760 },
   ed: { x: 72, y: 1180, w: 936, h: 300 }, fmtTop: 1236, sizesTop: 1300, phone: { cx: 540, cy: 900, w: 520 },
-  bubBottom: 1452, bubR: 888, bubL: 120, askTop: 1080, replyCy: 930, subTop: 1092, pillTop: 1180, logoHdr: { cy: 468, s: 0.5 }, typeLow: 1250,
+  bubBottom: 1452, bubR: 888, bubL: 120, askTop: 1080, replyCy: 962, subTop: 1112, pillTop: 1214, logoHdr: { cy: 468, s: 0.5 }, logoCta: { cy: 640, s: 0.5 }, typeLow: 1250,
   sting: { logoW: 640, cy: 0.46 },
 } : {
   heroTop: 96, hero: 128, slateTop: 1176, stepsTop: 62, card: { x: 100, y: 268 }, viewer: { cx: 540, cy: 560 },
   ed: { x: 72, y: 980, w: 936, h: 280 }, fmtTop: 1010, sizesTop: 1066, phone: { cx: 540, cy: 690, w: 410 },
-  bubBottom: 1262, bubR: 1008, bubL: 72, askTop: 820, replyCy: 640, subTop: 790, pillTop: 870, logoHdr: { cy: 238, s: 0.42 }, typeLow: 1010,
+  bubBottom: 1262, bubR: 1008, bubL: 72, askTop: 820, replyCy: 662, subTop: 790, pillTop: 884, logoHdr: { cy: 238, s: 0.42 }, logoCta: { cy: 382, s: 0.42 }, typeLow: 1010,
   sting: { logoW: 560, cy: 0.42 },
 };
 // vertical focus used when 1080×1920 footage is cover-cropped into 4:5 (0 = keep top, 1 = keep bottom)
@@ -100,6 +100,9 @@ const gW1 = el('span', 'w', gloT, 'وهذا'); gloT.appendChild(document.createT
 const gW2 = el('span', 'w', gloT, 'إعلانه.');
 for (const w of [gW1, gW2]) css(w, { display: 'inline-block' });
 css(gW2, { color: COL.lime, transformOrigin: '100% 62%' }); // grows out of the gap next to «وهذا», never over it
+// 4:5: the feed crop puts the office chair under the left end of a centred hook line → set both lines from the RTL
+// start side (right margin) so the contrast pair still sits in the same place
+if (!V) for (const e of [hookT, gloT]) css(e, { textAlign: 'right', left: '72px', right: '72px' });
 
 // montage slate (category + the honesty line)
 const slate = el('div', 'slate'); css(slate, { top: LY.slateTop + 'px' });
@@ -138,7 +141,7 @@ const panels = [0, 1, 2].map(i => { // RTL: SC 01 on the right
 await Promise.all(panels.map(p => p.im.decode()));
 
 // production pass labels
-const passes = el('div', 'fmtlab'); css(passes, { top: (V ? 1430 : 1240) + 'px' });
+const passes = el('div', 'fmtlab passes'); css(passes, { top: (V ? 1420 : 1236) + 'px' });
 const PASS = ['WIRE', 'CLAY', 'FINAL'].map(n => el('span', '', passes, n));
 
 // timeline editor
@@ -180,8 +183,16 @@ const FMTS = ['9:16', '1:1', '16:9'].map(n => el('span', '', fmtL, n));
 const sizesT = el('div', 'sup ar', ui, 'كل المقاسات'); css(sizesT, { top: LY.sizesTop + 'px', fontSize: '54px', color: COL.paper });
 
 // chat bubbles (dramatised; no names, no numbers)
+// chat tail: a curl that flows out of the bubble's bottom corner (mirrored for the left side)
+function tail(parent, side, fill, k = 1) {
+  const t = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
+  t.setAttribute('class', 'tail'); t.setAttribute('width', 46 * k); t.setAttribute('height', 42 * k); t.setAttribute('viewBox', '0 0 46 42');
+  t.innerHTML = `<path d="M0 0 H24 C24 16 31 31 46 40 C27 42 11 36 0 26 Z" fill="${fill}"/>`;
+  css(t, side === 'r' ? { right: 4 * k + 'px', bottom: -12 * k + 'px' } : { left: 4 * k + 'px', bottom: -12 * k + 'px', transform: 'scaleX(-1)' });
+  parent.appendChild(t); return t;
+}
 const BUB = [['منو مسوي هالإعلان؟!', 'r'], ['شفتوا إعلانهم؟', 'l'], ['وين مكانهم؟', 'r']].map(([txt, side], i) => {
-  const b = el('div', 'bub ' + side, ui, txt); b.style.setProperty('--ox', side === 'r' ? '92%' : '8%');
+  const b = el('div', 'bub ' + side, ui, txt); b.style.setProperty('--ox', side === 'r' ? '92%' : '8%'); tail(b, side, COL.paper);
   return { b, side, at: EV.bubbles[i], w: 0, h: 0 };
 });
 for (const B of BUB) { B.w = B.b.offsetWidth; B.h = B.b.offsetHeight; }
@@ -193,11 +204,11 @@ const [stSvg, stTag, stHd] = sting.el.children;
 const askT = el('div', 'hero ar', top); askT.textContent = 'عندك مشروع؟'; css(askT, { top: LY.askTop + 'px', fontSize: LY.hero + 'px', color: COL.paper });
 const askW = words(askT);
 const reply = el('div', 'reply ar', top); reply.textContent = 'خلّ إعلانك علينا.';
-css(reply, { fontSize: (V ? 92 : 84) + 'px' });
-const ctaW = words(reply);
+css(reply, { fontSize: (V ? 96 : 88) + 'px' });
+const ctaW = words(reply); tail(reply, 'l', COL.lime, 1.3);
 const RW = reply.offsetWidth, RH = reply.offsetHeight;
 css(reply, { left: ((W - RW) / 2) + 'px', top: (LY.replyCy - RH / 2) + 'px' });
-const subT = el('div', 'sup ar', top, 'اطلب إعلانك بالخاص'); css(subT, { top: LY.subTop + 'px', fontSize: '54px', color: '#C9CABF' });
+const subT = el('div', 'sup ar', top, 'اطلب إعلانك بالخاص'); css(subT, { top: LY.subTop + 'px', fontSize: '58px', color: '#D9DACF' });
 const subW = words(subT);
 const pill = el('div', 'handle', top, '@tash.creative.kw'); css(pill, { top: LY.pillTop + 'px' });
 
@@ -208,6 +219,11 @@ if (q.has('guides')) {
   gd.innerHTML = V ? `<div style="position:absolute;left:72px;right:72px;top:220px;bottom:420px;outline:2px dashed rgba(255,0,170,.8)"></div><div style="position:absolute;right:72px;width:120px;top:960px;bottom:420px;background:rgba(255,0,170,.18)"></div>`
     : `<div style="position:absolute;left:72px;right:72px;top:72px;bottom:72px;outline:2px dashed rgba(255,0,170,.8)"></div>`;
 }
+
+// determinism: kit's words() marks spans will-change:transform; Chromium then keeps a layer's raster scale from when it
+// was created, so a scaled word could rasterise differently depending on seek history. Turn it off: every frame
+// rasterises from its own state.
+for (const sp of document.querySelectorAll('.w')) sp.style.willChange = 'auto';
 
 // ---------------------------------------------------------------------------------------------- word animation helpers
 function riseIn(ws, t, t0, { gap = 0.1, dur = 0.42, rise = 64, blur = 9 } = {}) { // rise + unblur, RTL order (DOM order)
@@ -419,7 +435,7 @@ function uiFrame(t, sh) {
     const act = t < S.BOARD.at ? 0 : t < S.PROD.at ? 1 : t < S.EDIT.at ? 2 : 3;
     const out = E.inCubic(prog(t, EV.toPhone[0], 0.25));
     STEP.forEach((x, i) => {
-      css(x.s, { color: i === act ? COL.paper : i < act ? '#B9BAB2' : '#55574F' });
+      css(x.s, { color: i === act ? COL.paper : i < act ? '#B9BAB2' : '#6E7067' });
       css(x.dot, { opacity: i === act ? '1' : '0', transform: `scale(${i === act ? f2(0.4 + 0.6 * E.outExpo(prog(t, [S.IDEA, S.BOARD, S.PROD, S.EDIT][i].at, 0.3))) : 1})` });
     });
     const kin = E.outExpo(prog(t, S.IDEA.at + 0.12, 0.4));
@@ -470,10 +486,15 @@ function uiFrame(t, sh) {
   const sOn = t >= T0; show(stingRoot, sOn);
   if (sOn) {
     css(stingRoot, { transform: `translateY(${f2(stOff)}px)` });
-    sting.render(Math.min(t - T0, 3.6));
-    const k = E.inOutCubic(prog(t, S.ASK.at, 0.45)), hd = LY.logoHdr;
+    const PULSE2 = C.duration - 1.25; // the dots type once more in the final hold (the one living thing)
+    const st = t - T0 < 3.6 ? t - T0 : (t >= PULSE2 && t < PULSE2 + 0.92 ? 2.9 + (t - PULSE2) : 3.6);
+    sting.render(st);
+    const k = E.inOutCubic(prog(t, S.ASK.at, 0.45)), kc = E.inOutCubic(prog(t, S.CTA.at + 0.02, 0.5)), hd = LY.logoHdr, hc = LY.logoCta;
+    const creep = 1 + 0.03 * prog(t, SNAP + 0.1, S.ASK.at - SNAP - 0.1) + 0.02 * prog(t, S.CTA.at + 0.5, C.duration - S.CTA.at - 0.5);
     const lc = { x: W / 2, y: sting.logoBox.y + sting.logoBox.h / 2 };
-    css(stSvg, { transformOrigin: `${lc.x}px ${f2(lc.y)}px`, transform: `translateY(${f2((hd.cy - lc.y) * k)}px) scale(${f2(lerp(1, hd.s, k))})` });
+    const ty = (lerp(hd.cy, hc.cy, kc) - lc.y) * k, sc = lerp(1, hd.s, k) * creep;
+    css(stSvg, { transformOrigin: `${lc.x}px ${f2(lc.y)}px`, transform: `translateY(${f2(ty)}px) scale(${sc.toFixed(4)})` });
+    css(stTag, { transformOrigin: `540px ${f2(lc.y)}px`, transform: `scale(${creep.toFixed(4)})` }); css(stHd, { transformOrigin: `540px ${f2(lc.y)}px`, transform: `scale(${creep.toFixed(4)})` });
     const tk = E.inCubic(prog(t, S.ASK.at, 0.2));
     css(stTag, { opacity: f2(1 - tk) }); css(stHd, { opacity: f2((t < S.ASK.at ? clamp((t - T0 - 2.1) / 0.7) : 1) * (1 - tk)) });
   }
@@ -482,7 +503,8 @@ function uiFrame(t, sh) {
   const cOn = t >= S.CTA.at; show(reply, cOn); show(subT, cOn); show(pill, cOn);
   if (cOn) { // the reply pops like a sent message (from its tail), then its words resolve
     const pk = spring(clamp((t - EV.ctaLine) / 0.7), { freq: 2, damp: 12 });
-    css(reply, { transform: `scale(${f2(0.4 + 0.6 * pk)})`, opacity: f2(clamp((t - EV.ctaLine) / 0.07)) });
+    const cc = 1 + 0.02 * prog(t, S.CTA.at + 0.5, C.duration - S.CTA.at - 0.5); // slow creep of the end card
+    css(reply, { transform: `scale(${(cc * (0.4 + 0.6 * pk)).toFixed(4)})`, opacity: f2(clamp((t - EV.ctaLine) / 0.07)) });
     riseIn(ctaW, t, EV.ctaLine - 0.02, { gap: 0.07, dur: 0.4, rise: 24, blur: 6 }); // words already resolving as the bubble pops (no blank-lime frame)
     riseIn(subW, t, EV.ctaSub, { gap: 0.07, dur: 0.45, rise: 30, blur: 6 });
     const hk = tw(t, EV.ctaHandle, 0.6, E.outExpo);
@@ -502,12 +524,12 @@ async function drawPoster() {
   g.save(); g.beginPath(); g.rect(0, 0, W, half); g.clip();
   g.filter = 'saturate(0.8) contrast(0.93) brightness(1.03)'; cover(a, 0, -170, W, 1920 * 0.98, { fx: 0.85 }); g.filter = 'none'; phoneNoise(3, 0.08); g.restore();
   g.save(); g.beginPath(); g.rect(0, half, W, H - half); g.clip(); ink();
-  const sc = 0.8, bx = 455 - 540 * sc, by = 1212 - 840 * sc; cover(b, bx, by, W * sc, 1920 * sc);
+  const sc = 0.8, bx = 418 - 540 * sc, by = 1212 - 840 * sc; cover(b, bx, by, W * sc, 1920 * sc);
   for (const [x0, x1] of [[bx, bx + 90], [bx + W * sc, bx + W * sc - 90]]) { const gr = g.createLinearGradient(x0, 0, x1, 0); gr.addColorStop(0, COL.ink); gr.addColorStop(1, 'rgba(11,11,11,0)'); g.fillStyle = gr; g.fillRect(Math.min(x0, x1), half, 90, H - half); }
   g.restore();
   g.fillStyle = COL.ink; g.fillRect(0, half - 3, W, 6);
   const P = el('div', '', top); P.style.cssText = 'position:absolute;inset:0';
-  const t1 = el('div', 'hero ar', P, 'هذا منتجك.'); css(t1, { top: '300px', fontSize: '132px', color: COL.ink });
+  const t1 = el('div', 'hero ar', P, 'هذا منتجك.'); css(t1, { top: '326px', fontSize: '132px', color: COL.ink });
   const t2 = el('div', 'hero ar', P); css(t2, { top: (half + 44) + 'px', fontSize: '132px', color: COL.paper });
   el('span', '', t2, 'وهذا '); const w2 = el('span', '', t2, 'إعلانه.'); css(w2, { color: COL.lime });
   // the dots on the seam: "someone is typing…"
@@ -547,4 +569,8 @@ async function seek(t) {
   grain(grainCv, Math.round(t * 30), { amount: 26, scale: 2 });
 }
 
-boot({ width: W, height: H, fps: 30, duration: C.duration, seek });
+// seeks are serialised: kit's boot() fires its own seek(0) on ready, and a seek awaits image decodes, so without a
+// queue a render worker's first frame could interleave with it. Each frame is drawn by exactly one finished seek.
+let queue = Promise.resolve();
+const seekQ = t => (queue = queue.then(() => seek(t)));
+boot({ width: W, height: H, fps: 30, duration: C.duration, seek: seekQ });

@@ -164,6 +164,8 @@ m.add(bell(nf('D6'), 1.6, 0.7), EV['ctaLine'] + 0.02, gain=0.18, bus='sfx')
 m.add(stab([nf('D3'), nf('A3'), nf('D4'), nf('F#4'), nf('A4')], 1.6, 1800), G.t(11), gain=0.30, bus='music')
 m.add(pad([nf('D2'), nf('A2'), nf('D3'), nf('F#3'), nf('A3')], DUR - G.t(11), cutoff=1600, attack=0.05, release=1.2), G.t(11), gain=0.30, bus='music')
 m.add(pluck(nf('D5'), 1.8, bright=0.4), G.t(11, 2.0), gain=0.22, bus='music')
+PULSE2 = DUR - 1.25  # the logo's dots type once more in the end hold (picture: main.js)
+for k, dt in enumerate((0.18, 0.30, 0.42)): m.add(tick([2600, 2900, 3200][k]), PULSE2 + dt, gain=0.20 - 0.02 * k, pan=[0.2, 0, -0.2][k], bus='sfx')
 
 # ------------------------------------------------------------------------------------------- buses
 N = len(m.buf)
