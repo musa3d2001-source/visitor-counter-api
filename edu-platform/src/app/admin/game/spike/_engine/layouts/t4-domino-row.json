@@ -1,0 +1,497 @@
+{
+ "version": 1,
+ "key": "t4-domino-row",
+ "title": "صف الدومينو",
+ "tier": 4,
+ "slots": 5,
+ "par": 3,
+ "streakReward": "comet",
+ "launcher": {
+  "x": 2600,
+  "y": 250
+ },
+ "bodies": [
+  {
+   "id": "t1",
+   "shape": "box",
+   "material": "teak",
+   "x": 1900,
+   "y": 65,
+   "w": 16,
+   "h": 130,
+   "rot": 0,
+   "fixed": false
+  },
+  {
+   "id": "t2",
+   "shape": "box",
+   "material": "teak",
+   "x": 1830,
+   "y": 65,
+   "w": 16,
+   "h": 130,
+   "rot": 0,
+   "fixed": false
+  },
+  {
+   "id": "t3",
+   "shape": "box",
+   "material": "teak",
+   "x": 1760,
+   "y": 65,
+   "w": 16,
+   "h": 130,
+   "rot": 0,
+   "fixed": false
+  },
+  {
+   "id": "t4",
+   "shape": "box",
+   "material": "teak",
+   "x": 1690,
+   "y": 65,
+   "w": 16,
+   "h": 130,
+   "rot": 0,
+   "fixed": false
+  },
+  {
+   "id": "t5",
+   "shape": "box",
+   "material": "teak",
+   "x": 1620,
+   "y": 65,
+   "w": 16,
+   "h": 130,
+   "rot": 0,
+   "fixed": false
+  },
+  {
+   "id": "t6",
+   "shape": "box",
+   "material": "teak",
+   "x": 1550,
+   "y": 65,
+   "w": 16,
+   "h": 130,
+   "rot": 0,
+   "fixed": false
+  },
+  {
+   "id": "t7",
+   "shape": "box",
+   "material": "teak",
+   "x": 1480,
+   "y": 65,
+   "w": 16,
+   "h": 130,
+   "rot": 0,
+   "fixed": false
+  },
+  {
+   "id": "t8",
+   "shape": "box",
+   "material": "teak",
+   "x": 1410,
+   "y": 65,
+   "w": 16,
+   "h": 130,
+   "rot": 0,
+   "fixed": false
+  },
+  {
+   "id": "t9",
+   "shape": "box",
+   "material": "teak",
+   "x": 1340,
+   "y": 65,
+   "w": 16,
+   "h": 130,
+   "rot": 0,
+   "fixed": false
+  },
+  {
+   "id": "t10",
+   "shape": "box",
+   "material": "teak",
+   "x": 1270,
+   "y": 65,
+   "w": 16,
+   "h": 130,
+   "rot": 0,
+   "fixed": false
+  },
+  {
+   "id": "t11",
+   "shape": "box",
+   "material": "teak",
+   "x": 1200,
+   "y": 65,
+   "w": 16,
+   "h": 130,
+   "rot": 0,
+   "fixed": false
+  },
+  {
+   "id": "t12",
+   "shape": "box",
+   "material": "teak",
+   "x": 1130,
+   "y": 65,
+   "w": 16,
+   "h": 130,
+   "rot": 0,
+   "fixed": false
+  },
+  {
+   "id": "t13",
+   "shape": "box",
+   "material": "teak",
+   "x": 1060,
+   "y": 65,
+   "w": 16,
+   "h": 130,
+   "rot": 0,
+   "fixed": false
+  },
+  {
+   "id": "t14",
+   "shape": "box",
+   "material": "teak",
+   "x": 990,
+   "y": 65,
+   "w": 16,
+   "h": 130,
+   "rot": 0,
+   "fixed": false
+  },
+  {
+   "id": "t15",
+   "shape": "box",
+   "material": "teak",
+   "x": 920,
+   "y": 65,
+   "w": 16,
+   "h": 130,
+   "rot": 0,
+   "fixed": false
+  },
+  {
+   "id": "t16",
+   "shape": "box",
+   "material": "teak",
+   "x": 850,
+   "y": 65,
+   "w": 16,
+   "h": 130,
+   "rot": 0,
+   "fixed": false
+  },
+  {
+   "id": "t17",
+   "shape": "box",
+   "material": "teak",
+   "x": 440,
+   "y": 55,
+   "w": 20,
+   "h": 110,
+   "rot": 0,
+   "fixed": false
+  },
+  {
+   "id": "t18",
+   "shape": "box",
+   "material": "teak",
+   "x": 560,
+   "y": 55,
+   "w": 20,
+   "h": 110,
+   "rot": 0,
+   "fixed": false
+  },
+  {
+   "id": "t19",
+   "shape": "box",
+   "material": "teak",
+   "x": 500,
+   "y": 120,
+   "w": 160,
+   "h": 20,
+   "rot": 0,
+   "fixed": false
+  },
+  {
+   "id": "t20",
+   "shape": "box",
+   "material": "teak",
+   "x": 440,
+   "y": 170,
+   "w": 20,
+   "h": 80,
+   "rot": 0,
+   "fixed": false
+  },
+  {
+   "id": "t21",
+   "shape": "box",
+   "material": "teak",
+   "x": 560,
+   "y": 170,
+   "w": 20,
+   "h": 80,
+   "rot": 0,
+   "fixed": false
+  },
+  {
+   "id": "g22",
+   "shape": "box",
+   "material": "glass",
+   "x": 500,
+   "y": 220,
+   "w": 160,
+   "h": 20,
+   "rot": 0,
+   "fixed": false
+  },
+  {
+   "id": "l23",
+   "shape": "box",
+   "material": "lightbox",
+   "x": 500,
+   "y": 255,
+   "w": 50,
+   "h": 50,
+   "rot": 0,
+   "fixed": false
+  },
+  {
+   "id": "t24",
+   "shape": "box",
+   "material": "teak",
+   "x": 190,
+   "y": 75,
+   "w": 20,
+   "h": 150,
+   "rot": 0,
+   "fixed": false
+  },
+  {
+   "id": "t25",
+   "shape": "box",
+   "material": "teak",
+   "x": 310,
+   "y": 75,
+   "w": 20,
+   "h": 150,
+   "rot": 0,
+   "fixed": false
+  },
+  {
+   "id": "t26",
+   "shape": "box",
+   "material": "teak",
+   "x": 250,
+   "y": 160,
+   "w": 160,
+   "h": 20,
+   "rot": 0,
+   "fixed": false
+  },
+  {
+   "id": "f27",
+   "shape": "box",
+   "material": "frond",
+   "x": 200,
+   "y": 190,
+   "w": 20,
+   "h": 40,
+   "rot": 0,
+   "fixed": false
+  },
+  {
+   "id": "f28",
+   "shape": "box",
+   "material": "frond",
+   "x": 300,
+   "y": 190,
+   "w": 20,
+   "h": 40,
+   "rot": 0,
+   "fixed": false
+  },
+  {
+   "id": "s29",
+   "shape": "box",
+   "material": "stone",
+   "x": 1300,
+   "y": 400,
+   "w": 300,
+   "h": 30,
+   "rot": 0,
+   "fixed": true
+  },
+  {
+   "id": "g30",
+   "shape": "box",
+   "material": "glass",
+   "x": 1220,
+   "y": 455,
+   "w": 14,
+   "h": 80,
+   "rot": 0,
+   "fixed": false
+  },
+  {
+   "id": "g31",
+   "shape": "box",
+   "material": "glass",
+   "x": 1380,
+   "y": 455,
+   "w": 14,
+   "h": 80,
+   "rot": 0,
+   "fixed": false
+  },
+  {
+   "id": "g32",
+   "shape": "box",
+   "material": "glass",
+   "x": 1300,
+   "y": 502,
+   "w": 180,
+   "h": 14,
+   "rot": 0,
+   "fixed": false
+  },
+  {
+   "id": "f33",
+   "shape": "box",
+   "material": "frond",
+   "x": 1240,
+   "y": 523,
+   "w": 28,
+   "h": 28,
+   "rot": 0,
+   "fixed": false
+  },
+  {
+   "id": "f34",
+   "shape": "box",
+   "material": "frond",
+   "x": 1280,
+   "y": 523,
+   "w": 28,
+   "h": 28,
+   "rot": 0,
+   "fixed": false
+  },
+  {
+   "id": "f35",
+   "shape": "box",
+   "material": "frond",
+   "x": 1320,
+   "y": 523,
+   "w": 28,
+   "h": 28,
+   "rot": 0,
+   "fixed": false
+  },
+  {
+   "id": "f36",
+   "shape": "box",
+   "material": "frond",
+   "x": 1360,
+   "y": 523,
+   "w": 28,
+   "h": 28,
+   "rot": 0,
+   "fixed": false
+  },
+  {
+   "id": "f37",
+   "shape": "box",
+   "material": "frond",
+   "x": 2050,
+   "y": 20,
+   "w": 30,
+   "h": 40,
+   "rot": 0,
+   "fixed": false
+  },
+  {
+   "id": "f38",
+   "shape": "box",
+   "material": "frond",
+   "x": 2084,
+   "y": 20,
+   "w": 30,
+   "h": 40,
+   "rot": 0,
+   "fixed": false
+  },
+  {
+   "id": "f39",
+   "shape": "box",
+   "material": "frond",
+   "x": 2118,
+   "y": 20,
+   "w": 30,
+   "h": 40,
+   "rot": 0,
+   "fixed": false
+  },
+  {
+   "id": "f40",
+   "shape": "box",
+   "material": "frond",
+   "x": 2050,
+   "y": 60,
+   "w": 30,
+   "h": 40,
+   "rot": 0,
+   "fixed": false
+  },
+  {
+   "id": "f41",
+   "shape": "box",
+   "material": "frond",
+   "x": 2084,
+   "y": 60,
+   "w": 30,
+   "h": 40,
+   "rot": 0,
+   "fixed": false
+  },
+  {
+   "id": "f42",
+   "shape": "box",
+   "material": "frond",
+   "x": 2118,
+   "y": 60,
+   "w": 30,
+   "h": 40,
+   "rot": 0,
+   "fixed": false
+  }
+ ],
+ "lanterns": [
+  {
+   "id": "L1",
+   "x": 500,
+   "y": 150,
+   "r": 20
+  },
+  {
+   "id": "L2",
+   "x": 250,
+   "y": 190,
+   "r": 20
+  },
+  {
+   "id": "L3",
+   "x": 1300,
+   "y": 435,
+   "r": 20
+  }
+ ]
+}

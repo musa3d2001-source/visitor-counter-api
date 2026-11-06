@@ -1,0 +1,383 @@
+{
+  "method": "next build output (.next/static/chunks), gzip level 6 per whole file, brotli quality 11; chunks classified by content signature",
+  "buildId": "QW3I4XGeBqDzu3zkb9h3K",
+  "chunks": {},
+  "groups": {
+    "three": {
+      "raw": 0,
+      "gzip": 0,
+      "brotli": 0
+    },
+    "rapierStandardGlue": {
+      "raw": 0,
+      "gzip": 0,
+      "brotli": 0
+    },
+    "rapierWasm": {
+      "raw": 0,
+      "gzip": 0,
+      "brotli": 0
+    },
+    "rapierCompat": {
+      "raw": 0,
+      "gzip": 0,
+      "brotli": 0
+    },
+    "spikeEngine": {
+      "raw": 0,
+      "gzip": 0,
+      "brotli": 0
+    },
+    "spikeStage": {
+      "raw": 0,
+      "gzip": 0,
+      "brotli": 0
+    }
+  },
+  "initialJsOffenders": [],
+  "routes": {
+    "/preview/[fileId]": {
+      "initialJs": {
+        "raw": 606763,
+        "gzip": 187787
+      },
+      "files": 12
+    },
+    "/read/[fileId]": {
+      "initialJs": {
+        "raw": 606763,
+        "gzip": 187787
+      },
+      "files": 12
+    },
+    "/watch/[productId]": {
+      "initialJs": {
+        "raw": 626498,
+        "gzip": 194329
+      },
+      "files": 12
+    },
+    "/forgot-password": {
+      "initialJs": {
+        "raw": 599079,
+        "gzip": 184733
+      },
+      "files": 12
+    },
+    "/login": {
+      "initialJs": {
+        "raw": 598576,
+        "gzip": 184569
+      },
+      "files": 12
+    },
+    "/register": {
+      "initialJs": {
+        "raw": 602545,
+        "gzip": 185673
+      },
+      "files": 12
+    },
+    "/reset-password": {
+      "initialJs": {
+        "raw": 594837,
+        "gzip": 183455
+      },
+      "files": 12
+    },
+    "/account": {
+      "initialJs": {
+        "raw": 592924,
+        "gzip": 182741
+      },
+      "files": 12
+    },
+    "/bundles": {
+      "initialJs": {
+        "raw": 582512,
+        "gzip": 178826
+      },
+      "files": 11
+    },
+    "/cart": {
+      "initialJs": {
+        "raw": 587780,
+        "gzip": 181138
+      },
+      "files": 12
+    },
+    "/checkout": {
+      "initialJs": {
+        "raw": 591343,
+        "gzip": 182500
+      },
+      "files": 12
+    },
+    "/contact": {
+      "initialJs": {
+        "raw": 582512,
+        "gzip": 178826
+      },
+      "files": 11
+    },
+    "/grades/[gradeSlug]/[subjectSlug]": {
+      "initialJs": {
+        "raw": 582512,
+        "gzip": 178826
+      },
+      "files": 11
+    },
+    "/grades/[gradeSlug]": {
+      "initialJs": {
+        "raw": 582512,
+        "gzip": 178826
+      },
+      "files": 11
+    },
+    "/library": {
+      "initialJs": {
+        "raw": 582512,
+        "gzip": 178826
+      },
+      "files": 11
+    },
+    "/orders/[id]": {
+      "initialJs": {
+        "raw": 585183,
+        "gzip": 180142
+      },
+      "files": 12
+    },
+    "/": {
+      "initialJs": {
+        "raw": 589777,
+        "gzip": 181447
+      },
+      "files": 12
+    },
+    "/privacy": {
+      "initialJs": {
+        "raw": 582512,
+        "gzip": 178826
+      },
+      "files": 11
+    },
+    "/products/[slug]": {
+      "initialJs": {
+        "raw": 588349,
+        "gzip": 181233
+      },
+      "files": 12
+    },
+    "/refund-policy": {
+      "initialJs": {
+        "raw": 582512,
+        "gzip": 178826
+      },
+      "files": 11
+    },
+    "/stages/[slug]": {
+      "initialJs": {
+        "raw": 582512,
+        "gzip": 178826
+      },
+      "files": 11
+    },
+    "/teachers/[slug]": {
+      "initialJs": {
+        "raw": 582512,
+        "gzip": 178826
+      },
+      "files": 11
+    },
+    "/teachers": {
+      "initialJs": {
+        "raw": 582512,
+        "gzip": 178826
+      },
+      "files": 11
+    },
+    "/terms": {
+      "initialJs": {
+        "raw": 582512,
+        "gzip": 178826
+      },
+      "files": 11
+    },
+    "/_global-error": {
+      "initialJs": {
+        "raw": 461040,
+        "gzip": 136409
+      },
+      "files": 5
+    },
+    "/_not-found": {
+      "initialJs": {
+        "raw": 577291,
+        "gzip": 176519
+      },
+      "files": 10
+    },
+    "/admin/bundles": {
+      "initialJs": {
+        "raw": 615519,
+        "gzip": 191111
+      },
+      "files": 13
+    },
+    "/admin/catalog": {
+      "initialJs": {
+        "raw": 630577,
+        "gzip": 195971
+      },
+      "files": 13
+    },
+    "/admin/coupons/[id]": {
+      "initialJs": {
+        "raw": 628334,
+        "gzip": 195589
+      },
+      "files": 13
+    },
+    "/admin/coupons": {
+      "initialJs": {
+        "raw": 634713,
+        "gzip": 197342
+      },
+      "files": 13
+    },
+    "/admin/earnings": {
+      "initialJs": {
+        "raw": 615519,
+        "gzip": 191111
+      },
+      "files": 13
+    },
+    "/admin/orders/[id]": {
+      "initialJs": {
+        "raw": 627211,
+        "gzip": 195101
+      },
+      "files": 13
+    },
+    "/admin/orders": {
+      "initialJs": {
+        "raw": 615519,
+        "gzip": 191111
+      },
+      "files": 13
+    },
+    "/admin": {
+      "initialJs": {
+        "raw": 615519,
+        "gzip": 191111
+      },
+      "files": 13
+    },
+    "/admin/products/[id]": {
+      "initialJs": {
+        "raw": 666790,
+        "gzip": 207178
+      },
+      "files": 14
+    },
+    "/admin/products/new": {
+      "initialJs": {
+        "raw": 642888,
+        "gzip": 200271
+      },
+      "files": 13
+    },
+    "/admin/products": {
+      "initialJs": {
+        "raw": 630200,
+        "gzip": 195832
+      },
+      "files": 13
+    },
+    "/admin/profile": {
+      "initialJs": {
+        "raw": 638637,
+        "gzip": 198782
+      },
+      "files": 13
+    },
+    "/admin/reports": {
+      "initialJs": {
+        "raw": 615519,
+        "gzip": 191111
+      },
+      "files": 13
+    },
+    "/admin/review": {
+      "initialJs": {
+        "raw": 615519,
+        "gzip": 191111
+      },
+      "files": 13
+    },
+    "/admin/settings": {
+      "initialJs": {
+        "raw": 652319,
+        "gzip": 202731
+      },
+      "files": 14
+    },
+    "/admin/students/[id]": {
+      "initialJs": {
+        "raw": 630577,
+        "gzip": 195971
+      },
+      "files": 13
+    },
+    "/admin/students": {
+      "initialJs": {
+        "raw": 615519,
+        "gzip": 191111
+      },
+      "files": 13
+    },
+    "/admin/teachers/[id]": {
+      "initialJs": {
+        "raw": 648366,
+        "gzip": 201989
+      },
+      "files": 14
+    },
+    "/admin/teachers/new": {
+      "initialJs": {
+        "raw": 630713,
+        "gzip": 196448
+      },
+      "files": 13
+    },
+    "/admin/teachers": {
+      "initialJs": {
+        "raw": 615519,
+        "gzip": 191111
+      },
+      "files": 13
+    },
+    "/lab/admin-kit": {
+      "initialJs": {
+        "raw": 623024,
+        "gzip": 193122
+      },
+      "files": 12
+    },
+    "/lab/system": {
+      "initialJs": {
+        "raw": 603147,
+        "gzip": 186417
+      },
+      "files": 11
+    },
+    "/lab/v2-c": {
+      "initialJs": {
+        "raw": 599100,
+        "gzip": 184672
+      },
+      "files": 11
+    }
+  }
+}

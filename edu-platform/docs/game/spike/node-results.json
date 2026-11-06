@@ -1,0 +1,613 @@
+{
+  "generatedAt": "2026-11-06T16:18:50.310Z",
+  "node": "v22.23.4",
+  "cpu": "Intel(R) Xeon(R) Processor @ 2.10GHz",
+  "cpuCount": 4,
+  "runsPerLayout": 25,
+  "command": "node --import tsx --import ./scripts/game-spike/node-hooks/register.mjs --experimental-wasm-modules --no-warnings scripts/game-spike/node-bench.ts --runs 25",
+  "packages": {
+    "standard": {
+      "loadMs": 204.89,
+      "childProcess": {
+        "pid": 9955,
+        "loadMs": 186.83,
+        "allHashesEqual": true
+      },
+      "layouts": {
+        "t1-first-tower": {
+          "tier": 1,
+          "dynamicBodies": 7,
+          "shots": 1,
+          "par": 2,
+          "cleared": true,
+          "clearedAfterShot": 0,
+          "steps": 284,
+          "stateHash": "37be6208",
+          "perShotHashes": [
+            "37be6208"
+          ],
+          "distinctHashesOverRuns": 1,
+          "inProcess3RunsEqual": true,
+          "replayMs": {
+            "p50": 5.53,
+            "p95": 7.7,
+            "min": 5.25,
+            "max": 7.85
+          },
+          "avgStepUs": 19.48,
+          "stepProfileUs": {
+            "steps": 284,
+            "p50us": 19.8,
+            "p95us": 34.2,
+            "maxus": 160.72,
+            "meanus": 19.72
+          },
+          "otherSeed": {
+            "seed": 20261107,
+            "stateHash": "e385c934",
+            "cleared": true,
+            "differs": true
+          }
+        },
+        "t1-glass-window": {
+          "tier": 1,
+          "dynamicBodies": 8,
+          "shots": 2,
+          "par": 2,
+          "cleared": true,
+          "clearedAfterShot": 1,
+          "steps": 1860,
+          "stateHash": "930c2a5c",
+          "perShotHashes": [
+            "2caf3d8b",
+            "930c2a5c"
+          ],
+          "distinctHashesOverRuns": 1,
+          "inProcess3RunsEqual": true,
+          "replayMs": {
+            "p50": 33.28,
+            "p95": 40.26,
+            "min": 28.34,
+            "max": 44.97
+          },
+          "avgStepUs": 17.89,
+          "stepProfileUs": {
+            "steps": 1860,
+            "p50us": 13.26,
+            "p95us": 31.89,
+            "maxus": 657.56,
+            "meanus": 17.46
+          },
+          "otherSeed": {
+            "seed": 20261107,
+            "stateHash": "d1b29fe4",
+            "cleared": true,
+            "differs": true
+          }
+        },
+        "t2-teak-scaffold": {
+          "tier": 2,
+          "dynamicBodies": 25,
+          "shots": 2,
+          "par": 3,
+          "cleared": true,
+          "clearedAfterShot": 1,
+          "steps": 691,
+          "stateHash": "e0a09933",
+          "perShotHashes": [
+            "61b82fd2",
+            "e0a09933"
+          ],
+          "distinctHashesOverRuns": 1,
+          "inProcess3RunsEqual": true,
+          "replayMs": {
+            "p50": 34.21,
+            "p95": 39.49,
+            "min": 31.8,
+            "max": 39.96
+          },
+          "avgStepUs": 49.51,
+          "stepProfileUs": {
+            "steps": 691,
+            "p50us": 45.63,
+            "p95us": 79.13,
+            "maxus": 670.54,
+            "meanus": 44.92
+          },
+          "otherSeed": {
+            "seed": 20261107,
+            "stateHash": "24aa5587",
+            "cleared": true,
+            "differs": true
+          }
+        },
+        "t2-cloud-bounce": {
+          "tier": 2,
+          "dynamicBodies": 13,
+          "shots": 2,
+          "par": 3,
+          "cleared": true,
+          "clearedAfterShot": 1,
+          "steps": 1280,
+          "stateHash": "3a1c99ea",
+          "perShotHashes": [
+            "1cd7e9e1",
+            "3a1c99ea"
+          ],
+          "distinctHashesOverRuns": 1,
+          "inProcess3RunsEqual": true,
+          "replayMs": {
+            "p50": 27.38,
+            "p95": 46.64,
+            "min": 25.28,
+            "max": 50.26
+          },
+          "avgStepUs": 21.39,
+          "stepProfileUs": {
+            "steps": 1280,
+            "p50us": 18.99,
+            "p95us": 79.09,
+            "maxus": 303.6,
+            "meanus": 32.21
+          },
+          "otherSeed": {
+            "seed": 20261107,
+            "stateHash": "d5a09696",
+            "cleared": true,
+            "differs": true
+          }
+        },
+        "t3-stone-keep": {
+          "tier": 3,
+          "dynamicBodies": 34,
+          "shots": 3,
+          "par": 3,
+          "cleared": true,
+          "clearedAfterShot": 2,
+          "steps": 2318,
+          "stateHash": "b45d09f4",
+          "perShotHashes": [
+            "afe75ca6",
+            "07a124cd",
+            "b45d09f4"
+          ],
+          "distinctHashesOverRuns": 1,
+          "inProcess3RunsEqual": true,
+          "replayMs": {
+            "p50": 79.7,
+            "p95": 86.66,
+            "min": 74.15,
+            "max": 96.54
+          },
+          "avgStepUs": 34.38,
+          "stepProfileUs": {
+            "steps": 2318,
+            "p50us": 21.49,
+            "p95us": 74.47,
+            "maxus": 2193.06,
+            "meanus": 35.43
+          },
+          "otherSeed": {
+            "seed": 20261107,
+            "stateHash": "068bff14",
+            "cleared": false,
+            "differs": true
+          }
+        },
+        "t3-lightbox-chain": {
+          "tier": 3,
+          "dynamicBodies": 47,
+          "shots": 2,
+          "par": 2,
+          "cleared": true,
+          "clearedAfterShot": 1,
+          "steps": 1430,
+          "stateHash": "cec3545d",
+          "perShotHashes": [
+            "5aa3bff7",
+            "cec3545d"
+          ],
+          "distinctHashesOverRuns": 1,
+          "inProcess3RunsEqual": true,
+          "replayMs": {
+            "p50": 80.97,
+            "p95": 102.57,
+            "min": 71.15,
+            "max": 152.08
+          },
+          "avgStepUs": 56.62,
+          "stepProfileUs": {
+            "steps": 1430,
+            "p50us": 30.34,
+            "p95us": 117.86,
+            "maxus": 895.03,
+            "meanus": 54.91
+          },
+          "otherSeed": {
+            "seed": 20261107,
+            "stateHash": "db06542e",
+            "cleared": true,
+            "differs": true
+          }
+        },
+        "t4-domino-row": {
+          "tier": 4,
+          "dynamicBodies": 44,
+          "shots": 3,
+          "par": 3,
+          "cleared": true,
+          "clearedAfterShot": 2,
+          "steps": 1913,
+          "stateHash": "94fa983e",
+          "perShotHashes": [
+            "11543c1c",
+            "41e1cfab",
+            "94fa983e"
+          ],
+          "distinctHashesOverRuns": 1,
+          "inProcess3RunsEqual": true,
+          "replayMs": {
+            "p50": 73.89,
+            "p95": 117.61,
+            "min": 67.65,
+            "max": 133.83
+          },
+          "avgStepUs": 38.63,
+          "stepProfileUs": {
+            "steps": 1913,
+            "p50us": 31.17,
+            "p95us": 72.54,
+            "maxus": 3061.51,
+            "meanus": 39.14
+          },
+          "otherSeed": {
+            "seed": 20261107,
+            "stateHash": "abdc4469",
+            "cleared": false,
+            "differs": true
+          }
+        },
+        "t4-grand-observatory": {
+          "tier": 4,
+          "dynamicBodies": 90,
+          "shots": 4,
+          "par": 4,
+          "cleared": true,
+          "clearedAfterShot": 3,
+          "steps": 1626,
+          "stateHash": "2666ac7d",
+          "perShotHashes": [
+            "7913fafb",
+            "2717c88b",
+            "a3e7efc3",
+            "2666ac7d"
+          ],
+          "distinctHashesOverRuns": 1,
+          "inProcess3RunsEqual": true,
+          "replayMs": {
+            "p50": 134.19,
+            "p95": 182.3,
+            "min": 124.68,
+            "max": 216.16
+          },
+          "avgStepUs": 82.53,
+          "stepProfileUs": {
+            "steps": 1626,
+            "p50us": 60.74,
+            "p95us": 165.15,
+            "maxus": 1416.77,
+            "meanus": 83.99
+          },
+          "otherSeed": {
+            "seed": 20261107,
+            "stateHash": "557ba802",
+            "cleared": false,
+            "differs": true
+          }
+        }
+      }
+    },
+    "compat": {
+      "loadMs": 97.13,
+      "childProcess": {
+        "pid": 9976,
+        "loadMs": 108.22,
+        "allHashesEqual": true
+      },
+      "layouts": {
+        "t1-first-tower": {
+          "tier": 1,
+          "dynamicBodies": 7,
+          "shots": 1,
+          "par": 2,
+          "cleared": true,
+          "clearedAfterShot": 0,
+          "steps": 284,
+          "stateHash": "37be6208",
+          "perShotHashes": [
+            "37be6208"
+          ],
+          "distinctHashesOverRuns": 1,
+          "inProcess3RunsEqual": true,
+          "replayMs": {
+            "p50": 5.96,
+            "p95": 7.67,
+            "min": 5.47,
+            "max": 8.14
+          },
+          "avgStepUs": 20.99,
+          "stepProfileUs": {
+            "steps": 284,
+            "p50us": 20.61,
+            "p95us": 47.23,
+            "maxus": 1070.62,
+            "meanus": 25.26
+          },
+          "otherSeed": {
+            "seed": 20261107,
+            "stateHash": "e385c934",
+            "cleared": true,
+            "differs": true
+          }
+        },
+        "t1-glass-window": {
+          "tier": 1,
+          "dynamicBodies": 8,
+          "shots": 2,
+          "par": 2,
+          "cleared": true,
+          "clearedAfterShot": 1,
+          "steps": 1860,
+          "stateHash": "930c2a5c",
+          "perShotHashes": [
+            "2caf3d8b",
+            "930c2a5c"
+          ],
+          "distinctHashesOverRuns": 1,
+          "inProcess3RunsEqual": true,
+          "replayMs": {
+            "p50": 33.41,
+            "p95": 37.89,
+            "min": 31.44,
+            "max": 41.41
+          },
+          "avgStepUs": 17.96,
+          "stepProfileUs": {
+            "steps": 1860,
+            "p50us": 13.89,
+            "p95us": 34.83,
+            "maxus": 3017.53,
+            "meanus": 20.49
+          },
+          "otherSeed": {
+            "seed": 20261107,
+            "stateHash": "d1b29fe4",
+            "cleared": true,
+            "differs": true
+          }
+        },
+        "t2-teak-scaffold": {
+          "tier": 2,
+          "dynamicBodies": 25,
+          "shots": 2,
+          "par": 3,
+          "cleared": true,
+          "clearedAfterShot": 1,
+          "steps": 691,
+          "stateHash": "e0a09933",
+          "perShotHashes": [
+            "61b82fd2",
+            "e0a09933"
+          ],
+          "distinctHashesOverRuns": 1,
+          "inProcess3RunsEqual": true,
+          "replayMs": {
+            "p50": 33.99,
+            "p95": 39,
+            "min": 31.37,
+            "max": 39.75
+          },
+          "avgStepUs": 49.19,
+          "stepProfileUs": {
+            "steps": 691,
+            "p50us": 48.8,
+            "p95us": 80.12,
+            "maxus": 1022.17,
+            "meanus": 48.45
+          },
+          "otherSeed": {
+            "seed": 20261107,
+            "stateHash": "24aa5587",
+            "cleared": true,
+            "differs": true
+          }
+        },
+        "t2-cloud-bounce": {
+          "tier": 2,
+          "dynamicBodies": 13,
+          "shots": 2,
+          "par": 3,
+          "cleared": true,
+          "clearedAfterShot": 1,
+          "steps": 1280,
+          "stateHash": "3a1c99ea",
+          "perShotHashes": [
+            "1cd7e9e1",
+            "3a1c99ea"
+          ],
+          "distinctHashesOverRuns": 1,
+          "inProcess3RunsEqual": true,
+          "replayMs": {
+            "p50": 31.06,
+            "p95": 34.86,
+            "min": 29.99,
+            "max": 49.82
+          },
+          "avgStepUs": 24.27,
+          "stepProfileUs": {
+            "steps": 1280,
+            "p50us": 15.22,
+            "p95us": 44.19,
+            "maxus": 956.92,
+            "meanus": 23.39
+          },
+          "otherSeed": {
+            "seed": 20261107,
+            "stateHash": "d5a09696",
+            "cleared": true,
+            "differs": true
+          }
+        },
+        "t3-stone-keep": {
+          "tier": 3,
+          "dynamicBodies": 34,
+          "shots": 3,
+          "par": 3,
+          "cleared": true,
+          "clearedAfterShot": 2,
+          "steps": 2318,
+          "stateHash": "b45d09f4",
+          "perShotHashes": [
+            "afe75ca6",
+            "07a124cd",
+            "b45d09f4"
+          ],
+          "distinctHashesOverRuns": 1,
+          "inProcess3RunsEqual": true,
+          "replayMs": {
+            "p50": 83.19,
+            "p95": 87.37,
+            "min": 76.2,
+            "max": 124.95
+          },
+          "avgStepUs": 35.89,
+          "stepProfileUs": {
+            "steps": 2318,
+            "p50us": 22.64,
+            "p95us": 75.74,
+            "maxus": 2459.13,
+            "meanus": 37.5
+          },
+          "otherSeed": {
+            "seed": 20261107,
+            "stateHash": "068bff14",
+            "cleared": false,
+            "differs": true
+          }
+        },
+        "t3-lightbox-chain": {
+          "tier": 3,
+          "dynamicBodies": 47,
+          "shots": 2,
+          "par": 2,
+          "cleared": true,
+          "clearedAfterShot": 1,
+          "steps": 1430,
+          "stateHash": "cec3545d",
+          "perShotHashes": [
+            "5aa3bff7",
+            "cec3545d"
+          ],
+          "distinctHashesOverRuns": 1,
+          "inProcess3RunsEqual": true,
+          "replayMs": {
+            "p50": 83.62,
+            "p95": 92.45,
+            "min": 80.28,
+            "max": 105.09
+          },
+          "avgStepUs": 58.47,
+          "stepProfileUs": {
+            "steps": 1430,
+            "p50us": 31.81,
+            "p95us": 117.19,
+            "maxus": 1247.87,
+            "meanus": 56.66
+          },
+          "otherSeed": {
+            "seed": 20261107,
+            "stateHash": "db06542e",
+            "cleared": true,
+            "differs": true
+          }
+        },
+        "t4-domino-row": {
+          "tier": 4,
+          "dynamicBodies": 44,
+          "shots": 3,
+          "par": 3,
+          "cleared": true,
+          "clearedAfterShot": 2,
+          "steps": 1913,
+          "stateHash": "94fa983e",
+          "perShotHashes": [
+            "11543c1c",
+            "41e1cfab",
+            "94fa983e"
+          ],
+          "distinctHashesOverRuns": 1,
+          "inProcess3RunsEqual": true,
+          "replayMs": {
+            "p50": 78.02,
+            "p95": 91.21,
+            "min": 75.98,
+            "max": 117.18
+          },
+          "avgStepUs": 40.79,
+          "stepProfileUs": {
+            "steps": 1913,
+            "p50us": 35.53,
+            "p95us": 85.88,
+            "maxus": 1075.15,
+            "meanus": 45.3
+          },
+          "otherSeed": {
+            "seed": 20261107,
+            "stateHash": "abdc4469",
+            "cleared": false,
+            "differs": true
+          }
+        },
+        "t4-grand-observatory": {
+          "tier": 4,
+          "dynamicBodies": 90,
+          "shots": 4,
+          "par": 4,
+          "cleared": true,
+          "clearedAfterShot": 3,
+          "steps": 1626,
+          "stateHash": "2666ac7d",
+          "perShotHashes": [
+            "7913fafb",
+            "2717c88b",
+            "a3e7efc3",
+            "2666ac7d"
+          ],
+          "distinctHashesOverRuns": 1,
+          "inProcess3RunsEqual": true,
+          "replayMs": {
+            "p50": 146.96,
+            "p95": 186.26,
+            "min": 132.18,
+            "max": 193.44
+          },
+          "avgStepUs": 90.38,
+          "stepProfileUs": {
+            "steps": 1626,
+            "p50us": 70.89,
+            "p95us": 167.51,
+            "maxus": 1000.35,
+            "meanus": 87.19
+          },
+          "otherSeed": {
+            "seed": 20261107,
+            "stateHash": "557ba802",
+            "cleared": false,
+            "differs": true
+          }
+        }
+      }
+    }
+  },
+  "crossPackageEqual": true
+}

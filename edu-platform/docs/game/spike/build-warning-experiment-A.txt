@@ -1,0 +1,12 @@
+Turbopack build encountered 1 warning:
+[turbopack-wasm]/node/loadWasm.ts:25:10
+Warning: The file pattern ('node' <dynamic> '/' <dynamic> | 'node' <dynamic>) matches 27420 files in [project]/
+  23 | function resolvePath(chunkPath: string): string {
+  24 |   const { resolve } = require('path') as typeof import('path')
+> 25 |   return resolve(__turbopack_runtime_root__, chunkPath)
+     |          ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  26 | }
+  27 |
+  28 | export async function instantiate(
+
+Overly broad patterns can lead to build performance issues and over bundling.

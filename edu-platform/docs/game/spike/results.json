@@ -1,0 +1,537 @@
+{
+  "generatedAt": "2026-11-06T17:05:28.981Z",
+  "environment": {
+    "node": "v22.23.4",
+    "cpu": "Intel(R) Xeon(R) Processor @ 2.10GHz",
+    "cpuCount": 4,
+    "chromium": "153.0.8010.12",
+    "webkit": "MiniBrowser (WebKitGTK) 2.52.6 linux",
+    "next": "16.4.4 (Turbopack)",
+    "three": "0.186.0",
+    "rapier": "0.21.0"
+  },
+  "determinism": {
+    "node": {
+      "runsPerLayout": 25,
+      "distinctHashesPerLayout": {
+        "standard": 1,
+        "compat": 1
+      },
+      "inProcess3RunsEqual": true,
+      "childProcessEqual": true,
+      "standardEqualsCompat": true
+    },
+    "chromium": {
+      "allMatchGolden": true,
+      "serverCompatMatchesGolden": true
+    },
+    "webkitgtk": {
+      "standard": true,
+      "compat": true,
+      "serverMatchesWebkit": true
+    },
+    "golden": {
+      "t1-first-tower": "37be6208",
+      "t1-glass-window": "930c2a5c",
+      "t2-teak-scaffold": "e0a09933",
+      "t2-cloud-bounce": "3a1c99ea",
+      "t3-stone-keep": "b45d09f4",
+      "t3-lightbox-chain": "cec3545d",
+      "t4-domino-row": "94fa983e",
+      "t4-grand-observatory": "2666ac7d"
+    },
+    "seedSensitivity": {
+      "t1-first-tower": {
+        "otherSeedHashDiffers": true,
+        "otherSeedStillCleared": true
+      },
+      "t1-glass-window": {
+        "otherSeedHashDiffers": true,
+        "otherSeedStillCleared": true
+      },
+      "t2-teak-scaffold": {
+        "otherSeedHashDiffers": true,
+        "otherSeedStillCleared": true
+      },
+      "t2-cloud-bounce": {
+        "otherSeedHashDiffers": true,
+        "otherSeedStillCleared": true
+      },
+      "t3-stone-keep": {
+        "otherSeedHashDiffers": true,
+        "otherSeedStillCleared": false
+      },
+      "t3-lightbox-chain": {
+        "otherSeedHashDiffers": true,
+        "otherSeedStillCleared": true
+      },
+      "t4-domino-row": {
+        "otherSeedHashDiffers": true,
+        "otherSeedStillCleared": false
+      },
+      "t4-grand-observatory": {
+        "otherSeedHashDiffers": true,
+        "otherSeedStillCleared": false
+      }
+    }
+  },
+  "sizes": {
+    "method": "next build output (.next/static/chunks), gzip level 6 per whole file, brotli quality 11; chunks classified by content signature",
+    "source": "isolated build: git archive HEAD (5ac09eb) + spike only (see sizes-isolated*.json)",
+    "three": {
+      "raw": 556204,
+      "gzip": 138040,
+      "brotli": 112671
+    },
+    "rapierStandardGlue": {
+      "raw": 280931,
+      "gzip": 50538,
+      "brotli": 37722
+    },
+    "rapierStandardWasm": {
+      "raw": 2436321,
+      "gzip": 924543,
+      "brotli": 681486
+    },
+    "rapierStandardTotalGzip": 975081,
+    "rapierCompat": {
+      "raw": 3449903,
+      "gzip": 1295236,
+      "brotli": 954936
+    },
+    "spikeEngine": {
+      "raw": 140158,
+      "gzip": 37631,
+      "brotli": 32244
+    },
+    "spikeStage": {
+      "raw": 12545,
+      "gzip": 4645,
+      "brotli": 4072
+    },
+    "spikeRouteInitialJs": {
+      "raw": 620669,
+      "gzip": 193233
+    },
+    "gameJsWithoutRapierGzip": 180316,
+    "spikeRouteTotalGzip": {
+      "standard": 1348630,
+      "compat": 1668785
+    },
+    "measuredTransferNextStart": {
+      "standard": 1547394,
+      "compat": 1867184
+    }
+  },
+  "isolation": {
+    "analyzerHeavyOnlyInSpikeAsync": true,
+    "heavyByRoute": {
+      "/admin/game/spike": {
+        "@dimforge/rapier2d-deterministic": {
+          "raw": 280797,
+          "gzipEstimate": 59585,
+          "files": [
+            "static/chunks/02adi8jv1lziu.js"
+          ],
+          "kinds": [
+            "async"
+          ]
+        },
+        "@dimforge/rapier2d-deterministic-compat": {
+          "raw": 3449946,
+          "gzipEstimate": 1304282,
+          "files": [
+            "static/chunks/1jr23p1r9w1_l.js"
+          ],
+          "kinds": [
+            "async"
+          ]
+        },
+        "three": {
+          "raw": 541364,
+          "gzipEstimate": 132378,
+          "files": [
+            "static/chunks/14-dwqmo8f4w-.js"
+          ],
+          "kinds": [
+            "async"
+          ]
+        }
+      }
+    },
+    "analyzerDeltaExistingRoutesRaw": [
+      52
+    ],
+    "buildDeltaSpikeVsHeadRaw": [
+      114
+    ],
+    "buildDeltaSpikeVsHeadGzip": [
+      390
+    ],
+    "buildDeltaTrivialRouteVsHeadRaw": [
+      114
+    ],
+    "buildDeltaTrivialRouteVsHeadGzip": [
+      390
+    ],
+    "networkCheck": {
+      "visited": {
+        "/": {
+          "requests": 49,
+          "jsRequests": 13,
+          "wasm": 0,
+          "heavy": []
+        },
+        "/grades/grade-6": {
+          "requests": 50,
+          "jsRequests": 12,
+          "wasm": 0,
+          "heavy": []
+        },
+        "/products/d-english-teacher-video-course-bb1e73": {
+          "requests": 49,
+          "jsRequests": 13,
+          "wasm": 0,
+          "heavy": []
+        },
+        "/library": {
+          "requests": 48,
+          "jsRequests": 12,
+          "wasm": 0,
+          "heavy": []
+        }
+      },
+      "ok": true
+    }
+  },
+  "serverTrace": {
+    "experimentA_standardInServerGraph": {
+      "page": {
+        "files": 13795,
+        "existingFiles": 13794,
+        "mb": 653.9,
+        "wasm": [
+          "node_modules/@dimforge/rapier2d-deterministic-compat/dist/rapier_wasm2d_bg.wasm",
+          "node_modules/@dimforge/rapier2d-deterministic/rapier_wasm2d_bg.wasm",
+          "node_modules/@dimforge/rapier3d-compat/rapier_wasm3d_bg.wasm",
+          "node_modules/@img/sharp-wasm32/lib/sharp-wasm32-0.35.5.node.wasm",
+          "node_modules/next/dist/compiled/@mswjs/interceptors/ClientRequest/llhttp/llhttp.wasm",
+          "node_modules/next/dist/compiled/@vercel/og/resvg.wasm",
+          "node_modules/next/dist/compiled/@vercel/og/yoga.wasm",
+          "node_modules/next/dist/compiled/source-map08/mappings.wasm",
+          "node_modules/pdfjs-dist/wasm/jbig2.wasm",
+          "node_modules/pdfjs-dist/wasm/openjpeg.wasm",
+          "node_modules/pdfjs-dist/wasm/qcms_bg.wasm",
+          "node_modules/pdfjs-dist/wasm/quickjs-eval.wasm",
+          "node_modules/playwright-core/lib/webp_codec.wasm",
+          "node_modules/three/examples/jsm/libs/basis/basis_transcoder.wasm",
+          "node_modules/three/examples/jsm/libs/draco/draco_decoder.wasm",
+          "node_modules/three/examples/jsm/libs/draco/gltf/draco_decoder.wasm",
+          "chunks/ssr/node_modules_@dimforge_rapier2d-deterministic_rapier_wasm2d_bg_05ek5-kaqh2we.wasm"
+        ],
+        "pkgFiles": {
+          "three": 1263,
+          "@dimforge": 105
+        }
+      },
+      "route": {
+        "files": 13724,
+        "existingFiles": 13724,
+        "mb": 652.2,
+        "wasm": [
+          "node_modules/@dimforge/rapier2d-deterministic-compat/dist/rapier_wasm2d_bg.wasm",
+          "node_modules/@dimforge/rapier2d-deterministic/rapier_wasm2d_bg.wasm",
+          "node_modules/@dimforge/rapier3d-compat/rapier_wasm3d_bg.wasm",
+          "node_modules/@img/sharp-wasm32/lib/sharp-wasm32-0.35.5.node.wasm",
+          "node_modules/next/dist/compiled/@mswjs/interceptors/ClientRequest/llhttp/llhttp.wasm",
+          "node_modules/next/dist/compiled/@vercel/og/resvg.wasm",
+          "node_modules/next/dist/compiled/@vercel/og/yoga.wasm",
+          "node_modules/next/dist/compiled/source-map08/mappings.wasm",
+          "node_modules/pdfjs-dist/wasm/jbig2.wasm",
+          "node_modules/pdfjs-dist/wasm/openjpeg.wasm",
+          "node_modules/pdfjs-dist/wasm/qcms_bg.wasm",
+          "node_modules/pdfjs-dist/wasm/quickjs-eval.wasm",
+          "node_modules/playwright-core/lib/webp_codec.wasm",
+          "node_modules/three/examples/jsm/libs/basis/basis_transcoder.wasm",
+          "node_modules/three/examples/jsm/libs/draco/draco_decoder.wasm",
+          "node_modules/three/examples/jsm/libs/draco/gltf/draco_decoder.wasm",
+          "chunks/node_modules_@dimforge_rapier2d-deterministic_rapier_wasm2d_bg_05ek5-kaqh2we.wasm"
+        ],
+        "pkgFiles": {
+          "three": 1263,
+          "@dimforge": 105
+        }
+      }
+    },
+    "final_compatServer_ssrFalseClient": {
+      "page": {
+        "files": 356,
+        "existingFiles": 355,
+        "mb": 4.1,
+        "wasm": [],
+        "pkgFiles": {
+          "three": 0,
+          "@dimforge": 0
+        }
+      },
+      "route": {
+        "files": 116,
+        "existingFiles": 116,
+        "mb": 5.5,
+        "wasm": [],
+        "pkgFiles": {
+          "three": 0,
+          "@dimforge": 0
+        }
+      },
+      "referenceSettingsPage": {
+        "files": 367,
+        "existingFiles": 366,
+        "mb": 4.4,
+        "wasm": [],
+        "pkgFiles": {
+          "three": 0,
+          "@dimforge": 0
+        }
+      }
+    }
+  },
+  "performance": {
+    "nodeReplayP95MaxMs": {
+      "standard": 182.3,
+      "compat": 186.26
+    },
+    "nodeLayouts": {
+      "t1-first-tower": {
+        "tier": 1,
+        "dynamic": 7,
+        "shots": 1,
+        "steps": 284,
+        "p50": 5.53,
+        "p95": 7.7,
+        "compatP95": 7.67,
+        "avgStepUs": 19.48,
+        "stepP95Us": 34.2,
+        "stepMaxUs": 160.72
+      },
+      "t1-glass-window": {
+        "tier": 1,
+        "dynamic": 8,
+        "shots": 2,
+        "steps": 1860,
+        "p50": 33.28,
+        "p95": 40.26,
+        "compatP95": 37.89,
+        "avgStepUs": 17.89,
+        "stepP95Us": 31.89,
+        "stepMaxUs": 657.56
+      },
+      "t2-teak-scaffold": {
+        "tier": 2,
+        "dynamic": 25,
+        "shots": 2,
+        "steps": 691,
+        "p50": 34.21,
+        "p95": 39.49,
+        "compatP95": 39,
+        "avgStepUs": 49.51,
+        "stepP95Us": 79.13,
+        "stepMaxUs": 670.54
+      },
+      "t2-cloud-bounce": {
+        "tier": 2,
+        "dynamic": 13,
+        "shots": 2,
+        "steps": 1280,
+        "p50": 27.38,
+        "p95": 46.64,
+        "compatP95": 34.86,
+        "avgStepUs": 21.39,
+        "stepP95Us": 79.09,
+        "stepMaxUs": 303.6
+      },
+      "t3-stone-keep": {
+        "tier": 3,
+        "dynamic": 34,
+        "shots": 3,
+        "steps": 2318,
+        "p50": 79.7,
+        "p95": 86.66,
+        "compatP95": 87.37,
+        "avgStepUs": 34.38,
+        "stepP95Us": 74.47,
+        "stepMaxUs": 2193.06
+      },
+      "t3-lightbox-chain": {
+        "tier": 3,
+        "dynamic": 47,
+        "shots": 2,
+        "steps": 1430,
+        "p50": 80.97,
+        "p95": 102.57,
+        "compatP95": 92.45,
+        "avgStepUs": 56.62,
+        "stepP95Us": 117.86,
+        "stepMaxUs": 895.03
+      },
+      "t4-domino-row": {
+        "tier": 4,
+        "dynamic": 44,
+        "shots": 3,
+        "steps": 1913,
+        "p50": 73.89,
+        "p95": 117.61,
+        "compatP95": 91.21,
+        "avgStepUs": 38.63,
+        "stepP95Us": 72.54,
+        "stepMaxUs": 3061.51
+      },
+      "t4-grand-observatory": {
+        "tier": 4,
+        "dynamic": 90,
+        "shots": 4,
+        "steps": 1626,
+        "p50": 134.19,
+        "p95": 182.3,
+        "compatP95": 186.26,
+        "avgStepUs": 82.53,
+        "stepP95Us": 165.15,
+        "stepMaxUs": 1416.77
+      }
+    },
+    "nodeLoadMs": {
+      "standard": 204.89,
+      "compat": 97.13,
+      "compatChild": 108.22,
+      "standardChild": 186.83,
+      "serverRouteFirstCall": 97
+    },
+    "engineReadyPhoneCpu4Fast4g": {
+      "standard": {
+        "fcpMs": 652,
+        "stageMountedMs": 1776,
+        "engineReadySinceNavMs": 4273,
+        "engineReadyFromMountMs": 2547,
+        "transferBytes": 1547394
+      },
+      "compat": {
+        "fcpMs": 644,
+        "stageMountedMs": 1687,
+        "engineReadySinceNavMs": 4718,
+        "engineReadyFromMountMs": 2932,
+        "transferBytes": 1867184
+      }
+    },
+    "fpsSwiftShaderCpu4": {
+      "phone-high": {
+        "frames": 253,
+        "seconds": 10.000700000000187,
+        "fps": 25.3,
+        "medianMs": 33.4,
+        "p95Ms": 83.3,
+        "calls": 23,
+        "triangles": 4718,
+        "pixelRatio": 2,
+        "shadows": true,
+        "quality": "high",
+        "canvas": {
+          "cssW": 378,
+          "cssH": 213,
+          "w": 756,
+          "h": 426
+        },
+        "cpuThrottle": 4
+      },
+      "phone-low": {
+        "frames": 596,
+        "seconds": 10.001899999999441,
+        "fps": 59.6,
+        "medianMs": 16.7,
+        "p95Ms": 16.8,
+        "calls": 16,
+        "triangles": 2354,
+        "pixelRatio": 1,
+        "shadows": false,
+        "quality": "low",
+        "canvas": {
+          "cssW": 378,
+          "cssH": 213,
+          "w": 378,
+          "h": 213
+        },
+        "cpuThrottle": 4
+      },
+      "desktop-high": {
+        "frames": 222,
+        "seconds": 10.009299999999813,
+        "fps": 22.2,
+        "medianMs": 50,
+        "p95Ms": 83.3,
+        "calls": 23,
+        "triangles": 4718,
+        "pixelRatio": 1,
+        "shadows": true,
+        "quality": "high",
+        "canvas": {
+          "cssW": 996,
+          "cssH": 560,
+          "w": 996,
+          "h": 560
+        },
+        "cpuThrottle": 4
+      },
+      "desktop-low": {
+        "frames": 383,
+        "seconds": 10.002399999999442,
+        "fps": 38.3,
+        "medianMs": 16.8,
+        "p95Ms": 50,
+        "calls": 16,
+        "triangles": 2354,
+        "pixelRatio": 1,
+        "shadows": false,
+        "quality": "low",
+        "canvas": {
+          "cssW": 996,
+          "cssH": 560,
+          "w": 996,
+          "h": 560
+        },
+        "cpuThrottle": 4
+      }
+    },
+    "browserReplay": {
+      "standard-cpu1": {
+        "firstPassTotalMs": 968,
+        "warmMaxLayoutP50Ms": 127.5
+      },
+      "compat-cpu1": {
+        "firstPassTotalMs": 886,
+        "warmMaxLayoutP50Ms": 124.9
+      },
+      "standard-cpu4": {
+        "firstPassTotalMs": 3017,
+        "warmMaxLayoutP50Ms": 660.6
+      },
+      "compat-cpu4": {
+        "firstPassTotalMs": 3304,
+        "warmMaxLayoutP50Ms": 563.3
+      }
+    },
+    "webkitgtkLowNoThrottle": {
+      "triangles": 2274,
+      "shadows": false,
+      "quality": "low",
+      "seconds": 10,
+      "p95Ms": 45,
+      "medianMs": 24,
+      "frames": 355,
+      "calls": 15,
+      "pixelRatio": 1,
+      "fps": 35.5
+    }
+  },
+  "csp": {
+    "violationsFinal": 0
+  }
+}

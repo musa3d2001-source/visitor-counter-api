@@ -1,0 +1,282 @@
+{
+ "version": 1,
+ "key": "t2-teak-scaffold",
+ "title": "سقالة الساج",
+ "tier": 2,
+ "slots": 4,
+ "par": 3,
+ "streakReward": "heavy",
+ "launcher": {
+  "x": 2600,
+  "y": 250
+ },
+ "bodies": [
+  {
+   "id": "t1",
+   "shape": "box",
+   "material": "teak",
+   "x": 820,
+   "y": 45,
+   "w": 20,
+   "h": 90,
+   "rot": 0,
+   "fixed": false
+  },
+  {
+   "id": "t2",
+   "shape": "box",
+   "material": "teak",
+   "x": 980,
+   "y": 45,
+   "w": 20,
+   "h": 90,
+   "rot": 0,
+   "fixed": false
+  },
+  {
+   "id": "t3",
+   "shape": "box",
+   "material": "teak",
+   "x": 900,
+   "y": 100,
+   "w": 200,
+   "h": 20,
+   "rot": 0,
+   "fixed": false
+  },
+  {
+   "id": "t4",
+   "shape": "box",
+   "material": "teak",
+   "x": 820,
+   "y": 155,
+   "w": 20,
+   "h": 90,
+   "rot": 0,
+   "fixed": false
+  },
+  {
+   "id": "t5",
+   "shape": "box",
+   "material": "teak",
+   "x": 980,
+   "y": 155,
+   "w": 20,
+   "h": 90,
+   "rot": 0,
+   "fixed": false
+  },
+  {
+   "id": "t6",
+   "shape": "box",
+   "material": "teak",
+   "x": 900,
+   "y": 210,
+   "w": 200,
+   "h": 20,
+   "rot": 0,
+   "fixed": false
+  },
+  {
+   "id": "t7",
+   "shape": "box",
+   "material": "teak",
+   "x": 820,
+   "y": 265,
+   "w": 20,
+   "h": 90,
+   "rot": 0,
+   "fixed": false
+  },
+  {
+   "id": "t8",
+   "shape": "box",
+   "material": "teak",
+   "x": 980,
+   "y": 265,
+   "w": 20,
+   "h": 90,
+   "rot": 0,
+   "fixed": false
+  },
+  {
+   "id": "f9",
+   "shape": "box",
+   "material": "frond",
+   "x": 900,
+   "y": 320,
+   "w": 200,
+   "h": 20,
+   "rot": 0,
+   "fixed": false
+  },
+  {
+   "id": "f10",
+   "shape": "box",
+   "material": "frond",
+   "x": 850,
+   "y": 345,
+   "w": 30,
+   "h": 30,
+   "rot": 0,
+   "fixed": false
+  },
+  {
+   "id": "f11",
+   "shape": "box",
+   "material": "frond",
+   "x": 950,
+   "y": 345,
+   "w": 30,
+   "h": 30,
+   "rot": 0,
+   "fixed": false
+  },
+  {
+   "id": "t12",
+   "shape": "box",
+   "material": "teak",
+   "x": 1420,
+   "y": 45,
+   "w": 20,
+   "h": 90,
+   "rot": 0,
+   "fixed": false
+  },
+  {
+   "id": "t13",
+   "shape": "box",
+   "material": "teak",
+   "x": 1580,
+   "y": 45,
+   "w": 20,
+   "h": 90,
+   "rot": 0,
+   "fixed": false
+  },
+  {
+   "id": "t14",
+   "shape": "box",
+   "material": "teak",
+   "x": 1500,
+   "y": 100,
+   "w": 200,
+   "h": 20,
+   "rot": 0,
+   "fixed": false
+  },
+  {
+   "id": "t15",
+   "shape": "box",
+   "material": "teak",
+   "x": 1420,
+   "y": 155,
+   "w": 20,
+   "h": 90,
+   "rot": 0,
+   "fixed": false
+  },
+  {
+   "id": "t16",
+   "shape": "box",
+   "material": "teak",
+   "x": 1580,
+   "y": 155,
+   "w": 20,
+   "h": 90,
+   "rot": 0,
+   "fixed": false
+  },
+  {
+   "id": "t17",
+   "shape": "box",
+   "material": "teak",
+   "x": 1500,
+   "y": 210,
+   "w": 200,
+   "h": 20,
+   "rot": 0,
+   "fixed": false
+  },
+  {
+   "id": "t18",
+   "shape": "box",
+   "material": "teak",
+   "x": 1420,
+   "y": 265,
+   "w": 20,
+   "h": 90,
+   "rot": 0,
+   "fixed": false
+  },
+  {
+   "id": "t19",
+   "shape": "box",
+   "material": "teak",
+   "x": 1580,
+   "y": 265,
+   "w": 20,
+   "h": 90,
+   "rot": 0,
+   "fixed": false
+  },
+  {
+   "id": "f20",
+   "shape": "box",
+   "material": "frond",
+   "x": 1500,
+   "y": 320,
+   "w": 200,
+   "h": 20,
+   "rot": 0,
+   "fixed": false
+  },
+  {
+   "id": "f21",
+   "shape": "box",
+   "material": "frond",
+   "x": 1450,
+   "y": 345,
+   "w": 30,
+   "h": 30,
+   "rot": 0,
+   "fixed": false
+  },
+  {
+   "id": "f22",
+   "shape": "box",
+   "material": "frond",
+   "x": 1550,
+   "y": 345,
+   "w": 30,
+   "h": 30,
+   "rot": 0,
+   "fixed": false
+  },
+  {
+   "id": "t23",
+   "shape": "box",
+   "material": "teak",
+   "x": 1200,
+   "y": 15,
+   "w": 120,
+   "h": 30,
+   "rot": 0,
+   "fixed": false
+  }
+ ],
+ "lanterns": [
+  {
+   "id": "L1",
+   "x": 900,
+   "y": 240,
+   "r": 20
+  },
+  {
+   "id": "L2",
+   "x": 1500,
+   "y": 240,
+   "r": 20
+  }
+ ]
+}

@@ -1,0 +1,93 @@
+{
+ "t1-first-tower": {
+  "seed": 20261106,
+  "stateHash": "37be6208",
+  "steps": 284,
+  "cleared": true,
+  "clearedAfterShot": 0,
+  "perShot": [
+   "37be6208"
+  ]
+ },
+ "t1-glass-window": {
+  "seed": 20261106,
+  "stateHash": "930c2a5c",
+  "steps": 1860,
+  "cleared": true,
+  "clearedAfterShot": 1,
+  "perShot": [
+   "2caf3d8b",
+   "930c2a5c"
+  ]
+ },
+ "t2-teak-scaffold": {
+  "seed": 20261106,
+  "stateHash": "e0a09933",
+  "steps": 691,
+  "cleared": true,
+  "clearedAfterShot": 1,
+  "perShot": [
+   "61b82fd2",
+   "e0a09933"
+  ]
+ },
+ "t2-cloud-bounce": {
+  "seed": 20261106,
+  "stateHash": "3a1c99ea",
+  "steps": 1280,
+  "cleared": true,
+  "clearedAfterShot": 1,
+  "perShot": [
+   "1cd7e9e1",
+   "3a1c99ea"
+  ]
+ },
+ "t3-stone-keep": {
+  "seed": 20261106,
+  "stateHash": "b45d09f4",
+  "steps": 2318,
+  "cleared": true,
+  "clearedAfterShot": 2,
+  "perShot": [
+   "afe75ca6",
+   "07a124cd",
+   "b45d09f4"
+  ]
+ },
+ "t3-lightbox-chain": {
+  "seed": 20261106,
+  "stateHash": "cec3545d",
+  "steps": 1430,
+  "cleared": true,
+  "clearedAfterShot": 1,
+  "perShot": [
+   "5aa3bff7",
+   "cec3545d"
+  ]
+ },
+ "t4-domino-row": {
+  "seed": 20261106,
+  "stateHash": "94fa983e",
+  "steps": 1913,
+  "cleared": true,
+  "clearedAfterShot": 2,
+  "perShot": [
+   "11543c1c",
+   "41e1cfab",
+   "94fa983e"
+  ]
+ },
+ "t4-grand-observatory": {
+  "seed": 20261106,
+  "stateHash": "2666ac7d",
+  "steps": 1626,
+  "cleared": true,
+  "clearedAfterShot": 3,
+  "perShot": [
+   "7913fafb",
+   "2717c88b",
+   "a3e7efc3",
+   "2666ac7d"
+  ]
+ }
+}

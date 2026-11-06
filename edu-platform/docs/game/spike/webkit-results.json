@@ -1,0 +1,270 @@
+{
+  "base": "http://localhost:3200",
+  "browser": {
+    "name": "MiniBrowser",
+    "version": "2.52.6",
+    "platform": "linux"
+  },
+  "generatedAt": "2026-11-06T16:55:33.276Z",
+  "userAgent": "Mozilla/5.0 (X11; Ubuntu; Linux x86_64) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/60.5 Safari/605.1.15",
+  "cookiesInWebkit": [
+    {
+      "name": "session",
+      "domain": ".localhost",
+      "secure": false
+    }
+  ],
+  "afterLoginUrl": "http://localhost:3200/robots.txt",
+  "spikeUrl": "http://localhost:3200/admin/game/spike",
+  "wasm": {
+    "webgl2": true,
+    "instantiateStreaming": "function"
+  },
+  "standard": {
+    "ok": true,
+    "rows": [
+      {
+        "golden": "37be6208",
+        "match": true,
+        "hash": "37be6208",
+        "ms": 121,
+        "key": "t1-first-tower",
+        "cleared": true,
+        "steps": 284
+      },
+      {
+        "golden": "930c2a5c",
+        "match": true,
+        "hash": "930c2a5c",
+        "ms": 112,
+        "key": "t1-glass-window",
+        "cleared": true,
+        "steps": 1860
+      },
+      {
+        "golden": "e0a09933",
+        "match": true,
+        "hash": "e0a09933",
+        "ms": 81,
+        "key": "t2-teak-scaffold",
+        "cleared": true,
+        "steps": 691
+      },
+      {
+        "golden": "3a1c99ea",
+        "match": true,
+        "hash": "3a1c99ea",
+        "ms": 52,
+        "key": "t2-cloud-bounce",
+        "cleared": true,
+        "steps": 1280
+      },
+      {
+        "golden": "b45d09f4",
+        "match": true,
+        "hash": "b45d09f4",
+        "ms": 144,
+        "key": "t3-stone-keep",
+        "cleared": true,
+        "steps": 2318
+      },
+      {
+        "golden": "cec3545d",
+        "match": true,
+        "hash": "cec3545d",
+        "ms": 153,
+        "key": "t3-lightbox-chain",
+        "cleared": true,
+        "steps": 1430
+      },
+      {
+        "golden": "94fa983e",
+        "match": true,
+        "hash": "94fa983e",
+        "ms": 98,
+        "key": "t4-domino-row",
+        "cleared": true,
+        "steps": 1913
+      },
+      {
+        "golden": "2666ac7d",
+        "match": true,
+        "hash": "2666ac7d",
+        "ms": 164,
+        "key": "t4-grand-observatory",
+        "cleared": true,
+        "steps": 1626
+      }
+    ],
+    "wallMs": 1304,
+    "allMatchGolden": true
+  },
+  "compat": {
+    "ok": true,
+    "rows": [
+      {
+        "golden": "37be6208",
+        "match": true,
+        "hash": "37be6208",
+        "ms": 102,
+        "key": "t1-first-tower",
+        "cleared": true,
+        "steps": 284
+      },
+      {
+        "golden": "930c2a5c",
+        "match": true,
+        "hash": "930c2a5c",
+        "ms": 142,
+        "key": "t1-glass-window",
+        "cleared": true,
+        "steps": 1860
+      },
+      {
+        "golden": "e0a09933",
+        "match": true,
+        "hash": "e0a09933",
+        "ms": 90,
+        "key": "t2-teak-scaffold",
+        "cleared": true,
+        "steps": 691
+      },
+      {
+        "golden": "3a1c99ea",
+        "match": true,
+        "hash": "3a1c99ea",
+        "ms": 105,
+        "key": "t2-cloud-bounce",
+        "cleared": true,
+        "steps": 1280
+      },
+      {
+        "golden": "b45d09f4",
+        "match": true,
+        "hash": "b45d09f4",
+        "ms": 169,
+        "key": "t3-stone-keep",
+        "cleared": true,
+        "steps": 2318
+      },
+      {
+        "golden": "cec3545d",
+        "match": true,
+        "hash": "cec3545d",
+        "ms": 166,
+        "key": "t3-lightbox-chain",
+        "cleared": true,
+        "steps": 1430
+      },
+      {
+        "golden": "94fa983e",
+        "match": true,
+        "hash": "94fa983e",
+        "ms": 95,
+        "key": "t4-domino-row",
+        "cleared": true,
+        "steps": 1913
+      },
+      {
+        "golden": "2666ac7d",
+        "match": true,
+        "hash": "2666ac7d",
+        "ms": 157,
+        "key": "t4-grand-observatory",
+        "cleared": true,
+        "steps": 1626
+      }
+    ],
+    "wallMs": 1361,
+    "allMatchGolden": true
+  },
+  "server": {
+    "status": 200,
+    "loadMs": 37,
+    "results": [
+      {
+        "ms": 27.8,
+        "cleared": true,
+        "key": "t1-first-tower",
+        "steps": 284,
+        "hash": "37be6208"
+      },
+      {
+        "ms": 81.9,
+        "cleared": true,
+        "key": "t1-glass-window",
+        "steps": 1860,
+        "hash": "930c2a5c"
+      },
+      {
+        "ms": 39.1,
+        "cleared": true,
+        "key": "t2-teak-scaffold",
+        "steps": 691,
+        "hash": "e0a09933"
+      },
+      {
+        "ms": 39.5,
+        "cleared": true,
+        "key": "t2-cloud-bounce",
+        "steps": 1280,
+        "hash": "3a1c99ea"
+      },
+      {
+        "ms": 109,
+        "cleared": true,
+        "key": "t3-stone-keep",
+        "steps": 2318,
+        "hash": "b45d09f4"
+      },
+      {
+        "ms": 87.9,
+        "cleared": true,
+        "key": "t3-lightbox-chain",
+        "steps": 1430,
+        "hash": "cec3545d"
+      },
+      {
+        "ms": 78.2,
+        "cleared": true,
+        "key": "t4-domino-row",
+        "steps": 1913,
+        "hash": "94fa983e"
+      },
+      {
+        "ms": 137,
+        "cleared": true,
+        "key": "t4-grand-observatory",
+        "steps": 1626,
+        "hash": "2666ac7d"
+      }
+    ],
+    "requested": "compat",
+    "node": "v22.23.4",
+    "pkg": "compat"
+  },
+  "serverMatchesWebkit": true,
+  "engine": {
+    "errors": [],
+    "ready": true,
+    "timings": {
+      "three_import_ms": 113,
+      "engine_module_ms": 113,
+      "rapier_standard_load_ms": 170,
+      "engine_ready_from_click_ms": 677,
+      "engine_ready_since_navigation_ms": 1003
+    }
+  },
+  "fpsLow": {
+    "triangles": 2274,
+    "shadows": false,
+    "quality": "low",
+    "seconds": 10,
+    "p95Ms": 45,
+    "medianMs": 24,
+    "frames": 355,
+    "calls": 15,
+    "pixelRatio": 1,
+    "fps": 35.5
+  }
+}
