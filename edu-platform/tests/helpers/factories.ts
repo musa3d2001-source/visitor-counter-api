@@ -266,3 +266,64 @@ export async function createContainer(opts: {
   }
   return { id: b.id, slug, priceFils: b.price_fils, mainFileId: null, previewFileId: null };
 }
+
+// ---------------------------------------------------------------------------
+// بنك الأسئلة: الكتب المدرسية ودروس المنهج، والمعلم المرتبط بمواده
+// ---------------------------------------------------------------------------
+
+export type TestTextbookLesson = { unit: number; number: number; pageStart: number; pageEnd: number; title?: string; unitTitle?: string };
+export type TestTextbook = { id: string; subjectId: string; term: 1 | 2; unitIds: Record<number, string>; lessonIds: string[] };
+
+/**
+ * كتاب مدرسي بوحداته ودروسه (إدخال مباشر في القاعدة، بلا audit).
+ * المادة من subjectId إن أُعطي (مثل مادة صف مخفي)، وإلا من الصف والمادة المبذورين.
+ * current (افتراضيًا true) يلغي «الطبعة الحالية» عن كتب المادة والفصل نفسيهما كما يفعل createTextbook.
+ */
+export async function createTextbookWithLessons(opts: {
+  level?: number;
+  subjectSlug?: string;
+  subjectId?: string;
+  term?: 1 | 2;
+  title?: string;
+  edition?: string;
+  current?: boolean;
+  rightsConfirmed?: boolean;
+  lessons?: TestTextbookLesson[];
+} = {}): Promise<TestTextbook> {
+  const subjectId = opts.subjectId ?? (await gradeAndSubject(opts.level ?? 7, opts.subjectSlug ?? "science")).subjectId;
+  const term = opts.term ?? 1;
+  const current = opts.current ?? true;
+  if (current) await sql`update textbooks set is_current = false where subject_id = ${subjectId} and term = ${term} and is_current`;
+  const [t] = await sql<{ id: string }[]>`
+    insert into textbooks (subject_id, term, title, edition, is_current, rights_confirmed_at)
+    values (${subjectId}, ${term}, ${opts.title ?? `كتاب اختبار ${uniq()}`}, ${opts.edition ?? "2026"}, ${current},
+            ${opts.rightsConfirmed === false ? null : new Date()})
+    returning id
+  `;
+  const unitIds: Record<number, string> = {};
+  const lessonIds: string[] = [];
+  for (const l of opts.lessons ?? [{ unit: 1, number: 1, pageStart: 10, pageEnd: 20 }]) {
+    if (!unitIds[l.unit]) {
+      const [u] = await sql<{ id: string }[]>`
+        insert into curriculum_units (textbook_id, number, title) values (${t.id}, ${l.unit}, ${l.unitTitle ?? `الوحدة ${l.unit}`}) returning id
+      `;
+      unitIds[l.unit] = u.id;
+    }
+    const [row] = await sql<{ id: string }[]>`
+      insert into curriculum_lessons (unit_id, number, title, page_start, page_end)
+      values (${unitIds[l.unit]}, ${l.number}, ${l.title ?? `الدرس ${l.number}`}, ${l.pageStart}, ${l.pageEnd})
+      returning id
+    `;
+    lessonIds.push(row.id);
+  }
+  return { id: t.id, subjectId, term, unitIds, lessonIds };
+}
+
+/** معلم مستقل (self_managed) بحساب دخول، مع صفوف teacher_subjects لمواده */
+export async function createTeacherWithSubjects(opts: { subjectIds: string[]; canUpload?: boolean; displayName?: string }): Promise<TestTeacher & { user: SessionUser }> {
+  const t = await createTeacher({ mode: "self_managed", canUpload: opts.canUpload, displayName: opts.displayName });
+  for (const subjectId of opts.subjectIds) {
+    await sql`insert into teacher_subjects (teacher_id, subject_id) values (${t.id}, ${subjectId}) on conflict do nothing`;
+  }
+  return { ...t, user: t.user! };
+}
