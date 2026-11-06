@@ -156,11 +156,11 @@
       ],
       "blend": true,
       "frame": {
-        "z": 1.5,
+        "z": 1.6,
         "cx": 0.62,
         "cy": 0.0
       },
-      "why": "1.5x punch-in on the top rim of the b2 patty (lace tips + fat bubbles), dark griddle above for the label"
+      "why": "1.6x punch-in on the top rim of the b2 patty (lace tips + fat bubbles), dark griddle above the label"
     },
     {
       "id": "S05",
@@ -255,7 +255,7 @@
       "id": "S07b",
       "clip": "b5_stack",
       "from": 6.4,
-      "to": 7.15,
+      "to": 6.65,
       "keys": [
         [
           6.4,
@@ -264,24 +264,13 @@
           1.0
         ],
         [
-          6.525,
-          2.375,
+          6.65,
+          2.5,
           1.0,
-          0.5
-        ],
-        [
-          7.15,
-          2.6875,
-          0.5,
-          0.5
+          1.0
         ]
       ],
-      "blend": [
-        [
-          6.56,
-          7.15
-        ]
-      ],
+      "blend": false,
       "crisp": [
         6.4,
         6.525
@@ -291,7 +280,32 @@
         "cx": 0.5,
         "cy": 0.6
       },
-      "why": "cut on contact: opens on the centre pickle's landing frame f54 (2.25 s) at 6.40; the first onion ring lands at real speed f57 = 6.525 (one 16th before the old onion cue; the SFX moves with it), then 0.5x on the resting stack so the second ring wave (f65+) never enters. Skips the hovering pickle (f22-35), the upright-disc morph (f38-48) and the pale airborne discs. Frame blending ghosted the falls and minterpolate warped them (both rejected)"
+      "why": "cut on contact: opens on the centre pickle's landing frame f54 (2.25 s) at 6.40; the first onion ring lands at real speed on f57 = 6.525 (the onion SFX moves there, one 16th before the old cue). Ends before the ring's AI hover (f57-64 it floats above the pickles) can read and before the second ring wave (f61+) reaches the label zone. Nearest frames: frame blending ghosted the falls, minterpolate warped them (both rejected)"
+    },
+    {
+      "id": "S07c",
+      "clip": "b5_stack",
+      "from": 6.65,
+      "to": 7.15,
+      "keys": [
+        [
+          6.65,
+          3.3333,
+          0.5,
+          0.5
+        ],
+        [
+          7.15,
+          3.5833,
+          0.5,
+          0.5
+        ]
+      ],
+      "blend": true,
+      "frame": {
+        "z": 1.0
+      },
+      "why": "jump cut on the 8th (the old onion beat): the same stack with everything landed (f80-f86), steam, calm dark space above for «مخلل وبصل… / يقرمشون»"
     },
     {
       "id": "S08",
