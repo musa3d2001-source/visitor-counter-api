@@ -8,8 +8,10 @@ import type * as React from "react";
 import { Dialog } from "radix-ui";
 import {
   BadgeCheck,
+  BookOpenText,
   ChartColumn,
   ExternalLink,
+  FileQuestionMark,
   FileText,
   GraduationCap,
   House,
@@ -48,9 +50,11 @@ const OWNER_GROUPS: NavGroup[] = [
     title: "المحتوى",
     items: [
       { href: "/admin/products", label: "المحتوى والمنتجات", Icon: FileText, tone: "sky" },
+      { href: "/admin/questions", label: "بنك الأسئلة", Icon: FileQuestionMark, tone: "violet" },
       { href: "/admin/review", label: "مراجعة المحتوى", Icon: BadgeCheck, badge: "review", tone: "gold" },
       { href: "/admin/teachers", label: "المعلمون", Icon: GraduationCap, tone: "pink" },
       { href: "/admin/catalog", label: "المراحل والمواد", Icon: Layers, tone: "green" },
+      { href: "/admin/curriculum", label: "المنهج", Icon: BookOpenText, tone: "teal" },
       { href: "/admin/bundles", label: "الباقات والدورات", Icon: Package, tone: "coral" },
     ],
   },
@@ -74,6 +78,7 @@ const TEACHER_GROUPS: NavGroup[] = [
     items: [
       { href: "/admin", label: "الرئيسية", Icon: House, exact: true, tone: "teal" },
       { href: "/admin/products", label: "محتواي", Icon: FileText, tone: "sky" },
+      { href: "/admin/questions", label: "بنك الأسئلة", Icon: FileQuestionMark, tone: "violet" },
       { href: "/admin/earnings", label: "أرباحي ومبيعاتي", Icon: Wallet, tone: "gold" },
       { href: "/admin/profile", label: "ملفي التعريفي", Icon: UserRound, tone: "pink" },
     ],
@@ -118,7 +123,8 @@ function NavSquircle({ Icon, tone, active }: { Icon: LucideIcon; tone: AdminTone
   );
 }
 
-function NavList({ role, pendingReview, onNavigate }: { role: StaffRole; pendingReview: number; onNavigate?: () => void }) {
+/** reviewHref: رابط بند المراجعة حين تكون الأسئلة وحدها بالانتظار (تبويب «الأسئلة») */
+function NavList({ role, pendingReview, reviewHref, onNavigate }: { role: StaffRole; pendingReview: number; reviewHref?: string; onNavigate?: () => void }) {
   const pathname = usePathname();
   return (
     <nav aria-label="قائمة لوحة التحكم" className="flex flex-col gap-4">
@@ -132,7 +138,7 @@ function NavList({ role, pendingReview, onNavigate }: { role: StaffRole; pending
               return (
                 <li key={href}>
                   <Link
-                    href={href}
+                    href={badge === "review" && reviewHref ? reviewHref : href}
                     onClick={onNavigate}
                     aria-current={active ? "page" : undefined}
                     className={cn(
@@ -256,12 +262,14 @@ export function AdminSidebar({
   adminName,
   role,
   pendingReview = 0,
+  reviewHref,
   logoUrl,
 }: {
   siteName: string;
   adminName: string;
   role: StaffRole;
   pendingReview?: number;
+  reviewHref?: string;
   logoUrl?: string | null;
 }) {
   return (
@@ -274,7 +282,7 @@ export function AdminSidebar({
       </div>
       <div className="mx-5 h-px bg-linear-to-l from-transparent via-white/20 to-transparent" aria-hidden />
       <div className="flex-1 overflow-y-auto px-4 py-4 [scrollbar-color:rgb(255_255_255/0.2)_transparent] [scrollbar-width:thin]">
-        <NavList role={role} pendingReview={pendingReview} />
+        <NavList role={role} pendingReview={pendingReview} reviewHref={reviewHref} />
       </div>
       <UserFoot adminName={adminName} role={role} />
     </aside>
@@ -285,12 +293,14 @@ export function AdminMobileNav({
   siteName,
   role,
   pendingReview = 0,
+  reviewHref,
   adminName,
   logoUrl,
 }: {
   siteName: string;
   role: StaffRole;
   pendingReview?: number;
+  reviewHref?: string;
   adminName?: string;
   logoUrl?: string | null;
 }) {
@@ -349,7 +359,7 @@ export function AdminMobileNav({
             <Dialog.Description className="sr-only">روابط لوحة الإدارة</Dialog.Description>
             <div className="mx-4 h-px bg-linear-to-l from-transparent via-white/20 to-transparent" aria-hidden />
             <div className="flex-1 overflow-y-auto px-4 py-4">
-              <NavList role={role} pendingReview={pendingReview} onNavigate={() => setOpen(false)} />
+              <NavList role={role} pendingReview={pendingReview} reviewHref={reviewHref} onNavigate={() => setOpen(false)} />
             </div>
             <UserFoot adminName={adminName} role={role} />
           </Dialog.Content>

@@ -25,6 +25,7 @@ const FIELD_LABELS: Record<string, string> = {
   footer_note: "نص التذييل",
   fee_percent_bps: "نسبة الرسوم",
   fee_fixed_fils: "الرسوم الثابتة",
+  hide_textbook_exercises: "إخفاء تمارين الكتاب",
 };
 
 export async function saveSettingsAction(_p: ActionState, fd: FormData): Promise<ActionState> {
@@ -59,6 +60,7 @@ export async function saveSettingsAction(_p: ActionState, fd: FormData): Promise
       footer_note: str(fd, "footer_note"),
       fee_percent_bps: Math.round(feePct * 100),
       fee_fixed_fils: feeFixed,
+      hide_textbook_exercises: bool(fd, "hide_textbook_exercises"),
     };
     const parsed = settingsSchema.partial().safeParse(patch);
     if (!parsed.success) {

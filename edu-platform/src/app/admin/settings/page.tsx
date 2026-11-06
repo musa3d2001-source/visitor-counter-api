@@ -77,6 +77,7 @@ export default async function SettingsPage() {
             footer_note: s.footer_note,
             fee_percent: String(s.fee_percent_bps / 100),
             fee_fixed: filsToKwdString(s.fee_fixed_fils),
+            hide_textbook_exercises: s.hide_textbook_exercises,
           }}
         />
 

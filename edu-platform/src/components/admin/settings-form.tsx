@@ -2,7 +2,7 @@
 
 import { usePreservingAction } from "./use-preserving-action";
 import { useState } from "react";
-import { ArrowDown, ArrowUp, BookOpen, CheckCircle2, CircleHelp, Palette, Percent, Phone, Plus, Save, Sparkles, Trash2, Type } from "lucide-react";
+import { ArrowDown, ArrowUp, BookOpen, CheckCircle2, CircleHelp, Gamepad2, Palette, Percent, Phone, Plus, Save, Sparkles, Trash2, Type } from "lucide-react";
 import { ToneIcon } from "./icon-tile";
 import type { AdminTone } from "./tones";
 import type { ActionState } from "@/lib/action-state";
@@ -33,6 +33,8 @@ export type SettingsValues = {
   fee_percent: string;
   fee_fixed: string;
   footer_note: string;
+  /** يخفي فورًا أسئلة «تمرين من الكتاب» من التقديم للطلاب */
+  hide_textbook_exercises: boolean;
 };
 
 const PREVIEW_VARS = (primary: string, accent: string) =>
@@ -186,6 +188,19 @@ export function SettingsForm({ action, values }: { action: ServerAction; values:
             <Checkbox name="videos_enabled" defaultChecked={values.videos_enabled} label="تفعيل قسم دروس الفيديو للطلاب" />
           </div>
         </div>
+      </Card>
+
+      <Card title="الألعاب" icon={<Gamepad2 />} tone="coral" description="أسئلة اللعبة التي تصل للطلاب من بنك الأسئلة.">
+        <Checkbox
+          id="hide_textbook_exercises"
+          name="hide_textbook_exercises"
+          defaultChecked={values.hide_textbook_exercises}
+          label="إخفاء تمارين الكتاب من الطلاب فورًا"
+          aria-describedby="hide_textbook_exercises-hint"
+        />
+        <p id="hide_textbook_exercises-hint" className="mt-1 text-[0.85rem] leading-7 text-muted">
+          يوقف تقديم كل الأسئلة المصنفة «تمرين من الكتاب بصياغة معدّلة» للطلاب فور الحفظ، دون حذفها. ألغِ التحديد لإعادتها.
+        </p>
       </Card>
 
       <Card title="الرسوم المعتمدة لحساب أرباح المعلمين" icon={<Percent />} tone="gold">

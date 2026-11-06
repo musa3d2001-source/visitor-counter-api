@@ -3,6 +3,7 @@ import { headers } from "next/headers";
 import { notFound } from "next/navigation";
 import { requireStaff } from "@/server/auth/permissions";
 import { pendingReviewCount } from "@/server/admin/products";
+import { pendingQuestionCount } from "@/server/questions/bank";
 import { getSettings } from "@/server/platform/settings";
 import { storage } from "@/server/storage";
 import { AdminMobileNav, AdminSidebar } from "@/components/admin/sidebar";
@@ -18,7 +19,7 @@ export const metadata: Metadata = {
  * الصفحات الخاصة بالمالك تستدعي requireOwnerPage() (المعلم يحصل على 404).
  */
 /** مسارات المالك فقط — يُرفض المعلم مبكرًا هنا (قبل بث الصفحة) لتعود حالة 404 صحيحة */
-const OWNER_ONLY_PREFIXES = ["/admin/teachers", "/admin/review", "/admin/catalog", "/admin/bundles", "/admin/orders", "/admin/students", "/admin/coupons", "/admin/reports", "/admin/settings", "/admin/game"];
+const OWNER_ONLY_PREFIXES = ["/admin/teachers", "/admin/review", "/admin/catalog", "/admin/bundles", "/admin/orders", "/admin/students", "/admin/coupons", "/admin/reports", "/admin/settings", "/admin/game", "/admin/curriculum"];
 
 export default async function AdminLayout({ children }: { children: React.ReactNode }) {
   const actor = await requireStaff();
@@ -26,13 +27,21 @@ export default async function AdminLayout({ children }: { children: React.ReactN
     const path = (await headers()).get("x-pathname") ?? "";
     if (OWNER_ONLY_PREFIXES.some((p) => path === p || path.startsWith(`${p}/`))) notFound();
   }
-  const [settings, pending] = await Promise.all([getSettings(), actor.kind === "owner" ? pendingReviewCount() : Promise.resolve(0)]);
+  // شارة المراجعة للمالك: المحتوى + الأسئلة بانتظار المراجعة
+  const [settings, pendingContent, pendingQuestions] = await Promise.all([
+    getSettings(),
+    actor.kind === "owner" ? pendingReviewCount() : Promise.resolve(0),
+    actor.kind === "owner" ? pendingQuestionCount() : Promise.resolve(0),
+  ]);
+  const pending = pendingContent + pendingQuestions;
+  // إن كانت الأسئلة وحدها بالانتظار يفتح بند المراجعة تبويب «الأسئلة» مباشرة
+  const reviewHref = pendingContent === 0 && pendingQuestions > 0 ? "/admin/review?tab=questions" : undefined;
   const role = actor.kind;
   const name = actor.kind === "teacher" ? actor.teacherName : actor.name;
   const logoUrl = settings.logo_key ? storage().publicUrl(settings.logo_key) : null;
   return (
     <div className="flex min-h-dvh bg-canvas">
-      <AdminSidebar siteName={settings.site_name} adminName={name} role={role} pendingReview={pending} logoUrl={logoUrl} />
+      <AdminSidebar siteName={settings.site_name} adminName={name} role={role} pendingReview={pending} reviewHref={reviewHref} logoUrl={logoUrl} />
       <div className="relative isolate min-w-0 flex-1">
         {/* وهج مشمس خفيف أعلى مساحة العمل (زخرفي) */}
         <div
@@ -40,7 +49,7 @@ export default async function AdminLayout({ children }: { children: React.ReactN
           aria-hidden
         />
         <SandboxBanner />
-        <AdminMobileNav siteName={settings.site_name} role={role} pendingReview={pending} adminName={name} logoUrl={logoUrl} />
+        <AdminMobileNav siteName={settings.site_name} role={role} pendingReview={pending} reviewHref={reviewHref} adminName={name} logoUrl={logoUrl} />
         <main id="main" className="mx-auto w-full max-w-[84rem] px-4 pt-6 pb-16 sm:px-6 lg:px-10 lg:pt-9">
           {children}
         </main>
