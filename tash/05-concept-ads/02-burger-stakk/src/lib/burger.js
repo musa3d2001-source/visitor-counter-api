@@ -82,7 +82,7 @@ function bunTextures(kind, seed) {
   const crown = kind === 'crown';
   const col = crown
     ? ramp([[0, '#E2B878'], [0.05, '#D19A52'], [0.16, '#BB7A33'], [0.3, '#A05A1C'], [0.48, '#8A4714'], [0.75, '#7A3B0F'], [1, '#70350D']])
-    : ramp([[0, '#9C5620'], [0.25, '#A8622A'], [0.42, '#B87634'], [0.62, '#C98E48'], [0.85, '#D9A866'], [1, '#E2BA80']]);
+    : ramp([[0, '#8E4A18'], [0.3, '#9E5A22'], [0.5, '#AE6A2A'], [0.7, '#BE803A'], [0.88, '#CC9550'], [1, '#D6A866']]);
   const [map, rough, bump] = paintMulti(1024, 512, [{ srgb: true, repeatU: true }, { repeatU: true }, { repeatU: true }], (u, v, [c, r, b]) => {
     const a = u * TAU, cx = Math.cos(a), sx = Math.sin(a);
     const m1 = fbm(cx * 2.2, sx * 2.2, v * 6 + seed, 4);          // large mottling
@@ -201,7 +201,7 @@ function buildSesame(curve, disp, seed) {
 export function pattyShape(seed = 5, R0 = 1.13) {
   const R = ph => R0 * (1 + 0.05 * nAng(ph, 1.3, seed) + 0.03 * nAng(ph, 4.2, seed + 3) + 0.014 * nAng(ph, 11, seed + 6));
   const crust = (x, z) => 0.62 * ridged(x * 4.2 + seed, z * 4.2, 0.7, 4) + 0.38 * (0.5 + 0.5 * fbm(x * 11, z * 11, seed + 1, 3));
-  const hh = u => 0.07 * (1 - 0.84 * smooth(0.45, 1.0, u));
+  const hh = u => 0.075 * (1 - 0.8 * smooth(0.66, 1.0, u));
   const top = (x, z, u) => hh(u) + (crust(x, z) - 0.5) * 0.04 * (1 - 0.35 * u);
   return { R, crust, hh, top, R0 };
 }
@@ -252,8 +252,8 @@ function pattyTextures(S, seed, res, uvR) {
     const bb = cr * 0.55 + 0.3 * ridged(x * 26, z * 26, seed, 3) + 0.15 * (0.5 + 0.5 * f3);
     b[0] = b[1] = b[2] = clamp(bb * 255, 0, 255);
     // alpha (lace holes): keep ridges near the rim
-    const thr = smooth(0.84, 1.0, uu);
-    const keep = uu < 0.84 ? 1 : (lace + 0.18 * f3 > 0.35 + thr * 0.62 ? 1 : 0);
+    const thr = smooth(0.88, 1.0, uu);
+    const keep = uu < 0.88 ? 1 : (lace + 0.18 * f3 > 0.3 + thr * 0.55 ? 1 : 0);
     a[0] = a[1] = a[2] = uu > 1.0 ? 0 : keep * 255;
   });
   return { map, rough, bump, alpha };
@@ -462,7 +462,7 @@ export function buildOnions(seed = 41, layout) {
 
 // ------------------------------------------------------------------ SAUCE (dollop → splat morph) with relish flecks
 export function buildSauce(seed = 51) {
-  const R = ph => 0.8 * (1 + 0.12 * nAng(ph, 1.6, seed) + 0.06 * nAng(ph, 5, seed + 2));
+  const R = ph => 0.9 * (1 + 0.12 * nAng(ph, 1.6, seed) + 0.06 * nAng(ph, 5, seed + 2));
   const blob = (s, u, ph) => {
     const th = u * Math.PI / 2, rb = 0.2;
     if (s === 0) return [rb * Math.sin(th) * Math.cos(ph), rb + rb * Math.cos(th) * 1.15, rb * Math.sin(th) * Math.sin(ph)];
@@ -489,12 +489,19 @@ export function buildSauce(seed = 51) {
   const mat = new THREE.MeshPhysicalMaterial({ map, roughness: 0.14, clearcoat: 1, clearcoatRoughness: 0.06, sheen: 0.3, sheenColor: new THREE.Color('#ffd0b0'), emissive: new THREE.Color('#ff5a20'), emissiveIntensity: 0.05 });
   const m = new THREE.Mesh(g0, mat); m.castShadow = m.receiveShadow = true; m.morphTargetInfluences = [1];
   const g = new THREE.Group(); g.add(m); g.name = 'sauce'; g.userData.mesh = m; g.userData.mat = mat;
+  // drips over the rim (grow with 'ooze')
+  const prof = []; for (let k = 0; k <= 28; k++) { const s = k / 28; const r = 0.034 - 0.012 * smooth(0, 0.5, s) + 0.016 * smooth(0.55, 0.85, s); const end = s > 0.85 ? Math.sqrt(Math.max(0, 1 - ((s - 0.85) / 0.15) ** 2)) : 1; prof.push(new THREE.Vector2(Math.max(1e-4, r * end), -s)); }
+  const dg = new THREE.LatheGeometry(prof, 20);
+  g.userData.drips = [0.35, 1.25, 2.1, -0.6].map((ph, i) => {
+    const d = new THREE.Mesh(dg, mat); const rr = R(ph) * 0.98;
+    d.position.set(Math.cos(ph) * rr, 0.01, Math.sin(ph) * rr); d.userData.len = [0.16, 0.11, 0.14, 0.09][i]; d.castShadow = true; g.add(d); return d;
+  });
+  g.userData.ooze = k => g.userData.drips.forEach(d => { d.visible = k > 0.02; d.scale.set(1, Math.max(0.01, k * d.userData.len), 1); });
+  g.userData.ooze(1);
   return g;
 }
 
 // ------------------------------------------------------------------ full burger
-// stack heights (world y of each layer group origin). Double smash: heel / patty+cheese / patty+cheese / pickles+onions / sauce / crown
-export const REST = { heel: 0, patty: 0.448, cheese: 0.448, patty2: 0.618, cheese2: 0.618, pickles: 0.618, onions: 0.618, sauce: 0.618 + 0.172, crown: 0.618 + 0.172 + 0.03 };
 export const ORDER = ['heel', 'patty', 'cheese', 'patty2', 'cheese2', 'pickles', 'onions', 'sauce', 'crown'];
 
 export function buildBurger() {
@@ -511,12 +518,18 @@ export function buildBurger() {
   const pk = [[-0.62, 0.42, 0, 0.3, [0.06, -0.08]], [0.66, 0.38, 0, 0.31, [-0.05, 0.09]], [0.12, -0.7, 0, 0.3, [0.1, 0.02]], [0.05, 0.78, 0, 0.29, [-0.12, 0.05]], [-0.12, 0.02, 0.0, 0.3, [0.02, 0.03]], [-0.7, -0.38, 0, 0.29, [0.04, 0.1]]]
     .map(([x, z, dy, r, t]) => [x, z, topAt(x, z) + 0.014 + dy, r, t]);
   const pickles = buildPickles(31, pk);
-  const on = [[0.25, 0.1, 0.165, 0.58, [0.05, 0.03]], [-0.3, 0.3, 0.172, 0.5, [-0.05, 0.05]], [0.18, -0.4, 0.17, 0.44, [0.06, -0.06]], [-0.35, -0.3, 0.168, 0.36, [0.04, 0.05]]];
+  const on = [[0.3, 0.12, 0.165, 0.66, [0.05, 0.03]], [-0.36, 0.34, 0.173, 0.56, [-0.05, 0.05]], [0.22, -0.42, 0.17, 0.5, [0.06, -0.06]], [-0.4, -0.34, 0.168, 0.42, [0.04, 0.05]]];
   const onions = buildOnions(41, on);
   const sauce = buildSauce(51);
   const crown = buildBun('crown', 7);
   const group = new THREE.Group();
+  const h0 = S.hh(0);
+  const REST = { heel: 0, patty: 0.383 + h0 * 0.9 + 0.002 };
+  REST.cheese = REST.patty;
+  REST.patty2 = REST.patty + (h0 + 0.006 + 0.03) + h0 * 0.9 + 0.004;
+  REST.cheese2 = REST.pickles = REST.onions = REST.patty2;
+  REST.sauce = REST.patty2 + 0.185; REST.crown = REST.sauce + 0.04;
   const L = { heel, patty, cheese: cheese.group, patty2, cheese2: cheese2.group, pickles, onions, sauce, crown };
   for (const k in L) { group.add(L[k]); L[k].position.y = REST[k]; L[k].userData.restY = REST[k]; }
-  return { group, L, cheese, cheese2, S };
+  return { group, L, cheese, cheese2, S, REST };
 }

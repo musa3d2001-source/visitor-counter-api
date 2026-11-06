@@ -16,7 +16,7 @@ const renderer = new THREE.WebGLRenderer({ antialias: false, preserveDrawingBuff
 renderer.setPixelRatio(1); renderer.setSize(W, H);
 renderer.toneMapping = THREE.ACESFilmicToneMapping; renderer.toneMappingExposure = 1.0;
 renderer.outputColorSpace = THREE.SRGBColorSpace;
-stage.appendChild(renderer.domElement);
+stage.prepend(renderer.domElement); // under vignette, grain and type
 renderer.domElement.id = 'gl';
 
 const scene = new THREE.Scene();
@@ -31,14 +31,15 @@ const fontsReady = Promise.all([
 ]);
 await fontsReady; await document.fonts.ready; // the label CanvasTexture needs the real fonts
 
-const studio = makeStudio(renderer);
 const bottle = makeBottle();
 scene.add(bottle.group);
 const floor = makeFloor(W, H); scene.add(floor);
 const backdrop = makeBackdrop(); scene.add(backdrop);
 
+const studio = makeStudio(renderer);
+
 // the physical sweep strip (seen refracted through the glass during the hook)
-const sweepBack = new THREE.Mesh(new THREE.PlaneGeometry(0.07, 6), new THREE.MeshBasicMaterial({ color: 0xffffff }));
+const sweepBack = new THREE.Mesh(new THREE.PlaneGeometry(0.05, 6), new THREE.MeshBasicMaterial({ color: 0xffffff, map: studio.soft, transparent: false }));
 sweepBack.position.set(0, 1, -1.6); sweepBack.name = 'sweepStrip'; scene.add(sweepBack);
 
 // direct lights: warm key (shapes brass + liquid), cool rim
@@ -51,7 +52,7 @@ const fx = new THREE.Scene();
 const dustNear = makeParticles({ count: 420, kind: 0, seed: 11, color: '#f3c46a', size: 0.010, opacity: 0.9, box: [-1.6, 1.6, -0.1, 2.6, -1.6, 2.2] });
 const dustFar = makeParticles({ count: 260, kind: 0, seed: 23, color: '#d99a3c', size: 0.012, opacity: 0.6, box: [-3.5, 3.5, -0.1, 3.0, -4.0, -1.0] });
 const mistDrops = makeParticles({ count: 5200, kind: 1, seed: 31, color: '#ffe2b0', size: 0.0032, opacity: 0.55 });
-const mistCloud = makeParticles({ count: 220, kind: 2, seed: 37, color: '#c98a45', size: 0.05, opacity: 0.05 });
+const mistCloud = makeParticles({ count: 900, kind: 2, seed: 37, color: '#c98a45', size: 0.06, opacity: 0.018 });
 fx.add(dustFar, dustNear, mistCloud, mistDrops);
 const PARTS = [dustNear, dustFar, mistDrops, mistCloud];
 
@@ -78,9 +79,14 @@ if (PASS !== 'final') {
     const ground = new THREE.Mesh(new THREE.PlaneGeometry(40, 40), clay('#5d5a55', 0.9)); ground.rotation.x = -Math.PI / 2; scene.add(ground);
     passMats.ground = ground;
   }
-  for (const p of PARTS) { p.material.blending = THREE.NormalBlending; p.material.uniforms.uColor.value.set(PASS === 'wire' ? '#a8a49a' : '#d8d2c6'); }
+  for (const p of PARTS) { p.material.blending = THREE.NormalBlending; p.material.uniforms.uNormal.value = 1; p.material.uniforms.uColor.value.set(PASS === 'wire' ? '#a8a49a' : '#e9e4da'); }
   mistCloud.visible = false;
 }
+
+// debug switches (never used for deliverables): ?hide=cavity,liquid  ?nodof
+const HIDE = (q.get('hide') || '').split(',').filter(Boolean);
+scene.traverse(o => { if (HIDE.includes(o.name)) o.userData.hidden = true; });
+const NODOF = q.has('nodof');
 
 const overlay = makeOverlay(stage, { W, H, clean: CLEAN, poster: POSTER });
 const grainCv = document.getElementById('grain');
@@ -128,18 +134,19 @@ function renderFrame(t) {
   dustNear.visible = dustFar.visible = s.dust > 0;
   dustNear.material.uniforms.uOpacity.value = 0.9 * s.dust; dustFar.material.uniforms.uOpacity.value = 0.6 * s.dust;
   mistDrops.visible = s.mist > 0; mistCloud.visible = s.mist > 0 && PASS !== 'clay' && PASS !== 'wire';
-  mistDrops.material.uniforms.uOpacity.value = 0.55 * s.mist; mistCloud.material.uniforms.uOpacity.value = 0.05 * s.mist;
+  mistDrops.material.uniforms.uOpacity.value = 0.55 * s.mist; mistCloud.material.uniforms.uOpacity.value = 0.018 * s.mist;
 
+  scene.traverse(o => { if (o.userData.hidden) o.visible = false; });
   // 1) scene → MSAA HDR target (+depth)
   renderer.setRenderTarget(post.rtMain); renderer.setClearColor(0x000000, 1); renderer.clear(); renderer.render(scene, camera);
   // 2) depth of field
-  const ap = PASS === 'wire' ? 0 : s.aperture;
+  const ap = (PASS === 'wire' || NODOF) ? 0 : s.aperture;
   const target = ap > 0 ? post.dof.run(renderer, post.rtMain, camera, s.focus, ap) : post.dof.copy(renderer, post.rtMain);
   // 3) particles with their own bokeh, occluded by scene depth
   renderer.setRenderTarget(target); renderer.autoClear = false; renderer.render(fx, camera); renderer.autoClear = true;
   // 4) gentle highlight bloom (halation, not glow), 5) tone-map → screen
   if (PASS !== 'wire' && s.bloom > 0) { post.bloom.strength = s.bloom; post.bloom.render(renderer, null, target, 0, false); }
-  post.output.render(renderer, null, target);
+  post.output.render(renderer, target, s.exposure, Math.round(t * 30), PASS === 'wire' ? 0.4 : 1);
   renderer.setRenderTarget(null);
 }
 

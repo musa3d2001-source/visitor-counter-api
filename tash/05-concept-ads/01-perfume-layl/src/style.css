@@ -1,8 +1,7 @@
 html, body { margin: 0; background: #050403; overflow: hidden; }
 #stage { position: relative; width: 1080px; height: 1920px; overflow: hidden; background: #050403; }
 #gl { position: absolute; inset: 0; width: 1080px; height: 1920px; display: block; }
-#vignette { position: absolute; inset: 0; pointer-events: none;
-  background: radial-gradient(ellipse 78% 62% at 50% 50%, rgba(0,0,0,0) 55%, rgba(0,0,0,.42) 100%); }
+#vignette { display: none; } /* vignette lives in the GL output pass (dithered, no banding) */
 #grain { position: absolute; inset: 0; width: 1080px; height: 1920px; opacity: .06; mix-blend-mode: overlay; pointer-events: none; }
 #ui { position: absolute; inset: 0; pointer-events: none; }
 

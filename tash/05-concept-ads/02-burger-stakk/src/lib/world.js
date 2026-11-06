@@ -46,6 +46,7 @@ export function foodLights(scene) {
   L.rimR = new THREE.SpotLight('#FFF1DC', 260, 0, 0.55, 0.9, 2); L.rimR.position.set(3.6, 3.4, -4.2); L.rimR.target.position.set(0, 0.7, 0);
   L.rimL = new THREE.SpotLight('#FFD2A0', 140, 0, 0.6, 0.9, 2); L.rimL.position.set(-4.2, 2.6, -3.4); L.rimL.target.position.set(0, 0.7, 0);
   L.fill = new THREE.HemisphereLight('#FFF1E2', '#E23B2E', 0.12);
+  L.front = new THREE.SpotLight('#FFE9D0', 70, 0, 0.6, 1.0, 2); L.front.position.set(0.8, 1.1, 7.5); L.front.target.position.set(0, 0.75, 0); // fill card at lens height
   for (const k in L) { scene.add(L[k]); if (L[k].target) scene.add(L[k].target); }
   return L;
 }

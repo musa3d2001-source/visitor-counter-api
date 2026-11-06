@@ -2,8 +2,8 @@
 // Everything here is built procedurally (no external assets). Units: 1 = bottle width ≈ 10 cm.
 import * as THREE from 'three';
 import { Reflector } from 'three/addons/objects/Reflector.js';
+import { mergeVertices, mergeGeometries } from 'three/addons/utils/BufferGeometryUtils.js';
 import { UnrealBloomPass } from 'three/addons/postprocessing/UnrealBloomPass.js';
-import { OutputPass } from 'three/addons/postprocessing/OutputPass.js';
 import { rng } from '/_system/motion/kit.js';
 
 export const PAL = {
@@ -12,12 +12,12 @@ export const PAL = {
 
 // ------------------------------------------------------------------------------------------ geometry
 /** Pointed (two-centred) arch outline, flat-topped where the neck sits. Returns array of Vector2 (CCW). */
-export function archPoints({ a = 0.48, hs = 0.8, R = 0.62, f = 0.11, y0 = 0, rc = 0.04, n = 64, yClip = null }) {
+export function archPoints({ a = 0.48, hs = 0.8, R = 0.62, f = 0.11, y0 = 0, rc = 0.04, n = 160, yClip = null }) {
   const pts = [];
   const cxR = a - R; // centre of the right arc (sits left of the axis)
   const angTop = Math.acos((f - cxR) / R);
   // bottom-right rounded corner
-  const corner = (cx, cy, a0, a1) => { for (let i = 0; i <= 8; i++) { const t = a0 + (a1 - a0) * i / 8; pts.push(new THREE.Vector2(cx + rc * Math.cos(t), cy + rc * Math.sin(t))); } };
+  const corner = (cx, cy, a0, a1) => { for (let i = 0; i <= 14; i++) { const t = a0 + (a1 - a0) * i / 14; pts.push(new THREE.Vector2(cx + rc * Math.cos(t), cy + rc * Math.sin(t))); } };
   corner(-a + rc, y0 + rc, Math.PI, Math.PI * 1.5);
   corner(a - rc, y0 + rc, -Math.PI / 2, 0);
   // right side up to the spring line, then right arc to the neck plateau
@@ -38,12 +38,29 @@ export function archPoints({ a = 0.48, hs = 0.8, R = 0.62, f = 0.11, y0 = 0, rc 
   return out.filter((p, i, arr) => i === 0 || p.distanceTo(arr[i - 1]) > 1e-5);
 }
 
+/** Extrude with smooth side walls (bevel + sides share normals) and perfectly flat front/back faces.
+ *  ExtrudeGeometry is non-indexed, so its normals are per facet — refraction through it shows every facet. */
 function extrudeArch(opts, depth, bevel, bevelSeg = 8) {
   const shape = new THREE.Shape(archPoints(opts));
   const g = new THREE.ExtrudeGeometry(shape, { depth, bevelEnabled: true, bevelThickness: bevel, bevelSize: bevel, bevelSegments: bevelSeg, curveSegments: 64, steps: 1 });
   g.translate(0, 0, -depth / 2);
-  g.computeVertexNormals();
-  return g;
+  const part = (grp) => {
+    const out = new THREE.BufferGeometry();
+    const src = g.attributes.position.array.slice(grp.start * 3, (grp.start + grp.count) * 3);
+    out.setAttribute('position', new THREE.BufferAttribute(src, 3));
+    return out;
+  };
+  const caps = part(g.groups.find(x => x.materialIndex === 0));
+  let sides = part(g.groups.find(x => x.materialIndex === 1));
+  caps.computeVertexNormals();                       // flat
+  sides = mergeVertices(sides, 1e-5); sides.computeVertexNormals(); sides = sides.toNonIndexed();
+  const merged = mergeGeometries([caps, sides]);
+  // planar UVs (x,y) for completeness
+  const P = merged.attributes.position, uv = new Float32Array(P.count * 2);
+  for (let i = 0; i < P.count; i++) { uv[i * 2] = P.getX(i) + 0.5; uv[i * 2 + 1] = P.getY(i) / 1.5; }
+  merged.setAttribute('uv', new THREE.BufferAttribute(uv, 2));
+  g.dispose();
+  return merged;
 }
 
 export const DIM = (() => {
@@ -97,9 +114,18 @@ function labelTexture() {
 export function makeStudio(renderer) {
   const env = new THREE.Scene(); env.background = new THREE.Color(0, 0, 0);
   const strips = {};
+  // softbox falloff: flat centre, smooth edges across the width and at the ends (no aliasing in macro reflections)
+  const sc = document.createElement('canvas'); sc.width = 64; sc.height = 256; const sx = sc.getContext('2d');
+  const gx = sx.createLinearGradient(0, 0, 64, 0);
+  gx.addColorStop(0, 'rgba(255,255,255,0)'); gx.addColorStop(0.22, '#fff'); gx.addColorStop(0.78, '#fff'); gx.addColorStop(1, 'rgba(255,255,255,0)');
+  sx.fillStyle = gx; sx.fillRect(0, 0, 64, 256);
+  sx.globalCompositeOperation = 'destination-in';
+  const gy = sx.createLinearGradient(0, 0, 0, 256); gy.addColorStop(0, 'rgba(0,0,0,0)'); gy.addColorStop(0.08, '#000'); gy.addColorStop(0.92, '#000'); gy.addColorStop(1, 'rgba(0,0,0,0)');
+  sx.fillStyle = gy; sx.fillRect(0, 0, 64, 256);
+  const soft = new THREE.CanvasTexture(sc); soft.colorSpace = THREE.NoColorSpace;
   const add = (name, w, h, pos, look = [0, 0.8, 0]) => {
-    const m = new THREE.Mesh(new THREE.PlaneGeometry(w, h), new THREE.MeshBasicMaterial({ color: 0x000000, side: THREE.DoubleSide }));
-    m.position.set(...pos); m.lookAt(...look); env.add(m); strips[name] = m; return m;
+    const m = new THREE.Mesh(new THREE.PlaneGeometry(w, h), new THREE.MeshBasicMaterial({ color: 0x000000, side: THREE.DoubleSide, map: soft }));
+    m.position.set(...pos); m.lookAt(...look); m.userData.home = { pos: [...pos], look: [...look] }; env.add(m); strips[name] = m; return m;
   };
   add('keyL', 0.7, 8, [-1.7, 1.2, 4.2]);       // tall warm strip behind camera-left: long vertical streak on the front face
   add('keyR', 0.35, 8, [1.9, 1.2, 4.0]);       // thinner partner, camera-right
@@ -109,7 +135,9 @@ export function makeStudio(renderer) {
   add('rimR', 0.35, 7, [3.0, 1.0, -2.2]);
   add('top', 3.0, 1.4, [0, 5.0, 1.0]);         // overhead softbox (top bevels, cap top, liquid surface)
   add('fill', 2.4, 0.22, [0.0, 0.05, 3.6]);    // low front kicker (bottom bevel line)
-  add('sweep', 0.12, 9, [0, 1, 3]);            // the hook strip (animated)
+  add('frontL', 0.065, 9, [-0.33, 1.0, 4.6]);   // narrow strips behind camera: crisp streaks on the flat front face
+  add('frontR', 0.05, 9, [0.44, 1.0, 4.4]);
+  add('sweep', 0.09, 12, [0, 1, 3]);           // the hook strip (animated)
   add('back', 2.6, 1.4, [0, 0.6, -3.6]);       // warm back card: seen through the liquid
   const pmrem = new THREE.PMREMGenerator(renderer);
   pmrem.compileCubemapShader();
@@ -123,12 +151,13 @@ export function makeStudio(renderer) {
       strips[n].visible = !!v;
       if (v) strips[n].material.color.setRGB(v[0] * v[3], v[1] * v[3], v[2] * v[3]);
     }
+    for (const n in strips) { const h = strips[n].userData.home; const p = (cfg.pos && cfg.pos[n]) || h.pos; strips[n].position.set(...p); strips[n].lookAt(...h.look); }
     if (cfg.sweepPos) { strips.sweep.position.set(...cfg.sweepPos); strips.sweep.lookAt(0, 0.8, 0); }
-    const target = pmrem.fromScene(env, 0, 0.1, 50, { size: 256, position: new THREE.Vector3(0, 0.8, 0) });
+    const target = pmrem.fromScene(env, 0, 0.1, 50, { size: 512, position: new THREE.Vector3(0, 0.8, 0) });
     if (key) cache.set(key, target); else { if (rt) rt.dispose(); rt = target; }
     return target.texture;
   }
-  return { env, strips, build };
+  return { env, strips, build, soft };
 }
 
 // ------------------------------------------------------------------------------------------ bottle
@@ -254,10 +283,11 @@ const floorShader = {
       vec3 refl = texture2DProj(tDiffuse, vUv).rgb;
       float r = length(vWorld.xz);
       float fadeR = 1.0 - smoothstep(0.6, 3.2, r);
-      vec3 col = vec3(0.0035, 0.003, 0.0025);
+      vec3 col = vec3(0.0006, 0.0005, 0.0004);
       col += uPoolColor * uPool * exp(-r * r * 2.6);            // warm light pool under the bottle
-      float fz = exp(-max(vWorld.z - 0.22, 0.0) * 0.55);
-      col += refl * uRefl * fadeR * fz;
+      // glossy black acrylic at a grazing view: strong near the contact, never fully gone (it also mirrors the backdrop)
+      float dz = max(vWorld.z - 0.22, 0.0);
+      col += refl * uRefl * (0.50 * exp(-dz * 0.22) + 0.18);
       gl_FragColor = vec4(col, 1.0);
       #include <tonemapping_fragment>
       #include <colorspace_fragment>
@@ -344,7 +374,7 @@ const particleVS = /* glsl */`
   }`;
 
 const particleFS = /* glsl */`
-  uniform vec3 uColor; uniform sampler2D tDepth; uniform vec2 uRes; uniform float uNear, uFar, uOcclude, uKindF;
+  uniform vec3 uColor; uniform sampler2D tDepth; uniform vec2 uRes; uniform float uNear, uFar, uOcclude, uKindF, uNormal;
   varying float vA; varying float vSoft; varying vec3 vCol;
   float linDepth(float d){ float z = d * 2.0 - 1.0; return (2.0 * uNear * uFar) / (uFar + uNear - z * (uFar - uNear)); }
   void main(){
@@ -359,7 +389,7 @@ const particleFS = /* glsl */`
     float sceneZ = linDepth(texture2D(tDepth, gl_FragCoord.xy / uRes).r);
     float myZ = -vViewZ;
     a *= mix(1.0, uOcclude, step(sceneZ + 0.02, myZ));
-    gl_FragColor = vec4(uColor * vCol * a, 1.0);
+    gl_FragColor = uNormal > 0.5 ? vec4(uColor * vCol, clamp(a, 0.0, 1.0)) : vec4(uColor * vCol * a, 1.0);
   }`;
 
 export function makeParticles({ count, kind, seed, color, size, opacity = 1, box = null }) {
@@ -385,7 +415,7 @@ export function makeParticles({ count, kind, seed, color, size, opacity = 1, box
       uLightDir: { value: new THREE.Vector3(0, 0, -1) }, uKind: { value: kind }, uKindF: { value: kind }, uSim: { value: 0 },
       uOrigin: { value: new THREE.Vector3() }, uDirMist: { value: new THREE.Vector3(-1, 0.2, 0) },
       uColor: { value: new THREE.Color(color) }, tDepth: { value: null }, uRes: { value: new THREE.Vector2(1080, 1920) },
-      uNear: { value: 0.05 }, uFar: { value: 60 }, uOcclude: { value: 0.25 },
+      uNear: { value: 0.05 }, uFar: { value: 60 }, uOcclude: { value: 0.25 }, uNormal: { value: 0 },
     },
     transparent: true, depthWrite: false, depthTest: false, blending: THREE.AdditiveBlending,
   });
@@ -409,20 +439,19 @@ export function makeDOF(W, H) {
     fragmentShader: common + `
       varying vec2 vUv;
       void main(){
-        float cc = coc(vUv);
+        float cz = linDepth(texture2D(tDepth, vUv).r);
+        float cc = clamp(uAperture * abs(cz - uFocus) / max(cz, 0.05), 0.0, uMaxCoc);
         vec3 acc = texture2D(tColor, vUv).rgb; float tot = 1.0;
         float radius = 1.0; float ang = 0.0;
-        for (int i = 0; i < 64; i++) {
-          vec2 off = vec2(cos(ang), sin(ang)) * radius / uRes * 1.0;
-          vec2 tc = vUv + off;
+        for (int i = 0; i < 56; i++) {
+          vec2 tc = vUv + vec2(cos(ang), sin(ang)) * radius / uRes;
           vec3 sc = texture2D(tColor, tc).rgb;
-          float ss = coc(tc);
-          float sz = linDepth(texture2D(tDepth, tc).r), cz = linDepth(texture2D(tDepth, vUv).r);
+          float sz = linDepth(texture2D(tDepth, tc).r);
+          float ss = clamp(uAperture * abs(sz - uFocus) / max(sz, 0.05), 0.0, uMaxCoc);
           if (sz > cz) ss = min(ss, cc * 2.0);
           float m = smoothstep(radius - 1.0, radius + 1.0, ss);
           acc += mix(acc / tot, sc, m); tot += 1.0;
-          radius += 26.0 / 64.0 * 1.0 + 0.0; ang += 2.39996323;
-          if (radius > uMaxCoc) break;
+          radius += uMaxCoc / 56.0; ang += 2.39996323;
         }
         gl_FragColor = vec4(acc / tot, cc);
       }`,
@@ -469,8 +498,39 @@ export function makePost(renderer, W, H) {
   rtMain.depthTexture.type = THREE.FloatType;
   const dof = makeDOF(W, H);
   const bloom = new UnrealBloomPass(new THREE.Vector2(W, H), 0.18, 0.55, 0.92);
-  const output = new OutputPass(); output.renderToScreen = true;
+  const output = makeOutput();
   return { rtMain, dof, bloom, output };
+}
+
+/** Final pass: ACES filmic (same curve as three.js) → sRGB → vignette → seeded triangular dither (kills 8-bit banding
+ *  in the near-black gradients; deterministic per frame). */
+function makeOutput() {
+  const mat = new THREE.ShaderMaterial({
+    uniforms: { tDiffuse: { value: null }, uExposure: { value: 1 }, uFrame: { value: 0 }, uVig: { value: 1 } },
+    vertexShader: quadVS, depthTest: false, depthWrite: false,
+    fragmentShader: `uniform sampler2D tDiffuse; uniform float uExposure, uFrame, uVig; varying vec2 vUv;
+      vec3 laylRRT(vec3 v){ vec3 a = v * (v + 0.0245786) - 0.000090537; vec3 b = v * (0.983729 * v + 0.4329510) + 0.238081; return a / b; }
+      vec3 laylACES(vec3 c){
+        const mat3 I = mat3(vec3(0.59719, 0.07600, 0.02840), vec3(0.35458, 0.90834, 0.13383), vec3(0.04823, 0.01566, 0.83777));
+        const mat3 O = mat3(vec3(1.60475, -0.10208, -0.00327), vec3(-0.53108, 1.10813, -0.07276), vec3(-0.07367, -0.00605, 1.07602));
+        c *= uExposure / 0.6; c = I * c; c = laylRRT(c); c = O * c; return clamp(c, 0.0, 1.0); }
+      vec3 laylSRGB(vec3 v){ return mix(pow(v, vec3(0.41666)) * 1.055 - vec3(0.055), v * 12.92, vec3(lessThanEqual(v, vec3(0.0031308)))); }
+      float laylHash(vec2 p){ p = fract(p * vec2(443.897, 441.423)); p += dot(p, p.yx + 19.19); return fract((p.x + p.y) * p.x); }
+      void main(){
+        vec3 c = texture2D(tDiffuse, vUv).rgb;
+        vec2 q = (vUv - 0.5) * vec2(1.0, 1.0);
+        float v = smoothstep(0.98, 0.30, length(q * vec2(1.05, 0.82)) * 1.25);
+        c *= mix(1.0, mix(0.74, 1.0, v), uVig);
+        c = laylSRGB(laylACES(c));
+        c = vec3(0.010, 0.008, 0.006) + c * 0.988;   // one grade: warm lifted blacks, never pure #000
+        vec2 fc = gl_FragCoord.xy + vec2(uFrame * 17.0, uFrame * 31.0);
+        c += (laylHash(fc) + laylHash(fc + 71.3) - 1.0) / 255.0;
+        gl_FragColor = vec4(c, 1.0);
+      }`,
+  });
+  const quad = new THREE.Mesh(new THREE.PlaneGeometry(2, 2), mat); const qs = new THREE.Scene(); qs.add(quad);
+  const qc = new THREE.OrthographicCamera(-1, 1, 1, -1, 0, 1);
+  return { mat, render(renderer, src, exposure, frame, vig = 1) { mat.uniforms.tDiffuse.value = src.texture; mat.uniforms.uExposure.value = exposure; mat.uniforms.uFrame.value = frame; mat.uniforms.uVig.value = vig; renderer.setRenderTarget(null); renderer.render(qs, qc); } };
 }
 
 export { THREE };

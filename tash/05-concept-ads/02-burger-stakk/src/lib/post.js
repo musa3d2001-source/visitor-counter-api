@@ -1,6 +1,7 @@
 // STAKK — render pipeline: HDR scene RT (premultiplied alpha) → sub-frame motion-blur accumulation →
 // depth-of-field gather (scatter-as-gather, no fg bleed) → composite over brand backdrop + ACES + grade + vignette.
 import * as THREE from 'three';
+import { FXAAShader } from 'three/addons/shaders/FXAAShader.js';
 
 const FS_VERT = `varying vec2 vUv; void main(){ vUv = uv; gl_Position = vec4(position.xy, 0.0, 1.0); }`;
 
@@ -8,7 +9,8 @@ export class Post {
   constructor(renderer, W, H) {
     this.r = renderer; this.W = W; this.H = H;
     const mk = (o = {}) => new THREE.WebGLRenderTarget(W, H, { type: THREE.HalfFloatType, format: THREE.RGBAFormat, depthBuffer: true, ...o });
-    this.rtScene = mk({ samples: 4, depthTexture: new THREE.DepthTexture(W, H) });
+    this.rtScene = mk({ samples: 0, depthTexture: new THREE.DepthTexture(W, H) });
+    this.rtLDR = new THREE.WebGLRenderTarget(W, H, { type: THREE.UnsignedByteType, depthBuffer: false });
     this.rtAcc = mk({ depthBuffer: false });
     this.rtDof = mk({ depthBuffer: false });
     this.quadScene = new THREE.Scene(); this.quadCam = new THREE.OrthographicCamera(-1, 1, 1, -1, 0, 1);
@@ -94,24 +96,31 @@ export class Post {
       depthTest: false, depthWrite: false, toneMapped: false,
     });
   }
+  makeFXAA() {
+    this.fxaa = new THREE.ShaderMaterial({ uniforms: THREE.UniformsUtils.clone(FXAAShader.uniforms), vertexShader: FS_VERT, fragmentShader: FXAAShader.fragmentShader, depthTest: false, depthWrite: false, toneMapped: false });
+    this.fxaa.uniforms.resolution.value.set(1 / this.W, 1 / this.H);
+  }
   pass(mat, target) { this.quad.material = mat; this.r.setRenderTarget(target); this.r.render(this.quadScene, this.quadCam); }
 
-  /** renderFrame(subframes: [fn(k) that sets up scene state], scene, camera, opts) */
-  render(scene, camera, { sub = null, dof = {}, grade = {} } = {}) {
-    const r = this.r;
+  /** render(scene, camera, {sub: [fn] sub-frame state setters (motion blur), dof, grade}). Sub-frames are also sub-pixel jittered (AA). */
+  render(scene, camera, { sub = null, dof = {}, grade = {}, fxaa = true } = {}) {
+    const r = this.r, W = this.W, H = this.H;
     r.setClearColor(0x000000, 0);
-    if (!sub || sub.length <= 1) {
+    const N = sub ? sub.length : 1;
+    const halton = (i, b) => { let f = 1, x = 0; while (i > 0) { f /= b; x += f * (i % b); i = Math.floor(i / b); } return x; };
+    if (N <= 1) {
       if (sub) sub[0]();
       r.setRenderTarget(this.rtScene); r.clear(); r.render(scene, camera);
       this._dof(this.rtScene.texture, camera, dof);
     } else {
-      // accumulate the colour of N sub-frames (centre one last so depth matches the middle of the shutter)
       r.setRenderTarget(this.rtAcc); r.clear();
-      const order = sub.map((_, i) => i); const mid = Math.floor(sub.length / 2); order.splice(mid, 1); order.push(mid);
+      const order = sub.map((_, i) => i); const mid = Math.floor(N / 2); order.splice(mid, 1); order.push(mid);
       for (const i of order) {
         sub[i]();
+        camera.setViewOffset(W, H, halton(i + 1, 2) - 0.5, halton(i + 1, 3) - 0.5, W, H);
         r.setRenderTarget(this.rtScene); r.clear(); r.render(scene, camera);
-        this.copyMat.uniforms.tex.value = this.rtScene.texture; this.copyMat.uniforms.w.value = 1 / sub.length;
+        camera.clearViewOffset();
+        this.copyMat.uniforms.tex.value = this.rtScene.texture; this.copyMat.uniforms.w.value = 1 / N;
         this.pass(this.copyMat, this.rtAcc);
       }
       this._dof(this.rtAcc.texture, camera, dof);
@@ -119,7 +128,12 @@ export class Post {
     const u = this.finalMat.uniforms;
     u.tCol.value = this.rtDof.texture;
     for (const k in grade) { if (!u[k]) continue; const v = grade[k]; if (typeof v === 'number') u[k].value = v; else u[k].value.copy(v); }
-    this.pass(this.finalMat, null);
+    if (fxaa && N <= 1) {
+      if (!this.fxaa) this.makeFXAA();
+      this.pass(this.finalMat, this.rtLDR);
+      this.fxaa.uniforms.tDiffuse.value = this.rtLDR.texture;
+      this.pass(this.fxaa, null);
+    } else this.pass(this.finalMat, null);
   }
   _dof(tex, camera, { focus = 6, aperture = 0, maxR = 22 } = {}) {
     const u = this.dofMat.uniforms;
