@@ -45,12 +45,12 @@
       "id": "S07",
       "name": "BUILD C — double burst",
       "at": 5.75,
-      "end": 7.15
+      "end": 6.55
     },
     {
       "id": "S08",
-      "name": "INSERT — sauce splash",
-      "at": 7.15,
+      "name": "TOP-DOWN — pickles + onion flat, sauce pour",
+      "at": 6.55,
       "end": 7.9
     },
     {
@@ -131,5 +131,8 @@
   },
   "endcard": 10.4,
   "sting": 11.4,
-  "_onions": "photoreal cut: onions moved 6.65 -> 6.525 (one 16th earlier, same grid). In the footage the first ring lands 3 source frames after the pickle; stretching that to 0.25 s needed 0.5x, which stuttered or ghosted the falling ring."
+  "_onions": "photoreal cut: onions moved 6.65 -> 6.525 (one 16th earlier, same grid). In the footage the first ring lands 3 source frames after the pickle; stretching that to 0.25 s needed 0.5x, which stuttered or ghosted the falling ring.",
+  "sauceIn": 7.0,
+  "stingOffset": 0.1,
+  "_ecd": "ECD review: S07 now ends at 6.55 (cut on the onion ring's contact frame); S08 starts there as one top-down take (pickles and onions lying flat, sauce enters at sauceIn 7.00, contact 7.40). The old S07c (6.65-7.15, rings propped at impossible angles) is gone. stingOffset: the TASH sting picture and sonic logo both start 0.1 s in, so the cut at 11.40 lands on the typing bubble instead of two empty Ink frames."
 }
