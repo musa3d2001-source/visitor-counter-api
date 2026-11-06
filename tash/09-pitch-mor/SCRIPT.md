@@ -10,7 +10,7 @@ version ends on the spec slate, and so does the poster.
 |---|---|
 | `MOR-spec-ad-9x16.mp4` | 1080×1920 · 30 fps · H.264 High + AAC 48 kHz · 20.40 s · −14.0 LUFS, −1.5 dBTP |
 | `MOR-spec-ad-4x5.mp4` | 1080×1350 re-layout (every line re-placed inside the frame, m3 re-framed as a tilt) · same cut and sound · −14.0 LUFS, −1.5 dBTP |
-| `poster.png` | 1080×1920 reel cover (the hook frame + payoff line + spec slate, all inside the centre 3:4 profile crop) |
+| `poster.png` | 1080×1920 reel cover: the hook's door and keyhole, with **MOR's cup** inside it (m3; the emblem and «MOR مور» are correct) instead of the AI sign. The payoff line and spec slate sit inside the centre 3:4 profile crop |
 | `contact-sheet.png` | the 9:16 film at 4 fps |
 | `src/` | the reproducible source (see the end of this file) |
 
@@ -156,8 +156,8 @@ Master: `audio.wav` is pre-mastered to −14.1 LUFS, true peak −1.5 dBTP, LRA 
 
 ## Known weaknesses (honest)
 
-1. **The MOR sign's "O" is an AI artefact.** In m1 the O folds like a heart around the corner of the sign box (MOR's real sign has a plain O). The edit only uses m1's *wide* part, as the CD notes advise, but the hook (0–1.4 s), S1 and especially the **poster** show the sign large enough to notice. Only regenerating the footage can fix it, which wasn't allowed here. **The CD should decide whether the poster may show the sign this big.**
-2. **Garbled micro-Arabic on the cup in m3** (the small print on the right side of the cup, around x 800–900, y 790–890, 6.3–8.2 s). It is an AI artefact. It is small and the shot is short, so it was left.
+1. **The MOR sign's "O" is an AI artefact.** In m1 the O folds like a heart around the corner of the sign box (MOR's real sign has a plain O). The edit only uses m1's *wide* part, as the CD notes advise, and after the CD review the **poster no longer shows the sign**. It still shows, small, in the hook (0–1.4 s) and S1. The CD offered a 1.2–1.5× punch-in that would keep the sign out of frame, but it wasn't done: the sign is the subject the keyhole frames in the hook, and a punch-in would remove the point of the shot. Only regenerating the footage can fix it
+2. **The cups' small printed Arabic is softened, not fixed.** The AI misprinted it: in m3 the top-right block is garbage, and in m7 it reads «الكميت» for «الكويت». `tools/track_patch.py` tracks each block frame by frame (NCC ≥ 0.92), and the page softens it past legibility with a feathered box blur in both formats and on the poster. It reads as focus falloff on the curved cup, but a frame-by-frame look shows a soft patch where print should be. The English "Kuwait / Al jahra city" and «مور MOR» stay sharp. On the poster, the cup's «MOR مور» wraps around the cylinder, so its outer letters fall off the curve (that is the footage itself)
 3. **The hook's first 12 frames barely move** (5 % creep). The first event is the key turn at 0.42 s and the knock and light-up at 0.62 s. A stronger event in 0–0.4 s would sharpen the hook.
 4. **«…وراه قهوة» sits on the brass bar beside the white scale.** m2 has no clean dark area wide enough for a centred line, so it is seated with a graduated falloff and a soft shadow. It is legible, but it isn't on a clean field.
 5. **The low end is still bass-heavy.** About −7 dB of the mix sits at 20–60 Hz. That is mostly the bass line's own roots (G1, A1, B♭1), which phones play through their harmonics. The mix is within spec.
@@ -175,6 +175,7 @@ Master: `audio.wav` is pre-mastered to −14.1 LUFS, true peak −1.5 dBTP, LRA 
 | Self 2 (builder, MP4) | 4 fps contact sheet, cut strips f−1/f/f+1 at every cut, freeze/black detect, per-section RMS, spectrogram | text exits moved 50 ms earlier so no word survives a cut; night ambience +4 dB; the arc measured −29 (night) → −15 (montage) → −33 (breath) → −16 («تفضّل.») → −19 dBFS (tail) |
 | Independent (fresh agent, did not build it) | brief + rubric + the rendered MP4s and poster; ≥30 full-size stills in both formats, cut strips, determinism re-test, loudness | Score **77.5 before fixes → ≈80 after, no line below 3; verdict SHIP**. **Hard-gate fail fixed:** at frames 530–532 the TASH bubble overlapped the fading MOR mark → the ink dip now completes on 17.6 before the bubble. Also fixed: «تفضّل.» was still visible on the first pull-back frame (`welcomeOut` 14.75 → 14.68). In 9:16, «…وراه قهوة» reached y 1535 (bottom safe zone) → top 1336, glyphs y 1355–1470. The «تفضّل.» shadda sat at y 188 (top safe zone) → top 258. The poster headline was crowding the keyhole → lowered. Left alone: weaknesses 1–3 and 5 above |
 | Post-review (builder) | spectrogram, sub share | bass HP 55 Hz, drums HP 48 Hz (20–60 Hz share −6.4 → −7.0 dB); audio re-muxed into both MP4s with no picture change: −14.0 LUFS / −1.5 dBTP |
+| CD review (fc4e76e) | the CD's notes | (1) the misprinted micro-Arabic on the cups (m3 garbled, m7 «الكميت») is now tracked and softened in both formats (`tools/track_patch.py` → `assets/patches.json`, `main.js → softenPrint`). (2) The poster's keyhole now frames m3's cup (correct emblem and wordmark) instead of the AI sign (`poster.js → POSTER_PIC`). The hook punch-in was declined (see weakness 1). Both MP4s re-rendered; the audio is unchanged |
 
 ---
 
@@ -184,6 +185,7 @@ Master: `audio.wav` is pre-mastered to −14.1 LUFS, true peak −1.5 dBTP, LRA 
   placement) · `overlay.js` (Arabic lines, info line, slate, TASH tail) · `poster.js` (`?poster=1`) · `sting-short.js` (the local
   short TASH sting, copied from the HABBA ad) · `footage.js` · `cues.js` + `cues.json`
 - `audio.py` → `audio.wav`
+- `tools/track_patch.py` → `assets/patches.json` (per-frame boxes of the cups' misprinted small Arabic in segments C and G; needs `footage/`, so run it after `extract.sh`)
 - `tools/key_logo.py` → `assets/` (ring, rosette, plant, «مور», MOR, keyhole silhouette, `logo.json`): keys the cream mark off
   the burgundy plate by colour projection. The layers composite back to the plate within a mean of 0.7 levels (8-bit)
 - `tools/extract.sh` → `tools/conform.py` → `footage/` (the 30 fps JPEG sequences, ~100 MB; **not committed**, rebuild with
