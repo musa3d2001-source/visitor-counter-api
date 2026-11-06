@@ -54,7 +54,9 @@ run(async (d, { stage, T, rich, h, put, linesOf, typingBubble, wordmark }) => {
     put(stage, put(h('div', { class: 'block' }),
       h('div', { class: 'disp headline key', 'data-fit': '110,172', 'data-lines': linesOf(d.headline, 3), 'data-name': 'headline', html: rich(d.headline) }),
       d.line ? h('div', { class: 'txt line key', 'data-name': 'line', html: rich(d.line) }) : null,
-      kind === 'cover' && d.typing !== false ? h('div', { class: 'typing', html: typingBubble({ scale: 0.7, fill: T.surface === COL.ink ? COL.ink : COL.char, dot: on }) }) : null));
+      // our typing bubble = the sting's: lime dots on a dark bubble, on every theme (brand guide 03: lime dots only on Ink or
+      // Char). Char on the ink ground, Ink on paper and lime. (It used to take `on`, which is ink on paper/lime: ink on ink.)
+      kind === 'cover' && d.typing !== false ? h('div', { class: 'typing', html: typingBubble({ scale: 0.7, fill: d.theme === 'paper' || d.theme === 'lime' ? COL.ink : COL.char, dot: COL.lime }) }) : null));
     return { format: 'post', lightAt: '84% 4%' };
   }
 

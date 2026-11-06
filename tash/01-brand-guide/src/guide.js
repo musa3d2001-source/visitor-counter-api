@@ -592,12 +592,14 @@ put('v-ad-principles', [
   ['الخامات', 'Materials', 'زجاج بانكسار وسماكة، معدن مصقول، لمعة الأكل، بخار مضاء من ورا. اللقطة القريبة تفضح البساطة، فأضف تفاصيل السطح.'],
   ['الحركة', 'Motion', 'الكاميرا دايماً تتحرك بهدوء: دفع بطيء، قوس <bdi dir="ltr">20–40°</bdi>، وسحب تركيز مرة وحدة. حركة كبيرة وحدة بالقطعة.'],
   ['التلوين', 'Grade', 'تلوين واحد للقطعة، أسود مرفوع شوي، حبيبات <bdi dir="ltr">0.06</bdi> بالكثير، وتعتيم أطراف خفيف. لا أسود صافي ولا أبيض صافي.'],
+  ['اللقطات المولّدة', 'AI footage', 'بموافقة المالك بس، والمدير الإبداعي هو اللي يولّد. نشوف كل فريم بحجمه الكامل (الأيادي، الحواف، الأشياء اللي تتشكّل) ونقص أي جزء فيه غلط. الكلام والشعار نكتبهم بالكود فوق اللقطة، مو داخلها.'],
 ].map(([ar, en, t]) => `<div class="item"><h3 style="display:flex;justify-content:space-between"><span>${ar}</span><span class="en s">${en}</span></h3><p>${t}</p></div>`).join(''));
+// how each frame was made is stated under it: LAYL is built in code; STAKK's pictures are owner-approved Higgsfield footage
 put('v-ad-frames', [
-  ['ad-layl-hero', 'CONCEPT AD — 01 / PERFUME', '«ليل»: زجاج على أرضية داكنة، ضوء حافة، وعنبر من جوّا.', 'Dark-field glass, rim light, amber inside'],
-  ['ad-stakk-hero', 'CONCEPT AD — 02 / BURGER', '«ستاك»: ضوء دافي، لمعة الجبن، وظل تلامس.', 'Warm key, glisten, contact shadow'],
-].map(([f, slate, ar, en]) => `<div><img src="assets/${f}.jpg" style="width:100%;aspect-ratio:9/16;object-fit:cover;display:block">
-  <div class="lbl" style="margin-top:8px;text-align:right">${slate}</div><p class="sm" style="margin:3px 0 0">${ar}</p><p class="sm mute" style="margin:0">إعلان تجريبي — علامة خيالية</p><p class="en s">${en} · fictional brand</p></div>`).join(''));
+  ['ad-layl-hero', 'CONCEPT AD — 01 / PERFUME', '«ليل»: زجاج على أرضية داكنة، ضوء حافة، وعنبر من جوّا.', '3D مبني بالكود (<bdi dir="ltr">Three.js</bdi>).', 'Dark-field glass, rim light, amber inside · CGI'],
+  ['ad-stakk-hero', 'CONCEPT AD — 02 / BURGER', '«ستاك»: أحمر العميل، ضوء دافي، لمعة الجبن، وظل تلامس.', 'لقطات مولّدة بـ<bdi dir="ltr">Higgsfield</bdi> بموافقة المالك. التلوين والمونتاج والكلام من طشّ.', 'Client red, warm key, glisten, contact shadow · AI&nbsp;footage'],
+].map(([f, slate, ar, how, en]) => `<div><img src="assets/${f}.jpg" style="width:100%;aspect-ratio:9/16;object-fit:cover;display:block">
+  <div class="lbl" style="margin-top:8px;text-align:right">${slate}</div><p class="sm" style="margin:3px 0 0">${ar}</p><p class="sm mute" style="margin:0">${how}</p><p class="sm mute" style="margin:0">إعلان تجريبي — علامة خيالية</p><p class="en s">${en} · fictional&nbsp;brand</p></div>`).join(''));
 (function client() {
   const distinct = (pal, n) => { const out = []; for (const p of pal) { if (out.every(q => { const [a, b] = [lab(p.hex), lab(q.hex)]; return Math.hypot(a[0] - b[0], a[1] - b[1], a[2] - b[2]) > 12; })) out.push(p); if (out.length === n) break; } return out; };
   const H = 206, Wd = Math.round(H * 9 / 16);
@@ -730,8 +732,8 @@ put('v-files', `<table><thead><tr><th style="width:36%"><span class="ar">الم�
   ['02-logo/avatar/', 'الصورة الشخصية ليموني وحبر: <bdi dir="ltr">SVG</bdi> و<bdi dir="ltr">1080 / 320 px</bdi>'],
   ['02-logo/motion/', 'التوقيع المتحرّك 9:16، 9:16 ليموني، 1:1، و<bdi dir="ltr">tash-sonic-logo.wav</bdi>'],
   ['03-templates/', 'قوالب البوست، الكاروسيل، غلاف الريل، الستوري، الهايلايت، وبوستر العميل'],
-  ['04-launch-ad/', 'إعلان الإطلاق. لقطات الناس فيه مولّدة بـ<bdi dir="ltr">Higgsfield</bdi> بإخراج المدير الإبداعي، وقواعدها بـ<bdi dir="ltr">_CD-NOTES.md</bdi>'],
-  ['05-concept-ads/', 'إعلانات تجريبية لعلامات خيالية: «ليل» عطر، «ستاك» برجر، «حبّة» قهوة'],
+  ['04-launch-ad/', 'إعلان الإطلاق. لقطات الناس فيه مولّدة بـ<bdi dir="ltr">Higgsfield</bdi> بإخراج المدير الإبداعي؛ الكريدت وقواعد اللقطات بـ<bdi dir="ltr">SCRIPT.md</bdi>'],
+  ['05-concept-ads/', 'إعلانات تجريبية لعلامات خيالية: «ليل» عطر (3D بالكود)، «ستاك» برجر و«حبّة» قهوة (لقطات <bdi dir="ltr">Higgsfield</bdi>). الكريدت بـ<bdi dir="ltr">SCRIPT.md</bdi> كل واحد'],
   ['06-copy/', 'طريقة الكلام، الكابشن، الدعوات للطلب، والبروفايل'],
   ['07-ops/', 'نموذج الطلب، الأسعار، المراحل، التعديلات، والحقوق'],
   ['_system/tokens.css', 'الألوان، الخطوط، الأحجام، المسافات، المناطق الآمنة'],
@@ -744,10 +746,11 @@ put('v-files', `<table><thead><tr><th style="width:36%"><span class="ar">الم�
 put('v-licences', [
   ['الخطوط', 'Fonts', 'SIL OFL 1.1', 'Alexandria، IBM Plex Sans Arabic، Archivo، JetBrains Mono. الاستخدام التجاري والتضمين مسموح؛ ما ينباع الخط بروحه، والرخصة ترافقه. الـ<bdi dir="ltr">PDF</bdi> يضمّن نسخ ثابتة مقصوصة من نفس الملفات، ومعاها رخصها.', '_system/fonts/OFL-*.txt · 01-brand-guide/src/fonts/'],
   ['الشعار', 'Logo', 'TASH', 'رسم من حروف Alexandria محوّلة لمسارات ومعدّلة. الأعمال المصمّمة بخط OFL (ومنها الشعارات) ما تخضع لرخصة الخط.', '_system/brand/'],
-  ['Three.js', '3D', 'MIT', 'مكتبة الـ3D بالإعلانات التجريبية.', '_system/vendor/three/LICENSE'],
+  ['Three.js', '3D', 'MIT', 'مكتبة الـ3D: «ليل» كله، وخاتم إعلان الإطلاق.', '_system/vendor/three/LICENSE'],
   ['GSAP 3.13', 'Animation', 'GreenSock Standard', 'موجودة بالنظام؛ شروطها برأس الملف.', '_system/vendor/gsap/'],
   ['الصوت', 'Audio', 'TASH · original', 'كله مركّب بالكود من الصفر: بدون عيّنات، بدون موسيقى أو مؤثرات منزّلة.', '_system/audio/tashaudio.py'],
-  ['الصور', 'Visuals', 'TASH · original', 'صور الهوية و«ليل» مولّدة بالكود (<bdi dir="ltr">SVG / Canvas / Three.js</bdi>)، بدون صور ستوك. الاستثناء: لقطات مولّدة بـ<bdi dir="ltr">Higgsfield (Kling 3.0)</bdi> باشتراك المالك وموافقته — الناس بإعلان الإطلاق، وفيلم «حبّة»، ونسخة «ستاك» الجديدة — وتنذكر بالكريدت.', '04-launch-ad/footage/ai/ · 05-concept-ads/*/footage/ai/'],
+  ['الصور', 'Visuals', 'TASH · original', 'الهوية، والقوالب، و«ليل» كله، وخاتم إعلان الإطلاق: مبنية بالكود (<bdi dir="ltr">SVG / Canvas / Three.js</bdi>)، بدون صور ستوك.', '_system/ · 03-templates/ · 05-concept-ads/01-perfume-layl/'],
+  ['لقطات الذكاء الاصطناعي', 'AI footage', 'Higgsfield · owner-approved', 'لقطات «ستاك» و«حبّة» كلها، ولقطات الناس بإعلان الإطلاق (ومشهدي البرجر والقهوة فيه مأخوذين من «ستاك» و«حبّة»): مولّدة بـ<bdi dir="ltr">Higgsfield</bdi>، فيديو <bdi dir="ltr">Kling 3.0</bdi>، باشتراك المالك وموافقته. المدير الإبداعي بس هو اللي يولّد. الكلام والمونتاج والتلوين والصوت والتوقيع من طشّ. الكريدت وأرقام المهام بـ<bdi dir="ltr">SCRIPT.md</bdi> كل إعلان.', '04-launch-ad/footage/ai/ · 05-concept-ads/*/footage/ai/'],
 ].map(([a, e, l, t, f]) => `<div style="padding:7px 0 6px;border-bottom:1px solid ${RULE_P}"><div style="display:flex;justify-content:space-between;align-items:baseline"><span class="w6" style="font-size:11.5px">${a} <span class="en s" style="display:inline">${e}</span></span><span class="k" style="font-size:8px">${l}</span></div>
   <div class="sm" style="line-height:1.55;margin-top:2px">${t}</div><div class="k" style="font-size:7.5px;color:${META_P};text-align:right">${f}</div></div>`).join(''));
 

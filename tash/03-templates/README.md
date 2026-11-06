@@ -65,7 +65,7 @@ node 03-templates/render.mjs --all --only carousel
 | 1 | بوست — خدمة | `templates/post-service.html` | 1080×1350 | `image` {src, fx, fy, zoom} أو `images` [..] · `concept` · `service` · `line` · `includes` [..] | `post-service-01/02` |
 | 1 | بوست — قبل ← بعد | `templates/post-before-after.html` | 1080×1350 | `headline` · `before` {src,label} · `after` {src,label} · `focus` [x,y] · `scale` · `split` · `concept` | `post-before-after-01/02` |
 | 1 | بوست — «اطلب إعلانك» | `templates/post-cta.html` | 1080×1350 | `theme` (lime افتراضي) · `message` (فقاعتك) · `headline` · `line` · `contact` | `post-cta-01/02` |
-| 2 | كاروسيل | `templates/carousel.html` | 1080×1350 / شريحة | `series` · `slides` [ {kind: cover/content/closing, …} ] — ملف واحد يطلّع كل الشرائح | `carousel-how-to-order-01…06` |
+| 2 | كاروسيل | `templates/carousel.html` | 1080×1350 / شريحة | `theme` · `series` · `slides` [ {kind: cover/content/closing, …} ] — ملف واحد يطلّع كل الشرائح | `carousel-how-to-order-01…06` · `carousel-cover-lime/paper` (الغلاف على الليموني والورقي) |
 | 3 | غلاف ريل | `templates/reel-cover.html` | 1080×1920 | `variant`: `launch` · `concept` · `bts` | `reel-cover-launch/concept/bts` (+ `-guide`) |
 | 4 | ستوري «شغل جديد» | `templates/story-new-work.html` | 1080×1920 | `headline` · `line` · `image` · `title` · `kind` · `concept` | `story-new-work-01/02` |
 | 4 | ستوري «شلون تطلب؟» | `templates/story-how-to-order.html` | 1080×1920 | `headline` · `steps` [٤ رسائل] · `you` | `story-how-to-order` |
@@ -81,6 +81,7 @@ node 03-templates/render.mjs --all --only carousel
 - **قبل ← بعد:** الصورتين لازم نفس الكاميرا ونفس الكادر (مثل لقطات `bts` بـ`assets/`)، عشان القسمة تبين شي واحد نصّه قبل ونصّه بعد. `focus` = النقطة اللي تبيها بالنص (بكسلات الصورة الأصلية)، `scale` = حجمها.
 - **«اطلب إعلانك»:** المحادثة نفسها هي الفكرة: رسالتك يسار، وفقاعتنا تكتب يمين. لا تكتب أسماء أو أرقام بالفقاعة.
 - **الكاروسيل:** العدّاد مونو (`02 / 06`)، والنقاط الثلاث تتعبّى ليموني من اليمين لليسار مع التقدّم: الغلاف نص نقطة، والأخيرة الثلاث كاملة. الشرائح بالترتيب حسب مكانها بـ`slides`.
+  فقاعة «يكتب…» بالغلاف هي فقاعة التوقيع نفسها: **نقاط ليموني على فقاعة داكنة بكل الثيمات** (فحمي على الحبر، وحبر على الورقي والليموني)، لأن النقاط الليموني تنحط بس على الحبر أو الفحمي (دليل الهوية، الشعار). قبل كانت النقاط حبر: على فقاعة حبر بالليموني، وعلى فقاعة فحمي بالورقي، فما كانت تبين. الغلاف على الليموني والورقي: `carousel-cover-lime.png` و`carousel-cover-paper.png`.
 - **غلاف الريل:** `launch` = الشعار هو الصورة · `concept` = لقطة الإعلان + بطاقة «سليت» حبر فيها العنوان والتصنيف · `bts` = الهيكل، وشريط يبين اللقطة النهائية بين خطّين ليموني. الـ`bts` لإعلان تجريبي لازم لوحته فيها `CONCEPT AD` (مثال: `BTS — CONCEPT AD 01 / PERFUME`).
 - **تحريك الصورة (`dx` / `dy`):** إذا زحزحت صورة داخل مكانها، القالب يكبّرها شوي عشان ما يطلع شريط فاضي على الطرف. للصور الغامقة على الحبر تقدر تكتب `"edge": "fade"` بدال التكبير، فيذوب الطرف بالأرضية.
 - **سؤال/تصويت:** بالـ`poll` نخلي مكان الملصق فاضي (يبين بـ`--guide`)، وتحطّه إنت بإنستغرام بنفس المكان.
@@ -167,7 +168,7 @@ bash _system/tools/audio-check.sh 03-templates/examples/story-new-work-anim.mp4 
 - `src/icons.js` — أيقونات هندسية بنسب النقاط في الشعار (القطر : المسافة = 1 : 0.178).
 - `src/base.css` — أدوار الخطوط (Alexandria للعناوين، IBM Plex Sans Arabic للنص، JetBrains Mono للوحات، Archivo للاتيني).
 - `assets/layl-bts-*.png` — لقطات مستخرجة من `05-concept-ads/01-perfume-layl/bts/` (شغل فريق الإعلانات التجريبية).
-- صور «ليل» و«ستاك برجر» بالأمثلة تُقرا مباشرة من `05-concept-ads/` — إذا انعادت، الأمثلة تتحدّث بإعادة التشغيل.
+- صور «ليل» و«ستاك برجر» بالأمثلة تُقرا مباشرة من `05-concept-ads/` (`still-hero.png` و`poster.png`) — إذا انعادت، الأمثلة تتحدّث بإعادة التشغيل. «ليل» 3D مبني بالكود. «ستاك» صار بلقطات واقعية مولّدة بـHiggsfield باشتراك المالك وموافقته (الكريدت وأرقام المهام بـ`05-concept-ads/02-burger-stakk/SCRIPT.md`)؛ الكلام والتصميم والمونتاج والصوت من عندنا. ولأن البرجر الجديد يعبّي عرض الصورة، القصّات معدّلة: `post-service-01` بـ`fy: 58` (الطبقات)، و`reel-cover-concept` بدون `dy` (البرجر بحجمه بالصورة، والبطاقة طالعة فوق راس الخبزة). `story-new-work-02` يقرا لوحة البرجر الكامل `08-instagram/src/assets/stakk-story-plate.png` (`fy: 72`): نفس لقطة «ستاك» النظيفة عند 9.40 ث بدون أي تغيير، وبس الخلفية الحمرا ممدودة على الجنبين عشان الخبزة ما تنقص (تنبني بـ`bash 08-instagram/src/build.sh`، والسكربت `08-instagram/src/stakk_story_plate.py`).
 - «لومة / LOOMA» علامة خيالية سويناها للمثال فقط (صودا لومي)؛ مكتوب عليها مثال وإعلان تجريبي.
 - النصوص مأخوذة أو مبنية على `06-copy/` و`07-ops/05-process-and-timeline.md` (الخطوات الأربع).
 

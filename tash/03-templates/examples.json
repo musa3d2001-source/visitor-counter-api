@@ -53,6 +53,30 @@
    "out": "03-templates/examples/carousel-how-to-order.png"
   },
   {
+   "tpl": "03-templates/templates/carousel.html",
+   "data": {
+    "theme": "lime",
+    "series": "HOW TO ORDER",
+    "kind": "cover",
+    "headline": "شلون تطلب\nإعلانك؟",
+    "line": "أربع خطوات… وأولها رسالة.",
+    "__total": 6
+   },
+   "out": "03-templates/examples/carousel-cover-lime.png"
+  },
+  {
+   "tpl": "03-templates/templates/carousel.html",
+   "data": {
+    "theme": "paper",
+    "series": "HOW TO ORDER",
+    "kind": "cover",
+    "headline": "شلون تطلب\nإعلانك؟",
+    "line": "أربع خطوات… وأولها رسالة.",
+    "__total": 6
+   },
+   "out": "03-templates/examples/carousel-cover-paper.png"
+  },
+  {
    "tpl": "03-templates/templates/reel-cover.html",
    "data": "03-templates/data/reel-cover-launch.json",
    "out": "03-templates/examples/reel-cover-launch.png"

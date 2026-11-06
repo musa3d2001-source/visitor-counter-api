@@ -1,8 +1,9 @@
 # Grid captions: the 9 launch posts
 
 > **QA note (final lead):** this is the copywriter's draft. The **final, verified captions to paste** are in
-> `08-instagram/NN-*/caption.md`. Posts 5, 6, 7 and 9 were changed there to match the finished files; the two lines below
-> that had become untrue (post 5 line 3, post 9 line 4) are corrected here too, so nothing false is left in either place.
+> `08-instagram/NN-*/caption.md`. Posts 1, 2, 5, 6, 7 and 9 were changed there to match the finished files; the lines below
+> that had become untrue (post 5 line 3, post 9 line 4) are corrected here too, and the optional AI line 5 of posts 1 and 2
+> is copied over, so nothing false is left in either place (re-synced after the photoreal refresh).
 
 Posting order is 1 → 9. Instagram shows the newest first, so on launch day the grid reads:
 
@@ -39,6 +40,8 @@ Posting order is 1 → 9. Instagram shows the newest first, so on launch day the
 
 فخلّينا الإعلان نفسه يمشي على مهله.
 
+اللقطات سويناها بالذكاء الاصطناعي، والفكرة والمونتاج والصوت من عندنا.
+
 عندك كافيه أو محمصة؟ خلّ إعلانك علينا •••
 
 #TASHcreative #اعلانات_الكويت #كافيهات_الكويت #conceptad #kuwait #قهوة_مختصة #coffeead #موشن_جرافيك
@@ -50,7 +53,7 @@ Posting order is 1 → 9. Instagram shows the newest first, so on launch day the
 **النص البديل (Alt):** إعلان تجريبي لقهوة «حبّة» الخيالية، بإيقاع هادي ونص: قهوتك… على مهلك.
 
 </div>
-**Note (تحقق):** line 4 assumes the cut is slow and calm. If it isn't, replace it with «وخلّينا كل لقطة تاخذ وقتها.»
+**Note (تحقق):** line 4 assumes the cut is slow and calm (true of the photoreal cut). Line 5 (AI footage, after «المزيد») is optional and was added in the photoreal refresh; delete it if the owner prefers the platform's AI label alone.
 
 ---
 
@@ -66,6 +69,8 @@ Posting order is 1 → 9. Instagram shows the newest first, so on launch day the
 
 فعطينا كل طبقة لقطتها.
 
+لقطات الأكل سويناها بالذكاء الاصطناعي، والإيقاع والخط والصوت من عندنا.
+
 مطعمك يستاهل إعلان يجوّع. دزّ لنا بالخاص •••
 
 #TASHcreative #اعلانات_الكويت #مطاعم_الكويت #conceptad #kuwait #سماش_برجر #foodad #motiondesign
@@ -77,7 +82,7 @@ Posting order is 1 → 9. Instagram shows the newest first, so on launch day the
 **النص البديل (Alt):** إعلان تجريبي لمطعم «ستاك برجر» الخيالي: طبقات البرجر وحدة وحدة، ونص: كل طبقة لها سالفة.
 
 </div>
-**Note (تحقق):** line 4 and the alt text assume the layers get their own beats. Adjust if the structure is different.
+**Note (تحقق):** line 4 and the alt text assume the layers get their own beats (true of the photoreal cut). Line 5 (AI footage, after «المزيد») is optional and was added in the photoreal refresh; delete it if the owner prefers the platform's AI label alone.
 
 ---
 
@@ -309,7 +314,7 @@ For the other slides, use the slide text itself as the alt text.
 
 نسوي الإعلان كامل: فكرة وسكربت، فيديو، ريلز وستوري، تصميم، وموشن ومونتاج.
 
-لقطات المنتجات من إعلاناتنا التجريبية لعلامات خيالية، ومشاهد الناس سويناها بالذكاء الاصطناعي.
+المنتجات بالإعلان كلها خيالية، والأكل ومشاهد الناس سويناها بالذكاء الاصطناعي.
 
 عندك مشروع؟ خلّ إعلانك علينا. الخاص مفتوح •••
 
@@ -325,5 +330,5 @@ For the other slides, use the slide text itself as the alt text.
 **Alternative hook** (if the owner wants to echo the ad): «هذا منتجك. وهذا إعلانه… بس هالمرة، المنتج إحنا.»
 **Notes:**
 - The hook says «يبيله إعلان», not «أول إعلان سويناه». The concept ads were made first, so "first ad" would be untrue.
-- Line 4 (corrected in QA): the final cut's people shots (hook hand, diwaniya, café, car, owner) are owner-approved AI footage, so the line says so once. Same wording as `08-instagram/09-launch-reel/caption.md`; owner/lead to confirm.
+- Line 4 (corrected twice in QA): the people shots (hook hand, diwaniya, café, car, owner) **and**, since the photoreal refresh, the burger and coffee shots are owner-approved AI footage; the ring is a 3D build made for the film, not a concept-ad shot. So the earlier line («لقطات المنتجات من إعلاناتنا التجريبية…») stopped being true. Same wording as `08-instagram/09-launch-reel/caption.md`; owner/lead to confirm (the caption there gives a softer true alternative).
 - The chat bubbles («منو مسوي هالإعلان؟») are dramatised inside the ad. Never echo them in captions as if real people said them.

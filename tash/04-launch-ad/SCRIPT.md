@@ -80,11 +80,17 @@ the snap. Pre-mastered to −14 LUFS / −1.5 dBTP (`Mix.master`), then the rend
 - **Source:** `footage/ai/s1_hook … s5_owner.mp4`, 1076×1924 at 24 fps, about 5 s each, made with Kling 3.0 from CD-art-directed
   start frames (kept in `footage/ai/frames/`). All five passed CD review on the first take. They are cover-cropped to 1080×1920
   and conformed to 30 fps by frame index, and their generated audio is discarded.
+- **The clips:** s1_hook: an ordinary office, a hand in a white dishdasha sleeve photographs a plain, unlabeled perfume bottle under flat
+  fluorescent light, and the thumb taps the shutter · s2_diwaniya: night, three young men; one shows his phone (back to camera), one
+  points and laughs, one leans in · s3_cafe: sunlit café, two young women in abayas; one shows her phone, the other laughs behind her
+  hand · s4_car: night, parked car; a young man reads his phone, smiles and starts typing (the bridge into the typing bubble) ·
+  s5_owner: evening, a small oud and perfume shop; the owner glances at his phone on the counter as it lights up, with incense smoke.
 - **CD-approved windows (source s) → used here:** s1_hook 0.00–1.80 → 0.22–1.72 · s2_diwaniya 0.25–3.25 (best 1.75–2.75) →
   1.70–2.38 · s3_cafe 0.00–4.00 (best 0.75–2.25) → 0.80–1.48 · s4_car 0.50–3.75 → 0.55–1.77 · s5_owner 0.00–4.50 → 0.40–2.20.
 - **Rules:** never show or fake what is on a phone screen (the phone backs face the camera by design; no UI is composited
   onto them). Speed 0.8–1.0×, with no speed ramps. Inspect every frame used at full size (hands, fingers, teeth, faces) and
-  shorten any range with an artifact. Use one light shared grade (warm, slightly lifted blacks), the ad's grain, and a
+  shorten any range with an artifact; prefer the first 2–3 s of each clip, where image-to-video is most stable. Payoff rhythm:
+  0.6–0.9 s per reaction shot, cut on the beat, bubble pops on the claps. Use one light shared grade (warm, slightly lifted blacks), the ad's grain, and a
   1.02–1.05 scale to hide edge drift. The hook's tap is subtle, so sell it with a white blink on the phone screen and a dry
   click on the cut. Chat bubbles are set in code (RTL) and never baked into footage. No names, no numbers, no "real reactions"
   claims. Cut a 4:5 version that keeps the faces in frame. Only the CD generates; the edit team never calls Higgsfield.
@@ -121,7 +127,7 @@ from the photoreal STAKK / HABBA, `layl-spray_6.00-8.00`) · `bts/` (LAYL wire/c
 `extract.sh` rebuilds only the clips in `footage/`; delete stale folders in `review/launch-footage/` when a clip is renamed.
 
 ## 8. Self-review ledger
-Builder-reviewed in the rounds below, then independently reviewed and fixed by the ECD (last three rows). Every round = stills or full render → look
+Builder-reviewed in the rounds below, then independently reviewed and fixed by the ECD (the three ECD rows); the last row is the photoreal-montage re-cut. Every round = stills or full render → look
 at 25 %, 100 % and cut strips (cut−2f / cut / cut+1f) → fix → re-check.
 
 | round | what I looked at | top findings | change | measured after |
@@ -137,24 +143,32 @@ at 25 %, 100 % and cut strips (cut−2f / cut / cut+1f) → fix → re-check.
 | **ECD review** (independent, on the delivered v1 files) | 4 fps sheet + 43 full-size stills (9:16), 2 fps sheet + 9 stills (4:5), poster at 100 %, 1/30 s strips at the drop, dots-wipe, collapse and ASK→CTA, band energy per 0.5 s | (1) «عندك مشروع؟» at 136 px ran x 55–1020: outside the 72 px margins and into the right action rail; (2) text over text 23.07–23.13 (the lime reply popped over the exiting ask line); (3) the typing bubble sat on full-size chat bubbles for ~7 f (18.40–18.63); (4) poster: «هذا» black on the black phone bezel, «منتجك.» on the dark chair; in the hook (both formats) «ك.» sat on the chair arm; (5) the whole CTA card was assembled for only ≈1.5 s (brief: ≥2 s); (6) the sub (<60 Hz) sat 10–12 dB over the 150 Hz–2 kHz band in every groove: the energy phones can't play was eating the −14 LUFS headroom; (7) the vignette over the full-lime wipe made olive corners | (1) 120 px, centre nudged left; (2) the ask exits 23.29–23.48 and the reply pops ON the bar-11 downbeat (23.50); (3) the bubbles fly in and shrink first (inOutCubic 18.22–18.52), then the typing bubble grows; (4) poster photo at 1:1 with both lines set from the RTL start on the clean wall; hook/glory 128 px from the RTL start; 4:5 hook focus 0.46→0.20; (5) ASK = one full bar (21.5–23.5), CTA 23.5–27.0, so the film is now 27.0 s; score re-timed (reply pop + resolving stab on 23.50, reading dip in bar 11, bar-12 outro, 0.6 s fade); (6) kicks −3 dB, pure 808 sub ×0.6, saturated 808 harmonics ×0.3; (7) the vignette fades out while the dots cover the frame | ASK line x ≈ 101–951; collapse and ASK→CTA strips clean; sub−mid gap now 4–8 dB in the grooves, mids +3 dB at the same −14 LUFS |
 | ECD render 1 | full 9:16 (blackdetect, freezedetect, cuts, sync) | one near-empty ink frame at 23.50: the cut frame before the reply became visible | the reply is visible from the cut frame (pops from 0.4×) | see final QC |
 | ECD determinism | 6 frames in forward / reverse / single seek order | 22.4 s (ASK) differed on 49,069 px between orders (59–64k vs a single render): the canvas `filter: blur()` on the main canvas depended on seek history | filtered draws (hook grade, ASK blur) run on a software canvas (`willReadFrequently`) and are composited; both formats re-rendered (ECD render 2) | see final QC |
+| **photoreal montage** (burger + coffee re-cut) | both hand-offs; every frame of the two new clean pulls (45 + 30) on per-frame sheets; the pulls against the delivered STAKK / HABBA films; circle fits of the cup rim and the ring band on the cut frames; stills at 3.50 / 4.00 / 5.00 / 6.00 / 7.25 ±2 f in both formats, plus 3.37–3.73 and the editor; a poster re-render | (1) the CGI burger and coffee were in the montage; (2) the photoreal cup rim is smaller and lower than the CGI one (the ring was framed on (560, 570), r 390), so the match cut no longer matched; (3) the whip landing drew BURGER at the smear's 1.28× overscan and snapped to 1× at 3.70, a visible shrink on a sharp frame (latent in v1 too); (4) the editor thumbnails pointed at the old clips | (1) clean pulls per the hand-offs: STAKK 7.90–9.40 (crown lands on 4.00), HABBA 5.9667–6.9667 (ends on the clean rim); (2) the ring's match-cut start re-framed in its own camera onto the measured rim (×0.80, centre (560, 570) → (524, 654)), and `ring.mp4` re-rendered; the 4:5 RING focus now equals COFFEE's (0.26); (3) the overscan settles with the smear (0.14 → 0); (4) thumbnails re-pointed | on the encoded MP4s, cup f179 (529, 648) r 307 vs ring f180 (526, 650), band silhouette r ≈ 310: centres within 4 px and radii within ≈3 px, in 9:16 and in 4:5 (y −148); the landing is continuous; pulls match the concept films (mean |Δ| 1.1–1.5 of 255); the poster re-renders pixel-identical (0 px) |
 
-**Final QC (ECD pass, measured on the delivered files):**
+**Final QC.** Re-measured on the re-rendered files from the photoreal-montage pass. Lines marked (ECD) were measured by the ECD on the previous
+render and still hold: the audio is bit-identical (the decoded PCM of both new files matches the previous 9:16), and every frame outside the montage matches it.
 - `TASH-launch-9x16.mp4`: H.264 High yuv420p BT.709, 1080×1920, 30/1, **810 frames = 27.000 s**; AAC LC 48 kHz stereo, 27.000 s.
   **−14.0 LUFS** integrated, **true peak −1.5 dBTP**, LRA 3.2 LU (`audio-check.sh`). freezedetect (−60 dB, 0.6 s): none.
   blackdetect: only 18.93–19.13 and 19.27–19.47 (the sting's own typing dots on ink before the snap; the one-frame empty-ink
   cut at 23.50 found in ECD render 1 is gone). Scene cuts detected at 1.50 · 3.50 · 6.00 · 9.40/9.70 (dots-wipe) · 11.77 ·
   16.27 · 17.00 · 17.77 = the cue sheet (the burn, the cut into the dark spray, the sting and the ink cuts are below the detector's threshold).
-- A/V sync on the MP4 (audio onset at half-amplitude vs the picture event): drop +9 ms, snap +9 ms, reply pop +12 ms (< ⅓ frame).
+- A/V sync (ECD, previous render; picture and sound unchanged at these events): drop +9 ms, snap +9 ms, reply pop +12 ms (< ⅓ frame).
+  The photoreal crown lands on frame 120 = 4.000 s; the crown hit sits at 3.997 s (`audio.py`, unchanged).
 - `TASH-launch-4x5.mp4`: 1080×1350, 810 frames = 27.000 s, same audio: −14.0 LUFS, −1.5 dBTP, LRA 3.2; no freezes;
   blackdetect only 19.30–19.47 (sting dots).
+- What changed vs the previous render (per-frame mean luma difference): 9:16 differs only on 3.50–6.53 (burger, coffee, and the ring until it
+  settles onto the same hero framing). Elsewhere it is ≤ 0.24 of 255, apart from three editor frames at ≤ 0.4, which are the new thumbnails. 4:5 differs on
+  3.50–7.27 (its RING focus moved 0.36 → 0.26). Elsewhere it is ≤ 0.5, and that is encoder noise: on sampled frames p99 is 4–5 levels and no 32 px block differs
+  by more than 1.4.
 - Determinism (ECD): frames 1.6 / 9.45 / 18.45 / 22.4 / 23.5 / 25.9 rendered in forward order, in reverse order and alone →
-  0 px different; 0.6 and 21.8 → ≤ 2 px at 1 level (right-edge column, words mid-blur).
-- Score sections (`src/audio.wav`, LUFS, ECD boundaries): hook −21.1 · glory −12.8 · montage −12.4 · breath −14.6 · process −13.5 ·
+  0 px different; 0.6 and 21.8 → ≤ 2 px at 1 level (right-edge column, words mid-blur). This pass: 3.70 (BURGER) rendered after
+  two different seek histories → 0 px different.
+- Score sections (ECD; `src/audio.wav` unchanged, LUFS, ECD boundaries): hook −21.1 · glory −12.8 · montage −12.4 · breath −14.6 · process −13.5 ·
   bubbles −15.2 · pre-snap −16.3 · sting −17.1 · ask −15.1 · cta −17.4. Band balance: sub (<60 Hz) 4–8 dB over the 150 Hz–2 kHz
   band in the grooves (was 10–12 dB); the last 50 ms sit at −70 dB (0.6 s fade, no hanging sub).
 - Footage: all five AI ranges are inside the CD-approved windows (s1 0.22–1.72, s2 1.70–2.38, s3 0.80–1.48, s4 0.55–1.77,
   s5 0.40–2.20); hands and faces checked at 100 % on the frames used.
-- poster.png: 1080×1920; «هذا منتجك.» on the clean wall, «وهذا إعلانه.» on ink; wordmark, handle and CONCEPT WORK line inside y 240–1680.
+- poster.png (unchanged; re-rendered in this pass → 0 px different): 1080×1920; «هذا منتجك.» on the clean wall, «وهذا إعلانه.» on ink; wordmark, handle and CONCEPT WORK line inside y 240–1680.
 
 ## 9. Known weaknesses (honest)
 - **Footage policy.** The note at the top of BRIEF.md now records the owner-approved Higgsfield exception to §3.5 for both

@@ -10,19 +10,20 @@
 
 | # | Folder | Upload files | Format |
 |---|---|---|---|
-| 1 | `01-habba-concept-reel/` | `reel.mp4` + `cover.png` | Reel 9:16, 15.6 s (photoreal cut, delivered 6 Nov 18:22) |
-| 2 | `02-stakk-concept-reel/` | `reel.mp4` + `cover.png` | Reel 9:16, 13.8 s (**CGI cut; a photoreal re-cut is in progress**, see §7) |
+| 1 | `01-habba-concept-reel/` | `reel.mp4` + `cover.png` | Reel 9:16, 15.6 s (photoreal cut, re-delivered 6 Nov 18:51) · **AI label ON** |
+| 2 | `02-stakk-concept-reel/` | `reel.mp4` + `cover.png` | Reel 9:16, 13.8 s (photoreal cut, 6 Nov 19:48, with the owner-approved smash retake) · **AI label ON** |
 | 3 | `03-layl-concept-reel/` | `reel.mp4` + `cover.png` | Reel 9:16, 15.9 s |
 | 4 | `04-ehna-tash-carousel/` | `slide-01.png` … `slide-06.png` | Carousel 4:5, 6 slides |
 | 5 | `05-bts-reel/` | `reel.mp4` + `cover.png` | Reel 9:16, 13.07 s, original score (new for this package) |
 | 6 | `06-before-after-post/` | `post.png` | Single post 4:5 (a labelled demonstration) |
 | 7 | `07-services-carousel/` | `slide-01.png` … `slide-07.png` | Carousel 4:5, 7 slides |
 | 8 | `08-how-to-order-carousel/` | `slide-01.png` … `slide-06.png` | Carousel 4:5, 6 slides |
-| 9 | `09-launch-reel/` | `reel.mp4` + `cover.png` | Reel 9:16, 27.0 s |
-| — | `stories/day2-new-work-habba.png` | | Story 9:16 for day 2 (the other first stories reuse `03-templates/examples/`, see §4) |
+| 9 | `09-launch-reel/` | `reel.mp4` + `cover.png` | Reel 9:16, 27.0 s (photoreal burger and coffee, 6 Nov 19:52) · **AI label ON** |
+| — | `stories/day2-new-work-habba.png` | | Story 9:16 for day 2 |
+| — | `stories/new-work-stakk.png` | | Story 9:16, STAKK «شغل جديد» (photoreal; for later, see §4). The other first stories reuse `03-templates/examples/`, see §4 |
 
 Every post folder also has a `caption.md` with the caption to paste, the alt text, and that post's own checks.
-Reels 1, 2, 3 and 9 are the teams' masters, copied byte for byte. Their covers are the teams' posters. Two were moved down a little so their top line clears the 3:4 profile-grid crop: 3 by 30 px and 9 by 24 px, with only the empty background above the type stretched to fill. 1 and 2 are unchanged. See `src/sources.json`.
+Reels 1, 2, 3 and 9 are the teams' masters, copied byte for byte (`cmp`, 6 Nov 20:12). Their covers are the teams' posters. Two were moved down a little so their top line clears the 3:4 profile-grid crop: 3 by 30 px and 9 by 24 px, with only the empty background above the type stretched to fill. 1 and 2 are pixel-identical to their posters: their top type already starts at y 292 (HABBA's TASH pill) and y 271 (STAKK's slate), inside the crop (240). See `src/sources.json`.
 
 ---
 
@@ -69,7 +70,7 @@ Day 0 is launch day. The weekdays are a suggestion (the Kuwaiti week starts Sund
 ### 3a. Pins
 - Pin in reverse, **8, then 3, then 9**, because the most recently pinned post shows first. Result: **9 · 3 · 8** (`06-copy/pinned-posts.md`: trailer → proof → ask). If the order comes out wrong, unpin all three and re-pin in that order.
 - A pinned post leaves its place in the grid. The profile then reads 9 · 3 · 8 / 7 · 6 · 5 / 4 · 2 · 1 (as in the preview).
-- **Slot 2 rotates** (`pinned-posts.md`): to the strongest new piece, and to the first real client ad (with written permission). Once the photoreal STAKK cut is posted, consider moving slot 2 from 3 to 2. That also breaks up the four-bottle cluster in the grid (see §7).
+- **Slot 2 rotates** (`pinned-posts.md`): to the strongest new piece, and to the first real client ad (with written permission). STAKK (2) is now the photoreal cut, so the owner can move slot 2 from 3 to 2. That also breaks up the four-bottle cluster in the grid (see §7). The preview keeps 9 · 3 · 8 until the owner decides.
 
 ---
 
@@ -93,7 +94,7 @@ Every file is 1080×1920. Story text sits inside y 250–1620, and the poll and 
 | Day 1 | question box | ink background | «اسألنا أي شي عن الإعلانات.» |
 | Day 2 | HABBA «شغل جديد» (photoreal cut) | **`stories/day2-new-work-habba.png`** (made for this package) | — |
 | Day 2 | Q&A answer | `03-templates/examples/story-qa-answer.png` (if not used on Day −1) | — |
-| later | STAKK «شغل جديد» | `03-templates/examples/story-new-work-02.png` still shows the **CGI** burger. Re-render it from the photoreal still once that cut lands: `node 03-templates/render.mjs 03-templates/templates/story-new-work.html 03-templates/data/story-new-work-02.json 08-instagram/stories/new-work-stakk.png` | — |
+| later | STAKK «شغل جديد» (photoreal cut) | **`stories/new-work-stakk.png`** (same file as `03-templates/examples/story-new-work-02.png`, byte for byte) | — |
 
 Every story showing a concept ad keeps its `CONCEPT AD` slate and «إعلان تجريبي — علامة خيالية» in frame. Don't crop them out when resizing in the app.
 
@@ -115,7 +116,20 @@ Every story showing a concept ad keeps its `CONCEPT AD` slate and «إعلان �
 - [ ] **Caption:** paste the `text` block from `caption.md` exactly. In the preview, check that «؟» and «!» sit at the **left** end of Arabic lines and the line breaks survived.
 - [ ] **Hashtags:** at most 8, already in the caption. If the app refuses eight, keep the first five.
 - [ ] **Alt text:** Advanced settings → accessibility → write alt text (Arabic, from `caption.md`, one per carousel slide). If the app doesn't offer it for reels, skip it.
-- [ ] **AI label:** ON for **post 9** (photoreal AI footage of people), **post 1** (photoreal AI coffee footage) and **post 2** once the photoreal STAKK cut replaces the current file. Meta asks for disclosure of photorealistic AI-generated video, and the voice guide says AI is never hidden. Check the current platform rule and setting name on the day; they change. Owner's call, recommended ON.
+- [ ] **AI label: switch it ON for posts 1, 2 and 9, and leave it OFF for the code-made posts.** Do it **before you tap Share**, on the last screen of the composer: open the advanced options and turn on the AI label toggle (in the English app it has been called "Add AI label"; the published post then shows "AI info" by the account name). The name and place change between app versions and languages, so look for it on that screen on the day. Set it at upload, not afterwards. After posting, open the post and check the label shows. Why: Meta asks people to disclose photorealistic video that was made or changed with AI, and our voice guide says AI is never hidden (`06-copy/voice-and-tone.md` §8). The owner approved the AI footage. This label is how we stay open about it.
+
+  | Post | AI label | What's in the picture |
+  |---|---|---|
+  | **1** HABBA | **ON** | every shot is photoreal AI footage (Higgsfield; credit line + job ids in `05-concept-ads/03-coffee-habba/SCRIPT.md`) |
+  | **2** STAKK | **ON** | every shot is photoreal AI footage (Higgsfield; `05-concept-ads/02-burger-stakk/SCRIPT.md`) |
+  | **9** Launch | **ON** | the hook, burger, coffee, diwaniya, café, car and owner shots are photoreal AI footage (`04-launch-ad/SCRIPT.md` §5) |
+  | 3 LAYL | OFF | CGI built in code (Three.js); no AI footage |
+  | 5 BTS | OFF | LAYL's own drawing, wire, clay and 3D passes, built in code |
+  | 6 Before/after | OFF | both halves are our LAYL 3D renders (the post says so) |
+  | 4, 8 | OFF | type and graphics only |
+  | 7 Services | owner's call | LAYL CGI, our posts and the launch ad's process frames. Slide 06's editor timeline has two thumbnail-size (≈35 px wide) frames of the AI burger and coffee among its eight clip thumbnails. Nobody would take them for filmed footage, but if in doubt, switch it ON: a label on something true costs nothing |
+
+  Stories cut from posts 1, 2 or 9 (`stories/day2-new-work-habba.png`, `stories/new-work-stakk.png`, post 9 shared to story): if the story composer offers the AI label, switch it on too. The concept slate is in frame either way.
 - [ ] **Concept posts (1, 2, 3, 5, 6, 7):** the label is in the media **and** in the caption. Never tag or hashtag the fictional brands.
 - [ ] No location tag (we have no address), no collab, no product tags, no people tags.
 - [ ] After posting, look at the profile: the tile crop matches `profile-preview.png`, the slates are visible, and nothing important sits under the app's corner icons.
@@ -129,15 +143,15 @@ Every story showing a concept ad keeps its `CONCEPT AD` slate and «إعلان �
 
 ## 6. What was checked (numbers measured on the files in this folder)
 
-**Reels:** all are H.264 High, yuv420p, 1080×1920, 30 fps, AAC 48 kHz stereo, with 1080×1920 PNG covers.
+**Reels:** all are H.264 High, yuv420p, 1080×1920, 30 fps, AAC 48 kHz stereo, with 1080×1920 PNG covers. Frame counts by `ffprobe -count_frames`; loudness by `_system/tools/audio-check.sh` on the packaged files (posts 1, 2, 9 re-measured 6 Nov, 20:15). Contact sheets of 1, 2 and 9 at 2 fps were looked at frame by frame: photoreal footage throughout, the `CONCEPT AD` slate + «إعلان تجريبي — علامة خيالية» in the tails of 1 and 2, «نماذج تجريبية · CONCEPT WORK» on the burger and coffee in 9.
 
 | Post | Frames · length | Loudness · true peak | Notes |
 |---|---|---|---|
-| 1 HABBA | 468 · 15.60 s | −13.9 LUFS · −1.5 dBTP | byte-identical to `05-concept-ads/03-coffee-habba/HABBA-concept-9x16.mp4` (photoreal cut) |
-| 2 STAKK | 414 · 13.80 s | −14.0 LUFS · −1.2 dBTP | byte-identical to the current (CGI) team master |
-| 3 LAYL | 477 · 15.90 s | −14.0 LUFS · −1.8 dBTP | byte-identical to the team master |
+| 1 HABBA | 468 · 15.60 s | −14.0 LUFS · −1.5 dBTP · LRA 3.2 | byte-identical (`cmp`) to `05-concept-ads/03-coffee-habba/HABBA-concept-9x16.mp4`, photoreal cut re-delivered 18:51 (sha1 84b7d460…) |
+| 2 STAKK | 414 · 13.80 s | −14.0 LUFS · −1.4 dBTP · LRA 2.8 | byte-identical (`cmp`) to `05-concept-ads/02-burger-stakk/STAKK-concept-9x16.mp4`, photoreal cut with the S01 retake, 19:48 (sha1 f90b8edd…) |
+| 3 LAYL | 477 · 15.90 s | −14.0 LUFS · −1.8 dBTP | byte-identical (`cmp`) to the team master (unchanged in this refresh) |
 | 5 BTS | 392 · 13.07 s | −14.0 LUFS · −2.2 dBTP · LRA 5.5 | see below |
-| 9 Launch | 810 · 27.00 s | −14.0 LUFS · −1.5 dBTP | byte-identical to `04-launch-ad/TASH-launch-9x16.mp4` |
+| 9 Launch | 810 · 27.00 s | −14.0 LUFS · −1.5 dBTP · LRA 3.2 | byte-identical (`cmp`) to `04-launch-ad/TASH-launch-9x16.mp4`, the cut with the photoreal burger and coffee, 19:52 (sha1 5c16cf81…) |
 
 **BTS reel (post 5), made for this package.** One continuous move: a front-elevation drawing of the LAYL bottle (traced from the same geometry code that builds it, with real dimensions), then the ad's real wire, clay and final 3D passes of its S3 orbit, then the ad's real ending.
 - The passes were re-rendered from LAYL's own page at 60 fps, giving true in-between frames played at ≈0.48×. A lime scan line moves right to left between passes. The copy changes colour as the line passes under it.
@@ -152,13 +166,20 @@ Every story showing a concept ad keeps its `CONCEPT AD` slate and «إعلان �
 
 **Reproducibility:** `src/build.sh` rebuilt every static file and cover byte-identical. The only exception was HABBA, which the coffee team re-delivered during the run, and that is how the new cut was picked up.
 
+**Photoreal refresh (6 Nov, 20:11).** `package_reels.py --check` reported posts 1, 2 and 9 changed; `build.sh` re-packaged them. Compared with the files before the run:
+- Changed: reels 1, 2, 9 (new masters); covers 1 and 2 (now the photoreal posters, pixel-identical to them); post 7 slides 03 and 06 (their launch-ad frames are now cut from the new master by `src/launch_frames.py`: slide 06's editor-timeline thumbnails show the photoreal burger and coffee, and slide 03 differs only by encoder noise, 122 px); both profile previews; and the new STAKK story.
+- Byte-identical to before the run: cover 9 (the launch poster didn't change), post 6, carousels 4 and 8, slides 01, 02, 04, 05 and 07 of post 7, the BTS cover, and `stories/day2-new-work-habba.png` (it already used HABBA's photoreal still). Cover 3 was re-written from the unchanged LAYL poster.
+- Covers in the 3:4 grid crop (y 240–1680), first row of type: 9 at y 276, 2 at y 271 (slate), 1 at y 292 (TASH pill). All clear y 255. Bottoms: HABBA's saucer ends at about y 1655; STAKK's «STAKK BURGER» at about y 1495.
+- `profile-preview.png` and `-light.png` were looked at in full-size tiles. Row 3 is now 4 ink · 2 photoreal red · 1 photoreal beige. The reel icon on tile 2 sits right of the slate and clear of «كل».
+- A second full `build.sh` run gave byte-identical files throughout (sha1 of every PNG, JPEG, MP4 and JSON here, plus the 03-templates STAKK story). One small caveat, not ours: across three renders of STAKK's clean page at 9.40 s, one differed from the others in 4 pixels by 1 level, so the STAKK story can occasionally change by that much.
+
 **Grid rhythm (pinned state, as in the preview)**
 
 | | left | middle | right |
 |---|---|---|---|
 | row 1 | 9 photo-grey over ink, one lime word | 3 ink + amber | 8 **lime** |
 | row 2 | 7 **paper** | 6 split: ad (dark) │ plain photo (light) | 5 ink + lime lines |
-| row 3 | 4 **ink** | 2 red | 1 warm beige photo |
+| row 3 | 4 **ink** | 2 red (photoreal burger) | 1 warm beige (photoreal coffee) |
 
 - No two neighbours clash: lime sits between ink and ink, paper meets the dark half of 6, and red sits between ink and beige.
 - Lime fills one tile (about 11%), plus accents.
@@ -170,16 +191,19 @@ Every story showing a concept ad keeps its `CONCEPT AD` slate and «إعلان �
 
 ## 7. Open decisions and known weaknesses
 
-1. **STAKK (post 2) is still the CGI cut** the owner called cartoonish; the photoreal re-cut is in progress. When it lands: run `python3 08-instagram/src/package_reels.py` (or `--check` to see what changed), then `bash 08-instagram/src/build.sh` to refresh the previews, look at the new cover in `profile-preview.png`, re-render the STAKK story (§4), and switch on the AI label. **Don't post 2 from this folder until then**, unless the owner accepts the CGI cut.
-2. **Post 9 caption, line 4 was changed** from the copywriter's version, because the launch ad's people scenes are AI-generated, not from the concept ads. The new line says so once («ومشاهد الناس سويناها بالذكاء الاصطناعي»). `09-launch-reel/caption.md` gives a softer alternative that is still true. **Owner or lead to confirm.**
+1. **Posts 1, 2 and 9 are now the photoreal cuts** (packaged 6 Nov, 20:11; §6). Their pictures include owner-approved AI footage, so **the AI label goes ON for exactly these three** (§5). Their captions now say it once, after «المزيد»: post 1 line 5, post 2 line 5, post 9 line 4. Lines 5 in posts 1 and 2 are new and optional (delete them if the owner prefers the label alone). **Owner or lead to confirm the three lines.** If a team re-delivers again, run `package_reels.py --check`, then `build.sh`.
+2. **Post 9 caption, line 4 was rewritten again**: «المنتجات بالإعلان كلها خيالية، والأكل ومشاهد الناس سويناها بالذكاء الاصطناعي.» The earlier line said the product shots came from our concept ads and only the people were AI. Since the burger and coffee became AI footage, that line implied they weren't, and the ring was never from a concept ad. `09-launch-reel/caption.md` has the shot-by-shot reasoning and a softer alternative. `06-copy/grid-captions.md` was synced to this line in the final QA.
 3. **The display name** (brief vs copy team, §2.3). Owner decides once.
-4. **The same bottle shows in four tiles** (9, 3, 6, 5). 3 and 5 are LAYL by the brief, and 6 has to be LAYL to stay honest: it's the only concept product we own as a model, so it's the only one where we could make a true "ordinary photo" of the same product from the same camera. The remedy is the slot-2 rotation in §3a once STAKK is final, and future posts.
+4. **The same bottle shows in four tiles** (9, 3, 6, 5). 3 and 5 are LAYL by the brief, and 6 has to be LAYL to stay honest: it's the only concept product we own as a model, so it's the only one where we could make a true "ordinary photo" of the same product from the same camera. The remedy is the slot-2 rotation in §3a (STAKK is final now; owner's call), and future posts.
 5. **The launch-eve grid** (posts 1–8, nothing pinned yet) puts the lime tile 8 next to the paper tile 7, two low-contrast neighbours. It lasts one evening, and the pinned state fixes it.
 6. **The phone in the launch cover (post 9, top half) looks like an iPhone** with a stock camera layout. The launch ECD flagged this; it needs the lead's call. No logo is visible.
 7. **Post 6's "ordinary photo" is our 3D render** made to look like a phone shot, not a photograph. The post (`DEMO · CONCEPT AD 01` + «للتوضيح: منتج تجريبي لعلامة خيالية») and the caption both say so. In close-up it is cleaner than a real phone snap.
 8. **The BTS cover headline** was capped at 120 px so the app's reel icon (tile top-right) doesn't sit on «ورا». The icon position is estimated, not measured on a device. Check it after posting.
 9. **The «الأسعار» highlight** waits for the owner's price approval (`07-ops/04-pricing.md`).
-10. **Template bug** (03-templates, reported, not edited): `templates/carousel.html` draws the cover's typing bubble with ink dots on an ink bubble on lime and paper slides. `src/templates/deck.html` works around it with lime dots on the bubble.
+10. **Template bug, now fixed by the templates team** (6 Nov, 20:05): `03-templates/templates/carousel.html` used to draw the cover's typing bubble with ink dots on an ink bubble on lime and paper slides. It now draws lime dots on a dark bubble, which is what `src/templates/deck.html` already did, so carousels 4, 7 and 8 are unaffected.
+11. **The STAKK story's picture is a widened frame.** Every STAKK hero frame has the burger spanning the full width, so `still-hero.png` in the story slot cut off the bottom bun and the right edge. `stories/new-work-stakk.png` uses STAKK's own clean frame at 9.40 s, kept pixel for pixel, with only the red seamless continued 110 px left and 86 px right (`src/stakk_story_plate.py`). The seams are invisible at 100% and 200%. On the right, the floor shadow is carried outward and softened, which can't be checked against a wider real shot. `03-templates/data/story-new-work-02.json` now points at the same plate, so the templates example and the package story are the same file.
+12. **Post 7, slide 06** now shows the launch ad's current editor timeline. Two of its eight thumbnails (≈35 px wide) are the AI burger and coffee, so the AI label on post 7 is the owner's call (§5).
+13. **Outside this folder: synced in the final QA** (6 Nov, after 20:21). `tash/README.md` now describes STAKK and the launch ad as photoreal, and `06-copy/grid-captions.md` carries the new post 9 line 4 and the optional lines 5 of posts 1 and 2 (the `08-instagram` captions stay the ones to paste).
 
 ---
 
@@ -187,7 +211,7 @@ Every story showing a concept ad keeps its `CONCEPT AD` slate and «إعلان �
 
 ```bash
 python3 08-instagram/src/package_reels.py --check   # did any team re-deliver reel 1, 2, 3 or 9?
-bash 08-instagram/src/build.sh                      # re-package reels + covers, post 6, carousels, BTS cover, previews, caption check
+bash 08-instagram/src/build.sh                      # re-package reels + covers, post 6, post-7 launch frames, carousels, BTS cover, stories, previews, caption check
 bash 08-instagram/src/build.sh --bts                # … and re-render the BTS reel (plates → score → video; ~8 min, 2 workers)
 python3 08-instagram/src/check_captions.py          # after any caption edit
 ```
@@ -195,9 +219,12 @@ python3 08-instagram/src/check_captions.py          # after any caption edit
 | Source | What it builds |
 |---|---|
 | `src/package_reels.py` | copies reels 1, 2, 3, 9 and writes their covers; `src/sources.json` records what was packaged |
+| `src/launch_frames.py` | post 7's three launch-ad pictures (`src/assets/launch-{phone,storyboard,timeline}.jpg`), cut from the launch master's frames 474, 336 and 414 |
 | `src/templates/deck.html` + `src/data/0{4,7,8}-*.json` | carousels 4, 7, 8 (extends the 03-templates carousel; per-slide themes) |
 | `src/ba/before.html` → `src/templates/before-after.html` + `src/data/06-before-after.json` | post 6 |
 | `src/bts/` (`extract.sh`, `cues.json`, `index.html`, `main.js`, `audio.py`) | the BTS reel. Its plates live in `review/ig-package/bts/frames/` (scratch); `extract.sh` rebuilds them |
 | `src/templates/reel-cover-bts.html` + `src/data/05-bts-cover.json` | the BTS cover (03-templates' reel cover with the text block centred) |
+| 03-templates `story-new-work.html` + `src/data/story-new-work-habba.json` | `stories/day2-new-work-habba.png` (HABBA's `still-hero.png`) |
+| `src/stakk_story_plate.py` + 03-templates `story-new-work.html` + `src/data/story-new-work-stakk.json` | `src/assets/stakk-story-plate.png` (from STAKK `?clean=1` at 9.40 s) → `stories/new-work-stakk.png` |
 | `src/profile/index.html` (`?mode=light`, `?pins=` for no pins) | `profile-preview.png`, `profile-preview-light.png` |
 | `src/mux.mjs` | re-mux new audio onto a rendered video exactly as `_system/tools/render.mjs` does |

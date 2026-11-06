@@ -4,6 +4,7 @@
 > product, price or claim. Made by طشّ | TASH Creative to show the craft.
 >
 > **Footage: AI-generated with Higgsfield (GPT Image 2.6 start frames → Kling 3.0 Turbo), art-directed and approved by TASH. Edit, type, sound design and signature by TASH.**
+> (The S01 retake's start-frame model was not named in the CD's hand-off, so it is not claimed; see the job table. Its video job is Kling 3.0 Turbo.)
 > The owner approved Higgsfield for this ad after judging the CGI version «كرتوني مو حقيقي». The CD generated and approved
 > the seven clips in `footage/ai/`; the edit team did not generate anything.
 > **S01 was replaced at the owner's request.** The owner said the raw beef in the original b1 hook «جنه مخ» (looked like a
@@ -88,7 +89,7 @@ Clean plate only: 10.40 → 13.80 continues S10 (`b7_crown` 2.44 → 4.98 s, 0.8
 | صوص ستاك · السرّي | STAKK sauce · the secret one | 7.40–8.20 |
 | ستاك دبل · ٢٫٧٥٠ د.ك · اطلب الحين ← | STAKK double · 2.750 KD (fictional price) · order now | 8.55–10.40 |
 | ستاك برجر · STAKK BURGER | client logo (fictional) | 10.60–11.40 |
-| إعلان تجريبي — علامة خيالية · CONCEPT AD — 02 / BURGER | concept slate | 10.55–13.80 |
+| إعلان تجريبي — علامة خيالية · CONCEPT AD — 02 / BURGER | concept slate | 10.55–11.40 on the client card, then 12.72–13.80 under the TASH mark (fading in from 12.72 / 12.85). Not during the sting's typing bubble 11.40–12.72, where only `TASH / 2026` shows (measured on the final MP4 in the final QA) |
 
 Same words as the CGI version. No claims, no "best in Kuwait", no reviews, no numbers except the fictional price. Arabic is
 animated per word (never per letter); ellipses and «!» sit on the RTL end, «…على مهله» leads with its ellipsis (it continues

@@ -24,6 +24,8 @@ def frame(video, t, out, w=540):
 
 
 # ---------------------------------------------------------------- concept-ad frames (client palette vs TASH tail)
+# LAYL is code-built CGI (Three.js). STAKK is the photoreal cut (Higgsfield footage, owner-approved; credit in its SCRIPT.md):
+# card 11.1 = the STAKK end card fully built, tail 13.7 = the TASH signature; hero = its still-hero.png (S09 hero frame).
 ads = {
     'layl': ('05-concept-ads/01-perfume-layl/LAYL-concept-9x16.mp4', {'card': 12.7, 'tail': 15.7}),
     'stakk': ('05-concept-ads/02-burger-stakk/STAKK-concept-9x16.mp4', {'card': 11.1, 'tail': 13.7}),
@@ -42,9 +44,10 @@ for name, (rel, times) in ads.items():
     palettes[name] = [{'hex': '#%02X%02X%02X' % tuple(pal[i * 3:i * 3 + 3]), 'share': round(c / (180 * 320), 3)} for c, i in counts[:6]]
 
 # ---------------------------------------------------------------- misuse "busy image": a real frame of our own work
-# (HABBA hero: hard window-light stripes over cup, saucer and wood). Cropped to the misuse tile's 480:450.
+# (HABBA's photoreal hero, Higgsfield footage: a top-down latte on a speckled saucer under hard window-light stripes on wood).
+# Cropped to the misuse tile's 480:450, from just above the saucer so the whole cup and saucer and the stripes are in.
 im = Image.open(os.path.join(TASH, '05-concept-ads/03-coffee-habba/still-hero.png')).convert('RGB')
-cw = 1080; ch = round(cw * 450 / 480); y0 = 330
+cw = 1080; ch = round(cw * 450 / 480); y0 = 180
 im.crop((0, y0, cw, y0 + ch)).resize((960, 900), Image.LANCZOS).save(os.path.join(ASSETS, 'misuse-busy.jpg'), quality=88, optimize=True, progressive=True)
 
 # ---------------------------------------------------------------- sonic logo: waveform + measured loudness
