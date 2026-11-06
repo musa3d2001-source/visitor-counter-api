@@ -1,0 +1,86 @@
+{
+  "1": {
+    "folder": "01-habba-concept-reel",
+    "video": "05-concept-ads/03-coffee-habba/HABBA-concept-9x16.mp4",
+    "video_sha1": "92099287ceb8e9752ecfb2606604423b98b444e2",
+    "poster": "05-concept-ads/03-coffee-habba/poster.png",
+    "poster_sha1": "9e7631deeb52fdb726a36ec0aad24c2c8a0a90db",
+    "spec": {
+      "w": 1080,
+      "h": 1920,
+      "fps": "30/1",
+      "vcodec": "h264",
+      "profile": "High",
+      "pix": "yuv420p",
+      "acodec": "aac",
+      "ar": "48000",
+      "ch": 2,
+      "dur": 15.6
+    },
+    "cover": "unchanged",
+    "why": "photoreal cut (18:22): its poster already keeps the TASH pill at y≈290, inside the grid crop; the old CGI poster needed 30 px"
+  },
+  "2": {
+    "folder": "02-stakk-concept-reel",
+    "video": "05-concept-ads/02-burger-stakk/STAKK-concept-9x16.mp4",
+    "video_sha1": "c7fbabd8666aa7a65f9a8ed856d753b182913d26",
+    "poster": "05-concept-ads/02-burger-stakk/poster.png",
+    "poster_sha1": "210648dcb0f3a21f02910a5b5ca14a92f7a51870",
+    "spec": {
+      "w": 1080,
+      "h": 1920,
+      "fps": "30/1",
+      "vcodec": "h264",
+      "profile": "High",
+      "pix": "yuv420p",
+      "acodec": "aac",
+      "ar": "48000",
+      "ch": 2,
+      "dur": 13.8
+    },
+    "cover": "unchanged",
+    "why": ""
+  },
+  "3": {
+    "folder": "03-layl-concept-reel",
+    "video": "05-concept-ads/01-perfume-layl/LAYL-concept-9x16.mp4",
+    "video_sha1": "397363585c557b09655b04d3e118ef0476ed34a6",
+    "poster": "05-concept-ads/01-perfume-layl/poster.png",
+    "poster_sha1": "e7591df957f2698d890ca314020de9da14b835b0",
+    "spec": {
+      "w": 1080,
+      "h": 1920,
+      "fps": "30/1",
+      "vcodec": "h264",
+      "profile": "High",
+      "pix": "yuv420p",
+      "acodec": "aac",
+      "ar": "48000",
+      "ch": 2,
+      "dur": 15.9
+    },
+    "cover": "moved down 30px (empty background above y=215 stretched smoothly to fill the top)",
+    "why": "TASH mark shadda at y≈235 crossed the grid crop (240)"
+  },
+  "9": {
+    "folder": "09-launch-reel",
+    "video": "04-launch-ad/TASH-launch-9x16.mp4",
+    "video_sha1": "5ea0e735b2d11bd4d9e4fbf71764cfde1f1dd897",
+    "poster": "04-launch-ad/poster.png",
+    "poster_sha1": "c302fe9e95455106449cd1903fc58d824eac6eb0",
+    "spec": {
+      "w": 1080,
+      "h": 1920,
+      "fps": "30/1",
+      "vcodec": "h264",
+      "profile": "High",
+      "pix": "yuv420p",
+      "acodec": "aac",
+      "ar": "48000",
+      "ch": 2,
+      "dur": 27.0
+    },
+    "cover": "moved down 24px (empty background above y=244 stretched smoothly to fill the top)",
+    "why": "top line «هذا منتجك.» started 10 px inside the grid crop: the pinned-first tile looked guillotined"
+  }
+}

@@ -1,6 +1,7 @@
 """HABBA — original score + sound design for concept ad 03 (specialty coffee).
 Warm lo-fi at 85.714 BPM (1 beat = 0.7 s = 21 frames): soft electric-piano chords (local FM voice), a gentle mirwas
-groove, round sine bass, vinyl crackle; foley on picture: blinds, pour, bean taps, the cup's turn and clink.
+groove, round sine bass, vinyl crackle; foley on picture: blinds, pour, bean taps, the bean that drops into the mark.
+PHOTOREAL CUT: the music is unchanged; only SFX that lost or moved their picture were changed (see cues.json ev._sfxNote).
 Everything is synthesised here or by the TASH engine (_system/audio/tashaudio.py). Timings come from cues.json.
 Run:  python3 src/audio.py   → writes src/audio.wav (pre-mastered to −14 LUFS, true peak ≤ −1.5 dBTP)."""
 import sys, os, json
@@ -89,23 +90,6 @@ def bean_tap(seed_=1, gain=1.0):
     return fade((tick_ * 0.9 + knock * 0.5 + low) * gain, 0.0003, 0.02)
 
 
-def clink(f=2350, d=1.1):
-    """Ceramic 'tink': stiff inharmonic partials with fast decay + a glassy transient (cup settling on its saucer)."""
-    t = tt(d); y = np.zeros_like(t)
-    for ratio, a, dec in ((1.0, 1.0, 0.32), (2.42, 0.55, 0.16), (3.9, 0.35, 0.09), (5.61, 0.22, 0.05), (0.51, 0.25, 0.12)):
-        y += a * np.sin(2 * np.pi * f * ratio * t) * np.exp(-t / dec)
-    y += bp(noise(d), 3000, 11000) * env_exp(d, 0.0025) * 0.8
-    return fade(y * 0.35, 0.0002, 0.1)
-
-
-def scrape(d=1.3):
-    """The cup's foot turning on the saucer well: a very soft, slightly grainy ceramic slide."""
-    N = n_(d)
-    x = bp(noise(d), 900, 3800) * (0.6 + 0.4 * lp(_rng.standard_normal(N), 30) * 6)
-    e = np.sin(np.linspace(0, np.pi, N)) ** 1.5 * np.linspace(1, 0.4, N)
-    return stereo(x * e * 0.08, 0.1, width=0.3)
-
-
 # ----------------------------------------------------------------------------- arrangement
 m = Mix(DUR, tail=0.5)
 
@@ -171,16 +155,16 @@ m.add(shimmer(1.6, base=1760, n=5, seed_=8), EV['blindsOpen'] + 0.45, gain=0.10,
 p = pour(EV['streamOff'] - EV['milkStart'] + 0.25, seed_=21)
 p = lp(p, 3200) * np.linspace(1, 0.55, len(p))[:, None]
 m.add(p, EV['milkStart'] - 0.05, gain=0.85, bus='sfx')                                       # the milk pour
-m.add(bean_tap(1, 1.0), EV['bean1'], gain=1.0, bus='sfx', pan=0.1)                          # bean one
-m.add(bean_tap(2, 0.45), EV['bean1'] + 0.42, gain=0.6, bus='sfx', pan=0.1)                   #   …its little bounce
-m.add(bean_tap(3, 1.0), EV['bean2'], gain=0.95, bus='sfx', pan=0.2)                           # bean two
-m.add(bean_tap(4, 0.45), EV['bean2'] + 0.42, gain=0.55, bus='sfx', pan=0.2)
-for k, tb in enumerate(EV['beanTapsBehind']):                                                # the soft ones behind
-    m.add(lp(bean_tap(10 + k, 0.5), 3000), tb, gain=0.22, bus='sfx', pan=R.uniform(-0.4, 0.4))
-m.add(scrape(EV['settle'] - EV['turnStart']), EV['turnStart'], gain=1.0, bus='sfx')         # the cup turns
-m.add(clink(2350), EV['settle'] - 0.004, gain=0.9, bus='sfx', pan=-0.05)                    # hero: the clink
-m.add(clink(2350), EV['settle'], gain=0.25, bus='verb')
-m.add(bean_tap(7, 0.55), EV['beanDot'], gain=0.45, bus='sfx')                                 # the bean drops into the mark
+m.add(bean_tap(1, 1.0), EV['bean1'], gain=1.0, bus='sfx', pan=0.1)                          # bean one hits the hero bean
+m.add(bean_tap(3, 1.0), EV['bean2'], gain=0.95, bus='sfx', pan=-0.05)                         # bean two lands
+# the secondary contacts measured on the footage: bean one grazing off, bean two tipping onto its side
+for k, (tb, gn) in enumerate(zip(EV['beanTapsBehind'], (0.16, 0.32))):
+    m.add(lp(bean_tap(10 + k, 0.5), 3000), tb, gain=gn, bus='sfx', pan=(0.1, -0.1)[k])
+# (the v1 cup turn scrape and the 11.20 clink are gone: in the footage the cup does not turn, so they had no cause)
+# hero: the bean drops into the mark (the one terracotta accent lands in the ب slot), a layered wooden tok + room
+m.add(bean_tap(7, 1.0), EV['beanDot'] - 0.003, gain=0.8, bus='sfx')
+m.add(lp(softbass(nf('D3'), 0.18, 0.8), 600), EV['beanDot'], gain=0.22, bus='sfx')            # a little body under it
+m.add(bean_tap(7, 1.0), EV['beanDot'], gain=0.3, bus='verb')
 m.add(slats(0.4, 9, close=True, seed_=9), EV['blindsClose'] - 0.02, gain=0.55, bus='sfx')    # blinds close → TASH
 
 # ---------------------------------------------------------------- TASH signature (aligned to endcard-cues.json)
@@ -205,17 +189,18 @@ m.process_bus('drums', lambda b: reverb(sat(b * 1.2, 1.4) / 1.2, decay=0.6, mix=
 m.process_bus('verb', lambda b: hp(reverb(b, decay=1.9, mix=1.0, pre=0.02, tone=6500), 250))
 m.process_bus('bed', lambda b: b * lin(DUR - 0.6, DUR, 1, 0.4) * lin(EV['sting'] + 0.9, EV['sting'] + 1.1, 1, db(-8)))
 
-# sidechain-ish breathing on the keys and bass from the dums; reading dip under the lines; clear the air for the clink;
+# sidechain-ish breathing on the keys and bass from the dums; reading dip under the lines; a small breath before the bean
+# drops into the mark;
 # the whole music bed bows out with the blinds so the TASH signature lands on near-silence
 dums = [g.t(b, s * 0.25) for b, ss in ((1, (0, 6, 10)), (2, (0, 6)), (3, (10,)), (4, (0,))) for s in ss]
 duck = duck_curve(N, dums, depth_db=-3.5, attack=0.006, hold=0.03, release=0.2)[:, None]
 read = lin(EV['text1'] - 0.1, EV['text1'] + 0.2, 1, db(-2)) * lin(EV['text1Out'], EV['text1Out'] + 0.3, 1, db(2))
-pre_clink = lin(EV['settle'] - 0.35, EV['settle'] - 0.12, 1, db(-5)) * lin(EV['settle'] - 0.02, EV['settle'] + 0.3, 1, db(5))
+pre_dot = lin(EV['beanDot'] - 0.2, EV['beanDot'] - 0.06, 1, db(-2.5)) * lin(EV['beanDot'] + 0.02, EV['beanDot'] + 0.3, 1, db(2.5))
 outro = lin(EV['blindsClose'] - 0.05, EV['sting'] + 0.3, 1, db(-15)) * lin(EV['sting'] + 0.8, EV['sting'] + 1.08, 1, db(-12))
 # the arc: a hushed morning intro, the groove, a slow-motion hush for the beans, a fuller resolve on the end card
 arc = (lin(0.0, 2.6, db(-7), 1) * lin(EV['bean1'] - 0.9, EV['bean1'] - 0.5, 1, db(-5)) * lin(EV['turnStart'] - 0.2, EV['turnStart'] + 0.4, 1, db(5))
        * lin(EV['settle'] - 0.05, EV['settle'] + 0.1, 1, db(1.5)))
-music = lambda b: b * duck * read * pre_clink * outro * arc
+music = lambda b: b * duck * read * pre_dot * outro * arc
 for bus in ('keys', 'keys2', 'bass', 'drums'): m.process_bus(bus, music)
 m.process_bus('bass', lambda b: hp(b, 38, order=2) * db(-3))
 m.process_bus('keys', lambda b: peak_eq(b, 1000, 3.0, 0.8))

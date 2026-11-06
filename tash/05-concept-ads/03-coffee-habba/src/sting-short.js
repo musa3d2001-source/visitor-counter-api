@@ -66,6 +66,7 @@ export function createSting(root, { width = 1080, height = 1920, logoW = 640, cy
   css(tag, { position: 'absolute', left: '0', right: '0', top: (ly + logoH + 70) + 'px', textAlign: 'center', direction: 'rtl', fontFamily: 'Alexandria', fontWeight: '700', fontSize: taglineSize + 'px', color: T.text, lineHeight: '1.3' });
   wrap.appendChild(tag);
   const tagWords = tagline ? words(tag) : [];
+  tagWords.forEach(w => { w.style.willChange = 'auto'; });   // painted fresh per frame (seek-order independent blur)
   const hd = document.createElement('div');
   hd.textContent = handle;
   css(hd, { position: 'absolute', left: '0', right: '0', top: (ly + logoH + 70 + taglineSize * 1.3 + 34) + 'px', textAlign: 'center', fontFamily: 'JetBrains Mono', fontWeight: '600', fontSize: '26px', letterSpacing: '.2em', color: T.meta, direction: 'ltr' });

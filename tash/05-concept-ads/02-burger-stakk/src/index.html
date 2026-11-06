@@ -2,106 +2,82 @@
 <html lang="ar" dir="rtl"><head><meta charset="utf-8">
 <title>STAKK BURGER — concept ad (TASH)</title>
 <link rel="stylesheet" href="/_system/tokens.css">
-<script type="importmap">{"imports":{"three":"/_system/vendor/three/three.module.min.js","three/addons/":"/_system/vendor/three/addons/"}}</script>
 <style>
   :root { --red:#E23B2E; --mus:#F2B705; --cre:#FFF3DC; --chr:#1F1C19; }
   html,body { margin:0; background:#000; overflow:hidden; }
   #stage { position:relative; width:1080px; height:1920px; overflow:hidden; background:#000; }
-  #stage > canvas { position:absolute; inset:0; width:1080px; height:1920px; display:block; }
-  #grain { position:absolute; inset:0; width:1080px; height:1920px; opacity:.05; pointer-events:none; }
-  .ui { position:absolute; inset:0; direction:rtl; }
-  .ui .w { display:inline-block; }
+  #stage > canvas, #stage > div { position:absolute; inset:0; width:1080px; height:1920px; }
+  #pic { display:block; }
+  /* one vignette for the whole film (footage and the client card under it, so the match cut keeps its corners) */
+  #vig { pointer-events:none; background:radial-gradient(ellipse 78% 62% at 50% 54%, rgba(10,7,5,0) 58%, rgba(10,7,5,.30) 100%); }
+  #grain { opacity:.04; pointer-events:none; }
+  #ec, #sig { display:none; }
+  .ui { direction:rtl; }
+  .ui .w, .ui .tw { display:inline-block; }
   .lines { position:absolute; inset:0; width:1080px; height:1920px; overflow:visible; }
   .leader { fill:none; stroke:var(--cre); stroke-width:4; stroke-linecap:round; }
   .ldot { fill:var(--cre); stroke:var(--chr); stroke-width:3; }
   .lring { fill:none; stroke:var(--cre); stroke-width:3; }
-  /* title — words stacked like layers */
-  .title { position:absolute; top:300px; left:0; right:0; text-align:center; }
-  .tline { line-height:1.02; height:188px; }
-  .tw { display:inline-block; font-family:Alexandria; font-weight:900; font-size:168px; transform-origin:50% 100%; text-shadow:0 10px 0 var(--chr); }
+  /* title — four words stacked like layers */
+  .title { position:absolute; left:0; right:0; text-align:center; }
+  .tline { line-height:1.0; }
+  .tw { font-family:Alexandria; font-weight:900; transform-origin:50% 100%; text-shadow:0 9px 0 var(--chr); }
   .tw.cre { color:var(--cre); } .tw.mus { color:var(--mus); }
   /* ingredient labels */
-  .label { position:absolute; width:700px; }
+  .label { position:absolute; width:936px; }
   .label.right { right:72px; text-align:right; }
   .label.left { left:72px; text-align:left; }
   .l-sup { display:inline-block; font-family:Alexandria; font-weight:700; font-size:50px; line-height:1; }
   .l-sup.pill { background:var(--mus); color:var(--chr); padding:12px 30px 20px; border-radius:999px; }
   .label.right .l-sup { transform-origin:100% 50%; } .label.left .l-sup { transform-origin:0 50%; }
-  .l-hero { font-family:Alexandria; font-weight:900; font-size:126px; line-height:1.12; color:var(--cre); text-shadow:0 9px 0 var(--chr); margin-top:6px; }
+  .l-hero { font-family:Alexandria; font-weight:900; font-size:126px; line-height:1.12; color:var(--cre); text-shadow:0 9px 0 var(--chr); margin-top:6px; white-space:nowrap; }
   .l-hero .w { transform-origin:50% 90%; }
-  .double { position:absolute; top:330px; left:0; right:0; text-align:center; }
+  .double { position:absolute; left:0; right:0; text-align:center; }
   .d-hero { font-family:Alexandria; font-weight:900; font-size:170px; color:var(--mus); text-shadow:0 11px 0 var(--chr); }
   /* hero offer */
-  .product { position:absolute; top:268px; left:0; right:0; text-align:center; }
-  .p-hero { font-family:Alexandria; font-weight:900; font-size:150px; color:var(--cre); text-shadow:0 10px 0 var(--chr); }
-  .badge { position:absolute; left:806px; top:640px; width:270px; height:270px; border-radius:50%; background:var(--mus); box-shadow:0 12px 0 var(--chr); display:flex; align-items:center; justify-content:center; }
+  .product { position:absolute; }
+  .p-hero { font-family:Alexandria; font-weight:900; font-size:150px; line-height:1.1; color:var(--cre); text-shadow:0 10px 0 var(--chr); white-space:nowrap; }
+  .badge { position:absolute; width:250px; height:250px; border-radius:50%; background:var(--mus); box-shadow:0 12px 0 var(--chr); display:flex; align-items:center; justify-content:center; }
   .b-in { text-align:center; color:var(--chr); font-family:Alexandria; }
-  .b-num { font-weight:900; font-size:80px; line-height:1; }
-  .b-cur { font-weight:700; font-size:42px; line-height:1.15; }
-  .cta { position:absolute; left:50%; top:1376px; }
-  .cta-in { display:flex; align-items:center; gap:26px; background:var(--cre); color:var(--chr); font-family:Alexandria; font-weight:900; font-size:66px; padding:20px 58px 30px; border-radius:999px; box-shadow:0 10px 0 var(--chr); white-space:nowrap; }
+  .b-num { font-weight:900; font-size:76px; line-height:1; }
+  .b-cur { font-weight:700; font-size:40px; line-height:1.15; }
+  .cta { position:absolute; }
+  .cta-in { display:flex; align-items:center; gap:24px; background:var(--cre); color:var(--chr); font-family:Alexandria; font-weight:900; font-size:60px; padding:18px 52px 28px; border-radius:999px; box-shadow:0 10px 0 var(--chr); white-space:nowrap; }
   .cta-a { color:var(--red); font-family:Alexandria; font-weight:900; display:inline-block; }
   /* client end card */
-  .endcard { position:absolute; inset:0; background:var(--red); }
+  #ec { background:var(--red); }
   .mark { position:absolute; left:390px; top:470px; width:300px; height:230px; overflow:visible; }
   .ec-word { position:absolute; top:740px; left:0; right:0; text-align:center; }
   .ec-ar { font-family:Alexandria; font-weight:900; font-size:160px; color:var(--cre); text-shadow:0 11px 0 var(--chr); line-height:1.2; }
   .ec-lat { position:absolute; top:968px; left:0; right:0; text-align:center; direction:ltr; font-family:Archivo; font-weight:900; font-stretch:75%; font-size:66px; letter-spacing:.16em; color:var(--chr); }
   .slate { position:absolute; top:1408px; left:0; right:0; text-align:center; }
-  .sl-ar { font-family:"IBM Plex Sans Arabic"; font-weight:500; font-size:32px; color:var(--cre); opacity:1; }
+  .sl-ar { font-family:"IBM Plex Sans Arabic"; font-weight:500; font-size:32px; color:var(--cre); }
   .sl-mono { font-family:"JetBrains Mono"; font-weight:600; font-size:24px; letter-spacing:.24em; color:var(--cre); opacity:.92; direction:ltr; margin-top:10px; }
   /* TASH signature */
-  .sig { position:absolute; inset:0; }
   .sig-slate { position:absolute; top:1030px; left:0; right:0; text-align:center; }
   .sig-ar { font-family:"IBM Plex Sans Arabic"; font-weight:500; font-size:36px; color:#F5F5E9; }
   .sig-mono { font-family:"JetBrains Mono"; font-weight:600; font-size:22px; letter-spacing:.24em; color:#8E9088; direction:ltr; margin-top:22px; }
   .sig-hd { font-family:"JetBrains Mono"; font-weight:600; font-size:24px; letter-spacing:.2em; color:#8E9088; direction:ltr; margin-top:12px; }
   .sig-top { position:absolute; top:262px; left:72px; font-family:"JetBrains Mono"; font-weight:600; font-size:22px; letter-spacing:.24em; color:#8E9088; direction:ltr; }
   /* poster */
-  .poster .po-title { position:absolute; top:266px; left:0; right:0; text-align:center; font-family:Alexandria; font-weight:900; line-height:1.2; }
+  .poster { position:absolute; inset:0; direction:rtl; }
+  .po-title { position:absolute; left:0; right:0; text-align:center; font-family:Alexandria; font-weight:900; line-height:1.14; }
   .po-l1 { font-size:150px; color:var(--cre); text-shadow:0 10px 0 var(--chr); }
   .po-l2 { font-size:150px; color:var(--mus); text-shadow:0 10px 0 var(--chr); }
-  .po-badge { left:812px; top:800px; transform:translate(-50%,-50%) rotate(-9deg); display:flex; }
-  .po-brand { position:absolute; top:1336px; right:72px; text-align:right; }
-  .po-ar { font-family:Alexandria; font-weight:900; font-size:70px; color:var(--cre); text-shadow:0 6px 0 var(--chr); line-height:1.15; }
-  .po-lat { font-family:Archivo; font-weight:900; font-stretch:75%; font-size:30px; letter-spacing:.16em; color:var(--chr); direction:ltr; text-align:right; }
-  .po-cta { left:auto; right:auto; top:1346px; } .po-cta { left:72px; }
-  .po-cta .cta-in { font-size:52px; padding:16px 44px 24px; }
-  .po-slate { position:absolute; top:1476px; left:0; right:0; text-align:center; }
+  .po-sl { position:absolute; left:0; right:0; text-align:center; }
   .po-sl-mono { font-family:"JetBrains Mono"; font-weight:600; font-size:22px; letter-spacing:.24em; color:var(--cre); direction:ltr; }
   .po-sl-ar { font-family:"IBM Plex Sans Arabic"; font-weight:500; font-size:30px; color:var(--cre); margin-top:6px; }
-  .po-sl-tash { font-family:"JetBrains Mono"; font-weight:600; font-size:20px; letter-spacing:.24em; color:var(--cre); opacity:.7; direction:ltr; margin-top:14px; }
 </style></head>
-<body><div id="stage"><canvas id="grain" width="1080" height="1920"></canvas></div>
+<body><div id="stage">
+  <canvas id="pic"></canvas>
+  <div id="ec"></div>
+  <div id="vig"></div>
+  <div id="ui" class="ui"></div>
+  <div id="sig"></div>
+  <canvas id="grain"></canvas>
+</div>
 <script type="module">
-import { boot, grain } from '/_system/motion/kit.js';
-import { createWorld } from './scene.js';
-import { createOverlay, createPoster } from './overlay.js';
-const C = await (await fetch(new URL('./cues.json', import.meta.url))).json();
-const q = new URLSearchParams(location.search);
-const clean = q.get('clean') === '1', poster = q.has('poster'), aa = parseInt(q.get('aa') || '0', 10);
-const W = 1080, H = 1920, stage = document.getElementById('stage'), gc = document.getElementById('grain');
-let world = null, overlay = null;
-async function init() {
-  await Promise.all([
-    document.fonts.load('900 160px Alexandria', 'ستاك'), document.fonts.load('700 50px Alexandria', 'ستاك'),
-    document.fonts.load('500 32px "IBM Plex Sans Arabic"', 'إعلان'), document.fonts.load('600 22px "JetBrains Mono"', 'A'),
-    document.fonts.load('900 66px Archivo', 'S'),
-  ]);
-  world = await createWorld(W, H, C);
-  stage.insertBefore(world.canvas, gc);
-  overlay = poster ? null : createOverlay(stage, C, { W, H, project: world.project });
-  if (poster) createPoster(stage, { W, H });
-  stage.appendChild(gc);
-}
-const afterLoad = new Promise(res => (document.readyState === 'complete' ? res() : addEventListener('load', res, { once: true })));
-const ready = afterLoad.then(() => new Promise((res, rej) => setTimeout(() => init().then(res, e => { console.error('init failed', e && e.stack); rej(e); }), 0)));
-boot({ width: W, height: H, fps: C.fps, duration: C.duration, ready, seek: t => {
-  if (!world) return;
-  if (poster) { world.render(parseFloat(q.get('poster')) || 9.9, { aa: aa || 8, posterCam: true }); grain(gc, 7, { amount: 26, scale: 2 }); return; }
-  // end card + signature are opaque: skip the (hidden) 3D frame there unless rendering the clean plate
-  const st = (!clean && t >= C.endcard) ? { id: 'END' } : world.render(t, { clean, aa });
-  overlay.render(t, { clean, sid: st.id });
-  grain(gc, Math.round(t * C.fps), { amount: 26, scale: 2 });
-} });
-</script></body></html>
+  await new Promise(r => (document.readyState === 'complete' ? r() : addEventListener('load', r, { once: true })));
+  await import('./main.js');
+</script>
+</body></html>

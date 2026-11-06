@@ -3,12 +3,13 @@
 <title>HABBA — concept ad 03 / specialty coffee</title>
 <link rel="stylesheet" href="/_system/tokens.css">
 <link rel="stylesheet" href="./style.css">
-<script type="importmap">{"imports":{"three":"/_system/vendor/three/three.module.min.js","three/addons/":"/_system/vendor/three/addons/"}}</script>
 </head><body>
+<!-- URL: ?clean=1 (pure footage, same timeline) · ?poster=1 (cover) · ?t=… / ?play (preview) · ?info=1 (review HUD) -->
 <div id="stage">
-  <!-- #gl (WebGL) is inserted first by main.js; then paper/film grain, type, end card, TASH tail -->
+  <canvas id="pic" width="1080" height="1920"></canvas>
   <canvas id="grain" width="1080" height="1920"></canvas>
   <div id="ui"></div>
+  <canvas id="fg" width="1080" height="1920"></canvas>
 </div>
 <script type="module">
   await new Promise(r => (document.readyState === 'complete' ? r() : addEventListener('load', r)));

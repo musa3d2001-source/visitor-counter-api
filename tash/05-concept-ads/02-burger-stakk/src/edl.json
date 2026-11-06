@@ -1,0 +1,376 @@
+{
+  "_note": "STAKK photoreal cut: edit decision list. Read by src/tools/conform.py (bakes graded, retimed 30 fps JPEG sequences into src/footage/<seq>/) and by the page (src/footage/manifest.json). Times: edit seconds (cues.json grid). keys: [t_edit, t_source, speed_in, speed_out]; between keys the source time follows a cubic Hermite with those speeds (so speed ramps are smooth and measured). Source clips are 24 fps, 1080x1912.",
+  "srcFps": 24,
+  "fps": 30,
+  "clips": {
+    "b1_smash": "footage/ai/b1_smash.mp4",
+    "b2_crust": "footage/ai/b2_crust.mp4",
+    "b3_heel": "footage/ai/b3_heel.mp4",
+    "b4_melt": "footage/ai/b4_melt.mp4",
+    "b5_stack": "footage/ai/b5_stack.mp4",
+    "b6_sauce": "footage/ai/b6_sauce.mp4",
+    "b7_crown": "footage/ai/b7_crown.mp4"
+  },
+  "seq": [
+    {
+      "id": "S01",
+      "clip": "b1_smash",
+      "from": 0.0,
+      "to": 0.9,
+      "keys": [
+        [
+          0.0,
+          0.77,
+          1.1,
+          1.1
+        ],
+        [
+          0.4,
+          1.21,
+          1.1,
+          1.1
+        ],
+        [
+          0.9,
+          1.6225,
+          0.55,
+          0.55
+        ]
+      ],
+      "blend": [
+        [
+          0.44,
+          0.9
+        ]
+      ],
+      "crisp": [
+        0.4
+      ],
+      "frame": {
+        "z": 1.0
+      },
+      "why": "press contact f29 (1.21 s) on the smash cue 0.40; 1.1x into the hit, ramps to 0.55x through the steam burst"
+    },
+    {
+      "id": "S02",
+      "clip": "b2_crust",
+      "from": 0.9,
+      "to": 2.42,
+      "keys": [
+        [
+          0.9,
+          0.8,
+          1.0,
+          1.0
+        ],
+        [
+          2.3,
+          2.2,
+          1.0,
+          1.0
+        ]
+      ],
+      "blend": true,
+      "frame": {
+        "z": 1.0,
+        "shiftY": 450,
+        "fadeTop": 300
+      },
+      "why": "top-down crust; frame lowered 450 px with a dark falloff on top (the light pool ends) so the stacked title sits on calm griddle, never on crust. 2.15-2.42 is the whip handle"
+    },
+    {
+      "id": "S03",
+      "clip": "b3_heel",
+      "from": 1.93,
+      "to": 3.9,
+      "keys": [
+        [
+          1.93,
+          0.0,
+          0,
+          0
+        ],
+        [
+          2.4,
+          0.0,
+          0,
+          0.5
+        ],
+        [
+          2.83,
+          0.215,
+          0.5,
+          0.5
+        ],
+        [
+          2.97,
+          0.3375,
+          1.25,
+          1.25
+        ],
+        [
+          3.4,
+          0.875,
+          1.25,
+          0.8
+        ],
+        [
+          3.9,
+          1.325,
+          1.0,
+          1.0
+        ]
+      ],
+      "blend": [
+        [
+          2.4,
+          2.84
+        ]
+      ],
+      "crisp": [
+        3.4
+      ],
+      "frame": {
+        "z": 1.0
+      },
+      "why": "the source opens on a locked-off bun (f0-f5 identical), so frame 0 holds under the whip and the camera lands on the heel at 2.40; 0.5x until the patty enters, then 1.25x (24 fps -> 30 fps one-to-one, no blended ghosts) so the patty lands f21 (0.875 s) on 3.40"
+    },
+    {
+      "id": "S04",
+      "clip": "b2_crust",
+      "from": 3.9,
+      "to": 4.25,
+      "keys": [
+        [
+          3.9,
+          3.0,
+          1.0,
+          1.0
+        ],
+        [
+          4.25,
+          3.35,
+          1.0,
+          1.0
+        ]
+      ],
+      "blend": true,
+      "frame": {
+        "z": 1.5,
+        "cx": 0.62,
+        "cy": 0.0
+      },
+      "why": "1.5x punch-in on the top rim of the b2 patty (lace tips + fat bubbles), dark griddle above for the label"
+    },
+    {
+      "id": "S05",
+      "clip": "b3_heel",
+      "from": 4.25,
+      "to": 4.9,
+      "keys": [
+        [
+          4.25,
+          3.21,
+          1.0,
+          1.0
+        ],
+        [
+          4.4,
+          3.36,
+          1.0,
+          1.0
+        ],
+        [
+          4.9,
+          3.86,
+          1.0,
+          1.0
+        ]
+      ],
+      "blend": [
+        [
+          4.45,
+          4.9
+        ]
+      ],
+      "crisp": [
+        4.4
+      ],
+      "frame": {
+        "z": 1.0
+      },
+      "why": "cheddar slice falls at real speed (nearest frames, no ghosting) and lands f80-81 (3.36 s) on 4.40"
+    },
+    {
+      "id": "S06",
+      "clip": "b4_melt",
+      "from": 4.9,
+      "to": 5.75,
+      "keys": [
+        [
+          4.9,
+          4.53,
+          0.5,
+          0.5
+        ],
+        [
+          5.75,
+          4.955,
+          0.5,
+          0.5
+        ]
+      ],
+      "blend": true,
+      "frame": {
+        "z": 1.0
+      },
+      "why": "half-time: the drip grows down the heel at 0.5x (frames 109-119), frame-blended"
+    },
+    {
+      "id": "S07a",
+      "clip": "b5_stack",
+      "from": 5.75,
+      "to": 6.4,
+      "keys": [
+        [
+          5.75,
+          0.0,
+          0.5,
+          0.5
+        ],
+        [
+          6.4,
+          0.325,
+          0.5,
+          0.5
+        ]
+      ],
+      "blend": true,
+      "frame": {
+        "z": 1.0
+      },
+      "why": "the finished double stack before anything falls (f0-f8, the first pickle is still above the top crop): the «دبل!» and cheese2 beats"
+    },
+    {
+      "id": "S07b",
+      "clip": "b5_stack",
+      "from": 6.4,
+      "to": 7.15,
+      "keys": [
+        [
+          6.4,
+          2.25,
+          1.0,
+          1.0
+        ],
+        [
+          6.525,
+          2.375,
+          1.0,
+          0.5
+        ],
+        [
+          7.15,
+          2.6875,
+          0.5,
+          0.5
+        ]
+      ],
+      "blend": [
+        [
+          6.56,
+          7.15
+        ]
+      ],
+      "crisp": [
+        6.4,
+        6.525
+      ],
+      "frame": {
+        "z": 1.18,
+        "cx": 0.5,
+        "cy": 0.6
+      },
+      "why": "cut on contact: opens on the centre pickle's landing frame f54 (2.25 s) at 6.40; the first onion ring lands at real speed f57 = 6.525 (one 16th before the old onion cue; the SFX moves with it), then 0.5x on the resting stack so the second ring wave (f65+) never enters. Skips the hovering pickle (f22-35), the upright-disc morph (f38-48) and the pale airborne discs. Frame blending ghosted the falls and minterpolate warped them (both rejected)"
+    },
+    {
+      "id": "S08",
+      "clip": "b6_sauce",
+      "from": 7.15,
+      "to": 7.9,
+      "keys": [
+        [
+          7.15,
+          0.625,
+          1.0,
+          1.0
+        ],
+        [
+          7.4,
+          0.875,
+          1.0,
+          1.0
+        ],
+        [
+          7.9,
+          1.425,
+          1.2,
+          1.2
+        ]
+      ],
+      "blend": false,
+      "crisp": [
+        7.4
+      ],
+      "frame": {
+        "z": 1.0
+      },
+      "why": "sauce blob makes contact f21 (0.875 s) on 7.40, pools after; real speed, nearest frames"
+    },
+    {
+      "id": "S09",
+      "clip": "b7_crown",
+      "from": 7.9,
+      "to": 13.8,
+      "keys": [
+        [
+          7.9,
+          0.165,
+          1.25,
+          1.25
+        ],
+        [
+          8.4,
+          0.79,
+          1.25,
+          0.85
+        ],
+        [
+          10.4,
+          2.44,
+          0.8,
+          0.8
+        ],
+        [
+          13.8,
+          5.0,
+          0.706,
+          0.706
+        ]
+      ],
+      "blend": [
+        [
+          8.47,
+          13.8
+        ]
+      ],
+      "crisp": [
+        8.4
+      ],
+      "frame": {
+        "z": 1.0
+      },
+      "why": "S09 + S10 + clean hero handle as one take: crown lands f19 (0.79 s) on 8.40 at 1.25x, then 0.85-0.7x hero push; 10.40-13.80 only shows in ?clean=1"
+    }
+  ]
+}

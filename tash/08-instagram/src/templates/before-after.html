@@ -1,0 +1,49 @@
+<!doctype html>
+<!-- POST 6 · «صورة عادية ← إعلان» 1080×1350 — one bottle, split down the middle. Right (read first): the ordinary
+     photo. Left: the ad. Both halves come from the SAME camera, so the bottle joins exactly on the lime line.
+     after  = the LAYL ad's clean hero frame (1080×1920)
+     before = the same bottle model, same camera, rendered on a 1286×2286 canvas with the FOV widened by the same
+              factor (src/ba/before.html), so its centre 1080×1920 lines up with the after frame pixel for pixel.
+     data: before {src, label} · after {src, label} · scale · bottleTop (frame y of the cap) · y (post y for it)
+           · demo {slate, ar} · grip -->
+<html lang="ar" dir="rtl"><head><meta charset="utf-8">
+<link rel="stylesheet" href="/_system/tokens.css"><link rel="stylesheet" href="/03-templates/src/base.css">
+<style>
+  .half { position: absolute; top: 0; height: 1350px; overflow: hidden; z-index: 4; }
+  .half img { position: absolute; display: block; max-width: none; }
+  .split { position: absolute; left: 538px; top: 0; width: 4px; height: 1350px; background: var(--lime); z-index: 8; }
+  .grip { position: absolute; left: 540px; width: 150px; height: 70px; margin-left: -75px; border-radius: 35px; background: var(--ink);
+          z-index: 9; display: grid; place-items: center; box-shadow: 0 0 0 4px var(--lime); }
+  .lab { position: absolute; top: 118px; z-index: 10; font-size: 66px; line-height: 1.3; white-space: nowrap; }
+  .lab.before { right: 72px; color: var(--ink); }
+  .lab.after { left: 72px; color: var(--paper); }
+  .lab .hl { color: var(--lime); }
+  .demo { position: absolute; right: 72px; bottom: 92px; z-index: 10; display: grid; gap: 10px; justify-items: end; }
+  .demo .slate { color: #3E3B35; font-size: 19px; }
+  .demo .concept-ar { color: #2A2824; font-size: 25px; }
+  .wmk { position: absolute; left: 72px; bottom: 96px; z-index: 12; }
+  .feather { position: absolute; left: 0; top: 0; width: 140px; height: 1350px; z-index: 5; background: linear-gradient(to right, #050403 30%, rgba(5,4,3,0)); }
+</style></head><body><div id="stage"></div>
+<script type="module">
+import { run, COL } from '/03-templates/src/tpl.js';
+run(async (d, { stage, T, rich, h, put, wordmark, dotsSVG }) => {
+  const s = d.scale ?? 0.84, cx = 540;
+  const oy = (d.y ?? 250) - (d.bottleTop ?? 537) * s;        // frame → post: y' = oy + y·s
+  const ox = cx - 540 * s;                                    //               x' = ox + x·s (frame centred on the split)
+  const K = (d.beforeW ?? 1512) / 1080, bx = (1080 * (K - 1)) / 2, by = (1920 * (K - 1)) / 2;
+  const img = (src, x, y, w, hh) => h('img', { src, alt: '', style: `left:${x.toFixed(2)}px;top:${y.toFixed(2)}px;width:${w.toFixed(2)}px;height:${hh.toFixed(2)}px` });
+  put(stage,
+    // left = after (the ad); its frame is narrower than the post at this scale, so its dark edge melts into the ad's own black
+    h('div', { class: 'half', style: 'left:0;width:540px;background:#050403' }, img(d.after.src, ox, oy, 1080 * s, 1920 * s), h('div', { class: 'feather', style: `left:${(ox - 20).toFixed(1)}px` })),
+    // right = before (ordinary photo); the wide render covers the full half
+    h('div', { class: 'half', style: 'left:540px;width:540px' }, img(d.before.src, ox - bx * s - 540, oy - by * s, 1080 * K * s, 1920 * K * s)),
+    h('div', { class: 'split' }),
+    h('div', { class: 'grip', style: `top:${(d.grip ?? 158) - 35}px`, html: dotsSVG({ d: 22, fill: COL.lime }) }),
+    h('div', { class: 'disp lab before key', 'data-name': 'before label', html: rich(d.before.label) }),
+    h('div', { class: 'disp lab after key', 'data-name': 'after label', html: rich(d.after.label) }),
+    h('div', { class: 'demo key', 'data-name': 'demo label' }, h('div', { class: 'slate', text: d.demo.slate }), h('div', { class: 'concept-ar', text: d.demo.ar })),
+    h('div', { class: 'wmk' }, wordmark(T, 112)),
+  );
+  return { format: 'post', ground: false, grain: 0.035 };
+});
+</script></body></html>

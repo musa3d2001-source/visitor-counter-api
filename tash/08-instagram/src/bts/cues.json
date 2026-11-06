@@ -1,0 +1,112 @@
+{
+  "_note": "BTS reel «من الفكرة للإعلان» — one source of truth for picture (main.js) and sound (audio.py). Seconds. 80 BPM like LAYL (beat 0.75 s = 22.5 frames), grid offset 5 frames so the hand-off to the real ad lands on a downbeat AND on a whole frame (frame 230 = 7.6667 s).",
+  "duration": 13.066667,
+  "bpm": 80,
+  "beat": 0.75,
+  "gridOffset": 0.166667,
+  "shots": [
+    {
+      "id": "SKETCH",
+      "at": 0.0,
+      "end": 1.65,
+      "buys": "this bottle started as lines on paper: someone designed it, to the millimetre"
+    },
+    {
+      "id": "WIRE",
+      "at": 1.65,
+      "end": 3.15,
+      "buys": "it was built as a real 3D object, not a picture"
+    },
+    {
+      "id": "CLAY",
+      "at": 3.15,
+      "end": 5.4,
+      "buys": "form first: the shape works before any shine is added"
+    },
+    {
+      "id": "FINAL",
+      "at": 5.4,
+      "end": 7.666667,
+      "buys": "then light and material make it precious"
+    },
+    {
+      "id": "AD",
+      "at": 7.666667,
+      "end": 13.066667,
+      "buys": "and this is the ad it became (the real LAYL ending, CONCEPT AD slate, TASH sting)"
+    }
+  ],
+  "sweeps": [
+    {
+      "from": "SKETCH",
+      "to": "WIRE",
+      "at": 1.4,
+      "dur": 0.5
+    },
+    {
+      "from": "WIRE",
+      "to": "CLAY",
+      "at": 2.9,
+      "dur": 0.5
+    },
+    {
+      "from": "CLAY",
+      "to": "FINAL",
+      "at": 5.15,
+      "dur": 0.5
+    }
+  ],
+  "passes": {
+    "t0": 1.4,
+    "t1": 7.666667,
+    "frames": 180,
+    "srcFps": 60,
+    "_note": "pass plates: LAYL ad 3.00–6.00 s rendered at 60 fps; t0→t1 maps onto frames 0→179 (≈0.48× speed)"
+  },
+  "ad": {
+    "at": 7.666667,
+    "src": 10.5,
+    "frames": 162,
+    "_note": "LAYL-concept-9x16.mp4 from 10.50 s (its S6 hero cut, with its own impact) to its end at 15.90 s"
+  },
+  "text": [
+    {
+      "id": "hook",
+      "lines": [
+        "قبل لا يلمع•••",
+        "كان خطوط."
+      ],
+      "in": [
+        0.1,
+        0.88
+      ],
+      "out": 3.05
+    },
+    {
+      "id": "shape",
+      "lines": [
+        "بعدين",
+        "صار له شكل."
+      ],
+      "in": [
+        3.25,
+        3.52
+      ],
+      "out": 5.28
+    },
+    {
+      "id": "light",
+      "lines": [
+        "وآخر شي",
+        "الضوء."
+      ],
+      "in": [
+        5.45,
+        5.75
+      ],
+      "out": 7.42
+    }
+  ],
+  "hit": 7.666667,
+  "dotsIn": 0.32
+}

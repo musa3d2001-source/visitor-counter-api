@@ -4,7 +4,7 @@ import { tw, E, clamp, lerp, css } from '/_system/motion/kit.js';
 import { createSting } from './sting-short.js';
 import { wordmarkSVG } from '/_system/brand/logo.mjs';
 import { HC, VB as LVB, markInner } from './habba-logo.mjs';
-import { C } from './shots.js';
+import { C } from './cues.js';
 
 const EV = C.ev;
 const NS = 'http://www.w3.org/2000/svg';
@@ -18,7 +18,9 @@ function line(parent, words, { top, size, color = HC.paper, weight = 300, shadow
   const box = el(parent, 'div', 'h-ar', { top: top + 'px', fontSize: size + 'px', color, fontWeight: String(weight) });
   if (shadow) box.style.textShadow = shadow;
   const spans = words.map((w, i) => {
-    const s = el(box, 'span', null, { display: 'inline-block', willChange: 'transform, opacity, filter', padding: '0.45em 0.08em', margin: '-0.45em 0' }, w);
+    // no will-change: promoted layers re-used cached rasters across seeks (a few levels of difference in blurred
+    // frames depending on seek order); painted fresh every frame, the result is a pure function of t
+    const s = el(box, 'span', null, { display: 'inline-block', padding: '0.45em 0.08em', margin: '-0.45em 0' }, w);
     if (i < words.length - 1) box.appendChild(document.createTextNode(' '));
     return s;
   });
@@ -56,11 +58,12 @@ export async function makeOverlay(stage, { W, H, poster }) {
   const ui = stage.querySelector('#ui');
   const api = { render: () => {} };
 
-  // ---- the three calm lines
-  // paper type over the dark room (S2); roasted type over the sunlit table and wall (S3, S4) — contrast first
-  const t1 = line(ui, ['قهوتك…'], { top: 300, size: 150 });
-  const t2 = line(ui, ['على', 'مهلك.'], { top: 1300, size: 140 });
-  const t3 = line(ui, ['حبّة…', 'حبّة.'], { top: 1300, size: 150 });
+  // ---- the three calm lines, placed for the photoreal framing (never over food detail or a bright light bar)
+  // S2: paper in the dark room above the steam · S3: paper on the shaded table below the saucer (grade.js shade) ·
+  // S4: roasted on the sunlit wall, above the beans (the falling bean passes IN FRONT of it: main.js depth matte)
+  const t1 = line(ui, ['قهوتك…'], { top: 250, size: 150 });
+  const t2 = line(ui, ['على', 'مهلك.'], { top: 1300, size: 140, shadow: '0 2px 18px rgba(23,17,14,.55)' });
+  const t3 = line(ui, ['حبّة…', 'حبّة.'], { top: 330, size: 150, color: HC.roast });
 
   // ---- client end card on the sunlit wall: the mark writes on, then its bean drops into place under ب
   const ec = el(ui, 'div', null, { position: 'absolute', inset: '0' });
@@ -76,7 +79,7 @@ export async function makeOverlay(stage, { W, H, poster }) {
   const hw0 = svg.querySelector('#hw0'), hw1 = svg.querySelector('#hw1'), hbody = svg.querySelector('#hbody');
   const beanG = svg.querySelector('#habba-bean'); const beanBase = beanG.getAttribute('transform');
   const lat = el(ec, 'div', 'h-lat', { top: (markTop + markH + 34) + 'px', fontSize: '46px', fontWeight: '500', color: HC.roast, letterSpacing: '.42em', paddingLeft: '.42em' }, 'HABBA');
-  const sub = el(ec, 'div', 'h-lat', { top: (markTop + markH + 108) + 'px', fontSize: '22px', fontWeight: '500', color: '#5E4334', letterSpacing: '.5em', paddingLeft: '.5em' }, 'SPECIALTY COFFEE');
+  const sub = el(ec, 'div', 'h-lat', { top: (markTop + markH + 108) + 'px', fontSize: '22px', fontWeight: '500', color: HC.roast, letterSpacing: '.5em', paddingLeft: '.5em' }, 'SPECIALTY COFFEE');
 
   // ---- TASH tail: concept slate + signature
   const stingRoot = el(ui, 'div', null, { position: 'absolute', inset: '0', display: 'none' });
