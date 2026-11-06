@@ -6,7 +6,7 @@
 # Needs ffmpeg + python3 (numpy, PIL). Deterministic: same EDL → same JPEGs. Takes ~4–5 min on 1 core.
 set -euo pipefail
 HERE="$(cd "$(dirname "$0")" && pwd)"
-for c in b1_smash b2_crust b3_heel b4_melt b5_stack b6_sauce b7_crown; do
+for c in b1_smash_v3 b2_crust b3_heel b4_melt b5_stack b6_sauce b7_crown; do
   [ -f "$HERE/../../footage/ai/$c.mp4" ] || { echo "missing footage/ai/$c.mp4"; exit 1; }
 done
 python3 "$HERE/conform.py" "$@"

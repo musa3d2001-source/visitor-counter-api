@@ -34,10 +34,10 @@ BRAND_RED = np.array([226, 59, 46], np.float32) / 255    # #E23B2E
 LOOK = dict(sat=0.93, contrast=0.012, knee=0.84)
 # stage-red sample regions (source px) for the clips shot on the red seamless
 STAGE = {'b3_heel': (100, 100, 980, 700), 'b6_sauce': (0, 0, 200, 500), 'b7_crown': (100, 100, 980, 500)}
-DARK = {'b1_smash', 'b2_crust', 'b4_melt', 'b5_stack'}
+DARK = {'b1_smash_v3', 'b2_crust', 'b4_melt', 'b5_stack'}
 # the frame each clip's correction is measured on (clean stage, nothing falling through the sample region),
 # so every sequence cut from the same clip gets identical numbers
-REF = {'b1_smash': 40, 'b2_crust': 60, 'b3_heel': 30, 'b4_melt': 60, 'b5_stack': 0, 'b6_sauce': 60, 'b7_crown': 60}
+REF = {'b1_smash_v3': 40, 'b2_crust': 60, 'b3_heel': 30, 'b4_melt': 60, 'b5_stack': 0, 'b6_sauce': 60, 'b7_crown': 60}
 
 
 def smooth(e0, e1, x):

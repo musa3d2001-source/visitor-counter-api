@@ -3,7 +3,7 @@
   "srcFps": 24,
   "fps": 30,
   "clips": {
-    "b1_smash": "footage/ai/b1_smash.mp4",
+    "b1_smash_v3": "footage/ai/b1_smash_v3.mp4",
     "b2_crust": "footage/ai/b2_crust.mp4",
     "b3_heel": "footage/ai/b3_heel.mp4",
     "b4_melt": "footage/ai/b4_melt.mp4",
@@ -14,48 +14,37 @@
   "seq": [
     {
       "id": "S01",
-      "clip": "b1_smash",
+      "clip": "b1_smash_v3",
       "from": 0.0,
       "to": 0.9,
       "keys": [
         [
           0.0,
-          0.77,
-          1.1,
-          1.1
-        ],
-        [
-          0.4,
-          1.21,
-          1.1,
+          1.25,
+          1.25,
           1.25
         ],
         [
-          0.5333,
-          1.375,
+          0.4,
+          1.75,
           1.25,
-          0.5
+          1.25
         ],
         [
           0.9,
-          1.5583,
-          0.5,
-          0.5
+          2.375,
+          1.25,
+          1.25
         ]
       ],
-      "blend": [
-        [
-          0.55,
-          0.9
-        ]
-      ],
+      "blend": false,
       "crisp": [
         0.4
       ],
       "frame": {
         "z": 1.0
       },
-      "why": "press contact f29 (1.21 s) on the smash cue 0.40; 1.1x into the hit, then 1.25x (one source frame per output frame, nearest) through the fast compression f29-f33 so the press's motion blur never doubles into blended ghosts; from f33 (0.533) the press is down and the steam builds at 0.5x, frame-blended. ECD fix: the old 0.55x blend from 0.44 showed a doubled press rim at 0.47-0.57"
+      "why": "owner-approved retake b1_smash_v3 (compact, finely ground ball; the original b1 read as «جنه مخ»). One source frame per output frame for the whole shot (1.25x, nearest, no blends): f30 (1.250 s) at 0.00 -> f56 (2.333 s) at 0.867. The press descends through 0.00-0.37 with the ball whole and sharp under it (f30-f41, 12 frames); f41 (1.708 s) is the kiss, the first compressed frame f42 (1.750 s) lands on the smash cue 0.40, f43-f44 flatten it, f45 (1.875 s, 0.50) is the first sharp pressed frame, then the press holds while the steam starts. No blending anywhere: the press's motion-blurred frames (f36-f44) are shown as photographed, never doubled into a ghost rim"
     },
     {
       "id": "S02",

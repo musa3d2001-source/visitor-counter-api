@@ -8,8 +8,8 @@
   "shots": [
     { "id": "HOOK",   "at": 0.00,  "end": 1.50,  "src": "ai-s1_hook",        "in": 0.22,  "speed": 1.0, "buys": "this is an ordinary phone photo of an ordinary product — yours" },
     { "id": "GLORY",  "at": 1.50,  "end": 3.50,  "src": "layl-final_3.00-6.00", "in": 3.30, "srcAt": 3.0, "speed": 1.0, "buys": "this is what its ad could look like: light, glass, gold — cinema" },
-    { "id": "BURGER", "at": 3.50,  "end": 5.00,  "src": "stakk-crown_7.80-9.60", "in": 7.90, "srcAt": 7.8, "speed": 1.0, "buys": "they do food too: the stack slams together on the beat" },
-    { "id": "COFFEE", "at": 5.00,  "end": 6.00,  "src": "habba-pour_5.00-6.60", "in": 5.58, "srcAt": 5.0, "speed": 1.0, "buys": "and coffee: a heart drawn by a pour, in real sunlight" },
+    { "id": "BURGER", "at": 3.50,  "end": 5.00,  "src": "stakk-crown_7.90-9.40", "in": 7.90, "srcAt": 7.9, "speed": 1.0, "buys": "they do food too: the photoreal stack — the sesame crown slams on the beat" },
+    { "id": "COFFEE", "at": 5.00,  "end": 6.00,  "src": "habba-pour_5.9667-6.9667", "in": 5.9667, "srcAt": 5.9667, "speed": 1.0, "buys": "and coffee: the last pour into a latte heart, top-down in real sunlight; the pitcher lifts out and leaves a clean rim" },
     { "id": "RING",   "at": 6.00,  "end": 7.25,  "src": "ring",             "in": 0.00,  "srcAt": 0.0, "speed": 1.0, "buys": "and jewellery: the cup rim becomes a gold ring — this is editing, not a slideshow" },
     { "id": "SPRAY",  "at": 7.25,  "end": 9.50,  "src": "layl-spray_6.00-8.00", "in": 6.08, "srcAt": 6.0, "speed": 0.85, "buys": "back to your perfume: the scent is alive (slow-motion mist) — breathe before the how" },
     { "id": "IDEA",   "at": 9.50,  "end": 10.50, "buys": "it starts as an idea on paper: a written line" },
