@@ -187,7 +187,7 @@ export async function createWorld(W, H, C) {
       const caz = Math.atan2(v3.x, v3.z), dd = lerp(2.9, 2.35, E.inOutSine(k));
       orbit({ az: caz + lerp(0.42, 0.34, k), el: lerp(0.14, 0.1, k), d: dd, tx: v3.x * 0.97, tz: v3.z * 0.97, ty: v3.y - 0.06, fov: 28 });
       dof = { focus: dd, aperture: 24, maxR: 22 };
-      grade = { bg: BG.charcoal, exposure: 0.9, vignette: 0.45 };
+      grade = { bg: BG.charcoal, exposure: 0.9, vignette: 0.45, bgSpot: new THREE.Vector3(0.5, 0.55, 0.18) }; // value used in the delivered render
     } else if (id === 'S08') {
       setWorld('stage', 'charcoal');
       L.front.intensity = 45; L.key.intensity = 170;

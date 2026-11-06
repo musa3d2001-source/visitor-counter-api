@@ -1,0 +1,173 @@
+{
+ "_note": "Every example in 03-templates/examples/. Paths are relative to tash/. Render all: node 03-templates/render.mjs --all  (or --all --only <text>)",
+ "jobs": [
+  {
+   "tpl": "03-templates/templates/post-statement.html",
+   "data": "03-templates/data/post-statement-01.json",
+   "out": "03-templates/examples/post-statement-01.png"
+  },
+  {
+   "tpl": "03-templates/templates/post-service.html",
+   "data": "03-templates/data/post-service-01.json",
+   "out": "03-templates/examples/post-service-01.png"
+  },
+  {
+   "tpl": "03-templates/templates/post-before-after.html",
+   "data": "03-templates/data/post-before-after-01.json",
+   "out": "03-templates/examples/post-before-after-01.png"
+  },
+  {
+   "tpl": "03-templates/templates/post-cta.html",
+   "data": "03-templates/data/post-cta-01.json",
+   "out": "03-templates/examples/post-cta-01.png"
+  },
+  {
+   "tpl": "03-templates/templates/post-statement.html",
+   "data": "03-templates/data/post-statement-02.json",
+   "out": "03-templates/examples/post-statement-02.png"
+  },
+  {
+   "tpl": "03-templates/templates/post-service.html",
+   "data": "03-templates/data/post-service-02.json",
+   "out": "03-templates/examples/post-service-02.png"
+  },
+  {
+   "tpl": "03-templates/templates/post-before-after.html",
+   "data": "03-templates/data/post-before-after-02.json",
+   "out": "03-templates/examples/post-before-after-02.png"
+  },
+  {
+   "tpl": "03-templates/templates/post-cta.html",
+   "data": "03-templates/data/post-cta-02.json",
+   "out": "03-templates/examples/post-cta-02.png"
+  },
+  {
+   "tpl": "03-templates/templates/post-statement.html",
+   "data": "03-templates/data/post-statement-01.json",
+   "out": "03-templates/examples/post-statement-01-guide.png",
+   "guide": true
+  },
+  {
+   "tpl": "03-templates/templates/carousel.html",
+   "data": "03-templates/data/carousel-how-to-order.json",
+   "out": "03-templates/examples/carousel-how-to-order.png"
+  },
+  {
+   "tpl": "03-templates/templates/reel-cover.html",
+   "data": "03-templates/data/reel-cover-launch.json",
+   "out": "03-templates/examples/reel-cover-launch.png"
+  },
+  {
+   "tpl": "03-templates/templates/reel-cover.html",
+   "data": "03-templates/data/reel-cover-launch.json",
+   "out": "03-templates/examples/reel-cover-launch-guide.png",
+   "guide": true
+  },
+  {
+   "tpl": "03-templates/templates/reel-cover.html",
+   "data": "03-templates/data/reel-cover-concept.json",
+   "out": "03-templates/examples/reel-cover-concept.png"
+  },
+  {
+   "tpl": "03-templates/templates/reel-cover.html",
+   "data": "03-templates/data/reel-cover-concept.json",
+   "out": "03-templates/examples/reel-cover-concept-guide.png",
+   "guide": true
+  },
+  {
+   "tpl": "03-templates/templates/reel-cover.html",
+   "data": "03-templates/data/reel-cover-bts.json",
+   "out": "03-templates/examples/reel-cover-bts.png"
+  },
+  {
+   "tpl": "03-templates/templates/reel-cover.html",
+   "data": "03-templates/data/reel-cover-bts.json",
+   "out": "03-templates/examples/reel-cover-bts-guide.png",
+   "guide": true
+  },
+  {
+   "tpl": "03-templates/templates/story-new-work.html",
+   "data": "03-templates/data/story-new-work-01.json",
+   "out": "03-templates/examples/story-new-work-01.png"
+  },
+  {
+   "tpl": "03-templates/templates/story-new-work.html",
+   "data": "03-templates/data/story-new-work-02.json",
+   "out": "03-templates/examples/story-new-work-02.png"
+  },
+  {
+   "tpl": "03-templates/templates/story-new-work.html",
+   "data": "03-templates/data/story-new-work-01.json",
+   "out": "03-templates/examples/story-new-work-01-guide.png",
+   "guide": true
+  },
+  {
+   "tpl": "03-templates/templates/story-how-to-order.html",
+   "data": "03-templates/data/story-how-to-order.json",
+   "out": "03-templates/examples/story-how-to-order.png"
+  },
+  {
+   "tpl": "03-templates/templates/story-how-to-order.html",
+   "data": "03-templates/data/story-how-to-order.json",
+   "out": "03-templates/examples/story-how-to-order-guide.png",
+   "guide": true
+  },
+  {
+   "tpl": "03-templates/templates/story-qa.html",
+   "data": "03-templates/data/story-qa-poll.json",
+   "out": "03-templates/examples/story-qa-poll.png"
+  },
+  {
+   "tpl": "03-templates/templates/story-qa.html",
+   "data": "03-templates/data/story-qa-poll.json",
+   "out": "03-templates/examples/story-qa-poll-guide.png",
+   "guide": true
+  },
+  {
+   "tpl": "03-templates/templates/story-qa.html",
+   "data": "03-templates/data/story-qa-answer.json",
+   "out": "03-templates/examples/story-qa-answer.png"
+  },
+  {
+   "tpl": "03-templates/templates/highlight.html",
+   "data": "03-templates/data/highlights.json",
+   "out": "03-templates/examples/highlight.png"
+  },
+  {
+   "tpl": "03-templates/templates/highlight.html",
+   "data": {
+    "theme": "ink",
+    "icon": "order",
+    "name": "شلون تطلب؟"
+   },
+   "out": "03-templates/examples/highlight-guide.png",
+   "guide": true
+  },
+  {
+   "tpl": "03-templates/templates/highlights-preview.html",
+   "data": "03-templates/data/highlights-preview.json",
+   "out": "03-templates/examples/highlights-preview.png"
+  },
+  {
+   "tpl": "03-templates/templates/client-poster.html",
+   "data": "03-templates/data/client-poster-looma-4x5.json",
+   "out": "03-templates/examples/client-poster-looma-4x5.png"
+  },
+  {
+   "tpl": "03-templates/templates/client-poster.html",
+   "data": "03-templates/data/client-poster-looma-9x16.json",
+   "out": "03-templates/examples/client-poster-looma-9x16.png"
+  },
+  {
+   "tpl": "03-templates/templates/client-poster.html",
+   "data": "03-templates/data/client-poster-looma-9x16.json",
+   "out": "03-templates/examples/client-poster-looma-9x16-guide.png",
+   "guide": true
+  },
+  {
+   "tpl": "03-templates/templates/safe-zones.html",
+   "data": "03-templates/data/safe-zones.json",
+   "out": "03-templates/examples/safe-zones.png"
+  }
+ ]
+}

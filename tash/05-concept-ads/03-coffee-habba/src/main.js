@@ -29,7 +29,7 @@ scene.background = new THREE.Color(0.035, 0.022, 0.015);
 const tex = bakeTextures(renderer);
 const env = makeEnv(renderer);
 scene.environment = env; scene.environmentIntensity = 0.42;
-const gobo = makeGobo();
+const gobo = makeGobo(renderer);
 const room = makeRoom(tex); scene.add(room.group);
 const saucer = makeSaucer(tex); scene.add(saucer);
 const cup = makeCup(tex, env); cup.group.position.y = DIM.saucerY; scene.add(cup.group);
@@ -65,7 +65,7 @@ function apply(S, t) {
   // camera
   camera.fov = S.cam.fov; camera.position.set(...S.cam.pos); camera.up.set(...(S.cam.up || [0, 1, 0])); camera.lookAt(...S.cam.target); camera.updateProjectionMatrix();
   // light
-  gobo.draw(S.blinds);
+  gobo.draw(S.blinds); if (S._T) S._mark('gobo', S._T);
   sun.intensity = S.sun;
   scene.environmentIntensity = S.envI; fill.intensity = S.fill;
   // cup + saucer
@@ -96,13 +96,20 @@ function apply(S, t) {
   });
 }
 
+const PROF = q.has('prof');
+const gl = renderer.getContext();
+const mark = (lab, T) => { if (PROF) { gl.finish(); const n = performance.now(); T.push(lab + ' ' + (n - T.last).toFixed(0)); T.last = n; } };
 async function seek(t) {
+  const T = []; T.last = performance.now();
   const S = frameSpec(t, { clean: CLEAN, poster: POSTER });
-  apply(S, t);
+  S._T = T; S._mark = mark;
+  apply(S, t); mark('apply', T);
   // the shadow camera must match the gobo projection used by the steam shader: render once to update it if needed
-  post.render(scene, camera, { focus: S.dof.focus, aperture: S.dof.ap, exposure: S.exposure, frame: Math.round(t * 30), vig: 1, fade: S.fade || 0, steamScene });
-  grain(grainCv, Math.round(t * 30), { amount: 26, scale: 2 });
-  overlay.render(t, S);
+  post.render(scene, camera, { focus: S.dof.focus, aperture: S.dof.ap, exposure: S.exposure, frame: Math.round(t * 30), vig: 1, fade: S.fade || 0, steamScene, mark: lab => mark(lab, T) });
+  mark('gl', T);
+  grain(grainCv, Math.round(t * 30), { amount: 26, scale: 2 }); mark('grain', T);
+  overlay.render(t, S); mark('overlay', T);
+  if (PROF) console.warn(`t=${t} ` + T.join(' | '));
 }
 
 boot({ width: W, height: H, fps: 30, duration: C.duration, seek });

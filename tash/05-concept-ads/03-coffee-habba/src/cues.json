@@ -5,22 +5,74 @@
   "beat": 0.7,
   "duration": 15.6,
   "shots": [
-    { "id": "S1", "name": "blinds open — hero cup in morning light", "at": 0.0, "dur": 2.1 },
-    { "id": "S2", "name": "steam macro — backlit curl at the rim", "at": 2.1, "dur": 2.1 },
-    { "id": "S3", "name": "top-down pour — milk heart forms", "at": 4.2, "dur": 2.8 },
-    { "id": "S4", "name": "beans, slow motion — one, then another", "at": 7.0, "dur": 2.8 },
-    { "id": "S5", "name": "cup turns on its saucer — mark comes round", "at": 9.8, "dur": 2.8 },
-    { "id": "S6", "name": "tail — blinds close, TASH signature (clean: S5 hold continues)", "at": 12.6, "dur": 3.0 }
+    {
+      "id": "S1",
+      "name": "blinds open — hero cup in morning light",
+      "at": 0.0,
+      "dur": 2.1
+    },
+    {
+      "id": "S2",
+      "name": "steam macro — backlit curl at the rim",
+      "at": 2.1,
+      "dur": 2.1
+    },
+    {
+      "id": "S3",
+      "name": "top-down pour — milk heart forms",
+      "at": 4.2,
+      "dur": 2.8
+    },
+    {
+      "id": "S4",
+      "name": "beans, slow motion — one, then another",
+      "at": 7.0,
+      "dur": 2.8
+    },
+    {
+      "id": "S5",
+      "name": "cup turns on its saucer — mark comes round",
+      "at": 9.8,
+      "dur": 2.95
+    },
+    {
+      "id": "S6",
+      "name": "tail — blinds close, TASH signature (clean: S5 hold continues)",
+      "at": 12.75,
+      "dur": 2.85
+    }
   ],
   "ev": {
-    "blindsOpen": 0.28, "blindsOpenDur": 1.25,
-    "text1": 2.45, "text1Out": 3.95,
-    "milkStart": 4.2, "pull": 5.85, "pullDur": 0.55, "streamOff": 6.45,
-    "text2": 4.55, "text2Out": 6.7,
-    "bean1": 7.7, "bean2": 8.4, "text3Out": 9.55,
-    "turnStart": 9.9, "turnDur": 1.45, "settle": 11.25,
-    "logoIn": 10.95, "beanDot": 11.55,
-    "blindsClose": 12.6, "blindsCloseDur": 0.4,
-    "sting": 12.9
+    "blindsOpen": 0.28,
+    "blindsOpenDur": 1.25,
+    "text1": 2.45,
+    "text1Out": 3.85,
+    "milkStart": 4.2,
+    "pull": 5.85,
+    "pullDur": 0.55,
+    "streamOff": 6.45,
+    "text2": 4.55,
+    "text2Out": 6.6,
+    "bean1": 7.7,
+    "bean2": 8.4,
+    "text3Out": 9.42,
+    "turnStart": 9.9,
+    "turnDur": 1.3,
+    "settle": 11.2,
+    "logoIn": 10.8,
+    "beanDot": 11.5,
+    "blindsClose": 12.75,
+    "blindsCloseDur": 0.35,
+    "sting": 13.0,
+    "beanTapsBehind": [
+      7.18,
+      7.22,
+      7.28,
+      7.95,
+      8.15,
+      8.75,
+      9.05,
+      9.25
+    ]
   }
 }

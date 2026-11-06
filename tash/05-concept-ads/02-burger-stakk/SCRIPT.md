@@ -70,4 +70,18 @@ Original 120 BPM track (`src/audio.py`, engine `_system/audio/tashaudio.py`). Ki
 - `?clean=1` hides: title, labels, leader lines, «دبل!», offer, CTA, end card, slates and the TASH signature. Shot timings are identical to the table above.
 - 10.40 → 13.80 in the clean plate continues **S10 hero** (turntable + push-in), so there are no end-card frames in the footage.
 - Film grain (opacity .05) is kept in the clean plate as part of the footage finish.
-- Best clean hero still: `still-hero.png`.
+- Best clean hero still: `still-hero.png` (clean plate at 10.6 s, 8× jittered supersampling).
+
+## 7. Production notes
+
+- **3D:** Three.js r180 on SwiftShader, everything generated in code with seeded noise. Brioche crown/heel use displaced lathes with 2K baked-colour/bump/roughness maps; 330 instanced sesame seeds sit on the surface normal. The toasted cut faces are textured crumb. Smash patties are polar solids with craggy displacement, a matte sear, a separate wet/fat gloss map (clearcoat) and an alpha-cut lacy rim. Cheddar is a thick sheet that drapes under gravity (curvature beyond the patty edge), with rounded melted corners, blisters and growing drips. Pickles are crinkle-cut, red-onion rings use vertex colours, and the sauce is a dollop that morphs into a splat with drips and splash droplets. Raw beef and the press drive the hook.
+- **Look:** hand-built softbox environments (PMREM), warm key, two rim lights, front fill card, shadow-catcher floor composited over the exact brand colour, ACES, depth-of-field gather on the macro inserts, grain .05.
+- **Motion blur:** real sub-frame accumulation on falls, whips, the slam and splashes (4 sub-frames for solid layers, 10 for thin ones, 9 on the slam). Impact frames stay crisp, with a short cream flash on the smash and the top-bun slam.
+- **Timing:** `src/cues.json` is the single source for picture and sound (shots, drops, text in/out, end card, signature).
+
+## 8. Known weaknesses (honest)
+
+- In the hero turntable the two cheddar drapes dominate, so the patties read as dark bands and their lacy edges barely show. Smaller slices would fix it but need a full re-render.
+- The sauce reads as a glossy dollop, not a rich drizzle. Grease spatter in the hook reads as short golden dashes, not continuous streaks.
+- Bread and cheese are stylised-real CGI. They are convincing at feed size but do not look like photography at macro distance.
+- The whip-pan transition passes through ~2 near-black frames (camera tilting off the griddle) before the red stage.

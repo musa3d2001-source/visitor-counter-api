@@ -1,0 +1,77 @@
+<!doctype html>
+<!-- SAFE-ZONES GUIDE SHEET (2560×1600) — the same zone numbers the templates check against (FORMATS in src/tpl.js),
+     drawn at 44 %: post 4:5 · reel cover 9:16 · story 9:16 · highlight cover. -->
+<html lang="ar" dir="rtl"><head><meta charset="utf-8">
+<link rel="stylesheet" href="/_system/tokens.css"><link rel="stylesheet" href="/03-templates/src/base.css">
+<style>
+  .title { position: absolute; right: 120px; top: 90px; z-index: 10; font-size: 92px; color: var(--fg); }
+  .sub { position: absolute; left: 120px; top: 132px; z-index: 10; font-size: 22px; }
+  .panels { position: absolute; left: 120px; right: 120px; top: 290px; z-index: 10; display: flex; justify-content: space-between; align-items: flex-start; direction: rtl; }
+  .panel { width: 476px; display: grid; gap: 30px; }
+  .frame { position: relative; width: 476px; height: 845px; display: grid; align-content: end; }
+  .frame svg { display: block; }
+  .cap { display: grid; gap: 10px; }
+  .cap .h { font-family: var(--f-display-ar); font-weight: 800; font-size: 40px; line-height: 1.3; color: var(--fg); }
+  .cap .size { font-size: 20px; }
+  .cap ul { margin: 6px 0 0; padding: 0; list-style: none; display: grid; gap: 6px; }
+  .cap li { font-size: 26px; line-height: 1.45; color: var(--fg); display: flex; gap: 14px; align-items: baseline; }
+  .cap li span { flex: 1; }
+  .cap li::before { content: ''; flex: none; width: 10px; height: 10px; border-radius: 50%; background: var(--lime); transform: translateY(-4px); }
+</style></head><body><div id="stage"></div>
+<script type="module">
+import { run, FORMATS, COL } from '/03-templates/src/tpl.js';
+const PINK = '#FF2E88', CYAN = '#29C9FF';
+
+function draw(f, s = 0.5, extra = '') {
+  const W = f.width * s, H = f.height * s;
+  let g = `<rect width="${W}" height="${H}" fill="${COL.char}"/>`;
+  const t = (x, y, txt, c, a = 'start') => `<text x="${x}" y="${y}" fill="${c}" font-family="JetBrains Mono" font-weight="700" font-size="13" letter-spacing="1.6" text-anchor="${a}">${txt}</text>`;
+  for (const z of f.zones) {
+    if (z.type === 'crop') {
+      g += `<path fill-rule="evenodd" fill="rgba(11,11,11,.72)" d="M0 0H${W}V${H}H0Z M${z.x * s} ${z.y * s}V${(z.y + z.h) * s}H${(z.x + z.w) * s}V${z.y * s}Z"/>`;
+      g += `<rect x="${z.x * s}" y="${z.y * s}" width="${z.w * s}" height="${z.h * s}" fill="none" stroke="${PINK}" stroke-width="2" stroke-dasharray="9 6"/>`;
+      g += t(z.x * s + 8, z.y * s + 20, z.label, PINK);
+    } else if (z.type === 'avoid') {
+      g += `<rect x="${z.x * s}" y="${z.y * s}" width="${z.w * s}" height="${z.h * s}" fill="url(#hz)" stroke="${PINK}" stroke-width="1.5"/>`;
+      if (z.w > 300) g += t(z.x * s + 10, (z.y + z.h / 2) * s + 5, z.label, PINK);
+    } else if (z.type === 'margin') {
+      g += `<rect x="${z.x * s}" y="${z.y * s}" width="${z.w * s}" height="${z.h * s}" fill="none" stroke="${CYAN}" stroke-width="1.5" stroke-dasharray="4 5"/>`;
+      g += t(z.x * s + 8, (z.y + z.h) * s - 10, z.label, CYAN);
+    } else if (z.type === 'circle') {
+      if (!z.inner) g += `<path fill-rule="evenodd" fill="rgba(11,11,11,.72)" d="M0 0H${W}V${H}H0Z M${(z.cx - z.r) * s} ${z.cy * s}a${z.r * s} ${z.r * s} 0 1 0 ${2 * z.r * s} 0a${z.r * s} ${z.r * s} 0 1 0 ${-2 * z.r * s} 0Z"/>`;
+      g += `<circle cx="${z.cx * s}" cy="${z.cy * s}" r="${z.r * s}" fill="none" stroke="${z.inner ? CYAN : PINK}" stroke-width="2" stroke-dasharray="9 6"/>`;
+      g += t(z.cx * s, (z.inner ? z.cy + z.r : z.cy - z.r) * s + (z.inner ? 24 : -10), z.label, z.inner ? CYAN : PINK, 'middle');
+    }
+  }
+  return `<svg width="${W}" height="${H}" viewBox="0 0 ${W} ${H}" style="direction:ltr"><defs><pattern id="hz" width="12" height="12" patternUnits="userSpaceOnUse" patternTransform="rotate(45)"><rect width="12" height="12" fill="rgba(255,46,136,.12)"/><rect width="3.5" height="12" fill="rgba(255,46,136,.34)"/></pattern></defs>${g}${extra}</svg>`;
+}
+
+run(async (d, { stage, h, put, rich }) => {
+  const panel = (f, head, size, points, extra) => h('div', { class: 'panel' },
+    h('div', { class: 'frame', html: draw(f, 0.44, extra) }),
+    h('div', { class: 'cap' }, h('div', { class: 'h', html: rich(head) }), h('div', { class: 'slate size', text: size }),
+      put(h('ul'), points.map(p => h('li', {}, h('span', { html: rich(p) }))))));
+  const t = (x, y, txt) => `<text x="${x}" y="${y}" fill="#8E9088" font-family="JetBrains Mono" font-weight="600" font-size="13" letter-spacing="1.5" text-anchor="middle">${txt}</text>`;
+  put(stage,
+    h('div', { class: 'disp title', text: 'المناطق الآمنة' }),
+    h('div', { class: 'slate sub', text: 'SAFE ZONES — POST / REEL / STORY / HIGHLIGHT' }),
+    put(h('div', { class: 'panels' }),
+      panel(FORMATS.post, 'بوست الفيد 4:5', '1080 × 1350', [
+        'الشبكة بالبروفايل تقص 3:4 من الوسط: 1012 عرض. المهم داخلها.',
+        'هامش 96 من كل جهة للنص والشعار.',
+        'التوقيع (طشّ) تحت يسار، بكل بوست.']),
+      panel(FORMATS.reel, 'غلاف الريل 9:16', '1080 × 1920', [
+        'الشبكة تعرض الوسط 1080×1440: من 240 لين 1680.',
+        'فوق 220 وتحت 420 تحت واجهة الريلز.',
+        'النص المهم بين 240 و1500، وبعيد 120 عن يمين النص السفلي (الأزرار).']),
+      panel(FORMATS.story, 'ستوري 9:16', '1080 × 1920', [
+        'فوق 250: صورة الحساب والوقت.',
+        'تحت 300: الرد واللّصقات والروابط.',
+        'هامش 72 من الجنبين.']),
+      panel(FORMATS.highlight, 'غلاف الهايلايت', '1080 × 1920 → ⌀', [
+        'البروفايل يقص دائرة من الوسط.',
+        'الأيقونة داخل ⌀660، على أرضية حبر.',
+        'الليموني بس على «شلون تطلب؟».'])));
+  return { width: 2560, height: 1600, safe: null, zones: [], lightAt: '85% 0%' };
+});
+</script></body></html>

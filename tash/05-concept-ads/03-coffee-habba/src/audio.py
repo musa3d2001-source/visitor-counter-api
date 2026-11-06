@@ -55,8 +55,8 @@ def softbass(f, d=1.2, vel=1.0):
 
 def vinyl(d, seed_=4):
     r = np.random.default_rng(seed_); N = n_(d)
-    imp = np.zeros(N); idx = r.integers(0, N, int(d * 26)); imp[idx] = r.uniform(-1, 1, len(idx)) ** 3
-    pops = bp(imp, 900, 7000) * 2.2
+    imp = np.zeros(N); idx = r.integers(0, N, int(d * 18)); imp[idx] = r.uniform(-1, 1, len(idx)) ** 3
+    pops = lp(bp(imp, 700, 4500), 3500) * 1.6     # soft, rounded crackle (not hard clicks)
     hiss = lp(hp(noise(d, 'pink'), 1800), 9000) * 0.035
     rumble = hp(lp(noise(d, 'brown'), 90), 35) * 0.05
     return stereo(pops * 0.5 + hiss + rumble, 0, width=0.7)
@@ -131,6 +131,12 @@ chord(m, g.t(3, 0), V['A7sus'], vel=0.62)
 chord(m, g.t(3, 2.5), V['A7sus'][1:], vel=0.42, d=1.6)
 chord(m, g.t(4, 0), V['Dmaj9'], vel=0.70, spread=0.035, bright=0.5, d=4.2)
 
+# a warm, very low pad under the keys (felt more than heard): one per bar, long attack, dark filter
+PADS = [(0, 'Gmaj9'), (1, 'F#m11'), (2, 'Em9'), (3, 'A7sus'), (4, 'Dmaj9')]
+for bar, name in PADS:
+    d = 3.4 if bar < 4 else 3.0
+    m.add(pad([nf(n) for n in V[name][:3]], d, cutoff=850, detune=0.08, attack=0.9, release=1.0), g.t(bar, 0) - 0.05, gain=0.16, bus='keys')
+
 # bass: roots, round and short; sits out in the slow-motion beans (bar 2 second half)
 for bar, root in ((1, 'F#2'), (2, 'E2'), (3, 'A2'), (4, 'D2')):
     m.add(softbass(nf(root), 1.0), g.t(bar, 0) + 0.004, gain=0.5, bus='bass')
@@ -166,11 +172,11 @@ m.add(shimmer(1.6, base=1760, n=5, seed_=8), EV['blindsOpen'] + 0.45, gain=0.10,
 p = pour(EV['streamOff'] - EV['milkStart'] + 0.25, seed_=21)
 p = lp(p, 3200) * np.linspace(1, 0.55, len(p))[:, None]
 m.add(p, EV['milkStart'] - 0.05, gain=0.85, bus='sfx')                                       # the milk pour
-m.add(bean_tap(1, 1.0), EV['bean1'], gain=0.75, bus='sfx', pan=0.1)                          # bean one
+m.add(bean_tap(1, 1.0), EV['bean1'], gain=1.0, bus='sfx', pan=0.1)                          # bean one
 m.add(bean_tap(2, 0.45), EV['bean1'] + 0.42, gain=0.6, bus='sfx', pan=0.1)                   #   …its little bounce
-m.add(bean_tap(3, 1.0), EV['bean2'], gain=0.7, bus='sfx', pan=0.2)                           # bean two
+m.add(bean_tap(3, 1.0), EV['bean2'], gain=0.95, bus='sfx', pan=0.2)                           # bean two
 m.add(bean_tap(4, 0.45), EV['bean2'] + 0.42, gain=0.55, bus='sfx', pan=0.2)
-for k, tb in enumerate((7.18, 7.42, 7.95, 8.15, 8.75, 9.05)):                                 # the soft ones behind
+for k, tb in enumerate(EV['beanTapsBehind']):                                                # the soft ones behind
     m.add(lp(bean_tap(10 + k, 0.5), 3000), tb, gain=0.22, bus='sfx', pan=R.uniform(-0.4, 0.4))
 m.add(scrape(EV['settle'] - EV['turnStart']), EV['turnStart'], gain=1.0, bus='sfx')         # the cup turns
 m.add(clink(2350), EV['settle'] - 0.004, gain=0.9, bus='sfx', pan=-0.05)                    # hero: the clink

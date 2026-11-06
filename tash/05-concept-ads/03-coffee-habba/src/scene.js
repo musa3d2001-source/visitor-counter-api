@@ -100,49 +100,54 @@ export function bakeTextures(renderer) {
   return { wood, wall, cream, terra };
 }
 
-// ------------------------------------------------------------------ blinds gobo (canvas, animated)
-export function makeGobo() {
-  const S = 1024, cv = document.createElement('canvas'); cv.width = cv.height = S;
-  const ctx = cv.getContext('2d');
-  const tex = new THREE.CanvasTexture(cv); tex.colorSpace = THREE.SRGBColorSpace; tex.generateMipmaps = false; tex.minFilter = THREE.LinearFilter;
-  const R = rng(91); const leaves = Array.from({ length: 7 }, () => ({ x: R(), y: R(), s: 0.5 + R(), a: R() * 6.28 }));
+// ------------------------------------------------------------------ blinds gobo (GPU bake, animated)
+// Horizontal slats of light (a box profile convolved with a Gaussian = the soft edge of a real window shadow),
+// a window mullion, a few swaying leaf silhouettes from a plant on the sill, and a circular light-pool falloff.
+const GOBO = `varying vec2 vUv;
+uniform float uOpen, uSlide, uSigma, uLeaf, uSway, uRot, uP0, uP1; uniform vec4 uLeaves[7];
+float erfA(float x){ float s = sign(x); x = abs(x); float t = 1.0 / (1.0 + 0.3275911 * x);
+  float y = 1.0 - (((((1.061405429 * t - 1.453152027) * t) + 1.421413741) * t - 0.284496736) * t + 0.254829592) * t * exp(-x * x); return s * y; }
+float boxBlur(float d, float h, float sg){ return 0.5 * (erfA((h * 0.5 - d) / (sg * 1.41421)) + erfA((h * 0.5 + d) / (sg * 1.41421))); }
+void main(){
+  vec2 p = vUv - 0.5;
+  float c = cos(uRot), s = sin(uRot);
+  vec2 q = vec2(c * p.x - s * p.y, s * p.x + c * p.y) + 0.5;
+  float period = 1.0 / 30.0, h = period * (0.08 + 0.66 * uOpen);
+  float y = q.y / period + uSlide;
+  float d = abs(fract(y) - 0.5) * period;
+  float sg = max(uSigma, 0.0004);
+  float bars = boxBlur(d, h, sg);
+  // mullion (soft dark band)
+  bars *= 1.0 - boxBlur(abs(vUv.x - 0.631), 0.022, sg);
+  // leaves
+  float leaf = 0.0;
+  for (int i = 0; i < 7; i++){
+    vec4 L = uLeaves[i];
+    float a = L.w + sin(uSway * 1.3 + L.w) * 0.06;
+    vec2 r = vUv - L.xy; r = vec2(cos(a) * r.x + sin(a) * r.y, -sin(a) * r.x + cos(a) * r.y);
+    float e = length(r / vec2(0.117 * L.z, 0.033 * L.z));
+    leaf = max(leaf, 1.0 - smoothstep(1.0 - sg * 30.0, 1.0 + sg * 30.0, e));
+  }
+  bars *= 1.0 - leaf * uLeaf;
+  float rr = length(vUv - 0.5);
+  bars *= smoothstep(uP1, uP0, rr);
+  gl_FragColor = vec4(vec3(bars), 1.0);
+}`;
+export function makeGobo(renderer) {
+  const R = rng(91);
+  const leaves = Array.from({ length: 7 }, () => { const x = R(), y = R(), sc = 0.5 + R(), a = R() * 6.28; return new THREE.Vector4(0.08 + x * 0.22, 1 - (0.66 + y * 0.3), sc, -a); });
+  const uniforms = { uOpen: { value: 1 }, uSlide: { value: 0 }, uSigma: { value: 0.006 }, uLeaf: { value: 0 }, uSway: { value: 0 }, uRot: { value: 0 }, uP0: { value: 0.3 }, uP1: { value: 0.5 }, uLeaves: { value: leaves } };
+  const rt = new THREE.WebGLRenderTarget(1024, 1024, { type: THREE.UnsignedByteType, generateMipmaps: false, minFilter: THREE.LinearFilter, magFilter: THREE.LinearFilter });
   let last = '';
   function draw({ open = 1, slide = 0, soft = 7, leaf = 0, sway = 0, rot = 0, pool = [0.3, 0.5] } = {}) {
     const key = [open, slide, soft, leaf, sway, rot, pool[0], pool[1]].map(v => v.toFixed(4)).join('|');
     if (key === last) return; last = key;
-    ctx.setTransform(1, 0, 0, 1, 0, 0); ctx.filter = 'none';
-    ctx.fillStyle = '#000'; ctx.fillRect(0, 0, S, S);
-    const period = S / 30, h = period * (0.08 + 0.66 * open);
-    ctx.filter = `blur(${soft}px)`;
-    ctx.fillStyle = '#fff';
-    ctx.translate(S / 2, S / 2); ctx.rotate(rot); ctx.translate(-S / 2, -S / 2);
-    for (let i = -14; i < 46; i++) {
-      const y = (i + (slide % 1)) * period - S * 0.2;
-      ctx.fillRect(-S * 0.3, y - h / 2, S * 1.6, h);
-    }
-    ctx.setTransform(1, 0, 0, 1, 0, 0);
-    // window mullion + frame (soft dark bands) so it reads as a real window, not a stripe generator
-    ctx.fillStyle = '#000';
-    ctx.fillRect(S * 0.62, -20, S * 0.022, S + 40);
-    // a plant on the sill: soft leaf silhouettes swaying (one living thing in every hold)
-    if (leaf > 0) {
-      ctx.globalAlpha = leaf; ctx.filter = `blur(${soft * 1.6}px)`;
-      for (const L of leaves) {
-        ctx.save(); ctx.translate(S * (0.08 + L.x * 0.22), S * (0.66 + L.y * 0.3));
-        ctx.rotate(L.a + Math.sin(sway * 1.3 + L.a) * 0.06);
-        ctx.beginPath(); ctx.ellipse(0, 0, 120 * L.s, 34 * L.s, 0, 0, Math.PI * 2); ctx.fill(); ctx.restore();
-      }
-      ctx.globalAlpha = 1;
-    }
-    // soft circular falloff so the spot never shows a hard edge
-    ctx.filter = 'none';
-    const g = ctx.createRadialGradient(S / 2, S / 2, S * pool[0], S / 2, S / 2, S * pool[1]);
-    g.addColorStop(0, 'rgba(0,0,0,0)'); g.addColorStop(1, 'rgba(0,0,0,1)');
-    ctx.fillStyle = g; ctx.fillRect(0, 0, S, S);
-    tex.needsUpdate = true;
+    uniforms.uOpen.value = open; uniforms.uSlide.value = slide % 1; uniforms.uSigma.value = soft / 1024;
+    uniforms.uLeaf.value = leaf; uniforms.uSway.value = sway; uniforms.uRot.value = rot; uniforms.uP0.value = pool[0]; uniforms.uP1.value = pool[1];
+    bake(renderer, GOBO, 1024, { uniforms, rt, mip: false });
   }
   draw();
-  return { tex, draw, canvas: cv };
+  return { tex: rt.texture, draw };
 }
 
 // ------------------------------------------------------------------ environment (reflections): warm room + window with blinds
@@ -257,7 +262,7 @@ export function makeBeanGeometry(seed = 1) {
     const along = Math.pow(Math.max(0, 1 - x * x), 0.5);
     const cr = Math.exp(-dz * dz) * (y <= 0.02 ? 1 : 0) * along;
     y += cr * 0.48;
-    const bump = 1 + 0.025 * Math.sin(x * ns + no) * Math.sin(z * ns * 1.3 + no * 2.0) + 0.012 * Math.sin(x * 23 + z * 17 + no);
+    const bump = 1 + 0.008 * Math.sin(x * ns * 0.5 + no) * Math.sin(z * ns * 0.6 + no * 2.0);
     x *= bump; y *= bump; z *= bump;
     let X = x * ax, Y = y * ay, Z = z * az;
     Y += bend * X * X;
@@ -471,8 +476,8 @@ export function makePost(renderer, W, H) {
         gl_FragColor = vec4(c, 1.0);
       }`,
   });
-  function render(scene, camera, { focus = 2, aperture = 0, exposure = 1, frame = 0, vig = 1, fade = 0, steamScene = null } = {}) {
-    renderer.setRenderTarget(rt); renderer.render(scene, camera);
+  function render(scene, camera, { focus = 2, aperture = 0, exposure = 1, frame = 0, vig = 1, fade = 0, steamScene = null, mark = () => {} } = {}) {
+    renderer.setRenderTarget(rt); renderer.render(scene, camera); mark('scene');
     // steam: its own layer (sharp, additive), depth-tested against the main depth so the cup rim still hides it
     renderer.setRenderTarget(rtS); renderer.setClearColor(0x000000, 0); renderer.clear(true, true, false);
     if (steamScene) {
@@ -481,6 +486,7 @@ export function makePost(renderer, W, H) {
       renderer.render(qs, qc); renderer.render(steamScene, camera);
       renderer.autoClear = ac;
     }
+    mark('steam');
     let src = rt.texture;
     if (aperture > 0.01) {
       quad.material = cocMat; const c = cocMat.uniforms;
@@ -488,6 +494,7 @@ export function makePost(renderer, W, H) {
       renderer.setRenderTarget(rtC); renderer.render(qs, qc);
       quad.material = dofMat; dofMat.uniforms.tC.value = rtC.texture;
       renderer.setRenderTarget(rtB); renderer.render(qs, qc); src = rtB.texture;
+      mark('dof');
     }
     quad.material = outMat; const o = outMat.uniforms;
     o.tC.value = src; o.tS.value = rtS.texture; o.uExp.value = exposure; o.uFrame.value = frame; o.uVig.value = vig; o.uFade.value = fade;

@@ -1,0 +1,82 @@
+<!doctype html>
+<!-- REELS COVER 1080×1920 — three variants. Everything that matters sits inside y 240–1500 (the 3:4 profile-grid crop
+     is y 240–1680; the reels UI covers the top 220 and bottom 420; the action rail covers x > 960 in the lower half).
+     Render with --guide to see the zones.
+     variant 'launch'  { kicker, headline, slate }                    — TASH's own reel: the wordmark is the picture
+     variant 'concept' { image, headline, concept, card: 'top'|'bottom' } — a concept ad: the hero still + an ink slate card
+     variant 'bts'     { before, after, band: [y0, y1], headline, line, concept, dy } — wireframe, with a band of the final -->
+<html lang="ar" dir="rtl"><head><meta charset="utf-8">
+<link rel="stylesheet" href="/_system/tokens.css"><link rel="stylesheet" href="/03-templates/src/base.css">
+<style>
+  .full { left: 0; top: 0; width: 1080px; height: 1920px; z-index: 2; }
+  .kicker { position: absolute; right: 96px; left: 96px; top: 300px; z-index: 10; color: var(--sub); font-size: 50px; line-height: 1.45; }
+  .headline { position: absolute; right: 96px; left: 96px; z-index: 10; color: var(--fg); }
+  .bigmark { position: absolute; left: 180px; z-index: 10; }
+  .slate-b { position: absolute; left: 0; right: 0; margin: 0 auto; width: max-content; z-index: 10; font-size: 22px; }
+  .card { position: absolute; right: 72px; left: 72px; z-index: 10; background: var(--ink); padding: 52px 56px 50px; display: grid; gap: 22px; }
+  .card .headline { position: static; color: var(--paper); }
+  .card .meta { display: flex; justify-content: space-between; align-items: baseline; gap: 24px; direction: ltr; }
+  .card .slate { color: var(--smoke); font-size: 20px; }
+  .card .concept-ar { color: var(--smoke); font-size: 26px; }
+  .band-edge { position: absolute; left: 0; width: 1080px; height: 6px; background: var(--lime); z-index: 6; }
+  .bts-concept { position: absolute; right: 96px; z-index: 10; display: flex; gap: 22px; align-items: baseline; direction: ltr; }
+  .bts-concept .slate, .bts-concept .concept-ar { color: var(--paper); opacity: .85; }
+  .line { position: absolute; right: 96px; left: 96px; z-index: 10; color: var(--paper); font-size: 48px; line-height: 1.45; }
+  .scrim { position: absolute; left: 0; right: 0; top: 0; height: 760px; z-index: 3;
+           background: linear-gradient(to bottom, rgba(11,11,11,.78) 0%, rgba(11,11,11,.5) 55%, rgba(11,11,11,0) 100%); }
+</style></head><body><div id="stage"></div>
+<script type="module">
+import { run, COL, CONCEPT_AR } from '/03-templates/src/tpl.js';
+run(async (d, { stage, T, rich, h, put, linesOf, photo, wordmark }) => {
+  const v = d.variant || 'launch';
+
+  if (v === 'launch') {
+    const kicker = d.kicker ? h('div', { class: 'txt kicker key', 'data-name': 'kicker', html: rich(d.kicker) }) : null;
+    const head = h('div', { class: 'disp headline key', 'data-fit': '110,172', 'data-lines': linesOf(d.headline, 1), 'data-name': 'headline', html: rich(d.headline) });
+    const mark = h('div', { class: 'bigmark key', 'data-name': 'wordmark' }, wordmark(T, 720));
+    const slate = d.slate ? h('div', { class: 'slate slate-b key', text: d.slate }) : null;
+    put(stage, kicker, head, mark, slate);
+    return { format: 'reel', lightAt: '50% 52%', after: () => {
+      // one group (kicker → headline → wordmark → slate), centred in the key-content band y 240–1500
+      const kh = kicker ? kicker.offsetHeight + 6 : 0, gap1 = 130, gap2 = 96;
+      const total = kh + head.offsetHeight + gap1 + mark.offsetHeight + (slate ? gap2 + slate.offsetHeight : 0);
+      let y = 240 + (1260 - total) / 2;
+      if (kicker) { kicker.style.top = y + 'px'; y += kh; }
+      head.style.top = y + 'px'; y += head.offsetHeight + gap1;
+      mark.style.top = y + 'px'; y += mark.offsetHeight + gap2;
+      if (slate) slate.style.top = y + 'px';
+    } };
+  }
+
+  if (v === 'concept') {
+    const head = h('div', { class: 'disp headline', 'data-fit': '84,124', 'data-lines': linesOf(d.headline, 2), 'data-name': 'headline', html: rich(d.headline) });
+    const c = d.concept || {};
+    const card = h('div', { class: 'card key', 'data-name': 'slate card' }, head,
+      h('div', { class: 'meta' }, h('div', { class: 'slate', text: c.slate || 'CONCEPT AD' }), h('div', { class: 'concept-ar', text: c.ar || CONCEPT_AR })));
+    put(stage, photo(d.image, 'layer full'), card);
+    return { format: 'reel', ground: false, grain: 0.035, after: () => {
+      card.style.top = (d.card === 'bottom' ? 1500 - card.offsetHeight : 250) + 'px';
+    } };
+  }
+
+  // bts: the wireframe, with a band where the finished render shows through
+  const [b0, b1] = d.band || [880, 1180];
+  const dy = d.dy || 0;
+  const head = h('div', { class: 'disp headline key', style: 'top:270px', 'data-fit': '96,150', 'data-lines': linesOf(d.headline, 1), 'data-name': 'headline', html: rich(d.headline) });
+  const line = d.line ? h('div', { class: 'txt line key', 'data-name': 'line', html: rich(d.line) }) : null;
+  const c = d.concept || {};
+  put(stage,
+    photo({ src: d.before, dy }, 'layer full'),
+    put(photo({ src: d.after, dy }, 'layer full'), null),
+    h('div', { class: 'scrim' }),
+    h('div', { class: 'band-edge', style: `top:${b0 - 3}px` }), h('div', { class: 'band-edge', style: `top:${b1 - 3}px` }),
+    head, line,
+    h('div', { class: 'bts-concept key', 'data-name': 'concept label' }, h('div', { class: 'slate', text: c.slate || 'BEHIND THE SCENES' }), h('div', { class: 'concept-ar', text: c.ar || CONCEPT_AR })));
+  stage.querySelectorAll('.full')[1].style.clipPath = `inset(${b0}px 0 ${1920 - b1}px 0)`;
+  return { format: 'reel', ground: false, grain: 0.035, after: () => {
+    if (line) line.style.top = (head.offsetTop + head.offsetHeight + 4) + 'px';
+    const lab = stage.querySelector('.bts-concept');
+    lab.style.top = ((line || head).offsetTop + (line || head).offsetHeight + 34) + 'px';
+  } };
+});
+</script></body></html>

@@ -20,9 +20,8 @@ BEANS.push({ tl: EV.bean1, x: LAND.x + 0.02, z: LAND.z + 0.02, vs: 0.55, yaw: 0.
 BEANS.push({ tl: EV.bean2, x: LAND.x + 0.15, z: LAND.z - 0.06, vs: 0.55, yaw: 2.2, ax: [1, 0.4, -0.3], w: -2.1, ph: 1.9, hero: true, flip: true });
 // the rest of the slow pour: further back (soft), and a couple close to the lens (big bokeh shapes)
 const others = [
-  [7.18, -0.16, -0.42], [7.42, 0.12, -0.55], [7.95, -0.04, -0.75], [8.15, 0.22, -0.30], [8.75, -0.20, -0.50], [9.05, 0.15, -0.95],
-  [7.55, 0.10, 0.36], [8.95, -0.08, 0.42],
-];
+  [-0.14, -0.38], [0.14, -0.60], [-0.04, -0.75], [0.22, -0.30], [-0.20, -0.50], [0.15, -0.95], [0.10, 0.36], [-0.30, -1.20],
+].map(([dx, dz], i) => [[7.18, 7.28, 7.95, 8.15, 8.75, 9.05, 7.22, 9.25][i], dx, dz]);   // landing times mirrored in cues.json → beanTapsBehind
 for (const [tl, dx, dz] of others) BEANS.push({ tl, x: LAND.x + dx, z: LAND.z + dz, vs: 0.5 + R() * 0.15, yaw: R() * 6.28, ax: [R() - 0.5, R() - 0.5, R() - 0.5], w: (R() - 0.5) * 5, ph: R() * 6, flip: R() > 0.5 });
 // beans already resting on the table (the set dressing)
 const decor = [[0.98, 0.38, 0.4, 1], [1.12, 0.52, 2.1, 0], [0.9, 0.62, 4.0, 1], [-0.95, 0.55, 1.2, 0], [-1.08, 0.38, 5.1, 1], [1.3, 0.2, 3.3, 0]];
@@ -74,7 +73,7 @@ function orbit(target, dist, az, el, fov) {
 const deg = Math.PI / 180;
 
 export function frameSpec(t, { clean = false, poster = false } = {}) {
-  if (poster) t = 1.95;                                  // poster background = the opened hero frame
+  if (poster) t = 12.3;                                  // the cover lives in the end-card world (handled below)
   const sh = shotAt(t); const u = (t - sh.at) / sh.dur;  // u: 0..1 inside the shot
   const S = {
     shot: sh.id, u,
@@ -127,12 +126,18 @@ export function frameSpec(t, { clean = false, poster = false } = {}) {
   } else if (sh.id === 'S4') {
     // low on the table, slow motion: beans tumble through the light; two land on the beat
     const k = u;
-    const tg = [LAND.x + 0.07, 0.10, LAND.z - 0.04];
+    const tg = [LAND.x + 0.07, -0.005, LAND.z - 0.04];
     S.cam = orbit(tg, lerp(1.1, 1.02, k), lerp(-6, -9, k) * deg, lerp(12, 13.5, k) * deg, 30);
     S.beans = beansAt(t, 'fall');
     S.steam = steamAt(t, 0.6);
     S.dof = { focus: 1.06, ap: 30 };
     S.exposure = 1.0;
+  } else if (poster) {
+    // the cover: end-card world, cup settled with its mark facing us, framed lower to leave the wall for the lockup
+    S.cupRot = Math.PI; S.heartYaw = 0; S.latte = { ...HEART, uT: 0, uRot: 0 };
+    S.cam = orbit([-0.08, 0.98, 0.0], 5.0, 0 * deg, 5 * deg, 28);
+    S.beans = beansAt(t, 'landed'); S.steam = steamAt(12.3, 0.45, 0.85); S.dof = { focus: 4.95, ap: 8 };
+    S.blinds.slide = 0.18 * 12.3; S.blinds.sway = 12.3;
   } else {
     // S5 (and S6 in clean mode): the cup turns on its saucer, the mark comes round; slow push-in
     const tT = Math.min(t, EV.blindsClose + 3.0);

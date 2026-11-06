@@ -1,0 +1,48 @@
+<!doctype html>
+<!-- FEED POST 4:5 · BEFORE → AFTER — one object, split down the middle. Reading runs right→left, so «قبل» is on the
+     right and «بعد» on the left. The divider's grip is the three dots (the only lime on the post).
+     data: theme · headline · before {src,label} · after {src,label} · focus [x,y] (source px to centre on)
+           · scale (source → post) · split (%, from the left) · concept {slate, ar}
+     Both images must share the same framing (same camera) for the split to read as one object. -->
+<html lang="ar" dir="rtl"><head><meta charset="utf-8">
+<link rel="stylesheet" href="/_system/tokens.css"><link rel="stylesheet" href="/03-templates/src/base.css">
+<style>
+  .headline { position: absolute; right: 96px; left: 96px; top: 92px; z-index: 10; color: var(--fg); }
+  .pic { position: absolute; left: 0; width: 1080px; z-index: 5; overflow: hidden; }
+  .half { position: absolute; inset: 0; }
+  .half img { position: absolute; display: block; }
+  .pic { -webkit-mask-image: radial-gradient(ellipse 41% 50% at 50% 50%, #000 60%, transparent 100%);
+         mask-image: radial-gradient(ellipse 41% 50% at 50% 50%, #000 60%, transparent 100%); }
+  .rule { position: absolute; width: 4px; margin-left: -2px; background: var(--fg); z-index: 8; }
+  .grip { position: absolute; width: 148px; height: 68px; margin: -34px 0 0 -74px; border-radius: 34px; background: var(--ink);
+          box-shadow: 0 0 0 4px var(--fg); z-index: 9; display: grid; place-items: center; }
+  .tag { position: absolute; z-index: 9; font-size: 36px; line-height: 1.2; color: var(--fg); }
+  .concept { position: absolute; right: 96px; bottom: 96px; z-index: 10; display: grid; gap: 10px; justify-items: end; }
+  .concept .slate { font-size: 20px; }
+  .concept .concept-ar { font-size: 24px; }
+  .wmk { position: absolute; left: 96px; bottom: 100px; z-index: 12; }
+</style></head><body><div id="stage"></div>
+<script type="module">
+import { run } from '/03-templates/src/tpl.js';
+run(async (d, { stage, T, rich, h, put, linesOf, concept, wordmark, dotsSVG }) => {
+  const Y0 = 404, PH = 780;                                  // picture area
+  const s = d.scale ?? 0.78, [fx, fy] = d.focus || [540, 960], split = (d.split ?? 50) / 100 * 1080;
+  const pic = h('div', { class: 'pic', style: `top:${Y0}px;height:${PH}px` });
+  const img = src => h('img', { src, alt: '', style: `width:${1080 * s}px;height:${1920 * s}px;left:${split - fx * s}px;top:${PH / 2 - fy * s}px` });
+  pic.append(
+    h('div', { class: 'half', style: `clip-path: inset(0 ${1080 - split}px 0 0)` }, img(d.after.src)),   // left = after
+    h('div', { class: 'half', style: `clip-path: inset(0 0 0 ${split}px)` }, img(d.before.src)),        // right = before
+  );
+  put(stage,
+    h('div', { class: 'disp headline key', 'data-fit': '72,100', 'data-lines': linesOf(d.headline, 2), 'data-name': 'headline', html: rich(d.headline) }),
+    pic,
+    h('div', { class: 'rule', style: `left:${split}px;top:${Y0 + 40}px;height:${PH - 80}px` }),
+    h('div', { class: 'grip', style: `left:${split}px;top:${Y0 + PH / 2}px`, html: dotsSVG({ d: 22, fill: T.dot === '#0B0B0B' ? '#C6FF00' : T.dot }) }),
+    h('div', { class: 'txt tag key', style: `right:96px;top:${Y0 + 24}px`, 'data-name': 'before label', html: rich(d.before.label || 'قبل') }),
+    h('div', { class: 'txt tag key', style: `left:96px;top:${Y0 + 24}px`, 'data-name': 'after label', html: rich(d.after.label || 'بعد') }),
+    concept(d.concept),
+    h('div', { class: 'wmk' }, wordmark(T, 112)),
+  );
+  return { format: 'post' };
+});
+</script></body></html>

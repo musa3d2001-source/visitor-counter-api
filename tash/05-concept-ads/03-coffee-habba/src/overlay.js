@@ -60,7 +60,7 @@ export async function makeOverlay(stage, { W, H, poster }) {
   // paper type over the dark room (S2); roasted type over the sunlit table and wall (S3, S4) — contrast first
   const t1 = line(ui, ['قهوتك…'], { top: 300, size: 150 });
   const t2 = line(ui, ['على', 'مهلك.'], { top: 1300, size: 140 });
-  const t3 = line(ui, ['حبّة…', 'حبّة.'], { top: 300, size: 150, color: HC.roast });
+  const t3 = line(ui, ['حبّة…', 'حبّة.'], { top: 1300, size: 150 });
 
   // ---- client end card on the sunlit wall: the mark writes on, then its bean drops into place under ب
   const ec = el(ui, 'div', null, { position: 'absolute', inset: '0' });
