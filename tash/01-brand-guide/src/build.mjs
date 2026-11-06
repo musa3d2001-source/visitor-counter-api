@@ -70,7 +70,10 @@ const els = await page.$$('.page');
 for (let i = 0; i < els.length; i++) {
   if (only && !only.includes(i + 1)) continue;
   const f = join(PAGES, `page-${String(i + 1).padStart(2, '0')}.png`);
-  await els[i].screenshot({ path: f });
+  // clip 1 CSS px inside the page: 297 mm is 1122.5 px, so the box edge would otherwise pick up the body colour
+  await els[i].scrollIntoViewIfNeeded();
+  const bb = await els[i].boundingBox();
+  await page.screenshot({ path: f, clip: { x: bb.x + 1, y: bb.y + 1, width: bb.width - 2, height: bb.height - 2 } });
 }
 console.log('pngs →', PAGES);
 await browser.close(); srv.close();

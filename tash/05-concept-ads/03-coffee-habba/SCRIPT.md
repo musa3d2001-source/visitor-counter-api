@@ -13,7 +13,7 @@
 صار هو الوعد: قهوة تنسوّى بهدوء وتنشرب بهدوء.
 
 الإعلان صباح واحد على طاولة جنب دريشة فيها ستارة شرائح. الستارة تنفتح، والشمس تنزل خطوط على الطاولة وتلف على الكوب.
-البخار يطلع من الكوب، والحليب ينصب ويرسم قلب. حبّات القهوة تطيح بالتصوير البطيء، وكل حبّة تنزل على الطاولة ومعها
+البخار يطلع من الإسبريسو، وبعدين الحليب ينصب ويرسم قلب. حبّات القهوة تطيح بالتصوير البطيء، وكل حبّة تنزل على الطاولة ومعها
 كلمة: «حبّة…» وبعدين «حبّة.». الكوب يلف على صحنه ويبيّن الشعار، وآخر حبّة تنزل وتصير هي نقطة الباء في الشعار.
 بعدها الستارة تتسكّر والغرفة تظلم، ويطلع توقيع طشّ.
 
@@ -29,14 +29,14 @@
 "slowly, bit by bit". So the brand's own name carries the promise: coffee made slowly and drunk slowly.
 
 The film is one morning at a table by a window with blinds. The blinds open and the sun falls in bars across the
-table and wraps around the cup. Steam curls up, milk is poured into a heart, and beans tumble in slow motion. Each
+table and wraps around the cup. Steam curls up from the espresso, milk is poured and drawn into a heart, and beans tumble in slow motion. Each
 of the two hero beans lands on the beat of its word: «حبّة…», then «حبّة.». The cup turns on its saucer to show its
 mark, and a last bean drops into the logo as the dot of ب. Then the blinds close, the room goes dark, and the TASH
 signature types itself in.
 
 **Capability shown:** atmosphere and brand-world storytelling, through light (a gobo through blinds as the one
 light logic), texture (glazed stoneware with iron speckle, walnut grain, limewash wall, paper grain), calm pacing
-(1.9–2.95 s shots on an 85.7 BPM grid) and editorial typography with generous negative space. It also shows a
+(2.1–2.95 s shots on an 85.7 BPM grid) and editorial typography with generous negative space. It also shows a
 small but complete client design system: mark, palette, type roles and tone of voice.
 
 ---
@@ -61,9 +61,9 @@ The **same timeline** renders with `?clean=1` (pure footage for the launch-ad ed
 
 | # | Start | End | Shot (camera · light · action) | On screen (normal) | `?clean=1` |
 |---|---|---|---|---|---|
-| S1 | 0.00 | 2.10 | **Blinds open.** High 3/4 (≈50° → 47°) slow push 5.6 → 5.25 and a small arc. Frame 0 shows thin slits of light across the table and cup. Between 0.28 and 1.53 the slats tilt open and the bars widen; the room fills with warm light. Steam rises; the finished heart is in the cup. | — | same |
+| S1 | 0.00 | 2.10 | **Blinds open.** High 3/4 (≈50° → 47°) slow push 5.6 → 5.25 and a small arc. Frame 0 shows thin slits of light across the table and cup. Between 0.28 and 1.53 the slats tilt open and the bars widen; the room fills with warm light. Steam rises from a cup of espresso and crema (no milk yet: the heart is born in S3). | — | same |
 | S2 | 2.10 | 4.20 | **Steam macro.** Side view at rim height against the dark room, push-in 4.9 → 4.6, focus on the rim. Steam curls up and glows only where it crosses a bar of sun. | «قهوتك…» writes on right→left at 2.45; exits up from 3.85, gone by 4.15 | same, no type |
-| S3 | 4.20 | 7.00 | **Top-down pour.** ≈80° overhead, slow 9° rotation and push. The milk stream is already falling at frame 0. A white bloom grows in the crema (4.20–5.85); the pull-through (5.85–6.40) draws it into a heart; the stream lifts away at 6.45. The bars slide across the saucer, and the lower frame sits in shade for the line. | «على مهلك.» writes on at 4.55 (2nd word +0.26); exits from 6.60, gone by 6.94 | same, no type |
+| S3 | 4.20 | 7.00 | **Top-down pour.** ≈80° overhead, slow 9° rotation and push. The milk stream is already falling at frame 0: thin, tapering and beaded, with ripples running out from where it lands. A white bloom grows in the crema (4.20–5.85); the pull-through (5.85–6.40) draws it into a heart; the stream lifts away at 6.45. The bars slide across the saucer, and the lower frame sits in shade for the line. | «على مهلك.» writes on at 4.55 (2nd word +0.26); exits from 6.60, gone by 6.94 | same, no type |
 | S4 | 7.00 | 9.80 | **Beans, slow motion.** Low on the table, shallow focus, the barred wall behind. Beans tumble down through the light at about ⅛ speed. **Bean 1 lands at 7.70, bean 2 at 8.40** (crease up, a small slow bounce, settle). Others land soft and out of focus behind and in front. | «حبّة…» drops in at 7.70 · «حبّة.» at 8.40; exits from 9.42, gone by 9.76 | same, no type |
 | S5 | 9.80 | 12.75 | **The cup turns on its saucer.** Low hero angle, push-in 4.75 → 4.25. The cup turns 72° (9.90–11.20, outCubic) and settles with a **clink at 11.20**; its printed mark comes round to face us. The light pool sits on the wall behind the lockup (same sun direction), and the steam settles low. **Client end card on the wall:** the mark writes on right→left (10.80–11.70); its terracotta bean drops from just under the letters and **lands in the ب slot at 11.50**; HABBA tracks in (11.55); SPECIALTY COFFEE (11.80). Full lockup holds to 12.75. | HABBA end card | the footage only (no mark, no Latin) |
 | S6 | 12.75 | 15.60 | **Tail.** The blinds close (12.75–13.10): the bars narrow to slits and the room goes dark. The TASH signature (local `sting-short.js`, same dots as `createSting`) runs from **13.00**: typing 13.00–13.74 → converge → **snap 14.12** → shadda 14.30 → «خلّهم يسولفون عنك!» 14.55 → @tash.creative.kw 15.10. The `CONCEPT AD — 03 / COFFEE` + «إعلان تجريبي — علامة خيالية» slate is visible from 13.10 to the end. | TASH tail + concept slate | **S5 continues**: light stays on, push-in continues to 15.60, the cup holds with its mark (no close, no sting, no slate) |

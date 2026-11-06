@@ -22,9 +22,9 @@ BEANS.push({ tl: EV.bean2, x: LAND.x + 0.15, z: LAND.z - 0.06, vs: 0.55, yaw: 2.
 const others = [
   [-0.14, -0.38], [0.14, -0.60], [-0.04, -0.75], [0.22, -0.30], [-0.20, -0.50], [0.15, -0.95], [0.10, 0.36], [-0.30, -1.20],
 ].map(([dx, dz], i) => [[7.18, 7.28, 7.95, 8.15, 8.75, 9.05, 7.22, 9.25][i], dx, dz]);   // landing times mirrored in cues.json → beanTapsBehind
-for (const [tl, dx, dz] of others) BEANS.push({ tl, x: LAND.x + dx, z: LAND.z + dz, vs: 0.5 + R() * 0.15, yaw: R() * 6.28, ax: [R() - 0.5, R() - 0.5, R() - 0.5], w: (R() - 0.5) * 5, ph: R() * 6, flip: R() > 0.5 });
+for (const [tl, dx, dz] of others) BEANS.push({ tl, x: LAND.x + dx, z: LAND.z + dz, vs: 0.5 + R() * 0.15, yaw: R() * 6.28, ax: [R() - 0.5, R() - 0.5, R() - 0.5], w: (R() - 0.5) * 5, ph: R() * 6, flip: R() > 0.25 });
 // beans already resting on the table (the set dressing)
-const decor = [[0.98, 0.38, 0.4, 1], [1.12, 0.52, 2.1, 0], [0.9, 0.62, 4.0, 1], [-0.95, 0.55, 1.2, 0], [-1.08, 0.38, 5.1, 1], [1.3, 0.2, 3.3, 0]];
+const decor = [[0.98, 0.38, 0.4, 1], [1.12, 0.52, 2.1, 1], [0.9, 0.62, 4.0, 1], [-0.95, 0.55, 1.2, 0], [-1.08, 0.38, 5.1, 1], [1.3, 0.2, 3.3, 1]];
 const qTmp = new THREE.Quaternion(), qA = new THREE.Quaternion(), qB = new THREE.Quaternion(), ax = new THREE.Vector3(), eul = new THREE.Euler();
 const REST_Y = 0.0175, REST_UP = 0.0300;   // flat face down / crease up (dome down)
 function beanState(b, t, { landedOnly = false } = {}) {
@@ -63,6 +63,7 @@ function steamAt(t, amt = 1, s = 1) {
 
 // ------------------------------------------------------------------ latte states
 const HEART = { uMilk: 1, uPull: 1, uStream: 0, uImp: [0, 0.2] };
+const CREMA = { uMilk: 0, uPull: 0, uStream: 0, uImp: [0, 0.2] };   // before the pour: espresso and crema only
 const BLOB_C = 0.10;
 
 // ------------------------------------------------------------------ camera helper: spherical orbit around a target
@@ -79,7 +80,7 @@ export function frameSpec(t, { clean = false, poster = false } = {}) {
     shot: sh.id, u,
     blinds: { open: 1, slide: 0.18 * t, soft: 7, leaf: 0.55, sway: t, pool: [0.26, 0.48] },
     sun: 9, envI: 0.42, fill: 0.25, exposure: 1.0,
-    cupRot: -0.62, heartYaw: 0.12, latte: { ...HEART, uT: 0, uRot: 0 }, stream: null,
+    cupRot: -0.62, heartYaw: 0.12, latte: { ...CREMA, uT: 0, uRot: 0 }, stream: null,
     beans: beansAt(t, 'none'), steam: steamAt(t, 0.8), dof: { focus: 3, ap: 0 },
   };
 

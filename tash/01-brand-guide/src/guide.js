@@ -66,6 +66,13 @@ const shaddaBox = (() => {
   return { x: bb.x + tr.e, y: bb.y + tr.f, w: bb.width, h: bb.height };
 })();
 
+function tiers(items, cw = 6.2, pad = 10) { // items: [{x, text}] → adds .tier; labels read left→right from x
+  const placed = []; [...items].sort((a, b) => a.x - b.x).forEach(it => {
+    it.w = it.text.length * cw + pad; const cov = placed.filter(p => p.x + p.w > it.x);
+    it.tier = cov.length ? Math.max(...cov.map(p => p.tier)) + 1 : 0; placed.push(it); });
+  return items;
+}
+
 // ------------------------------------------------------------------ page furniture
 const pages = $$('.page'), NP = pages.length;
 pages.forEach((p, i) => { const pg = $('.run .pg', p); if (pg) pg.textContent = String(i + 1).padStart(2, '0') + ' / ' + String(NP).padStart(2, '0'); });
@@ -218,7 +225,7 @@ put('services', [
   const one = (w, ok) => { const hh = Math.round(w * L.VB.h / L.VB.w) + 16;
     return `<div style="display:flex;flex-direction:column;align-items:center;gap:5px">${im('wm-' + w, w + 16, hh)}<div style="display:flex;gap:5px;align-items:center"><span class="${ok ? 'ok' : 'no'}"></span><span class="k">${w} px</span></div></div>`; };
   const zoom = (w, ok, k = 3) => { const ww = w + 16, hh = Math.round(w * L.VB.h / L.VB.w) + 16;
-    return `<div><div class="fig" style="position:relative;width:${(w + 8) * k}px;height:${(hh - 8) * k}px;overflow:hidden;background:${INK}"><img src="assets/px/wm-${w}.png" style="position:absolute;left:${-4 * k}px;top:${-4 * k}px;width:${ww * k}px;height:${hh * k}px;image-rendering:pixelated;max-width:none"></div>
+    return `<div><div class="fig" style="position:relative;width:${(w + 4) * k}px;height:${(hh - 12) * k}px;overflow:hidden;background:${INK}"><img src="assets/px/wm-${w}.png" style="position:absolute;left:${-6 * k}px;top:${-6 * k}px;width:${ww * k}px;height:${hh * k}px;image-rendering:pixelated;max-width:none"></div>
       <div style="display:flex;gap:5px;align-items:center;margin-top:5px"><span class="${ok ? 'ok' : 'no'}"></span><span class="k">${w} px × ${k}</span></div></div>`; };
   put('v-minsize', `<div style="display:flex;align-items:flex-end;gap:14px;margin:10px 0 14px">${one(120, 1)}${one(96, 1)}${one(72, 0)}${one(48, 0)}</div>
     <div style="display:flex;align-items:flex-start;gap:14px">${zoom(96, 1)}${zoom(48, 0)}</div>`);
@@ -239,7 +246,7 @@ put('services', [
   const fit = (s, w) => `<div class="fig" style="width:${w}px">${s}</div>`;
   const av = (o, w) => `<div style="width:${w}px;height:${w}px;border-radius:50%;overflow:hidden">${L.avatarSVG(o).replace('<svg ', '<svg style="display:block;width:100%;height:100%" ')}</div>`;
   put('v-variants', [
-    tile(fit(L.wordmarkSVG({ body: PAPER, dot: LIME }), 210), 'الشعار', 'Wordmark · primary', 'الأساسي: أي مكان وأي حجم فوق <bdi>96 px</bdi>.', 'svg/tash-wordmark--paper-lime.svg'),
+    tile(fit(L.wordmarkSVG({ body: PAPER, dot: LIME }), 210), 'الشعار', 'Wordmark · primary', 'الأساسي: أي مكان وأي حجم فوق <bdi dir="ltr">96 px</bdi>.', 'svg/tash-wordmark--paper-lime.svg'),
     tile(fit(L.lockupHorizontalSVG({ pad: 0 }), 270), 'التركيب الأفقي', 'Horizontal lockup', 'للمقاسات العريضة والمستندات، ولما نحتاج الإنجليزي جنب العربي.', 'svg/tash-lockup-h--paper-lime.svg'),
     tile(fit(L.lockupStackedSVG({ pad: 0 }), 150), 'التركيب المكدّس', 'Stacked lockup', 'للمربع والطولي، وأول تعارف مع الاسم.', 'svg/tash-lockup-stacked--paper-lime.svg'),
     tile(fit(L.symbolSVG({ pad: 0 }), 110), 'رمز النقاط', 'Dots symbol', 'تعداد، تحميل، علامة مائية. ما يحل محل الشعار بالتوقيع.', 'svg/tash-symbol-dots--lime.svg'),
@@ -264,34 +271,37 @@ put('services', [
 
 // ------------------------------------------------------------------ 03e avatar
 (function avatar() {
-  const big = 230;
-  const g = `<svg ${NS} viewBox="0 0 1080 1080" style="position:absolute;inset:0;width:100%;height:100%;direction:ltr">
-    <circle cx="540" cy="540" r="538" fill="none" stroke="${INK}" stroke-width="4" stroke-dasharray="14 10"/>
-    <line x1="${540 - 378}" y1="250" x2="${540 - 378}" y2="830" stroke="${INK}" stroke-width="4" stroke-dasharray="14 10"/><line x1="${540 + 378}" y1="250" x2="${540 + 378}" y2="830" stroke="${INK}" stroke-width="4" stroke-dasharray="14 10"/>
-    ${T(540, 240, '70%', { size: 40, fill: INK, anchor: 'middle', weight: 700 })}</svg>`;
+  const big = 196, aw = 1080 * 0.70, ax = (1080 - aw) / 2 + 1080 * 0.012;   // the same numbers avatarSVG() uses
+  const guide = `<svg ${NS} viewBox="0 0 1080 1080" style="position:absolute;inset:0;width:100%;height:100%;direction:ltr">
+    <line x1="${ax}" y1="250" x2="${ax}" y2="830" stroke="${INK}" stroke-width="6" stroke-dasharray="16 12"/><line x1="${ax + aw}" y1="250" x2="${ax + aw}" y2="830" stroke="${INK}" stroke-width="6" stroke-dasharray="16 12"/>
+    ${T(540, 232, '70%', { size: 50, fill: INK, anchor: 'middle', weight: 700 })}</svg>`;
   const img = (n, w) => `<img src="assets/px/${n}.png" width="${w + 12}" height="${w + 12}" style="display:block">`;
-  const ctx = (mode, bg, fg) => `<div style="background:${bg};padding:12px 14px;display:flex;align-items:center;gap:16px">
-      ${img(`avatar-lime-110-${mode}`, 110)}${img(`avatar-lime-40-${mode}`, 40)}${img(`avatar-ink-40-${mode}`, 40)}
-      <div style="color:${fg};font-size:9px;line-height:1.5"><div class="k" style="font-size:8px">${mode === 'light' ? 'LIGHT MODE' : 'DARK MODE'}</div><div>110 px · 40 px · 40 px حبر</div></div></div>`;
-  const zoom = (n, k = 3) => `<div style="width:${52 * k}px;height:${52 * k}px;overflow:hidden;position:relative"><img src="assets/px/${n}.png" style="width:${52 * k}px;height:${52 * k}px;image-rendering:pixelated;display:block;max-width:none"></div>`;
+  const cell = (k, mode, ok) => { const dark = mode === 'dark', bg = dark ? '#000000' : '#FFFFFF', fg = dark ? '#DDDDDD' : '#111111';
+    return `<div style="background:${bg};color:${fg};display:flex;align-items:center;gap:12px;padding:6px 12px;height:60px">${img(`avatar-${k}-40-${mode}`, 40)}
+      <div style="flex:1;line-height:1.4"><div class="k" style="font-size:8.5px;color:${fg}">tash.creative.kw</div><div style="font-size:10.5px">الخاص مفتوح •••</div></div>
+      <span class="${ok ? 'ok' : dark ? 'no inv' : 'no'}"></span></div>`; };
+  const zoom = n => `<div class="fig" style="width:120px;height:120px;overflow:hidden;position:relative;background:#000"><img src="assets/px/${n}.png" style="position:absolute;left:-18px;top:-18px;width:156px;height:156px;image-rendering:pixelated;max-width:none"></div>`;
   put('v-avatar', `
-   <div style="display:flex;gap:26px;align-items:flex-start">
-     <div><div style="position:relative;width:${big}px;height:${big}px"><div style="position:absolute;inset:0;border-radius:50%;overflow:hidden">${L.avatarSVG({}).replace('<svg ', '<svg style="display:block;width:100%;height:100%" ')}</div>${g}</div>
-       <div class="cap"><span class="ok"></span><div><div class="w6">الكلمة 70% من القطر، متوسّطة بصرياً</div><div class="en">Built by avatarSVG() · 02-logo/avatar/</div></div></div></div>
+   <div style="display:flex;gap:24px;align-items:flex-start">
+     <div style="width:${big}px"><div style="position:relative;width:${big}px;height:${big}px"><div style="position:absolute;inset:0;border-radius:50%;overflow:hidden">${L.avatarSVG({}).replace('<svg ', '<svg style="display:block;width:100%;height:100%" ')}</div>${guide}</div>
+       <div class="cap"><span class="ok"></span><div><div class="w6">الكلمة 70% من القطر</div><div class="en">avatarSVG() · 02-logo/avatar/</div></div></div></div>
      <div style="flex:1">
        <div style="background:#FFFFFF;color:#111;padding:16px 18px 14px">
          <div style="display:flex;gap:16px;align-items:center">${img('avatar-lime-110-light', 110)}
-           <div><div style="font-weight:600;font-size:13px">طشّ <bdi>TASH</bdi> | استوديو إعلانات</div><div class="k" style="font-size:9.5px;color:#555;margin-top:2px">tash.creative.kw</div></div></div>
-         <div style="font-size:10.5px;line-height:1.6;margin-top:10px">خلّهم يسولفون عنك •••<br>نسوي الإعلان نفسه: فكرة وسكربت، فيديو، تصميم، موشن ومونتاج — للريلز والتيك توك والستوري.</div>
+           <div><div style="font-weight:600;font-size:13px;white-space:nowrap">طشّ <bdi dir="ltr">TASH</bdi> | استوديو إعلانات</div><div class="k" style="font-size:9.5px;color:#555;margin-top:3px">tash.creative.kw</div></div></div>
+         <div style="font-size:11px;line-height:1.65;margin-top:10px">خلّهم يسولفون عنك •••<br>نسوي الإعلان نفسه: فكرة وسكربت، فيديو، تصميم، موشن ومونتاج — للريلز والتيك توك والستوري.</div>
        </div>
-       <div class="cap"><span class="ok"></span><div><div class="w6">بالحجم الحقيقي: 110 px بالبروفايل</div><div class="en">Real 1× pixels · generic profile mock, no platform UI</div></div></div>
+       <div class="cap"><span class="ok"></span><div><div class="w6">بالحجم الحقيقي: <bdi dir="ltr">110 px</bdi> بالبروفايل</div><div class="en">Real 1× pixels · generic profile mock, no platform UI · bio from 06-copy</div></div></div>
      </div>
    </div>
-   <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-top:18px">${ctx('light', '#FFFFFF', '#111')}${ctx('dark', '#000000', '#CCC')}</div>
-   <div style="display:flex;gap:18px;align-items:flex-end;margin-top:14px">
+   <div style="display:grid;grid-template-columns:1fr 1fr;gap:6px;margin-top:16px">
+     <div class="lbl" style="text-align:right">LIGHT MODE · 40 PX</div><div class="lbl" style="text-align:right">DARK MODE · 40 PX</div>
+     ${cell('lime', 'light', 1)}${cell('lime', 'dark', 1)}${cell('ink', 'light', 1)}${cell('ink', 'dark', 0)}
+   </div>
+   <div style="display:flex;gap:16px;align-items:flex-end;margin-top:14px">
      <div>${zoom('avatar-lime-40-dark')}<div class="cap"><span class="ok"></span><span class="k">LIME · 40 PX × 3</span></div></div>
-     <div>${zoom('avatar-ink-40-dark')}<div class="cap"><span class="no"></span><span class="k">INK · 40 PX × 3</span></div></div>
-     <p class="sm" style="flex:1;margin:0 0 22px">بـ<bdi class="k">40 px</bdi> الحروف تصير شكل، والدائرة الليمونية هي اللي تخلّينا ننعرف. نسخة الحبر تذوب بالوضع الداكن، عشان كذا الليموني هو الأساسي.</p>
+     <div>${zoom('avatar-ink-40-dark')}<div class="cap"><span class="no inv"></span><span class="k">INK · 40 PX × 3</span></div></div>
+     <p class="sm" style="flex:1;margin:0 0 24px">بـ<bdi dir="ltr">40 px</bdi> الحروف تصير شكل، والدائرة الليمونية هي اللي تخلّينا ننعرف. دائرة الحبر تذوب بالوضع الداكن ويبقى الاسم بدون إطار، عشان كذا الليموني هو الأساسي.</p>
    </div>`);
 })();
 
@@ -358,8 +368,8 @@ put('v-support', SUPPORT.map(([ar, en, hex, role]) => `<div style="display:flex;
 (function ratio() { // tall segmented bar: 28 px, 2 px surface gaps, share inside the leading edge when it fits
   const parts = [['حبر', 60, INK], ['ورقي', 25, PAPER], ['ليموني', 10, LIME], ['الباقي', 5, SMOKE]];
   put('v-ratio', `<div style="display:flex;gap:2px;height:28px">` + parts.map(([ar, v, c]) =>
-    `<div style="flex:${v} 0 0;background:${c};border-radius:4px;${c === INK ? `box-shadow:inset 0 0 0 1px ${SMOKE}` : ''};display:flex;align-items:center;padding:0 10px;color:${textOn(c)};font-size:10px;font-weight:600;white-space:nowrap;overflow:visible">${v >= 10 ? `${ar} <bdi class="k" style="margin-right:6px">${v}%</bdi>` : ''}</div>`).join('') +
-    `</div><div style="display:flex;justify-content:space-between;margin-top:7px"><span class="sm" style="color:${SMOKE}">الليموني إشارة مو ديكور: إذا كل شي ليموني، ولا شي مهم.</span><span class="sm" style="color:${SMOKE}">دخاني + فحمي + خطّي <bdi class="k">5%</bdi></span></div>`);
+    `<div style="flex:${v} 0 0;background:${c};border-radius:4px;${c === INK ? `box-shadow:inset 0 0 0 1px ${SMOKE}` : ''};display:flex;align-items:center;padding:0 10px;color:${textOn(c)};font-size:10px;font-weight:600;white-space:nowrap;overflow:visible">${v >= 10 ? `${ar} <bdi dir="ltr" class="k" style="margin-right:6px">${v}%</bdi>` : ''}</div>`).join('') +
+    `</div><div style="display:flex;justify-content:space-between;margin-top:7px"><span class="sm" style="color:${SMOKE}">الليموني إشارة مو ديكور: إذا كل شي ليموني، ولا شي مهم.</span><span class="sm" style="color:${SMOKE}">دخاني + فحمي + خطّي <bdi dir="ltr" class="k">5%</bdi></span></div>`);
 })();
 (function contrast() {
   const fgs = [['ورقي', PAPER], ['ليموني', LIME], ['دخاني', SMOKE], ['حبر', INK], ['دخاني غامق', META_P], ['زيتوني', META_L]];
@@ -382,37 +392,43 @@ put('v-support', SUPPORT.map(([ar, en, hex, role]) => `<div style="display:flex;
 
 // ------------------------------------------------------------------ 05 typography
 put('v-families', [
-  { name: 'Alexandria', role: 'العناوين العربية', roleEn: 'Arabic display', w: '600–900 · نستخدم 800', file: 'Alexandria-VF.ttf', lic: 'OFL-Alexandria.txt',
-    spec: `<div style="font-family:Alexandria;font-weight:800;font-size:58px;line-height:1.35">يسولفون</div>`,
-    glyphs: `<div style="font-family:Alexandria;font-weight:800;font-size:13px;line-height:1.7">أ ب ت ث ج ح خ د ذ ر ز س ش ص ض ط ظ ع غ ف ق ك ل م ن ه و ي ٠١٢٣٤٥٦٧٨٩</div>`, use: 'كلمة لين ست كلمات. أساس الشعار (<bdi>Black</bdi>).' },
-  { name: 'IBM Plex Sans Arabic', role: 'النص العربي', roleEn: 'Arabic text', w: '400–700 · نستخدم 400 و600', file: 'IBMPlexSansArabic-*.ttf', lic: 'OFL-IBMPlexSansArabic.txt',
+  { name: 'Alexandria', role: 'العناوين العربية', roleEn: 'Arabic display', w: 'WEIGHTS 600–900 · WE USE 800', file: 'Alexandria-VF.ttf', lic: 'OFL-Alexandria.txt',
+    spec: `<div style="font-family:Alexandria;font-weight:800;font-size:60px;line-height:1.35">سالفة</div>`,
+    glyphs: `<div style="font-family:Alexandria;font-weight:800;font-size:13px;line-height:1.75">أ ب ت ث ج ح خ د ذ ر ز س ش ص ض ط ظ ع غ ف ق ك ل م ن ه و ي <bdi dir="ltr">٠١٢٣٤٥٦٧٨٩</bdi></div>`, use: 'كلمة لين ست كلمات. وهو أساس الشعار (<bdi dir="ltr">Black</bdi>).' },
+  { name: 'IBM Plex Sans Arabic', role: 'النص العربي', roleEn: 'Arabic text', w: 'WEIGHTS 400–700 · WE USE 400 + 600', file: 'IBMPlexSansArabic-*.ttf', lic: 'OFL-IBMPlexSansArabic.txt',
     spec: `<div style="font-family:'IBM Plex Sans Arabic';font-weight:400;font-size:21px;line-height:1.6">نسوي الإعلان نفسه، من الفكرة لين <span style="font-weight:600">الملف النهائي.</span></div>`,
-    glyphs: `<div style="font-family:'IBM Plex Sans Arabic';font-size:12px;line-height:1.7">أبجد هوز حطي كلمن سعفص قرشت ثخذ ضظغ · ٠١٢٣٤٥٦٧٨٩ · 0123456789</div>`, use: 'الشرح، السطور الثانوية، الكابشن، والواجهات.' },
-  { name: 'Archivo', role: 'العناوين اللاتينية', roleEn: 'Latin display', w: '800–900 · عرض 125%', file: 'Archivo-VF.ttf', lic: 'OFL-Archivo.txt',
-    spec: `<div style="font-family:Archivo;font-weight:900;font-stretch:125%;font-size:60px;line-height:1.2;direction:ltr;text-align:right">TASH</div>`,
-    glyphs: `<div style="font-family:Archivo;font-weight:800;font-stretch:125%;font-size:12px;line-height:1.7;direction:ltr;text-align:right">ABCDEFGHIJKLMNOPQRSTUVWXYZ 0123456789</div>`, use: 'الاسم اللاتيني، الأرقام الكبيرة، والعناوين الإنجليزية.' },
-  { name: 'JetBrains Mono', role: 'اللوحات والمواصفات', roleEn: 'Labels · slates', w: '500–700 · حروف كبيرة · تباعد 0.24em', file: 'JetBrainsMono-VF.ttf', lic: 'OFL-JetBrainsMono.txt',
+    glyphs: `<div style="font-family:'IBM Plex Sans Arabic';font-size:12px;line-height:1.75">أبجد هوز حطي كلمن سعفص قرشت ثخذ ضظغ <bdi dir="ltr">٠١٢٣٤٥٦٧٨٩</bdi> <bdi dir="ltr">0123456789</bdi></div>`, use: 'الشرح، السطور الثانوية، الكابشن، والواجهات.' },
+  { name: 'Archivo', role: 'العناوين اللاتينية', roleEn: 'Latin display', w: 'WEIGHTS 800–900 · WIDTH 125%', file: 'Archivo-VF.ttf', lic: 'OFL-Archivo.txt',
+    spec: `<div style="font-family:Archivo;font-weight:900;font-stretch:125%;font-size:58px;line-height:1.2;direction:ltr;text-align:right">TASH</div>`,
+    glyphs: `<div style="font-family:Archivo;font-weight:800;font-stretch:125%;font-size:12px;line-height:1.75;direction:ltr;text-align:right;overflow-wrap:anywhere">ABCDEFGHIJKLM NOPQRSTUVWXYZ 0123456789</div>`, use: 'الاسم اللاتيني، الأرقام الكبيرة، والعناوين الإنجليزية.' },
+  { name: 'JetBrains Mono', role: 'اللوحات والمواصفات', roleEn: 'Labels · slates', w: 'WEIGHTS 500–700 · CAPS · .24EM', file: 'JetBrainsMono-VF.ttf', lic: 'OFL-JetBrainsMono.txt',
     spec: `<div class="lbl" style="font-size:15px;color:${INK};letter-spacing:.24em;line-height:2.1;text-align:right">SC 03 · TK 1<br>TASH / 2026</div>`,
-    glyphs: `<div style="font-family:'JetBrains Mono';font-weight:600;font-size:11px;line-height:1.7;direction:ltr;text-align:right;letter-spacing:.06em">ABCDEFGHIJKLMNOPQRSTUVWXYZ 0123456789 — / ·</div>`, use: 'لاتيني وأرقام بس، أبداً عربي.' },
-].map(f => `<div style="border-top:1.5px solid ${INK};padding-top:10px">
-   <div style="display:flex;justify-content:space-between;align-items:baseline"><span class="w6" style="font-size:12px">${f.role}</span><span class="en s">${f.roleEn}</span></div>
-   <div style="height:120px;display:flex;align-items:center;justify-content:flex-start">${f.spec}</div>
+    glyphs: `<div style="font-family:'JetBrains Mono';font-weight:600;font-size:11px;line-height:1.75;direction:ltr;text-align:right;letter-spacing:.06em;overflow-wrap:anywhere">ABCDEFGHIJKLM NOPQRSTUVWXYZ 0123456789 — / ·</div>`, use: 'لاتيني وأرقام بس، أبداً عربي.' },
+].map(f => `<div style="border-top:1.5px solid ${INK};padding-top:10px;min-width:0">
+   <div style="display:flex;justify-content:space-between;align-items:baseline;gap:8px"><span class="w6" style="font-size:12.5px">${f.role}</span><span class="en s">${f.roleEn}</span></div>
+   <div style="height:116px;display:flex;align-items:center;justify-content:flex-start;overflow:hidden">${f.spec}</div>
    ${f.glyphs}
    <div class="hr"></div>
    <div style="font-family:Archivo;font-weight:800;font-stretch:125%;font-size:12px;direction:ltr;text-align:right">${f.name}</div>
    <p class="sm" style="margin:4px 0 6px">${f.use}</p>
-   <div class="k" style="font-size:8px;line-height:1.8;color:${META_P};text-align:right"><div>${f.w.replace(/[^\x00-\x7F–·%]+/g, m => `<span style="font-family:'IBM Plex Sans Arabic';letter-spacing:0">${m}</span>`)}</div><div>SIL OFL 1.1 · COMMERCIAL USE OK</div><div>_system/fonts/${f.file}</div><div>_system/fonts/${f.lic}</div></div>
+   <div class="k" style="font-size:8px;line-height:1.85;color:${META_P};text-align:right;white-space:normal"><div>${f.w}</div><div>SIL OFL 1.1 · COMMERCIAL USE OK</div><div>_system/fonts/${f.file}</div><div>_system/fonts/${f.lic}</div></div>
  </div>`).join(''));
+put('v-together', `<div style="background:${INK};color:${PAPER};padding:16px 22px 14px;display:flex;justify-content:space-between;align-items:flex-end;gap:24px">
+    <div><div class="lbl" style="color:${SMOKE};text-align:right;margin-bottom:16px">TASH / 2026</div>
+      <div style="font-family:Alexandria;font-weight:800;font-size:38px;line-height:1.3">خلّ إعلانك علينا.</div>
+      <div style="font-size:14px;color:${SMOKE};margin-top:2px">نسوي الإعلان نفسه، من الفكرة لين الملف النهائي.</div></div>
+    <div style="direction:ltr;text-align:left"><div style="font-family:Archivo;font-weight:900;font-stretch:125%;font-size:30px;line-height:1">TASH</div><div class="lbl" style="color:${SMOKE};margin-top:6px">CREATIVE STUDIO · KUWAIT</div></div></div>
+  <div class="cap"><span class="ok"></span><span class="sm">الأربعة مع بعض: عنوان بـ<bdi dir="ltr">Alexandria</bdi>، سطر بـ<bdi dir="ltr">Plex</bdi>، الاسم بـ<bdi dir="ltr">Archivo</bdi>، ولوحة بـ<bdi dir="ltr">Mono</bdi>. وزنين لكل عائلة بالكثير.</span></div>`);
 (function scale() {
   const k = 0.3, rows = [
-    ['--t-hero', 168, 'Alexandria 800', '1–3 كلمات', `<span style="font-family:Alexandria;font-weight:800">طشّ!</span>`],
+    ['--t-hero', 168, 'Alexandria 800', '<bdi dir="ltr">1–3</bdi> كلمات', `<span style="font-family:Alexandria;font-weight:800">طشّ!</span>`],
     ['--t-h1', 112, 'Alexandria 800', 'عنوان', `<span style="font-family:Alexandria;font-weight:800">خلّ إعلانك علينا</span>`],
     ['--t-h2', 72, 'Alexandria 800', 'عنوان فرعي', `<span style="font-family:Alexandria;font-weight:800">مو بس فيديو… فكرة.</span>`],
     ['--t-h3', 48, 'Plex Arabic 600', 'سطر داعم', `<span style="font-family:'IBM Plex Sans Arabic';font-weight:600">من الفكرة لين الملف النهائي</span>`],
     ['--t-body', 34, 'Plex Arabic 400', 'أقل نص قابل للقراءة', `<span style="font-family:'IBM Plex Sans Arabic';font-weight:400">نكتب لك سالفة يفهمها جمهورك من أول ثانية.</span>`],
-    ['--t-meta', 22, 'JetBrains Mono 600', 'لوحات، تباعد 0.24em', `<span class="lbl" style="font-size:inherit;color:${PAPER}">CONCEPT AD — 01 / PERFUME</span>`],
+    ['--t-meta', 22, 'JetBrains Mono 600', 'لوحات، تباعد <bdi dir="ltr">0.24em</bdi>', `<span class="lbl" style="font-size:inherit;color:${PAPER}">CONCEPT AD — 01 / PERFUME</span>`],
   ];
-  put('v-scale', rows.map(([tok, px, fam, use, sample]) => `<div style="display:grid;grid-template-columns:1fr 150px;gap:16px;align-items:center;border-bottom:1px solid ${LINE};padding:8px 0">
+  put('v-scale', rows.map(([tok, px, fam, use, sample]) => `<div style="display:grid;grid-template-columns:1fr 150px;gap:16px;align-items:center;border-bottom:1px solid ${LINE};padding:11px 0">
      <div style="font-size:${px * k}px;line-height:1.35;color:${PAPER};white-space:nowrap">${sample}</div>
      <div class="k" style="font-size:8.5px;line-height:1.6;color:${SMOKE}"><div style="color:${PAPER};font-size:11px">${px} px</div><div>${tok}</div><div>${fam}</div><div style="font-family:'IBM Plex Sans Arabic';letter-spacing:0;direction:rtl;text-align:left">${use}</div></div></div>`).join(''));
   put('v-mix', `<div style="display:flex;align-items:center;gap:8px;margin-bottom:6px"><span class="ok"></span><span style="font-family:Alexandria;font-weight:800;font-size:24px">إعلان <bdi style="font-family:Archivo;font-weight:800;font-stretch:125%;font-size:88%">3D</bdi> من الصفر</span><span class="k" style="color:${SMOKE}">88%</span></div>
@@ -435,92 +451,92 @@ put('v-families', [
       row(1, big(wordsBox, 'font-size:26px'), 'من اليمين لليسار') + row(0, big(letters), 'حروف مفصولة = شكل معزول'),
       'نحرّك الكلمة أو السطر: قناع، حركة، شفافية، تمويه. إذا تبي تلوّن جزء من كلمة، كرّر الكلمة كاملة بطبقة فوقها وقصّها بقناع.'),
     block('علامات الترقيم', 'Punctuation',
-      row(1, big('شلون أطلب؟', 'font-size:24px') + `<span style="width:16px"></span>` + big('طشّ… خلّهم', 'font-size:24px') + `<span style="width:16px"></span>` + big('«يسولفون»', 'font-size:24px')) +
-      row(0, `<span dir="ltr" style="font-family:Alexandria;font-weight:800;font-size:24px;unicode-bidi:isolate">شلون أطلب؟</span>`, 'الحقل LTR: العلامة طاحت يمين') +
-      row(0, big('شلون أطلب? طشّ... خلّهم', 'font-size:24px'), 'علامات لاتينية'),
-      '، ؟ ! تكون على يسار السطر. «» للاقتباس. «…» حرف واحد لاصق بالكلمة قبله ومسافة بعده. إذا طاحت العلامة يمين، الحقل نفسه LTR: صلّح الحقل مو النص.'),
+      row(1, big('شلون أطلب؟', 'font-size:23px;white-space:nowrap') + `<span style="width:18px"></span>` + big('طشّ… خلّهم', 'font-size:23px;white-space:nowrap') + `<span style="width:18px"></span>` + big('«يسولفون»', 'font-size:23px;white-space:nowrap')) +
+      row(0, `<span dir="ltr" style="font-family:Alexandria;font-weight:800;font-size:23px;unicode-bidi:isolate;white-space:nowrap">خلّهم يسولفون عنك!</span>`, 'حقل <bdi dir="ltr">LTR</bdi>: «!» طاحت يمين') +
+      row(0, big('شلون أطلب? طشّ... خلّهم', 'font-size:23px;white-space:nowrap'), 'علامات لاتينية'),
+      'العلامات تكون على يسار آخر السطر. «،» و«؟» عربية وثابتة بمكانها، بس «!» و«.» تطيح يمين إذا الحقل <bdi dir="ltr">LTR</bdi>: صلّح الحقل مو النص. «» للاقتباس، و«…» حرف واحد لاصق بالكلمة قبله.'),
     block('نظام أرقام واحد بالقطعة', 'One numeral system per piece',
       row(1, big('٤ خطوات، و٣٠ ثانية', 'font-size:24px'), 'محتوى إبداعي') + row(1, big('4 خطوات، و30 ثانية', 'font-size:24px'), 'معلومات عملية') + row(0, big('٤ خطوات، و30 ثانية', 'font-size:24px'), 'خلط'),
-      '<b class="w6">توصيتنا:</b> المحتوى الإبداعي (بوست، ريل، ستوري، كابشن) بالأرقام الهندية ٠–٩. المعلومات العملية (أسعار، مواعيد، مقاسات، تواصل) واللوحات بالأرقام العربية 0–9. وبكل قطعة نظام واحد بس. هالدليل كله 0–9 لأنه مواصفات.'),
+      '<b class="w6">توصيتنا:</b> المحتوى الإبداعي (بوست، ريل، ستوري، كابشن) بالأرقام الهندية <bdi dir="ltr">٠–٩</bdi>. المعلومات العملية (أسعار، مواعيد، مقاسات، تواصل) واللوحات بالأرقام العربية <bdi dir="ltr">0–9</bdi>. وبكل قطعة نظام واحد بس. هالدليل كله <bdi dir="ltr">0–9</bdi> لأنه مواصفات.'),
   ].join(''));
 })();
 
 // ------------------------------------------------------------------ 06 devices
 (function dots() {
   const head = (ar, en) => `<div style="display:flex;justify-content:space-between;align-items:baseline;margin-bottom:8px"><h3 style="font-size:13px">${ar}</h3><span class="en s">${en}</span></div>`;
-  const tile = (inner, h = 200) => `<div class="tile" style="height:${h}px;background:${CHAR};position:relative">${inner}</div>`;
-  // bullets
-  const bullets = tile(`<div style="padding:22px 22px">${['فكرة', 'سكربت', 'إنتاج', 'ملف جاهز'].map(t => `<div style="display:flex;align-items:center;gap:10px;font-size:14px;line-height:2"><span style="width:7px;height:7px;border-radius:50%;background:${LIME}"></span>${t}</div>`).join('')}
-    <div style="margin-top:10px;font-size:14px;font-weight:600">الخاص مفتوح <span style="display:inline-flex;gap:4px;margin-right:4px;vertical-align:1px">${'<span style="width:6px;height:6px;border-radius:50%;background:' + LIME + '"></span>'.repeat(3)}</span></div></div>`);
+  const tile = (inner, h = 190) => `<div class="tile" style="height:${h}px;background:${CHAR};position:relative">${inner}</div>`;
+  const dot = (d = 7) => `<span style="display:inline-block;width:${d}px;height:${d}px;border-radius:50%;background:${LIME}"></span>`;
+  const bullets = tile(`<div style="padding:20px 22px">${['فكرة', 'سكربت', 'إنتاج', 'ملف جاهز'].map(t => `<div style="display:flex;align-items:center;gap:10px;font-size:14px;line-height:1.9">${dot()}${t}</div>`).join('')}
+    <div style="margin-top:8px;font-size:14px;font-weight:600;display:flex;align-items:center;gap:8px">الخاص مفتوح <span style="display:inline-flex;gap:4px">${dot(6) + dot(6) + dot(6)}</span></div></div>`);
   // loader frames — kit.js typing(), period/phase from endcard-cues.json
   const fr = [0, 0.12, 0.24, 0.36, 0.48, 0.6];
-  const loader = tile(svg('0 0 300 200', fr.map((t, j) => { const x0 = 18 + j * 46;
-    return [1, 0, -1].map((k, i) => `<circle cx="${x0 + 20 + k * 11}" cy="${92 + typing(t, i, { period: CUES.typingPeriod, phase: CUES.typingPhase, amp: 14 })}" r="4.6" fill="${LIME}"/>`).join('') +
-      T(x0 + 20, 140, t.toFixed(2), { size: 10, anchor: 'middle' }); }).join('') + `<line x1="14" y1="104" x2="286" y2="104" stroke="${LINE}" stroke-width="1"/>` + T(150, 172, 'PERIOD ' + CUES.typingPeriod + ' S · PHASE ' + CUES.typingPhase + ' S', { size: 9, anchor: 'middle', ls: 1.5 })));
-  // dots-wipe: three lime dots, staggered right→left, scale on ease-in to cover; cut hidden at full cover; B revealed as they exit left
-  function wipeFrame(p) { // p 0..1
-    const w = 54, h = 96;
-    const A = `<rect width="${w}" height="${h}" fill="${INK}"/><text x="${w / 2}" y="${h / 2 + 5}" font-family="Alexandria" font-weight="800" font-size="13" fill="${PAPER}" text-anchor="middle" direction="rtl">قبل</text>`;
+  const loader = tile(svg('0 0 300 190', fr.map((t, j) => { const x0 = 18 + j * 46;
+    return [1, 0, -1].map((k, i) => `<circle cx="${x0 + 20 + k * 11}" cy="${88 + typing(t, i, { period: CUES.typingPeriod, phase: CUES.typingPhase, amp: 14 })}" r="4.6" fill="${LIME}"/>`).join('') +
+      T(x0 + 20, 132, t.toFixed(2), { size: 10, anchor: 'middle' }); }).join('') + `<line x1="14" y1="100" x2="286" y2="100" stroke="${LINE}" stroke-width="1"/>` + T(150, 164, 'PERIOD ' + CUES.typingPeriod + ' S · PHASE ' + CUES.typingPhase + ' S', { size: 9, anchor: 'middle', ls: 1.5 })));
+  // dots-wipe: three dots grow right→left (ease-in, staggered) until they cover; the cut hides under lime; they exit left and reveal B
+  function wipeFrame(p, n) {
+    const w = 54, h = 96, A = `<rect width="${w}" height="${h}" fill="${INK}"/><text x="${w / 2}" y="${h / 2 + 5}" font-family="Alexandria" font-weight="800" font-size="13" fill="${PAPER}" text-anchor="middle" direction="rtl">قبل</text>`;
     const B = `<rect width="${w}" height="${h}" fill="${PAPER}"/><text x="${w / 2}" y="${h / 2 + 5}" font-family="Alexandria" font-weight="800" font-size="13" fill="${INK}" text-anchor="middle" direction="rtl">بعد</text>`;
-    let s = p < 0.5 ? A : B;
-    [0, 1, 2].forEach(i => { // i = 0 rightmost
-      const inK = E.inCubic(clamp((p - i * 0.07) / 0.36)), outK = E.inCubic(clamp((p - 0.5 - i * 0.05) / 0.4));
-      const r = lerp(3, 70, inK) * (1 - outK) + (outK > 0 ? 0 : 0);
-      const cx = w / 2 + (1 - i) * 11 - outK * 90, cy = h / 2;
-      if (p > 0.02 && r > 0.1) s += `<circle cx="${cx}" cy="${cy}" r="${r}" fill="${LIME}"/>`;
-    });
-    return `<svg ${NS} viewBox="0 0 ${w} ${h}" style="display:block;width:${w * 0.82}px;height:${h * 0.82}px;direction:ltr"><clipPath id="wf${Math.round(p * 100)}"><rect width="${w}" height="${h}"/></clipPath><g clip-path="url(#wf${Math.round(p * 100)})">${s}</g></svg>`;
+    let s = p < 0.5 ? A : B; const out = E.inQuad(clamp((p - 0.5) / 0.5));
+    if (p > 0.02 && p < 0.999) [0, 1, 2].forEach(i => { // i = 0 is the rightmost dot
+      const k = E.inCubic(clamp((p - 0.06 - i * 0.06) / 0.34)), rr = p < 0.5 ? lerp(4, 74, k) : 74;
+      s += `<circle cx="${w / 2 + (1 - i) * 11 - out * 150}" cy="${h / 2}" r="${rr}" fill="${LIME}"/>`; });
+    return `<div style="text-align:center"><svg ${NS} viewBox="0 0 ${w} ${h}" style="display:block;width:${w}px;height:${h}px;direction:ltr"><clipPath id="wf${n}"><rect width="${w}" height="${h}"/></clipPath><g clip-path="url(#wf${n})">${s}</g></svg>
+      <div class="k" style="font-size:7.5px;color:${SMOKE};margin-top:5px">${p.toFixed(2)}</div></div>`;
   }
-  const wipe = tile(`<div style="display:flex;gap:4px;padding:30px 10px 0;justify-content:center;direction:ltr">${[0, 0.18, 0.34, 0.5, 0.72, 1].map(p => wipeFrame(p)).join('')}</div>
-    <div class="k" style="font-size:8px;color:${SMOKE};text-align:center;margin-top:12px">A → DOTS SCALE R→L → FULL COVER (CUT) → EXIT LEFT → B</div>
-    <div class="k" style="font-size:8px;color:${SMOKE};text-align:center;margin-top:4px">10–14 F · ONCE PER PIECE</div>`);
-  const sw = 3 * 0.05 * 112;
-  const wm = tile(`<div style="position:absolute;inset:0;display:flex;justify-content:center;padding-top:10px"><div style="position:relative;width:101px;height:180px;overflow:hidden">
-      <img src="/03-templates/assets/layl-bts-wire.png" style="width:101px;height:180px;display:block;object-fit:cover">
+  const ps = [0, 0.2, 0.32, 0.46, 0.84, 0.92, 1];
+  const wipe = tile(`<div style="display:flex;gap:10px;padding:22px 16px 0;justify-content:center;direction:ltr">${ps.map((p, n) => wipeFrame(p, n)).join('')}</div>
+    <div class="k" style="font-size:8px;color:${SMOKE};text-align:center;margin-top:12px">A → DOTS GROW R→L (EASE-IN) → FULL COVER = CUT → EXIT LEFT → B · 10–14 F · ONCE PER PIECE</div>`);
+  const wm = tile(`<div style="position:absolute;inset:0;display:flex;justify-content:center;padding-top:8px"><div style="position:relative;width:98px;height:174px;overflow:hidden">
+      <img src="/03-templates/assets/layl-bts-wire.png" style="width:98px;height:174px;display:block;object-fit:cover">
       <div style="position:absolute;left:8px;bottom:9px;width:18px" class="fig">${L.symbolSVG({ pad: 0 })}</div></div></div>`);
-  put('v-dots', [
-    `<div>${head('تعداد وتوقيع', 'Bullets & sign-off')}${bullets}<p class="sm" style="margin-top:8px">نقطة وحدة = تعداد. ثلاث نقاط = التوقيع، مرة وحدة بآخر الكلام.</p></div>`,
-    `<div>${head('تحميل / يكتب', 'Loader · typing')}${loader}<p class="sm" style="margin-top:8px">نطّة لكل نقطة من اليمين لليسار. نفس توقيت التوقيع المتحرّك.</p></div>`,
-    `<div>${head('مسحة النقاط', 'Dots-wipe transition')}${wipe}<p class="sm" style="margin-top:8px">النقاط تكبر لين تغطي، والقطع مخفي تحت الليموني. مرة وحدة بالقطعة.</p></div>`,
-    `<div>${head('علامة مائية', 'Watermark')}${wm}<p class="sm" style="margin-top:8px">بصور الكواليس حقتنا بس: صغيرة، تحت يسار. أبداً على شغل العميل.</p></div>`,
-  ].join(''));
-  // do / don't
-  const dd = (ok, inner, ar) => `<div class="tile" style="background:${CHAR};height:70px;display:flex;align-items:center;gap:14px;padding:0 16px"><span class="${ok ? 'ok' : 'no'}"></span>
-     <div style="width:84px">${svg('0 0 120 50', inner)}</div><span class="sm">${ar}</span></div>`;
-  const row3 = (rs, gap, col = LIME, dy = [0, 0, 0]) => rs.map((r, i) => `<circle cx="${92 - i * gap}" cy="${25 + dy[i]}" r="${r}" fill="${Array.isArray(col) ? col[i] : col}"/>`).join('');
-  put('v-dots-dd', [
-    dd(1, row3([10, 10, 10], 29), 'ثلاث نقاط متساوية بصف'),
-    dd(0, [0, 1, 2, 3].map(i => `<circle cx="${104 - i * 27}" cy="25" r="10" fill="${LIME}"/>`).join(''), 'عدد ثاني'),
-    dd(0, `<circle cx="60" cy="12" r="10" fill="${LIME}"/><circle cx="46" cy="37" r="10" fill="${LIME}"/><circle cx="74" cy="37" r="10" fill="${LIME}"/>`, 'ترتيب ثاني (مثلث)'),
-    dd(0, row3([13, 8, 5], 26, [LIME, PAPER, SMOKE]), 'أحجام أو ألوان مختلفة'),
-  ].join(''));
+  put('v-dots', `<div style="display:grid;grid-template-columns:1fr 1fr 2fr;gap:14px">
+    <div>${head('تعداد وتوقيع', 'Bullets & sign-off')}${bullets}<p class="sm" style="margin-top:8px">نقطة وحدة = تعداد. ثلاث نقاط = التوقيع، مرة وحدة بآخر الكلام.</p></div>
+    <div>${head('تحميل / يكتب', 'Loader · typing')}${loader}<p class="sm" style="margin-top:8px">نطّة لكل نقطة من اليمين لليسار، بنفس توقيت التوقيع المتحرّك.</p></div>
+    <div>${head('مسحة النقاط', 'Dots-wipe transition · computed frames')}${wipe}<p class="sm" style="margin-top:8px">النقاط تكبر لين تغطي الإطار، والقطع مخفي تحت الليموني، وتطلع يسار وتكشف المشهد الجديد. مرة وحدة بالقطعة.</p></div></div>`);
+  // watermark + do / don't
+  const dd = (ok, inner, ar) => `<div class="tile" style="background:${CHAR};height:84px;display:flex;align-items:center;gap:14px;padding:0 16px"><span class="${ok ? 'ok' : 'no'}"></span>
+     <div style="width:84px;flex:0 0 84px">${svg('0 0 120 50', inner)}</div><span class="sm">${ar}</span></div>`;
+  const row3 = (rs, gap, col = LIME) => rs.map((r_, i) => `<circle cx="${92 - i * gap}" cy="25" r="${r_}" fill="${Array.isArray(col) ? col[i] : col}"/>`).join('');
+  put('v-dots-dd', `<div style="display:grid;grid-template-columns:1fr 3fr;gap:14px">
+    <div>${head('علامة مائية', 'Watermark')}${wm}<p class="sm" style="margin-top:8px">بصور الكواليس حقتنا بس: صغيرة، تحت يسار. أبداً على شغل العميل.</p></div>
+    <div>${head('النقاط دايماً ثلاث، متساوية، بصف', 'Always three, equal, in a row')}<div style="display:grid;grid-template-columns:1fr 1fr;gap:10px">${[
+      dd(1, row3([10, 10, 10], 29), 'ثلاث نقاط متساوية بصف'),
+      dd(0, [0, 1, 2, 3].map(i => `<circle cx="${104 - i * 27}" cy="25" r="10" fill="${LIME}"/>`).join(''), 'عدد ثاني'),
+      dd(0, `<circle cx="60" cy="12" r="10" fill="${LIME}"/><circle cx="46" cy="37" r="10" fill="${LIME}"/><circle cx="74" cy="37" r="10" fill="${LIME}"/>`, 'ترتيب ثاني (مثلث)'),
+      dd(0, row3([13, 8, 5], 26, [LIME, PAPER, SMOKE]), 'أحجام أو ألوان مختلفة'),
+    ].join('')}</div></div></div>`);
 })();
 (function devices2() {
-  const col = (ar, en, vis, rules) => `<div style="display:flex;flex-direction:column"><h2 style="font-size:20px">${ar}</h2><p class="en" style="margin-bottom:12px">${en}</p>${vis}<div style="margin-top:12px">${rules}</div></div>`;
+  const col = (ar, en, vis, rules, bad) => `<div style="display:flex;flex-direction:column"><h2 style="font-size:20px">${ar}</h2><p class="en" style="margin-bottom:12px">${en}</p>${vis}<div style="margin-top:10px">${rules}</div><div style="margin-top:auto">${bad}</div></div>`;
   const rule = (ok, ar) => `<div class="cap" style="margin-top:5px"><span class="${ok ? 'ok' : 'no'}"></span><span class="sm">${ar}</span></div>`;
-  // chat bubble — the sting's bubble (ink, lime dots) + a dramatised line
-  const bub = (txt, w) => `<div style="display:inline-block;background:${INK};color:${PAPER};border-radius:22px;padding:9px 16px 10px;font-size:13px;font-weight:600;max-width:${w}px">${txt}</div>`;
-  const chat = `<div class="tile" style="height:230px;background:${PAPER};box-shadow:inset 0 0 0 1px ${RULE_P};padding:18px">
-      <div style="width:150px" class="fig">${svg('620 70 330 170', `<path d="${bubblePath(800, 150, 300, 150)}" fill="${INK}"/>` + [1, 0, -1].map((k, i) => `<circle cx="${800 + k * 82}" cy="${150 + typing(0.3, i, { amp: 14 })}" r="26" fill="${LIME}"/>`).join(''))}</div>
-      <div style="margin-top:14px">${bub('منو مسوي هالإعلان؟', 220)}</div>
-      <div style="margin-top:12px;display:flex;align-items:center;gap:8px"><span class="no"></span><div style="opacity:.55">${bub('+500 عميل راضي!', 220)}</div></div></div>`;
-  // slates
-  const slate = `<div class="tile" style="height:230px;background:${INK};color:${PAPER};padding:24px 22px;display:flex;flex-direction:column;justify-content:space-between">
-      <div><div class="lbl" style="font-size:10px;color:${PAPER};letter-spacing:.24em">CONCEPT AD — 01 / PERFUME</div><div style="font-size:12px;margin-top:6px">إعلان تجريبي — علامة خيالية</div></div>
+  const badTile = (inner, ar) => `<div class="tile" style="height:112px;background:${PAPER};box-shadow:inset 0 0 0 1px ${RULE_P};display:flex;align-items:center;gap:14px;padding:0 14px"><span class="no"></span>${inner}<span class="sm" style="flex:1">${ar}</span></div>`;
+  const bub = (txt, w, extra = '') => `<div style="display:inline-block;background:${INK};color:${PAPER};border-radius:22px;padding:9px 16px 10px;font-size:13px;font-weight:600;max-width:${w}px;${extra}">${txt}</div>`;
+  const chat = `<div class="tile" style="height:300px;background:${PAPER};box-shadow:inset 0 0 0 1px ${RULE_P};padding:22px 20px">
+      <div style="width:170px" class="fig">${svg('630 66 340 192', `<path d="${bubblePath(800, 150, 300, 150)}" fill="${INK}"/>` + [1, 0, -1].map((k, i) => `<circle cx="${800 + k * 82}" cy="${150 + typing(0.3, i, { amp: 14 })}" r="26" fill="${LIME}"/>`).join(''))}</div>
+      <div style="margin-top:22px">${bub('منو مسوي هالإعلان؟', 230)}</div></div>`;
+  const slate = `<div class="tile" style="height:300px;background:${INK};color:${PAPER};padding:26px 22px;display:flex;flex-direction:column;justify-content:space-between">
+      <div><div class="lbl" style="font-size:10px;color:${PAPER};letter-spacing:.24em">CONCEPT AD — 01 / PERFUME</div><div style="font-size:12.5px;margin-top:7px">إعلان تجريبي — علامة خيالية</div></div>
       <div class="lbl" style="font-size:10px;color:${SMOKE};letter-spacing:.24em">TASH / 2026</div>
       <div class="lbl" style="font-size:10px;color:${SMOKE};letter-spacing:.24em">SC 03 · TK 1</div></div>`;
-  // frame corners on our own BTS still
-  const cn = (x, y, sx, sy) => `<path d="M${x} ${y + sy * 54} V${y} H${x + sx * 54}" fill="none" stroke="${PAPER}" stroke-opacity=".8" stroke-width="4"/>`;
-  const corners = `<div class="tile" style="height:230px;background:${INK};display:flex;justify-content:center;align-items:center">
-      <div style="position:relative;width:129px;height:230px"><img src="/03-templates/assets/layl-bts-clay.png" style="width:129px;height:230px;object-fit:cover;display:block">
-      <div style="position:absolute;inset:0" class="fill">${svg('0 0 1080 1920', cn(150, 420, 1, 1) + cn(930, 420, -1, 1) + cn(150, 1500, 1, -1) + cn(930, 1500, -1, -1) + T(150, 1600, 'SC 03 · TK 1', { size: 40, fill: PAPER, ls: 9, op: 0.8 }), 'preserveAspectRatio="xMidYMid slice"')}</div></div></div>`;
+  const cn = (x, y, sx, sy, c = PAPER, w = 4, L_ = 54) => `<path d="M${x} ${y + sy * L_} V${y} H${x + sx * L_}" fill="none" stroke="${c}" stroke-opacity=".85" stroke-width="${w}"/>`;
+  const corners = `<div class="tile" style="height:300px;background:${INK};display:flex;justify-content:center;align-items:center">
+      <div style="position:relative;width:169px;height:300px"><img src="/03-templates/assets/layl-bts-clay.png" style="width:169px;height:300px;object-fit:cover;display:block">
+      <div style="position:absolute;inset:0" class="fill">${svg('0 0 1080 1920', cn(170, 430, 1, 1) + cn(910, 430, -1, 1) + cn(170, 1490, 1, -1) + cn(910, 1490, -1, -1), 'preserveAspectRatio="xMidYMid slice"')}</div></div></div>`;
+  // ✕ minis, drawn
+  const mini = inner => `<div style="width:52px;flex:0 0 52px">${svg('0 0 108 192', `<rect width="108" height="192" fill="${INK}"/>` + inner)}</div>`;
+  const hud = mini(`<g font-family="JetBrains Mono" font-size="7" fill="${PAPER}" letter-spacing="1"><text x="6" y="12">SC 03</text><text x="102" y="12" text-anchor="end">TK 1</text><text x="6" y="186">00:00:03:12</text><text x="102" y="186" text-anchor="end">REC</text><text x="54" y="100" text-anchor="middle">CONCEPT AD</text></g>`);
+  const clutter = mini(`${cn(14, 30, 1, 1, PAPER, 2, 14)}${cn(94, 30, -1, 1, PAPER, 2, 14)}${cn(14, 162, 1, -1, PAPER, 2, 14)}${cn(94, 162, -1, -1, PAPER, 2, 14)}<g stroke="${LINE}">${[36, 54, 72].map(x => `<line x1="${x}" y1="0" x2="${x}" y2="192"/>`).join('')}</g><circle cx="20" cy="178" r="3" fill="${LIME}"/><circle cx="29" cy="178" r="3" fill="${LIME}"/><circle cx="38" cy="178" r="3" fill="${LIME}"/><text x="54" y="16" font-family="JetBrains Mono" font-size="7" fill="${PAPER}" text-anchor="middle">TASH / 2026</text>`);
   put('v-devices2', [
     col('فقاعة المحادثة', 'Device 2 · the chat bubble', chat,
-      rule(1, 'فقاعة «يكتب…» نفس شكل التوقيع، أو سطر محادثة مُمثَّل.') + rule(1, 'واجهة محادثة عامة: بدون أسماء، بدون أرقام، بدون ادعاءات.') + rule(0, 'لا أرقام مؤلفة ولا آراء عملاء مخترعة.') + rule(0, 'لا شعارات أو واجهات منصات حقيقية.')),
+      rule(1, 'فقاعة «يكتب…» نفس شكل التوقيع، أو سطر محادثة مُمثَّل.') + rule(1, 'واجهة محادثة عامة: بدون أسماء، بدون أرقام، بدون ادعاءات.') + rule(0, 'لا شعارات أو واجهات منصات حقيقية.'),
+      badTile(bub('+500 عميل راضي!', 160, 'font-size:12px;opacity:.9'), 'أرقام مؤلفة أو آراء عملاء مخترعة')),
     col('اللوحة (سليت)', 'Device 3 · the slate', slate,
-      rule(1, '<bdi>JetBrains Mono 600</bdi>، حروف كبيرة، تباعد 0.24em، و22–26 px على مقاس 1080.') + rule(1, 'لوحة <bdi>CONCEPT AD</bdi> مع «إعلان تجريبي — علامة خيالية» إلزامية بالإعلانات التجريبية: بآخر ثواني الفيديو وعلى الغلاف.') + rule(0, 'لا عربي بخط المونو.') + rule(0, 'لا توزّع لوحات وتوقيتات بكل زاوية: يصير شكل لعبة.')),
+      rule(1, '<bdi dir="ltr">JetBrains Mono 600</bdi>، حروف كبيرة، تباعد <bdi dir="ltr">0.24em</bdi>، وحجم <bdi dir="ltr">22–26 px</bdi> على مقاس <bdi dir="ltr">1080</bdi>.') + rule(1, 'لوحة <bdi dir="ltr">CONCEPT AD</bdi> مع «إعلان تجريبي — علامة خيالية» إلزامية بالإعلانات التجريبية: بآخر ثواني الفيديو وعلى الغلاف.') + rule(0, 'لا عربي بخط المونو.'),
+      badTile(hud, 'لوحات وتوقيتات بكل زاوية: يصير شكل لعبة')),
     col('زوايا الإطار', 'Device 4 · frame corners', corners,
-      rule(1, 'للكواليس وشغل «قيد الإنتاج»: سماكة 4 px على 1080، والضلع 2D تقريباً، ورقي 80%.') + rule(1, 'تحضن الموضوع، ما تلمسه.') + rule(0, 'مو زينة على كل بوست.') + rule(0, 'زوايا + لوحة + نقاط بنفس الإطار = زحمة.')),
+      rule(1, 'للكواليس وشغل «قيد الإنتاج»: سماكة <bdi dir="ltr">4 px</bdi> على <bdi dir="ltr">1080</bdi>، والضلع حوالي <bdi dir="ltr">2D</bdi>، ورقي <bdi dir="ltr">85%</bdi>.') + rule(1, 'تحضن الموضوع، ما تلمسه.') + rule(0, 'مو زينة على كل بوست.'),
+      badTile(clutter, 'زوايا + شبكة + لوحة + نقاط بنفس الإطار = زحمة')),
   ].join(''));
 })();
 
@@ -532,13 +548,13 @@ put('v-families', [
   const over = `<defs>${hatch}</defs>${cols}
     <rect x="0" y="0" width="${crop}" height="${H}" fill="url(#hatch-p)" opacity=".85"/><rect x="${W - crop}" y="0" width="${crop}" height="${H}" fill="url(#hatch-p)" opacity=".85"/>
     <rect x="${m}" y="${m}" width="${W - 2 * m}" height="${H - 2 * m}" fill="none" stroke="${PAPER}" stroke-width="3" stroke-dasharray="14 10"/>
-    ${T(crop + 14, 60, '3:4 GRID CROP · ' + crop.toFixed(1) + ' PX EACH SIDE', { size: 24, fill: LIME, ls: 3 })}
-    ${T(m + 8, H - m - 14, 'MARGIN 96', { size: 24, fill: PAPER, ls: 3 })}`;
+    ${T(crop + 14, 60, '3:4 GRID CROP · ≈' + Math.round(crop) + ' PX EACH SIDE', { size: 24, fill: LIME, ls: 3 })}
+    ${T(W - m - 10, m + 34, 'MARGIN 96', { size: 24, fill: PAPER, ls: 3, anchor: 'end' })}`;
   const tiles = ['post-statement-01', 'post-statement-02', 'post-cta-01'];
   put('v-post', `<div style="display:flex;gap:28px;align-items:flex-start">
     <div><div style="position:relative;width:${W * sc}px;height:${H * sc}px"><img src="/03-templates/examples/post-statement-01.png" style="width:100%;height:100%;display:block">
       <div class="fill" style="position:absolute;inset:0">${svg(`0 0 ${W} ${H}`, over)}</div></div>
-      <div class="cap"><span class="ok"></span><div><div class="w6">قالب «جملة» من 03-templates، وفوقه الشبكة والهوامش والقصّة</div><div class="en">03-templates/examples/post-statement-01.png · 1080×1350</div></div></div></div>
+      <div class="cap"><span class="ok"></span><div><div class="w6">قالب «جملة» من <bdi dir="ltr">03-templates</bdi>، وفوقه الشبكة والهوامش والقصّة</div><div class="en">03-templates/examples/post-statement-01.png · 1080×1350</div></div></div></div>
     <div style="flex:1">
       <h3>شلون يبين بشبكة البروفايل</h3><p class="en" style="margin-bottom:10px">Profile grid · centred 3:4 crop</p>
       <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:2px;background:${PAPER};direction:ltr">${tiles.map(t => `<div style="aspect-ratio:3/4;overflow:hidden"><img src="/03-templates/examples/${t}.png" style="width:100%;height:100%;object-fit:cover;display:block"></div>`).join('')}</div>
@@ -581,25 +597,27 @@ put('v-families', [
 put('v-ad-principles', [
   ['الضوء', 'Light', 'ضوء رئيسي واحد، وضوء حافة يفصل الشكل، وظل تلامس تحت المنتج. للزجاج: خلفية داكنة وشريطين ضوء على الجوانب.'],
   ['الخامات', 'Materials', 'زجاج بانكسار وسماكة، معدن مصقول، لمعة الأكل، بخار مضاء من ورا. اللقطة القريبة تفضح البساطة، فأضف تفاصيل السطح.'],
-  ['الحركة', 'Motion', 'الكاميرا دايماً تتحرك بهدوء: دفع بطيء، قوس 20–40°، وسحب تركيز مرة وحدة. حركة كبيرة وحدة بالقطعة.'],
-  ['التلوين', 'Grade', 'تلوين واحد للقطعة، أسود مرفوع شوي، حبيبات 0.06 بالكثير، وتعتيم أطراف خفيف. لا أسود صافي ولا أبيض صافي.'],
+  ['الحركة', 'Motion', 'الكاميرا دايماً تتحرك بهدوء: دفع بطيء، قوس <bdi dir="ltr">20–40°</bdi>، وسحب تركيز مرة وحدة. حركة كبيرة وحدة بالقطعة.'],
+  ['التلوين', 'Grade', 'تلوين واحد للقطعة، أسود مرفوع شوي، حبيبات <bdi dir="ltr">0.06</bdi> بالكثير، وتعتيم أطراف خفيف. لا أسود صافي ولا أبيض صافي.'],
 ].map(([ar, en, t]) => `<div class="item"><h3 style="display:flex;justify-content:space-between"><span>${ar}</span><span class="en s">${en}</span></h3><p>${t}</p></div>`).join(''));
 put('v-ad-frames', [
   ['ad-layl-hero', 'CONCEPT AD — 01 / PERFUME', '«ليل»: زجاج على أرضية داكنة، ضوء حافة، وعنبر من جوّا.', 'Dark-field glass, rim light, amber inside'],
   ['ad-stakk-hero', 'CONCEPT AD — 02 / BURGER', '«ستاك»: ضوء دافي، لمعة الجبن، وظل تلامس.', 'Warm key, glisten, contact shadow'],
 ].map(([f, slate, ar, en]) => `<div><img src="assets/${f}.jpg" style="width:100%;aspect-ratio:9/16;object-fit:cover;display:block">
-  <div class="lbl" style="margin-top:8px;text-align:right">${slate}</div><p class="sm" style="margin:3px 0 0">${ar}</p><p class="en s">${en} · علامة خيالية</p></div>`).join(''));
+  <div class="lbl" style="margin-top:8px;text-align:right">${slate}</div><p class="sm" style="margin:3px 0 0">${ar}</p><p class="sm mute" style="margin:0">إعلان تجريبي — علامة خيالية</p><p class="en s">${en} · fictional brand</p></div>`).join(''));
 (function client() {
   const distinct = (pal, n) => { const out = []; for (const p of pal) { if (out.every(q => { const [a, b] = [lab(p.hex), lab(q.hex)]; return Math.hypot(a[0] - b[0], a[1] - b[1], a[2] - b[2]) > 12; })) out.push(p); if (out.length === n) break; } return out; };
-  const chips = list => `<div style="display:flex;gap:4px;margin-top:6px">${list.map(h => `<div style="flex:1"><div style="height:16px;background:${h};box-shadow:inset 0 0 0 1px ${RULE_P}"></div><div class="k" style="font-size:6.5px;color:${META_P};margin-top:2px;text-align:center">${h}</div></div>`).join('')}</div>`;
+  const H = 206, Wd = Math.round(H * 9 / 16);
+  const chips = list => `<div style="display:flex;gap:3px;margin-top:7px">${list.map(h => `<div style="flex:1;min-width:0"><div style="height:14px;background:${h};box-shadow:inset 0 0 0 1px ${RULE_P}"></div><div class="k" style="font-size:6.5px;color:${META_P};margin-top:2px;text-align:center">${h}</div></div>`).join('')}</div>`;
+  const im = (key, f, l) => `<div style="width:${Wd}px"><img src="assets/ad-${key}-${f}.jpg" style="width:${Wd}px;height:${H}px;object-fit:cover;display:block"><div class="k" style="font-size:7px;color:${META_P};margin-top:3px;text-align:right">${l}</div></div>`;
   const row = (key, name, ar) => { const pal = distinct(MEDIA.palettes[key], 4).map(p => p.hex);
-    const im = (f, lab_) => `<div><img src="assets/ad-${key}-${f}.jpg" style="width:100%;aspect-ratio:9/16;object-fit:cover;display:block"><div class="k" style="font-size:7px;color:${META_P};margin-top:3px">${lab_}</div></div>`;
-    return `<div style="margin-bottom:16px"><div style="display:flex;justify-content:space-between;align-items:baseline;margin-bottom:6px"><h3>${ar}</h3><span class="lbl">${name}</span></div>
-      <div style="display:grid;grid-template-columns:2fr 1fr;gap:14px;direction:ltr">
-        <div style="border-top:2px solid ${INK};padding-top:6px"><div class="sm w6" style="direction:rtl;text-align:right;margin-bottom:6px">هوية العميل <span class="en s" style="display:inline">Client palette · measured</span></div>
-          <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px">${im('hero', 'HERO')}${im('card', 'CLIENT END CARD')}</div>${chips(pal)}</div>
-        <div style="border-top:2px solid ${INK};padding-top:6px"><div class="sm w6" style="direction:rtl;text-align:right;margin-bottom:6px">توقيع طشّ <span class="en s" style="display:inline">TASH tail</span></div>
-          ${im('tail', 'LAST FRAME')}${chips([INK, PAPER, LIME])}</div></div></div>`; };
+    return `<div style="margin-bottom:16px"><div style="display:flex;justify-content:space-between;align-items:baseline;border-bottom:1.5px solid ${INK};padding-bottom:5px;margin-bottom:9px"><h3 style="font-size:13px">${ar}</h3><span class="lbl">${name}</span></div>
+      <div style="display:flex;gap:20px;align-items:flex-start">
+        <div style="width:${2 * Wd + 8}px"><div class="sm w6" style="margin-bottom:5px">هوية العميل <span class="en s" style="display:inline;margin-right:4px">Client palette · measured</span></div>
+          <div style="display:flex;gap:8px">${im(key, 'hero', 'HERO')}${im(key, 'card', 'CLIENT END CARD')}</div>${chips(pal)}</div>
+        <div style="align-self:center;color:${META_P};font-size:22px;font-family:'IBM Plex Sans Arabic'">←</div>
+        <div style="width:${Wd}px"><div class="sm w6" style="margin-bottom:5px">توقيع طشّ</div>${im(key, 'tail', 'LAST FRAME')}${chips([INK, PAPER, LIME])}</div>
+      </div></div>`; };
   put('v-client', row('layl', 'LAYL · PERFUME · FICTIONAL', '«ليل» — عطر') + row('stakk', 'STAKK · BURGER · FICTIONAL', '«ستاك» — برجر'));
 })();
 
@@ -610,18 +628,23 @@ put('v-ad-frames', [
     `<div><img src="assets/sting/sting-${t.toFixed(2)}.png" style="width:100%;aspect-ratio:1;display:block;border:1px solid ${LINE}">
       <div style="display:flex;justify-content:space-between;align-items:baseline;margin-top:4px"><span class="k" style="font-size:8px;color:${PAPER}">${t.toFixed(2)} s</span><span style="font-size:9.5px;direction:rtl">${ar}</span></div></div>`).join('') + `</div>`);
   // timeline from the cue file (time runs left→right, like an editor)
-  const X = t => 30 + t / CUES.duration * 940, y = 34;
+  const X = t => 30 + t / CUES.duration * 940, y = 64;
   const seg = (a, b, col, lab_) => `<rect x="${X(a)}" y="${y - 7}" width="${X(b) - X(a)}" height="14" rx="3" fill="${col}"/>` + T((X(a) + X(b)) / 2, y + 30, lab_, { size: 10, anchor: 'middle', ls: 1.5 });
-  const mark = (t, lab_, col = PAPER) => `<line x1="${X(t)}" y1="${y - 16}" x2="${X(t)}" y2="${y + 16}" stroke="${col}" stroke-width="2"/>` + T(X(t), y - 22, lab_, { size: 10, anchor: 'middle', fill: col, ls: 1 });
+  const mk = tiers([['SNAP ' + CUES.snap, CUES.snap, LIME], ['SHADDA ' + CUES.shadda, CUES.shadda], ['TAGLINE ' + CUES.tagline, CUES.tagline], ['HANDLE ' + CUES.handle, CUES.handle]]
+    .map(([text, t, col]) => ({ text, t, col: col || PAPER, x: X(t) - 2 })), 7.2, 12);
+  const maxT = Math.max(...mk.map(m => m.tier));
+  mk.push({ text: 'END ' + CUES.duration, t: CUES.duration, col: PAPER, x: X(CUES.duration), tier: maxT });
+  // labels sit above the axis, so the deepest tier goes nearest the axis: a leader then only crosses rows whose labels start to its right
+  const mark = m => { const ly = y - 22 - (maxT - m.tier) * 15; return `<line x1="${X(m.t)}" y1="${ly + 3}" x2="${X(m.t)}" y2="${y + 16}" stroke="${m.col}" stroke-width="2"/>` + T(m.x - (m.t === CUES.duration ? 0 : 0), ly, m.text, { size: 10, anchor: m.t === CUES.duration ? 'end' : 'start', fill: m.col, ls: 1 }); };
   let ticks = ''; for (let t = 0; t <= CUES.duration + 1e-6; t += 0.5) ticks += `<line x1="${X(t)}" y1="${y + 40}" x2="${X(t)}" y2="${y + 46}" stroke="${SMOKE}"/>` + T(X(t), y + 60, t.toFixed(1), { size: 9, anchor: 'middle' });
-  put('v-timeline', svg('0 0 1000 104', `<line x1="${X(0)}" y1="${y}" x2="${X(CUES.duration)}" y2="${y}" stroke="${LINE}" stroke-width="2"/>` +
+  put('v-timeline', svg('0 0 1000 134', `<line x1="${X(0)}" y1="${y}" x2="${X(CUES.duration)}" y2="${y}" stroke="${LINE}" stroke-width="2"/>` +
     seg(CUES.typingStart, CUES.converge, CHAR, 'TYPING') + seg(CUES.converge, CUES.snap, SMOKE, 'CONVERGE') + seg(CUES.pulse, CUES.pulse + 0.62 + 0.3, CHAR, 'PULSE') +
     CUES.ticks.map(t => `<circle cx="${X(t)}" cy="${y}" r="4" fill="${LIME}"/>`).join('') +
-    mark(CUES.snap, 'SNAP ' + CUES.snap, LIME) + mark(CUES.shadda, 'SHADDA ' + CUES.shadda) + mark(CUES.tagline, 'TAGLINE ' + CUES.tagline) + mark(CUES.handle, 'HANDLE ' + CUES.handle) + mark(CUES.duration, 'END ' + CUES.duration) +
+    mk.map(mark).join('') +
     `<rect x="${X(CUES.snap)}" y="${y - 7}" width="${X(CUES.shadda) - X(CUES.snap)}" height="14" rx="3" fill="${LIME}" opacity=".35"/>` + ticks +
     T(X(0), y + 84, 'SECONDS · ENDCARD-CUES.JSON · TIME RUNS LEFT → RIGHT', { size: 9, ls: 1.5 })));
   // easing curves straight from kit.js
-  const plot = (fn, ar, en, frames_, lo = 0, hi = 1) => { const w = 200, h = 110, px = t => 12 + t * (w - 24), py = v => h - 14 - (v - lo) / (hi - lo) * (h - 34);
+  const plot = (fn, ar, en, frames_, lo = 0, hi = 1) => { const w = 200, h = 128, px = t => 12 + t * (w - 24), py = v => h - 14 - (v - lo) / (hi - lo) * (h - 34);
     let d = ''; for (let i = 0; i <= 80; i++) { const t = i / 80; d += (i ? 'L' : 'M') + px(t).toFixed(1) + ' ' + py(fn(t)).toFixed(1); }
     return `<div>${svg(`0 0 ${w} ${h}`, `<line x1="12" y1="${py(0)}" x2="${w - 12}" y2="${py(0)}" stroke="${LINE}"/><line x1="12" y1="${py(1)}" x2="${w - 12}" y2="${py(1)}" stroke="${LINE}" stroke-dasharray="3 4"/><path d="${d}" fill="none" stroke="${LIME}" stroke-width="2.5"/>`)}
       <div style="display:flex;justify-content:space-between;align-items:baseline;margin-top:3px"><span class="w6" style="font-size:10px">${ar}</span><span class="k" style="font-size:7.5px;color:${SMOKE}">${frames_}</span></div><div class="en s">${en}</div></div>`; };
@@ -631,14 +654,14 @@ put('v-ad-frames', [
     plot(x => spring(x, { freq: 1.9, damp: 7 }), 'نطّة وحدة بالقطعة', 'spring 1.9 / 7 · the slam', '+19%', -0.05, 1.25),
     plot(E.inOutSine, 'انتقال لون أو أرضية', 'E.inOutSine · ramps', '9–20 F'),
     `<div><h3>قواعد الحركة</h3><p class="en s" style="margin-bottom:6px">Motion rules</p><ul class="dots lime">
-      <li style="font-size:10px;line-height:1.55">كل فريم دالة من الوقت: لا أنيميشن <bdi>CSS</bdi> ولا عشوائية.</li>
+      <li style="font-size:10px;line-height:1.55">كل فريم دالة من الوقت: لا أنيميشن <bdi dir="ltr">CSS</bdi> ولا عشوائية.</li>
       <li style="font-size:10px;line-height:1.55">العربي يتحرّك كلمة كلمة أو سطر سطر.</li>
       <li style="font-size:10px;line-height:1.55">المسحات من اليمين لليسار، اتجاه الكتابة.</li>
       <li style="font-size:10px;line-height:1.55">الشعار يوصل، ما يكبر من صفر. وآخر فريم = الشعار الثابت.</li></ul></div>`,
   ].join(''));
 })();
 (function sound() {
-  const dur = MEDIA.duration, w = 1000, h = 150, mid = 78, X = t => 20 + t / CUES.duration * 960, amp = 52;
+  const dur = MEDIA.duration, w = 1000, h = 196, mid = 116, X = t => 20 + t / CUES.duration * 960, amp = 62;
   const pk = MEDIA.peaks, max = Math.max(...pk.map(p => Math.max(-p[0], p[1])));
   let bars = ''; pk.forEach((p, i) => { const t = (i + 0.5) / pk.length * dur; if (t > CUES.duration) return; const x = X(t);
     bars += `<line x1="${x.toFixed(1)}" y1="${(mid - p[1] / max * amp).toFixed(1)}" x2="${x.toFixed(1)}" y2="${(mid - p[0] / max * amp).toFixed(1)}" stroke="${INK}" stroke-width="1.6"/>`; });
@@ -650,19 +673,21 @@ put('v-ad-frames', [
     [CUES.shadda + 0.06, 'POP', 'الشدّة', 'pop(500→1300 Hz)', 'الشدّة تنزل'],
     [CUES.pulse + 0.18, 'TICKS', 'نبضة', '2.6 / 2.9 / 3.2 kHz', 'النقاط تنبض'],
   ];
-  const marks = ev.map(([t, k], i) => `<line x1="${X(t)}" y1="12" x2="${X(t)}" y2="${h - 18}" stroke="${k === 'HIT' ? INK : META_P}" stroke-width="${k === 'HIT' ? 2 : 1}" stroke-dasharray="${k === 'HIT' ? '' : '3 4'}"/>` +
-    T(X(t) + 4, 14 + (i % 2) * 12, k, { size: 9, fill: k === 'HIT' ? INK : META_P, ls: 1.2 })).join('');
+  const tv = tiers(ev.map(([t, k]) => ({ t, text: k, x: X(t) })), 6.6, 6);
+  const marks = tv.map(m => { const ly = 12 + m.tier * 13, hit = m.text === 'HIT';
+    return `<line x1="${X(m.t)}" y1="${ly + 3}" x2="${X(m.t)}" y2="${h - 18}" stroke="${hit ? INK : META_P}" stroke-width="${hit ? 2 : 1}" stroke-dasharray="${hit ? '' : '3 4'}"/>` +
+      T(X(m.t) + 4, ly, m.text, { size: 9, fill: hit ? INK : META_P, ls: 1.2, weight: hit ? 700 : 600 }); }).join('');
   let axis = ''; for (let t = 0; t <= CUES.duration + 1e-6; t += 0.5) axis += T(X(t), h - 2, t.toFixed(1), { size: 9, fill: META_P, anchor: 'middle' });
   put('v-wave', svg(`0 0 ${w} ${h}`, `<line x1="20" y1="${mid}" x2="980" y2="${mid}" stroke="${RULE_P}"/>` + bars + marks + axis));
   put('v-sound-events', `<table><thead><tr><th style="width:14%"><span class="ar">الوقت</span>TIME</th><th style="width:18%"><span class="ar">الصوت</span>SOUND</th><th><span class="ar">من الكود</span>SOURCE</th><th style="width:30%"><span class="ar">بالصورة</span>PICTURE</th></tr></thead><tbody>` +
     [[0.02, 'فقاعة', 'pop(300→700 Hz)', 'الفقاعة تطلع'],
-     [CUES.ticks.join(' / '), 'تكّ تكّ تكّ', 'tick() · 2.2 / 2.5 / 2.8 kHz', 'النقاط تكتب'],
+     [CUES.ticks.map(t => t.toFixed(2)).join(' · '), 'تكّ تكّ تكّ', 'tick() · 2.2 / 2.5 / 2.8 kHz', 'النقاط تكتب'],
      [(CUES.snap - 0.42).toFixed(2), 'هوا', 'whoosh(0.5 s) · peak ≈ ' + (CUES.snap - 0.42 + 0.3).toFixed(2) + ' s', 'النقاط تطير'],
      [(CUES.snap - 0.004).toFixed(3), '<b>طشّ!</b>', 'tash_hit(): impact + claps_ensemble + air', 'الكلمة تنضرب'],
      [(CUES.shadda + 0.06).toFixed(2), 'بوب', 'pop(500→1300 Hz)', 'الشدّة تنزل'],
      [`${(CUES.pulse + 0.18).toFixed(2)}–${(CUES.pulse + 0.42).toFixed(2)}`, 'تكّات خفيفة', 'tick() · 2.6 / 2.9 / 3.2 kHz', 'النقاط تنبض']]
       .map(([t, a, s, p]) => `<tr><td class="k" style="font-size:9px">${t}</td><td class="w6">${a}</td><td class="k" style="font-size:8px;color:${META_P}">${s}</td><td>${p}</td></tr>`).join('') + `</tbody></table>
-    <p class="sm" style="margin-top:8px">بالإعلان الكامل: نزّل الموسيقى 10–15 dB قبل الضربة بـ0.2–0.3 ث، أو خلّ الموسيقى تقفل قبل التوقيع. وإذا مقام الأغنية يتعارض مع التكّات، غيّر طبقتها.</p>`);
+    <p class="sm" style="margin-top:10px">بالإعلان الكامل: نزّل الموسيقى <bdi dir="ltr">10–15 dB</bdi> قبل الضربة بـ<bdi dir="ltr">0.2–0.3 s</bdi>، أو خلّ الموسيقى تقفل قبل التوقيع. وإذا مقام الأغنية يتعارض مع التكّات، غيّر طبقتها.</p>`);
   const L1 = MEDIA.loudness;
   const box_ = (v, k, sub) => `<div style="border:1.5px solid ${INK};padding:8px 10px 7px"><div style="font-family:Archivo;font-weight:800;font-stretch:125%;font-size:20px;direction:ltr;text-align:right">${v}</div><div class="lbl" style="text-align:right;color:${INK}">${k}</div><div class="sm mute" style="margin-top:2px">${sub}</div></div>`;
   const ok = (I, TP) => Math.abs(I + 14) <= 1 && TP <= -1;
@@ -670,8 +695,8 @@ put('v-ad-frames', [
     <table style="margin-top:10px"><thead><tr><th><span class="ar">مقاس فعلياً</span>MEASURED · EBU R128</th><th>I</th><th>TP</th><th>LRA</th><th></th></tr></thead><tbody>
       <tr><td class="k" style="font-size:8px">tash-sonic-logo.wav</td><td class="k">${L1.wav.I}</td><td class="k">${L1.wav.TP}</td><td class="k">${L1.wav.LRA}</td><td><span class="${ok(L1.wav.I, L1.wav.TP) ? 'ok' : 'no'}"></span></td></tr>
       <tr><td class="k" style="font-size:8px">tash-logo-sting-9x16.mp4</td><td class="k">${L1.mp4.I}</td><td class="k">${L1.mp4.TP}</td><td class="k">${L1.mp4.LRA}</td><td><span class="${ok(L1.mp4.I, L1.mp4.TP) ? 'ok' : 'no'}"></span></td></tr></tbody></table>
-    <ul class="dots" style="margin-top:10px"><li class="sm">الماستر بين −14 و−15 LUFS، والذروة ≤ −1.5 dBTP؛ الرندر يطبّق <bdi>loudnorm</bdi>.</li>
-      <li class="sm">افحص بـ<bdi class="k">audio-check.sh</bdi>: لا طقطقة، لا ذيل بيس طويل، لا حدّة بين 2 و5 kHz.</li>
+    <ul class="dots" style="margin-top:10px"><li class="sm">الماستر بين <bdi dir="ltr">−15</bdi> و<bdi dir="ltr">−14 LUFS</bdi>، والذروة <bdi dir="ltr">≤ −1.5 dBTP</bdi>. الرندر بعدها يطبّق <bdi dir="ltr">loudnorm</bdi>.</li>
+      <li class="sm">افحص بـ<bdi dir="ltr" class="k">audio-check.sh</bdi>: لا طقطقة، لا ذيل بيس طويل، ولا حدّة بين <bdi dir="ltr">2–5 kHz</bdi>.</li>
       <li class="sm">صوت أصلي بس. لا موسيقى ولا مؤثرات منزّلة.</li></ul>`);
 })();
 
@@ -683,9 +708,14 @@ put('v-voice-rules', [
   ['ولا رقم بدون إثبات', 'No number without proof', 'لا عدد عملاء، ولا مشاهدات، ولا «الأفضل»، ولا ضمانات.'],
   ['التجريبي ينقال إنه تجريبي', 'Concept work says so', '«إعلان تجريبي لعلامة خيالية»، كل مرة، ومن البداية.'],
 ].map(([a, e, t], i) => `<div class="item" style="display:grid;grid-template-columns:20px 1fr;margin-bottom:8px"><span class="num" style="color:${INK};padding-top:2px">${i + 1}</span><div><h3 style="display:flex;justify-content:space-between"><span>${a}</span><span class="en s">${e}</span></h3><p>${t}</p></div></div>`).join(''));
-const wl = rows => rows.map(([w, g]) => `<div style="display:flex;justify-content:space-between;gap:10px;padding:5px 0;border-bottom:1px solid ${RULE_P}"><span class="w6" style="font-size:12px">${w}</span><span class="sm mute" style="text-align:left">${g}</span></div>`).join('');
+const wl = rows => rows.map(([w, g]) => `<div style="display:flex;justify-content:space-between;gap:10px;padding:6px 0;border-bottom:1px solid ${RULE_P}"><span class="w6" style="font-size:13px">${w}</span><span class="sm mute" style="text-align:left">${g}</span></div>`).join('');
 put('v-words-use', wl([['سالفة · يسولفون', 'فعلنا الأساسي'], ['خلّ · خلّهم', '«خلّ إعلانك علينا»'], ['دزّ · الخاص', 'أرسل · الرسائل'], ['شلون · شنو · منو', 'أسئلة كويتية'], ['الحين · توّنا', 'الآن · قبل شوي'], ['وايد · شوي', 'كثير · قليل'], ['مو بس…', '«مو بس فيديو…»'], ['على مهلك', 'بدون عجلة'], ['نسوي', 'نصنع'], ['شغل نظيف', 'متقن بدون مبالغة']]));
 put('v-words-avoid', wl([['نقدم لكم · يسعدنا · يرجى', 'فصحى متخشبة'], ['إبداع · احترافي · مميز', 'مديح فاضي'], ['الأفضل · رقم واحد · مضمون', 'ادعاءات'], ['ترند · فايرال · انتشار', 'وعود ما نملكها'], ['لا تفوّت الفرصة', 'استعجال مزيّف'], ['أسعار منافسة · رمزية', 'ينزّل قيمة الشغل'], ['إعلانات بالذكاء الاصطناعي', 'الأداة مو العنوان'], ['ندير حسابك · متابعين', 'خارج خدماتنا'], ['أبغى · إيش · كتير', 'لهجات ثانية']]));
+put('v-dialect', `<h2>اللهجة بالتفصيل</h2><p class="en" style="margin-bottom:10px">Kuwaiti dialect, in practice</p><div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:16px">` + [
+  ['المخاطَب', 'Address', 'بالمنشورات: مفرد مذكّر عام («عندك مشروع؟»). بالخاص: جمع («حيّاكم»)، ونمشي على طريقة الشخص إذا كتب: «عندچ»، «تبين».'],
+  ['الإيموجي', 'Emoji', 'ثنتين بالكثير بالكابشن، ولا وحدة بنص الفيديو. توقيعنا «•••» مرة وحدة عند الدعوة للطلب.'],
+  ['الذكاء الاصطناعي', 'AI', 'الأدوات مطبخ، مو منيو: نبيع الفكرة والسكربت والإخراج والتشطيب. ما نخفيه إذا أحد سأل، وما نحطه عنوان.'],
+].map(([a, e, t]) => `<div style="border-top:1.5px solid ${INK};padding-top:8px"><h3 style="display:flex;justify-content:space-between;align-items:baseline"><span>${a}</span><span class="en s">${e}</span></h3><p class="sm" style="margin-top:3px">${t}</p></div>`).join('') + `</div>`);
 put('v-examples', [
   ['نقدم لكم أفضل الحلول الإعلانية المتكاملة.', 'نسوي إعلانك من الفكرة لين الملف النهائي.'],
   ['هل تبحث عن إعلان مميز لمشروعك؟', 'مشروعك حلو… بس محد يسولف عنه؟'],
@@ -693,37 +723,38 @@ put('v-examples', [
   ['نحن الأفضل في الكويت.', 'خلّ الشغل يسولف عنّا.'],
   ['احجز الآن ولا تفوّت الفرصة!', 'متى ما جهزت، الخاص مفتوح.'],
   ['إعلان ترويجي لمنتج عطري فاخر.', 'عطر يبقى… بعد ما تمشي.'],
-].map(([b, a]) => `<div style="display:grid;grid-template-columns:5fr 40px 6fr;align-items:center;padding:12px 0;border-bottom:1px solid ${LINE}">
-   <div style="display:flex;gap:10px;align-items:center;color:${SMOKE};font-size:13px"><span class="no"></span>${b}</div>
+].map(([b, a]) => `<div style="display:grid;grid-template-columns:4fr 40px 7fr;align-items:center;padding:19px 0;border-bottom:1px solid ${LINE}">
+   <div style="display:flex;gap:10px;align-items:center;color:${SMOKE};font-size:14.5px"><span class="no"></span>${b}</div>
    <div style="color:${LIME};font-size:18px;text-align:center;font-family:'IBM Plex Sans Arabic'">←</div>
-   <div style="display:flex;gap:10px;align-items:center"><span class="ok"></span><span style="font-family:Alexandria;font-weight:800;font-size:22px;line-height:1.4">${a}</span></div></div>`).join('') +
-  `<p class="sm mute" style="margin-top:10px">الأمثلة من <bdi class="k">06-copy/voice-and-tone.md</bdi>. لاحظ إن «نحن الأفضل» ما انصلحت، انشالت.</p>`);
+   <div style="display:flex;gap:10px;align-items:center"><span class="ok"></span><span style="font-family:Alexandria;font-weight:800;font-size:25px;line-height:1.4;text-wrap:balance">${a}</span></div></div>`).join('') +
+  `<p class="sm mute" style="margin-top:10px">الأمثلة من <bdi dir="ltr" class="k">06-copy/voice-and-tone.md</bdi>. لاحظ إن «نحن الأفضل» ما انصلحت، انشالت.</p>`);
 
 // ------------------------------------------------------------------ 11 files & licences
 put('v-files', `<table><thead><tr><th style="width:36%"><span class="ar">المسار</span>PATH</th><th><span class="ar">شنو فيه</span>CONTENTS</th></tr></thead><tbody>` + [
-  ['01-brand-guide/', 'هالدليل: <bdi>brand-guide.html</bdi>، <bdi>TASH-Brand-Guide.pdf</bdi>، صور الصفحات <bdi>pages/</bdi>، وسكربتات البناء <bdi>src/</bdi>'],
-  ['02-logo/svg/', 'الشعار 7 نسخ، الأفقي 3، المكدّس 3، النقاط 2 (<bdi>SVG</bdi>)'],
-  ['02-logo/png/', 'نفس النسخ <bdi>PNG</bdi> بعرض 1200–3000 px'],
-  ['02-logo/avatar/', 'الصورة الشخصية ليموني وحبر: <bdi>SVG</bdi> و<bdi>1080 / 320 px</bdi>'],
-  ['02-logo/motion/', 'التوقيع المتحرّك 9:16، 9:16 ليموني، 1:1، و<bdi>tash-sonic-logo.wav</bdi>'],
+  ['01-brand-guide/', 'هالدليل: <bdi dir="ltr">brand-guide.html</bdi>، <bdi dir="ltr">TASH-Brand-Guide.pdf</bdi>، صور الصفحات <bdi dir="ltr">pages/</bdi>، وسكربتات البناء <bdi dir="ltr">src/</bdi>'],
+  ['02-logo/svg/', 'الشعار 7 نسخ، الأفقي 3، المكدّس 3، النقاط 2 (<bdi dir="ltr">SVG</bdi>)'],
+  ['02-logo/png/', 'نفس النسخ <bdi dir="ltr">PNG</bdi> بعرض <bdi dir="ltr">1200–3000 px</bdi>'],
+  ['02-logo/avatar/', 'الصورة الشخصية ليموني وحبر: <bdi dir="ltr">SVG</bdi> و<bdi dir="ltr">1080 / 320 px</bdi>'],
+  ['02-logo/motion/', 'التوقيع المتحرّك 9:16، 9:16 ليموني، 1:1، و<bdi dir="ltr">tash-sonic-logo.wav</bdi>'],
   ['03-templates/', 'قوالب البوست، الكاروسيل، غلاف الريل، الستوري، الهايلايت، وبوستر العميل'],
+  ['04-launch-ad/', 'إعلان الإطلاق. لقطات الناس فيه مولّدة بـ<bdi dir="ltr">Higgsfield</bdi> بإخراج المدير الإبداعي، وقواعدها بـ<bdi dir="ltr">_CD-NOTES.md</bdi>'],
   ['05-concept-ads/', 'إعلانات تجريبية لعلامات خيالية: «ليل» عطر، «ستاك» برجر، «حبّة» قهوة'],
   ['06-copy/', 'طريقة الكلام، الكابشن، الدعوات للطلب، والبروفايل'],
   ['07-ops/', 'نموذج الطلب، الأسعار، المراحل، التعديلات، والحقوق'],
   ['_system/tokens.css', 'الألوان، الخطوط، الأحجام، المسافات، المناطق الآمنة'],
   ['_system/brand/logo.mjs', 'بنّاء الشعار: الكلمة، التركيبات، النقاط، الصورة الشخصية'],
-  ['_system/motion/', '<bdi>kit.js</bdi> (الحركة)، <bdi>endcard.js</bdi> (التوقيع)، <bdi>endcard-cues.json</bdi> (التوقيت)'],
-  ['_system/audio/tashaudio.py', 'محرّك الصوت الأصلي و<bdi>sonic_logo()</bdi>'],
+  ['_system/motion/', '<bdi dir="ltr">kit.js</bdi> (الحركة)، <bdi dir="ltr">endcard.js</bdi> (التوقيع)، <bdi dir="ltr">endcard-cues.json</bdi> (التوقيت)'],
+  ['_system/audio/tashaudio.py', 'محرّك الصوت الأصلي و<bdi dir="ltr">sonic_logo()</bdi>'],
   ['_system/fonts/', 'الخطوط الأربعة ونصوص رخصها'],
-  ['_system/tools/', '<bdi>render.mjs</bdi>، <bdi>contact.sh</bdi>، <bdi>audio-check.sh</bdi>، <bdi>export-logo.mjs</bdi>'],
-].map(([p, d]) => `<tr><td class="k" style="font-size:8.5px" data-path="${p}">${p}</td><td class="sm">${d}</td></tr>`).join('') + `</tbody></table>`);
+  ['_system/tools/', '<bdi dir="ltr">render.mjs</bdi>، <bdi dir="ltr">contact.sh</bdi>، <bdi dir="ltr">audio-check.sh</bdi>، <bdi dir="ltr">export-logo.mjs</bdi>'],
+].map(([p, d]) => `<tr><td class="k" style="font-size:8.5px;text-align:right" data-path="${p}">${p}</td><td class="sm">${d}</td></tr>`).join('') + `</tbody></table>`);
 put('v-licences', [
   ['الخطوط', 'Fonts', 'SIL OFL 1.1', 'Alexandria، IBM Plex Sans Arabic، Archivo، JetBrains Mono. الاستخدام التجاري والتضمين مسموح؛ ما ينباع الخط بروحه، والرخصة ترافقه.', '_system/fonts/OFL-*.txt'],
   ['الشعار', 'Logo', 'TASH', 'رسم من حروف Alexandria محوّلة لمسارات ومعدّلة. الأعمال المصمّمة بخط OFL (ومنها الشعارات) ما تخضع لرخصة الخط.', '_system/brand/'],
   ['Three.js', '3D', 'MIT', 'مكتبة الـ3D بالإعلانات التجريبية.', '_system/vendor/three/LICENSE'],
   ['GSAP 3.13', 'Animation', 'GreenSock Standard', 'موجودة بالنظام؛ شروطها برأس الملف.', '_system/vendor/gsap/'],
   ['الصوت', 'Audio', 'TASH · original', 'كله مركّب بالكود من الصفر: بدون عيّنات، بدون موسيقى أو مؤثرات منزّلة.', '_system/audio/tashaudio.py'],
-  ['الصور', 'Visuals', 'TASH · original', 'كلها مولّدة بالكود (<bdi>SVG / Canvas / Three.js</bdi>). بدون صور ستوك.', '—'],
+  ['الصور', 'Visuals', 'TASH · original', 'صور الهوية والإعلانات التجريبية كلها مولّدة بالكود (<bdi dir="ltr">SVG / Canvas / Three.js</bdi>)، بدون صور ستوك. الاستثناء: لقطات الناس بإعلان الإطلاق، مولّدة بـ<bdi dir="ltr">Higgsfield (Kling 3.0)</bdi> باشتراك المالك وموافقته، وتنذكر بالكريدت.', '04-launch-ad/footage/ai/'],
 ].map(([a, e, l, t, f]) => `<div style="padding:7px 0 6px;border-bottom:1px solid ${RULE_P}"><div style="display:flex;justify-content:space-between;align-items:baseline"><span class="w6" style="font-size:11.5px">${a} <span class="en s" style="display:inline">${e}</span></span><span class="k" style="font-size:8px">${l}</span></div>
   <div class="sm" style="line-height:1.55;margin-top:2px">${t}</div><div class="k" style="font-size:7.5px;color:${META_P};text-align:right">${f}</div></div>`).join(''));
 

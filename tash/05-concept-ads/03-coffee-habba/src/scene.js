@@ -269,7 +269,7 @@ export function makeBeanGeometry(seed = 1) {
     p.setXYZ(i, X, Y, Z);
     // vertex colour: dark in the crease walls, a pale silverskin line in its floor, slightly lighter dome
     const wall = Math.exp(-Math.pow((Math.abs(dz) - 1.0) / 0.6, 2)) * (y <= 0.4 ? 1 : 0) * along;
-    let sh = 1 - wall * 0.45 + (y > 0 ? 0.08 * y : 0);
+    let sh = (1 - wall * 0.45 + (y > 0 ? 0.08 * y : 0)) * (0.9 + 0.2 * (0.5 + 0.5 * Math.sin(x * 9.1 + no) * Math.sin(z * 7.7 + no * 1.7)));
     let r = sh, gg = sh, b = sh;
     const skin = Math.exp(-dz * dz * 6) * (cr > 0.2 ? 1 : 0);
     r = lerp3(r, 2.1, skin); gg = lerp3(gg, 1.85, skin); b = lerp3(b, 1.5, skin);
@@ -282,12 +282,12 @@ export function makeBeanGeometry(seed = 1) {
 const lerp3 = (a, b, k) => a + (b - a) * k;
 export function makeBeans(n = 18) {
   const geos = [1, 2, 3, 4].map(s => makeBeanGeometry(s * 13));
-  const mat = new THREE.MeshPhysicalMaterial({ color: new THREE.Color('#6e4227'), vertexColors: true, roughness: 0.58, clearcoat: 0.18, clearcoatRoughness: 0.4, envMapIntensity: 0.6, sheen: 0.3, sheenRoughness: 0.6, sheenColor: new THREE.Color('#b07a52') });
+  const mat = new THREE.MeshPhysicalMaterial({ color: new THREE.Color('#6e4227'), vertexColors: true, roughness: 0.68, clearcoat: 0.08, clearcoatRoughness: 0.5, envMapIntensity: 0.5, sheen: 0.35, sheenRoughness: 0.7, sheenColor: new THREE.Color('#a9774f') });
   const R = rng(777); const beans = [];
   const grp = new THREE.Group();
   for (let i = 0; i < n; i++) {
     const m = new THREE.Mesh(geos[i % 4], mat.clone());
-    m.material.color.offsetHSL((R() - 0.5) * 0.02, (R() - 0.5) * 0.06, (R() - 0.5) * 0.07);
+    m.material.color.offsetHSL((R() - 0.5) * 0.03, (R() - 0.5) * 0.10, (R() - 0.5) * 0.12);
     m.castShadow = true; m.receiveShadow = true;
     const s = 0.105 * (0.9 + R() * 0.2); m.scale.setScalar(s);
     grp.add(m); beans.push({ mesh: m, r: [R(), R(), R(), R(), R(), R()] });
@@ -376,9 +376,13 @@ export function makeLatte(renderer) {
       vec3 col = mix(crema, crema * 0.72, halo * step(0.001, uMilk));
       col = mix(col, foam, milk);
       // the stream impact: a bright churning spot with a ripple ring
-      float di = length(pw - uImp);
-      col = mix(col, vec3(0.97, 0.94, 0.88), smoothstep(0.07, 0.02, di) * uStream);
-      col = mix(col, col * 0.85, smoothstep(0.02, 0.0, abs(di - 0.12 - 0.02 * sin(uT * 9.0))) * uStream * 0.6);
+      float di = length(pw - uImp + 0.012 * vec2(sin(uT * 31.0), cos(uT * 27.0)));
+      col = mix(col, vec3(0.98, 0.955, 0.9), smoothstep(0.055, 0.018, di) * uStream);          // the boil where it lands
+      for (int i = 0; i < 2; i++) {                                                               // ripples running outward
+        float ph = fract(uT * 1.6 + float(i) * 0.5); float rr = 0.05 + ph * 0.16;
+        float ring = smoothstep(0.012, 0.0, abs(di - rr)) * (1.0 - ph) * uStream;
+        col = mix(col, col * 0.80, ring * 0.7); col = mix(col, min(col * 1.18, 1.0), smoothstep(0.012, 0.0, abs(di - rr + 0.014)) * (1.0 - ph) * uStream * 0.5);
+      }
       // meniscus: the liquid climbs the wall and darkens at the very edge
       col *= mix(1.0, 0.6, smoothstep(0.93, 1.0, r));
       gl_FragColor = vec4(col, 1.0);
@@ -392,24 +396,48 @@ export function makeLatte(renderer) {
 }
 
 // ------------------------------------------------------------------ milk stream (top-down pour)
+// A variable-radius tube rebuilt every frame: it tapers as the milk accelerates, carries travelling varicose "beads"
+// (the natural instability of a falling stream), wobbles slightly, and is glossy with a warm, slightly translucent tint.
 export function makeStream() {
-  const N = 40;
-  const pts = Array.from({ length: N }, (_, i) => new THREE.Vector3(0, i / (N - 1), 0));
-  const curve = new THREE.CatmullRomCurve3(pts);
-  const mat = new THREE.MeshPhysicalMaterial({ color: new THREE.Color('#fbf6ee'), roughness: 0.3, clearcoat: 0.6, envMapIntensity: 1.2, emissive: new THREE.Color('#3a332b') });
-  const mesh = new THREE.Mesh(new THREE.TubeGeometry(curve, 60, 0.018, 12, false), mat);
-  mesh.castShadow = true;
+  const SEG = 90, RAD = 14;
+  const geo = new THREE.BufferGeometry();
+  const pos = new Float32Array((SEG + 1) * (RAD + 1) * 3), nor = new Float32Array(pos.length);
+  const idx = [];
+  for (let i = 0; i < SEG; i++) for (let j = 0; j < RAD; j++) {
+    const a = i * (RAD + 1) + j, b = a + RAD + 1;
+    idx.push(a, a + 1, b, b, a + 1, b + 1);   // outward-facing winding
+  }
+  geo.setIndex(idx);
+  geo.setAttribute('position', new THREE.BufferAttribute(pos, 3)); geo.setAttribute('normal', new THREE.BufferAttribute(nor, 3));
+  const mat = new THREE.MeshPhysicalMaterial({ color: new THREE.Color('#f6efe4'), roughness: 0.12, clearcoat: 1, clearcoatRoughness: 0.05,
+    envMapIntensity: 1.4, emissive: new THREE.Color('#5a4632'), sheen: 0.5, sheenColor: new THREE.Color('#fff4e0'), transparent: true, opacity: 0.96 });
+  const mesh = new THREE.Mesh(geo, mat); mesh.castShadow = true; mesh.frustumCulled = false;
+  const P = new THREE.Vector3(), T = new THREE.Vector3(), N = new THREE.Vector3(), B = new THREE.Vector3(), UP = new THREE.Vector3(0, 0, 1);
   function set({ x = 0, z = 0, y0 = 0.55, y1 = 2.2, width = 1, t = 0, lift = 0 }) {
-    const P = [];
-    for (let i = 0; i < N; i++) {
-      const k = i / (N - 1);
-      const y = y0 + lift + (y1 - y0) * k;
-      const wob = 0.0035 * Math.sin(t * 9 + k * 6) * (1 - k);
-      P.push(new THREE.Vector3(x + wob + k * 0.04, y, z - k * 0.22 + wob));
+    const pts = [];
+    for (let i = 0; i <= SEG; i++) {
+      const k = i / SEG, y = y0 + lift + (y1 - y0) * k;
+      const wob = (0.004 * Math.sin(t * 7.3 + k * 9) + 0.002 * Math.sin(t * 13.1 + k * 23)) * (1 - k * 0.6);
+      pts.push(new THREE.Vector3(x + wob + k * 0.04, y, z - k * 0.22 + wob * 0.6));
     }
-    const c = new THREE.CatmullRomCurve3(P);
-    mesh.geometry.dispose();
-    mesh.geometry = new THREE.TubeGeometry(c, 80, 0.017 * width, 16, false);
+    const curve = new THREE.CatmullRomCurve3(pts);
+    for (let i = 0; i <= SEG; i++) {
+      const k = i / SEG;
+      curve.getPointAt(k, P); curve.getTangentAt(k, T);
+      N.crossVectors(T, UP).normalize(); B.crossVectors(T, N).normalize();
+      // taper toward the surface, beads travelling down the stream, a touch of lateral squash
+      const bead = 1 + 0.18 * Math.sin(k * 70 + t * 38) * (1 - k) + 0.06 * Math.sin(k * 23 - t * 17);
+      const r = 0.0105 * width * (0.72 + 0.6 * k) * bead;
+      for (let j = 0; j <= RAD; j++) {
+        const a = j / RAD * Math.PI * 2, ca = Math.cos(a), sa = Math.sin(a);
+        const o = ((i * (RAD + 1)) + j) * 3;
+        const nx = N.x * ca + B.x * sa, ny = N.y * ca + B.y * sa, nz = N.z * ca + B.z * sa;
+        pos[o] = P.x + nx * r; pos[o + 1] = P.y + ny * r; pos[o + 2] = P.z + nz * r * 0.92;
+        nor[o] = nx; nor[o + 1] = ny; nor[o + 2] = nz;
+      }
+    }
+    geo.attributes.position.needsUpdate = true; geo.attributes.normal.needsUpdate = true;
+    geo.computeBoundingSphere();
   }
   return { mesh, set };
 }

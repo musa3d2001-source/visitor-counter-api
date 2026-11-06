@@ -33,8 +33,8 @@ body { background: #2a2a27; font-family: var(--f-text-ar); font-weight: 400; -we
 
 /* type */
 .sn { font-family: var(--f-display-en); font-weight: 800; font-stretch: 125%; font-size: 13px; letter-spacing: .02em; color: var(--fg); direction: ltr; text-align: right; }
-h1 { font-family: var(--f-display-ar); font-weight: 800; font-size: 40px; line-height: 1.22; margin: 6px 0 4px; letter-spacing: 0; }
-h2 { font-family: var(--f-display-ar); font-weight: 800; font-size: 18px; line-height: 1.35; margin: 0 0 2px; }
+h1 { font-family: var(--f-display-ar); font-weight: 800; font-size: 40px; line-height: 1.22; margin: 6px 0 4px; letter-spacing: 0; text-wrap: balance; }
+h2 { font-family: var(--f-display-ar); font-weight: 800; font-size: 18px; line-height: 1.35; margin: 0 0 2px; text-wrap: balance; }
 h3 { font-family: var(--f-text-ar); font-weight: 600; font-size: 12px; line-height: 1.5; margin: 0; }
 .en { font-family: var(--f-display-en); font-weight: 800; font-stretch: 125%; font-size: 10.5px; line-height: 1.35; color: var(--mute); direction: ltr; unicode-bidi: isolate; text-align: right; margin: 0; }
 h1 + .en, h2 + .en { margin-top: 3px; }
@@ -86,6 +86,7 @@ td .en { font-size: 7.5px; }
 .badge.solid { background: var(--fg); color: var(--paper); }
 .ink .badge.solid { color: var(--ink); }
 
+#v-files td { padding-top: 4px; padding-bottom: 4px; }
 /* swatch chips */
 .chip { display: inline-block; width: 11px; height: 11px; border-radius: 50%; vertical-align: -1px; box-shadow: inset 0 0 0 1px rgba(128,128,120,.35); }
 
@@ -112,7 +113,7 @@ td .en { font-size: 7.5px; }
   <div class="cover-t">
     <h1>دليل الهوية</h1>
     <p class="en">Brand Guidelines</p>
-    <p class="sm mute" style="margin-top:22px">طشّ <bdi>TASH Creative</bdi> — استوديو إعلانات، الكويت</p>
+    <p class="sm mute" style="margin-top:22px">طشّ <bdi dir="ltr">TASH Creative</bdi> — استوديو إعلانات، الكويت</p>
   </div>
   <div class="lbl" style="position:absolute;top:70px;left:60px;color:var(--smoke)">BRAND GUIDE — V1.0</div>
   <div class="cover-mark fig" id="v-cover"></div>
@@ -131,10 +132,10 @@ td .en { font-size: 7.5px; }
       <p class="en" style="margin-bottom:22px">Contents</p>
       <p>هذا الدليل يحدد شلون تنبني أي قطعة من طشّ: الفكرة، الشعار، الألوان، الخطوط، العناصر، التخطيط، الصورة، الحركة والصوت، وطريقة الكلام.</p>
       <p class="pe">How every TASH piece is built: idea, logo, colour, type, devices, layout, picture, motion, sound and voice.</p>
-      <p>كل صورة هني مطلّعة من نظامنا نفسه: ملفات <bdi class="k">_system/</bdi>، الشعارات بـ<bdi class="k">02-logo/</bdi>، والإعلانات التجريبية اللي سويناها. ما فيه ولا رسمة توضيحية مصنوعة للدليل بس.</p>
-      <p class="pe">Every visual is rendered from the live system and our own work. Nothing is mocked up.</p>
+      <p>كل صورة هني مطلّعة من نظامنا نفسه: ملفات <bdi dir="ltr" class="k">_system/</bdi>، الشعارات بـ<bdi dir="ltr" class="k">02-logo/</bdi>، والإعلانات التجريبية اللي سويناها. وحتى الرسومات التوضيحية مرسومة بالكود من نفس ملفات الشعار، والأرقام محسوبة مو مكتوبة باليد.</p>
+      <p class="pe">Every visual is rendered from the live system and our own work; even the diagrams are drawn in code from the logo files, and the numbers are computed.</p>
       <div class="hr" style="margin:16px 0 12px"></div>
-      <p class="sm"><span class="w6">المرجع هو الكود.</span> إذا اختلف شي هني عن <bdi class="k">tokens.css</bdi> أو <bdi class="k">logo.mjs</bdi>، الكود يمشي، وهالدليل يتصحّح.</p>
+      <p class="sm"><span class="w6">المرجع هو الكود.</span> إذا اختلف شي هني عن <bdi dir="ltr" class="k">tokens.css</bdi> أو <bdi dir="ltr" class="k">logo.mjs</bdi>، الكود يمشي، وهالدليل يتصحّح.</p>
       <p class="pe">If this guide and the code disagree, the code wins and the guide gets fixed.</p>
     </div>
     <div style="grid-column:6 / span 7" id="toc">
@@ -180,7 +181,7 @@ td .en { font-size: 7.5px; }
         <p>«طشّ» كلمة وحدة، كويتية، ولها وقع. تنقال بصوت عالي وتنحفظ من أول مرة، وفيها رشّة وحركة: نفس شغل الإعلان.</p>
         <p class="en">One Kuwaiti word with punch. Easy to say, hard to forget.</p></div>
       <div class="item"><h3><span class="ok"></span>ليموني على أسود</h3>
-        <p>تباين <bdi class="k" data-cr="#C6FF00,#0B0B0B"></bdi>. لون ما يمر مرور الكرام بالشبكة، وإذا انستخدم كإشارة صغيرة يخلّي أي تصميم يبين إنه لنا.</p>
+        <p>تباين <bdi dir="ltr" class="k" data-cr="#C6FF00,#0B0B0B"></bdi>. لون ما يمر مرور الكرام بالشبكة، وإذا انستخدم كإشارة صغيرة يخلّي أي تصميم يبين إنه لنا.</p>
         <p class="en">Distinctive, and instantly ours when used as a small signal.</p></div>
       <div class="item"><h3><span class="ok"></span>دفا الكريمي</h3>
         <p>بدال الأبيض الطبي، الكريمي أنعم على العين وأقرب لإحساس الورق والطباعة.</p>
@@ -192,13 +193,13 @@ td .en { font-size: 7.5px; }
         <p>ليموني كهربائي على أسود هي لغة الألعاب والعملات الرقمية ومشروبات الطاقة. إذا كثر، نبين منصة ألعاب مو استوديو إعلانات.</p>
         <p class="en">Neon lime on black reads gaming, crypto, energy drinks.</p></div>
       <div class="item"><h3><span class="no"></span>كليشيه التوهّج</h3>
-        <p>أول حل يجي على البال مع الليموني هو التوهّج (<bdi>glow</bdi>). يرخّص الهوية، ويطلع وسخ بالطباعة وبضغط المنصات.</p>
+        <p>أول حل يجي على البال مع الليموني هو التوهّج (<bdi dir="ltr">glow</bdi>). يرخّص الهوية، ويطلع وسخ بالطباعة وبضغط المنصات.</p>
         <p class="en">Glow is the cliché; it cheapens the mark and breaks in print.</p></div>
       <div class="item"><h3><span class="no"></span>رمادي بارد جنب كريمي دافي</h3>
-        <p><bdi class="k">#9AA0A6</bdi> رمادي واجهات تقني مايل للأزرق (<bdi class="k" data-lab="#9AA0A6"></bdi>)، والكريمي مايل للأصفر (<bdi class="k" data-lab="#F5F5E9"></bdi>): الاثنين يتعاركون. وعلى الكريمي تباينه <bdi class="k" data-cr="#9AA0A6,#F5F5E9"></bdi>، ما يصلح حتى للعناوين الكبيرة.</p>
+        <p><bdi dir="ltr" class="k">#9AA0A6</bdi> رمادي واجهات تقني مايل للأزرق (<bdi dir="ltr" class="k" data-lab="#9AA0A6"></bdi>)، والكريمي مايل للأصفر (<bdi dir="ltr" class="k" data-lab="#F5F5E9"></bdi>): الاثنين يتعاركون. وعلى الكريمي تباينه <bdi dir="ltr" class="k" data-cr="#9AA0A6,#F5F5E9"></bdi>، ما يصلح حتى للعناوين الكبيرة.</p>
         <p class="en">A cool, Google-like UI grey against a warm cream.</p></div>
       <div class="item"><h3><span class="no"></span>ليموني على كريمي</h3>
-        <p>التباين <bdi class="k" data-cr="#C6FF00,#F5F5E9"></bdi>: يعني النص يختفي. ما ينفع نص ولا خط رفيع.</p>
+        <p>التباين <bdi dir="ltr" class="k" data-cr="#C6FF00,#F5F5E9"></bdi>: يعني النص يختفي. ما ينفع نص ولا خط رفيع.</p>
         <p class="en">Lime on cream is invisible as text.</p></div>
       <div class="item"><h3><span class="no"></span>رشّات جاهزة</h3>
         <p>بقع الحبر والماي موجودة بكل مكتبة. ما تفرّقنا عن أحد، وتتحول لوسخ بالأحجام الصغيرة.</p>
@@ -217,7 +218,7 @@ td .en { font-size: 7.5px; }
       <div><div class="tile" id="v-ev-temp" style="height:150px"></div>
         <div class="cap"><div><b class="w6">الحرارة</b> — الرمادي الأزرق يبرد الكريمي؛ الدخاني يدفّيه.<p class="en">Temperature: b* measured in CIELAB</p></div></div></div>
       <div><div class="tile" id="v-ev-contrast" style="height:150px"></div>
-        <div class="cap"><div><b class="w6">التباين</b> — محسوب بمعادلة <bdi>WCAG 2.x</bdi>.<p class="en">Contrast, computed</p></div></div></div>
+        <div class="cap"><div><b class="w6">التباين</b> — محسوب بمعادلة <bdi dir="ltr">WCAG 2.x</bdi>.<p class="en">Contrast, computed</p></div></div></div>
       <div><div class="tile" id="v-ev-glow" style="height:150px"></div>
         <div class="cap"><div><b class="w6">التوهّج</b> — شلناه. الضوء يكون بالصورة، مو فلتر على الشعار.<p class="en">No glow, ever</p></div></div></div>
       <div><div class="tile" id="v-ev-splash" style="height:150px"></div>
@@ -230,11 +231,11 @@ td .en { font-size: 7.5px; }
         <th><span class="ar">ليش</span>WHY</th></tr></thead>
       <tbody>
         <tr><td>الاسم «طشّ» والشدّة</td><td><span class="badge solid">كمّلنا</span></td><td>الشدّة هي الضربة بالاسم، وصارت جزء من الشعار. <span class="en" style="display:inline">Kept: the shadda is the punch.</span></td></tr>
-        <tr><td>الأسود <bdi class="k">#0B0B0B</bdi> ← حبر</td><td><span class="badge solid">كمّلنا</span></td><td>أرضيتنا الأساسية، حوالي 60% من أي قطعة. <span class="en" style="display:inline">Kept as Ink, ~60%.</span></td></tr>
-        <tr><td>الليموني <bdi class="k">#C6FF00</bdi></td><td><span class="badge solid">كمّلنا بقاعدة</span></td><td>إشارة بس، 10% أو أقل: النقاط، كلمة وحدة، زر، مسحة. وأبداً مو نص على الورقي. <span class="en" style="display:inline">Kept, strictly as a ≤10% signal.</span></td></tr>
-        <tr><td>الكريمي <bdi class="k">#F5F5E9</bdi> ← ورقي</td><td><span class="badge solid">كمّلنا</span></td><td>النص الفاتح على الحبر، وأرضية الطباعة والصفحات الهادية. <span class="en" style="display:inline">Kept as Paper.</span></td></tr>
-        <tr><td>الرمادي <bdi class="k">#9AA0A6</bdi> ← دخاني <bdi class="k">#8E9088</bdi></td><td><span class="badge">غيّرنا</span></td><td>رمادي دافي يمشي مع الورقي. للنص الثانوي على الحبر (<bdi class="k" data-cr="#8E9088,#0B0B0B"></bdi>). <span class="en" style="display:inline">Warm smoke replaces the cool grey.</span></td></tr>
-        <tr><td>فحمي <bdi class="k">#1A1A18</bdi> وخطّي <bdi class="k">#2C2C29</bdi></td><td><span class="badge">أضفنا</span></td><td>أسطح وفواصل على الحبر، بدال الظلال والتوهّج. <span class="en" style="display:inline">Added: char surface + hairline.</span></td></tr>
+        <tr><td>الأسود <bdi dir="ltr" class="k">#0B0B0B</bdi> ← حبر</td><td><span class="badge solid">كمّلنا</span></td><td>أرضيتنا الأساسية، حوالي 60% من أي قطعة. <span class="en" style="display:inline">Kept as Ink, ~60%.</span></td></tr>
+        <tr><td>الليموني <bdi dir="ltr" class="k">#C6FF00</bdi></td><td><span class="badge solid">كمّلنا بقاعدة</span></td><td>إشارة بس، 10% أو أقل: النقاط، كلمة وحدة، زر، مسحة. وأبداً مو نص على الورقي. <span class="en" style="display:inline">Kept, strictly as a ≤10% signal.</span></td></tr>
+        <tr><td>الكريمي <bdi dir="ltr" class="k">#F5F5E9</bdi> ← ورقي</td><td><span class="badge solid">كمّلنا</span></td><td>النص الفاتح على الحبر، وأرضية الطباعة والصفحات الهادية. <span class="en" style="display:inline">Kept as Paper.</span></td></tr>
+        <tr><td>الرمادي <bdi dir="ltr" class="k">#9AA0A6</bdi> ← دخاني <bdi dir="ltr" class="k">#8E9088</bdi></td><td><span class="badge">غيّرنا</span></td><td>رمادي دافي يمشي مع الورقي. للنص الثانوي على الحبر (<bdi dir="ltr" class="k" data-cr="#8E9088,#0B0B0B"></bdi>). <span class="en" style="display:inline">Warm smoke replaces the cool grey.</span></td></tr>
+        <tr><td>فحمي <bdi dir="ltr" class="k">#1A1A18</bdi> وخطّي <bdi dir="ltr" class="k">#2C2C29</bdi></td><td><span class="badge">أضفنا</span></td><td>أسطح وفواصل على الحبر، بدال الظلال والتوهّج. <span class="en" style="display:inline">Added: char surface + hairline.</span></td></tr>
         <tr><td>التوهّج والنيون</td><td><span class="badge">شلنا</span></td><td>الإضاءة الحقيقية مكانها الصورة، مو فلتر على الشعار أو النص. <span class="en" style="display:inline">Removed: no glow.</span></td></tr>
         <tr><td>لمسات الرشّة ← النقاط الثلاث</td><td><span class="badge">غيّرنا</span></td><td>«يكتب…» = يسولفون عنك. فكرة تشتغل ثابتة، وبالحركة، وبالصوت، وكعنصر جرافيكي. <span class="en" style="display:inline">The dots idea replaces literal splashes.</span></td></tr>
         <tr><td>البوسترات الأولى</td><td><span class="badge">معلّق</span></td><td>ما نحكم على شي ما شفناه. بنراجعها أول ما توصل. <span class="en" style="display:inline">Pending until the files arrive.</span></td></tr>
@@ -259,12 +260,12 @@ td .en { font-size: 7.5px; }
       <p class="sm">كلمة وحدة، كويتية، فيها رشّة وحركة. والشدّة هي الضربة: «طشّ!»</p>
       <p class="pe">One Kuwaiti word, with a splash in it. The shadda is the punch.</p>
     </div>
-    <div style="grid-column:6 / span 7; position:relative">
+    <div style="grid-column:5 / span 8; position:relative">
       <div class="fig" id="v-idea" style="margin-top:10px"></div>
       <div style="position:absolute; bottom:0; right:0; left:0">
         <div class="lbl" style="text-align:right; margin-bottom:10px">TAGLINE</div>
-        <div style="font-family:var(--f-display-ar); font-weight:800; font-size:54px; line-height:1.3">طشّ…<br>خلّهم <span style="color:var(--lime)">يسولفون</span> عنك!</div>
-        <p class="en" style="font-size:13px; margin-top:6px">Make them talk about you.</p>
+        <div style="font-family:var(--f-display-ar); font-weight:800; font-size:54px; line-height:1.6">طشّ…<br>خلّهم <span style="color:var(--lime)">يسولفون</span> عنك!</div>
+        <p class="en" style="font-size:13px; margin-top:2px">Make them talk about you.</p>
       </div>
     </div>
   </div>
@@ -320,13 +321,13 @@ td .en { font-size: 7.5px; }
       <h1>الشعار: البناء</h1>
       <p class="en" style="margin-bottom:18px">Logo construction</p>
       <div class="item"><h3><span class="num">1</span>القاعدة</h3>
-        <p>حروف <bdi>Alexandria Black</bdi> (رخصة <bdi>OFL</bdi>)، محوّلة لمسارات ومعدّلة يدوياً. الشعار رسم، مو نص مكتوب بالخط.</p>
+        <p>حروف <bdi dir="ltr">Alexandria Black</bdi> (رخصة <bdi dir="ltr">OFL</bdi>)، محوّلة لمسارات ومعدّلة يدوياً. الشعار رسم، مو نص مكتوب بالخط.</p>
         <p class="en">Alexandria Black base, outlined and customised.</p></div>
       <div class="item"><h3><span class="num">2</span>قائم الطاء</h3>
-        <p>مقصوص بزاوية <bdi class="k" id="o-angle"></bdi> تطلع باتجاه القراءة. بالعربي «قدّام» يعني يسار، فالقصّة توحي بحركة للأمام.</p>
+        <p>مقصوص بزاوية <bdi dir="ltr" class="k" id="o-angle"></bdi> تطلع باتجاه القراءة. بالعربي «قدّام» يعني يسار، فالقصّة توحي بحركة للأمام.</p>
         <p class="en">The ط stem is cut at an angle rising toward the reading direction.</p></div>
       <div class="item"><h3><span class="num">3</span>النقاط</h3>
-        <p>ثلاث دوائر كاملة بصف واحد، والمسافة بينها <bdi class="k" id="o-gap"></bdi>. قطر النقطة <b>D</b> هو وحدة القياس للهوية كلها: الفراغ، الأحجام، والحركة.</p>
+        <p>ثلاث دوائر كاملة بصف واحد، والمسافة بينها <bdi dir="ltr" class="k" id="o-gap"></bdi>. قطر النقطة <b>D</b> هو وحدة القياس للهوية كلها: الفراغ، الأحجام، والحركة.</p>
         <p class="en">Perfect circles in a row. Dot diameter D is the brand unit.</p></div>
       <div class="item"><h3><span class="num">4</span>الشدّة</h3>
         <p>باقية. هي الضربة بالاسم، وبالحركة تنزل آخر شي مثل علامة التعجب.</p>
@@ -354,7 +355,7 @@ td .en { font-size: 7.5px; }
     </div>
     <div style="grid-column:7 / span 6">
       <h2 style="font-size:22px">أصغر حجم</h2><p class="en" style="margin-bottom:12px">Minimum sizes, digital</p>
-      <p class="sm">الصور تحت مطلّعة من الشعار الحقيقي بكثافة شاشة <bdi class="k">1×</bdi>، بحجمها الفعلي، ومعاها تكبير <bdi class="k">3×</bdi> للبكسلات. تحت <bdi class="k">96 px</bdi> الشدّة والنقاط تتلاحم.</p>
+      <p class="sm">الصور تحت مطلّعة من الشعار الحقيقي بكثافة شاشة <bdi dir="ltr" class="k">1×</bdi>، بحجمها الفعلي، ومعاها تكبير <bdi dir="ltr" class="k">3×</bdi> للبكسلات. تحت <bdi dir="ltr" class="k">96 px</bdi> الشدّة والنقاط تتلاحم.</p>
       <p class="pe">Real 1× rasters at actual size, with a 3× pixel zoom. Below 96 px the shadda and dots clog.</p>
       <div id="v-minsize"></div>
       <table style="margin-top:12px" id="t-min">
@@ -371,7 +372,7 @@ td .en { font-size: 7.5px; }
   <div class="b">
     <div style="display:flex; justify-content:space-between; align-items:flex-end; margin-bottom:14px">
       <div><h2 style="font-size:22px">النسخ</h2><p class="en">Variants · reference files in 02-logo/</p></div>
-      <p class="sm mute" style="max-width:460px; margin:0">كل نسخة لها ملف <bdi class="k">SVG</bdi> و<bdi class="k">PNG</bdi> جاهز. لا ترسم الشعار من جديد ولا تكتبه بالخط، استخدم الملف.</p>
+      <p class="sm mute" style="max-width:460px; margin:0">كل نسخة لها ملف <bdi dir="ltr" class="k">SVG</bdi> و<bdi dir="ltr" class="k">PNG</bdi> جاهز. لا ترسم الشعار من جديد ولا تكتبه بالخط، استخدم الملف.</p>
     </div>
     <div id="v-variants" style="display:grid; grid-template-columns:repeat(3,1fr); gap:14px"></div>
   </div>
@@ -400,18 +401,18 @@ td .en { font-size: 7.5px; }
     <div style="grid-column:1 / span 4">
       <h2 style="font-size:22px">الصورة الشخصية</h2><p class="en" style="margin-bottom:14px">Avatar rules</p>
       <div class="item"><h3><span class="ok"></span>الأساسية: الليموني</h3>
-        <p>أعلى تباين بالشبكة، تنشاف بالوضع الفاتح والداكن، وتبقى تنعرف لين <bdi class="k">40 px</bdi>. هني الليموني «كبير» عن قصد: هو الأرضية، مو نص.</p>
+        <p>أعلى تباين بالشبكة، تنشاف بالوضع الفاتح والداكن، وتبقى تنعرف لين <bdi dir="ltr" class="k">40 px</bdi>. هني الليموني «كبير» عن قصد: هو الأرضية، مو نص.</p>
         <p class="en">Primary: lime. Readable in light and dark mode, recognisable at 40 px.</p></div>
       <div class="item"><h3><span class="ok"></span>البديلة: الحبر</h3>
         <p>للسياقات الداكنة أو إذا الليموني تعارض مع منصة. نفس التركيب.</p>
         <p class="en">Alternate: ink, same build.</p></div>
       <div class="item"><h3><span class="no"></span>لا تعدّل التركيب</h3>
-        <p>الكلمة <bdi class="k">70%</bdi> من القطر، ومتوسّطة بصرياً (ذيل الشين نازل تحت السطر). لا حلقة، لا إطار، لا تدرّج، ولا تكبير.</p>
+        <p>الكلمة <bdi dir="ltr" class="k">70%</bdi> من القطر، ومتوسّطة بصرياً (ذيل الشين نازل تحت السطر). لا حلقة، لا إطار، لا تدرّج، ولا تكبير.</p>
         <p class="en">Wordmark at 70% of the circle, optically centred. No rings, frames, gradients or zoom.</p></div>
       <div class="item"><h3><span class="no"></span>النقاط بروحها مو صورة شخصية</h3>
-        <p>رمز النقاط بديل بس للأماكن الصغيرة جداً (أيقونة موقع تحت <bdi class="k">32 px</bdi>).</p>
+        <p>رمز النقاط بديل بس للأماكن الصغيرة جداً (أيقونة موقع تحت <bdi dir="ltr" class="k">32 px</bdi>).</p>
         <p class="en">Dots alone only below 32 px (favicons).</p></div>
-      <p class="sm mute">نفس الصورة بكل المنصات. الملفات: <bdi class="k">02-logo/avatar/</bdi></p>
+      <p class="sm mute">نفس الصورة بكل المنصات. الملفات: <bdi dir="ltr" class="k">02-logo/avatar/</bdi></p>
     </div>
     <div style="grid-column:6 / span 7" id="v-avatar"></div>
   </div>
@@ -436,7 +437,7 @@ td .en { font-size: 7.5px; }
     <div class="g12" style="margin-bottom:16px">
       <div style="grid-column:1 / span 5"><div class="sn">04</div><h1>الألوان</h1><p class="en">Colour</p></div>
       <div style="grid-column:7 / span 6; align-self:end">
-        <p class="sm">أربعة ألوان أساسية واثنين مساندة. الحبر هو الأرضية، والورقي هو الكلام، والليموني إشارة: النقاط، كلمة وحدة، زر، أو مسحة. قيم <bdi>CMYK</bdi> تقريبية من غير بروفايل؛ اطلب بروفة من المطبعة.</p>
+        <p class="sm">أربعة ألوان أساسية واثنين مساندة. الحبر هو الأرضية، والورقي هو الكلام، والليموني إشارة: النقاط، كلمة وحدة، زر، أو مسحة. قيم <bdi dir="ltr">CMYK</bdi> تقريبية من غير بروفايل؛ اطلب بروفة من المطبعة.</p>
         <p class="pe" style="margin-bottom:0">Ink is the ground, Paper the voice, Lime the signal. CMYK values are unprofiled approximations; proof before print.</p>
       </div>
     </div>
@@ -458,7 +459,7 @@ td .en { font-size: 7.5px; }
     <div style="grid-column:1 / span 7">
       <h2 style="font-size:22px">جدول التباين</h2><p class="en" style="margin-bottom:10px">WCAG 2.x contrast, computed from the hex values</p>
       <div id="v-contrast"></div>
-      <p class="sm mute" style="margin-top:12px"><b class="w6" style="color:var(--ink)">القراءة:</b> <bdi class="k">AAA ≥ 7</bdi>، <bdi class="k">AA ≥ 4.5</bdi> للنص العادي، <bdi class="k">AA LARGE ≥ 3</bdi> للعناوين الكبيرة بس (<bdi>24 px</bdi> وفوق، أو <bdi>18.7 px</bdi> عريض). وتحت <bdi>3</bdi> ما يصلح للنص أبداً.</p>
+      <p class="sm mute" style="margin-top:12px"><b class="w6" style="color:var(--ink)">القراءة:</b> <bdi dir="ltr" class="k">AAA ≥ 7</bdi>، <bdi dir="ltr" class="k">AA ≥ 4.5</bdi> للنص العادي، <bdi dir="ltr" class="k">AA LARGE ≥ 3</bdi> للعناوين الكبيرة بس (<bdi dir="ltr">24 px</bdi> وفوق، أو <bdi dir="ltr">18.7 px</bdi> عريض). وتحت <bdi dir="ltr">3</bdi> ما يصلح للنص أبداً.</p>
     </div>
     <div style="grid-column:9 / span 4">
       <h2 style="font-size:22px">التوليفات المعتمدة</h2><p class="en" style="margin-bottom:12px">Approved pairings</p>
@@ -474,7 +475,7 @@ td .en { font-size: 7.5px; }
     <div class="g12" style="margin-bottom:18px">
       <div style="grid-column:1 / span 5"><div class="sn">05</div><h1>الخطوط</h1><p class="en">Typography · four families, strict roles</p></div>
       <div style="grid-column:7 / span 6; align-self:end">
-        <p class="sm">أربع عائلات، لكل وحدة دور ما تطلع منه. كلها برخصة <bdi>SIL Open Font License 1.1</bdi>: الاستخدام التجاري مسموح، والتضمين بالملفات مسموح، بس ما ينباع الخط بروحه. نسخ الرخص بـ<bdi class="k">_system/fonts/</bdi>.</p>
+        <p class="sm">أربع عائلات، لكل وحدة دور ما تطلع منه. كلها برخصة <bdi dir="ltr">SIL Open Font License 1.1</bdi>: الاستخدام التجاري مسموح، والتضمين بالملفات مسموح، بس ما ينباع الخط بروحه. نسخ الرخص بـ<bdi dir="ltr" class="k">_system/fonts/</bdi>.</p>
         <p class="pe" style="margin-bottom:0">All four are SIL OFL 1.1: commercial use and embedding allowed; the fonts may not be sold on their own.</p>
       </div>
     </div>
@@ -497,12 +498,12 @@ td .en { font-size: 7.5px; }
         <li class="sm">ثلاث مستويات بالكثير بالإطار الواحد، وكل مستوى أكبر من اللي تحته بمرة ونص لمرتين.</li>
         <li class="sm">العنوان الكبير كلمة لين ثلاث. على الشاشة ست كلمات بالكثير.</li>
         <li class="sm">وزنين بالكثير بالتصميم. لا عريض مزيّف ولا مائل للعربي.</li>
-        <li class="sm">ارتفاع السطر للعناوين <bdi>1.25–1.5</bdi> عشان الشدّة والهمزة، وللنص <bdi>1.7</bdi>.</li>
+        <li class="sm">ارتفاع السطر للعناوين <bdi dir="ltr">1.25–1.5</bdi> عشان الشدّة والهمزة، وللنص <bdi dir="ltr">1.7</bdi>.</li>
         <li class="sm">صغّر التصميم لربع حجمه: إذا ما انقرا، الخط صغير.</li>
       </ul>
       <div class="hr" style="margin:14px 0"></div>
       <h2>عربي وإنجليزي بسطر واحد</h2><p class="en" style="margin-bottom:10px">Arabic + Latin on one line</p>
-      <p class="sm">العربي يبين أصغر بنفس الحجم، فاللاتيني ينحط <bdi class="k">85–92%</bdi> من حجم العربي ويتوازن بالعين.</p>
+      <p class="sm">العربي يبين أصغر بنفس الحجم، فاللاتيني ينحط <bdi dir="ltr" class="k">85–92%</bdi> من حجم العربي ويتوازن بالعين.</p>
       <div id="v-mix" style="margin-top:6px"></div>
     </div>
   </div>
@@ -528,8 +529,8 @@ td .en { font-size: 7.5px; }
         <p class="pe" style="margin:4px 0 0">Ownable, so spent with intent: once or twice per piece.</p>
       </div>
     </div>
-    <div style="display:grid; grid-template-columns:repeat(4,1fr); gap:14px" id="v-dots"></div>
-    <div style="display:grid; grid-template-columns:repeat(4,1fr); gap:14px; margin-top:14px" id="v-dots-dd"></div>
+    <div id="v-dots"></div>
+    <div style="margin-top:16px" id="v-dots-dd"></div>
   </div>
 </section>
 
@@ -547,18 +548,18 @@ td .en { font-size: 7.5px; }
   <div class="b g12">
     <div style="grid-column:1 / span 4">
       <div class="sn">07</div><h1>التخطيط</h1><p class="en" style="margin-bottom:16px">Layout · feed post 4:5</p>
-      <p class="sm">البوست <bdi class="k">1080×1350</bdi>، بس البروفايل يعرضه <bdi class="k">3:4</bdi> من النص: يقص حوالي <bdi class="k">34 px</bdi> من كل جنب. فأي شي مهم يكون داخل العرض الأوسط <bdi class="k">1012 px</bdi>.</p>
+      <p class="sm">البوست <bdi dir="ltr" class="k">1080×1350</bdi>، بس البروفايل يعرضه <bdi dir="ltr" class="k">3:4</bdi> من النص: يقص حوالي <bdi dir="ltr" class="k">34 px</bdi> من كل جنب. فأي شي مهم يكون داخل العرض الأوسط <bdi dir="ltr" class="k">1012 px</bdi>.</p>
       <p class="pe">The profile grid shows a centred 3:4 crop: 34 px lost each side.</p>
       <table style="margin-top:6px">
         <tbody>
-          <tr><td>الهامش</td><td class="k">96 px</td><td class="sm mute">أقل شي <bdi>72</bdi>، والفخم <bdi>96–120</bdi></td></tr>
+          <tr><td>الهامش</td><td class="k">96 px</td><td class="sm mute">أقل شي <bdi dir="ltr">72</bdi>، والفخم <bdi dir="ltr">96–120</bdi></td></tr>
           <tr><td>الشبكة</td><td class="k">6 COL · 24 GUTTER</td><td class="sm mute">داخل الهامش</td></tr>
           <tr><td>الإيقاع</td><td class="k">8 px</td><td class="sm mute">كل المسافات من مضاعفاته</td></tr>
           <tr><td>الشعار</td><td class="k">≥ 2D</td><td class="sm mute">تحت يسار: نهاية القراءة</td></tr>
           <tr><td>النص</td><td class="k">≤ 20%</td><td class="sm mute">من مساحة الإعلان</td></tr>
         </tbody>
       </table>
-      <p class="sm" style="margin-top:12px">القوالب الجاهزة بـ<bdi class="k">03-templates/</bdi> تفحص هالمناطق بنفسها وتحذّرك إذا شي مهم طلع برّاها.</p>
+      <p class="sm" style="margin-top:12px">القوالب الجاهزة بـ<bdi dir="ltr" class="k">03-templates/</bdi> تفحص هالمناطق بنفسها وتحذّرك إذا شي مهم طلع برّاها.</p>
     </div>
     <div style="grid-column:5 / span 8" id="v-post"></div>
   </div>
@@ -597,11 +598,11 @@ td .en { font-size: 7.5px; }
   <div class="b g12">
     <div style="grid-column:1 / span 4">
       <h2 style="font-size:22px">إعلان العميل يلبس هوية العميل</h2><p class="en" style="margin-bottom:12px">Client work wears the client's palette</p>
-      <p>شغل العميل بألوانه وخطّه هو، مو ألواننا. طشّ يطلع بس بالتوقيع الأخير (<bdi class="k">2.2–3 s</bdi>)، ومعاه لوحة <bdi class="k">CONCEPT AD</bdi> و«إعلان تجريبي — علامة خيالية» بالإعلانات التجريبية.</p>
+      <p>شغل العميل بألوانه وخطّه هو، مو ألواننا. طشّ يطلع بس بالتوقيع الأخير (<bdi dir="ltr" class="k">2.2–3 s</bdi>)، ومعاه لوحة <bdi dir="ltr" class="k">CONCEPT AD</bdi> و«إعلان تجريبي — علامة خيالية» بالإعلانات التجريبية.</p>
       <p class="pe">TASH appears only in the closing signature (+ the concept slate on demo work). That proves we design for the client, not for ourselves.</p>
       <ul class="dots" style="margin-top:10px">
         <li class="sm">لا ليموني ولا نقاط داخل جسم إعلان العميل. شعار العميل يوصل بسبب شي صار بالإعلان، مو عن طريق نقاطنا.</li>
-        <li class="sm">الألوان تحت مقاسة من صورة الإعلان نفسه (<bdi>median-cut</bdi>، الألوان الأكثر حضوراً).</li>
+        <li class="sm">الألوان تحت مقاسة من صورة الإعلان نفسه (<bdi dir="ltr">median-cut</bdi>، الألوان الأكثر حضوراً).</li>
         <li class="sm">التوقيع حركتين: بطاقة العميل، ثم توقيع طشّ. مو بطاقة وحدة جامدة.</li>
       </ul>
     </div>
@@ -632,9 +633,9 @@ td .en { font-size: 7.5px; }
   <div class="b">
     <div class="g12" style="margin-bottom:10px">
       <div style="grid-column:1 / span 6"><h2 style="font-size:22px">الشعار الصوتي</h2><p class="en">Sonic logo · tash-sonic-logo.wav, waveform drawn from the file</p></div>
-      <div style="grid-column:7 / span 6; align-self:end"><p class="sm" style="margin:0">تكّ، تكّ، تكّ… هوا… <b>طشّ!</b> وبوب صغير للشدّة. صوت أصلي مركّب بالكود (<bdi class="k">tashaudio.py</bdi>)، بدون عيّنات ولا مكتبات صوت.</p></div>
+      <div style="grid-column:7 / span 6; align-self:end"><p class="sm" style="margin:0">تكّ، تكّ، تكّ… هوا… <b>طشّ!</b> وبوب صغير للشدّة. صوت أصلي مركّب بالكود (<bdi dir="ltr" class="k">tashaudio.py</bdi>)، بدون عيّنات ولا مكتبات صوت.</p></div>
     </div>
-    <div id="v-wave" class="fig"></div>
+    <div id="v-wave" class="fig" style="margin-top:16px"></div>
     <div class="g12" style="margin-top:12px">
       <div style="grid-column:1 / span 7" id="v-sound-events"></div>
       <div style="grid-column:9 / span 4">
@@ -661,7 +662,7 @@ td .en { font-size: 7.5px; }
         <div><h2>نتجنب</h2><p class="en" style="margin-bottom:8px">Words we avoid</p><div id="v-words-avoid"></div></div>
       </div>
       <div id="v-dialect" style="margin-top:20px"></div>
-      <p class="sm mute" style="margin-top:12px">النسخة الكاملة، مع قواعد الإملاء: <bdi class="k">06-copy/voice-and-tone.md</bdi></p>
+      <p class="sm mute" style="margin-top:12px">النسخة الكاملة، مع قواعد الإملاء: <bdi dir="ltr" class="k">06-copy/voice-and-tone.md</bdi></p>
     </div>
   </div>
 </section>
