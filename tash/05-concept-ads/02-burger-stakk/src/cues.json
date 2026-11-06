@@ -142,5 +142,5 @@
     ],
     "roll": 7.9
   },
-  "_onestage": "One-stage re-edit (owner: «يلوع الجبد، فيه أخطاء ومو متناسق»): the build is cut from four chained clips of one burger on one stage. Moved: onions 6.525 -> 6.65 (a 16th later: the ring's real landing after a jump cut), sauceIn 7.00 -> 6.90 (the sauce enters on the 6.90 beat). Removed: the S02 -> S03 whip (hard cut on the 2.40 beat). Text windows follow the falls: every label leaves before the next layer falls through its band."
+  "_onestage": "One-stage re-edit (owner: «يلوع الجبد، فيه أخطاء ومو متناسق»): the build is cut from four chained clips of one burger on one stage. Every drop cue shows that layer's first landed frame (edl.json; SCRIPT.md §6). Moved: onions 6.525 -> 6.65 (a 16th later: the ring's real landing after a jump cut), sauceIn 7.00 -> 6.90 (the sauce enters on the 6.90 beat). Removed: the S02 -> S03 whip (hard cut on the 2.40 beat). Text windows follow the falls: every label leaves before the next layer falls through its band (crunch ends 7.14: the sauce blob reaches its row at 7.13)."
 }
