@@ -63,8 +63,8 @@ The **same timeline** renders with `?clean=1` (pure footage for the launch-ad ed
 |---|---|---|---|---|---|
 | S1 | 0.00 | 2.10 | **Blinds open.** High 3/4 (≈50° → 47°) slow push 5.6 → 5.25 and a small arc. Frame 0 shows thin slits of light across the table and cup. Between 0.28 and 1.53 the slats tilt open and the bars widen; the room fills with warm light. Steam rises from a cup of espresso and crema (no milk yet: the heart is born in S3). | — | same |
 | S2 | 2.10 | 4.20 | **Steam macro.** Side view at rim height against the dark room, push-in 4.9 → 4.6, focus on the rim. Steam curls up and glows only where it crosses a bar of sun. | «قهوتك…» writes on right→left at 2.45; exits up from 3.85, gone by 4.15 | same, no type |
-| S3 | 4.20 | 7.00 | **Top-down pour.** ≈80° overhead, slow 9° rotation and push. The milk stream is already falling at frame 0: thin, tapering and beaded, with ripples running out from where it lands. A white bloom grows in the crema (4.20–5.85); the pull-through (5.85–6.40) draws it into a heart; the stream lifts away at 6.45. The bars slide across the saucer, and the lower frame sits in shade for the line. | «على مهلك.» writes on at 4.55 (2nd word +0.26); exits from 6.60, gone by 6.94 | same, no type |
-| S4 | 7.00 | 9.80 | **Beans, slow motion.** Low on the table, shallow focus, the barred wall behind. Beans tumble down through the light at about ⅛ speed. **Bean 1 lands at 7.70, bean 2 at 8.40** (crease up, a small slow bounce, settle). Others land soft and out of focus behind and in front. | «حبّة…» drops in at 7.70 · «حبّة.» at 8.40; exits from 9.42, gone by 9.76 | same, no type |
+| S3 | 4.20 | 7.00 | **Top-down pour.** ≈80° overhead, slow 9° rotation and push. The milk stream is already falling at frame 0: thin, tapering and beaded, with ripples running out from where it lands. A white bloom grows in the crema (4.20–5.85); the pull-through (5.85–6.40) draws it into a heart; the stream lifts away at 6.45. The bars slide across the saucer. The cup is framed high (saucer edge at y ≈ 1270) so the line sits on the shaded table below it, never on the cream saucer. | «على مهلك.» writes on at 4.55 (2nd word +0.26); exits from 6.60, gone by 6.94 | same, no type |
+| S4 | 7.00 | 9.80 | **Beans, slow motion.** Low on the table, shallow focus, the barred wall behind. Beans tumble down through the light at about ⅛ speed. Bean 1 is already falling into the top of frame at the cut (7.00) and the eye follows it down; bean 2 enters as bean 1 lands. **Bean 1 lands at 7.70, bean 2 at 8.40** (crease up, a small slow bounce, settle). Others land soft and out of focus behind and in front. | «حبّة…» drops in at 7.70 · «حبّة.» at 8.40; exits from 9.42, gone by 9.76 | same, no type |
 | S5 | 9.80 | 12.75 | **The cup turns on its saucer.** Low hero angle, push-in 4.75 → 4.25. The cup turns 72° (9.90–11.20, outCubic) and settles with a **clink at 11.20**; its printed mark comes round to face us. The light pool sits on the wall behind the lockup (same sun direction), and the steam settles low. **Client end card on the wall:** the mark writes on right→left (10.80–11.70); its terracotta bean drops from just under the letters and **lands in the ب slot at 11.50**; HABBA tracks in (11.55); SPECIALTY COFFEE (11.80). Full lockup holds to 12.75. | HABBA end card | the footage only (no mark, no Latin) |
 | S6 | 12.75 | 15.60 | **Tail.** The blinds close (12.75–13.10): the bars narrow to slits and the room goes dark. The TASH signature (local `sting-short.js`, same dots as `createSting`) runs from **13.00**: typing 13.00–13.74 → converge → **snap 14.12** → shadda 14.30 → «خلّهم يسولفون عنك!» 14.55 → @tash.creative.kw 15.10. The `CONCEPT AD — 03 / COFFEE` + «إعلان تجريبي — علامة خيالية» slate is visible from 13.10 to the end. | TASH tail + concept slate | **S5 continues**: light stays on, push-in continues to 15.60, the cup holds with its mark (no close, no sting, no slate) |
 
@@ -79,7 +79,7 @@ the film also close it.
 | Time | Text | Notes |
 |---|---|---|
 | 2.45–4.15 | **قهوتك…** | paper `#EFE6D8` on the dark room, 150 px Alexandria 300. The ellipsis sits on the left (end of the RTL line) |
-| 4.55–6.94 | **على مهلك.** | paper, 140 px, lower frame (in shade); the full stop sits at the left end |
+| 4.55–6.94 | **على مهلك.** | paper, 140 px, lower frame on the shaded table, below the saucer; the full stop sits at the left end |
 | 7.70–9.76 | **حبّة…  حبّة.** | paper, 150 px, lower frame; each word drops in as its bean lands. Shadda on ب in both |
 | 10.80–13.10 | mark **حبّة** + HABBA + SPECIALTY COFFEE | roasted `#4A2F23` on the sunlit wall |
 | 13.10–15.60 | `CONCEPT AD — 03 / COFFEE` · **إعلان تجريبي — علامة خيالية** | TASH slate (JetBrains Mono / IBM Plex Sans Arabic) |
@@ -115,6 +115,23 @@ Arc: hushed intro → groove → slow-motion hush → fuller resolve → near-si
 Master: pre-mastered to −14 LUFS, true peak ≤ −1.5 dBTP; the renderer's loudnorm then sets the final level.
 
 ---
+
+## Revision after the ECD review (timeline unchanged)
+
+All cut times, text times and sound cues above are unchanged; `src/cues.json` was not touched, so `?clean=1` cuts still
+land on the same frames. What changed is the look of some shots, which matters if you already pulled clean footage:
+
+- **Cup handle** (S1, S2, S5, poster, still): both ends of the handle used to stop at the glaze. The top showed an open,
+  hollow tube end and the lower end a flat cut floating off the body. Both ends now run into the cup wall.
+- **Shadows** (every shot): the sun now uses a full-precision soft shadow map instead of VSM. VSM broke up into blocky
+  dark squares where the rim shades the coffee (S1 hook, S3, hero still) and made beans and the saucer float. Object
+  shadows are now crisper and grounded. The rim shadow on the coffee and the milk stream's shadow are drawn
+  analytically, so they stay smooth.
+- **S3 framing**: the cup now sits about 145 px higher in frame. «على مهلك.» used to sit on the bright cream saucer
+  (paper on cream); it now sits on the shaded table.
+- **S4**: the two hero beans fall more slowly, so bean 1 is in frame from the first frame of the shot. Their landing
+  times (7.70 / 8.40) are unchanged. All beans have a roasted-skin texture and a soft contact shadow.
+- **Latte**: the milk has a thin caramel blush inside its edge, so it reads less like a flat white disc.
 
 ## Files
 

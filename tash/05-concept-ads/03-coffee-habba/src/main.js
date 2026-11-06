@@ -2,7 +2,7 @@
 // URL: ?clean=1 (pure footage, same timeline) · ?poster=1 (designed cover) · ?t=… / ?play (preview)
 import * as THREE from 'three';
 import { boot, grain, clamp, lerp, tw, E, rng } from '/_system/motion/kit.js';
-import { bakeTextures, makeGobo, makeEnv, makeRoom, makeCup, makeSaucer, makeBeans, makeSteam, makeLatte, makeStream, makePost, DIM } from './scene.js';
+import { bakeTextures, makeGobo, makeEnv, makeRoom, makeCup, makeSaucer, makeBeans, makeSteam, makeLatte, makeStream, makePost, placeBlob, DIM } from './scene.js';
 import { C, frameSpec } from './shots.js';
 
 const q = new URLSearchParams(location.search);
@@ -17,7 +17,7 @@ renderer.shadowMap.enabled = true;
 // PCF (packed full-precision depth), not VSM: VSM's half-float moments broke up into blocky dark squares where the rim
 // shadows the coffee a few mm below it (S1 hook, S3, hero still), and its light-bleeding made beans and saucer float.
 // A sharp-ish sun shadow is also the physically right one for objects touching the table.
-renderer.shadowMap.type = q.has('vsm') ? THREE.VSMShadowMap : THREE.PCFSoftShadowMap;
+renderer.shadowMap.type = THREE.PCFSoftShadowMap;
 renderer.outputColorSpace = THREE.SRGBColorSpace;
 stage.prepend(renderer.domElement); renderer.domElement.id = 'gl';
 
@@ -39,7 +39,7 @@ const room = makeRoom(tex); scene.add(room.group);
 const saucer = makeSaucer(tex); scene.add(saucer);
 const cup = makeCup(tex, env, SUN_DIR); cup.group.position.y = DIM.saucerY; scene.add(cup.group);
 await cup.logoTex.ready;
-const beans = makeBeans(16); scene.add(beans.group);
+const beans = makeBeans(16, tex); scene.add(beans.group);
 const steam = makeSteam(gobo); const steamScene = new THREE.Scene(); steamScene.add(steam.group);
 const latte = makeLatte(renderer); cup.liqMat.map = latte.rt.texture; cup.liqMat.needsUpdate = true;
 const stream = makeStream(); scene.add(stream.mesh);
@@ -88,7 +88,7 @@ function apply(S, t) {
   beans.beans.forEach((b, i) => {
     const st = S.beans[i];
     b.mesh.visible = !!st;
-    if (st) { b.mesh.position.set(...st.p); b.mesh.quaternion.set(...st.q); }
+    if (st) { b.mesh.position.set(...st.p); b.mesh.quaternion.set(...st.q); placeBlob(b, st.p, st.q); } else b.blob.visible = false;
   });
   // steam billboards (face the camera around the vertical axis)
   sun.updateMatrixWorld(); sun.shadow.camera.updateMatrixWorld();

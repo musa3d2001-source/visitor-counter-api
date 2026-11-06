@@ -249,7 +249,8 @@ export async function createWorld(W, H, C) {
   function subCount(t) {
     if (t >= 1.98 && t <= 2.12) return 12;                      // fastest part of the whip-out
     if (t >= C.whip[0] && t <= C.whip[1]) return 8;
-    if (t > C.smash - 0.045 && t < C.smash + 0.045) return 9;   // the slam itself: smooth, not strobed
+    if (Math.abs(t - C.smash) < 0.01) return 28;                 // contact frame: the plate crosses ~170 px inside the shutter
+    if (t > C.smash - 0.045 && t < C.smash + 0.045) return 16;   // the slam itself: smooth, not strobed
     if (t > C.smash - 0.08 && t < C.smash + 0.12) return 6;
     if (t > D.sauce && t < D.sauce + 0.1) return 8;              // splat spikes move fast
     if (t >= D.sauce + 0.1 && t < D.sauce + 0.18) return 4;

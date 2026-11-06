@@ -56,6 +56,16 @@ void main(){
   c = mix(c, vec3(0.86, 0.78, 0.68), smoothstep(0.62, 0.8, fbm(uv * 1.6 + 7.0)) * 0.25);
   gl_FragColor = vec4(c, 1.0);
 }`;
+// roasted bean skin: fine wrinkles and pores (height in r, roughness variation in g)
+const BEANSKIN = `varying vec2 vUv;
+void main(){
+  vec2 uv = vUv * vec2(6.0, 3.0);
+  float wr = fbm(vec2(uv.x * 7.0, uv.y * 2.2) + 4.0);                 // long wrinkles along the bean
+  float fine = vn(uv * 60.0) * 0.5 + vn(uv * 140.0 + 3.0) * 0.5;      // pores
+  float h = 0.55 * smoothstep(0.35, 0.75, wr) + 0.25 * fine + 0.2 * fbm(uv * 3.0);
+  float rough = 0.55 + 0.35 * fbm(uv * 2.0 + 9.0);
+  gl_FragColor = vec4(h, rough, h, 1.0);
+}`;
 // stoneware: cream glaze with iron speckles
 const CREAM = `varying vec2 vUv; uniform float uRep;
 float speck(vec2 p, float dens){
@@ -97,7 +107,8 @@ export function bakeTextures(renderer) {
   const cream = bake(renderer, CREAM, 1024, { uniforms: { uRep: { value: 4 } } }).texture; cream.colorSpace = THREE.SRGBColorSpace;
   const terra = bake(renderer, TERRA, 1024).texture; terra.colorSpace = THREE.SRGBColorSpace;
   terra.wrapT = THREE.ClampToEdgeWrapping;
-  return { wood, wall, cream, terra };
+  const beanskin = bake(renderer, BEANSKIN, 512).texture;
+  return { wood, wall, cream, terra, beanskin };
 }
 
 // ------------------------------------------------------------------ blinds gobo (GPU bake, animated)
@@ -231,7 +242,7 @@ export function makeCup(tex, env, sunDir = new THREE.Vector3(0.8, -0.5, -0.34).n
           vec2 c = uStr.xy; float s = dot(c - p, uSunH);
           c += vec2(0.04, -0.22) * (max(s, 0.0) * uSunTan / 2.6); s = dot(c - p, uSunH);
           vec2 q = p + uSunH * s - c;
-          vis *= 1.0 - 0.85 * step(0.0, s) * (1.0 - smoothstep(uStr.z * 0.7, uStr.z * 1.6, length(q)));
+          vis *= 1.0 - 0.42 * step(0.0, s) * (1.0 - smoothstep(uStr.z * 0.4, uStr.z * 2.4, length(q)));   // milk is translucent: a soft, light line
         }
         reflectedLight.directDiffuse *= vis; reflectedLight.directSpecular *= vis;
         #ifdef USE_CLEARCOAT
@@ -281,6 +292,7 @@ export function makeSaucer(tex) {
 export function makeBeanGeometry(seed = 1) {
   const R = rng(seed);
   const g = new THREE.SphereGeometry(1, 72, 54);
+  g.rotateZ(Math.PI / 2);                                         // UV poles at the bean's tips (the skin bump pinches at poles)
   const p = g.attributes.position, col = new Float32Array(p.count * 3);
   const ax = 0.56 * (0.94 + R() * 0.12), ay = 0.27 * (0.92 + R() * 0.14), az = 0.40 * (0.92 + R() * 0.14);
   const ns = 7 + R() * 5, no = R() * 10;
@@ -311,9 +323,32 @@ export function makeBeanGeometry(seed = 1) {
   return g;
 }
 const lerp3 = (a, b, k) => a + (b - a) * k;
-export function makeBeans(n = 18) {
+const BLOB_G = new THREE.PlaneGeometry(1, 1);
+const BLOB_M = (() => {
+  const cv = document.createElement('canvas'); cv.width = cv.height = 128; const c = cv.getContext('2d');
+  const gr = c.createRadialGradient(64, 64, 0, 64, 64, 64);
+  gr.addColorStop(0, 'rgba(0,0,0,0.85)'); gr.addColorStop(0.35, 'rgba(0,0,0,0.55)'); gr.addColorStop(1, 'rgba(0,0,0,0)');
+  c.fillStyle = gr; c.fillRect(0, 0, 128, 128);
+  const t = new THREE.CanvasTexture(cv);
+  return new THREE.MeshBasicMaterial({ map: t, transparent: true, depthWrite: false, color: 0x1a0d06, polygonOffset: true, polygonOffsetFactor: -1 });
+})();
+const _bx = new THREE.Vector3();
+/** place a bean's contact blob from its pose (p = centre, q = quaternion); height above the wood fades it */
+export function placeBlob(b, p, q) {
+  const h = p[1] - 0.03;                                         // ≈0 when resting
+  const k = Math.max(0, Math.min(1, 1 - h / 0.06));
+  b.blob.visible = k > 0.01;
+  if (!b.blob.visible) return;
+  _bx.set(1, 0, 0).applyQuaternion(new THREE.Quaternion(...q));   // long axis → blob orientation
+  b.blob.position.set(p[0], 0.0012, p[2]);
+  b.blob.rotation.set(-Math.PI / 2, 0, Math.atan2(_bx.z, _bx.x) * -1);
+  b.blob.scale.set(b.s * 1.8 * (0.6 + 0.4 * Math.hypot(_bx.x, _bx.z)), b.s * 1.45, 1);
+  b.blob.material.opacity = 0.62 * k;
+}
+export function makeBeans(n = 18, tex = null) {
   const geos = [1, 2, 3, 4].map(s => makeBeanGeometry(s * 13));
-  const mat = new THREE.MeshPhysicalMaterial({ color: new THREE.Color('#6e4227'), vertexColors: true, roughness: 0.68, clearcoat: 0.08, clearcoatRoughness: 0.5, envMapIntensity: 0.5, sheen: 0.35, sheenRoughness: 0.7, sheenColor: new THREE.Color('#a9774f') });
+  const mat = new THREE.MeshPhysicalMaterial({ color: new THREE.Color('#6e4227'), vertexColors: true, roughness: 0.68, clearcoat: 0.08, clearcoatRoughness: 0.5, envMapIntensity: 0.5, sheen: 0.35, sheenRoughness: 0.7, sheenColor: new THREE.Color('#a9774f'),
+    ...(tex ? { bumpMap: tex.beanskin, bumpScale: 2.2, roughnessMap: tex.beanskin, roughness: 0.95 } : {}) });
   const R = rng(777); const beans = [];
   const grp = new THREE.Group();
   for (let i = 0; i < n; i++) {
@@ -321,7 +356,9 @@ export function makeBeans(n = 18) {
     m.material.color.offsetHSL((R() - 0.5) * 0.03, (R() - 0.5) * 0.10, (R() - 0.5) * 0.12);
     m.castShadow = true; m.receiveShadow = true;
     const s = 0.105 * (0.9 + R() * 0.2); m.scale.setScalar(s);
-    grp.add(m); beans.push({ mesh: m, r: [R(), R(), R(), R(), R(), R()] });
+    // contact shadow: a soft dark blob on the table under the bean, fading in as it nears the wood (grounds it)
+    const blob = new THREE.Mesh(BLOB_G, BLOB_M.clone()); blob.rotation.x = -Math.PI / 2; blob.renderOrder = 1; blob.visible = false;
+    grp.add(m, blob); beans.push({ mesh: m, blob, s, r: [R(), R(), R(), R(), R(), R()] });
   }
   return { group: grp, beans };
 }
@@ -402,6 +439,10 @@ export function makeLatte(renderer) {
       float milk = smoothstep(0.012, -0.012, d) * step(0.001, uMilk);
       vec3 foam = vec3(0.96, 0.925, 0.86) * (0.97 + 0.04 * vn(pw * 160.0)) * (1.0 - 0.05 * smoothstep(0.0, -0.08, d + 0.02));
       foam = mix(foam, vec3(0.82, 0.66, 0.48), rings * 0.32 * milk);
+      // microfoam meeting the crema: a thin caramel blush just inside the edge, broken up by the flow (not a paper disc)
+      float blush = smoothstep(-0.11, -0.004, d) * (0.55 + 0.45 * fbm(pw * 9.0 + 2.0));
+      foam = mix(foam, vec3(0.80, 0.62, 0.43), blush * 0.38);
+      foam *= 0.985 + 0.03 * fbm(pw * 26.0 + uT * 0.2);
       // crema compressed into a darker rim just outside the milk
       float halo = smoothstep(0.045, 0.0, d) * (1.0 - milk);
       vec3 col = mix(crema, crema * 0.72, halo * step(0.001, uMilk));
