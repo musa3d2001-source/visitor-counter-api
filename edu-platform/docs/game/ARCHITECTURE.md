@@ -15,6 +15,8 @@
 
 ## 1. المحرك: 2.5D (three.js + Rapier2D الحتمي)
 
+> **تحديث 6 نوفمبر 2026: اختار المالك 3D خلف المرقاب** (`PLAN.md` §2.1). ما في هذا القسم قياسات المرحلة 0 للنسخة الثنائية، وتبقى صالحة منهجًا (حزمة split للعميل و `-compat` للخادم، وجزيرة `ssr:false`، والحتمية بالبصمة). المرحلة 2 تبدأ بتجربة 3D تعيد القياسات نفسها على `@dimforge/rapier3d-deterministic` 0.21.0 بسقف **120 جسمًا فيزيائيًا** وشظايا مرئية فقط، ثم يُحدَّث هذا القسم بأرقامها.
+
 ### 1.1 الإصدارات (مثبتة بدقة في `package.json`)
 
 | الحزمة | القرار | السبب |
@@ -128,7 +130,7 @@ src/app/admin/{curriculum,questions,game}/
 ## 3. البيانات (ترحيلان)
 
 ### `0007_question_bank.sql`
-`textbooks` (`subject_id`, `term`, `title`, `edition`, `is_current`, `rights_confirmed_at/by`)، `curriculum_units`، `curriculum_lessons` (`page_start/end`)، `questions`، `question_choices` (`unique index … where is_correct`)، `question_reports`، `question_attempts` العام. القيود كما في الأمر (5.1)، والتحقق قبل `in_review` بمشغّل في القاعدة إضافة إلى الخادم.
+`textbooks` (`subject_id`, `term`, `title`, `edition`, `is_current`, `rights_confirmed_at/by`)، `curriculum_units`، `curriculum_lessons` (`page_start/end`، و`chapter_number/chapter_title` اختياريان لكتب الوحدة ← الفصل ← الدرس، ورقم الدرس فريد داخل الفصل بفهرس `(unit_id, coalesce(chapter_number, 0), number)`)، `questions`، `question_choices` (`unique index … where is_correct`)، `question_reports`، `question_attempts` العام. القيود كما في الأمر (5.1)، والتحقق قبل `in_review` بمشغّل في القاعدة إضافة إلى الخادم.
 
 **ما بُني في المرحلة 1 (قرارات تفصيلية):**
 - `questions.root_id` هوية السؤال عبر نسخه، و`version` يزيد مع كل نسخة معدّلة. فهرسان فريدان جزئيان: نسخة منشورة واحدة لكل جذر، ونسخة مفتوحة (مسودة أو مراجعة) واحدة. اعتماد النسخة المعدّلة يؤرشف المنشورة في المعاملة نفسها، والمحاولات القديمة تبقى على نسختها.
