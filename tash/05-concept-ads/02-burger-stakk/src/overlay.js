@@ -31,8 +31,8 @@ function outWords(spans, t, start, { dur = 0.14, drop = -30 } = {}) {
 // Every label sits on calm ground (red seamless, dark griddle, charcoal) and never on food detail; sup and hero can
 // arrive on different beats (the claim lands with the shot that proves it). anchors: per sequence, frame-space px.
 const LABELS = [
-  { key: 'heel', top: 820, sup: 'بريوش', hero: 'محمّص بالزبدة', supAt: 'heel', heroAt: +0.05, out: 'end',
-    anchors: { S03: [230, 1300] } },                                 // the toasted top of the heel; the patty falls in after it exits
+  { key: 'heel', top: 820, sup: 'بريوش', hero: 'محمّص بالزبدة', supAt: 'heel', heroAt: +0.05, out: 3.12,
+    anchors: { S03: [230, 1300] } },                                 // the toasted top of the heel; gone by 3.26, before the falling patty reaches the label's band
   { key: 'patty', top: 222, sup: 'سماش…', hero: 'أطرافه مقرمشة', heroSize: 120, heroLH: 1.0, supAt: 'patty', heroAt: 3.62, out: 4.11,
     anchors: { S03: [200, 1212], S04: [385, 600] } },               // «سماش…» on the landed patty; the crisp claim on the real lace (S04);
                                                                      // gone on the S05 cut so the falling cheddar never passes under it
