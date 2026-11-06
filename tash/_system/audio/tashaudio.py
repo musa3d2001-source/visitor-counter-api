@@ -198,6 +198,31 @@ def duck_curve(N, times, depth_db=-8, attack=0.004, hold=0.03, release=0.22):
     return g
 
 
+
+def lufs(x):
+    """Integrated loudness (ITU-R BS.1770-4, K-weighted, gated) in LUFS at 48 kHz."""
+    xs = stereo(x)
+    # K-weighting stage 1 (high shelf) + stage 2 (RLB high-pass), BS.1770 coefficients for 48 kHz
+    b1, a1 = [1.53512485958697, -2.69169618940638, 1.19839281085285], [1.0, -1.69065929318241, 0.73248077421585]
+    b2, a2 = [1.0, -2.0, 1.0], [1.0, -1.99004745483398, 0.99007225036621]
+    k = signal.lfilter(b2, a2, signal.lfilter(b1, a1, xs, axis=0), axis=0)
+    blk, hop = n_(0.4), n_(0.1)
+    if len(k) < blk: return -70.0
+    ms = np.array([(k[i:i + blk] ** 2).mean(axis=0).sum() for i in range(0, len(k) - blk + 1, hop)])
+    L = -0.691 + 10 * np.log10(ms + 1e-12)
+    ms = ms[L > -70]
+    if not len(ms): return -70.0
+    rel = -0.691 + 10 * np.log10(ms.mean()) - 10
+    ms = ms[(-0.691 + 10 * np.log10(ms)) > rel]
+    return float(-0.691 + 10 * np.log10(ms.mean()))
+
+
+def true_peak_db(x, os_=4):
+    xs = stereo(x)
+    up = signal.resample_poly(xs, os_, 1, axis=0)
+    return float(20 * np.log10(np.abs(up).max() + 1e-12))
+
+
 # ----------------------------------------------------------------------------- the mix bus
 class Mix:
     def __init__(self, duration, tail=2.0):
@@ -221,7 +246,7 @@ class Mix:
             y = fn(self.buses[name])
             self.buses[name] = y[:len(self.buf)] if len(y) >= len(self.buf) else np.vstack([y, np.zeros((len(self.buf) - len(y), 2))])
 
-    def render(self, ceiling_db=-1.0, glue=True):
+    def render(self, ceiling_db=-1.5, glue=True):
         out = self.buf.copy()
         for b in self.buses.values(): out += b[:len(out)]
         out = hp(out, 24, order=4)
@@ -230,12 +255,25 @@ class Mix:
         out = limiter(out, ceiling_db)
         return out[:n_(self.d)]
 
-    def master(self, path, ceiling_db=-1.0, glue=True):
+    def master(self, path, ceiling_db=-1.5, glue=True, target_lufs=-14.0):
+        """Render, normalise to target_lufs (None = skip) and limit so TRUE peak stays ≤ ceiling_db.
+        Pre-mastering here means the renderer's linear loudnorm only nudges the level (no pumping)."""
         out = self.render(ceiling_db, glue)
+        if target_lufs is not None:
+            for _ in range(3):
+                g = target_lufs - lufs(out)
+                if abs(g) < 0.3: break
+                out = out * db(g)
+                c = ceiling_db
+                for _ in range(4):
+                    y = limiter(out, c)
+                    over = true_peak_db(y) - ceiling_db
+                    if over <= 0: break
+                    c -= over + 0.05
+                out = y
         os.makedirs(os.path.dirname(os.path.abspath(path)), exist_ok=True)
         wavfile.write(path, SR, out.astype(np.float32))
-        pk = 20 * np.log10(np.abs(out).max() + 1e-9); rms = 20 * np.log10(np.sqrt((out ** 2).mean()) + 1e-9)
-        print(f'wrote {path}  dur={len(out) / SR:.2f}s  peak={pk:.1f}dBFS  rms={rms:.1f}dBFS')
+        print(f'wrote {path}  dur={len(out) / SR:.2f}s  loudness={lufs(out):.1f} LUFS  true-peak={true_peak_db(out):.1f} dBTP')
         return out
 
 

@@ -122,10 +122,16 @@ async function main() {
 }
 
 export async function mux(video, audio, out) {
-  // Loudness: -14 LUFS integrated, -1 dBTP — Instagram/TikTok normalise to roughly this.
+  // Loudness: −14 LUFS integrated, −1 dBTP (Instagram/TikTok normalise to roughly this).
+  // Two-pass loudnorm in linear mode: measure first, then apply one static gain — no pumping.
+  const target = 'I=-14:TP=-1.5:LRA=11'; // −1.5 leaves room for AAC encoder overshoot
+  const m = await capture('ffmpeg', ['-hide_banner', '-nostats', '-i', audio, '-af', `loudnorm=${target}:print_format=json`, '-f', 'null', '-']);
+  const j = JSON.parse(m.slice(m.lastIndexOf('{'), m.lastIndexOf('}') + 1));
+  const af = `loudnorm=${target}:measured_I=${j.input_i}:measured_TP=${j.input_tp}:measured_LRA=${j.input_lra}:measured_thresh=${j.input_thresh}:offset=${j.target_offset}:linear=true`;
   await run('ffmpeg', ['-y', '-loglevel', 'error', '-i', video, '-i', audio, '-map', '0:v', '-map', '1:a', '-c:v', 'copy',
-    '-af', 'loudnorm=I=-14:TP=-1.0:LRA=9', '-ar', '48000', '-c:a', 'aac', '-b:a', '320k', '-shortest', '-movflags', '+faststart', out]);
+    '-af', af, '-ar', '48000', '-c:a', 'aac', '-b:a', '320k', '-shortest', '-movflags', '+faststart', out]);
 }
+function capture(cmd, a) { return new Promise((res, rej) => { let e = ''; const p = spawn(cmd, a); p.stderr.on('data', d => (e += d)); p.on('close', c => (c === 0 ? res(e) : rej(new Error(cmd + ' exit ' + c + '\n' + e.slice(-500))))); }); }
 function run(cmd, a) { return new Promise((res, rej) => spawn(cmd, a, { stdio: 'inherit' }).on('close', c => (c === 0 ? res() : rej(new Error(cmd + ' exit ' + c))))); }
 
 if (process.argv[1] && resolve(process.argv[1]) === fileURLToPath(import.meta.url)) main().catch(e => { console.error(e); process.exit(1); });
