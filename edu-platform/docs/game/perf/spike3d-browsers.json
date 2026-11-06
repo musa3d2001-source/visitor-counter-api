@@ -1,0 +1,934 @@
+{
+  "base": "http://localhost:3100",
+  "at": "2026-11-06T21:49:47.262Z",
+  "runs": [
+    {
+      "engine": "chromium",
+      "version": "153.0.8010.12",
+      "query": "auto=1&flavors=split,compat",
+      "throttle": null,
+      "wallMs": 24491,
+      "errors": [],
+      "res": {
+        "ua": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) HeadlessChrome/153.0.8010.12 Safari/537.36",
+        "dpr": 1,
+        "cores": 24,
+        "viewport": "1280x800",
+        "webgl2": true,
+        "reducedMotion": false,
+        "server": {
+          "node": "v22.20.0",
+          "initMs": 0,
+          "totalMs": 1003,
+          "maxLayoutMs": 310.1
+        },
+        "flavors": [
+          {
+            "flavor": "split",
+            "ok": true,
+            "loadMs": 333,
+            "bytes": {
+              "transfer": 1238366,
+              "encoded": 1237466,
+              "decoded": 3425529,
+              "files": [
+                "43dc0vsbi0b5-.js 0KB",
+                "1e575r52pp_qq.js 55KB",
+                "073pqyaxx48t-.wasm 1153KB"
+              ]
+            },
+            "allMatch": true,
+            "replay": [
+              {
+                "key": "first-light",
+                "bodies": 7,
+                "ms": 69.1,
+                "match": true,
+                "firstMismatchShot": -1
+              },
+              {
+                "key": "frond-wall",
+                "bodies": 31,
+                "ms": 58.6,
+                "match": true,
+                "firstMismatchShot": -1
+              },
+              {
+                "key": "glass-tower",
+                "bodies": 23,
+                "ms": 19.1,
+                "match": true,
+                "firstMismatchShot": -1
+              },
+              {
+                "key": "stone-gate",
+                "bodies": 10,
+                "ms": 19.8,
+                "match": true,
+                "firstMismatchShot": -1
+              },
+              {
+                "key": "lightbox-court",
+                "bodies": 27,
+                "ms": 24.5,
+                "match": true,
+                "firstMismatchShot": -1
+              },
+              {
+                "key": "pyramid",
+                "bodies": 59,
+                "ms": 135.9,
+                "match": true,
+                "firstMismatchShot": -1
+              },
+              {
+                "key": "stress-90",
+                "bodies": 90,
+                "ms": 176.8,
+                "match": true,
+                "firstMismatchShot": -1
+              },
+              {
+                "key": "stress-120",
+                "bodies": 120,
+                "ms": 153.6,
+                "match": true,
+                "firstMismatchShot": -1
+              }
+            ],
+            "usPerStep": 78
+          },
+          {
+            "flavor": "compat",
+            "ok": true,
+            "loadMs": 239,
+            "bytes": {
+              "transfer": 1652398,
+              "encoded": 1652098,
+              "decoded": 4369395,
+              "files": [
+                "0p4ntnplsgpfy.js 1613KB"
+              ]
+            },
+            "allMatch": true,
+            "replay": [
+              {
+                "key": "first-light",
+                "bodies": 7,
+                "ms": 21.9,
+                "match": true,
+                "firstMismatchShot": -1
+              },
+              {
+                "key": "frond-wall",
+                "bodies": 31,
+                "ms": 67.9,
+                "match": true,
+                "firstMismatchShot": -1
+              },
+              {
+                "key": "glass-tower",
+                "bodies": 23,
+                "ms": 24.5,
+                "match": true,
+                "firstMismatchShot": -1
+              },
+              {
+                "key": "stone-gate",
+                "bodies": 10,
+                "ms": 27.8,
+                "match": true,
+                "firstMismatchShot": -1
+              },
+              {
+                "key": "lightbox-court",
+                "bodies": 27,
+                "ms": 35,
+                "match": true,
+                "firstMismatchShot": -1
+              },
+              {
+                "key": "pyramid",
+                "bodies": 59,
+                "ms": 215.2,
+                "match": true,
+                "firstMismatchShot": -1
+              },
+              {
+                "key": "stress-90",
+                "bodies": 90,
+                "ms": 286.1,
+                "match": true,
+                "firstMismatchShot": -1
+              },
+              {
+                "key": "stress-120",
+                "bodies": 120,
+                "ms": 269.5,
+                "match": true,
+                "firstMismatchShot": -1
+              }
+            ],
+            "usPerStep": 112
+          }
+        ],
+        "threeLoadMs": 55,
+        "threeBytes": {
+          "transfer": 152376,
+          "encoded": 151776,
+          "decoded": 598339,
+          "files": [
+            "06rzas65iad0w.js 140KB",
+            "0sl1_bokzybbi.js 8KB"
+          ]
+        },
+        "engineReadyMs": 3281,
+        "visual": [
+          {
+            "quality": "high",
+            "seconds": 8,
+            "fps": 8.9,
+            "medianMs": 112.3,
+            "p95Ms": 305.6,
+            "drawCalls": 30,
+            "triangles": 100122,
+            "dpr": 1,
+            "frames": 78,
+            "canvas": "1280x800",
+            "maxShards": 132,
+            "simMsPerFrameP95": 4.7
+          },
+          {
+            "quality": "low",
+            "seconds": 8,
+            "fps": 21.5,
+            "medianMs": 46.6,
+            "p95Ms": 183,
+            "drawCalls": 16,
+            "triangles": 36946,
+            "dpr": 1,
+            "frames": 125,
+            "canvas": "1280x800",
+            "maxShards": 132,
+            "simMsPerFrameP95": 81.9
+          }
+        ],
+        "done": true
+      }
+    },
+    {
+      "engine": "webkit",
+      "version": "26.6",
+      "query": "auto=1&flavors=split,compat",
+      "throttle": null,
+      "wallMs": 21685,
+      "errors": [],
+      "res": {
+        "ua": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/26.6 Safari/605.1.15",
+        "dpr": 1,
+        "cores": 8,
+        "viewport": "1280x800",
+        "webgl2": true,
+        "reducedMotion": false,
+        "server": {
+          "node": "v22.20.0",
+          "initMs": 0,
+          "totalMs": 1107,
+          "maxLayoutMs": 367
+        },
+        "flavors": [
+          {
+            "flavor": "split",
+            "ok": true,
+            "loadMs": 177,
+            "bytes": {
+              "transfer": 1238366,
+              "encoded": 1237466,
+              "decoded": 3425529,
+              "files": [
+                "43dc0vsbi0b5-.js 0KB",
+                "1e575r52pp_qq.js 55KB",
+                "073pqyaxx48t-.wasm 1153KB"
+              ]
+            },
+            "allMatch": true,
+            "replay": [
+              {
+                "key": "first-light",
+                "bodies": 7,
+                "ms": 31,
+                "match": true,
+                "firstMismatchShot": -1
+              },
+              {
+                "key": "frond-wall",
+                "bodies": 31,
+                "ms": 67,
+                "match": true,
+                "firstMismatchShot": -1
+              },
+              {
+                "key": "glass-tower",
+                "bodies": 23,
+                "ms": 20,
+                "match": true,
+                "firstMismatchShot": -1
+              },
+              {
+                "key": "stone-gate",
+                "bodies": 10,
+                "ms": 27,
+                "match": true,
+                "firstMismatchShot": -1
+              },
+              {
+                "key": "lightbox-court",
+                "bodies": 27,
+                "ms": 28,
+                "match": true,
+                "firstMismatchShot": -1
+              },
+              {
+                "key": "pyramid",
+                "bodies": 59,
+                "ms": 191,
+                "match": true,
+                "firstMismatchShot": -1
+              },
+              {
+                "key": "stress-90",
+                "bodies": 90,
+                "ms": 249,
+                "match": true,
+                "firstMismatchShot": -1
+              },
+              {
+                "key": "stress-120",
+                "bodies": 120,
+                "ms": 220,
+                "match": true,
+                "firstMismatchShot": -1
+              }
+            ],
+            "usPerStep": 99
+          },
+          {
+            "flavor": "compat",
+            "ok": true,
+            "loadMs": 182,
+            "bytes": {
+              "transfer": 1652398,
+              "encoded": 1652098,
+              "decoded": 4369395,
+              "files": [
+                "0p4ntnplsgpfy.js 1613KB"
+              ]
+            },
+            "allMatch": true,
+            "replay": [
+              {
+                "key": "first-light",
+                "bodies": 7,
+                "ms": 31,
+                "match": true,
+                "firstMismatchShot": -1
+              },
+              {
+                "key": "frond-wall",
+                "bodies": 31,
+                "ms": 66,
+                "match": true,
+                "firstMismatchShot": -1
+              },
+              {
+                "key": "glass-tower",
+                "bodies": 23,
+                "ms": 19,
+                "match": true,
+                "firstMismatchShot": -1
+              },
+              {
+                "key": "stone-gate",
+                "bodies": 10,
+                "ms": 38,
+                "match": true,
+                "firstMismatchShot": -1
+              },
+              {
+                "key": "lightbox-court",
+                "bodies": 27,
+                "ms": 56,
+                "match": true,
+                "firstMismatchShot": -1
+              },
+              {
+                "key": "pyramid",
+                "bodies": 59,
+                "ms": 376,
+                "match": true,
+                "firstMismatchShot": -1
+              },
+              {
+                "key": "stress-90",
+                "bodies": 90,
+                "ms": 465,
+                "match": true,
+                "firstMismatchShot": -1
+              },
+              {
+                "key": "stress-120",
+                "bodies": 120,
+                "ms": 420,
+                "match": true,
+                "firstMismatchShot": -1
+              }
+            ],
+            "usPerStep": 174
+          }
+        ],
+        "threeLoadMs": 42,
+        "threeBytes": {
+          "transfer": 152376,
+          "encoded": 151776,
+          "decoded": 598339,
+          "files": [
+            "06rzas65iad0w.js 140KB",
+            "0sl1_bokzybbi.js 8KB"
+          ]
+        },
+        "engineReadyMs": 3575,
+        "visual": [
+          {
+            "quality": "high",
+            "seconds": 8,
+            "fps": 15.6,
+            "medianMs": 64,
+            "p95Ms": 78,
+            "drawCalls": 32,
+            "triangles": 73914,
+            "dpr": 1,
+            "frames": 122,
+            "canvas": "1280x800",
+            "maxShards": 145,
+            "simMsPerFrameP95": 4
+          },
+          {
+            "quality": "low",
+            "seconds": 8,
+            "fps": 15.4,
+            "medianMs": 65,
+            "p95Ms": 81,
+            "drawCalls": 18,
+            "triangles": 38554,
+            "dpr": 1,
+            "frames": 116,
+            "canvas": "1280x800",
+            "maxShards": 137,
+            "simMsPerFrameP95": 5
+          }
+        ],
+        "done": true
+      }
+    },
+    {
+      "engine": "chrome",
+      "version": "156.0.8078.80",
+      "query": "auto=1&flavors=split,compat",
+      "throttle": null,
+      "wallMs": 21783,
+      "errors": [],
+      "res": {
+        "ua": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) HeadlessChrome/156.0.0.0 Safari/537.36",
+        "dpr": 1,
+        "cores": 24,
+        "viewport": "1280x800",
+        "webgl2": true,
+        "server": {
+          "node": "v22.20.0",
+          "initMs": 0,
+          "totalMs": 1059,
+          "maxLayoutMs": 339.3
+        },
+        "flavors": [
+          {
+            "flavor": "split",
+            "ok": true,
+            "loadMs": 270,
+            "bytes": {
+              "transfer": 1238366,
+              "encoded": 1237466,
+              "decoded": 3425529,
+              "files": [
+                "43dc0vsbi0b5-.js 0KB",
+                "1e575r52pp_qq.js 55KB",
+                "073pqyaxx48t-.wasm 1153KB"
+              ]
+            },
+            "allMatch": true,
+            "replay": [
+              {
+                "key": "first-light",
+                "bodies": 7,
+                "ms": 167.8,
+                "match": true,
+                "firstMismatchShot": -1
+              },
+              {
+                "key": "frond-wall",
+                "bodies": 31,
+                "ms": 98.3,
+                "match": true,
+                "firstMismatchShot": -1
+              },
+              {
+                "key": "glass-tower",
+                "bodies": 23,
+                "ms": 37.6,
+                "match": true,
+                "firstMismatchShot": -1
+              },
+              {
+                "key": "stone-gate",
+                "bodies": 10,
+                "ms": 38.6,
+                "match": true,
+                "firstMismatchShot": -1
+              },
+              {
+                "key": "lightbox-court",
+                "bodies": 27,
+                "ms": 46,
+                "match": true,
+                "firstMismatchShot": -1
+              },
+              {
+                "key": "pyramid",
+                "bodies": 59,
+                "ms": 247.3,
+                "match": true,
+                "firstMismatchShot": -1
+              },
+              {
+                "key": "stress-90",
+                "bodies": 90,
+                "ms": 336.6,
+                "match": true,
+                "firstMismatchShot": -1
+              },
+              {
+                "key": "stress-120",
+                "bodies": 120,
+                "ms": 279.5,
+                "match": true,
+                "firstMismatchShot": -1
+              }
+            ],
+            "usPerStep": 148
+          },
+          {
+            "flavor": "compat",
+            "ok": true,
+            "loadMs": 304,
+            "bytes": {
+              "transfer": 1652398,
+              "encoded": 1652098,
+              "decoded": 4369395,
+              "files": [
+                "0p4ntnplsgpfy.js 1613KB"
+              ]
+            },
+            "allMatch": true,
+            "replay": [
+              {
+                "key": "first-light",
+                "bodies": 7,
+                "ms": 26.7,
+                "match": true,
+                "firstMismatchShot": -1
+              },
+              {
+                "key": "frond-wall",
+                "bodies": 31,
+                "ms": 76.6,
+                "match": true,
+                "firstMismatchShot": -1
+              },
+              {
+                "key": "glass-tower",
+                "bodies": 23,
+                "ms": 26.7,
+                "match": true,
+                "firstMismatchShot": -1
+              },
+              {
+                "key": "stone-gate",
+                "bodies": 10,
+                "ms": 30.7,
+                "match": true,
+                "firstMismatchShot": -1
+              },
+              {
+                "key": "lightbox-court",
+                "bodies": 27,
+                "ms": 37.6,
+                "match": true,
+                "firstMismatchShot": -1
+              },
+              {
+                "key": "pyramid",
+                "bodies": 59,
+                "ms": 236.6,
+                "match": true,
+                "firstMismatchShot": -1
+              },
+              {
+                "key": "stress-90",
+                "bodies": 90,
+                "ms": 316.3,
+                "match": true,
+                "firstMismatchShot": -1
+              },
+              {
+                "key": "stress-120",
+                "bodies": 120,
+                "ms": 293.7,
+                "match": true,
+                "firstMismatchShot": -1
+              }
+            ],
+            "usPerStep": 124
+          }
+        ],
+        "threeLoadMs": 62,
+        "threeBytes": {
+          "transfer": 152042,
+          "encoded": 151442,
+          "decoded": 597376,
+          "files": [
+            "06rzas65iad0w.js 140KB",
+            "0y5v5o73hh0ya.js 8KB"
+          ]
+        },
+        "engineReadyMs": 3587,
+        "visual": [
+          {
+            "quality": "high",
+            "seconds": 8,
+            "fps": 7.8,
+            "medianMs": 128.7,
+            "p95Ms": 226.1,
+            "drawCalls": 30,
+            "triangles": 96810,
+            "dpr": 1,
+            "frames": 59,
+            "canvas": "1280x800",
+            "maxShards": 132,
+            "simMsPerFrameP95": 8.8
+          },
+          {
+            "quality": "low",
+            "seconds": 8,
+            "fps": 14.7,
+            "medianMs": 67.9,
+            "p95Ms": 151.6,
+            "drawCalls": 19,
+            "triangles": 37590,
+            "dpr": 1,
+            "frames": 111,
+            "canvas": "1280x800",
+            "maxShards": 132,
+            "simMsPerFrameP95": 43.6
+          }
+        ],
+        "done": true
+      },
+      "note": "measured before the review fixes (same physics and layouts, earlier renderer build)"
+    },
+    {
+      "engine": "chromium-throttled-x4-fast4g",
+      "version": "153.0.8010.12",
+      "query": "auto=1&flavors=split",
+      "throttle": {
+        "cpu": 4,
+        "net": true
+      },
+      "wallMs": 24826,
+      "errors": [],
+      "res": {
+        "ua": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) HeadlessChrome/153.0.8010.12 Safari/537.36",
+        "dpr": 1,
+        "cores": 24,
+        "viewport": "390x844",
+        "webgl2": true,
+        "server": {
+          "node": "v22.20.0",
+          "initMs": 0,
+          "totalMs": 1122,
+          "maxLayoutMs": 327.7
+        },
+        "flavors": [
+          {
+            "flavor": "split",
+            "ok": true,
+            "loadMs": 1686,
+            "bytes": {
+              "transfer": 1238366,
+              "encoded": 1237466,
+              "decoded": 3425529,
+              "files": [
+                "43dc0vsbi0b5-.js 0KB",
+                "1e575r52pp_qq.js 55KB",
+                "073pqyaxx48t-.wasm 1153KB"
+              ]
+            },
+            "allMatch": true,
+            "replay": [
+              {
+                "key": "first-light",
+                "bodies": 7,
+                "ms": 274.3,
+                "match": true,
+                "firstMismatchShot": -1
+              },
+              {
+                "key": "frond-wall",
+                "bodies": 31,
+                "ms": 426.7,
+                "match": true,
+                "firstMismatchShot": -1
+              },
+              {
+                "key": "glass-tower",
+                "bodies": 23,
+                "ms": 162.2,
+                "match": true,
+                "firstMismatchShot": -1
+              },
+              {
+                "key": "stone-gate",
+                "bodies": 10,
+                "ms": 77.3,
+                "match": true,
+                "firstMismatchShot": -1
+              },
+              {
+                "key": "lightbox-court",
+                "bodies": 27,
+                "ms": 42.7,
+                "match": true,
+                "firstMismatchShot": -1
+              },
+              {
+                "key": "pyramid",
+                "bodies": 59,
+                "ms": 727.6,
+                "match": true,
+                "firstMismatchShot": -1
+              },
+              {
+                "key": "stress-90",
+                "bodies": 90,
+                "ms": 625.5,
+                "match": true,
+                "firstMismatchShot": -1
+              },
+              {
+                "key": "stress-120",
+                "bodies": 120,
+                "ms": 476.5,
+                "match": true,
+                "firstMismatchShot": -1
+              }
+            ],
+            "usPerStep": 334
+          }
+        ],
+        "threeLoadMs": 386,
+        "threeBytes": {
+          "transfer": 152042,
+          "encoded": 151442,
+          "decoded": 597376,
+          "files": [
+            "06rzas65iad0w.js 140KB",
+            "0y5v5o73hh0ya.js 8KB"
+          ]
+        },
+        "engineReadyMs": 5727,
+        "visual": [
+          {
+            "quality": "high",
+            "seconds": 8,
+            "fps": 15.1,
+            "medianMs": 66.1,
+            "p95Ms": 125,
+            "drawCalls": 28,
+            "triangles": 70698,
+            "dpr": 1,
+            "frames": 117,
+            "canvas": "390x844",
+            "maxShards": 132,
+            "simMsPerFrameP95": 76.4
+          },
+          {
+            "quality": "low",
+            "seconds": 8,
+            "fps": 31.3,
+            "medianMs": 31.9,
+            "p95Ms": 50.8,
+            "drawCalls": 17,
+            "triangles": 38374,
+            "dpr": 1,
+            "frames": 237,
+            "canvas": "390x844",
+            "maxShards": 153,
+            "simMsPerFrameP95": 36.1
+          }
+        ],
+        "done": true
+      },
+      "note": "measured before the review fixes (same physics and layouts, earlier renderer build)"
+    },
+    {
+      "engine": "chromium-throttled-x4-fast4g",
+      "version": "153.0.8010.12",
+      "query": "auto=1&flavors=compat",
+      "throttle": {
+        "cpu": 4,
+        "net": true
+      },
+      "wallMs": 24550,
+      "errors": [],
+      "res": {
+        "ua": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) HeadlessChrome/153.0.8010.12 Safari/537.36",
+        "dpr": 1,
+        "cores": 24,
+        "viewport": "390x844",
+        "webgl2": true,
+        "server": {
+          "node": "v22.20.0",
+          "initMs": 0,
+          "totalMs": 1048,
+          "maxLayoutMs": 332.4
+        },
+        "flavors": [
+          {
+            "flavor": "compat",
+            "ok": true,
+            "loadMs": 1945,
+            "bytes": {
+              "transfer": 1652398,
+              "encoded": 1652098,
+              "decoded": 4369395,
+              "files": [
+                "0p4ntnplsgpfy.js 1613KB"
+              ]
+            },
+            "allMatch": true,
+            "replay": [
+              {
+                "key": "first-light",
+                "bodies": 7,
+                "ms": 362.3,
+                "match": true,
+                "firstMismatchShot": -1
+              },
+              {
+                "key": "frond-wall",
+                "bodies": 31,
+                "ms": 471.7,
+                "match": true,
+                "firstMismatchShot": -1
+              },
+              {
+                "key": "glass-tower",
+                "bodies": 23,
+                "ms": 92,
+                "match": true,
+                "firstMismatchShot": -1
+              },
+              {
+                "key": "stone-gate",
+                "bodies": 10,
+                "ms": 49.5,
+                "match": true,
+                "firstMismatchShot": -1
+              },
+              {
+                "key": "lightbox-court",
+                "bodies": 27,
+                "ms": 87.2,
+                "match": true,
+                "firstMismatchShot": -1
+              },
+              {
+                "key": "pyramid",
+                "bodies": 59,
+                "ms": 732.6,
+                "match": true,
+                "firstMismatchShot": -1
+              },
+              {
+                "key": "stress-90",
+                "bodies": 90,
+                "ms": 406.4,
+                "match": true,
+                "firstMismatchShot": -1
+              },
+              {
+                "key": "stress-120",
+                "bodies": 120,
+                "ms": 666.8,
+                "match": true,
+                "firstMismatchShot": -1
+              }
+            ],
+            "usPerStep": 340
+          }
+        ],
+        "threeLoadMs": 378,
+        "threeBytes": {
+          "transfer": 152042,
+          "encoded": 151442,
+          "decoded": 597376,
+          "files": [
+            "06rzas65iad0w.js 140KB",
+            "0y5v5o73hh0ya.js 8KB"
+          ]
+        },
+        "engineReadyMs": 5922,
+        "visual": [
+          {
+            "quality": "high",
+            "seconds": 8,
+            "fps": 15.1,
+            "medianMs": 66.3,
+            "p95Ms": 102.2,
+            "drawCalls": 31,
+            "triangles": 71442,
+            "dpr": 1,
+            "frames": 126,
+            "canvas": "390x844",
+            "maxShards": 137,
+            "simMsPerFrameP95": 70.4
+          },
+          {
+            "quality": "low",
+            "seconds": 8,
+            "fps": 33.8,
+            "medianMs": 29.6,
+            "p95Ms": 52,
+            "drawCalls": 17,
+            "triangles": 38374,
+            "dpr": 1,
+            "frames": 264,
+            "canvas": "390x844",
+            "maxShards": 163,
+            "simMsPerFrameP95": 30.4
+          }
+        ],
+        "done": true
+      },
+      "note": "measured before the review fixes (same physics and layouts, earlier renderer build)"
+    }
+  ]
+}

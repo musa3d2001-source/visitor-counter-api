@@ -1,0 +1,181 @@
+{
+  "node": "v22.20.0",
+  "platform": "win32-x64",
+  "initMs": 61.4,
+  "runs": 10,
+  "layouts": {
+    "first-light": {
+      "bodies": 7,
+      "shots": 3,
+      "steps": 641,
+      "broken": 1,
+      "freed": "2/2",
+      "finalHash": "2e2cb321",
+      "inProcessStable": true,
+      "childProcessMatch": true,
+      "p50ms": 11.4,
+      "p95ms": 25.2,
+      "maxMs": 25.2,
+      "usPerStep": 17.8,
+      "hashes": [
+        "8e85530f",
+        "2161843d",
+        "940c9529",
+        "2e2cb321"
+      ]
+    },
+    "frond-wall": {
+      "bodies": 31,
+      "shots": 4,
+      "steps": 774,
+      "broken": 6,
+      "freed": "0/3",
+      "finalHash": "4bd18634",
+      "inProcessStable": true,
+      "childProcessMatch": true,
+      "p50ms": 41.9,
+      "p95ms": 42.4,
+      "maxMs": 42.4,
+      "usPerStep": 54.1,
+      "hashes": [
+        "255bbd0c",
+        "fb51775d",
+        "95196cb4",
+        "ce399988",
+        "4bd18634"
+      ]
+    },
+    "glass-tower": {
+      "bodies": 23,
+      "shots": 4,
+      "steps": 796,
+      "broken": 19,
+      "freed": "3/3",
+      "finalHash": "8089d21b",
+      "inProcessStable": true,
+      "childProcessMatch": true,
+      "p50ms": 13.4,
+      "p95ms": 19,
+      "maxMs": 19,
+      "usPerStep": 16.8,
+      "hashes": [
+        "8b1ac5b4",
+        "e87cab94",
+        "d05628f4",
+        "17fc0ad5",
+        "8089d21b"
+      ]
+    },
+    "stone-gate": {
+      "bodies": 10,
+      "shots": 4,
+      "steps": 951,
+      "broken": 1,
+      "freed": "2/2",
+      "finalHash": "6e7bda40",
+      "inProcessStable": true,
+      "childProcessMatch": true,
+      "p50ms": 15.1,
+      "p95ms": 16.9,
+      "maxMs": 16.9,
+      "usPerStep": 15.9,
+      "hashes": [
+        "df8f2d70",
+        "32bb7ae1",
+        "665f8b6d",
+        "7e2b4b25",
+        "6e7bda40"
+      ]
+    },
+    "lightbox-court": {
+      "bodies": 27,
+      "shots": 4,
+      "steps": 941,
+      "broken": 4,
+      "freed": "6/6",
+      "finalHash": "81afeaea",
+      "inProcessStable": true,
+      "childProcessMatch": true,
+      "p50ms": 20.1,
+      "p95ms": 22.9,
+      "maxMs": 22.9,
+      "usPerStep": 21.3,
+      "hashes": [
+        "00696ba6",
+        "85fce77e",
+        "e81e1e6f",
+        "2427fa6c",
+        "81afeaea"
+      ]
+    },
+    "pyramid": {
+      "bodies": 59,
+      "shots": 5,
+      "steps": 1082,
+      "broken": 9,
+      "freed": "4/4",
+      "finalHash": "26f6abc9",
+      "inProcessStable": true,
+      "childProcessMatch": true,
+      "p50ms": 235,
+      "p95ms": 258.5,
+      "maxMs": 258.5,
+      "usPerStep": 217.2,
+      "hashes": [
+        "ca998ca5",
+        "5c0e81b7",
+        "ee0bdf44",
+        "0a50579b",
+        "ea6bb0d0",
+        "26f6abc9"
+      ]
+    },
+    "stress-90": {
+      "bodies": 90,
+      "shots": 6,
+      "steps": 1537,
+      "broken": 31,
+      "freed": "6/6",
+      "finalHash": "4e9144df",
+      "inProcessStable": true,
+      "childProcessMatch": true,
+      "p50ms": 342.8,
+      "p95ms": 476.5,
+      "maxMs": 476.5,
+      "usPerStep": 223,
+      "hashes": [
+        "631bce0e",
+        "a6ebd10e",
+        "d795ab57",
+        "4d9f514e",
+        "04c9fabb",
+        "8c406938",
+        "4e9144df"
+      ]
+    },
+    "stress-120": {
+      "bodies": 120,
+      "shots": 6,
+      "steps": 1712,
+      "broken": 22,
+      "freed": "7/8",
+      "finalHash": "d469b9cc",
+      "inProcessStable": true,
+      "childProcessMatch": true,
+      "p50ms": 325.3,
+      "p95ms": 335.4,
+      "maxMs": 335.4,
+      "usPerStep": 190,
+      "hashes": [
+        "d0ca9f45",
+        "74a5c977",
+        "605e2020",
+        "58cf3cd7",
+        "3bf1da44",
+        "5a7a654d",
+        "d469b9cc"
+      ]
+    }
+  },
+  "allDeterministic": true
+}
