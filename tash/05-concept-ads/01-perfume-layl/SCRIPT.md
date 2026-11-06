@@ -35,10 +35,13 @@ A **CGI product film** built entirely in code:
   arch has smooth bevel normals and flat faces (a custom normal pass), because non-indexed extrudes show facets in
   refraction. An inner cavity surface adds the glass→air reflections.
 - **Liquid.** An inner volume with a custom shader: an intensity-dependent amber ramp (deep red-brown → honey), backlit
-  radial falloff, a caustic band at the base, refracted studio env, and a "glow front" that rises through it. The hook's
+  radial falloff, a caustic band at the base, refracted studio env, and a "glow front" that rises through it. The juice
+  deepens toward the cavity walls (longer light path) and the fill line carries a thin meniscus highlight over a slightly
+  darker band. In S2 the refracted back light comes up with the glow, so the unlit juice opens deep and dark. The hook's
   light bar lights a moving band inside it.
-- **Brass.** Lathe-turned cap with anisotropic brushed `MeshPhysicalMaterial`, a canvas-drawn brushing map, chamfers, a
-  groove and an atomiser orifice.
+- **Brass.** Lathe-turned cap (384 segments, real vertex tangents) with anisotropic brushed `MeshPhysicalMaterial`, a
+  canvas-drawn brushing map, chamfers, a groove and an atomiser orifice with a fine polished bezel. The vertex tangents
+  matter in macro: derivative tangents are per triangle and showed as stair-stepped facets on the rim.
 - **Label.** «ليل» / LAYL / EAU DE PARFUM · No.07 drawn to a `CanvasTexture` with the real fonts (Alexandria 300,
   Archivo expanded 300/400), as hot-foil on the clear glass plinth.
 - **Macro detail and lens.** Depth of field via a half-res gather blur composited by circle of confusion, plus a
@@ -57,7 +60,7 @@ A **CGI product film** built entirely in code:
   reservoir with 1.3 cm walls. It is not modelled on any existing perfume.
 - **Cap = atomiser.** A heavy lathe-turned brushed-brass cylinder with a fine groove. A pin-hole orifice on its left side
   makes the cap itself the actuator: press, and it sprays.
-- **Label.** Hot-foil «ليل» / LAYL / EAU DE PARFUM · No.07 on the plinth.
+- **Label.** Hot-foil «ليل» / LAYL / ─── / EAU DE PARFUM · No.07 on the plinth (the same lockup as the end card).
 
 ## 4. Client look (not TASH) | هوية العميل
 | role | value |
@@ -86,8 +89,9 @@ Times in seconds; frames at 30 fps (first frame of the shot). Cuts sit on an 80 
 | S5 | **8.25 → 10.50** | 248–314 | **The mist lingers.** The plume hangs in the dark and keeps drifting (continuous with S4). The camera follows it slowly. Text beat in the final. | vFOV 38°, focus on the mist | low warm rims only | the scent stays after you leave |
 | S6 | **10.50 → 15.90** | 315–476 | **Hero pack shot.** Low angle on a glossy black floor with a strong near-contact reflection. One long push-in (r 7.45 → 6.55) with slight lateral drift. Verticals stay straight (lens shift 0.415). Gold dust settles. | vFOV 40°, cam height 0.36 | full studio + edge streaks + warm backdrop pool | this is LAYL, No.07, a product you could own |
 
-**Final-only layers over S6:** client end card **11.25 → 13.20**, "lights out" fade **13.20 → 13.50**, TASH signature
-**13.50 → 15.90** (local short sting: `src/sting-short.js`). The `CONCEPT AD` slate is visible from **12.05 to the end**.
+**Final-only layers over S6:** client end card **11.10 → 12.95**, a quick "lights out" dip **12.95 → 13.17** (night
+falls), TASH signature **13.15 → 15.90** (local short sting: `src/sting-short.js`; snap at 14.27). The `CONCEPT AD` slate
+fades in from **11.90** and stays to the end. These layers were re-timed in the ECD review; **no shot time changed**.
 In `?clean=1` the hero simply continues (pure footage) to 15.90.
 
 **BTS range** (for the launch ad): **3.00 → 6.00 (S3 orbit, frames 90–179)**, rendered three ways: `bts/wire.mp4`,
@@ -102,9 +106,9 @@ the left. Proofread twice.
 | 3.20 → 5.48 (exit done by 5.90) | «عود · عنبر · زعفران» (oud · amber · saffron) | Alexandria 300, 50 px, brass dots | rise + unblur per word, right→left; exits upward |
 | 8.30 → 10.08 (exit done by 10.36) | «تمشي…» | Alexandria 300, 132 px, ivory | feathered right→left write-on (like a pen), leftward drift |
 | 8.65 → 10.12 (exit done by 10.44) | «ويبقى ليل.» (ليل. in honey) | Alexandria 300, 132 px | same write-on, words 0.24 s apart; both lines leave before the cut at 10.50 |
-| 11.25 → 13.20 | «ليل» / LAYL / ─── / EAU DE PARFUM · No.07 | Alexandria 300, 168 px · Archivo exp. 300, 44 px, .62em · 400, 22 px, .34em | the name writes on as the push settles; Latin tracks in from .95em; the hairline draws from the centre |
-| 12.05 → 15.90 | `CONCEPT AD — 01 / PERFUME` + «إعلان تجريبي — علامة خيالية» | JetBrains Mono 600, 22 px · IBM Plex Sans Arabic 400, 26 px | fade in, top safe area (y 232) |
-| 13.50 → 15.90 | TASH sting: typing bubble → dots land in ش → طشّ → «خلّهم يسولفون عنك!» → @tash.creative.kw | TASH brand | `createSting` behaviour, damped pops |
+| 11.10 → 12.95 | «ليل» / LAYL / ─── / EAU DE PARFUM · No.07 | Alexandria 300, 168 px · Archivo exp. 300, 44 px, .62em · 400, 22 px, .34em | the name writes on as the push settles; Latin tracks in from .95em; the hairline draws from the centre |
+| 11.90 → 15.90 | `CONCEPT AD — 01 / PERFUME` + «إعلان تجريبي — علامة خيالية» | JetBrains Mono 600, 22 px · IBM Plex Sans Arabic 400, 26 px | fade in, top safe area (y 232) |
+| 13.15 → 15.90 | TASH sting: typing bubble → dots land in ش (14.27) → طشّ → «خلّهم يسولفون عنك!» (from 14.57, fully in ≈14.9) → @tash.creative.kw (from 15.00) | TASH brand | `createSting` behaviour, damped pops; tagline/handle cues 1.42 / 1.85 s (instead of 1.55 / 2.1) so both are readable before the end |
 
 Safe zones: all text sits within x 72–1008 and y 232–1350 (lower lines centred, clear of the right-side action rail); nothing sits in the bottom 420 px.
 
@@ -126,11 +130,14 @@ mirwas pulse on the hero. Cues come from the same `src/cues.json` as the picture
 | 8.35 / 8.75 | quiet bell under each line («تمشي…», «ويبقى ليل.») |
 | 9.20 → 10.50 | sub swell + tonal riser (from 9.40) into the hero |
 | 10.50 | **hero hit 2**: impact + 808, oud cadence A4 G4 F#4 Eb4 → D4, mirwas dum … tak tak |
-| 11.25 | end card: one deep frame-drum (tabl), glass shimmer + glass tone as the name writes on |
-| 13.05 → 13.62 | **lights out**: the score low-passes and fades (a clear dip before the snap) |
-| 13.50 | TASH `sonic_logo()`: ticks → whoosh → **hero hit 3** on the snap (14.62) → shadda pop; soft 0.3 s fade at the end |
+| 11.10 | end card: one deep frame-drum (tabl), glass shimmer + glass tone as the name writes on |
+| 12.80 → 13.30 | **lights out**: the score low-passes and drops to a faint dark bed (−20 dB) under the typing ticks (no digital silence) |
+| 13.77 → 14.12 | the bed clears completely, so the snap lands on air |
+| 13.15 | TASH `sonic_logo()`: ticks → whoosh → **hero hit 3** on the snap (14.27) → shadda pop; soft 0.3 s fade at the end |
 
-Pre-master: −14.5 LUFS, −1.5 dBTP (WAV). The mux applies loudnorm −14 LUFS / −1 dBTP.
+Low end (ECD review): sub swells −3 dB, the 808s −3 dB, impacts −1.3 dB, the music bus high-passed at 34 Hz and the sonic
+logo at 30 Hz. Energy below 150 Hz went from 53 % to 42 % of the mix, so phone speakers get more of the oud and bells.
+Pre-master: −14.1 LUFS, −1.6 dBTP true peak (WAV), so the mux's linear loudnorm (−14 LUFS / −1.5 dBTP) only nudges it.
 
 ## 8. Pages, params, commands
 - Page: `src/index.html` (+ `main.js`, `scene.js`, `shots.js`, `overlay.js`, `sting-short.js`, `style.css`,
@@ -145,7 +152,9 @@ Pre-master: −14.5 LUFS, −1.5 dBTP (WAV). The mux applies loudnorm −14 LUFS
 ## 9. Notes
 - Fictional brand. It shows no claims, numbers, reviews or real products. The bottle is an original design.
 - `_system` is untouched. The sting is a local copy (`src/sting-short.js`) with the same cues and dot behaviour; only the
-  bubble and dot-pop springs are damped, so the shadda drop is the one visible spring.
+  bubble and dot-pop springs are damped, so the shadda drop is the one visible spring, and the tagline/handle cues come
+  in sooner (1.42 / 1.85 s) because the tail inside the film is 2.75 s, not 4.2 s. The typing, converge, snap and shadda
+  cues are unchanged, so `sonic_logo()` lines up with the picture exactly.
 
 ## 10. Deliverables (this folder)
 | file | what |
@@ -164,7 +173,7 @@ Pre-master: −14.5 LUFS, −1.5 dBTP (WAV). The mux applies loudnorm −14 LUFS
 | 0 | 8-bit banding in the near-black backdrop | own output pass with seeded ±1 LSB dither, vignette moved into GL | no visible rings |
 | 1 | frame 0 near-black; camera eases stopped dead on cuts; bloom 0.2 | bar in frame at f0, cruise ease, bloom 0.07 | composed f0; motion carries through cuts |
 | 1 | notes / line text still exiting across cuts | exits re-timed (5.48 / 10.08) | no text over the next shot |
-| 1 | end-card hold ≈0.6 s | end card moved to 11.25 | ≈1.2 s full hold with the push still alive |
+| 1 | end-card hold ≈0.6 s | end card moved to 11.25 | ≈1.2 s full hold with the push still alive (superseded in round 3) |
 | 1 | hard clip write-on cut letters mid-glyph | feathered RTL mask with padding for dots and descenders | reads like a pen |
 | 2 | S2 glow washed to pale cream | glow ceiling 0.85 → 0.72 | rich amber through the push |
 | 2 | ي of «تمشي…» nearly touching «ليل» | line 2 +20 px | clear leading |

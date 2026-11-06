@@ -27,7 +27,7 @@ const ORBIT = { ...STUDIO, frontL: [...NEUTRAL, 6], frontR: [...NEUTRAL, 4] };
 export function frameSpec(t) {
   const s = shotAt(t), k = local(s, t);
   const spec = { shot: s.id, k, cam: null, env: null, envKey: null, key: 0, rim: 0, glow: 0, glowY: 2, stripX: 9, stripI: 0, floor: true, refl: 0.5, pool: 1, backdrop: 1,
-    dust: 0, mist: 0, sim: 0, focus: 3, aperture: 0, capPress: 0, sweepBack: null, bloom: 0.07, exposure: 1.0 };
+    dust: 0, mist: 0, sim: 0, refr: 0.35, focus: 3, aperture: 0, capPress: 0, sweepBack: null, bloom: 0.07, exposure: 1.0 };
 
   if (s.id === 'S1') {
     // Frame 0 is already a composition: the arch edge in near-dark, a thin bar of light already entering from the right.
@@ -53,7 +53,9 @@ export function frameSpec(t) {
     spec.env = { keyL: [...WARM, 1.6], keyR: [...NEUTRAL, 0.9], back: [...AMBER, 1.0], top: [...WARM, 0.8], fill: [...WARM, 1.0], sideR: [...COOL, 1.6], sideL: [...WARM, 1.4], rimL: [...WARM, 0.8], rimR: [...COOL, 0.8], frontL: [...NEUTRAL, 15], frontR: [...NEUTRAL, 10] };
     spec.envKey = 'S2';
     spec.key = 0.6; spec.rim = 0.5;
-    spec.glow = lerp(0.12, 0.72, E.outCubic(clamp(k * 1.25))); spec.glowY = lerp(0.2, 1.6, E.inOutSine(clamp(k * 1.15)));
+    spec.glow = lerp(0.20, 0.72, E.outCubic(clamp(k * 1.25))); spec.glowY = lerp(0.36, 1.6, E.inOutSine(clamp(k * 1.15)));
+    // unlit juice reads deep and dark (not a flat orange slab); the refracted back light comes up with the glow
+    spec.refr = lerp(0.10, 0.35, E.inOutSine(clamp(k * 1.35)));
     spec.floor = false; spec.focus = lerp(2.85, 2.48, cruise(k)); spec.aperture = 10; spec.backdrop = 0.7;
   } else if (s.id === 'S3') {
     // Slow 50° orbit; gold dust drifts through the frame — the notes. Env stays fixed, reflections slide.

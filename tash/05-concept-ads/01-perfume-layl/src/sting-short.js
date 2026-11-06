@@ -1,11 +1,14 @@
 // LOCAL VARIANT of /_system/motion/endcard.js for the short tail inside a client concept ad (LAYL).
 // Same cues (endcard-cues.json), same dot behaviour (typing bounce → arc converge → land in ش → pulse), same sonic_logo().
 // Only change (CRAFT-ADDENDUM §5.2): the bubble pop and dot appear springs are damped (damp ≥ 12) so the shadda drop
-// stays the one visible spring in a 2.4 s tail. _system is untouched.
+// stays the one visible spring in a 2.75 s tail; the tagline/handle cues come in sooner (see CUES below). _system is untouched.
 import * as L from '/_system/brand/logo.mjs';
 import { tw, E, clamp, lerp, typing, spring, css, words, headlineIn } from '/_system/motion/kit.js';
 
-export const CUES = await (await fetch('/_system/motion/endcard-cues.json')).json();
+const BASE = await (await fetch('/_system/motion/endcard-cues.json')).json();
+// Short-tail timing: the typing → converge → snap → shadda beats (and so sonic_logo()) are unchanged; only the tagline
+// and handle follow the shadda sooner so «خلّهم يسولفون عنك!» and the handle are readable before the film ends.
+export const CUES = { ...BASE, tagline: 1.42, handle: 1.85 };
 /** Times at which each typing dot peaks (tick SFX) — precomputed in endcard-cues.json. */
 export const tickTimes = () => CUES.ticks;
 

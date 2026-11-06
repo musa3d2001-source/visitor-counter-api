@@ -63,7 +63,7 @@ def ping(note, t0, gain=0.08, pan=0.0, d=2.0, bright=0.45):
 
 
 # ------------------------------------------------------------------------------------------ S1 — darkness, light sweep (0.00–1.50)
-sub_swell('D2', 0.0, 1.7, gain=0.08, rise=0.4)
+sub_swell('D2', 0.0, 1.7, gain=0.06, rise=0.4)
 oud('D2', 0.0, vel=0.55, d=2.6)                 # frame 0: a low open string under the first light
 # the strip of light travels right→left: an airy sweep panned R→L
 sw = whoosh(1.45, f_lo=700, f_hi=6500, q=3.2, pan_from=0.85, pan_to=-0.85, peak=0.5)
@@ -80,12 +80,12 @@ oud('Eb4', CUT['S2'] + 0.375, vel=0.65, pan=-0.05)
 oud('F#4', CUT['S2'] + 0.75, vel=0.85, pan=0.0, trem=True)
 oud('G4', CUT['S2'] + 1.125, vel=0.6, pan=0.05)
 pad_seg(['D3', 'A3'], CUT['S2'] - 0.2, CUT['S3'] + 0.3, cutoff=750, gain=0.20, attack=0.9)
-sub_swell('D2', CUT['S2'] + 0.2, 1.8, gain=0.12, rise=1.0)
+sub_swell('D2', CUT['S2'] + 0.2, 1.8, gain=0.085, rise=1.0)
 m.add(riser(1.2, f_lo=300, f_hi=3500, tonal=False) * 0.07, CUT['S3'] - 1.2, bus='sfx')
 
 # ------------------------------------------------------------------------------------------ S3 — orbit, gold dust (3.00–6.00)
-m.add(impact(2.0, sub_f=50, bright=0.25, sub_decay=0.25, space=0.25) * 0.30, CUT['S3'], bus='sfx')
-m.add(sub808(nf('D2'), 1.4, glide_from=nf('D3'), glide_t=0.07, decay=0.42) * 0.24, CUT['S3'], bus='music')
+m.add(impact(2.0, sub_f=50, bright=0.25, sub_decay=0.25, space=0.25) * 0.26, CUT['S3'], bus='sfx')
+m.add(sub808(nf('D2'), 1.4, glide_from=nf('D3'), glide_t=0.07, decay=0.42) * 0.17, CUT['S3'], bus='music')
 oud('A4', CUT['S3'], vel=1.0, trem=True, pan=0.0)
 for i, (n, b, v) in enumerate([('G4', 0.5, 0.6), ('F#4', 1.0, 0.75), ('Eb4', 1.5, 0.6), ('D4', 2.0, 0.85),
                                ('F#4', 2.75, 0.5), ('A4', 3.0, 0.6), ('C5', 3.25, 0.55), ('Bb4', 3.5, 0.6), ('A4', 3.75, 0.7)]):
@@ -118,12 +118,12 @@ oud('D3', CUT['S5'], vel=0.75, d=3.0, trem=True)
 pad_seg(['D3', 'A3'], CUT['S5'], CUT['S6'], cutoff=520, gain=0.14, attack=0.6)
 ping('A5', T_LINE1 + 0.05, gain=0.04, pan=0.2, d=2.4, bright=0.3)
 ping('D6', T_LINE2 + 0.10, gain=0.06, pan=-0.2, d=2.6, bright=0.3)
-sub_swell('D2', 9.2, 1.4, gain=0.07, rise=1.1)
+sub_swell('D2', 9.2, 1.4, gain=0.05, rise=1.1)
 m.add(riser(1.1, f_lo=250, f_hi=4000, tonal=True) * 0.05, CUT['S6'] - 1.1, bus='sfx')
 
-# ------------------------------------------------------------------------------------------ S6 — hero (10.50–13.50)
-m.add(impact(2.2, sub_f=48, bright=0.3, sub_decay=0.28, space=0.3) * 0.42, CUT['S6'], bus='sfx')
-m.add(sub808(nf('D2'), 1.6, glide_from=nf('A2'), glide_t=0.08, decay=0.5) * 0.26, CUT['S6'], bus='music')
+# ------------------------------------------------------------------------------------------ S6 — hero (10.50 → lights out 12.95)
+m.add(impact(2.2, sub_f=48, bright=0.3, sub_decay=0.28, space=0.3) * 0.36, CUT['S6'], bus='sfx')
+m.add(sub808(nf('D2'), 1.6, glide_from=nf('A2'), glide_t=0.08, decay=0.5) * 0.18, CUT['S6'], bus='music')
 oud('D3', CUT['S6'], vel=0.9, d=2.4)
 for n, b, v, tr in [('D4', 0.0, 1.0, True), ('A4', 0.5, 0.75, False), ('G4', 1.0, 0.7, False), ('F#4', 1.5, 0.85, True),
                     ('Eb4', 2.0, 0.75, False), ('D4', 2.5, 1.0, True), ('A3', 3.0, 0.55, False), ('D4', 3.5, 0.7, True)]:
@@ -140,17 +140,22 @@ m.add(shimmer(2.2, base=1174.7, n=6, seed_=44) * 0.12, T_ENDCARD, bus='glass')
 glass_sing('D6', T_ENDCARD + 0.05, 1.6, gain=0.03)
 
 # ------------------------------------------------------------------------------------------ bus processing
-m.process_bus('music', lambda x: x)  # (subs live here on purpose)
+m.process_bus('music', lambda x: hp(x, 34, order=2))  # subs live here; nothing useful below ~35 Hz
 m.process_bus('oud', lambda x: reverb(peak_eq(x, 250, 2.5, 1.0), decay=2.4, mix=0.30, tone=5200))
 m.process_bus('glass', lambda x: reverb(x, decay=3.0, mix=0.4, tone=8000))
 m.process_bus('perc', lambda x: reverb(x, decay=1.4, mix=0.22, tone=5000))
 
 
+STING_SNAP = T_STING + json.load(open(os.path.join(HERE, '../../../_system/motion/endcard-cues.json')))['snap']
+
+
 def lights_out(x):
-    """Night falls: the score darkens (low-pass) and fades under the sting."""
+    """Night falls: the score darkens (low-pass) and drops to a faint dark bed under the typing ticks (no digital
+    silence), then clears completely just before the snap so the hit lands on air."""
     N = len(x); tt_ = np.arange(N) / SR
     k = np.clip((tt_ - (T_LIGHTSOUT - 0.15)) / 0.4, 0, 1)
-    g = 1 - np.clip((tt_ - T_LIGHTSOUT) / 0.42, 0, 1) ** 1.3
+    g = 1 - (1 - db(-20)) * np.clip((tt_ - T_LIGHTSOUT) / 0.35, 0, 1) ** 1.3
+    g *= 1 - np.clip((tt_ - (STING_SNAP - 0.5)) / 0.35, 0, 1) ** 1.5
     dark = lp(x, 380, order=2)
     return (x * (1 - k[:, None]) + dark * k[:, None]) * g[:, None]
 
@@ -159,14 +164,27 @@ for b in ('oud', 'music', 'glass', 'perc'):
     m.process_bus(b, lights_out)
 
 # ------------------------------------------------------------------------------------------ TASH signature
-m.add(sonic_logo() * 0.95, T_STING)
+m.add(hp(sonic_logo(), 30, order=2) * 0.95, T_STING)   # the brand signature, unchanged apart from sub-30 Hz rumble
 
 m.buf *= db(2.6)
 for b in m.buses: m.buses[b] *= db(2.6)
 out = m.render(ceiling_db=-2.3, glue=True)
-# soft tail: the film ends 2.4 s into the sting; fade the last 0.3 s (no hard cut, no endless sub)
+# soft tail: the film ends 2.75 s into the sting; fade the last 0.3 s (no hard cut, no endless sub)
 N = len(out); fo = n_(0.30)
 out[-fo:] *= (np.linspace(1, 0, fo) ** 1.5)[:, None]
+# pre-master: -14 LUFS with true peak <= -1.6 dBTP, so the renderer's linear loudnorm (-14 / -1.5) only nudges it
+for _ in range(4):
+    out = out * db(-14.0 - lufs(out))
+    c = -1.7
+    for _ in range(6):
+        y = limiter(out, c)
+        over = true_peak_db(y) - (-1.6)
+        if over <= 0: break
+        c -= over + 0.05
+    out = y
+    if abs(lufs(out) + 14.0) < 0.15: break
+out[-fo:] *= (np.linspace(1, 0, fo) ** 1.5)[:, None]   # keep the last frames at true zero after the gain change
+print(f'pre-master: {lufs(out):.1f} LUFS, true peak {true_peak_db(out):.1f} dBTP')
 path = os.path.join(HERE, 'audio.wav')
 wavfile.write(path, SR, out.astype(np.float32))
 pk = 20 * np.log10(np.abs(out).max() + 1e-9); rms = 20 * np.log10(np.sqrt((out ** 2).mean()) + 1e-9)

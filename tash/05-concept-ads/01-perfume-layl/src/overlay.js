@@ -109,7 +109,7 @@ export function makeOverlay(stage, { W, H, clean, poster }) {
     css(ecSub, { opacity: (ks * (1 - out)).toFixed(3), transform: `translateY(${((1 - ks) * 10).toFixed(1)}px)` });
 
     // night falls → TASH signature
-    blackout.style.opacity = tw(t, T.lightsOut, 0.3, E.inOutSine).toFixed(3);
+    blackout.style.opacity = tw(t, T.lightsOut, 0.22, E.inOutSine).toFixed(3); // a quick dip (night falls), no dead air
     const st = t - T.sting;
     stingRoot.style.display = st >= 0 ? 'block' : 'none';
     if (st >= 0) sting.render(st);

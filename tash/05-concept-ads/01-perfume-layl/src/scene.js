@@ -102,9 +102,9 @@ function labelTexture() {
   x.direction = 'ltr'; x.fontStretch = 'expanded'; x.font = '300 92px Archivo'; x.letterSpacing = '46px';
   x.fillText('LAYL', w / 2 + 23, 390);
   x.font = '400 34px Archivo'; x.letterSpacing = '13px';
-  x.fillText('EAU DE PARFUM  ·  No.07', w / 2 + 6, 470);
-  // hairline
-  x.fillRect(w / 2 - 70, 300, 140, 2);
+  x.fillText('EAU DE PARFUM  ·  No.07', w / 2 + 6, 482);
+  // hairline between LAYL and the sub-line (same lockup as the end card; clear of the dots of ي)
+  x.fillRect(w / 2 - 48, 420, 96, 2);
   const t = new THREE.CanvasTexture(c); t.anisotropy = 8; t.colorSpace = THREE.SRGBColorSpace;
   return t;
 }
@@ -188,8 +188,8 @@ export function makeBottle() {
   const liqMat = new THREE.MeshPhysicalMaterial({ color: new THREE.Color('#2a1203'), roughness: 0.1, metalness: 0, clearcoat: 1, clearcoatRoughness: 0.03, emissive: new THREE.Color('#e8801c'), emissiveIntensity: 1, envMapIntensity: 0.5 });
   liqMat.onBeforeCompile = (sh) => {
     Object.assign(sh.uniforms, liqUniforms);
-    sh.vertexShader = sh.vertexShader.replace('#include <common>', '#include <common>\nvarying vec3 vLocalPos;').replace('#include <begin_vertex>', '#include <begin_vertex>\nvLocalPos = position;');
-    sh.fragmentShader = sh.fragmentShader.replace('#include <common>', '#include <common>\nvarying vec3 vLocalPos; uniform float uGlow, uGlowY, uFill, uBase, uRefr, uStripX, uStripI;')
+    sh.vertexShader = sh.vertexShader.replace('#include <common>', '#include <common>\nvarying vec3 vLocalPos; varying vec3 vLocalN;').replace('#include <begin_vertex>', '#include <begin_vertex>\nvLocalPos = position; vLocalN = normal;');
+    sh.fragmentShader = sh.fragmentShader.replace('#include <common>', '#include <common>\nvarying vec3 vLocalPos; varying vec3 vLocalN; uniform float uGlow, uGlowY, uFill, uBase, uRefr, uStripX, uStripI;')
       .replace('#include <emissivemap_fragment>', `#include <emissivemap_fragment>
         float hy = clamp((vLocalPos.y - uBase) / (uFill - uBase), 0.0, 1.0);
         float facing = abs(dot(normalize(vNormal), normalize(vViewPosition)));
@@ -202,15 +202,24 @@ export function makeBottle() {
         // the hook: a strip light passing behind the flask lights a vertical band of amber
         float band = exp(-pow((vLocalPos.x - uStripX) / 0.075, 2.0)) + 0.35 * exp(-pow((vLocalPos.x - uStripX) / 0.22, 2.0));
         I += uStripI * band * mix(0.55, 1.0, 1.0 - hy) * mix(0.5, 1.0, pow(facing, 1.2));
+        // longer light path near the cavity walls: the juice deepens toward its edges (depth, not a flat panel)
+        float side = 1.0 - abs(vLocalN.y);
+        float wall = smoothstep(0.0, 0.17, 1.0 - abs(vLocalPos.x) / 0.344);
+        I *= mix(0.42, 1.0, mix(1.0, wall, side));
+        // meniscus: a slightly darker band just under the surface, then the fill line catches the light
+        float dTop = uFill - vLocalPos.y;
+        I *= 1.0 - 0.22 * side * smoothstep(0.006, 0.02, dTop) * (1.0 - smoothstep(0.03, 0.08, dTop));
         // intensity-dependent hue: thin/bright light reads honey-gold, deep/dim reads red-brown amber
         vec3 amb = mix(vec3(0.42, 0.075, 0.006), vec3(1.0, 0.52, 0.13), smoothstep(0.0, 0.9, I));
-        totalEmissiveRadiance = amb * I * 1.35;`)
+        totalEmissiveRadiance = amb * I * 1.35;
+        float men = exp(-pow(dTop / 0.0055, 2.0)) * side * smoothstep(0.0, 0.08, 1.0 - abs(vLocalPos.x) / 0.344);
+        totalEmissiveRadiance += vec3(1.0, 0.72, 0.38) * men * (0.10 + 0.9 * uGlow);`)
       .replace('#include <opaque_fragment>', `
         #ifdef USE_ENVMAP
         {
           vec3 rv = refract(-normalize(vViewPosition), normalize(vNormal), 0.75);
           rv = inverseTransformDirection(rv, viewMatrix);
-          vec3 seen = textureCubeUV(envMap, envMapRotation * rv, 0.12).rgb;
+          vec3 seen = textureCubeUV(envMap, envMapRotation * rv, 0.07).rgb;
           float facing2 = abs(dot(normalize(vNormal), normalize(vViewPosition)));
           vec3 absorb = vec3(0.9, 0.36, 0.06) * mix(0.25, 1.0, facing2);
           outgoingLight += seen * absorb * uRefr;
@@ -229,7 +238,8 @@ export function makeBottle() {
   add(0.25, 0.135); add(0.243, 0.142); add(0.243, 0.152); add(0.25, 0.159); // groove
   add(0.25, 0.338); add(0.236, 0.352);            // top chamfer
   add(0.0, 0.352);
-  const capGeo = new THREE.LatheGeometry(P, 128);
+  const capGeo = new THREE.LatheGeometry(P, 384);
+  capGeo.computeTangents(); // smooth anisotropy across facets (derivative tangents are per-triangle -> stair-steps in macro)
   const brushed = brushedTexture(5);
   brushed.repeat.set(1, 1);
   const brass = new THREE.MeshPhysicalMaterial({ color: new THREE.Color('#c9a15b'), metalness: 1, roughness: 0.34, roughnessMap: brushed, anisotropy: 0.8, anisotropyRotation: 0, bumpMap: brushed, bumpScale: 0.15, envMapIntensity: 1.25, clearcoat: 0.0 });
@@ -237,9 +247,9 @@ export function makeBottle() {
   const capMesh = new THREE.Mesh(capGeo, brass); capMesh.name = 'cap';
   cap.add(capMesh);
   // atomiser orifice on the cap's left side: dark pin-hole + polished ring
-  const hole = new THREE.Mesh(new THREE.CircleGeometry(0.016, 32), new THREE.MeshBasicMaterial({ color: 0x020100 }));
+  const hole = new THREE.Mesh(new THREE.CircleGeometry(0.0165, 48), new THREE.MeshBasicMaterial({ color: 0x010000 }));
   hole.name = 'nozzle';
-  const ring = new THREE.Mesh(new THREE.TorusGeometry(0.022, 0.006, 16, 48), new THREE.MeshPhysicalMaterial({ color: new THREE.Color('#d8b46e'), metalness: 1, roughness: 0.12, envMapIntensity: 1.4 }));
+  const ring = new THREE.Mesh(new THREE.TorusGeometry(0.0205, 0.0036, 24, 96), new THREE.MeshPhysicalMaterial({ color: new THREE.Color('#d8b46e'), metalness: 1, roughness: 0.2, envMapIntensity: 1.3 }));
   ring.name = 'nozzleRing';
   const nozzle = new THREE.Group(); nozzle.add(hole, ring);
   nozzle.position.set(-0.2515, 0.245, 0); nozzle.rotation.y = -Math.PI / 2;

@@ -114,7 +114,7 @@ function renderFrame(t) {
   scene.environmentIntensity = 1.0;
   key.intensity = s.key * 38; rim.intensity = s.rim * 2.2;
   bottle.liqUniforms.uGlow.value = s.glow; bottle.liqUniforms.uGlowY.value = s.glowY;
-  bottle.liqUniforms.uStripX.value = s.stripX; bottle.liqUniforms.uStripI.value = s.stripI;
+  bottle.liqUniforms.uRefr.value = s.refr; bottle.liqUniforms.uStripX.value = s.stripX; bottle.liqUniforms.uStripI.value = s.stripI;
   bottle.cap.position.y = DIM.plateau - 0.004 - s.capPress * 0.014;
   floor.visible = s.floor && !floor.userData.off;
   if (passMats.ground) passMats.ground.visible = s.floor;
