@@ -1,0 +1,12 @@
+{
+  "key": "market-canopy",
+  "version": 1,
+  "shots": [
+    { "idx": 0, "ammo": "meteor", "yawStep": 20, "angleStep": 34, "powerStep": 7, "activateAt": -1 },
+    { "idx": 1, "ammo": "meteor", "yawStep": 33, "angleStep": 33, "powerStep": 6, "activateAt": -1 },
+    { "idx": 2, "ammo": "meteor", "yawStep": 6, "angleStep": 33, "powerStep": 6, "activateAt": -1 }
+  ],
+  "hashes": ["f6c59dfa", "b49cec44", "ab2de01f", "1b189ffa"],
+  "finalHash": "1b189ffa",
+  "clearedAfterShot": 2
+}

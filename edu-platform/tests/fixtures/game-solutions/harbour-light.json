@@ -1,0 +1,14 @@
+{
+  "key": "harbour-light",
+  "version": 1,
+  "shots": [
+    { "idx": 0, "ammo": "meteor", "yawStep": 18, "angleStep": 4, "powerStep": 28, "activateAt": -1 },
+    { "idx": 1, "ammo": "meteor", "yawStep": 29, "angleStep": 4, "powerStep": 26, "activateAt": -1 },
+    { "idx": 2, "ammo": "meteor", "yawStep": 6, "angleStep": 29, "powerStep": 6, "activateAt": -1 },
+    { "idx": 3, "ammo": "meteor", "yawStep": 13, "angleStep": 6, "powerStep": 10, "activateAt": -1 },
+    { "idx": 4, "ammo": "meteor", "yawStep": 11, "angleStep": 2, "powerStep": 16, "activateAt": -1 }
+  ],
+  "hashes": ["aa582750", "9608ba34", "afe92a2b", "0cb1e31d", "321b7b48", "c4fadb0b"],
+  "finalHash": "c4fadb0b",
+  "clearedAfterShot": 4
+}

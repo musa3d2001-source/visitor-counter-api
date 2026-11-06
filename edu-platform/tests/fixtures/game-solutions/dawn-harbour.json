@@ -1,0 +1,14 @@
+{
+  "key": "dawn-harbour",
+  "version": 1,
+  "shots": [
+    { "idx": 0, "ammo": "meteor", "yawStep": 22, "angleStep": 17, "powerStep": 14, "activateAt": -1 },
+    { "idx": 1, "ammo": "meteor", "yawStep": 10, "angleStep": 4, "powerStep": 14, "activateAt": -1 },
+    { "idx": 2, "ammo": "meteor", "yawStep": 36, "angleStep": 26, "powerStep": 7, "activateAt": -1 },
+    { "idx": 3, "ammo": "meteor", "yawStep": 30, "angleStep": 5, "powerStep": 32, "activateAt": -1 },
+    { "idx": 4, "ammo": "meteor", "yawStep": 27, "angleStep": 2, "powerStep": 20, "activateAt": -1 }
+  ],
+  "hashes": ["4c7d80c0", "386821e1", "51cebb48", "bb2f5156", "290458be", "1ea645fb"],
+  "finalHash": "1ea645fb",
+  "clearedAfterShot": 4
+}

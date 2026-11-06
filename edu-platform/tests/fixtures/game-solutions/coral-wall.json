@@ -1,0 +1,12 @@
+{
+  "key": "coral-wall",
+  "version": 1,
+  "shots": [
+    { "idx": 0, "ammo": "meteor", "yawStep": 12, "angleStep": 7, "powerStep": 20, "activateAt": -1 },
+    { "idx": 1, "ammo": "meteor", "yawStep": 29, "angleStep": 4, "powerStep": 26, "activateAt": -1 },
+    { "idx": 2, "ammo": "meteor", "yawStep": 20, "angleStep": 5, "powerStep": 19, "activateAt": -1 }
+  ],
+  "hashes": ["9971ac8c", "e00ab4a9", "cd06375f", "1673908e"],
+  "finalHash": "1673908e",
+  "clearedAfterShot": 2
+}

@@ -1,0 +1,14 @@
+{
+  "key": "lightbox-court",
+  "version": 1,
+  "shots": [
+    { "idx": 0, "ammo": "meteor", "yawStep": 26, "angleStep": 2, "powerStep": 28, "activateAt": -1 },
+    { "idx": 1, "ammo": "meteor", "yawStep": 5, "angleStep": 50, "powerStep": 5, "activateAt": -1 },
+    { "idx": 2, "ammo": "meteor", "yawStep": 20, "angleStep": 4, "powerStep": 27, "activateAt": -1 },
+    { "idx": 3, "ammo": "meteor", "yawStep": 36, "angleStep": 6, "powerStep": 17, "activateAt": -1 },
+    { "idx": 4, "ammo": "meteor", "yawStep": 15, "angleStep": 1, "powerStep": 19, "activateAt": -1 }
+  ],
+  "hashes": ["d0a14634", "bdffb5aa", "b03eb0f3", "55e9eef6", "75331c4c", "b05f93f7"],
+  "finalHash": "b05f93f7",
+  "clearedAfterShot": 4
+}

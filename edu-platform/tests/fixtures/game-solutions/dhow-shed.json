@@ -1,0 +1,12 @@
+{
+  "key": "dhow-shed",
+  "version": 1,
+  "shots": [
+    { "idx": 0, "ammo": "meteor", "yawStep": 23, "angleStep": 6, "powerStep": 22, "activateAt": -1 },
+    { "idx": 1, "ammo": "meteor", "yawStep": 14, "angleStep": 5, "powerStep": 14, "activateAt": -1 },
+    { "idx": 2, "ammo": "meteor", "yawStep": 35, "angleStep": 5, "powerStep": 19, "activateAt": -1 }
+  ],
+  "hashes": ["6484abd5", "36806b5d", "104088a8", "4f790142"],
+  "finalHash": "4f790142",
+  "clearedAfterShot": 2
+}

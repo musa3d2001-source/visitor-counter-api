@@ -1,0 +1,11 @@
+{
+  "key": "palm-arbour",
+  "version": 1,
+  "shots": [
+    { "idx": 0, "ammo": "meteor", "yawStep": 14, "angleStep": 30, "powerStep": 7, "activateAt": -1 },
+    { "idx": 1, "ammo": "meteor", "yawStep": 31, "angleStep": 4, "powerStep": 22, "activateAt": -1 }
+  ],
+  "hashes": ["1f4a7d84", "52183d77", "2e6e8009"],
+  "finalHash": "2e6e8009",
+  "clearedAfterShot": 1
+}
