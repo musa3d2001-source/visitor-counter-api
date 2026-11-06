@@ -264,9 +264,11 @@ before it when the clip has one.
 - **Loudness** is about −13.6 LUFS integrated on the MP4, inside −14 ±1, because the renderer's linear loudnorm adds the ≈0.5 LU it measures low
   (figures for this file: §10). The mix stays sub-forward.
 - **The match cut into the client card** goes from a photographed burger to a flat graphic mark (unchanged).
-- **Copies elsewhere are stale** (not in this folder, not touched): the reel in `08-instagram/02-stakk-concept-reel/` is a byte-identical copy
-  of an older cut, and the STAKK rows in `tash/README.md` / `08-instagram/POSTING-PLAN.md` describe an older file. Re-run
-  `08-instagram/src/package_reels.py` and refresh those rows from §10.
+- **Copies elsewhere: refreshed** (6 Nov, 23:26, propagation pass): `08-instagram/02-stakk-concept-reel/reel.mp4` is byte-identical (`cmp`)
+  to this file, and the STAKK rows in `tash/README.md` and `08-instagram/POSTING-PLAN.md` carry the §10 figures. The launch ad's BURGER pull
+  (clean 7.90–9.40, `b7_crown` only) re-renders byte-identical, so it was not re-cut. The templates and brand guide use only `poster.png`,
+  `still-hero.png`, the 9.40 clean frame, the end card and the signature, which are all unchanged. Still stale, outside the delivered folders:
+  the share bundle `review/share/TASH-Instagram-Kit/` (+ `.zip`, 21:01) holds the previous reel.
 - **Determinism:** two renders of the same frame from different seek orders differ by at most 1/255 on ≤4 pixels (checked at 4.40, 6.167, 7.767).
 
 ## 9. Review log

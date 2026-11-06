@@ -186,7 +186,9 @@ re-measured on the re-muxed files, and both formats carry the same decoded audio
 - The montage uses snapshots. The burger and coffee pulls were rendered on 2026-11-06 (≈19:35) from the photoreal STAKK and
   HABBA pages and match their delivered films (mean absolute difference ≈1.1–1.5 of 255, which is grain and encoding). A teammate
   was editing STAKK's S01 (0–0.9 s) at the time, outside the range used. The LAYL clips are earlier snapshots. Later changes to
-  the concept ads only reach this cut if they are re-pulled (§7).
+  the concept ads only reach this cut if they are re-pulled (§7). Re-checked after STAKK's one-stage re-edit (6 Nov 23:20): the
+  STAKK pull re-rendered from the current page is byte-identical to `footage/clean/stakk-crown_7.90-9.40.mp4` (sha1 a77bad2f…), and its
+  45 JPEGs in `review/launch-footage/` match. The range is `b7_crown` only, so none of STAKK's removed footage is in this cut and nothing was re-rendered.
 - **Pour foley: fixed** (pour-to-picture pass). The pour now ends at the stream break (5.500, f165), so nothing plays under the lift-out.
   The fix leaves one source-to-picture mismatch. `audio.py` also rewrites `src/assets/wave.json`, the A1 waveform drawn in the EDIT shot, and the new
   file differs from the old one in a few bins around 5.4–6.1 s, plus a 0.001 rounding step on some others. The delivered picture was not
