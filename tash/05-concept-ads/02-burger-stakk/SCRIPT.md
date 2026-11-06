@@ -1,114 +1,183 @@
-# STAKK — «ستاك برجر» · Concept ad 02 / Burger
+# STAKK — «ستاك برجر» · Concept ad 02 / Burger (photoreal cut)
 
-> **إعلان تجريبي — علامة خيالية.** STAKK BURGER is a fictional brand made up for this concept. No real restaurant, product, price or claim.
-> Made by طشّ | TASH Creative to show the craft. All visuals are procedural Three.js CGI, all type is live Chromium text from OFL fonts, and all sound is synthesised with `_system/audio`.
+> **إعلان تجريبي — علامة خيالية.** STAKK BURGER is a fictional brand invented for this concept. No real restaurant,
+> product, price or claim. Made by طشّ | TASH Creative to show the craft.
+>
+> **Footage: AI-generated with Higgsfield (GPT Image 2.6 start frames → Kling 3.0 Turbo), art-directed and approved by TASH. Edit, type, sound design and signature by TASH.**
+> The owner approved Higgsfield for this ad after judging the CGI version «كرتوني مو حقيقي». The CD generated and approved
+> the seven clips in `footage/ai/`; the edit team did not generate anything. All type is live Chromium text from OFL fonts,
+> and the score and sound design are synthesised with `_system/audio`.
+
+| Shot | Image job (start frame) | Video job |
+|---|---|---|
+| b1 smash | cce37c0b-16d9-4ebf-9311-f19b9b042617 | 80e1d8d0-9051-4e3f-a4ec-f14764bb1ef6 |
+| b2 crust | ccf1c92d-105f-4aa1-af87-a745454893bd | 21783c54-54eb-469c-8740-0722b8cd65e8 |
+| b3 heel | 9e3dd31f-fb02-41ae-ad6c-2310949fc4b2 | ff8b7e30-e12b-4e4a-9ba6-fc61dc6094a7 |
+| b4 melt | a61e78e2-61a3-486b-a1c7-936ea2ccbe22 | a8d0f2d0-0b1c-441f-96a1-e25f5680e1cc |
+| b5 stack | eead7c0e-2dd8-4f1e-a0f8-961580c95532 | bcfec400-f017-4460-9dfe-a64b7b126109 |
+| b6 sauce | bd8c31bf-e6d9-4cd3-8a91-fa17ffd59959 | aa36060b-44ba-47cb-9168-d52d45f237f9 |
+| b7 crown | 621fc520-a580-4775-a8d7-b2d49b49e00f | f7ee3a67-011f-44e4-baf4-61825934d7d2 |
 
 | | |
 |---|---|
 | Format | 9:16 · 1080×1920 · 30 fps · H.264 + AAC 48 kHz · 13.8 s |
-| File | `STAKK-concept-9x16.mp4` (final, with audio) |
-| Clean plate | `src/index.html?clean=1` renders the **same timeline** with no text, slates, UI, end card or signature (pure footage). From 10.4 s onward it keeps rolling the hero turntable, so editors get 3.4 s of extra hero handle. |
-| Source | `src/index.html` + `src/scene.js` (3D shots) + `src/overlay.js` (type / end card / signature) + `src/lib/*` (burger, world, post) · `src/cues.json` (timing shared by picture and sound) · `src/audio.py` → `src/audio.wav` |
+| File | `STAKK-concept-9x16.mp4` (final, with audio) · `poster.png` (reel cover) · `still-hero.png` (clean hero frame) · `contact-sheet.png` |
+| Clean plate | `src/index.html?clean=1` renders the **same timeline** with no type, slates, end card or sting. From 10.40 it keeps rolling the hero to 13.80. Ranges for the launch ad: `footage/HANDOFF-launch.md` |
+| Source | `src/index.html` + `src/main.js` (picture: footage, cameras, whip) + `src/overlay.js` (type, end card, slates, signature) + `src/footage.js` (frame loader) · `src/edl.json` (in-points, speeds, framing) → `src/tools/extract.sh` / `conform.py` → `src/footage/<seq>/` (graded 30 fps JPEGs) · `src/cues.json` (timing shared by picture and sound) · `src/audio.py` → `src/audio.wav` |
+| Kept for reference | `src/_cgi-v1/` = the Three.js version (scene, lib, its overlay/index, SCRIPT-v1, audio-v1). Not loaded by the film |
 
 ---
 
-## 1. الفكرة · The idea
+## 1. الفكرة · The idea (unchanged)
 
 **«كل طبقة لها سالفة»** (every layer has a story).
 
-Arabic: البرجر ما ينبني مرة وحدة. كل طبقة تنزل على الإيقاع ومعاها سالفتها القصيرة. الإعلان كله «تجميع» برجر على الدقّة: كل ما نزلت طبقة تطلع كلمة تشرح ليش هي هني. والإيقاع نفسه يحكي القصة: سريع، بعدين يهدّي مع الجبن («على مهله»)، بعدين ينفجر بالدبل.
+البرجر ما ينبني مرة وحدة. كل طبقة تنزل على الإيقاع ومعاها سالفتها القصيرة: سريع، بعدين يهدّي مع الجبن («على مهله»)، بعدين ينفجر بالدبل.
 
-English: a smash burger built live, one layer per beat. Each layer lands with its own sound and its own one-line story, pinned to it by a tracked callout line. The edit is the joke. Everything is fast and punchy until the cheese, where the cut slows to half-time to match the copy «تشيدر يذوب… على مهله» ("cheddar melting… taking its time"). Then the double drops in a burst of 8th notes. The title itself stacks like layers, word by word.
-
-**Improvements over the brief idea:** a double smash stack (STAKK = stack, more crust on screen); the half-time melt beat; the title built as a stack of words; callout lines tracked to the 3D layers like an exploded product diagram; a wind-up before the smash (anticipation → impact).
+A smash burger built live, one layer per beat. Each layer lands with its own sound and a one-line story pinned to it by a
+leader line. Everything is fast until the cheese, where the cut drops to half-time for «تشيدر يذوب… على مهله», then the
+double lands in a burst of cuts, the crown slams, and the offer holds.
 
 ## 2. القدرة اللي يثبتها · Capability shown
 
-High-energy social ad: **rhythm editing** (cuts and drops locked to a 120 BPM grid, with a deliberate half-time section and a silence gap before the top bun), **kinetic Arabic typography** (animated per word, never per letter; stacked title; sticker labels with tracked leader lines), **stacking/exploded product animation** (9 layers with squash, settle, stack compression, cheese drape physics, sauce splat), **appetite appeal** (raking and rim light, glinting fat on the crust, glossy sauce, melting cheddar with drips, steam), and design **for the client**: their own palette (tomato red, mustard, cream, charcoal) and type, with TASH lime only in our signature.
+Rhythm editing of real-looking food footage: every physical event (press contact, patty, cheddar, pickle, onion, sauce,
+crown) is retimed to land on its beat. Speed ramps and frame-accurate in-points, one shared grade across seven clips
+(the red stage is pulled to the client's exact red, the blacks are matched), motivated transitions (a whip that drops the heel
+onto its beat, cuts on contact, a graphic match cut into the logo), and kinetic Arabic type placed only on calm ground with
+leader lines that touch the real object. Designed for the client: their palette (tomato red, mustard, cream, charcoal) and type.
+TASH lime appears only in our signature.
 
-## 3. Shot list (locked timings, seconds; beat k = 0.4 + 0.5·k)
+## 3. Shot list (cue grid locked; beat k = 0.4 + 0.5·k)
 
-| # | In → Out | Shot | Camera / action | On-screen text (hidden in `?clean=1`) | Sound |
+Speeds are source seconds per edit second. "f" = source frame (24 fps). Every event frame is shown crisp (no blend).
+
+| # | In → Out | Source · in-point · speed | Picture / edit | On-screen (hidden in `?clean=1`) | Sound |
 |---|---|---|---|---|---|
-| S01 | 0.00 → 0.90 | **SMASH** (hook) | Low macro on a black griddle. Raw beef ball, bokeh kitchen lights, steam wisps. The steel press winds up (0.00–0.22) and **slams at 0.40**: ball squashes into a lacy disc, grease spray, steam burst, camera shake, tilt down. | — | Griddle sizzle from frame 0 · press whoosh · **impact + sizzle burst + group clap at 0.40** · groove starts |
-| S02 | 0.90 → 2.15 | CRUST + TITLE | High angle over the seared patty on the griddle (dark mahogany crust, cracks, fat glints), raking light, bubbling fat. **Whip-pan up 1.95 → 2.15** (sub-frame motion blur); the whip dips the frame into S03's tomato red from ≈1.97, so the cut lands on colour, not black. | «كل» «طبقة» «لها» «سالفة» rise into place on 16ths (0.900 / 1.025 / 1.150 / 1.275), stacking like layers without crossing each other, exit with the whip | Four wooden "thocks" on the 16ths · Hijaz pluck tease · whoosh up |
-| S03 | 2.15 → 3.90 | BUILD A (red stage) | Whip-in from below. **Heel lands 2.40**. **Patty 1 lands 3.40** (falls from 3.18). Slow push. | 2.40–3.30 «بريوش» / «محمّص بالزبدة» → heel · 3.40–4.30 «سماش…» / «أطرافه مقرمشة» → patty edge | Fall whoosh + low thud + tabl (heel) · thud + sizzle (patty) |
-| S04 | 3.90 → 4.25 | INSERT crust edge | Macro slide along patty 1's lacy, glinting edge, shallow DOF, backlit steam (charcoal). | (patty label continues) | Close sizzle |
-| S05 | 4.25 → 4.90 | BUILD B (red) | Other side of the stack. **Cheddar lands 4.40** and drapes under its own weight. | 4.40 «تشيدر يذوب» | Soft squish pop + thud + short pour |
-| S06 | 4.90 → 5.75 | INSERT melt — **half-time** | Slow push on the front cheese corner folding over the patty; drip grows (charcoal, shallow DOF). | 4.90 «…على مهله» joins (till 5.75) | Groove drops to half-time: one dum, slow clap, long 808, pad · riser back in |
-| S07 | 5.75 → 7.15 | BUILD C — double burst (charcoal) | 8th-note burst: **patty 2 at 5.90 · cheddar 2 at 6.15 · pickles at 6.40 · red onion at 6.65**. | 5.90–6.36 «دبل!» · 6.40–7.35 «مخلل وبصل…» / «يقرمشون» | Big thud + group clap + sizzle · squish · crunch · crunch |
-| S08 | 7.15 → 7.90 | INSERT sauce | Top-down. Dollop falls, **splats at 7.40** with a splash; drips ooze over the rim. | 7.40–8.30 «صوص ستاك» / «السرّي» | Whoosh down · splat pop + pour |
-| S09 | 7.90 → 8.40 | WIDE — top bun | Pull back. Snare roll, then **silence 8.15–8.40**; crown falls from 8.15. | (sauce label exits) | Riser + snare roll → gap |
-| S10 | 8.40 → 10.40 | HERO turntable + offer | **Crown slams at 8.40** (match cut on impact into the low hero angle). Burger turns, steam breathes, slow push-in. | 8.55 «ستاك دبل» · 8.90 price badge «٢٫٧٥٠ د.ك» · 9.40 CTA «اطلب الحين ←» (button press on 9.90) | **Drop:** impact + group clap + tabl, full groove, Hijaz pluck hook · pop / bell on price · pop + click on CTA |
-| S11 | 10.40 → 11.40 | CLIENT END CARD | Red. **Match cut:** frame 1 of the card shows the burger mark at the hero burger's size and position, layers slightly exploded; it flies up and closes into the lockup (0.5 s, outExpo), then «ستاك برجر» + STAKK BURGER (charcoal); slow scale drift keeps the hold alive. | Slate from 10.55: «إعلان تجريبي — علامة خيالية» + `CONCEPT AD — 02 / BURGER` | Final hit + claps + D chord strum → **tape-stop 10.95–11.40** |
-| S12 | 11.40 → 13.80 | TASH SIGNATURE | Official `createSting()` (typing dots → ش → طشّ) at a smaller logo size, played from sting time 0 to 2.4 s, so the dot behaviour and cues are untouched. | `TASH / 2026` · «إعلان تجريبي — علامة خيالية» · `CONCEPT AD — 02 / BURGER` · `@tash.creative.kw` | `sonic_logo()` at 11.40 (same cue file), faded out over the last 0.35 s |
+| S01 | 0.00 → 0.90 | `b1_smash` 0.77 s (f18) → 1.60 · 1.1× into the hit, ramps to 0.55× | Gloved steel press over a raw ball on a black griddle; **contact f29 on 0.40**; +3.5 % punch and 11 px shake (τ 55 ms); slow push | — | sizzle from frame 0 · press whoosh · **impact + sizzle burst + group clap 0.40** |
+| S02 | 0.90 → 2.15 | `b2_crust` 0.80 s (f19) → 2.05 · 1.0× | Top-down seared crust, fat bubbling. Frame lowered 450 px into a dark falloff so the title sits on griddle, not crust. **Whip 1.95 →**: the red stage rides in above the plate with a vertical smear sized to the per-frame travel | «كل» «طبقة» «لها» «سالفة» rise into four stacked slots on 16ths (0.900 / 1.025 / 1.150 / 1.275) and ride the whip out (vertical blur) | four wooden thocks · Hijaz pluck tease · whip whoosh |
+| S03 | 2.15 → 3.90 | `b3_heel` f0 held under the whip (the source opens on a locked-off bun) · 0.5× · then 1.25× for the fall | The whip lands the camera on the heel **at 2.40** with a short bounce. The heel "drops" onto its beat. The patty enters at 2.89 and **lands f21 on 3.40**; nearest frames (1.25× = one source frame per output frame) | 2.40 «بريوش» / «محمّص بالزبدة» (left, above the heel; exits 3.16–3.30, before the patty passes) · 3.40 «سماش…» → leader to the patty · 3.62 «أطرافه مقرمشة» | fall whoosh + thud + tabl 2.40 · 0.45 s fall whoosh + thud + sizzle 3.40 |
+| S04 | 3.90 → 4.25 | `b2_crust` 3.00 s (f72) → 3.33 · 1.0× · **1.6× punch-in** | Macro on the patty's crispy lace and bubbling fat, slow lateral slide | the crisp claim's leader lands on a real lace tip; label out by the S05 cut | close sizzle |
+| S05 | 4.25 → 4.90 | `b3_heel` 3.23 s (f77) → 3.83 · 1.0× | Cheddar slice falls (real motion blur) and **lands f81 on 4.40** | 4.40 «تشيدر يذوب» → leader to the slice corner | soft squish pop + thud + short pour |
+| S06 | 4.90 → 5.75 | `b4_melt` 4.53 s (f108) → 4.95 · **0.5×**, frame-blended | **Half-time**: cheddar folded over a lacy edge, the drip grows down the brioche; slow push toward the drip | 4.90 «…على مهله» joins (leader to the drip) | groove drops to half-time: one dum, slow clap, long 808, pad · riser back in |
+| S07 | 5.75 → 7.15 | `b5_stack`, three cuts: **a** 0.00 s (f0) → 0.31 at 0.5× · **b** 2.25 s (f54) → 2.48 at 1.0× · **c** 3.33 s (f80) → 3.58 at 0.5× | **a** the finished double stack, punch-ins on 5.90 («دبل!») and 6.15 (cheese2). **b** cut on contact: the centre pickle lands **f54 on 6.40**, the first onion ring **f57 on 6.533**. **c** jump cut on the 8th (6.65) to the settled stack | 5.90–6.36 «دبل!» · 6.40 «مخلل وبصل…» → leader to a pickle · 6.525 «يقرمشون» | thud + group clap + sizzle 5.90 · squish 6.15 · crunch 6.40 · **onion crunch 6.525** (was 6.65, see §5) |
+| S08 | 7.15 → 7.90 | `b6_sauce` 0.64 s (f15) → 1.39 · 1.0 → 1.2× | Top-down on red: a stream of orange sauce **makes contact f21 on 7.40** and pools over pickles and onion | 7.40 «صوص ستاك» / «السرّي» (left of the stream) → leader to the pool; exits 8.06–8.20, before the crown falls through | stream pour · **thick plop on contact 7.40** · glossy pour |
+| S09 | 7.90 → 8.40 | `b7_crown` 0.165 s (f4) → 0.79 · 1.25× | The finished stack on red; the sesame crown falls into frame at 8.17 (silence 8.15–8.40) | — | riser + snare roll → gap · crown fall whoosh |
+| S10 | 8.40 → 10.40 | `b7_crown` 0.79 s (f19) → 2.44 · 0.85 → 0.8×, frame-blended | **Crown lands f19 on 8.40**: +4 % punch and 11 px shake, then a slow hero push, steam | all in the red band above the crown, never on the food: 8.55 «ستاك دبل» · 8.90 badge «٢٫٧٥٠ د.ك» · 9.40 CTA «اطلب الحين ←» (press on 9.90) | **drop**: impact + group clap + tabl, full groove, Hijaz pluck hook · pop/bell on price · pop + click on CTA |
+| S11 | 10.40 → 11.40 | graphic | **Match cut**: frame 1 of the client card draws the burger mark exactly over the real burger's silhouette (x 33–1079, y 598–1606 on the last hero frame), then it flies up into the lockup (0.5 s outExpo) | «ستاك برجر» + STAKK BURGER · slate from 10.55: «إعلان تجريبي — علامة خيالية» + `CONCEPT AD — 02 / BURGER` | final hit + claps + D chord → tape-stop 10.95–11.40 |
+| S12 | 11.40 → 13.80 | graphic | Official `createSting()` (typing dots → ش → طشّ), smaller logo, sting time 0 → 2.4 s | `TASH / 2026` · «إعلان تجريبي — علامة خيالية» · `CONCEPT AD — 02 / BURGER` · `@tash.creative.kw` | `sonic_logo()` at 11.40, faded over the last 0.35 s |
 
-Average shot length ≈ 1.15 s.
+Clean plate only: 10.40 → 13.80 continues S10 (`b7_crown` 2.44 → 4.98 s, 0.8 → 0.7×).
 
-## 4. On-screen copy (Kuwaiti) — proofread
+## 4. On-screen copy (Kuwaiti), proofread twice at full size
 
-| Arabic | Gloss |
-|---|---|
-| كل طبقة لها سالفة | every layer has a story |
-| بريوش · محمّص بالزبدة | brioche · toasted in butter |
-| سماش… · أطرافه مقرمشة | smash… · its edges are crispy |
-| تشيدر يذوب · …على مهله | cheddar melting · …taking its time |
-| دبل! | double! |
-| مخلل وبصل… · يقرمشون | pickles and onion… · crunching |
-| صوص ستاك · السرّي | STAKK sauce · the secret one |
-| ستاك دبل · ٢٫٧٥٠ د.ك · اطلب الحين | STAKK double · 2.750 KD (fictional price) · order now |
-| ستاك برجر · STAKK BURGER | client logo (fictional) |
+| Arabic | Gloss | On screen |
+|---|---|---|
+| كل · طبقة · لها · سالفة | every layer has a story | 0.90–2.15 |
+| بريوش · محمّص بالزبدة | brioche · toasted in butter | 2.40–3.30 |
+| سماش… · أطرافه مقرمشة | smash… · its edges are crispy | 3.40–4.25 |
+| تشيدر يذوب · …على مهله | cheddar melting · …taking its time | 4.40–5.75 |
+| دبل! | double! | 5.90–6.36 |
+| مخلل وبصل… · يقرمشون | pickles and onion… · crunching | 6.40–7.35 |
+| صوص ستاك · السرّي | STAKK sauce · the secret one | 7.40–8.20 |
+| ستاك دبل · ٢٫٧٥٠ د.ك · اطلب الحين ← | STAKK double · 2.750 KD (fictional price) · order now | 8.55–10.40 |
+| ستاك برجر · STAKK BURGER | client logo (fictional) | 10.60–11.40 |
+| إعلان تجريبي — علامة خيالية · CONCEPT AD — 02 / BURGER | concept slate | 10.55–13.80 |
 
-No claims, no "best in Kuwait", no reviews, no numbers except the fictional price. Arabic is animated per word or per line only.
+Same words as the CGI version. No claims, no "best in Kuwait", no reviews, no numbers except the fictional price. Arabic is
+animated per word (never per letter); ellipses and «!» sit on the RTL end, «…على مهله» leads with its ellipsis (it continues
+«تشيدر يذوب»), and the shadda in «محمّص» and «السرّي» is checked. Two hero lines wrap to two lines because at 126 px they're
+wider than the 936 px safe width («محمّص بالزبدة» 983 px, «أطرافه مقرمشة» 1074 px, measured with HarfBuzz).
 
 ## 5. Sound
 
-Original 120 BPM track (`src/audio.py`, engine `_system/audio/tashaudio.py`). Kick and 808 in Hijaz-on-D (D–Eb movement); Khaleeji `claps_ensemble` on the backbeat plus the push on the "and" of 3 (3+3+2 feel); mirwas dum/tak pattern; 16th hats; oud-ish `pluck` hook in Hijaz in the drop. Every layer drop has its own SFX on the grid: thud, sizzle, squish, crunch, splat, impact. Sizzle runs from frame 0 under the hook. Silence is used twice on purpose: the half-time melt and the 0.25 s gap before the top bun. The music tape-stops into the TASH sonic logo. A gentle −3.5 dB low shelf (110 Hz) sits on the music bus only, because phones can't play the 808's sub and it was eating the loudness budget. The hero impacts keep their full sub. Loudness is normalised to −14 LUFS at mux.
+Same original 120 BPM score as the CGI cut (`src/audio.py`, engine `_system/audio/tashaudio.py`): Hijaz-on-D 808 and kick,
+Khaleeji `claps_ensemble` with the 3+3+2 push, mirwas dum/tak, 16th hats, oud-ish pluck hook, half-time for the melt, a
+0.25 s silence before the crown, tape-stop into the TASH sonic logo. Only three SFX changed, where the picture changed:
 
-## 6. Clean-plate notes (for the launch-ad editor)
+- **Patty (3.40):** its fall whoosh runs 0.45 s (was 0.25) because the real patty falls for 0.5 s on screen.
+- **Onions:** the crunch moved from 6.65 to **6.525** (one 16th earlier, same grid). In the footage the first ring lands
+  three source frames after the pickle. Stretching that gap to 0.25 s needed 0.5×, which either stuttered the ring
+  (nearest frames) or doubled it (blends). `cues.json` → `drops.onions` and its `_onions` note.
+- **Sauce (7.40):** the CGI dollop's whoosh + splat became a pour. A thin stream sound runs from the S08 cut, then a
+  thick low plop on contact, then a glossy pour into the pool.
 
-- `?clean=1` hides: title, labels, leader lines, «دبل!», offer, CTA, end card, slates and the TASH signature. Shot timings are identical to the table above.
-- 10.40 → 13.80 in the clean plate continues **S10 hero** (turntable + push-in), so there are no end-card frames in the footage.
-- Film grain (opacity .05) is kept in the clean plate as part of the footage finish.
-- S02's last frames (≈1.97 → 2.15) are the whip: the frame blurs upward and dips into tomato red. For a clean crust shot, cut S02 before 1.95.
-- Leader lines and labels are overlay only; none of the ECD look changes moved a shot boundary or a drop time (cues.json unchanged).
-- Best clean hero still: `still-hero.png` (clean plate at 10.6 s, 8× jittered supersampling).
+Mixed by `audio.py` to −14.0 LUFS (true peak −1.8 dBTP); the renderer's two-pass loudnorm muxes it at −14 LUFS.
 
-## 7. Production notes
+## 6. Footage pipeline and grade
 
-- **3D:** Three.js r180 on SwiftShader, everything generated in code with seeded noise. Brioche crown/heel use displaced lathes with 2K baked-colour/bump/roughness maps; 330 instanced sesame seeds sit on the surface normal. The toasted cut faces are textured crumb. Smash patties are polar solids with craggy displacement plus fine crags. The crust map is deep mahogany: caramelised nubs, dark cracks, char flecks and sparse wet-fat glints in the clearcoat map, with no sheen veil. The rim is an alpha-cut lace with lighter, crisp filaments. Cheddar (1.9-unit slices, so both patties' lacy edges show between the corners) is a thick sheet that drapes under gravity, with rounded melted corners and growing drips. Each drip is one teardrop that grows a neck as it lengthens, with the bulb staying round. Pickles are crinkle-cut, red-onion rings use vertex colours, and the sauce is a dollop that morphs into a splat with drips and splash droplets. Raw beef and the press drive the hook.
-- **Look:** hand-built softbox environments (PMREM), warm key, two rim lights, front fill card, shadow-catcher floor composited over the exact brand colour, ACES, depth-of-field gather on the macro inserts, grain .05.
-- **Motion blur:** real sub-frame accumulation. Falls get a sub-frame count from their on-screen smear (108° shutter, echo spacing ≤ ~11 px, up to 10 sub-frames), so they blur instead of stepping into ghost copies. Other counts: 12 on the fastest whip frames, 28 on the slam's contact frame (16 on either side), 8 on the sauce splat. Impact frames stay crisp, with a short cream flash on the smash and the top-bun slam. Grease and sauce droplets stretch to at least one sub-frame step, so they read as streaks, not beads.
-- **Transitions:** the S02 whip-out dips into S03's red. The S10 → S11 cut is a match cut: the client mark is born at the hero burger's size and position, then flies into the lockup. A falling heel's floor shadow softens with height, so the first drop no longer punches a black hole into the red.
-- **Timing:** `src/cues.json` is the single source for picture and sound (shots, drops, text in/out, end card, signature).
+`bash src/tools/extract.sh` (→ `conform.py`) rebuilds `src/footage/` from `footage/ai/*.mp4` and `src/edl.json`. It writes only
+the frames the edit uses: 429 graded JPEGs at 1080×1920 and q:v 3, 66 MB. Then `manifest.json` maps every edit frame to its
+source frame(s).
+
+- **Decode:** BT.709, tv range → full-range RGB (the clips are BT.709; decoding them as BT.601 had made the red look crimson).
+- **Retime:** each sequence is a cubic Hermite through `[edit t, source t, speed in, speed out]` keys, so ramps are smooth and
+  measurable. Event frames are always shown crisp. Slow sections (≤0.85×) blend the two neighbouring source frames in linear
+  light; real-speed and fast action uses nearest frames. At 1.25×, 24 fps maps one-to-one onto 30 fps.
+- **Framing:** a single Lanczos resample per frame (cover crop, punch-ins 1.18–1.6×). The page adds a constant 1.03 overscan
+  (hides AI edge artefacts), slow pushes, two impact shakes (smash and crown only) and the whip.
+- **Grade (one for all seven clips):** (1) a per-clip black match measured on a clean reference frame (0.5th percentile → 10/9/7);
+  (2) a shared look: saturation 0.93 (AI clips run hot), a gentle S-curve, and highlights rolled off toward the client cream
+  (white → ≈245/240/225, never pure white); (3) a red-stage secondary on b3/b6/b7 that pulls the seamless to `#E23B2E`.
+  Measured after grading: stage red (225–226, 58–59, 45–46) on S03, S09 early, mid and late. Dark-clip 0.5th percentiles
+  (7–15, 7–10, 3–7). Grain .04 and a constant vignette (−20 % at the corners, also over the client card, so the match cut
+  keeps its corners).
+
+### Events: CD notes vs measured (frame by frame, at full resolution)
+
+| Clip | CD note | Measured / used | Note |
+|---|---|---|---|
+| b1 smash | contact ≈1.21 s | f28 touches, **f29 (1.208 s)** compresses → on 0.40 | ✓ |
+| b3 patty | lands ≈0.875 s | **f21 (0.875 s)** → 3.40 | ✓ |
+| b3 cheddar | lands ≈3.375 s | f80 touches, **f81 (3.375 s)** flat → 4.40 | ✓ |
+| b5 pickles | first land ≈1.50 s | f37 (1.54 s) lands, but **f22–f35 a pickle hovers and drifts up** and **f38–f48 a pale upright disc morphs into a pickle**. Used the centre pickle **f54 (2.25 s)** → 6.40 | glitches not in the notes; avoided |
+| b5 onions | land ≈2.2–2.35 s | first ring **f57 (2.375 s)** → 6.533; then **it hovers above the pickles (f57–64)** and a second wave falls f61–f73 through the label zone, so S07 cuts at 6.65 to the settled stack (f80) | the suggested 1.1–1.3× ramp couldn't hit both cues (0.75 s of source in 0.25 s of edit would need 3×) |
+| b6 sauce | first touches ≈0.75 s | at 0.75 s the blob is still above the onion; **contact f21 (0.875 s)**, spreads f22 → 7.40 | 3 frames later than the note |
+| b7 crown | lands ≈0.79 s | f18 touches (blurred), **f19 (0.792 s)** landed → 8.40 | ✓ |
+
+**Rejected:** ffmpeg `minterpolate` (mci/aobmc/bidir) on the b5 falls. Every in-between frame warped (a half-transparent
+pickle, torn and fogged ring interiors). Plain frame blending doubled the falling pickles, rings and cheddar. Falls are now
+nearest-frame only.
+
+## 7. Clean-plate notes (launch-ad editor)
+
+- `?clean=1` hides the title, labels, leader lines, «دبل!», offer, CTA, end card, slates and the TASH signature. The cue
+  table above is identical, including the S07 inner cuts (6.40, 6.65) and the whip (1.95–2.40).
+- The finish (grade, vignette, grain .04, punch and shake on the smash and the crown) stays in the clean plate.
+- The best BURGER range for the launch ad is **clean 7.90 → 9.40** (crown slams at 8.40 = 0.5 s in), the same range as
+  before, so the launch cues stay valid. More ranges and their source seconds: `footage/HANDOFF-launch.md`.
+- `still-hero.png` = clean frame at 11.60 (b7 source ≈3.38 s).
 
 ## 8. Known weaknesses (honest)
 
-- Bread and cheese are stylised-real CGI. They are convincing at feed size but do not look like photography at macro distance. The cheddar reads as processed slices, which is correct for a smash burger but not luxurious.
-- The patties' lacy rims are an alpha-cut sheet (no MSAA). At the low side angles of the build and hero shots they read as ragged, crispy fringes rather than a delicate lace.
-- The sauce reads as a glossy orange dollop with relish flecks, not a drizzle. The onion rings are cleaner than real sliced onion.
-- After the whip-out, about 0.2 s (≈2.10–2.30) is near-empty tomato red before the heel falls in. The heel's landing is locked to the beat at 2.40.
-- Shadows of high-flying layers after the heel still show as soft dark ellipses on the red floor for a few frames.
-- The mix is still sub-forward (808 + kick) with an LRA of about 3 LU, which is typical for social but not very dynamic.
+- **It is AI footage.** At full size the brioche and cheddar read as real. Some tells remain, and the edit routes around
+  them rather than hiding them completely. In S07c the onion rings rest on the pickles at steep angles, propped rather than
+  lying flat. In S07b's last three frames (6.57–6.63) the first ring rests only on a tilted pickle's raised edge and reads as slightly floating before the 6.65 cut. The b3 patty is a
+  regular round patty, not a lacy smash patty, so the crisp claim is shown on b2's lace (S04), not on it.
+- **S02 is composited.** The frame is lowered 450 px, and the top quarter is a synthetic dark falloff (the griddle's own
+  edge tone, darkened), so the stacked title sits on calm ground. It reads as the light pool ending, but it is not
+  photographed. The b2 crust also shows pink, under-seared patches (it's the raw side up).
+- **S03 holds source frame 0 for 0.47 s** under the whip (1.93–2.40). The source opens on a locked-off bun, so the hold is
+  invisible under the smear, but it is outside the 0.5–1.25× rule.
+- **S04 is a 1.6× punch-in on 1080p AI footage**, so it's slightly soft (it reads as macro, but it is not sharp).
+- **The onion beat moved one 16th** (6.65 → 6.525) to follow the real landing. 6.65 is now a cut instead of a landing.
+- **The poster composites** the hero frame at 62 % over its own seamless red (feathered edges). The seam isn't visible,
+  but the burger is smaller than in any film frame.
+- **The match cut into the client card** goes from a photographed burger to a flat graphic mark (born on the burger's
+  silhouette). It's a graphic match, not a morph.
+- Leader lines re-target on two cuts (S03 → S04, S05 → S06), so the dot jumps with the picture.
+- **Determinism:** two renders of the same frame from different seek orders differ by at most 1/255 on ≤7 of 2.07 M pixels.
+- The mix is still sub-forward with LRA ≈3 LU, typical for social but not very dynamic.
 
-## 9. Review log (ECD pass, independent of the builder)
+## 9. Review log
 
-| Found (timestamp) | Change | Result |
-|---|---|---|
-| 0.9–2.15, 3.4–4.25: patty read as orange smoke or leopard print (sheen veil, smash-steam fog over the top-down shot, low-frequency crust) | new crust map (dark mahogany, caramel nubs, cracks, char flecks, fat glints), no sheen, the smash puff kept to S01, per-shot bump strength | S02 and S04 read as seared crust; hero shows two crispy patties |
-| hero/poster: cheese hid both patties | slices 2.12 → 1.9 | patty edges show between the drooping corners |
-| 4.9–5.75 melt insert: drip looked like a chess pawn with a flat cap | new teardrop drip (closed root, smooth neck/bulb) for cheese and sauce | the drip grows a neck as it lengthens |
-| 2.33, 5.67, 7.43: falls stepped into 4 ghost copies | smear-driven sub-frame count, 108° shutter on falls | smooth blur, crisp landings |
-| 2.0–2.15: whip went to near-black | the whip dips into S03's red | the cut lands on colour |
-| 1.30: «سالفة» crossed «لها» while dropping in | words rise into the empty slot below | no text-over-text |
-| 4.0, 5.3: leader line/ring landed on the label, or ran off-frame | leader lines only in wide shots | — |
-| 10.33–10.5: flat red frame with a small yellow bar | match cut: the mark is born at the burger's size and position | the end card has a cause |
-| STAKK BURGER in mustard on red (2.4:1) | charcoal | legible |
-| poster slate at 1590–1720 (under reel UI / grid crop) | slate inside the safe area, compact | — |
-| heel cut face showed a red hairline at its rim | face closed to the crust | — |
-| 0.5: grease spray as beaded dashes | streaks at least one sub-frame step long | continuous streaks |
-| raw ball read as a peach; pickles read as fresh cucumber | darker lean red with chunkier strands; pickled olive palette, tan seeds | — |
-| mix: sub band ≈ full band | −3.5 dB low shelf on the music bus | mids and highs +1.3 dB relative |
-| 0.40 (hook contact frame): press plate stepped into ~6 ghost plates | 28 sub-frames on the contact frame, 16 either side | one continuous smear |
-
-**How the final was made (ECD pass):** one full re-render of the current source as two single-worker segments (0–5 s, 5–13.8 s), plus a re-render of 0–1.0 s after the slam fix. Frames 1.0–5.0 were re-encoded once with the renderer's x264 settings (crf 14). The segments were concatenated (identical SPS/PPS) and muxed with the renderer's two-pass linear loudnorm. Measured on the delivered file: 414 frames, 1080×1920, 30 fps, H.264 High, AAC 48 kHz; −14.0 LUFS integrated, −1.2 dBTP, LRA 2.8 LU. No freezes ≥0.6 s. Brightness across the splice points changes by less than 2/255 per frame; the only large frame-to-frame changes are planned cuts and the one-frame impact flash. The strongest onset of each hit is within one frame (5–18 ms) of its drop: smash, heel, patty, patty 2, pickles, sauce, crown, end card and sting snap. The cheese squishes and the onion crunch are multi-grain sounds that start on the drop and peak 24–42 ms later.
+| Round | Found (timestamp) | Change | Result |
+|---|---|---|---|
+| 1 | 4.27: cheddar slice ghosted (frame blend at 1.0×); 6.17 and 7.13: falling pickles and rings doubled | nearest frames on all falls; blending only ≤0.85× on calm content | crisp falls |
+| 1 | b5: ring hover (f57–64), second ring wave through the label zone, pickle hover/morph | S07 rebuilt as three cuts on the beat grid (5.75 / 6.40 / 6.65) | no glitch frames on screen; labels on clean dark ground |
+| 1 | 2.17–2.37: the whip's tail dragged S02's dark band in as a black bar; 12-sample smear stepped | after the cut, S03's own floor fills below; samples = blur length / 5 (≤56) | the heel drops in on red and lands on 2.40 |
+| 1 | 2.70, 3.80: hero lines overflowed the 936 px safe width | measured with HarfBuzz; long heroes wrap to two lines; offer name 150 → 120 px | everything inside x 72–1008 |
+| 1 | 9.0: price badge overlapped «ستاك دبل» | name right, badge left, CTA under the name; all above the crown (≥55 px gap at 10.37) | — |
+| 1 | 10.40: end-card mark born 30 % taller than the burger (exploded layers × 4.8 scale) | born in place on the burger's silhouette; small drag only in flight | crown edge at y 600 vs the real 595 |
+| 1 | 4.60: «تشيدريذوب»: the pop spring overshot the word scale to 1.10 and closed the word space | overshoot kept in rise/rotation; scale capped at 1 | the space stays |
+| 2 | 4.27: the patty label was still fading while the cheddar fell under it | label leaves on the S05 cut (4.11–4.25) | no text over moving food |
+| 2 | «أطرافه / مقرمشة» lines nearly touching | line-height 0.96 → 1.0 (still clears the lace) | — |

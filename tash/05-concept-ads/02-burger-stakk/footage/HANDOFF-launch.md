@@ -1,7 +1,7 @@
 # STAKK photoreal → launch ad: clean ranges
 
 For the launch-ad editor (`tash/04-launch-ad`). Every range below is in the **clean render**
-`05-concept-ads/02-burger-stakk/src/index.html?clean=1` (picture only: no type, slates, end card or sting; grade, vignette .30
+`05-concept-ads/02-burger-stakk/src/index.html?clean=1` (picture only: no type, slates, end card or sting; grade, vignette −20 %
 at the corners and grain .04 are baked in, like the rest of the footage finish). The clean timeline is the same as the
 film's, frame for frame. From 10.40 to 13.80 it keeps rolling the hero instead of showing the end card.
 
