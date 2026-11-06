@@ -1,0 +1,731 @@
+{
+  "pass": true,
+  "graph": ".next/diagnostics/analyze/graph-phase0-gate.jsonl",
+  "snapshot": "phase0-gate",
+  "baseline": "docs/game/baseline/bundle-baseline.json",
+  "tolerance": 0,
+  "counts": {
+    "baselineRoutes": 63,
+    "grew": 0,
+    "same": 63,
+    "smaller": 0,
+    "missing": 0,
+    "newRoutes": 5,
+    "leaks": 0
+  },
+  "failures": [],
+  "routes": [
+    {
+      "route": "/sitemap.xml",
+      "kind": "route-handler",
+      "baseline": 0,
+      "current": 0,
+      "delta": 0,
+      "deltaGzip": 0,
+      "asyncDelta": 0,
+      "status": "same"
+    },
+    {
+      "route": "/robots.txt",
+      "kind": "route-handler",
+      "baseline": 0,
+      "current": 0,
+      "delta": 0,
+      "deltaGzip": 0,
+      "asyncDelta": 0,
+      "status": "same"
+    },
+    {
+      "route": "/_not-found",
+      "kind": "page",
+      "baseline": 576017,
+      "current": 576017,
+      "delta": 0,
+      "deltaGzip": 0,
+      "asyncDelta": 0,
+      "status": "same"
+    },
+    {
+      "route": "/_global-error",
+      "kind": "page",
+      "baseline": 459663,
+      "current": 459663,
+      "delta": 0,
+      "deltaGzip": 0,
+      "asyncDelta": 0,
+      "status": "same"
+    },
+    {
+      "route": "/preview/[fileId]",
+      "kind": "page",
+      "baseline": 605542,
+      "current": 605542,
+      "delta": 0,
+      "deltaGzip": 0,
+      "asyncDelta": 0,
+      "status": "same"
+    },
+    {
+      "route": "/read/[fileId]",
+      "kind": "page",
+      "baseline": 605542,
+      "current": 605542,
+      "delta": 0,
+      "deltaGzip": 0,
+      "asyncDelta": 0,
+      "status": "same"
+    },
+    {
+      "route": "/watch/[productId]",
+      "kind": "page",
+      "baseline": 625198,
+      "current": 625198,
+      "delta": 0,
+      "deltaGzip": 0,
+      "asyncDelta": 0,
+      "status": "same"
+    },
+    {
+      "route": "/",
+      "kind": "page",
+      "baseline": 588589,
+      "current": 588589,
+      "delta": 0,
+      "deltaGzip": 0,
+      "asyncDelta": 0,
+      "status": "same"
+    },
+    {
+      "route": "/forgot-password",
+      "kind": "page",
+      "baseline": 597891,
+      "current": 597891,
+      "delta": 0,
+      "deltaGzip": 0,
+      "asyncDelta": 0,
+      "status": "same"
+    },
+    {
+      "route": "/login",
+      "kind": "page",
+      "baseline": 597388,
+      "current": 597388,
+      "delta": 0,
+      "deltaGzip": 0,
+      "asyncDelta": 0,
+      "status": "same"
+    },
+    {
+      "route": "/register",
+      "kind": "page",
+      "baseline": 601357,
+      "current": 601357,
+      "delta": 0,
+      "deltaGzip": 0,
+      "asyncDelta": 0,
+      "status": "same"
+    },
+    {
+      "route": "/reset-password",
+      "kind": "page",
+      "baseline": 593649,
+      "current": 593649,
+      "delta": 0,
+      "deltaGzip": 0,
+      "asyncDelta": 0,
+      "status": "same"
+    },
+    {
+      "route": "/account",
+      "kind": "page",
+      "baseline": 591736,
+      "current": 591736,
+      "delta": 0,
+      "deltaGzip": 0,
+      "asyncDelta": 0,
+      "status": "same"
+    },
+    {
+      "route": "/bundles",
+      "kind": "page",
+      "baseline": 581281,
+      "current": 581281,
+      "delta": 0,
+      "deltaGzip": 0,
+      "asyncDelta": 0,
+      "status": "same"
+    },
+    {
+      "route": "/cart",
+      "kind": "page",
+      "baseline": 586592,
+      "current": 586592,
+      "delta": 0,
+      "deltaGzip": 0,
+      "asyncDelta": 0,
+      "status": "same"
+    },
+    {
+      "route": "/checkout",
+      "kind": "page",
+      "baseline": 590155,
+      "current": 590155,
+      "delta": 0,
+      "deltaGzip": 0,
+      "asyncDelta": 0,
+      "status": "same"
+    },
+    {
+      "route": "/contact",
+      "kind": "page",
+      "baseline": 581281,
+      "current": 581281,
+      "delta": 0,
+      "deltaGzip": 0,
+      "asyncDelta": 0,
+      "status": "same"
+    },
+    {
+      "route": "/grades/[gradeSlug]",
+      "kind": "page",
+      "baseline": 581281,
+      "current": 581281,
+      "delta": 0,
+      "deltaGzip": 0,
+      "asyncDelta": 0,
+      "status": "same"
+    },
+    {
+      "route": "/grades/[gradeSlug]/[subjectSlug]",
+      "kind": "page",
+      "baseline": 581281,
+      "current": 581281,
+      "delta": 0,
+      "deltaGzip": 0,
+      "asyncDelta": 0,
+      "status": "same"
+    },
+    {
+      "route": "/library",
+      "kind": "page",
+      "baseline": 581281,
+      "current": 581281,
+      "delta": 0,
+      "deltaGzip": 0,
+      "asyncDelta": 0,
+      "status": "same"
+    },
+    {
+      "route": "/orders/[id]",
+      "kind": "page",
+      "baseline": 583995,
+      "current": 583995,
+      "delta": 0,
+      "deltaGzip": 0,
+      "asyncDelta": 0,
+      "status": "same"
+    },
+    {
+      "route": "/privacy",
+      "kind": "page",
+      "baseline": 581281,
+      "current": 581281,
+      "delta": 0,
+      "deltaGzip": 0,
+      "asyncDelta": 0,
+      "status": "same"
+    },
+    {
+      "route": "/products/[slug]",
+      "kind": "page",
+      "baseline": 587161,
+      "current": 587161,
+      "delta": 0,
+      "deltaGzip": 0,
+      "asyncDelta": 0,
+      "status": "same"
+    },
+    {
+      "route": "/refund-policy",
+      "kind": "page",
+      "baseline": 581281,
+      "current": 581281,
+      "delta": 0,
+      "deltaGzip": 0,
+      "asyncDelta": 0,
+      "status": "same"
+    },
+    {
+      "route": "/stages/[slug]",
+      "kind": "page",
+      "baseline": 581281,
+      "current": 581281,
+      "delta": 0,
+      "deltaGzip": 0,
+      "asyncDelta": 0,
+      "status": "same"
+    },
+    {
+      "route": "/teachers",
+      "kind": "page",
+      "baseline": 581281,
+      "current": 581281,
+      "delta": 0,
+      "deltaGzip": 0,
+      "asyncDelta": 0,
+      "status": "same"
+    },
+    {
+      "route": "/teachers/[slug]",
+      "kind": "page",
+      "baseline": 581281,
+      "current": 581281,
+      "delta": 0,
+      "deltaGzip": 0,
+      "asyncDelta": 0,
+      "status": "same"
+    },
+    {
+      "route": "/terms",
+      "kind": "page",
+      "baseline": 581281,
+      "current": 581281,
+      "delta": 0,
+      "deltaGzip": 0,
+      "asyncDelta": 0,
+      "status": "same"
+    },
+    {
+      "route": "/admin",
+      "kind": "page",
+      "baseline": 641357,
+      "current": 641357,
+      "delta": 0,
+      "deltaGzip": 0,
+      "asyncDelta": 0,
+      "status": "same"
+    },
+    {
+      "route": "/admin/bundles",
+      "kind": "page",
+      "baseline": 641357,
+      "current": 641357,
+      "delta": 0,
+      "deltaGzip": 0,
+      "asyncDelta": 0,
+      "status": "same"
+    },
+    {
+      "route": "/admin/catalog",
+      "kind": "page",
+      "baseline": 656415,
+      "current": 656415,
+      "delta": 0,
+      "deltaGzip": 0,
+      "asyncDelta": 0,
+      "status": "same"
+    },
+    {
+      "route": "/admin/coupons",
+      "kind": "page",
+      "baseline": 660551,
+      "current": 660551,
+      "delta": 0,
+      "deltaGzip": 0,
+      "asyncDelta": 0,
+      "status": "same"
+    },
+    {
+      "route": "/admin/coupons/[id]",
+      "kind": "page",
+      "baseline": 654172,
+      "current": 654172,
+      "delta": 0,
+      "deltaGzip": 0,
+      "asyncDelta": 0,
+      "status": "same"
+    },
+    {
+      "route": "/admin/earnings",
+      "kind": "page",
+      "baseline": 641357,
+      "current": 641357,
+      "delta": 0,
+      "deltaGzip": 0,
+      "asyncDelta": 0,
+      "status": "same"
+    },
+    {
+      "route": "/admin/orders",
+      "kind": "page",
+      "baseline": 641357,
+      "current": 641357,
+      "delta": 0,
+      "deltaGzip": 0,
+      "asyncDelta": 0,
+      "status": "same"
+    },
+    {
+      "route": "/admin/orders/[id]",
+      "kind": "page",
+      "baseline": 653049,
+      "current": 653049,
+      "delta": 0,
+      "deltaGzip": 0,
+      "asyncDelta": 0,
+      "status": "same"
+    },
+    {
+      "route": "/admin/products",
+      "kind": "page",
+      "baseline": 656038,
+      "current": 656038,
+      "delta": 0,
+      "deltaGzip": 0,
+      "asyncDelta": 0,
+      "status": "same"
+    },
+    {
+      "route": "/admin/products/[id]",
+      "kind": "page",
+      "baseline": 692671,
+      "current": 692671,
+      "delta": 0,
+      "deltaGzip": 0,
+      "asyncDelta": 0,
+      "status": "same"
+    },
+    {
+      "route": "/admin/products/new",
+      "kind": "page",
+      "baseline": 668726,
+      "current": 668726,
+      "delta": 0,
+      "deltaGzip": 0,
+      "asyncDelta": 0,
+      "status": "same"
+    },
+    {
+      "route": "/admin/profile",
+      "kind": "page",
+      "baseline": 664475,
+      "current": 664475,
+      "delta": 0,
+      "deltaGzip": 0,
+      "asyncDelta": 0,
+      "status": "same"
+    },
+    {
+      "route": "/admin/reports",
+      "kind": "page",
+      "baseline": 641357,
+      "current": 641357,
+      "delta": 0,
+      "deltaGzip": 0,
+      "asyncDelta": 0,
+      "status": "same"
+    },
+    {
+      "route": "/admin/review",
+      "kind": "page",
+      "baseline": 641357,
+      "current": 641357,
+      "delta": 0,
+      "deltaGzip": 0,
+      "asyncDelta": 0,
+      "status": "same"
+    },
+    {
+      "route": "/admin/settings",
+      "kind": "page",
+      "baseline": 678200,
+      "current": 678200,
+      "delta": 0,
+      "deltaGzip": 0,
+      "asyncDelta": 0,
+      "status": "same"
+    },
+    {
+      "route": "/admin/students",
+      "kind": "page",
+      "baseline": 641357,
+      "current": 641357,
+      "delta": 0,
+      "deltaGzip": 0,
+      "asyncDelta": 0,
+      "status": "same"
+    },
+    {
+      "route": "/admin/students/[id]",
+      "kind": "page",
+      "baseline": 656415,
+      "current": 656415,
+      "delta": 0,
+      "deltaGzip": 0,
+      "asyncDelta": 0,
+      "status": "same"
+    },
+    {
+      "route": "/admin/teachers",
+      "kind": "page",
+      "baseline": 641357,
+      "current": 641357,
+      "delta": 0,
+      "deltaGzip": 0,
+      "asyncDelta": 0,
+      "status": "same"
+    },
+    {
+      "route": "/admin/teachers/[id]",
+      "kind": "page",
+      "baseline": 674247,
+      "current": 674247,
+      "delta": 0,
+      "deltaGzip": 0,
+      "asyncDelta": 0,
+      "status": "same"
+    },
+    {
+      "route": "/admin/teachers/new",
+      "kind": "page",
+      "baseline": 656551,
+      "current": 656551,
+      "delta": 0,
+      "deltaGzip": 0,
+      "asyncDelta": 0,
+      "status": "same"
+    },
+    {
+      "route": "/api/admin/reports/export",
+      "kind": "route-handler",
+      "baseline": 0,
+      "current": 0,
+      "delta": 0,
+      "deltaGzip": 0,
+      "asyncDelta": 0,
+      "status": "same"
+    },
+    {
+      "route": "/api/admin/uploads/complete",
+      "kind": "route-handler",
+      "baseline": 0,
+      "current": 0,
+      "delta": 0,
+      "deltaGzip": 0,
+      "asyncDelta": 0,
+      "status": "same"
+    },
+    {
+      "route": "/api/admin/uploads/init",
+      "kind": "route-handler",
+      "baseline": 0,
+      "current": 0,
+      "delta": 0,
+      "deltaGzip": 0,
+      "asyncDelta": 0,
+      "status": "same"
+    },
+    {
+      "route": "/api/files/[fileId]",
+      "kind": "route-handler",
+      "baseline": 0,
+      "current": 0,
+      "delta": 0,
+      "deltaGzip": 0,
+      "asyncDelta": 0,
+      "status": "same"
+    },
+    {
+      "route": "/api/lessons/[lessonId]/progress",
+      "kind": "route-handler",
+      "baseline": 0,
+      "current": 0,
+      "delta": 0,
+      "deltaGzip": 0,
+      "asyncDelta": 0,
+      "status": "same"
+    },
+    {
+      "route": "/api/lessons/[lessonId]/stream",
+      "kind": "route-handler",
+      "baseline": 0,
+      "current": 0,
+      "delta": 0,
+      "deltaGzip": 0,
+      "asyncDelta": 0,
+      "status": "same"
+    },
+    {
+      "route": "/api/payments/myfatoorah/webhook",
+      "kind": "route-handler",
+      "baseline": 0,
+      "current": 0,
+      "delta": 0,
+      "deltaGzip": 0,
+      "asyncDelta": 0,
+      "status": "same"
+    },
+    {
+      "route": "/api/progress",
+      "kind": "route-handler",
+      "baseline": 0,
+      "current": 0,
+      "delta": 0,
+      "deltaGzip": 0,
+      "asyncDelta": 0,
+      "status": "same"
+    },
+    {
+      "route": "/api/uploads/local",
+      "kind": "route-handler",
+      "baseline": 0,
+      "current": 0,
+      "delta": 0,
+      "deltaGzip": 0,
+      "asyncDelta": 0,
+      "status": "same"
+    },
+    {
+      "route": "/api/video/bunny/webhook",
+      "kind": "route-handler",
+      "baseline": 0,
+      "current": 0,
+      "delta": 0,
+      "deltaGzip": 0,
+      "asyncDelta": 0,
+      "status": "same"
+    },
+    {
+      "route": "/lab/admin-kit",
+      "kind": "page",
+      "baseline": 648819,
+      "current": 648819,
+      "delta": 0,
+      "deltaGzip": 0,
+      "asyncDelta": 0,
+      "status": "same"
+    },
+    {
+      "route": "/lab/system",
+      "kind": "page",
+      "baseline": 601837,
+      "current": 601837,
+      "delta": 0,
+      "deltaGzip": 0,
+      "asyncDelta": 0,
+      "status": "same"
+    },
+    {
+      "route": "/lab/v2-c",
+      "kind": "page",
+      "baseline": 597836,
+      "current": 597836,
+      "delta": 0,
+      "deltaGzip": 0,
+      "asyncDelta": 0,
+      "status": "same"
+    },
+    {
+      "route": "/media/[...key]",
+      "kind": "route-handler",
+      "baseline": 0,
+      "current": 0,
+      "delta": 0,
+      "deltaGzip": 0,
+      "asyncDelta": 0,
+      "status": "same"
+    },
+    {
+      "route": "/payment/return",
+      "kind": "route-handler",
+      "baseline": 0,
+      "current": 0,
+      "delta": 0,
+      "deltaGzip": 0,
+      "asyncDelta": 0,
+      "status": "same"
+    }
+  ],
+  "newRoutes": [
+    {
+      "route": "/admin/game/spike",
+      "allowedGame": true,
+      "initialJs": {
+        "raw": 653836,
+        "gzip": 259789
+      },
+      "asyncJs": {
+        "raw": 4461205,
+        "gzip": 1555637
+      },
+      "gamePackages": {
+        "@dimforge/rapier2d-deterministic (client)": 280797,
+        "@dimforge/rapier2d-deterministic-compat (client)": 3449946,
+        "three (client)": 581324
+      }
+    },
+    {
+      "route": "/admin/game/spike/replay",
+      "allowedGame": true,
+      "initialJs": {
+        "raw": 0,
+        "gzip": 0
+      },
+      "asyncJs": {
+        "raw": 0,
+        "gzip": 0
+      },
+      "gamePackages": {
+        "@dimforge/rapier2d-deterministic-compat (server)": 3449891
+      }
+    },
+    {
+      "route": "/lab/game-a",
+      "allowedGame": true,
+      "initialJs": {
+        "raw": 624807,
+        "gzip": 241113
+      },
+      "asyncJs": {
+        "raw": 598688,
+        "gzip": 151169
+      },
+      "gamePackages": {
+        "three (server)": 579568,
+        "three (client)": 583166
+      }
+    },
+    {
+      "route": "/lab/game-b",
+      "allowedGame": true,
+      "initialJs": {
+        "raw": 641783,
+        "gzip": 249652
+      },
+      "asyncJs": {
+        "raw": 599182,
+        "gzip": 151484
+      },
+      "gamePackages": {
+        "three (server)": 579568,
+        "three (client)": 583166
+      }
+    },
+    {
+      "route": "/lab/game-c",
+      "allowedGame": true,
+      "initialJs": {
+        "raw": 643490,
+        "gzip": 250352
+      },
+      "asyncJs": {
+        "raw": 599090,
+        "gzip": 151639
+      },
+      "gamePackages": {
+        "three (server)": 579568,
+        "three (client)": 583166
+      }
+    }
+  ]
+}

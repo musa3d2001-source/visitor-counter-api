@@ -15,7 +15,8 @@
  * initial JS = client `.js` parts of the route's `bootstrap` + `render_dependent` output groups.
  *
  * Usage (from edu-platform/):
- *   # capture a new snapshot, export it and check it (does not stop the dev server):
+ *   # capture a new snapshot, export it to .next/diagnostics/analyze/graph-<name>.jsonl and check it
+ *   # (does not stop the dev server; reuses the Turbopack cache, so ~1–60 s):
  *   node scripts/check-game-bundle.mjs --capture [--snapshot <name>]
  *   # or check an existing export:
  *   npx next analyze --output --snapshot <name>
@@ -27,7 +28,6 @@
  *   --json <file>       also write the full comparison as JSON
  */
 import fs from "node:fs";
-import os from "node:os";
 import path from "node:path";
 import { execFileSync } from "node:child_process";
 
@@ -61,7 +61,8 @@ if (!graphFile) {
   const nextBin = path.join(ROOT, "node_modules/next/dist/bin/next");
   console.log(`[capture] next analyze --output --snapshot ${snap}`);
   execFileSync(process.execPath, [nextBin, "analyze", "--output", "--snapshot", snap], { cwd: ROOT, stdio: "inherit" });
-  graphFile = path.join(fs.mkdtempSync(path.join(os.tmpdir(), "game-bundle-")), `graph-${snap}.jsonl`);
+  // next to the snapshot, inside the git-ignored .next/ (about 27MB)
+  graphFile = path.join(ROOT, ".next/diagnostics/analyze", `graph-${snap}.jsonl`);
   console.log(`[capture] next analyze export --snapshot ${snap} > ${graphFile}`);
   const fd = fs.openSync(graphFile, "w");
   execFileSync(process.execPath, [nextBin, "analyze", "export", "--snapshot", snap], { cwd: ROOT, stdio: ["ignore", fd, "inherit"], maxBuffer: 1 << 30 });
@@ -173,7 +174,7 @@ for (const n of newRoutes) {
 }
 const summary = {
   pass: failures.length === 0,
-  graph: graphFile,
+  graph: path.relative(ROOT, graphFile),
   snapshot: meta?.snapshot_name ?? null,
   baseline: path.relative(ROOT, baselineFile),
   tolerance,
