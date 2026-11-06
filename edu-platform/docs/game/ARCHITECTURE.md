@@ -130,6 +130,13 @@ src/app/admin/{curriculum,questions,game}/
 ### `0007_question_bank.sql`
 `textbooks` (`subject_id`, `term`, `title`, `edition`, `is_current`, `rights_confirmed_at/by`)، `curriculum_units`، `curriculum_lessons` (`page_start/end`)، `questions`، `question_choices` (`unique index … where is_correct`)، `question_reports`، `question_attempts` العام. القيود كما في الأمر (5.1)، والتحقق قبل `in_review` بمشغّل في القاعدة إضافة إلى الخادم.
 
+**ما بُني في المرحلة 1 (قرارات تفصيلية):**
+- `questions.root_id` هوية السؤال عبر نسخه، و`version` يزيد مع كل نسخة معدّلة. فهرسان فريدان جزئيان: نسخة منشورة واحدة لكل جذر، ونسخة مفتوحة (مسودة أو مراجعة) واحدة. اعتماد النسخة المعدّلة يؤرشف المنشورة في المعاملة نفسها، والمحاولات القديمة تبقى على نسختها.
+- مشغّلات في القاعدة: الصفحة ضمن نطاق الدرس دائمًا؛ الانتقالات المسموحة فقط؛ قفل محتوى السؤال وخياراته بعد المسودة؛ وعند `in_review` أو `published`: من خيارين إلى أربعة (اثنان لـ «صح أو خطأ»)، وصحيح واحد (فهرس فريد أيضًا)، وبلا «كل ما سبق»، وتأكيد الحقوق لغير «تجريبي».
+- معرّف الخيار عند الطالب `HMAC(APP_SECRET, attemptId‖choiceId)` بطول 16، فيختلف بين محاولتين للسؤال نفسه.
+- `hide_textbook_exercises` يُقرأ عند كل تقديم (لا كاش بين الطلبات)، فيخفي «تمرين من الكتاب» فورًا دون حذف.
+- محلل CSV داخلي (`src/server/questions/csv.ts`) يُستخدم الآن لاستيراد فهرس الكتاب، ولاحقًا لاستيراد الأسئلة.
+
 ### `0008_game.sql`
 `game_worlds`، `game_levels` (`num_nonnulls(lesson_id, unit_id) = 1`)، `game_runs` (فهرس جزئي فريد: جولة نشطة واحدة لكل طالب)، `game_run_shots` (فريد على `(run_id, idx)`)، `game_progress`.
 
