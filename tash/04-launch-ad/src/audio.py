@@ -95,7 +95,13 @@ for bar in range(0, 3):
 m.add(swish(0.34, 600, 6000, 0.7, -0.7), SH['BURGER']['at'] - 0.2, gain=0.55, bus='sfx')          # whip (peak on the cut)
 m.add(hit_small(), EV['crown'] - 0.003, gain=0.55, bus='sfx')                                         # the crown lands on the beat
 m.add(stereo(hp(riser(0.32, 800, 9000, tonal=False)[:, 0], 900), 0, 0.6), EV['burn'][1] - 0.32, gain=0.30, bus='sfx')  # burn swell
-m.add(pour(1.0, seed_=17), SH['COFFEE']['at'] + 0.02, gain=0.35, bus='sfx')                             # the pour
+# the pour follows the photoreal plate: the stream thins over f162–f164 and is gone from f165 (5.500 s), measured on both
+# encoded masters (9:16 and 4:5). The pour is still generated at its old 1.0 s so the shared noise RNG, and so every
+# later sound, is unchanged; it is cut at the break with a 0.10 s raised-cosine fade over the thinning (no click).
+POUR_AT, POUR_BREAK, POUR_FADE = SH['COFFEE']['at'] + 0.02, 5.50, 0.10
+pr = pour(1.0, seed_=17)[:n_(POUR_BREAK - POUR_AT)].copy()
+nfo = n_(POUR_FADE); pr[-nfo:] *= (np.cos(np.linspace(0, np.pi / 2, nfo)) ** 2)[:, None]
+m.add(pr, POUR_AT, gain=0.35, bus='sfx')                                                                # the pour
 m.add(bell(nf('A6'), 1.8, 0.8), SH['RING']['at'], gain=0.30, pan=-0.2, bus='sfx')                      # cup → ring: one 'ting'
 m.add(bell(nf('E7'), 1.4, 0.6), SH['RING']['at'] + 0.09, gain=0.14, pan=0.3, bus='sfx')
 
