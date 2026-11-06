@@ -1,0 +1,59 @@
+{
+  "source": "Owner's iPhone, /admin/game/spike3d on the Vercel Preview (2026-11-07), «انسخ النتيجة» pasted in the conversation",
+  "preview": "https://darb-preview-riqs9s850-musa3d2001-sources-projects.vercel.app (branch claude/farqad-3d-preview, eb2ddc5)",
+  "result": {
+    "ua": "Mozilla/5.0 (iPhone; CPU iPhone OS 18_7 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/27.2 Mobile/15E148 Safari/604.1",
+    "dpr": 3,
+    "cores": 4,
+    "viewport": "440x748",
+    "webgl2": true,
+    "reducedMotion": false,
+    "server": { "node": "v26.13.0", "initMs": 278, "totalMs": 3754, "maxLayoutMs": 817.2 },
+    "flavors": [
+      {
+        "flavor": "split",
+        "ok": true,
+        "loadMs": 901,
+        "bytes": { "transfer": 1194516, "encoded": 1193616, "decoded": 3425539, "files": ["0o70ov03g7o1t.js 0KB", "3rboeehp5lc11.js 53KB", "2kfa92vifsy38.wasm 1112KB"] },
+        "allMatch": true,
+        "replay": [
+          { "key": "first-light", "bodies": 7, "ms": 42, "match": true, "firstMismatchShot": -1 },
+          { "key": "frond-wall", "bodies": 31, "ms": 41, "match": true, "firstMismatchShot": -1 },
+          { "key": "glass-tower", "bodies": 23, "ms": 11, "match": true, "firstMismatchShot": -1 },
+          { "key": "stone-gate", "bodies": 10, "ms": 13, "match": true, "firstMismatchShot": -1 },
+          { "key": "lightbox-court", "bodies": 27, "ms": 16, "match": true, "firstMismatchShot": -1 },
+          { "key": "pyramid", "bodies": 59, "ms": 105, "match": true, "firstMismatchShot": -1 },
+          { "key": "stress-90", "bodies": 90, "ms": 135, "match": true, "firstMismatchShot": -1 },
+          { "key": "stress-120", "bodies": 120, "ms": 122, "match": true, "firstMismatchShot": -1 }
+        ],
+        "usPerStep": 58
+      },
+      {
+        "flavor": "compat",
+        "ok": true,
+        "loadMs": 730,
+        "bytes": { "transfer": 1599182, "encoded": 1598882, "decoded": 4369395, "files": ["3zol_enu26myh.js 1561KB"] },
+        "allMatch": true,
+        "replay": [
+          { "key": "first-light", "bodies": 7, "ms": 30, "match": true, "firstMismatchShot": -1 },
+          { "key": "frond-wall", "bodies": 31, "ms": 37, "match": true, "firstMismatchShot": -1 },
+          { "key": "glass-tower", "bodies": 23, "ms": 11, "match": true, "firstMismatchShot": -1 },
+          { "key": "stone-gate", "bodies": 10, "ms": 12, "match": true, "firstMismatchShot": -1 },
+          { "key": "lightbox-court", "bodies": 27, "ms": 16, "match": true, "firstMismatchShot": -1 },
+          { "key": "pyramid", "bodies": 59, "ms": 106, "match": true, "firstMismatchShot": -1 },
+          { "key": "stress-90", "bodies": 90, "ms": 137, "match": true, "firstMismatchShot": -1 },
+          { "key": "stress-120", "bodies": 120, "ms": 120, "match": true, "firstMismatchShot": -1 }
+        ],
+        "usPerStep": 56
+      }
+    ],
+    "threeLoadMs": 426,
+    "threeBytes": { "transfer": 156352, "encoded": 155752, "decoded": 598339, "files": ["26kf3-cft-32n.js 9KB", "3kwrsvp_gkpai.js 143KB"] },
+    "engineReadyMs": 4915,
+    "visual": [
+      { "quality": "high", "seconds": 8, "fps": 58.8, "medianMs": 17, "p95Ms": 17, "drawCalls": 30, "triangles": 73554, "dpr": 2, "frames": 479, "canvas": "880x1496", "maxShards": 185, "simMsPerFrameP95": 3 },
+      { "quality": "low", "seconds": 8, "fps": 58.8, "medianMs": 17, "p95Ms": 18, "drawCalls": 17, "triangles": 38374, "dpr": 1, "frames": 483, "canvas": "440x748", "maxShards": 184, "simMsPerFrameP95": 3 }
+    ],
+    "done": true
+  }
+}
