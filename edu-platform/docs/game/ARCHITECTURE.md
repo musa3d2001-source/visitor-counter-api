@@ -148,7 +148,9 @@ src/app/(play)/play/    الخريطة والمستوى ودفتر المراج�
 src/app/admin/{curriculum,questions,game}/
 ```
 
-- `createGame({ canvas?, layout, seed, quality }) → { dispatch, on, destroy }`، ويشترك React بـ `useSyncExternalStore`. آمن مع `reactStrictMode` (التجربة تنشئ وتحرر المحرك في كل تركيب).
+- `createGame({ R, level, seed, canvas?, quality?, reducedMotion?, guidePoints? }) → { dispatch, subscribe, getSnapshot, on, destroy }` (`src/game/game.ts`)، ويشترك React بـ `useSyncExternalStore`. آمن مع `reactStrictMode`. بلا canvas يعمل بلا three (اختبارات Node والخادم لاحقًا). الأوامر: `aim` و`fire` و`activate` و`setQuality` و`setDawn` و`pause`/`resume`؛ والأحداث: `settled` (مرة لكل طلقة بقاعدة السكون نفسها، فبصمة العميل = `runHeadless`)، و`activated`، و`contextLost` (يُنقل إلى وضع الأسئلة).
+- **اختبارات اللعبة بلا قاعدة:** `npm run test:game` (`vitest.unit.config.mts` بلا globalSetup) يشغّل `tests/unit/game/*`: القواعد، والجلسة، والتصاميم والحتمية (عملية فرعية)، والمحرك، والحدود (قائمة Math البيضاء، والاستيرادات الممنوعة، وحدود الحزمة split، وتطابق ثنائي WASM مع البصمات المكتوبة هنا).
+- **صفحة معاينة المالك** `/admin/game/levels`: تلعب التصاميم الثمانية بالمحرك الحقيقي بلا أسئلة (كل رمية شهاب)، بملء الشاشة وبالمنزلقات والسحب ولوحة المفاتيح.
 - **المشهد في الجوال العمودي** (اكتُشف في المختبر): الكاميرا تؤطّر الملعب داخل «المنطقة الآمنة» بين شريط الأعلى ولوح الأسفل عبر `camera.setViewOffset`، فلا يختفي البرج خلف لوح السؤال. على 390 بكسل ملعب عرضه 29م يعطي نحو 13 بكسل/م، وقد وجدته لجنة الحكم صغيرًا (البرج نحو 35 بكسل)؛ **قاعدة تصميم المستويات: المسافة من أبعد جسم إلى المرقاب ≤ 18م** (نحو 21 بكسل/م على 390).
 - الخلفية (السماء والنجوم والقمر والأفق `KuwaitSkyline`) طبقات DOM/SVG خلف canvas شفاف، تُحاذى مع أرضية المشهد بإسقاط نقطة الأفق من الكاميرا (`projectY`). أرخص على الجوال من رسمها في WebGL، وتبقى حادة.
 
