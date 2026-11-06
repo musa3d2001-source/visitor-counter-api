@@ -131,7 +131,7 @@ void main(){
   bars *= 1.0 - leaf * uLeaf;
   float rr = length(vUv - 0.5);
   bars *= smoothstep(uP1, uP0, rr);
-  gl_FragColor = vec4(vec3(bars), 1.0);
+  gl_FragColor = vec4(vec3(pow(clamp(bars, 0.0, 1.0), 2.2)), 1.0);   // same transfer as the approved sRGB canvas gobo
 }`;
 export function makeGobo(renderer) {
   const R = rng(91);
@@ -147,7 +147,7 @@ export function makeGobo(renderer) {
     bake(renderer, GOBO, 1024, { uniforms, rt, mip: false });
   }
   draw();
-  return { tex: rt.texture, draw };
+  return { tex: rt.texture, draw, rt };
 }
 
 // ------------------------------------------------------------------ environment (reflections): warm room + window with blinds
@@ -416,7 +416,8 @@ export function makeStream() {
 
 // ------------------------------------------------------------------ post: depth of field (gather) + output (ACES, grade, vignette, dither)
 export function makePost(renderer, W, H) {
-  const rt = new THREE.WebGLRenderTarget(W, H, { type: THREE.HalfFloatType, samples: 4 });
+  const msaa = +(new URLSearchParams(location.search).get('msaa') || 4);
+  const rt = new THREE.WebGLRenderTarget(W, H, { type: THREE.HalfFloatType, samples: msaa });
   rt.depthTexture = new THREE.DepthTexture(W, H); rt.depthTexture.type = THREE.FloatType;
   const rtB = new THREE.WebGLRenderTarget(W, H, { type: THREE.HalfFloatType });
   const rtS = new THREE.WebGLRenderTarget(W, H, { type: THREE.HalfFloatType, depthBuffer: true });

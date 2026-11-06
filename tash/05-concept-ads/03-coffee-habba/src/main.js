@@ -65,6 +65,8 @@ function apply(S, t) {
   // camera
   camera.fov = S.cam.fov; camera.position.set(...S.cam.pos); camera.up.set(...(S.cam.up || [0, 1, 0])); camera.lookAt(...S.cam.target); camera.updateProjectionMatrix();
   // light
+  const aim = S.sunAim ? new THREE.Vector3(...S.sunAim) : SUN_AIM;          // the poster may re-aim the sun (same direction)
+  sun.position.copy(SUN_DIR).multiplyScalar(-14).add(aim); sun.target.position.copy(aim); sun.target.updateMatrixWorld();
   gobo.draw(S.blinds); if (S._T) S._mark('gobo', S._T);
   sun.intensity = S.sun;
   scene.environmentIntensity = S.envI; fill.intensity = S.fill;
@@ -98,7 +100,8 @@ function apply(S, t) {
 
 const PROF = q.has('prof');
 const gl = renderer.getContext();
-const mark = (lab, T) => { if (PROF) { gl.finish(); const n = performance.now(); T.push(lab + ' ' + (n - T.last).toFixed(0)); T.last = n; } };
+const px = new Uint8Array(4);
+const mark = (lab, T) => { if (PROF) { gl.readPixels(0, 0, 1, 1, gl.RGBA, gl.UNSIGNED_BYTE, px); const n = performance.now(); T.push(lab + ' ' + (n - T.last).toFixed(0)); T.last = n; } };
 async function seek(t) {
   const T = []; T.last = performance.now();
   const S = frameSpec(t, { clean: CLEAN, poster: POSTER });

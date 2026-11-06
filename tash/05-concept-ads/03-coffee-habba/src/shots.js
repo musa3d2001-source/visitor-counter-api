@@ -135,9 +135,10 @@ export function frameSpec(t, { clean = false, poster = false } = {}) {
   } else if (poster) {
     // the cover: end-card world, cup settled with its mark facing us, framed lower to leave the wall for the lockup
     S.cupRot = Math.PI; S.heartYaw = 0; S.latte = { ...HEART, uT: 0, uRot: 0 };
-    S.cam = orbit([-0.08, 0.98, 0.0], 5.0, 0 * deg, 5 * deg, 28);
-    S.beans = beansAt(t, 'landed'); S.steam = steamAt(12.3, 0.45, 0.85); S.dof = { focus: 4.95, ap: 8 };
-    S.blinds.slide = 0.18 * 12.3; S.blinds.sway = 12.3;
+    S.cam = orbit([-0.1, 0.84, 0.0], 5.7, 0 * deg, 5 * deg, 28);
+    S.beans = beansAt(t, 'landed'); S.steam = steamAt(12.3, 0.35, 0.36); S.dof = { focus: 5.65, ap: 8 };
+    S.blinds.slide = 0.18 * 12.3; S.blinds.sway = 12.3; S.blinds.pool = [0.3, 0.56];
+    S.sunAim = [0.0, 1.05, -1.5];                    // lift the light pool so the wall behind the lockup is sunlit
   } else {
     // S5 (and S6 in clean mode): the cup turns on its saucer, the mark comes round; slow push-in
     const tT = Math.min(t, EV.blindsClose + 3.0);

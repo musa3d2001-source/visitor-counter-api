@@ -12,7 +12,7 @@
 «حبّة» اسم المحل، ومعناها حبّة القهوة. و«حبّة حبّة» بلهجتنا تعني «على راحتك، شوي شوي». فاسم العلامة نفسه
 صار هو الوعد: قهوة تنسوّى بهدوء وتنشرب بهدوء.
 
-الإعلان صباح واحد على طاولة جنب دريشة فيها ستارة شرائح. الستارة تنفتح، والشمس تنقسم خطوط على الطاولة وعلى الكوب.
+الإعلان صباح واحد على طاولة جنب دريشة فيها ستارة شرائح. الستارة تنفتح، والشمس تنزل خطوط على الطاولة وتلف على الكوب.
 البخار يطلع من الكوب، والحليب ينصب ويرسم قلب. حبّات القهوة تطيح بالتصوير البطيء، وكل حبّة تنزل على الطاولة ومعها
 كلمة: «حبّة…» وبعدين «حبّة.». الكوب يلف على صحنه ويبيّن الشعار، وآخر حبّة تنزل وتصير هي نقطة الباء في الشعار.
 بعدها الستارة تتسكّر والغرفة تظلم، ويطلع توقيع طشّ.
@@ -99,19 +99,19 @@ A7sus4 → **Dmaj9, which resolves on the end card**. Under it: a round sine bas
 
 | Time | Cue |
 |---|---|
-| 0.00 | vinyl crackle + the first chord, low-passed (dark) |
+| 0.00 | vinyl crackle + the first chord, low-passed (dark) and hushed (−7 dB, rising to full by 2.6 s) |
 | 0.26 | **blinds open**: a ripple of slat clicks over a soft air swish; the keys' low-pass opens 0.25 → 1.6 s with the light; a faint shimmer as the room fills |
-| 1.40 | bass enters |
 | 2.50 · 3.20 | two soft plucks answer «قهوتك…» (A4 → F#4); music dips 2 dB while it reads |
-| 2.80 | groove enters (mirwas, swung 16ths) |
+| 2.80 | groove and bass enter (mirwas dum/tak, swung 16ths, a round sine bass) |
 | 4.15–6.65 | **milk pour** (synth pour, low-passed, thinning as the stream lifts) |
-| 7.00–9.80 | the groove thins out for the slow motion. **Bean taps at 7.70 and 8.40** (tick + small wooden knock, each with a bounce 0.42 s later), and a pluck **D5 on each landing**: the same note twice, «حبّة… حبّة.». Soft out-of-focus taps behind |
-| 9.90–11.20 | the cup's foot slides on the saucer (very soft ceramic scrape); the music dips 5 dB just before the clink |
+| 7.00–9.80 | the music hushes −5 dB and the groove thins out for the slow motion. **Bean taps at 7.70 and 8.40** (tick + small wooden knock, each with a bounce 0.42 s later), and a pluck **D5 on each landing**: the same note twice, «حبّة… حبّة.». Soft out-of-focus taps behind |
+| 9.90–11.20 | the music comes back up as the cup turns; its foot slides on the saucer (very soft ceramic scrape); a 5 dB dip just before the clink |
 | **11.20** | **hero: the ceramic clink** on the downbeat of the Dmaj9 resolve |
 | 11.50 | a small tap as the bean drops into the mark |
 | 12.75 | blinds close (slat ripple); the music bows out −15 dB into the tail |
 | 13.00 | `sonic_logo()`: ticks → whoosh → **طشّ hit at 14.12** → shadda pop |
 
+Arc: hushed intro → groove → slow-motion hush → fuller resolve → near-silence → the TASH hit (WAV LRA 3.8 LU).
 Master: pre-mastered to −14 LUFS, true peak ≤ −1.5 dBTP; the renderer's loudnorm then sets the final level.
 
 ---
@@ -119,7 +119,7 @@ Master: pre-mastered to −14 LUFS, true peak ≤ −1.5 dBTP; the renderer's lo
 ## Files
 
 - `HABBA-concept-9x16.mp4`: the final with audio
-- `poster.png`: designed cover (1080×1920) with the TASH concept slate chip, HABBA mark, line and cup (`?poster=1`)
+- `poster.png`: designed cover (1080×1920): a small TASH pill + `CONCEPT AD — 03 / COFFEE` + «إعلان تجريبي — علامة خيالية», the HABBA mark, HABBA, «قهوتك… على مهلك.», and the cup with its mark in the sun (`?poster=1`)
 - `still-hero.png`: the best clean frame (`?clean=1`)
 - `contact-sheet.png`: 2 fps
 - `src/`: `index.html` · `main.js` (renderer, light, post) · `scene.js` (world, materials, steam, latte, DOF/grade) ·

@@ -121,7 +121,7 @@ V = {   # rootless voicings — the bass carries the roots
     'Dmaj9': ['F#3', 'A3', 'C#4', 'E4'],
 }
 # bar 0: the chord blooms as the blinds open (a lowpass opening on the keys bus, applied below)
-chord(m, 0.00, V['Gmaj9'], vel=0.62, spread=0.03, bright=0.35, d=3.0)
+chord(m, 0.00, V['Gmaj9'], vel=0.55, spread=0.03, bright=0.35, d=3.0)
 chord(m, g.t(0, 2.5), V['Gmaj9'][1:], vel=0.42, bright=0.3, d=1.6)
 chord(m, g.t(1, 0), V['F#m11'], vel=0.66)
 chord(m, g.t(1, 2.5), V['F#m11'][1:], vel=0.44, d=1.6)
@@ -142,7 +142,6 @@ for bar, root in ((1, 'F#2'), (2, 'E2'), (3, 'A2'), (4, 'D2')):
     m.add(softbass(nf(root), 1.0), g.t(bar, 0) + 0.004, gain=0.5, bus='bass')
     if bar in (1, 3):
         m.add(softbass(nf(root) * 2, 0.5, 0.6), g.t(bar, 2.5) + 0.004, gain=0.3, bus='bass')
-m.add(softbass(nf('G2'), 1.2, 0.8), g.t(0, 2) + 0.01, gain=0.42, bus='bass')
 
 # groove: a gentle mirwas pattern (dum = low, tak = slap) with a swung shaker. Enters with the steam (bar 1),
 # drops to almost nothing for the slow-motion beans, returns softly on the cup's turn, ends on the resolve.
@@ -204,7 +203,7 @@ m.process_bus('keys', lambda b: reverb(b, decay=1.8, mix=0.22, pre=0.02, tone=50
 m.process_bus('keys2', lambda b: reverb(b, decay=2.2, mix=0.3, pre=0.02, tone=5500))
 m.process_bus('drums', lambda b: reverb(sat(b * 1.2, 1.4) / 1.2, decay=0.6, mix=0.14, tone=5000))
 m.process_bus('verb', lambda b: hp(reverb(b, decay=1.9, mix=1.0, pre=0.02, tone=6500), 250))
-m.process_bus('bed', lambda b: b * lin(DUR - 0.6, DUR, 1, 0.4))
+m.process_bus('bed', lambda b: b * lin(DUR - 0.6, DUR, 1, 0.4) * lin(EV['sting'] + 0.9, EV['sting'] + 1.1, 1, db(-8)))
 
 # sidechain-ish breathing on the keys and bass from the dums; reading dip under the lines; clear the air for the clink;
 # the whole music bed bows out with the blinds so the TASH signature lands on near-silence
@@ -213,7 +212,10 @@ duck = duck_curve(N, dums, depth_db=-3.5, attack=0.006, hold=0.03, release=0.2)[
 read = lin(EV['text1'] - 0.1, EV['text1'] + 0.2, 1, db(-2)) * lin(EV['text1Out'], EV['text1Out'] + 0.3, 1, db(2))
 pre_clink = lin(EV['settle'] - 0.35, EV['settle'] - 0.12, 1, db(-5)) * lin(EV['settle'] - 0.02, EV['settle'] + 0.3, 1, db(5))
 outro = lin(EV['blindsClose'] - 0.05, EV['sting'] + 0.3, 1, db(-15)) * lin(EV['sting'] + 0.8, EV['sting'] + 1.08, 1, db(-12))
-music = lambda b: b * duck * read * pre_clink * outro
+# the arc: a hushed morning intro, the groove, a slow-motion hush for the beans, a fuller resolve on the end card
+arc = (lin(0.0, 2.6, db(-7), 1) * lin(EV['bean1'] - 0.9, EV['bean1'] - 0.5, 1, db(-5)) * lin(EV['turnStart'] - 0.2, EV['turnStart'] + 0.4, 1, db(5))
+       * lin(EV['settle'] - 0.05, EV['settle'] + 0.1, 1, db(1.5)))
+music = lambda b: b * duck * read * pre_clink * outro * arc
 for bus in ('keys', 'keys2', 'bass', 'drums'): m.process_bus(bus, music)
 m.process_bus('bass', lambda b: hp(b, 38, order=2) * db(-3))
 m.process_bus('keys', lambda b: peak_eq(b, 1000, 3.0, 0.8))
