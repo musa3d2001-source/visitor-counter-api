@@ -13,6 +13,10 @@ The work itself is the proof. Quality bar = a real studio reel, not "someone usi
 > product-shot vocabulary, edit grammar, motion principles, Arabic kinetic type, sting craft, sound-to-picture,
 > and the critic rubric. Apply it; the rules in this bible still win where they differ.
 
+> **Launch ad (tash/04-launch-ad) only:** the owner subscribed to Higgsfield, and the CD generated and approved
+> photoreal clips of people and hands for the launch ad. They are in `tash/04-launch-ad/footage/ai/`.
+> **Read `tash/04-launch-ad/_CD-NOTES.md` before planning the edit**: it says where each clip goes and the rules for using it.
+
 ---------------------------------------------------------------------------------------------------
 ## 1. Brand idea (the thing every piece must express)
 

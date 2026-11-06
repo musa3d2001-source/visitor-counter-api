@@ -36,24 +36,27 @@ body { background: #2a2a27; font-family: var(--f-text-ar); font-weight: 400; -we
 h1 { font-family: var(--f-display-ar); font-weight: 800; font-size: 40px; line-height: 1.22; margin: 6px 0 4px; letter-spacing: 0; }
 h2 { font-family: var(--f-display-ar); font-weight: 800; font-size: 18px; line-height: 1.35; margin: 0 0 2px; }
 h3 { font-family: var(--f-text-ar); font-weight: 600; font-size: 12px; line-height: 1.5; margin: 0; }
-.en { font-family: var(--f-display-en); font-weight: 800; font-stretch: 125%; font-size: 10.5px; line-height: 1.35; color: var(--mute); direction: ltr; text-align: right; margin: 0; }
+.en { font-family: var(--f-display-en); font-weight: 800; font-stretch: 125%; font-size: 10.5px; line-height: 1.35; color: var(--mute); direction: ltr; unicode-bidi: isolate; text-align: right; margin: 0; }
+h1 + .en, h2 + .en { margin-top: 3px; }
+/* English sentences read in Plex; Archivo stays for short labels */
+.item .en, .cap .en, td .en, .es { font-family: var(--f-text-ar); font-weight: 400; font-stretch: 100%; font-size: 9.5px; letter-spacing: 0; }
 .en.s { font-size: 8.5px; }
-p { font-size: 11.5px; line-height: 1.78; margin: 0 0 8px; }
+p { font-size: 12.5px; line-height: 1.78; margin: 0 0 8px; }
 p.lead { font-size: 14px; line-height: 1.7; }
-p.sm, .sm { font-size: 10.5px; line-height: 1.65; }
-.pe { font-family: var(--f-text-ar); font-size: 9.5px; line-height: 1.5; color: var(--mute); direction: ltr; text-align: right; margin: -4px 0 8px; }
+p.sm, .sm { font-size: 11.5px; line-height: 1.65; }
+.pe { font-family: var(--f-text-ar); font-size: 10px; line-height: 1.5; color: var(--mute); direction: ltr; text-align: right; margin: -4px 0 8px; }
 .lbl { font-family: var(--f-mono); font-weight: 600; font-size: 7.5px; letter-spacing: .2em; text-transform: uppercase; color: var(--mute); direction: ltr; unicode-bidi: isolate; }
-.k { font-family: var(--f-mono); font-weight: 500; font-size: 9px; letter-spacing: .03em; direction: ltr; unicode-bidi: isolate; }
+.k { font-family: var(--f-mono); font-weight: 500; font-size: 9px; letter-spacing: .03em; direction: ltr; unicode-bidi: isolate; white-space: nowrap; }
 .mute { color: var(--mute); }
 .w6 { font-weight: 600; }
-bdi, .ltr { direction: ltr; unicode-bidi: isolate; }
+bdi, .ltr { direction: ltr; unicode-bidi: isolate; white-space: nowrap; }
 .hr { height: 1px; background: var(--rule); margin: 10px 0; }
 
 /* do / don't marks: lime disc = yes; the opposite ground's disc = no */
 .ok, .no { display: inline-block; width: 13px; height: 13px; flex: 0 0 13px; vertical-align: -2px; background-size: 100% 100%; }
 .ok { background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 20 20'%3E%3Ccircle cx='10' cy='10' r='10' fill='%23C6FF00'/%3E%3Cpath d='M5.6 10.4l2.9 2.9 5.9-6.5' fill='none' stroke='%230B0B0B' stroke-width='2.3' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E"); }
 .no { background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 20 20'%3E%3Ccircle cx='10' cy='10' r='10' fill='%230B0B0B'/%3E%3Cpath d='M6.6 6.6l6.8 6.8M13.4 6.6l-6.8 6.8' stroke='%23F5F5E9' stroke-width='2.3' stroke-linecap='round'/%3E%3C/svg%3E"); }
-.ink .no { background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 20 20'%3E%3Ccircle cx='10' cy='10' r='10' fill='%23F5F5E9'/%3E%3Cpath d='M6.6 6.6l6.8 6.8M13.4 6.6l-6.8 6.8' stroke='%230B0B0B' stroke-width='2.3' stroke-linecap='round'/%3E%3C/svg%3E"); }
+.ink .no, .no.inv { background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 20 20'%3E%3Ccircle cx='10' cy='10' r='10' fill='%23F5F5E9'/%3E%3Cpath d='M6.6 6.6l6.8 6.8M13.4 6.6l-6.8 6.8' stroke='%230B0B0B' stroke-width='2.3' stroke-linecap='round'/%3E%3C/svg%3E"); }
 .cap { display: flex; gap: 6px; align-items: flex-start; margin-top: 7px; font-size: 10px; line-height: 1.45; }
 .cap .en { font-size: 8px; margin-top: 1px; }
 
@@ -64,20 +67,20 @@ bdi, .ltr { direction: ltr; unicode-bidi: isolate; }
 
 /* lists */
 ul.dots { list-style: none; margin: 0; padding: 0; }
-ul.dots li { position: relative; padding-right: 16px; font-size: 11.5px; line-height: 1.7; margin-bottom: 3px; }
+ul.dots li { position: relative; padding-right: 16px; font-size: 12.5px; line-height: 1.7; margin-bottom: 3px; }
 ul.dots li::before { content: ''; position: absolute; right: 2px; top: .66em; width: 6px; height: 6px; border-radius: 50%; background: var(--fg); }
 .ink ul.dots.lime li::before { background: var(--lime); }
 .item { margin-bottom: 11px; }
 .item h3 { display: flex; gap: 6px; align-items: baseline; }
-.item p { margin: 1px 0 0; font-size: 10.5px; line-height: 1.65; }
+.item p { margin: 1px 0 0; font-size: 11.5px; line-height: 1.65; }
 .item .en { font-size: 8px; margin-top: 1px; }
-.num { font-family: var(--f-display-en); font-weight: 800; font-stretch: 125%; font-size: 9px; direction: ltr; color: var(--mute); min-width: 14px; display: inline-block; }
+.num { font-family: var(--f-display-en); font-weight: 800; font-stretch: 125%; font-size: 9px; direction: ltr; text-align: right; color: var(--mute); min-width: 14px; display: inline-block; }
 
 /* tables */
 table { border-collapse: collapse; width: 100%; }
 th { font-family: var(--f-mono); font-weight: 600; font-size: 7px; letter-spacing: .18em; text-transform: uppercase; color: var(--mute); text-align: right; padding: 0 0 6px 10px; border-bottom: 1px solid var(--fg); }
 th .ar { font-family: var(--f-text-ar); letter-spacing: 0; text-transform: none; font-size: 9px; color: var(--fg); display: block; margin-bottom: 1px; }
-td { font-size: 10px; line-height: 1.5; padding: 5px 0 5px 10px; border-bottom: 1px solid var(--rule); vertical-align: top; }
+td { font-size: 11px; line-height: 1.5; padding: 6px 0 6px 10px; border-bottom: 1px solid var(--rule); vertical-align: top; }
 td .en { font-size: 7.5px; }
 .badge { display: inline-block; font-family: var(--f-text-ar); font-weight: 600; font-size: 9px; padding: 1px 7px 2px; border: 1px solid var(--fg); border-radius: 20px; white-space: nowrap; }
 .badge.solid { background: var(--fg); color: var(--paper); }
@@ -95,9 +98,9 @@ td .en { font-size: 7.5px; }
 .cover-foot .tag { font-family: var(--f-display-ar); font-weight: 800; font-size: 22px; line-height: 1.4; margin: 0 0 14px; }
 
 /* ---------- TOC ---------- */
-.toc-row { display: grid; grid-template-columns: 34px 1fr 40px; align-items: baseline; padding: 9px 0 8px; border-bottom: 1px solid var(--rule); }
+.toc-row { display: grid; grid-template-columns: 34px 1fr 40px; align-items: baseline; padding: 13px 0 12px; border-bottom: 1px solid var(--rule); }
 .toc-row .n { font-family: var(--f-display-en); font-weight: 800; font-stretch: 125%; font-size: 11px; direction: ltr; text-align: right; }
-.toc-row .t { font-weight: 600; font-size: 14px; line-height: 1.3; }
+.toc-row .t { font-weight: 600; font-size: 16px; line-height: 1.3; }
 .toc-row .t .en { display: inline; font-size: 8.5px; margin-right: 8px; }
 .toc-row .p { font-family: var(--f-mono); font-weight: 600; font-size: 9px; letter-spacing: .1em; direction: ltr; text-align: left; color: var(--mute); }
 </style>
@@ -189,10 +192,10 @@ td .en { font-size: 7.5px; }
         <p>ليموني كهربائي على أسود هي لغة الألعاب والعملات الرقمية ومشروبات الطاقة. إذا كثر، نبين منصة ألعاب مو استوديو إعلانات.</p>
         <p class="en">Neon lime on black reads gaming, crypto, energy drinks.</p></div>
       <div class="item"><h3><span class="no"></span>كليشيه التوهّج</h3>
-        <p>أول حل يجي على البال مع الليموني هو الـ<bdi>glow</bdi>. يرخّص الهوية، ويطلع وسخ بالطباعة وبضغط المنصات.</p>
+        <p>أول حل يجي على البال مع الليموني هو التوهّج (<bdi>glow</bdi>). يرخّص الهوية، ويطلع وسخ بالطباعة وبضغط المنصات.</p>
         <p class="en">Glow is the cliché; it cheapens the mark and breaks in print.</p></div>
       <div class="item"><h3><span class="no"></span>رمادي بارد جنب كريمي دافي</h3>
-        <p><bdi class="k">#9AA0A6</bdi> رمادي واجهات تقني مايل للأزرق (<bdi class="k">b*</bdi> <bdi class="k" data-lab="#9AA0A6"></bdi>)، والكريمي مايل للأصفر (<bdi class="k" data-lab="#F5F5E9"></bdi>): الاثنين يتعاركون. وعلى الكريمي تباينه <bdi class="k" data-cr="#9AA0A6,#F5F5E9"></bdi>، ما يصلح حتى للعناوين الكبيرة.</p>
+        <p><bdi class="k">#9AA0A6</bdi> رمادي واجهات تقني مايل للأزرق (<bdi class="k" data-lab="#9AA0A6"></bdi>)، والكريمي مايل للأصفر (<bdi class="k" data-lab="#F5F5E9"></bdi>): الاثنين يتعاركون. وعلى الكريمي تباينه <bdi class="k" data-cr="#9AA0A6,#F5F5E9"></bdi>، ما يصلح حتى للعناوين الكبيرة.</p>
         <p class="en">A cool, Google-like UI grey against a warm cream.</p></div>
       <div class="item"><h3><span class="no"></span>ليموني على كريمي</h3>
         <p>التباين <bdi class="k" data-cr="#C6FF00,#F5F5E9"></bdi>: يعني النص يختفي. ما ينفع نص ولا خط رفيع.</p>
@@ -257,10 +260,10 @@ td .en { font-size: 7.5px; }
       <p class="pe">One Kuwaiti word, with a splash in it. The shadda is the punch.</p>
     </div>
     <div style="grid-column:6 / span 7; position:relative">
-      <div class="fig" id="v-idea" style="margin-top:6px"></div>
+      <div class="fig" id="v-idea" style="margin-top:10px"></div>
       <div style="position:absolute; bottom:0; right:0; left:0">
         <div class="lbl" style="text-align:right; margin-bottom:10px">TAGLINE</div>
-        <div style="font-family:var(--f-display-ar); font-weight:800; font-size:50px; line-height:1.3">طشّ… خلّهم <span style="color:var(--lime)">يسولفون</span> عنك!</div>
+        <div style="font-family:var(--f-display-ar); font-weight:800; font-size:54px; line-height:1.3">طشّ…<br>خلّهم <span style="color:var(--lime)">يسولفون</span> عنك!</div>
         <p class="en" style="font-size:13px; margin-top:6px">Make them talk about you.</p>
       </div>
     </div>
@@ -301,7 +304,7 @@ td .en { font-size: 7.5px; }
       </div>
       <p class="pe" style="margin-top:8px">We don't manage accounts, publish for clients, run paid ads, sell followers or guarantee results.</p>
       <div style="background:var(--ink); color:var(--paper); padding:14px 16px 12px; margin-top:14px">
-        <div style="font-family:var(--f-display-ar); font-weight:800; font-size:18px; line-height:1.45">نسوي الإعلان نفسه، من الفكرة لين الملف النهائي.</div>
+        <div style="font-family:var(--f-display-ar); font-weight:800; font-size:19px; line-height:1.45; text-wrap:balance">نسوي الإعلان نفسه، من الفكرة لين الملف النهائي.</div>
         <p class="en" style="color:var(--smoke); margin-top:3px">We make the ad itself, from idea to final file.</p>
       </div>
     </div>
@@ -346,6 +349,8 @@ td .en { font-size: 7.5px; }
       <p class="sm">خلّ حول الشعار فراغ ما يقل عن <b>2D</b> من كل جهة، و<b>D</b> هو قطر النقطة بنفس الحجم. ما يدخل هالمنطقة لا نص ولا صورة ولا حافة. نفس القاعدة للتركيبات: نقيس من نقاط الشعار اللي فيها.</p>
       <p class="pe">Keep 2D clear on every side, where D is the dot diameter at that size. Same rule for lockups.</p>
       <div class="fig" id="v-clear" style="margin-top:8px"></div>
+      <div class="fig" id="v-clear-lockup" style="margin-top:14px"></div>
+      <div class="cap"><span class="ok"></span><div><div class="w6">نفس القاعدة للتركيب الأفقي: <b>2D</b> من نقاط الشعار اللي فيه</div><div class="en">Horizontal lockup · tash-lockup-h--ink</div></div></div>
     </div>
     <div style="grid-column:7 / span 6">
       <h2 style="font-size:22px">أصغر حجم</h2><p class="en" style="margin-bottom:12px">Minimum sizes, digital</p>
@@ -366,7 +371,7 @@ td .en { font-size: 7.5px; }
   <div class="b">
     <div style="display:flex; justify-content:space-between; align-items:flex-end; margin-bottom:14px">
       <div><h2 style="font-size:22px">النسخ</h2><p class="en">Variants · reference files in 02-logo/</p></div>
-      <p class="sm mute" style="max-width:430px; margin:0">كل نسخة لها ملف <bdi class="k">SVG</bdi> و<bdi class="k">PNG</bdi> جاهز. لا ترسم الشعار من جديد ولا تكتبه بالخط، استخدم الملف.</p>
+      <p class="sm mute" style="max-width:460px; margin:0">كل نسخة لها ملف <bdi class="k">SVG</bdi> و<bdi class="k">PNG</bdi> جاهز. لا ترسم الشعار من جديد ولا تكتبه بالخط، استخدم الملف.</p>
     </div>
     <div id="v-variants" style="display:grid; grid-template-columns:repeat(3,1fr); gap:14px"></div>
   </div>
@@ -384,7 +389,7 @@ td .en { font-size: 7.5px; }
       <p class="pe">On images: all-Paper on a calm, dark area, or on an Ink plate.</p>
       <p class="sm">الليموني الكامل للأحجام الصغيرة والمطبوعات الخاصة بس، عشان ما يزيد الليموني عن حصته.</p>
     </div>
-    <div style="grid-column:4 / span 9; display:grid; grid-template-columns:repeat(3,1fr); gap:12px" id="v-colourways"></div>
+    <div style="grid-column:4 / span 9; display:grid; grid-template-columns:repeat(3,1fr); gap:22px 14px; align-content:start" id="v-colourways"></div>
   </div>
 </section>
 
@@ -453,7 +458,7 @@ td .en { font-size: 7.5px; }
     <div style="grid-column:1 / span 7">
       <h2 style="font-size:22px">جدول التباين</h2><p class="en" style="margin-bottom:10px">WCAG 2.x contrast, computed from the hex values</p>
       <div id="v-contrast"></div>
-      <p class="sm mute" style="margin-top:10px"><b class="w6" style="color:var(--ink)">القراءة:</b> <bdi class="k">AAA</bdi> ≥ 7 · <bdi class="k">AA</bdi> ≥ 4.5 للنص العادي · <bdi class="k">AA LARGE</bdi> ≥ 3 للعناوين الكبيرة بس (24 px وفوق، أو 18.7 px عريض) · تحت 3 ما يصلح للنص.</p>
+      <p class="sm mute" style="margin-top:12px"><b class="w6" style="color:var(--ink)">القراءة:</b> <bdi class="k">AAA ≥ 7</bdi>، <bdi class="k">AA ≥ 4.5</bdi> للنص العادي، <bdi class="k">AA LARGE ≥ 3</bdi> للعناوين الكبيرة بس (<bdi>24 px</bdi> وفوق، أو <bdi>18.7 px</bdi> عريض). وتحت <bdi>3</bdi> ما يصلح للنص أبداً.</p>
     </div>
     <div style="grid-column:9 / span 4">
       <h2 style="font-size:22px">التوليفات المعتمدة</h2><p class="en" style="margin-bottom:12px">Approved pairings</p>
@@ -473,7 +478,8 @@ td .en { font-size: 7.5px; }
         <p class="pe" style="margin-bottom:0">All four are SIL OFL 1.1: commercial use and embedding allowed; the fonts may not be sold on their own.</p>
       </div>
     </div>
-    <div id="v-families" style="display:grid; grid-template-columns:repeat(4,1fr); gap:14px"></div>
+    <div id="v-families" style="display:grid; grid-template-columns:repeat(4,minmax(0,1fr)); gap:18px"></div>
+    <div id="v-together" style="margin-top:18px"></div>
   </div>
 </section>
 
@@ -491,7 +497,7 @@ td .en { font-size: 7.5px; }
         <li class="sm">ثلاث مستويات بالكثير بالإطار الواحد، وكل مستوى أكبر من اللي تحته بمرة ونص لمرتين.</li>
         <li class="sm">العنوان الكبير كلمة لين ثلاث. على الشاشة ست كلمات بالكثير.</li>
         <li class="sm">وزنين بالكثير بالتصميم. لا عريض مزيّف ولا مائل للعربي.</li>
-        <li class="sm">ارتفاع السطر للعناوين 1.25 لين 1.5 عشان الشدّة والهمزة، وللنص 1.7.</li>
+        <li class="sm">ارتفاع السطر للعناوين <bdi>1.25–1.5</bdi> عشان الشدّة والهمزة، وللنص <bdi>1.7</bdi>.</li>
         <li class="sm">صغّر التصميم لربع حجمه: إذا ما انقرا، الخط صغير.</li>
       </ul>
       <div class="hr" style="margin:14px 0"></div>
@@ -541,18 +547,18 @@ td .en { font-size: 7.5px; }
   <div class="b g12">
     <div style="grid-column:1 / span 4">
       <div class="sn">07</div><h1>التخطيط</h1><p class="en" style="margin-bottom:16px">Layout · feed post 4:5</p>
-      <p class="sm">البوست <bdi class="k">1080×1350</bdi>، بس البروفايل يعرضه <bdi class="k">3:4</bdi> من النص: يقص <bdi class="k">34 px</bdi> من كل جنب. فأي شي مهم يكون داخل العرض الأوسط <bdi class="k">1012 px</bdi>.</p>
+      <p class="sm">البوست <bdi class="k">1080×1350</bdi>، بس البروفايل يعرضه <bdi class="k">3:4</bdi> من النص: يقص حوالي <bdi class="k">34 px</bdi> من كل جنب. فأي شي مهم يكون داخل العرض الأوسط <bdi class="k">1012 px</bdi>.</p>
       <p class="pe">The profile grid shows a centred 3:4 crop: 34 px lost each side.</p>
       <table style="margin-top:6px">
         <tbody>
-          <tr><td>الهامش</td><td class="k">96 px</td><td class="sm mute">أقل شي 72، والفخم 96–120</td></tr>
+          <tr><td>الهامش</td><td class="k">96 px</td><td class="sm mute">أقل شي <bdi>72</bdi>، والفخم <bdi>96–120</bdi></td></tr>
           <tr><td>الشبكة</td><td class="k">6 COL · 24 GUTTER</td><td class="sm mute">داخل الهامش</td></tr>
           <tr><td>الإيقاع</td><td class="k">8 px</td><td class="sm mute">كل المسافات من مضاعفاته</td></tr>
           <tr><td>الشعار</td><td class="k">≥ 2D</td><td class="sm mute">تحت يسار: نهاية القراءة</td></tr>
           <tr><td>النص</td><td class="k">≤ 20%</td><td class="sm mute">من مساحة الإعلان</td></tr>
         </tbody>
       </table>
-      <p class="sm" style="margin-top:12px">القوالب الجاهزة بـ<bdi class="k">03-templates/</bdi> تفحص هالمناطق بنفسها وتحذّرك.</p>
+      <p class="sm" style="margin-top:12px">القوالب الجاهزة بـ<bdi class="k">03-templates/</bdi> تفحص هالمناطق بنفسها وتحذّرك إذا شي مهم طلع برّاها.</p>
     </div>
     <div style="grid-column:5 / span 8" id="v-post"></div>
   </div>
@@ -595,7 +601,7 @@ td .en { font-size: 7.5px; }
       <p class="pe">TASH appears only in the closing signature (+ the concept slate on demo work). That proves we design for the client, not for ourselves.</p>
       <ul class="dots" style="margin-top:10px">
         <li class="sm">لا ليموني ولا نقاط داخل جسم إعلان العميل. شعار العميل يوصل بسبب شي صار بالإعلان، مو عن طريق نقاطنا.</li>
-        <li class="sm">الألوان تحت مقاسة من صورة الإعلان نفسه (<bdi>median-cut</bdi>، أكثر 6 ألوان).</li>
+        <li class="sm">الألوان تحت مقاسة من صورة الإعلان نفسه (<bdi>median-cut</bdi>، الألوان الأكثر حضوراً).</li>
         <li class="sm">التوقيع حركتين: بطاقة العميل، ثم توقيع طشّ. مو بطاقة وحدة جامدة.</li>
       </ul>
     </div>
@@ -654,7 +660,8 @@ td .en { font-size: 7.5px; }
         <div><h2>نستخدم</h2><p class="en" style="margin-bottom:8px">Words we use</p><div id="v-words-use"></div></div>
         <div><h2>نتجنب</h2><p class="en" style="margin-bottom:8px">Words we avoid</p><div id="v-words-avoid"></div></div>
       </div>
-      <p class="sm mute" style="margin-top:14px">النسخة الكاملة، مع قواعد الإملاء والإيموجي والذكاء الاصطناعي: <bdi class="k">06-copy/voice-and-tone.md</bdi></p>
+      <div id="v-dialect" style="margin-top:20px"></div>
+      <p class="sm mute" style="margin-top:12px">النسخة الكاملة، مع قواعد الإملاء: <bdi class="k">06-copy/voice-and-tone.md</bdi></p>
     </div>
   </div>
 </section>
@@ -691,7 +698,7 @@ td .en { font-size: 7.5px; }
   <div class="fig" id="v-back" style="position:absolute; left:50%; top:46%; width:150px; transform:translate(-50%,-50%)"></div>
   <div style="position:absolute; left:0; right:0; top:58%; text-align:center">
     <div style="font-family:var(--f-display-ar); font-weight:800; font-size:24px; line-height:1.4">خلّهم يسولفون عنك!</div>
-    <div class="lbl" style="margin-top:12px; text-align:center; color:var(--smoke); font-size:8.5px">@TASH.CREATIVE.KW</div>
+    <div class="lbl" style="margin-top:12px; text-align:center; color:var(--smoke); font-size:9px; text-transform:none">@tash.creative.kw</div>
   </div>
   <div class="lbl" style="position:absolute; bottom:44px; left:60px; right:60px; display:flex; justify-content:space-between"><span>TASH CREATIVE — KUWAIT</span><span>BRAND GUIDE V1.0 — 2026</span></div>
 </section>
