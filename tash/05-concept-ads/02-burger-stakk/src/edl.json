@@ -28,18 +28,24 @@
           0.4,
           1.21,
           1.1,
-          1.1
+          1.25
+        ],
+        [
+          0.5333,
+          1.375,
+          1.25,
+          0.5
         ],
         [
           0.9,
-          1.6225,
-          0.55,
-          0.55
+          1.5583,
+          0.5,
+          0.5
         ]
       ],
       "blend": [
         [
-          0.44,
+          0.55,
           0.9
         ]
       ],
@@ -49,7 +55,7 @@
       "frame": {
         "z": 1.0
       },
-      "why": "press contact f29 (1.21 s) on the smash cue 0.40; 1.1x into the hit, ramps to 0.55x through the steam burst"
+      "why": "press contact f29 (1.21 s) on the smash cue 0.40; 1.1x into the hit, then 1.25x (one source frame per output frame, nearest) through the fast compression f29-f33 so the press's motion blur never doubles into blended ghosts; from f33 (0.533) the press is down and the steam builds at 0.5x, frame-blended. ECD fix: the old 0.55x blend from 0.44 showed a doubled press rim at 0.47-0.57"
     },
     {
       "id": "S02",
@@ -169,20 +175,26 @@
       "to": 4.9,
       "keys": [
         [
-          4.25,
-          3.21,
-          1.0,
+          4.2667,
+          3.125,
+          1.25,
+          1.25
+        ],
+        [
+          4.3667,
+          3.25,
+          1.25,
           1.0
         ],
         [
           4.4,
-          3.36,
+          3.4583,
           1.0,
           1.0
         ],
         [
           4.9,
-          3.86,
+          3.9583,
           1.0,
           1.0
         ]
@@ -199,7 +211,7 @@
       "frame": {
         "z": 1.0
       },
-      "why": "cheddar slice falls at real speed (nearest frames, no ghosting) and lands f80-81 (3.36 s) on 4.40"
+      "why": "cheddar slice falls one source frame per output frame (f75-f78, nearest, no ghosting), then lands flat on f83 at 4.40. ECD fix: source f79-f82 are an AI ghost duplicate (a flat slice already on the patty while the falling slice is still above it, then a translucent bump as one morphs into the other), so the edit jumps f78 -> f83 across the contact: the slice slaps down in one frame"
     },
     {
       "id": "S06",
@@ -255,7 +267,7 @@
       "id": "S07b",
       "clip": "b5_stack",
       "from": 6.4,
-      "to": 6.65,
+      "to": 6.55,
       "keys": [
         [
           6.4,
@@ -280,49 +292,30 @@
         "cx": 0.5,
         "cy": 0.6
       },
-      "why": "cut on contact: opens on the centre pickle's landing frame f54 (2.25 s) at 6.40; the first onion ring lands at real speed on f57 = 6.525 (the onion SFX moves there, one 16th before the old cue). Ends before the ring's AI hover (f57-64 it floats above the pickles) can read and before the second ring wave (f61+) reaches the label zone. Nearest frames: frame blending ghosted the falls, minterpolate warped them (both rejected)"
-    },
-    {
-      "id": "S07c",
-      "clip": "b5_stack",
-      "from": 6.65,
-      "to": 7.15,
-      "keys": [
-        [
-          6.65,
-          3.3333,
-          0.5,
-          0.5
-        ],
-        [
-          7.15,
-          3.5833,
-          0.5,
-          0.5
-        ]
-      ],
-      "blend": true,
-      "frame": {
-        "z": 1.0
-      },
-      "why": "jump cut on the 8th (the old onion beat): the same stack with everything landed (f80-f86), steam, calm dark space above for «مخلل وبصل… / يقرمشون»"
+      "why": "cut on contact: opens on the centre pickle's landing frame f54 (2.25 s) at 6.40; the first onion ring touches a pickle at real speed on f57 = 6.533 (the onion SFX sits on 6.525) and the shot cuts on that frame. ECD fix: it used to run to 6.65, and f58-f60 show the ring hovering over a pickle with air under it while the centre pickle morphs. Nearest frames: frame blending ghosted the falls, minterpolate warped them"
     },
     {
       "id": "S08",
       "clip": "b6_sauce",
-      "from": 7.15,
+      "from": 6.55,
       "to": 7.9,
       "keys": [
         [
-          7.15,
-          0.625,
+          6.5667,
+          0.0,
+          0.85,
+          0.85
+        ],
+        [
+          7.0,
+          0.375,
           1.0,
-          1.0
+          1.25
         ],
         [
           7.4,
           0.875,
-          1.0,
+          1.25,
           1.0
         ],
         [
@@ -332,14 +325,19 @@
           1.2
         ]
       ],
-      "blend": false,
+      "blend": [
+        [
+          6.55,
+          6.97
+        ]
+      ],
       "crisp": [
         7.4
       ],
       "frame": {
         "z": 1.0
       },
-      "why": "sauce blob makes contact f21 (0.875 s) on 7.40, pools after; real speed, nearest frames"
+      "why": "one continuous top-down take on red from the S07b cut (6.55): pickles and onion rings lying flat (b6 f0-f8, a locked-off plate, frame-blended), the sauce enters at the top on f9 (7.00), falls one source frame per output frame (1.25x, nearest) and makes contact f21 (0.875 s) on 7.40, then pools at 1.0-1.2x. ECD fix: replaces the old S07c (b5 f80-f86), where the onion rings stood propped at impossible angles over the pickles for 0.5 s"
     },
     {
       "id": "S09",
