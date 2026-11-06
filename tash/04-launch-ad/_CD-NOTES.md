@@ -27,4 +27,7 @@ The table below has the CD-approved in/out ranges. **Use only those ranges.**
 - `s1_hook.mp4`: **0.00–1.80** is approved. Handheld drift, thumb on the shutter, and the bottle on the screen is stable. The tap itself is subtle, so SELL it: a fast white shutter blink on the phone screen area, plus a dry shutter click in the audio, on the cut frame. Then hard cut to the LAYL glory shot on the drop.
 - `s2_diwaniya.mp4`: **0.25–3.25** is approved (pointing hand and faces are clean at full size). Best beat ≈ 1.75–2.75, where the middle man grins at the phone.
 - `s4_car.mp4`: **0.50–3.75** is approved (face and hands clean). He looks down and grins while typing, which leads into the typing bubble.
-- `s3_cafe.mp4`, `s5_owner.mp4`: ranges are added here once reviewed. If a file is missing, it failed review: don't use it.
+- `s5_owner.mp4`: **0.00–4.50** is approved (the hand on the phone is clean at full size; the screen is only a soft glow, no UI). Calm and steady, the smile grows over the clip, incense smoke rises. Ideal as the slow emotional button or graded down behind the CTA.
+- `s3_cafe.mp4`: **0.00–4.00** is approved (faces, hands and rings are clean at full size). One shows her phone, the other laughs behind her hand, in warm striped window light. Best beat ≈ 0.75–2.25.
+
+All five clips passed CD review on the first take. The start frames are kept in `footage/ai/frames/` for reference.
