@@ -1,0 +1,175 @@
+{
+ "t1-first-tower": {
+  "seed": 20261106,
+  "shots": [
+   {
+    "idx": 0,
+    "ammo": "meteor",
+    "angleStep": 2,
+    "powerStep": 28,
+    "activateAt": -1
+   }
+  ]
+ },
+ "t1-glass-window": {
+  "seed": 20261106,
+  "shots": [
+   {
+    "idx": 0,
+    "ammo": "pebble",
+    "angleStep": 8,
+    "powerStep": 26,
+    "activateAt": -1
+   },
+   {
+    "idx": 1,
+    "ammo": "meteor",
+    "angleStep": 23,
+    "powerStep": 14,
+    "activateAt": -1
+   }
+  ]
+ },
+ "t2-teak-scaffold": {
+  "seed": 20261106,
+  "shots": [
+   {
+    "idx": 0,
+    "ammo": "meteor",
+    "angleStep": 17,
+    "powerStep": 22,
+    "activateAt": -1
+   },
+   {
+    "idx": 1,
+    "ammo": "meteor",
+    "angleStep": 5,
+    "powerStep": 30,
+    "activateAt": -1
+   }
+  ]
+ },
+ "t2-cloud-bounce": {
+  "seed": 20261106,
+  "shots": [
+   {
+    "idx": 0,
+    "ammo": "pebble",
+    "angleStep": 32,
+    "powerStep": 14,
+    "activateAt": -1
+   },
+   {
+    "idx": 1,
+    "ammo": "meteor",
+    "angleStep": 47,
+    "powerStep": 10,
+    "activateAt": -1
+   }
+  ]
+ },
+ "t3-stone-keep": {
+  "seed": 20261106,
+  "shots": [
+   {
+    "idx": 0,
+    "ammo": "meteor",
+    "angleStep": 2,
+    "powerStep": 26,
+    "activateAt": -1
+   },
+   {
+    "idx": 1,
+    "ammo": "pebble",
+    "angleStep": 2,
+    "powerStep": 20,
+    "activateAt": -1
+   },
+   {
+    "idx": 2,
+    "ammo": "heavy",
+    "angleStep": 5,
+    "powerStep": 26,
+    "activateAt": -1
+   }
+  ]
+ },
+ "t3-lightbox-chain": {
+  "seed": 20261106,
+  "shots": [
+   {
+    "idx": 0,
+    "ammo": "pebble",
+    "angleStep": 5,
+    "powerStep": 24,
+    "activateAt": -1
+   },
+   {
+    "idx": 1,
+    "ammo": "meteor",
+    "angleStep": 5,
+    "powerStep": 34,
+    "activateAt": -1
+   }
+  ]
+ },
+ "t4-domino-row": {
+  "seed": 20261106,
+  "shots": [
+   {
+    "idx": 0,
+    "ammo": "meteor",
+    "angleStep": 35,
+    "powerStep": 18,
+    "activateAt": -1
+   },
+   {
+    "idx": 1,
+    "ammo": "pebble",
+    "angleStep": 74,
+    "powerStep": 22,
+    "activateAt": -1
+   },
+   {
+    "idx": 2,
+    "ammo": "meteor",
+    "angleStep": 29,
+    "powerStep": 18,
+    "activateAt": -1
+   }
+  ]
+ },
+ "t4-grand-observatory": {
+  "seed": 20261106,
+  "shots": [
+   {
+    "idx": 0,
+    "ammo": "meteor",
+    "angleStep": 11,
+    "powerStep": 30,
+    "activateAt": -1
+   },
+   {
+    "idx": 1,
+    "ammo": "pebble",
+    "angleStep": 8,
+    "powerStep": 6,
+    "activateAt": -1
+   },
+   {
+    "idx": 2,
+    "ammo": "meteor",
+    "angleStep": 38,
+    "powerStep": 28,
+    "activateAt": -1
+   },
+   {
+    "idx": 3,
+    "ammo": "meteor",
+    "angleStep": 2,
+    "powerStep": 30,
+    "activateAt": -1
+   }
+  ]
+ }
+}

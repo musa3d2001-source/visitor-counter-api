@@ -1,0 +1,224 @@
+{
+  "base": "http://localhost:3200",
+  "chromium": "153.0.8010.12",
+  "passes": 5,
+  "generatedAt": "2026-11-06T17:02:35.479Z",
+  "runs": {
+    "standard-cpu1": {
+      "byLayout": {
+        "t1-first-tower": {
+          "firstPassMs": 97.9,
+          "warmP50Ms": 5.8,
+          "warmMaxMs": 9.2,
+          "allMatch": true
+        },
+        "t1-glass-window": {
+          "firstPassMs": 89.6,
+          "warmP50Ms": 30,
+          "warmMaxMs": 44.2,
+          "allMatch": true
+        },
+        "t2-teak-scaffold": {
+          "firstPassMs": 94.6,
+          "warmP50Ms": 31.1,
+          "warmMaxMs": 33.6,
+          "allMatch": true
+        },
+        "t2-cloud-bounce": {
+          "firstPassMs": 61.8,
+          "warmP50Ms": 27.9,
+          "warmMaxMs": 29.3,
+          "allMatch": true
+        },
+        "t3-stone-keep": {
+          "firstPassMs": 197.3,
+          "warmP50Ms": 73.7,
+          "warmMaxMs": 82.2,
+          "allMatch": true
+        },
+        "t3-lightbox-chain": {
+          "firstPassMs": 129.7,
+          "warmP50Ms": 75.2,
+          "warmMaxMs": 91.9,
+          "allMatch": true
+        },
+        "t4-domino-row": {
+          "firstPassMs": 114.8,
+          "warmP50Ms": 69.4,
+          "warmMaxMs": 76.3,
+          "allMatch": true
+        },
+        "t4-grand-observatory": {
+          "firstPassMs": 182.7,
+          "warmP50Ms": 127.5,
+          "warmMaxMs": 143.2,
+          "allMatch": true
+        }
+      },
+      "firstPassTotalMs": 968,
+      "warmMaxLayoutP50Ms": 127.5
+    },
+    "compat-cpu1": {
+      "byLayout": {
+        "t1-first-tower": {
+          "firstPassMs": 151.8,
+          "warmP50Ms": 5.8,
+          "warmMaxMs": 6.9,
+          "allMatch": true
+        },
+        "t1-glass-window": {
+          "firstPassMs": 127.7,
+          "warmP50Ms": 34.8,
+          "warmMaxMs": 40.2,
+          "allMatch": true
+        },
+        "t2-teak-scaffold": {
+          "firstPassMs": 65.5,
+          "warmP50Ms": 31.1,
+          "warmMaxMs": 70.4,
+          "allMatch": true
+        },
+        "t2-cloud-bounce": {
+          "firstPassMs": 56,
+          "warmP50Ms": 27.9,
+          "warmMaxMs": 32.9,
+          "allMatch": true
+        },
+        "t3-stone-keep": {
+          "firstPassMs": 148.2,
+          "warmP50Ms": 77.1,
+          "warmMaxMs": 78.9,
+          "allMatch": true
+        },
+        "t3-lightbox-chain": {
+          "firstPassMs": 96.2,
+          "warmP50Ms": 76.7,
+          "warmMaxMs": 79.5,
+          "allMatch": true
+        },
+        "t4-domino-row": {
+          "firstPassMs": 94.5,
+          "warmP50Ms": 67.7,
+          "warmMaxMs": 79.6,
+          "allMatch": true
+        },
+        "t4-grand-observatory": {
+          "firstPassMs": 146.1,
+          "warmP50Ms": 124.9,
+          "warmMaxMs": 129.5,
+          "allMatch": true
+        }
+      },
+      "firstPassTotalMs": 886,
+      "warmMaxLayoutP50Ms": 124.9
+    },
+    "standard-cpu4": {
+      "byLayout": {
+        "t1-first-tower": {
+          "firstPassMs": 495.4,
+          "warmP50Ms": 28.5,
+          "warmMaxMs": 36.4,
+          "allMatch": true
+        },
+        "t1-glass-window": {
+          "firstPassMs": 271.6,
+          "warmP50Ms": 136,
+          "warmMaxMs": 153,
+          "allMatch": true
+        },
+        "t2-teak-scaffold": {
+          "firstPassMs": 315.2,
+          "warmP50Ms": 163,
+          "warmMaxMs": 273.8,
+          "allMatch": true
+        },
+        "t2-cloud-bounce": {
+          "firstPassMs": 191.8,
+          "warmP50Ms": 136.7,
+          "warmMaxMs": 177.9,
+          "allMatch": true
+        },
+        "t3-stone-keep": {
+          "firstPassMs": 421,
+          "warmP50Ms": 356.9,
+          "warmMaxMs": 375.2,
+          "allMatch": true
+        },
+        "t3-lightbox-chain": {
+          "firstPassMs": 381.6,
+          "warmP50Ms": 347.6,
+          "warmMaxMs": 422.3,
+          "allMatch": true
+        },
+        "t4-domino-row": {
+          "firstPassMs": 345.7,
+          "warmP50Ms": 325.3,
+          "warmMaxMs": 352.2,
+          "allMatch": true
+        },
+        "t4-grand-observatory": {
+          "firstPassMs": 595,
+          "warmP50Ms": 660.6,
+          "warmMaxMs": 673.9,
+          "allMatch": true
+        }
+      },
+      "firstPassTotalMs": 3017,
+      "warmMaxLayoutP50Ms": 660.6
+    },
+    "compat-cpu4": {
+      "byLayout": {
+        "t1-first-tower": {
+          "firstPassMs": 487.2,
+          "warmP50Ms": 23.5,
+          "warmMaxMs": 28.8,
+          "allMatch": true
+        },
+        "t1-glass-window": {
+          "firstPassMs": 322.5,
+          "warmP50Ms": 134.7,
+          "warmMaxMs": 148.2,
+          "allMatch": true
+        },
+        "t2-teak-scaffold": {
+          "firstPassMs": 246.6,
+          "warmP50Ms": 150.6,
+          "warmMaxMs": 170.2,
+          "allMatch": true
+        },
+        "t2-cloud-bounce": {
+          "firstPassMs": 163.3,
+          "warmP50Ms": 143.2,
+          "warmMaxMs": 175.3,
+          "allMatch": true
+        },
+        "t3-stone-keep": {
+          "firstPassMs": 537.7,
+          "warmP50Ms": 381.8,
+          "warmMaxMs": 423.9,
+          "allMatch": true
+        },
+        "t3-lightbox-chain": {
+          "firstPassMs": 437.5,
+          "warmP50Ms": 353.8,
+          "warmMaxMs": 411.8,
+          "allMatch": true
+        },
+        "t4-domino-row": {
+          "firstPassMs": 462.3,
+          "warmP50Ms": 334.1,
+          "warmMaxMs": 353.6,
+          "allMatch": true
+        },
+        "t4-grand-observatory": {
+          "firstPassMs": 646.7,
+          "warmP50Ms": 563.3,
+          "warmMaxMs": 603.3,
+          "allMatch": true
+        }
+      },
+      "firstPassTotalMs": 3304,
+      "warmMaxLayoutP50Ms": 563.3
+    }
+  }
+}

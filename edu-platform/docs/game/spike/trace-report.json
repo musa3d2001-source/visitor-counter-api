@@ -1,0 +1,52 @@
+{
+  "admin/game/spike/page.js.nft.json": {
+    "files": 356,
+    "existingFiles": 355,
+    "mb": 4.1,
+    "wasm": [],
+    "pkgFiles": {
+      "three": 0,
+      "@dimforge": 0
+    }
+  },
+  "admin/game/spike/replay/route.js.nft.json": {
+    "files": 116,
+    "existingFiles": 116,
+    "mb": 5.5,
+    "wasm": [],
+    "pkgFiles": {
+      "three": 0,
+      "@dimforge": 0
+    }
+  },
+  "admin/settings/page.js.nft.json": {
+    "files": 367,
+    "existingFiles": 366,
+    "mb": 4.4,
+    "wasm": [],
+    "pkgFiles": {
+      "three": 0,
+      "@dimforge": 0
+    }
+  },
+  "(site)/page.js.nft.json": {
+    "files": 175,
+    "existingFiles": 175,
+    "mb": 2.7,
+    "wasm": [],
+    "pkgFiles": {
+      "three": 0,
+      "@dimforge": 0
+    }
+  },
+  "api/progress/route.js.nft.json": {
+    "files": 115,
+    "existingFiles": 115,
+    "mb": 2,
+    "wasm": [],
+    "pkgFiles": {
+      "three": 0,
+      "@dimforge": 0
+    }
+  }
+}

@@ -1,0 +1,172 @@
+{
+ "version": 1,
+ "key": "t2-cloud-bounce",
+ "title": "ارتداد الغيم",
+ "tier": 2,
+ "slots": 4,
+ "par": 3,
+ "streakReward": "pulse",
+ "launcher": {
+  "x": 2600,
+  "y": 250
+ },
+ "bodies": [
+  {
+   "id": "s1",
+   "shape": "box",
+   "material": "stone",
+   "x": 1750,
+   "y": 200,
+   "w": 40,
+   "h": 400,
+   "rot": 0,
+   "fixed": true
+  },
+  {
+   "id": "c2",
+   "shape": "box",
+   "material": "cloud",
+   "x": 1350,
+   "y": 720,
+   "w": 360,
+   "h": 40,
+   "rot": -12,
+   "fixed": true
+  },
+  {
+   "id": "t3",
+   "shape": "box",
+   "material": "teak",
+   "x": 1080,
+   "y": 50,
+   "w": 20,
+   "h": 100,
+   "rot": 0,
+   "fixed": false
+  },
+  {
+   "id": "t4",
+   "shape": "box",
+   "material": "teak",
+   "x": 1220,
+   "y": 50,
+   "w": 20,
+   "h": 100,
+   "rot": 0,
+   "fixed": false
+  },
+  {
+   "id": "t5",
+   "shape": "box",
+   "material": "teak",
+   "x": 1150,
+   "y": 110,
+   "w": 180,
+   "h": 20,
+   "rot": 0,
+   "fixed": false
+  },
+  {
+   "id": "t6",
+   "shape": "box",
+   "material": "teak",
+   "x": 1080,
+   "y": 170,
+   "w": 20,
+   "h": 100,
+   "rot": 0,
+   "fixed": false
+  },
+  {
+   "id": "t7",
+   "shape": "box",
+   "material": "teak",
+   "x": 1220,
+   "y": 170,
+   "w": 20,
+   "h": 100,
+   "rot": 0,
+   "fixed": false
+  },
+  {
+   "id": "t8",
+   "shape": "box",
+   "material": "teak",
+   "x": 1150,
+   "y": 230,
+   "w": 180,
+   "h": 20,
+   "rot": 0,
+   "fixed": false
+  },
+  {
+   "id": "t9",
+   "shape": "box",
+   "material": "teak",
+   "x": 1080,
+   "y": 270,
+   "w": 20,
+   "h": 60,
+   "rot": 0,
+   "fixed": false
+  },
+  {
+   "id": "t10",
+   "shape": "box",
+   "material": "teak",
+   "x": 1220,
+   "y": 270,
+   "w": 20,
+   "h": 60,
+   "rot": 0,
+   "fixed": false
+  },
+  {
+   "id": "f11",
+   "shape": "box",
+   "material": "frond",
+   "x": 1150,
+   "y": 310,
+   "w": 180,
+   "h": 20,
+   "rot": 0,
+   "fixed": false
+  },
+  {
+   "id": "g12",
+   "shape": "box",
+   "material": "glass",
+   "x": 900,
+   "y": 60,
+   "w": 16,
+   "h": 120,
+   "rot": 0,
+   "fixed": false
+  },
+  {
+   "id": "g13",
+   "shape": "box",
+   "material": "glass",
+   "x": 1400,
+   "y": 60,
+   "w": 16,
+   "h": 120,
+   "rot": 0,
+   "fixed": false
+  }
+ ],
+ "lanterns": [
+  {
+   "id": "L1",
+   "x": 1150,
+   "y": 140,
+   "r": 20
+  },
+  {
+   "id": "L2",
+   "x": 1150,
+   "y": 260,
+   "r": 20
+  }
+ ]
+}

@@ -1,0 +1,89 @@
+{
+ "version": 1,
+ "key": "t1-first-tower",
+ "title": "البرج الأول",
+ "tier": 1,
+ "slots": 3,
+ "par": 2,
+ "streakReward": "comet",
+ "launcher": {
+  "x": 2600,
+  "y": 250
+ },
+ "bodies": [
+  {
+   "id": "t1",
+   "shape": "box",
+   "material": "teak",
+   "x": 1340,
+   "y": 50,
+   "w": 20,
+   "h": 100,
+   "rot": 0,
+   "fixed": false
+  },
+  {
+   "id": "t2",
+   "shape": "box",
+   "material": "teak",
+   "x": 1460,
+   "y": 50,
+   "w": 20,
+   "h": 100,
+   "rot": 0,
+   "fixed": false
+  },
+  {
+   "id": "t3",
+   "shape": "box",
+   "material": "teak",
+   "x": 1400,
+   "y": 110,
+   "w": 160,
+   "h": 20,
+   "rot": 0,
+   "fixed": false
+  },
+  {
+   "id": "t4",
+   "shape": "box",
+   "material": "teak",
+   "x": 1340,
+   "y": 160,
+   "w": 20,
+   "h": 80,
+   "rot": 0,
+   "fixed": false
+  },
+  {
+   "id": "t5",
+   "shape": "box",
+   "material": "teak",
+   "x": 1460,
+   "y": 160,
+   "w": 20,
+   "h": 80,
+   "rot": 0,
+   "fixed": false
+  },
+  {
+   "id": "f6",
+   "shape": "box",
+   "material": "frond",
+   "x": 1400,
+   "y": 210,
+   "w": 160,
+   "h": 20,
+   "rot": 0,
+   "fixed": false
+  }
+ ],
+ "lanterns": [
+  {
+   "id": "L1",
+   "x": 1400,
+   "y": 140,
+   "r": 20
+  }
+ ]
+}

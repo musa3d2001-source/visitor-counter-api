@@ -1,0 +1,584 @@
+{
+  "base": "http://localhost:3200",
+  "chromium": "153.0.8010.12",
+  "launchArgs": [
+    "--use-angle=swiftshader",
+    "--enable-unsafe-swiftshader"
+  ],
+  "fast4g": {
+    "offline": false,
+    "latency": 165,
+    "downloadThroughput": 1012500,
+    "uploadThroughput": 168750
+  },
+  "generatedAt": "2026-11-06T16:48:03.367Z",
+  "heavyFiles": [
+    {
+      "file": "0qupc71wd3esz.js",
+      "tag": "three"
+    },
+    {
+      "file": "1o168rozd1yp6.js",
+      "tag": "rapier-compat"
+    },
+    {
+      "file": "23_rm5ep3f99q.wasm",
+      "tag": "rapier-wasm"
+    },
+    {
+      "file": "3pncybfg3u04c.js",
+      "tag": "rapier-standard-glue+turbopack-wasm-loader"
+    }
+  ],
+  "hashes": {
+    "standard": [
+      {
+        "key": "t1-first-tower",
+        "hash": "37be6208",
+        "golden": "37be6208",
+        "match": true,
+        "steps": 284,
+        "cleared": true,
+        "ms": 145
+      },
+      {
+        "key": "t1-glass-window",
+        "hash": "930c2a5c",
+        "golden": "930c2a5c",
+        "match": true,
+        "steps": 1860,
+        "cleared": true,
+        "ms": 129.3
+      },
+      {
+        "key": "t2-teak-scaffold",
+        "hash": "e0a09933",
+        "golden": "e0a09933",
+        "match": true,
+        "steps": 691,
+        "cleared": true,
+        "ms": 112
+      },
+      {
+        "key": "t2-cloud-bounce",
+        "hash": "3a1c99ea",
+        "golden": "3a1c99ea",
+        "match": true,
+        "steps": 1280,
+        "cleared": true,
+        "ms": 70.6
+      },
+      {
+        "key": "t3-stone-keep",
+        "hash": "b45d09f4",
+        "golden": "b45d09f4",
+        "match": true,
+        "steps": 2318,
+        "cleared": true,
+        "ms": 143.6
+      },
+      {
+        "key": "t3-lightbox-chain",
+        "hash": "cec3545d",
+        "golden": "cec3545d",
+        "match": true,
+        "steps": 1430,
+        "cleared": true,
+        "ms": 128.7
+      },
+      {
+        "key": "t4-domino-row",
+        "hash": "94fa983e",
+        "golden": "94fa983e",
+        "match": true,
+        "steps": 1913,
+        "cleared": true,
+        "ms": 101.5
+      },
+      {
+        "key": "t4-grand-observatory",
+        "hash": "2666ac7d",
+        "golden": "2666ac7d",
+        "match": true,
+        "steps": 1626,
+        "cleared": true,
+        "ms": 151.7
+      }
+    ],
+    "compat": [
+      {
+        "key": "t1-first-tower",
+        "hash": "37be6208",
+        "golden": "37be6208",
+        "match": true,
+        "steps": 284,
+        "cleared": true,
+        "ms": 12.9
+      },
+      {
+        "key": "t1-glass-window",
+        "hash": "930c2a5c",
+        "golden": "930c2a5c",
+        "match": true,
+        "steps": 1860,
+        "cleared": true,
+        "ms": 38.6
+      },
+      {
+        "key": "t2-teak-scaffold",
+        "hash": "e0a09933",
+        "golden": "e0a09933",
+        "match": true,
+        "steps": 691,
+        "cleared": true,
+        "ms": 37.6
+      },
+      {
+        "key": "t2-cloud-bounce",
+        "hash": "3a1c99ea",
+        "golden": "3a1c99ea",
+        "match": true,
+        "steps": 1280,
+        "cleared": true,
+        "ms": 42.3
+      },
+      {
+        "key": "t3-stone-keep",
+        "hash": "b45d09f4",
+        "golden": "b45d09f4",
+        "match": true,
+        "steps": 2318,
+        "cleared": true,
+        "ms": 78.7
+      },
+      {
+        "key": "t3-lightbox-chain",
+        "hash": "cec3545d",
+        "golden": "cec3545d",
+        "match": true,
+        "steps": 1430,
+        "cleared": true,
+        "ms": 119.3
+      },
+      {
+        "key": "t4-domino-row",
+        "hash": "94fa983e",
+        "golden": "94fa983e",
+        "match": true,
+        "steps": 1913,
+        "cleared": true,
+        "ms": 89.4
+      },
+      {
+        "key": "t4-grand-observatory",
+        "hash": "2666ac7d",
+        "golden": "2666ac7d",
+        "match": true,
+        "steps": 1626,
+        "cleared": true,
+        "ms": 133.2
+      }
+    ],
+    "server": {
+      "status": 200,
+      "pkg": "compat",
+      "requested": "compat",
+      "node": "v22.23.4",
+      "loadMs": 97,
+      "results": [
+        {
+          "key": "t1-first-tower",
+          "hash": "37be6208",
+          "steps": 284,
+          "cleared": true,
+          "ms": 120.5
+        },
+        {
+          "key": "t1-glass-window",
+          "hash": "930c2a5c",
+          "steps": 1860,
+          "cleared": true,
+          "ms": 113
+        },
+        {
+          "key": "t2-teak-scaffold",
+          "hash": "e0a09933",
+          "steps": 691,
+          "cleared": true,
+          "ms": 63.7
+        },
+        {
+          "key": "t2-cloud-bounce",
+          "hash": "3a1c99ea",
+          "steps": 1280,
+          "cleared": true,
+          "ms": 39.3
+        },
+        {
+          "key": "t3-stone-keep",
+          "hash": "b45d09f4",
+          "steps": 2318,
+          "cleared": true,
+          "ms": 107.2
+        },
+        {
+          "key": "t3-lightbox-chain",
+          "hash": "cec3545d",
+          "steps": 1430,
+          "cleared": true,
+          "ms": 133.3
+        },
+        {
+          "key": "t4-domino-row",
+          "hash": "94fa983e",
+          "steps": 1913,
+          "cleared": true,
+          "ms": 83.2
+        },
+        {
+          "key": "t4-grand-observatory",
+          "hash": "2666ac7d",
+          "steps": 1626,
+          "cleared": true,
+          "ms": 145.2
+        }
+      ]
+    },
+    "allBrowserMatchGolden": true,
+    "serverMatchesGolden": true,
+    "errors": []
+  },
+  "engineReady": {
+    "standard": {
+      "runs": [
+        {
+          "fcpMs": 652,
+          "stageMountedMs": 1807,
+          "engineReadySinceNavMs": 4273,
+          "engineReadyFromMountMs": 2502,
+          "rapierLoadMs": 1511,
+          "threeImportMs": 541,
+          "nav": {
+            "ttfb": 44.700000000186265,
+            "domContentLoaded": 884.9000000003725,
+            "load": 1092.9000000003725
+          },
+          "transfer": {
+            "totalBytes": 1545605,
+            "jsBytes": 441955,
+            "wasmBytes": 925873,
+            "jsFiles": 19,
+            "wasmFiles": [
+              {
+                "url": "/_next/static/chunks/23_rm5ep3f99q.wasm",
+                "type": "application/wasm",
+                "enc": "gzip",
+                "transfer": 925873
+              }
+            ]
+          },
+          "encodings": [
+            null,
+            "gzip"
+          ],
+          "heavyRequested": [
+            "three",
+            "rapier-wasm",
+            "rapier-standard-glue+turbopack-wasm-loader"
+          ],
+          "errors": []
+        },
+        {
+          "fcpMs": 620,
+          "stageMountedMs": 1688,
+          "engineReadySinceNavMs": 4201,
+          "engineReadyFromMountMs": 2547,
+          "rapierLoadMs": 1536,
+          "threeImportMs": 569,
+          "nav": {
+            "ttfb": 30.09999999962747,
+            "domContentLoaded": 434.8999999994412,
+            "load": 1193.5999999996275
+          },
+          "transfer": {
+            "totalBytes": 1547405,
+            "jsBytes": 441955,
+            "wasmBytes": 925873,
+            "jsFiles": 19,
+            "wasmFiles": [
+              {
+                "url": "/_next/static/chunks/23_rm5ep3f99q.wasm",
+                "type": "application/wasm",
+                "enc": "gzip",
+                "transfer": 925873
+              }
+            ]
+          },
+          "encodings": [
+            null,
+            "gzip"
+          ],
+          "heavyRequested": [
+            "three",
+            "rapier-wasm",
+            "rapier-standard-glue+turbopack-wasm-loader"
+          ],
+          "errors": []
+        },
+        {
+          "fcpMs": 668,
+          "stageMountedMs": 1776,
+          "engineReadySinceNavMs": 4491,
+          "engineReadyFromMountMs": 2630,
+          "rapierLoadMs": 1495,
+          "threeImportMs": 712,
+          "nav": {
+            "ttfb": 39.200000000186265,
+            "domContentLoaded": 1053.5,
+            "load": 1398.8999999994412
+          },
+          "transfer": {
+            "totalBytes": 1547394,
+            "jsBytes": 441955,
+            "wasmBytes": 925873,
+            "jsFiles": 19,
+            "wasmFiles": [
+              {
+                "url": "/_next/static/chunks/23_rm5ep3f99q.wasm",
+                "type": "application/wasm",
+                "enc": "gzip",
+                "transfer": 925873
+              }
+            ]
+          },
+          "encodings": [
+            null,
+            "gzip"
+          ],
+          "heavyRequested": [
+            "three",
+            "rapier-wasm",
+            "rapier-standard-glue+turbopack-wasm-loader"
+          ],
+          "errors": []
+        }
+      ],
+      "median": {
+        "fcpMs": 652,
+        "stageMountedMs": 1776,
+        "engineReadySinceNavMs": 4273,
+        "engineReadyFromMountMs": 2547,
+        "transferBytes": 1547394
+      }
+    },
+    "compat": {
+      "runs": [
+        {
+          "fcpMs": 648,
+          "stageMountedMs": 1827,
+          "engineReadySinceNavMs": 4718,
+          "engineReadyFromMountMs": 2932,
+          "rapierLoadMs": 1909,
+          "threeImportMs": 617,
+          "nav": {
+            "ttfb": 24.700000000186265,
+            "domContentLoaded": 952.9000000003725,
+            "load": 1047.5999999996275
+          },
+          "transfer": {
+            "totalBytes": 1867184,
+            "jsBytes": 1687619,
+            "wasmBytes": 0,
+            "jsFiles": 19,
+            "wasmFiles": []
+          },
+          "encodings": [
+            null,
+            "gzip"
+          ],
+          "heavyRequested": [
+            "three",
+            "rapier-compat"
+          ],
+          "errors": []
+        },
+        {
+          "fcpMs": 644,
+          "stageMountedMs": 1687,
+          "engineReadySinceNavMs": 4720,
+          "engineReadyFromMountMs": 2952,
+          "rapierLoadMs": 1851,
+          "threeImportMs": 717,
+          "nav": {
+            "ttfb": 25,
+            "domContentLoaded": 899.4000000003725,
+            "load": 1142.5
+          },
+          "transfer": {
+            "totalBytes": 1865400,
+            "jsBytes": 1687619,
+            "wasmBytes": 0,
+            "jsFiles": 19,
+            "wasmFiles": []
+          },
+          "encodings": [
+            null,
+            "gzip"
+          ],
+          "heavyRequested": [
+            "three",
+            "rapier-compat"
+          ],
+          "errors": []
+        },
+        {
+          "fcpMs": 636,
+          "stageMountedMs": 1538,
+          "engineReadySinceNavMs": 4555,
+          "engineReadyFromMountMs": 2928,
+          "rapierLoadMs": 1884,
+          "threeImportMs": 565,
+          "nav": {
+            "ttfb": 23.300000000745058,
+            "domContentLoaded": 819.1000000005588,
+            "load": 1094.300000000745
+          },
+          "transfer": {
+            "totalBytes": 1867193,
+            "jsBytes": 1687619,
+            "wasmBytes": 0,
+            "jsFiles": 19,
+            "wasmFiles": []
+          },
+          "encodings": [
+            null,
+            "gzip"
+          ],
+          "heavyRequested": [
+            "three",
+            "rapier-compat"
+          ],
+          "errors": []
+        }
+      ],
+      "median": {
+        "fcpMs": 644,
+        "stageMountedMs": 1687,
+        "engineReadySinceNavMs": 4718,
+        "engineReadyFromMountMs": 2932,
+        "transferBytes": 1867184
+      }
+    }
+  },
+  "fps": {
+    "phone-high": {
+      "frames": 253,
+      "seconds": 10.000700000000187,
+      "fps": 25.3,
+      "medianMs": 33.4,
+      "p95Ms": 83.3,
+      "calls": 23,
+      "triangles": 4718,
+      "pixelRatio": 2,
+      "shadows": true,
+      "quality": "high",
+      "canvas": {
+        "cssW": 378,
+        "cssH": 213,
+        "w": 756,
+        "h": 426
+      },
+      "cpuThrottle": 4
+    },
+    "phone-low": {
+      "frames": 596,
+      "seconds": 10.001899999999441,
+      "fps": 59.6,
+      "medianMs": 16.7,
+      "p95Ms": 16.8,
+      "calls": 16,
+      "triangles": 2354,
+      "pixelRatio": 1,
+      "shadows": false,
+      "quality": "low",
+      "canvas": {
+        "cssW": 378,
+        "cssH": 213,
+        "w": 378,
+        "h": 213
+      },
+      "cpuThrottle": 4
+    },
+    "desktop-high": {
+      "frames": 222,
+      "seconds": 10.009299999999813,
+      "fps": 22.2,
+      "medianMs": 50,
+      "p95Ms": 83.3,
+      "calls": 23,
+      "triangles": 4718,
+      "pixelRatio": 1,
+      "shadows": true,
+      "quality": "high",
+      "canvas": {
+        "cssW": 996,
+        "cssH": 560,
+        "w": 996,
+        "h": 560
+      },
+      "cpuThrottle": 4
+    },
+    "desktop-low": {
+      "frames": 383,
+      "seconds": 10.002399999999442,
+      "fps": 38.3,
+      "medianMs": 16.8,
+      "p95Ms": 50,
+      "calls": 16,
+      "triangles": 2354,
+      "pixelRatio": 1,
+      "shadows": false,
+      "quality": "low",
+      "canvas": {
+        "cssW": 996,
+        "cssH": 560,
+        "w": 996,
+        "h": 560
+      },
+      "cpuThrottle": 4
+    }
+  },
+  "isolation": {
+    "visited": {
+      "/": {
+        "requests": 49,
+        "jsRequests": 13,
+        "wasm": 0,
+        "heavy": []
+      },
+      "/grades/grade-6": {
+        "requests": 50,
+        "jsRequests": 12,
+        "wasm": 0,
+        "heavy": []
+      },
+      "/products/d-english-teacher-video-course-bb1e73": {
+        "requests": 49,
+        "jsRequests": 13,
+        "wasm": 0,
+        "heavy": []
+      },
+      "/library": {
+        "requests": 48,
+        "jsRequests": 12,
+        "wasm": 0,
+        "heavy": []
+      }
+    },
+    "ok": true
+  },
+  "csp": {
+    "violations": [],
+    "count": 0
+  }
+}

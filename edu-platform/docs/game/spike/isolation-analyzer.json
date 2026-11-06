@@ -1,0 +1,299 @@
+{
+  "graph": "/tmp/claude-0/-home-user/e361d345-2d68-5683-a08a-09a4ce05cead/scratchpad/game/spike/graph-spike.jsonl",
+  "routes": 65,
+  "heavyByRoute": {
+    "/admin/game/spike": {
+      "@dimforge/rapier2d-deterministic": {
+        "raw": 280797,
+        "gzipEstimate": 59585,
+        "files": [
+          "static/chunks/02adi8jv1lziu.js"
+        ],
+        "kinds": [
+          "async"
+        ]
+      },
+      "@dimforge/rapier2d-deterministic-compat": {
+        "raw": 3449946,
+        "gzipEstimate": 1304282,
+        "files": [
+          "static/chunks/1jr23p1r9w1_l.js"
+        ],
+        "kinds": [
+          "async"
+        ]
+      },
+      "three": {
+        "raw": 541364,
+        "gzipEstimate": 132378,
+        "files": [
+          "static/chunks/14-dwqmo8f4w-.js"
+        ],
+        "kinds": [
+          "async"
+        ]
+      }
+    }
+  },
+  "offenders": [],
+  "initialJsDeltas": {
+    "/_not-found": {
+      "baseline": 576017,
+      "now": 576069,
+      "delta": 52
+    },
+    "/_global-error": {
+      "baseline": 459663,
+      "now": 459715,
+      "delta": 52
+    },
+    "/preview/[fileId]": {
+      "baseline": 605542,
+      "now": 605594,
+      "delta": 52
+    },
+    "/read/[fileId]": {
+      "baseline": 605542,
+      "now": 605594,
+      "delta": 52
+    },
+    "/watch/[productId]": {
+      "baseline": 625198,
+      "now": 625250,
+      "delta": 52
+    },
+    "/": {
+      "baseline": 588589,
+      "now": 588641,
+      "delta": 52
+    },
+    "/forgot-password": {
+      "baseline": 597891,
+      "now": 597943,
+      "delta": 52
+    },
+    "/login": {
+      "baseline": 597388,
+      "now": 597440,
+      "delta": 52
+    },
+    "/register": {
+      "baseline": 601357,
+      "now": 601409,
+      "delta": 52
+    },
+    "/reset-password": {
+      "baseline": 593649,
+      "now": 593701,
+      "delta": 52
+    },
+    "/account": {
+      "baseline": 591736,
+      "now": 591788,
+      "delta": 52
+    },
+    "/bundles": {
+      "baseline": 581281,
+      "now": 581333,
+      "delta": 52
+    },
+    "/cart": {
+      "baseline": 586592,
+      "now": 586644,
+      "delta": 52
+    },
+    "/checkout": {
+      "baseline": 590155,
+      "now": 590207,
+      "delta": 52
+    },
+    "/contact": {
+      "baseline": 581281,
+      "now": 581333,
+      "delta": 52
+    },
+    "/grades/[gradeSlug]": {
+      "baseline": 581281,
+      "now": 581333,
+      "delta": 52
+    },
+    "/grades/[gradeSlug]/[subjectSlug]": {
+      "baseline": 581281,
+      "now": 581333,
+      "delta": 52
+    },
+    "/library": {
+      "baseline": 581281,
+      "now": 581333,
+      "delta": 52
+    },
+    "/orders/[id]": {
+      "baseline": 583995,
+      "now": 584047,
+      "delta": 52
+    },
+    "/privacy": {
+      "baseline": 581281,
+      "now": 581333,
+      "delta": 52
+    },
+    "/products/[slug]": {
+      "baseline": 587161,
+      "now": 587213,
+      "delta": 52
+    },
+    "/refund-policy": {
+      "baseline": 581281,
+      "now": 581333,
+      "delta": 52
+    },
+    "/stages/[slug]": {
+      "baseline": 581281,
+      "now": 581333,
+      "delta": 52
+    },
+    "/teachers": {
+      "baseline": 581281,
+      "now": 581333,
+      "delta": 52
+    },
+    "/teachers/[slug]": {
+      "baseline": 581281,
+      "now": 581333,
+      "delta": 52
+    },
+    "/terms": {
+      "baseline": 581281,
+      "now": 581333,
+      "delta": 52
+    },
+    "/admin": {
+      "baseline": 641357,
+      "now": 641409,
+      "delta": 52
+    },
+    "/admin/bundles": {
+      "baseline": 641357,
+      "now": 641409,
+      "delta": 52
+    },
+    "/admin/catalog": {
+      "baseline": 656415,
+      "now": 656467,
+      "delta": 52
+    },
+    "/admin/coupons": {
+      "baseline": 660551,
+      "now": 660603,
+      "delta": 52
+    },
+    "/admin/coupons/[id]": {
+      "baseline": 654172,
+      "now": 654224,
+      "delta": 52
+    },
+    "/admin/earnings": {
+      "baseline": 641357,
+      "now": 641409,
+      "delta": 52
+    },
+    "/admin/game/spike": {
+      "baseline": null,
+      "now": 646434,
+      "note": "new route"
+    },
+    "/admin/game/spike/replay": {
+      "baseline": null,
+      "now": 0,
+      "note": "new route"
+    },
+    "/admin/orders": {
+      "baseline": 641357,
+      "now": 641409,
+      "delta": 52
+    },
+    "/admin/orders/[id]": {
+      "baseline": 653049,
+      "now": 653101,
+      "delta": 52
+    },
+    "/admin/products": {
+      "baseline": 656038,
+      "now": 656090,
+      "delta": 52
+    },
+    "/admin/products/[id]": {
+      "baseline": 692671,
+      "now": 692723,
+      "delta": 52
+    },
+    "/admin/products/new": {
+      "baseline": 668726,
+      "now": 668778,
+      "delta": 52
+    },
+    "/admin/profile": {
+      "baseline": 664475,
+      "now": 664527,
+      "delta": 52
+    },
+    "/admin/reports": {
+      "baseline": 641357,
+      "now": 641409,
+      "delta": 52
+    },
+    "/admin/review": {
+      "baseline": 641357,
+      "now": 641409,
+      "delta": 52
+    },
+    "/admin/settings": {
+      "baseline": 678200,
+      "now": 678252,
+      "delta": 52
+    },
+    "/admin/students": {
+      "baseline": 641357,
+      "now": 641409,
+      "delta": 52
+    },
+    "/admin/students/[id]": {
+      "baseline": 656415,
+      "now": 656467,
+      "delta": 52
+    },
+    "/admin/teachers": {
+      "baseline": 641357,
+      "now": 641409,
+      "delta": 52
+    },
+    "/admin/teachers/[id]": {
+      "baseline": 674247,
+      "now": 674299,
+      "delta": 52
+    },
+    "/admin/teachers/new": {
+      "baseline": 656551,
+      "now": 656603,
+      "delta": 52
+    },
+    "/lab/admin-kit": {
+      "baseline": 648819,
+      "now": 648871,
+      "delta": 52
+    },
+    "/lab/system": {
+      "baseline": 601837,
+      "now": 601889,
+      "delta": 52
+    },
+    "/lab/v2-c": {
+      "baseline": 597836,
+      "now": 597888,
+      "delta": 52
+    }
+  },
+  "distinctDeltasOnExistingRoutes": [
+    52
+  ]
+}

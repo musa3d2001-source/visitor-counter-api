@@ -1,0 +1,4271 @@
+{
+  "schema": 1,
+  "capturedWith": "npx next analyze --output --snapshot <name> && npx next analyze export --snapshot <name>",
+  "snapshot": {
+    "name": "baseline",
+    "createdAt": "2026-11-06T15:45:31.991Z",
+    "nextVersion": "16.4.4",
+    "gitBranch": "claude/farqad-game",
+    "gitSha": "5ac09ebaffb76c73f81c945843e5f9a3977326ea",
+    "gitShortSha": "5ac09eb",
+    "gitDirty": false,
+    "gitMessage": "Adopt the Sunny Classroom design method as a project skill",
+    "appDirOnly": false,
+    "noMangling": false,
+    "routeCount": 63
+  },
+  "units": "bytes; analyzer gzip = sum of per-module compressed_size reported by the analyzer (estimate)",
+  "totals": {
+    "routes": 63,
+    "pageRoutes": 49,
+    "maxInitialJs": {
+      "route": "/admin/products/[id]",
+      "raw": 692671,
+      "gzip": 277592
+    }
+  },
+  "sharedChunks": {
+    "byAllPageRoutes": [
+      {
+        "chunk": "static/chunks/13my00uw5li9w.js",
+        "routes": 49,
+        "raw": 233236,
+        "gzip": 77881
+      },
+      {
+        "chunk": "static/chunks/05ieumge748ou.js",
+        "routes": 49,
+        "raw": 177588,
+        "gzip": 72039
+      },
+      {
+        "chunk": "static/chunks/3eqrbz4c9u_p6.js",
+        "routes": 49,
+        "raw": 20881,
+        "gzip": 10276
+      },
+      {
+        "chunk": "static/chunks/turbopack-32g9idqqcaa90.js",
+        "routes": 49,
+        "raw": 11242,
+        "gzip": 5120
+      }
+    ],
+    "byTwoOrMore": [
+      {
+        "chunk": "static/chunks/13my00uw5li9w.js",
+        "routes": 49,
+        "raw": 233236,
+        "gzip": 77881
+      },
+      {
+        "chunk": "static/chunks/05ieumge748ou.js",
+        "routes": 49,
+        "raw": 177588,
+        "gzip": 72039
+      },
+      {
+        "chunk": "static/chunks/3eqrbz4c9u_p6.js",
+        "routes": 49,
+        "raw": 20881,
+        "gzip": 10276
+      },
+      {
+        "chunk": "static/chunks/turbopack-32g9idqqcaa90.js",
+        "routes": 49,
+        "raw": 11242,
+        "gzip": 5120
+      },
+      {
+        "chunk": "static/chunks/0nqsj_70u2fm1.js",
+        "routes": 48,
+        "raw": 37265,
+        "gzip": 16826
+      },
+      {
+        "chunk": "static/chunks/1ya00gsj1p_te.js",
+        "routes": 48,
+        "raw": 28032,
+        "gzip": 8781
+      },
+      {
+        "chunk": "static/chunks/40t7a4x_4thkd.js",
+        "routes": 48,
+        "raw": 27062,
+        "gzip": 13097
+      },
+      {
+        "chunk": "static/chunks/19r4euou7ofmq.js",
+        "routes": 48,
+        "raw": 23838,
+        "gzip": 12260
+      },
+      {
+        "chunk": "static/chunks/3zugwmf-dzg75.js",
+        "routes": 48,
+        "raw": 13971,
+        "gzip": 6650
+      },
+      {
+        "chunk": "static/chunks/2h4-j9yva6dx3.js",
+        "routes": 48,
+        "raw": 2902,
+        "gzip": 1247
+      },
+      {
+        "chunk": "static/chunks/3j18lc1b5hw28.js",
+        "routes": 21,
+        "raw": 32652,
+        "gzip": 15279
+      },
+      {
+        "chunk": "static/chunks/2ff6hr100qplm.js",
+        "routes": 21,
+        "raw": 5264,
+        "gzip": 2446
+      },
+      {
+        "chunk": "static/chunks/0qklzl1zc686e.js",
+        "routes": 20,
+        "raw": 4230,
+        "gzip": 2153
+      },
+      {
+        "chunk": "static/chunks/16zsox1nigylz.js",
+        "routes": 8,
+        "raw": 1396,
+        "gzip": 632
+      },
+      {
+        "chunk": "static/chunks/2zmdtyxuhdrrp.js",
+        "routes": 3,
+        "raw": 258,
+        "gzip": 209
+      },
+      {
+        "chunk": "static/chunks/3vj0dmgzlqzf3.js",
+        "routes": 2,
+        "raw": 29267,
+        "gzip": 13976
+      },
+      {
+        "chunk": "static/chunks/086aseaqfmvcy.js",
+        "routes": 2,
+        "raw": 16454,
+        "gzip": 7643
+      },
+      {
+        "chunk": "static/chunks/322lohe2kqhbn.js",
+        "routes": 2,
+        "raw": 13088,
+        "gzip": 5797
+      },
+      {
+        "chunk": "static/chunks/0722yhk82ughg.js",
+        "routes": 2,
+        "raw": 258,
+        "gzip": 211
+      }
+    ]
+  },
+  "routes": {
+    "/sitemap.xml": {
+      "kind": "route-handler",
+      "analyzer": {
+        "initialJs": {
+          "raw": 0,
+          "gzip": 0
+        },
+        "asyncJs": {
+          "raw": 0,
+          "gzip": 0
+        },
+        "initialCss": {
+          "raw": 0,
+          "gzip": 0
+        },
+        "initialJsChunks": [],
+        "asyncJsChunks": [],
+        "initialJsByPackage": {}
+      }
+    },
+    "/robots.txt": {
+      "kind": "route-handler",
+      "analyzer": {
+        "initialJs": {
+          "raw": 0,
+          "gzip": 0
+        },
+        "asyncJs": {
+          "raw": 0,
+          "gzip": 0
+        },
+        "initialCss": {
+          "raw": 0,
+          "gzip": 0
+        },
+        "initialJsChunks": [],
+        "asyncJsChunks": [],
+        "initialJsByPackage": {}
+      }
+    },
+    "/_not-found": {
+      "kind": "page",
+      "analyzer": {
+        "initialJs": {
+          "raw": 576017,
+          "gzip": 224177
+        },
+        "asyncJs": {
+          "raw": 0,
+          "gzip": 0
+        },
+        "initialCss": {
+          "raw": 249039,
+          "gzip": 34296
+        },
+        "initialJsChunks": [
+          "static/chunks/05ieumge748ou.js",
+          "static/chunks/0nqsj_70u2fm1.js",
+          "static/chunks/13my00uw5li9w.js",
+          "static/chunks/19r4euou7ofmq.js",
+          "static/chunks/1ya00gsj1p_te.js",
+          "static/chunks/2h4-j9yva6dx3.js",
+          "static/chunks/3eqrbz4c9u_p6.js",
+          "static/chunks/3zugwmf-dzg75.js",
+          "static/chunks/40t7a4x_4thkd.js",
+          "static/chunks/turbopack-32g9idqqcaa90.js"
+        ],
+        "asyncJsChunks": [],
+        "initialJsByPackage": {
+          "next": 467397,
+          "tailwind-merge": 27372,
+          "(app src)": 17053,
+          "lucide-react": 11882,
+          "(other)": 11242,
+          "react-remove-scroll": 5546,
+          "@radix-ui/react-dialog": 5485,
+          "@radix-ui/react-dismissable-layer": 5209,
+          "@radix-ui/react-focus-scope": 4261,
+          "@radix-ui/react-slot": 2833,
+          "@radix-ui/react-presence": 2651,
+          "react-remove-scroll-bar": 2173,
+          "@radix-ui/react-context": 1731,
+          "aria-hidden": 1413,
+          "@radix-ui/react-use-controllable-state": 1235,
+          "@radix-ui/primitive": 1092,
+          "use-sidecar": 1064,
+          "tslib": 846,
+          "@swc/helpers": 844,
+          "@radix-ui/react-focus-guards": 766,
+          "react-style-singleton": 663,
+          "use-callback-ref": 582,
+          "@radix-ui/react-primitive": 547,
+          "@radix-ui/react-compose-refs": 473,
+          "@radix-ui/react-use-effect-event": 415,
+          "clsx": 371,
+          "@radix-ui/react-use-callback-ref": 272,
+          "@radix-ui/react-portal": 267,
+          "@radix-ui/react-id": 225,
+          "get-nonce": 59,
+          "@radix-ui/react-use-layout-effect": 48
+        }
+      }
+    },
+    "/_global-error": {
+      "kind": "page",
+      "analyzer": {
+        "initialJs": {
+          "raw": 459663,
+          "gzip": 173245
+        },
+        "asyncJs": {
+          "raw": 0,
+          "gzip": 0
+        },
+        "initialCss": {
+          "raw": 0,
+          "gzip": 0
+        },
+        "initialJsChunks": [
+          "static/chunks/05ieumge748ou.js",
+          "static/chunks/13my00uw5li9w.js",
+          "static/chunks/2a9180rtt0nts.js",
+          "static/chunks/3eqrbz4c9u_p6.js",
+          "static/chunks/turbopack-32g9idqqcaa90.js"
+        ],
+        "asyncJsChunks": [],
+        "initialJsByPackage": {
+          "next": 444825,
+          "(other)": 11242,
+          "(app src)": 2752,
+          "@swc/helpers": 844
+        }
+      }
+    },
+    "/preview/[fileId]": {
+      "kind": "page",
+      "analyzer": {
+        "initialJs": {
+          "raw": 605542,
+          "gzip": 238364
+        },
+        "asyncJs": {
+          "raw": 468858,
+          "gzip": 139623
+        },
+        "initialCss": {
+          "raw": 249039,
+          "gzip": 34296
+        },
+        "initialJsChunks": [
+          "static/chunks/05ieumge748ou.js",
+          "static/chunks/0722yhk82ughg.js",
+          "static/chunks/0nqsj_70u2fm1.js",
+          "static/chunks/13my00uw5li9w.js",
+          "static/chunks/19r4euou7ofmq.js",
+          "static/chunks/1ya00gsj1p_te.js",
+          "static/chunks/2h4-j9yva6dx3.js",
+          "static/chunks/3eqrbz4c9u_p6.js",
+          "static/chunks/3vj0dmgzlqzf3.js",
+          "static/chunks/3zugwmf-dzg75.js",
+          "static/chunks/40t7a4x_4thkd.js",
+          "static/chunks/turbopack-32g9idqqcaa90.js"
+        ],
+        "asyncJsChunks": [
+          "[output]/.next/server/chunks/ssr/node_modules_pdfjs-dist_build_pdf_mjs_0z37jkkqfce7_._.js",
+          "static/chunks/0xr1n8zkmtiyk.js"
+        ],
+        "initialJsByPackage": {
+          "next": 475123,
+          "(app src)": 32266,
+          "tailwind-merge": 27372,
+          "lucide-react": 18210,
+          "(other)": 11500,
+          "react-remove-scroll": 5546,
+          "@radix-ui/react-dialog": 5485,
+          "@radix-ui/react-dismissable-layer": 5209,
+          "@radix-ui/react-focus-scope": 4261,
+          "@radix-ui/react-slot": 2833,
+          "@radix-ui/react-presence": 2651,
+          "react-remove-scroll-bar": 2173,
+          "@radix-ui/react-context": 1731,
+          "aria-hidden": 1413,
+          "@radix-ui/react-use-controllable-state": 1235,
+          "@radix-ui/primitive": 1092,
+          "use-sidecar": 1064,
+          "tslib": 846,
+          "@swc/helpers": 844,
+          "@radix-ui/react-focus-guards": 766,
+          "react-style-singleton": 663,
+          "use-callback-ref": 582,
+          "@radix-ui/react-primitive": 547,
+          "@radix-ui/react-compose-refs": 473,
+          "@radix-ui/react-use-effect-event": 415,
+          "clsx": 371,
+          "@radix-ui/react-use-callback-ref": 272,
+          "@radix-ui/react-portal": 267,
+          "@radix-ui/react-id": 225,
+          "get-nonce": 59,
+          "@radix-ui/react-use-layout-effect": 48
+        }
+      }
+    },
+    "/read/[fileId]": {
+      "kind": "page",
+      "analyzer": {
+        "initialJs": {
+          "raw": 605542,
+          "gzip": 238364
+        },
+        "asyncJs": {
+          "raw": 468858,
+          "gzip": 139623
+        },
+        "initialCss": {
+          "raw": 249039,
+          "gzip": 34296
+        },
+        "initialJsChunks": [
+          "static/chunks/05ieumge748ou.js",
+          "static/chunks/0722yhk82ughg.js",
+          "static/chunks/0nqsj_70u2fm1.js",
+          "static/chunks/13my00uw5li9w.js",
+          "static/chunks/19r4euou7ofmq.js",
+          "static/chunks/1ya00gsj1p_te.js",
+          "static/chunks/2h4-j9yva6dx3.js",
+          "static/chunks/3eqrbz4c9u_p6.js",
+          "static/chunks/3vj0dmgzlqzf3.js",
+          "static/chunks/3zugwmf-dzg75.js",
+          "static/chunks/40t7a4x_4thkd.js",
+          "static/chunks/turbopack-32g9idqqcaa90.js"
+        ],
+        "asyncJsChunks": [
+          "[output]/.next/server/chunks/ssr/node_modules_pdfjs-dist_build_pdf_mjs_0z37jkkqfce7_._.js",
+          "static/chunks/0xr1n8zkmtiyk.js"
+        ],
+        "initialJsByPackage": {
+          "next": 475123,
+          "(app src)": 32266,
+          "tailwind-merge": 27372,
+          "lucide-react": 18210,
+          "(other)": 11500,
+          "react-remove-scroll": 5546,
+          "@radix-ui/react-dialog": 5485,
+          "@radix-ui/react-dismissable-layer": 5209,
+          "@radix-ui/react-focus-scope": 4261,
+          "@radix-ui/react-slot": 2833,
+          "@radix-ui/react-presence": 2651,
+          "react-remove-scroll-bar": 2173,
+          "@radix-ui/react-context": 1731,
+          "aria-hidden": 1413,
+          "@radix-ui/react-use-controllable-state": 1235,
+          "@radix-ui/primitive": 1092,
+          "use-sidecar": 1064,
+          "tslib": 846,
+          "@swc/helpers": 844,
+          "@radix-ui/react-focus-guards": 766,
+          "react-style-singleton": 663,
+          "use-callback-ref": 582,
+          "@radix-ui/react-primitive": 547,
+          "@radix-ui/react-compose-refs": 473,
+          "@radix-ui/react-use-effect-event": 415,
+          "clsx": 371,
+          "@radix-ui/react-use-callback-ref": 272,
+          "@radix-ui/react-portal": 267,
+          "@radix-ui/react-id": 225,
+          "get-nonce": 59,
+          "@radix-ui/react-use-layout-effect": 48
+        }
+      }
+    },
+    "/watch/[productId]": {
+      "kind": "page",
+      "analyzer": {
+        "initialJs": {
+          "raw": 625198,
+          "gzip": 247673
+        },
+        "asyncJs": {
+          "raw": 0,
+          "gzip": 0
+        },
+        "initialCss": {
+          "raw": 249039,
+          "gzip": 34296
+        },
+        "initialJsChunks": [
+          "static/chunks/05ieumge748ou.js",
+          "static/chunks/0hy6jmqz-be53.js",
+          "static/chunks/0nqsj_70u2fm1.js",
+          "static/chunks/13my00uw5li9w.js",
+          "static/chunks/19r4euou7ofmq.js",
+          "static/chunks/1ya00gsj1p_te.js",
+          "static/chunks/2h4-j9yva6dx3.js",
+          "static/chunks/3eqrbz4c9u_p6.js",
+          "static/chunks/3iz4-yuh2xx4u.js",
+          "static/chunks/3zugwmf-dzg75.js",
+          "static/chunks/40t7a4x_4thkd.js",
+          "static/chunks/turbopack-32g9idqqcaa90.js"
+        ],
+        "asyncJsChunks": [],
+        "initialJsByPackage": {
+          "next": 489934,
+          "(app src)": 36897,
+          "tailwind-merge": 27372,
+          "lucide-react": 18682,
+          "(other)": 11242,
+          "react-remove-scroll": 5546,
+          "@radix-ui/react-dialog": 5485,
+          "@radix-ui/react-dismissable-layer": 5209,
+          "@radix-ui/react-focus-scope": 4261,
+          "@radix-ui/react-slot": 2833,
+          "@radix-ui/react-presence": 2651,
+          "react-remove-scroll-bar": 2173,
+          "@radix-ui/react-context": 1731,
+          "aria-hidden": 1413,
+          "@radix-ui/react-use-controllable-state": 1235,
+          "@radix-ui/primitive": 1092,
+          "use-sidecar": 1064,
+          "tslib": 846,
+          "@swc/helpers": 844,
+          "@radix-ui/react-focus-guards": 766,
+          "react-style-singleton": 663,
+          "use-callback-ref": 582,
+          "@radix-ui/react-primitive": 547,
+          "@radix-ui/react-compose-refs": 473,
+          "@radix-ui/react-use-effect-event": 415,
+          "clsx": 371,
+          "@radix-ui/react-use-callback-ref": 272,
+          "@radix-ui/react-portal": 267,
+          "@radix-ui/react-id": 225,
+          "get-nonce": 59,
+          "@radix-ui/react-use-layout-effect": 48
+        }
+      }
+    },
+    "/": {
+      "kind": "page",
+      "analyzer": {
+        "initialJs": {
+          "raw": 588589,
+          "gzip": 229478
+        },
+        "asyncJs": {
+          "raw": 0,
+          "gzip": 0
+        },
+        "initialCss": {
+          "raw": 357203,
+          "gzip": 58639
+        },
+        "initialJsChunks": [
+          "static/chunks/05ieumge748ou.js",
+          "static/chunks/0cm8eqzs1g1oj.js",
+          "static/chunks/0nqsj_70u2fm1.js",
+          "static/chunks/13my00uw5li9w.js",
+          "static/chunks/19r4euou7ofmq.js",
+          "static/chunks/1ya00gsj1p_te.js",
+          "static/chunks/2ff6hr100qplm.js",
+          "static/chunks/2h4-j9yva6dx3.js",
+          "static/chunks/3eqrbz4c9u_p6.js",
+          "static/chunks/3zugwmf-dzg75.js",
+          "static/chunks/40t7a4x_4thkd.js",
+          "static/chunks/turbopack-32g9idqqcaa90.js"
+        ],
+        "asyncJsChunks": [],
+        "initialJsByPackage": {
+          "next": 467397,
+          "(app src)": 27558,
+          "tailwind-merge": 27372,
+          "lucide-react": 13171,
+          "(other)": 11242,
+          "react-remove-scroll": 5546,
+          "@radix-ui/react-dialog": 5485,
+          "@radix-ui/react-dismissable-layer": 5209,
+          "@radix-ui/react-focus-scope": 4261,
+          "@radix-ui/react-slot": 2833,
+          "@radix-ui/react-presence": 2651,
+          "react-remove-scroll-bar": 2173,
+          "@radix-ui/react-context": 1731,
+          "aria-hidden": 1413,
+          "@radix-ui/react-use-controllable-state": 1235,
+          "@radix-ui/primitive": 1092,
+          "use-sidecar": 1064,
+          "tslib": 846,
+          "@swc/helpers": 844,
+          "class-variance-authority": 778,
+          "@radix-ui/react-focus-guards": 766,
+          "react-style-singleton": 663,
+          "use-callback-ref": 582,
+          "@radix-ui/react-primitive": 547,
+          "@radix-ui/react-compose-refs": 473,
+          "@radix-ui/react-use-effect-event": 415,
+          "clsx": 371,
+          "@radix-ui/react-use-callback-ref": 272,
+          "@radix-ui/react-portal": 267,
+          "@radix-ui/react-id": 225,
+          "get-nonce": 59,
+          "@radix-ui/react-use-layout-effect": 48
+        }
+      }
+    },
+    "/forgot-password": {
+      "kind": "page",
+      "analyzer": {
+        "initialJs": {
+          "raw": 597891,
+          "gzip": 235433
+        },
+        "asyncJs": {
+          "raw": 0,
+          "gzip": 0
+        },
+        "initialCss": {
+          "raw": 249039,
+          "gzip": 34296
+        },
+        "initialJsChunks": [
+          "static/chunks/05ieumge748ou.js",
+          "static/chunks/0nqsj_70u2fm1.js",
+          "static/chunks/0zgl73p2tb1bn.js",
+          "static/chunks/13my00uw5li9w.js",
+          "static/chunks/19r4euou7ofmq.js",
+          "static/chunks/1ya00gsj1p_te.js",
+          "static/chunks/2ff6hr100qplm.js",
+          "static/chunks/2h4-j9yva6dx3.js",
+          "static/chunks/3eqrbz4c9u_p6.js",
+          "static/chunks/3zugwmf-dzg75.js",
+          "static/chunks/40t7a4x_4thkd.js",
+          "static/chunks/turbopack-32g9idqqcaa90.js"
+        ],
+        "asyncJsChunks": [
+          "[output]/.next/server/chunks/ssr/[externals]_nodemailer_18wnhmej5xya_._.js"
+        ],
+        "initialJsByPackage": {
+          "next": 467768,
+          "(app src)": 32313,
+          "tailwind-merge": 27372,
+          "lucide-react": 16569,
+          "(other)": 11242,
+          "react-remove-scroll": 5546,
+          "@radix-ui/react-dialog": 5485,
+          "@radix-ui/react-dismissable-layer": 5209,
+          "@radix-ui/react-focus-scope": 4261,
+          "@radix-ui/react-slot": 2833,
+          "@radix-ui/react-presence": 2651,
+          "react-remove-scroll-bar": 2173,
+          "@radix-ui/react-context": 1731,
+          "class-variance-authority": 1556,
+          "aria-hidden": 1413,
+          "@radix-ui/react-use-controllable-state": 1235,
+          "@radix-ui/primitive": 1092,
+          "use-sidecar": 1064,
+          "tslib": 846,
+          "@swc/helpers": 844,
+          "@radix-ui/react-focus-guards": 766,
+          "react-style-singleton": 663,
+          "use-callback-ref": 582,
+          "@radix-ui/react-primitive": 547,
+          "@radix-ui/react-compose-refs": 473,
+          "@radix-ui/react-use-effect-event": 415,
+          "clsx": 371,
+          "@radix-ui/react-use-callback-ref": 272,
+          "@radix-ui/react-portal": 267,
+          "@radix-ui/react-id": 225,
+          "get-nonce": 59,
+          "@radix-ui/react-use-layout-effect": 48
+        }
+      }
+    },
+    "/login": {
+      "kind": "page",
+      "analyzer": {
+        "initialJs": {
+          "raw": 597388,
+          "gzip": 235105
+        },
+        "asyncJs": {
+          "raw": 0,
+          "gzip": 0
+        },
+        "initialCss": {
+          "raw": 249039,
+          "gzip": 34296
+        },
+        "initialJsChunks": [
+          "static/chunks/05ieumge748ou.js",
+          "static/chunks/0nqsj_70u2fm1.js",
+          "static/chunks/13my00uw5li9w.js",
+          "static/chunks/19r4euou7ofmq.js",
+          "static/chunks/1ya00gsj1p_te.js",
+          "static/chunks/28zhtrrouh_2w.js",
+          "static/chunks/2ff6hr100qplm.js",
+          "static/chunks/2h4-j9yva6dx3.js",
+          "static/chunks/3eqrbz4c9u_p6.js",
+          "static/chunks/3zugwmf-dzg75.js",
+          "static/chunks/40t7a4x_4thkd.js",
+          "static/chunks/turbopack-32g9idqqcaa90.js"
+        ],
+        "asyncJsChunks": [
+          "[output]/.next/server/chunks/ssr/[externals]_nodemailer_18wnhmej5xya_._.js"
+        ],
+        "initialJsByPackage": {
+          "next": 467768,
+          "(app src)": 32280,
+          "tailwind-merge": 27372,
+          "lucide-react": 16099,
+          "(other)": 11242,
+          "react-remove-scroll": 5546,
+          "@radix-ui/react-dialog": 5485,
+          "@radix-ui/react-dismissable-layer": 5209,
+          "@radix-ui/react-focus-scope": 4261,
+          "@radix-ui/react-slot": 2833,
+          "@radix-ui/react-presence": 2651,
+          "react-remove-scroll-bar": 2173,
+          "@radix-ui/react-context": 1731,
+          "class-variance-authority": 1556,
+          "aria-hidden": 1413,
+          "@radix-ui/react-use-controllable-state": 1235,
+          "@radix-ui/primitive": 1092,
+          "use-sidecar": 1064,
+          "tslib": 846,
+          "@swc/helpers": 844,
+          "@radix-ui/react-focus-guards": 766,
+          "react-style-singleton": 663,
+          "use-callback-ref": 582,
+          "@radix-ui/react-primitive": 547,
+          "@radix-ui/react-compose-refs": 473,
+          "@radix-ui/react-use-effect-event": 415,
+          "clsx": 371,
+          "@radix-ui/react-use-callback-ref": 272,
+          "@radix-ui/react-portal": 267,
+          "@radix-ui/react-id": 225,
+          "get-nonce": 59,
+          "@radix-ui/react-use-layout-effect": 48
+        }
+      }
+    },
+    "/register": {
+      "kind": "page",
+      "analyzer": {
+        "initialJs": {
+          "raw": 601357,
+          "gzip": 236791
+        },
+        "asyncJs": {
+          "raw": 0,
+          "gzip": 0
+        },
+        "initialCss": {
+          "raw": 249039,
+          "gzip": 34296
+        },
+        "initialJsChunks": [
+          "static/chunks/05ieumge748ou.js",
+          "static/chunks/0nqsj_70u2fm1.js",
+          "static/chunks/13my00uw5li9w.js",
+          "static/chunks/19r4euou7ofmq.js",
+          "static/chunks/1ya00gsj1p_te.js",
+          "static/chunks/20i6gfs-uigrb.js",
+          "static/chunks/2ff6hr100qplm.js",
+          "static/chunks/2h4-j9yva6dx3.js",
+          "static/chunks/3eqrbz4c9u_p6.js",
+          "static/chunks/3zugwmf-dzg75.js",
+          "static/chunks/40t7a4x_4thkd.js",
+          "static/chunks/turbopack-32g9idqqcaa90.js"
+        ],
+        "asyncJsChunks": [
+          "[output]/.next/server/chunks/ssr/[externals]_nodemailer_18wnhmej5xya_._.js"
+        ],
+        "initialJsByPackage": {
+          "next": 467768,
+          "(app src)": 34701,
+          "tailwind-merge": 27372,
+          "lucide-react": 17647,
+          "(other)": 11242,
+          "react-remove-scroll": 5546,
+          "@radix-ui/react-dialog": 5485,
+          "@radix-ui/react-dismissable-layer": 5209,
+          "@radix-ui/react-focus-scope": 4261,
+          "@radix-ui/react-slot": 2833,
+          "@radix-ui/react-presence": 2651,
+          "react-remove-scroll-bar": 2173,
+          "@radix-ui/react-context": 1731,
+          "class-variance-authority": 1556,
+          "aria-hidden": 1413,
+          "@radix-ui/react-use-controllable-state": 1235,
+          "@radix-ui/primitive": 1092,
+          "use-sidecar": 1064,
+          "tslib": 846,
+          "@swc/helpers": 844,
+          "@radix-ui/react-focus-guards": 766,
+          "react-style-singleton": 663,
+          "use-callback-ref": 582,
+          "@radix-ui/react-primitive": 547,
+          "@radix-ui/react-compose-refs": 473,
+          "@radix-ui/react-use-effect-event": 415,
+          "clsx": 371,
+          "@radix-ui/react-use-callback-ref": 272,
+          "@radix-ui/react-portal": 267,
+          "@radix-ui/react-id": 225,
+          "get-nonce": 59,
+          "@radix-ui/react-use-layout-effect": 48
+        }
+      }
+    },
+    "/reset-password": {
+      "kind": "page",
+      "analyzer": {
+        "initialJs": {
+          "raw": 593649,
+          "gzip": 233454
+        },
+        "asyncJs": {
+          "raw": 0,
+          "gzip": 0
+        },
+        "initialCss": {
+          "raw": 249039,
+          "gzip": 34296
+        },
+        "initialJsChunks": [
+          "static/chunks/05ieumge748ou.js",
+          "static/chunks/0nqsj_70u2fm1.js",
+          "static/chunks/13my00uw5li9w.js",
+          "static/chunks/19r4euou7ofmq.js",
+          "static/chunks/1ya00gsj1p_te.js",
+          "static/chunks/2ff6hr100qplm.js",
+          "static/chunks/2h4-j9yva6dx3.js",
+          "static/chunks/3eqrbz4c9u_p6.js",
+          "static/chunks/3vk4suhxh8d-w.js",
+          "static/chunks/3zugwmf-dzg75.js",
+          "static/chunks/40t7a4x_4thkd.js",
+          "static/chunks/turbopack-32g9idqqcaa90.js"
+        ],
+        "asyncJsChunks": [
+          "[output]/.next/server/chunks/ssr/[externals]_nodemailer_18wnhmej5xya_._.js"
+        ],
+        "initialJsByPackage": {
+          "next": 467768,
+          "(app src)": 28813,
+          "tailwind-merge": 27372,
+          "lucide-react": 15861,
+          "(other)": 11242,
+          "react-remove-scroll": 5546,
+          "@radix-ui/react-dialog": 5485,
+          "@radix-ui/react-dismissable-layer": 5209,
+          "@radix-ui/react-focus-scope": 4261,
+          "@radix-ui/react-slot": 2833,
+          "@radix-ui/react-presence": 2651,
+          "react-remove-scroll-bar": 2173,
+          "@radix-ui/react-context": 1731,
+          "class-variance-authority": 1522,
+          "aria-hidden": 1413,
+          "@radix-ui/react-use-controllable-state": 1235,
+          "@radix-ui/primitive": 1092,
+          "use-sidecar": 1064,
+          "tslib": 846,
+          "@swc/helpers": 844,
+          "@radix-ui/react-focus-guards": 766,
+          "react-style-singleton": 663,
+          "use-callback-ref": 582,
+          "@radix-ui/react-primitive": 547,
+          "@radix-ui/react-compose-refs": 473,
+          "@radix-ui/react-use-effect-event": 415,
+          "clsx": 371,
+          "@radix-ui/react-use-callback-ref": 272,
+          "@radix-ui/react-portal": 267,
+          "@radix-ui/react-id": 225,
+          "get-nonce": 59,
+          "@radix-ui/react-use-layout-effect": 48
+        }
+      }
+    },
+    "/account": {
+      "kind": "page",
+      "analyzer": {
+        "initialJs": {
+          "raw": 591736,
+          "gzip": 231908
+        },
+        "asyncJs": {
+          "raw": 0,
+          "gzip": 0
+        },
+        "initialCss": {
+          "raw": 357203,
+          "gzip": 58639
+        },
+        "initialJsChunks": [
+          "static/chunks/05ieumge748ou.js",
+          "static/chunks/0nqsj_70u2fm1.js",
+          "static/chunks/13my00uw5li9w.js",
+          "static/chunks/19r4euou7ofmq.js",
+          "static/chunks/1ya00gsj1p_te.js",
+          "static/chunks/2ff6hr100qplm.js",
+          "static/chunks/2h4-j9yva6dx3.js",
+          "static/chunks/2xf8vpd41pphy.js",
+          "static/chunks/3eqrbz4c9u_p6.js",
+          "static/chunks/3zugwmf-dzg75.js",
+          "static/chunks/40t7a4x_4thkd.js",
+          "static/chunks/turbopack-32g9idqqcaa90.js"
+        ],
+        "asyncJsChunks": [
+          "[output]/.next/server/chunks/ssr/[externals]_nodemailer_18wnhmej5xya_._.js"
+        ],
+        "initialJsByPackage": {
+          "next": 467768,
+          "(app src)": 28202,
+          "tailwind-merge": 27372,
+          "lucide-react": 14559,
+          "(other)": 11242,
+          "react-remove-scroll": 5546,
+          "@radix-ui/react-dialog": 5485,
+          "@radix-ui/react-dismissable-layer": 5209,
+          "@radix-ui/react-focus-scope": 4261,
+          "@radix-ui/react-slot": 2833,
+          "@radix-ui/react-presence": 2651,
+          "react-remove-scroll-bar": 2173,
+          "@radix-ui/react-context": 1731,
+          "class-variance-authority": 1522,
+          "aria-hidden": 1413,
+          "@radix-ui/react-use-controllable-state": 1235,
+          "@radix-ui/primitive": 1092,
+          "use-sidecar": 1064,
+          "tslib": 846,
+          "@swc/helpers": 844,
+          "@radix-ui/react-focus-guards": 766,
+          "react-style-singleton": 663,
+          "use-callback-ref": 582,
+          "@radix-ui/react-primitive": 547,
+          "@radix-ui/react-compose-refs": 473,
+          "@radix-ui/react-use-effect-event": 415,
+          "clsx": 371,
+          "@radix-ui/react-use-callback-ref": 272,
+          "@radix-ui/react-portal": 267,
+          "@radix-ui/react-id": 225,
+          "get-nonce": 59,
+          "@radix-ui/react-use-layout-effect": 48
+        }
+      }
+    },
+    "/bundles": {
+      "kind": "page",
+      "analyzer": {
+        "initialJs": {
+          "raw": 581281,
+          "gzip": 226623
+        },
+        "asyncJs": {
+          "raw": 0,
+          "gzip": 0
+        },
+        "initialCss": {
+          "raw": 357203,
+          "gzip": 58639
+        },
+        "initialJsChunks": [
+          "static/chunks/05ieumge748ou.js",
+          "static/chunks/0nqsj_70u2fm1.js",
+          "static/chunks/13my00uw5li9w.js",
+          "static/chunks/19r4euou7ofmq.js",
+          "static/chunks/1ya00gsj1p_te.js",
+          "static/chunks/2ff6hr100qplm.js",
+          "static/chunks/2h4-j9yva6dx3.js",
+          "static/chunks/3eqrbz4c9u_p6.js",
+          "static/chunks/3zugwmf-dzg75.js",
+          "static/chunks/40t7a4x_4thkd.js",
+          "static/chunks/turbopack-32g9idqqcaa90.js"
+        ],
+        "asyncJsChunks": [],
+        "initialJsByPackage": {
+          "next": 467397,
+          "tailwind-merge": 27372,
+          "(app src)": 20786,
+          "lucide-react": 12635,
+          "(other)": 11242,
+          "react-remove-scroll": 5546,
+          "@radix-ui/react-dialog": 5485,
+          "@radix-ui/react-dismissable-layer": 5209,
+          "@radix-ui/react-focus-scope": 4261,
+          "@radix-ui/react-slot": 2833,
+          "@radix-ui/react-presence": 2651,
+          "react-remove-scroll-bar": 2173,
+          "@radix-ui/react-context": 1731,
+          "aria-hidden": 1413,
+          "@radix-ui/react-use-controllable-state": 1235,
+          "@radix-ui/primitive": 1092,
+          "use-sidecar": 1064,
+          "tslib": 846,
+          "@swc/helpers": 844,
+          "class-variance-authority": 778,
+          "@radix-ui/react-focus-guards": 766,
+          "react-style-singleton": 663,
+          "use-callback-ref": 582,
+          "@radix-ui/react-primitive": 547,
+          "@radix-ui/react-compose-refs": 473,
+          "@radix-ui/react-use-effect-event": 415,
+          "clsx": 371,
+          "@radix-ui/react-use-callback-ref": 272,
+          "@radix-ui/react-portal": 267,
+          "@radix-ui/react-id": 225,
+          "get-nonce": 59,
+          "@radix-ui/react-use-layout-effect": 48
+        }
+      }
+    },
+    "/cart": {
+      "kind": "page",
+      "analyzer": {
+        "initialJs": {
+          "raw": 586592,
+          "gzip": 229063
+        },
+        "asyncJs": {
+          "raw": 0,
+          "gzip": 0
+        },
+        "initialCss": {
+          "raw": 357203,
+          "gzip": 58639
+        },
+        "initialJsChunks": [
+          "static/chunks/05ieumge748ou.js",
+          "static/chunks/0nqsj_70u2fm1.js",
+          "static/chunks/0r---beeo4utt.js",
+          "static/chunks/13my00uw5li9w.js",
+          "static/chunks/19r4euou7ofmq.js",
+          "static/chunks/1ya00gsj1p_te.js",
+          "static/chunks/2ff6hr100qplm.js",
+          "static/chunks/2h4-j9yva6dx3.js",
+          "static/chunks/3eqrbz4c9u_p6.js",
+          "static/chunks/3zugwmf-dzg75.js",
+          "static/chunks/40t7a4x_4thkd.js",
+          "static/chunks/turbopack-32g9idqqcaa90.js"
+        ],
+        "asyncJsChunks": [],
+        "initialJsByPackage": {
+          "next": 467397,
+          "tailwind-merge": 27372,
+          "(app src)": 25738,
+          "lucide-react": 12994,
+          "(other)": 11242,
+          "react-remove-scroll": 5546,
+          "@radix-ui/react-dialog": 5485,
+          "@radix-ui/react-dismissable-layer": 5209,
+          "@radix-ui/react-focus-scope": 4261,
+          "@radix-ui/react-slot": 2833,
+          "@radix-ui/react-presence": 2651,
+          "react-remove-scroll-bar": 2173,
+          "@radix-ui/react-context": 1731,
+          "aria-hidden": 1413,
+          "@radix-ui/react-use-controllable-state": 1235,
+          "@radix-ui/primitive": 1092,
+          "use-sidecar": 1064,
+          "tslib": 846,
+          "@swc/helpers": 844,
+          "class-variance-authority": 778,
+          "@radix-ui/react-focus-guards": 766,
+          "react-style-singleton": 663,
+          "use-callback-ref": 582,
+          "@radix-ui/react-primitive": 547,
+          "@radix-ui/react-compose-refs": 473,
+          "@radix-ui/react-use-effect-event": 415,
+          "clsx": 371,
+          "@radix-ui/react-use-callback-ref": 272,
+          "@radix-ui/react-portal": 267,
+          "@radix-ui/react-id": 225,
+          "get-nonce": 59,
+          "@radix-ui/react-use-layout-effect": 48
+        }
+      }
+    },
+    "/checkout": {
+      "kind": "page",
+      "analyzer": {
+        "initialJs": {
+          "raw": 590155,
+          "gzip": 231603
+        },
+        "asyncJs": {
+          "raw": 0,
+          "gzip": 0
+        },
+        "initialCss": {
+          "raw": 357203,
+          "gzip": 58639
+        },
+        "initialJsChunks": [
+          "static/chunks/05ieumge748ou.js",
+          "static/chunks/0nqsj_70u2fm1.js",
+          "static/chunks/13my00uw5li9w.js",
+          "static/chunks/19r4euou7ofmq.js",
+          "static/chunks/1o24it-i_yf2z.js",
+          "static/chunks/1ya00gsj1p_te.js",
+          "static/chunks/2ff6hr100qplm.js",
+          "static/chunks/2h4-j9yva6dx3.js",
+          "static/chunks/3eqrbz4c9u_p6.js",
+          "static/chunks/3zugwmf-dzg75.js",
+          "static/chunks/40t7a4x_4thkd.js",
+          "static/chunks/turbopack-32g9idqqcaa90.js"
+        ],
+        "asyncJsChunks": [],
+        "initialJsByPackage": {
+          "next": 467768,
+          "tailwind-merge": 27372,
+          "(app src)": 26467,
+          "lucide-react": 14679,
+          "(other)": 11242,
+          "react-remove-scroll": 5546,
+          "@radix-ui/react-dialog": 5485,
+          "@radix-ui/react-dismissable-layer": 5209,
+          "@radix-ui/react-focus-scope": 4261,
+          "@radix-ui/react-slot": 2833,
+          "@radix-ui/react-presence": 2651,
+          "react-remove-scroll-bar": 2173,
+          "@radix-ui/react-context": 1731,
+          "class-variance-authority": 1556,
+          "aria-hidden": 1413,
+          "@radix-ui/react-use-controllable-state": 1235,
+          "@radix-ui/primitive": 1092,
+          "use-sidecar": 1064,
+          "tslib": 846,
+          "@swc/helpers": 844,
+          "@radix-ui/react-focus-guards": 766,
+          "react-style-singleton": 663,
+          "use-callback-ref": 582,
+          "@radix-ui/react-primitive": 547,
+          "@radix-ui/react-compose-refs": 473,
+          "@radix-ui/react-use-effect-event": 415,
+          "clsx": 371,
+          "@radix-ui/react-use-callback-ref": 272,
+          "@radix-ui/react-portal": 267,
+          "@radix-ui/react-id": 225,
+          "get-nonce": 59,
+          "@radix-ui/react-use-layout-effect": 48
+        }
+      }
+    },
+    "/contact": {
+      "kind": "page",
+      "analyzer": {
+        "initialJs": {
+          "raw": 581281,
+          "gzip": 226623
+        },
+        "asyncJs": {
+          "raw": 0,
+          "gzip": 0
+        },
+        "initialCss": {
+          "raw": 249039,
+          "gzip": 34296
+        },
+        "initialJsChunks": [
+          "static/chunks/05ieumge748ou.js",
+          "static/chunks/0nqsj_70u2fm1.js",
+          "static/chunks/13my00uw5li9w.js",
+          "static/chunks/19r4euou7ofmq.js",
+          "static/chunks/1ya00gsj1p_te.js",
+          "static/chunks/2ff6hr100qplm.js",
+          "static/chunks/2h4-j9yva6dx3.js",
+          "static/chunks/3eqrbz4c9u_p6.js",
+          "static/chunks/3zugwmf-dzg75.js",
+          "static/chunks/40t7a4x_4thkd.js",
+          "static/chunks/turbopack-32g9idqqcaa90.js"
+        ],
+        "asyncJsChunks": [],
+        "initialJsByPackage": {
+          "next": 467397,
+          "tailwind-merge": 27372,
+          "(app src)": 20786,
+          "lucide-react": 12635,
+          "(other)": 11242,
+          "react-remove-scroll": 5546,
+          "@radix-ui/react-dialog": 5485,
+          "@radix-ui/react-dismissable-layer": 5209,
+          "@radix-ui/react-focus-scope": 4261,
+          "@radix-ui/react-slot": 2833,
+          "@radix-ui/react-presence": 2651,
+          "react-remove-scroll-bar": 2173,
+          "@radix-ui/react-context": 1731,
+          "aria-hidden": 1413,
+          "@radix-ui/react-use-controllable-state": 1235,
+          "@radix-ui/primitive": 1092,
+          "use-sidecar": 1064,
+          "tslib": 846,
+          "@swc/helpers": 844,
+          "class-variance-authority": 778,
+          "@radix-ui/react-focus-guards": 766,
+          "react-style-singleton": 663,
+          "use-callback-ref": 582,
+          "@radix-ui/react-primitive": 547,
+          "@radix-ui/react-compose-refs": 473,
+          "@radix-ui/react-use-effect-event": 415,
+          "clsx": 371,
+          "@radix-ui/react-use-callback-ref": 272,
+          "@radix-ui/react-portal": 267,
+          "@radix-ui/react-id": 225,
+          "get-nonce": 59,
+          "@radix-ui/react-use-layout-effect": 48
+        }
+      }
+    },
+    "/grades/[gradeSlug]": {
+      "kind": "page",
+      "analyzer": {
+        "initialJs": {
+          "raw": 581281,
+          "gzip": 226623
+        },
+        "asyncJs": {
+          "raw": 0,
+          "gzip": 0
+        },
+        "initialCss": {
+          "raw": 357203,
+          "gzip": 58639
+        },
+        "initialJsChunks": [
+          "static/chunks/05ieumge748ou.js",
+          "static/chunks/0nqsj_70u2fm1.js",
+          "static/chunks/13my00uw5li9w.js",
+          "static/chunks/19r4euou7ofmq.js",
+          "static/chunks/1ya00gsj1p_te.js",
+          "static/chunks/2ff6hr100qplm.js",
+          "static/chunks/2h4-j9yva6dx3.js",
+          "static/chunks/3eqrbz4c9u_p6.js",
+          "static/chunks/3zugwmf-dzg75.js",
+          "static/chunks/40t7a4x_4thkd.js",
+          "static/chunks/turbopack-32g9idqqcaa90.js"
+        ],
+        "asyncJsChunks": [],
+        "initialJsByPackage": {
+          "next": 467397,
+          "tailwind-merge": 27372,
+          "(app src)": 20786,
+          "lucide-react": 12635,
+          "(other)": 11242,
+          "react-remove-scroll": 5546,
+          "@radix-ui/react-dialog": 5485,
+          "@radix-ui/react-dismissable-layer": 5209,
+          "@radix-ui/react-focus-scope": 4261,
+          "@radix-ui/react-slot": 2833,
+          "@radix-ui/react-presence": 2651,
+          "react-remove-scroll-bar": 2173,
+          "@radix-ui/react-context": 1731,
+          "aria-hidden": 1413,
+          "@radix-ui/react-use-controllable-state": 1235,
+          "@radix-ui/primitive": 1092,
+          "use-sidecar": 1064,
+          "tslib": 846,
+          "@swc/helpers": 844,
+          "class-variance-authority": 778,
+          "@radix-ui/react-focus-guards": 766,
+          "react-style-singleton": 663,
+          "use-callback-ref": 582,
+          "@radix-ui/react-primitive": 547,
+          "@radix-ui/react-compose-refs": 473,
+          "@radix-ui/react-use-effect-event": 415,
+          "clsx": 371,
+          "@radix-ui/react-use-callback-ref": 272,
+          "@radix-ui/react-portal": 267,
+          "@radix-ui/react-id": 225,
+          "get-nonce": 59,
+          "@radix-ui/react-use-layout-effect": 48
+        }
+      }
+    },
+    "/grades/[gradeSlug]/[subjectSlug]": {
+      "kind": "page",
+      "analyzer": {
+        "initialJs": {
+          "raw": 581281,
+          "gzip": 226623
+        },
+        "asyncJs": {
+          "raw": 0,
+          "gzip": 0
+        },
+        "initialCss": {
+          "raw": 357203,
+          "gzip": 58639
+        },
+        "initialJsChunks": [
+          "static/chunks/05ieumge748ou.js",
+          "static/chunks/0nqsj_70u2fm1.js",
+          "static/chunks/13my00uw5li9w.js",
+          "static/chunks/19r4euou7ofmq.js",
+          "static/chunks/1ya00gsj1p_te.js",
+          "static/chunks/2ff6hr100qplm.js",
+          "static/chunks/2h4-j9yva6dx3.js",
+          "static/chunks/3eqrbz4c9u_p6.js",
+          "static/chunks/3zugwmf-dzg75.js",
+          "static/chunks/40t7a4x_4thkd.js",
+          "static/chunks/turbopack-32g9idqqcaa90.js"
+        ],
+        "asyncJsChunks": [],
+        "initialJsByPackage": {
+          "next": 467397,
+          "tailwind-merge": 27372,
+          "(app src)": 20786,
+          "lucide-react": 12635,
+          "(other)": 11242,
+          "react-remove-scroll": 5546,
+          "@radix-ui/react-dialog": 5485,
+          "@radix-ui/react-dismissable-layer": 5209,
+          "@radix-ui/react-focus-scope": 4261,
+          "@radix-ui/react-slot": 2833,
+          "@radix-ui/react-presence": 2651,
+          "react-remove-scroll-bar": 2173,
+          "@radix-ui/react-context": 1731,
+          "aria-hidden": 1413,
+          "@radix-ui/react-use-controllable-state": 1235,
+          "@radix-ui/primitive": 1092,
+          "use-sidecar": 1064,
+          "tslib": 846,
+          "@swc/helpers": 844,
+          "class-variance-authority": 778,
+          "@radix-ui/react-focus-guards": 766,
+          "react-style-singleton": 663,
+          "use-callback-ref": 582,
+          "@radix-ui/react-primitive": 547,
+          "@radix-ui/react-compose-refs": 473,
+          "@radix-ui/react-use-effect-event": 415,
+          "clsx": 371,
+          "@radix-ui/react-use-callback-ref": 272,
+          "@radix-ui/react-portal": 267,
+          "@radix-ui/react-id": 225,
+          "get-nonce": 59,
+          "@radix-ui/react-use-layout-effect": 48
+        }
+      }
+    },
+    "/library": {
+      "kind": "page",
+      "analyzer": {
+        "initialJs": {
+          "raw": 581281,
+          "gzip": 226623
+        },
+        "asyncJs": {
+          "raw": 0,
+          "gzip": 0
+        },
+        "initialCss": {
+          "raw": 357203,
+          "gzip": 58639
+        },
+        "initialJsChunks": [
+          "static/chunks/05ieumge748ou.js",
+          "static/chunks/0nqsj_70u2fm1.js",
+          "static/chunks/13my00uw5li9w.js",
+          "static/chunks/19r4euou7ofmq.js",
+          "static/chunks/1ya00gsj1p_te.js",
+          "static/chunks/2ff6hr100qplm.js",
+          "static/chunks/2h4-j9yva6dx3.js",
+          "static/chunks/3eqrbz4c9u_p6.js",
+          "static/chunks/3zugwmf-dzg75.js",
+          "static/chunks/40t7a4x_4thkd.js",
+          "static/chunks/turbopack-32g9idqqcaa90.js"
+        ],
+        "asyncJsChunks": [],
+        "initialJsByPackage": {
+          "next": 467397,
+          "tailwind-merge": 27372,
+          "(app src)": 20786,
+          "lucide-react": 12635,
+          "(other)": 11242,
+          "react-remove-scroll": 5546,
+          "@radix-ui/react-dialog": 5485,
+          "@radix-ui/react-dismissable-layer": 5209,
+          "@radix-ui/react-focus-scope": 4261,
+          "@radix-ui/react-slot": 2833,
+          "@radix-ui/react-presence": 2651,
+          "react-remove-scroll-bar": 2173,
+          "@radix-ui/react-context": 1731,
+          "aria-hidden": 1413,
+          "@radix-ui/react-use-controllable-state": 1235,
+          "@radix-ui/primitive": 1092,
+          "use-sidecar": 1064,
+          "tslib": 846,
+          "@swc/helpers": 844,
+          "class-variance-authority": 778,
+          "@radix-ui/react-focus-guards": 766,
+          "react-style-singleton": 663,
+          "use-callback-ref": 582,
+          "@radix-ui/react-primitive": 547,
+          "@radix-ui/react-compose-refs": 473,
+          "@radix-ui/react-use-effect-event": 415,
+          "clsx": 371,
+          "@radix-ui/react-use-callback-ref": 272,
+          "@radix-ui/react-portal": 267,
+          "@radix-ui/react-id": 225,
+          "get-nonce": 59,
+          "@radix-ui/react-use-layout-effect": 48
+        }
+      }
+    },
+    "/orders/[id]": {
+      "kind": "page",
+      "analyzer": {
+        "initialJs": {
+          "raw": 583995,
+          "gzip": 228224
+        },
+        "asyncJs": {
+          "raw": 0,
+          "gzip": 0
+        },
+        "initialCss": {
+          "raw": 357203,
+          "gzip": 58639
+        },
+        "initialJsChunks": [
+          "static/chunks/05ieumge748ou.js",
+          "static/chunks/0jxwqgfrpqwte.js",
+          "static/chunks/0nqsj_70u2fm1.js",
+          "static/chunks/13my00uw5li9w.js",
+          "static/chunks/19r4euou7ofmq.js",
+          "static/chunks/1ya00gsj1p_te.js",
+          "static/chunks/2ff6hr100qplm.js",
+          "static/chunks/2h4-j9yva6dx3.js",
+          "static/chunks/3eqrbz4c9u_p6.js",
+          "static/chunks/3zugwmf-dzg75.js",
+          "static/chunks/40t7a4x_4thkd.js",
+          "static/chunks/turbopack-32g9idqqcaa90.js"
+        ],
+        "asyncJsChunks": [],
+        "initialJsByPackage": {
+          "next": 467397,
+          "tailwind-merge": 27372,
+          "(app src)": 22051,
+          "lucide-react": 13306,
+          "(other)": 11242,
+          "react-remove-scroll": 5546,
+          "@radix-ui/react-dialog": 5485,
+          "@radix-ui/react-dismissable-layer": 5209,
+          "@radix-ui/react-focus-scope": 4261,
+          "@radix-ui/react-slot": 2833,
+          "@radix-ui/react-presence": 2651,
+          "react-remove-scroll-bar": 2173,
+          "@radix-ui/react-context": 1731,
+          "class-variance-authority": 1556,
+          "aria-hidden": 1413,
+          "@radix-ui/react-use-controllable-state": 1235,
+          "@radix-ui/primitive": 1092,
+          "use-sidecar": 1064,
+          "tslib": 846,
+          "@swc/helpers": 844,
+          "@radix-ui/react-focus-guards": 766,
+          "react-style-singleton": 663,
+          "use-callback-ref": 582,
+          "@radix-ui/react-primitive": 547,
+          "@radix-ui/react-compose-refs": 473,
+          "@radix-ui/react-use-effect-event": 415,
+          "clsx": 371,
+          "@radix-ui/react-use-callback-ref": 272,
+          "@radix-ui/react-portal": 267,
+          "@radix-ui/react-id": 225,
+          "get-nonce": 59,
+          "@radix-ui/react-use-layout-effect": 48
+        }
+      }
+    },
+    "/privacy": {
+      "kind": "page",
+      "analyzer": {
+        "initialJs": {
+          "raw": 581281,
+          "gzip": 226623
+        },
+        "asyncJs": {
+          "raw": 0,
+          "gzip": 0
+        },
+        "initialCss": {
+          "raw": 249039,
+          "gzip": 34296
+        },
+        "initialJsChunks": [
+          "static/chunks/05ieumge748ou.js",
+          "static/chunks/0nqsj_70u2fm1.js",
+          "static/chunks/13my00uw5li9w.js",
+          "static/chunks/19r4euou7ofmq.js",
+          "static/chunks/1ya00gsj1p_te.js",
+          "static/chunks/2ff6hr100qplm.js",
+          "static/chunks/2h4-j9yva6dx3.js",
+          "static/chunks/3eqrbz4c9u_p6.js",
+          "static/chunks/3zugwmf-dzg75.js",
+          "static/chunks/40t7a4x_4thkd.js",
+          "static/chunks/turbopack-32g9idqqcaa90.js"
+        ],
+        "asyncJsChunks": [],
+        "initialJsByPackage": {
+          "next": 467397,
+          "tailwind-merge": 27372,
+          "(app src)": 20786,
+          "lucide-react": 12635,
+          "(other)": 11242,
+          "react-remove-scroll": 5546,
+          "@radix-ui/react-dialog": 5485,
+          "@radix-ui/react-dismissable-layer": 5209,
+          "@radix-ui/react-focus-scope": 4261,
+          "@radix-ui/react-slot": 2833,
+          "@radix-ui/react-presence": 2651,
+          "react-remove-scroll-bar": 2173,
+          "@radix-ui/react-context": 1731,
+          "aria-hidden": 1413,
+          "@radix-ui/react-use-controllable-state": 1235,
+          "@radix-ui/primitive": 1092,
+          "use-sidecar": 1064,
+          "tslib": 846,
+          "@swc/helpers": 844,
+          "class-variance-authority": 778,
+          "@radix-ui/react-focus-guards": 766,
+          "react-style-singleton": 663,
+          "use-callback-ref": 582,
+          "@radix-ui/react-primitive": 547,
+          "@radix-ui/react-compose-refs": 473,
+          "@radix-ui/react-use-effect-event": 415,
+          "clsx": 371,
+          "@radix-ui/react-use-callback-ref": 272,
+          "@radix-ui/react-portal": 267,
+          "@radix-ui/react-id": 225,
+          "get-nonce": 59,
+          "@radix-ui/react-use-layout-effect": 48
+        }
+      }
+    },
+    "/products/[slug]": {
+      "kind": "page",
+      "analyzer": {
+        "initialJs": {
+          "raw": 587161,
+          "gzip": 229870
+        },
+        "asyncJs": {
+          "raw": 0,
+          "gzip": 0
+        },
+        "initialCss": {
+          "raw": 357203,
+          "gzip": 58639
+        },
+        "initialJsChunks": [
+          "static/chunks/05ieumge748ou.js",
+          "static/chunks/0nqsj_70u2fm1.js",
+          "static/chunks/0sg4pnz3wreyi.js",
+          "static/chunks/13my00uw5li9w.js",
+          "static/chunks/19r4euou7ofmq.js",
+          "static/chunks/1ya00gsj1p_te.js",
+          "static/chunks/2ff6hr100qplm.js",
+          "static/chunks/2h4-j9yva6dx3.js",
+          "static/chunks/3eqrbz4c9u_p6.js",
+          "static/chunks/3zugwmf-dzg75.js",
+          "static/chunks/40t7a4x_4thkd.js",
+          "static/chunks/turbopack-32g9idqqcaa90.js"
+        ],
+        "asyncJsChunks": [],
+        "initialJsByPackage": {
+          "next": 467768,
+          "tailwind-merge": 27372,
+          "(app src)": 23876,
+          "lucide-react": 14276,
+          "(other)": 11242,
+          "react-remove-scroll": 5546,
+          "@radix-ui/react-dialog": 5485,
+          "@radix-ui/react-dismissable-layer": 5209,
+          "@radix-ui/react-focus-scope": 4261,
+          "@radix-ui/react-slot": 2833,
+          "@radix-ui/react-presence": 2651,
+          "react-remove-scroll-bar": 2173,
+          "@radix-ui/react-context": 1731,
+          "class-variance-authority": 1556,
+          "aria-hidden": 1413,
+          "@radix-ui/react-use-controllable-state": 1235,
+          "@radix-ui/primitive": 1092,
+          "use-sidecar": 1064,
+          "tslib": 846,
+          "@swc/helpers": 844,
+          "@radix-ui/react-focus-guards": 766,
+          "react-style-singleton": 663,
+          "use-callback-ref": 582,
+          "@radix-ui/react-primitive": 547,
+          "@radix-ui/react-compose-refs": 473,
+          "@radix-ui/react-use-effect-event": 415,
+          "clsx": 371,
+          "@radix-ui/react-use-callback-ref": 272,
+          "@radix-ui/react-portal": 267,
+          "@radix-ui/react-id": 225,
+          "get-nonce": 59,
+          "@radix-ui/react-use-layout-effect": 48
+        }
+      }
+    },
+    "/refund-policy": {
+      "kind": "page",
+      "analyzer": {
+        "initialJs": {
+          "raw": 581281,
+          "gzip": 226623
+        },
+        "asyncJs": {
+          "raw": 0,
+          "gzip": 0
+        },
+        "initialCss": {
+          "raw": 249039,
+          "gzip": 34296
+        },
+        "initialJsChunks": [
+          "static/chunks/05ieumge748ou.js",
+          "static/chunks/0nqsj_70u2fm1.js",
+          "static/chunks/13my00uw5li9w.js",
+          "static/chunks/19r4euou7ofmq.js",
+          "static/chunks/1ya00gsj1p_te.js",
+          "static/chunks/2ff6hr100qplm.js",
+          "static/chunks/2h4-j9yva6dx3.js",
+          "static/chunks/3eqrbz4c9u_p6.js",
+          "static/chunks/3zugwmf-dzg75.js",
+          "static/chunks/40t7a4x_4thkd.js",
+          "static/chunks/turbopack-32g9idqqcaa90.js"
+        ],
+        "asyncJsChunks": [],
+        "initialJsByPackage": {
+          "next": 467397,
+          "tailwind-merge": 27372,
+          "(app src)": 20786,
+          "lucide-react": 12635,
+          "(other)": 11242,
+          "react-remove-scroll": 5546,
+          "@radix-ui/react-dialog": 5485,
+          "@radix-ui/react-dismissable-layer": 5209,
+          "@radix-ui/react-focus-scope": 4261,
+          "@radix-ui/react-slot": 2833,
+          "@radix-ui/react-presence": 2651,
+          "react-remove-scroll-bar": 2173,
+          "@radix-ui/react-context": 1731,
+          "aria-hidden": 1413,
+          "@radix-ui/react-use-controllable-state": 1235,
+          "@radix-ui/primitive": 1092,
+          "use-sidecar": 1064,
+          "tslib": 846,
+          "@swc/helpers": 844,
+          "class-variance-authority": 778,
+          "@radix-ui/react-focus-guards": 766,
+          "react-style-singleton": 663,
+          "use-callback-ref": 582,
+          "@radix-ui/react-primitive": 547,
+          "@radix-ui/react-compose-refs": 473,
+          "@radix-ui/react-use-effect-event": 415,
+          "clsx": 371,
+          "@radix-ui/react-use-callback-ref": 272,
+          "@radix-ui/react-portal": 267,
+          "@radix-ui/react-id": 225,
+          "get-nonce": 59,
+          "@radix-ui/react-use-layout-effect": 48
+        }
+      }
+    },
+    "/stages/[slug]": {
+      "kind": "page",
+      "analyzer": {
+        "initialJs": {
+          "raw": 581281,
+          "gzip": 226623
+        },
+        "asyncJs": {
+          "raw": 0,
+          "gzip": 0
+        },
+        "initialCss": {
+          "raw": 357203,
+          "gzip": 58639
+        },
+        "initialJsChunks": [
+          "static/chunks/05ieumge748ou.js",
+          "static/chunks/0nqsj_70u2fm1.js",
+          "static/chunks/13my00uw5li9w.js",
+          "static/chunks/19r4euou7ofmq.js",
+          "static/chunks/1ya00gsj1p_te.js",
+          "static/chunks/2ff6hr100qplm.js",
+          "static/chunks/2h4-j9yva6dx3.js",
+          "static/chunks/3eqrbz4c9u_p6.js",
+          "static/chunks/3zugwmf-dzg75.js",
+          "static/chunks/40t7a4x_4thkd.js",
+          "static/chunks/turbopack-32g9idqqcaa90.js"
+        ],
+        "asyncJsChunks": [],
+        "initialJsByPackage": {
+          "next": 467397,
+          "tailwind-merge": 27372,
+          "(app src)": 20786,
+          "lucide-react": 12635,
+          "(other)": 11242,
+          "react-remove-scroll": 5546,
+          "@radix-ui/react-dialog": 5485,
+          "@radix-ui/react-dismissable-layer": 5209,
+          "@radix-ui/react-focus-scope": 4261,
+          "@radix-ui/react-slot": 2833,
+          "@radix-ui/react-presence": 2651,
+          "react-remove-scroll-bar": 2173,
+          "@radix-ui/react-context": 1731,
+          "aria-hidden": 1413,
+          "@radix-ui/react-use-controllable-state": 1235,
+          "@radix-ui/primitive": 1092,
+          "use-sidecar": 1064,
+          "tslib": 846,
+          "@swc/helpers": 844,
+          "class-variance-authority": 778,
+          "@radix-ui/react-focus-guards": 766,
+          "react-style-singleton": 663,
+          "use-callback-ref": 582,
+          "@radix-ui/react-primitive": 547,
+          "@radix-ui/react-compose-refs": 473,
+          "@radix-ui/react-use-effect-event": 415,
+          "clsx": 371,
+          "@radix-ui/react-use-callback-ref": 272,
+          "@radix-ui/react-portal": 267,
+          "@radix-ui/react-id": 225,
+          "get-nonce": 59,
+          "@radix-ui/react-use-layout-effect": 48
+        }
+      }
+    },
+    "/teachers": {
+      "kind": "page",
+      "analyzer": {
+        "initialJs": {
+          "raw": 581281,
+          "gzip": 226623
+        },
+        "asyncJs": {
+          "raw": 0,
+          "gzip": 0
+        },
+        "initialCss": {
+          "raw": 357203,
+          "gzip": 58639
+        },
+        "initialJsChunks": [
+          "static/chunks/05ieumge748ou.js",
+          "static/chunks/0nqsj_70u2fm1.js",
+          "static/chunks/13my00uw5li9w.js",
+          "static/chunks/19r4euou7ofmq.js",
+          "static/chunks/1ya00gsj1p_te.js",
+          "static/chunks/2ff6hr100qplm.js",
+          "static/chunks/2h4-j9yva6dx3.js",
+          "static/chunks/3eqrbz4c9u_p6.js",
+          "static/chunks/3zugwmf-dzg75.js",
+          "static/chunks/40t7a4x_4thkd.js",
+          "static/chunks/turbopack-32g9idqqcaa90.js"
+        ],
+        "asyncJsChunks": [],
+        "initialJsByPackage": {
+          "next": 467397,
+          "tailwind-merge": 27372,
+          "(app src)": 20786,
+          "lucide-react": 12635,
+          "(other)": 11242,
+          "react-remove-scroll": 5546,
+          "@radix-ui/react-dialog": 5485,
+          "@radix-ui/react-dismissable-layer": 5209,
+          "@radix-ui/react-focus-scope": 4261,
+          "@radix-ui/react-slot": 2833,
+          "@radix-ui/react-presence": 2651,
+          "react-remove-scroll-bar": 2173,
+          "@radix-ui/react-context": 1731,
+          "aria-hidden": 1413,
+          "@radix-ui/react-use-controllable-state": 1235,
+          "@radix-ui/primitive": 1092,
+          "use-sidecar": 1064,
+          "tslib": 846,
+          "@swc/helpers": 844,
+          "class-variance-authority": 778,
+          "@radix-ui/react-focus-guards": 766,
+          "react-style-singleton": 663,
+          "use-callback-ref": 582,
+          "@radix-ui/react-primitive": 547,
+          "@radix-ui/react-compose-refs": 473,
+          "@radix-ui/react-use-effect-event": 415,
+          "clsx": 371,
+          "@radix-ui/react-use-callback-ref": 272,
+          "@radix-ui/react-portal": 267,
+          "@radix-ui/react-id": 225,
+          "get-nonce": 59,
+          "@radix-ui/react-use-layout-effect": 48
+        }
+      }
+    },
+    "/teachers/[slug]": {
+      "kind": "page",
+      "analyzer": {
+        "initialJs": {
+          "raw": 581281,
+          "gzip": 226623
+        },
+        "asyncJs": {
+          "raw": 0,
+          "gzip": 0
+        },
+        "initialCss": {
+          "raw": 357203,
+          "gzip": 58639
+        },
+        "initialJsChunks": [
+          "static/chunks/05ieumge748ou.js",
+          "static/chunks/0nqsj_70u2fm1.js",
+          "static/chunks/13my00uw5li9w.js",
+          "static/chunks/19r4euou7ofmq.js",
+          "static/chunks/1ya00gsj1p_te.js",
+          "static/chunks/2ff6hr100qplm.js",
+          "static/chunks/2h4-j9yva6dx3.js",
+          "static/chunks/3eqrbz4c9u_p6.js",
+          "static/chunks/3zugwmf-dzg75.js",
+          "static/chunks/40t7a4x_4thkd.js",
+          "static/chunks/turbopack-32g9idqqcaa90.js"
+        ],
+        "asyncJsChunks": [],
+        "initialJsByPackage": {
+          "next": 467397,
+          "tailwind-merge": 27372,
+          "(app src)": 20786,
+          "lucide-react": 12635,
+          "(other)": 11242,
+          "react-remove-scroll": 5546,
+          "@radix-ui/react-dialog": 5485,
+          "@radix-ui/react-dismissable-layer": 5209,
+          "@radix-ui/react-focus-scope": 4261,
+          "@radix-ui/react-slot": 2833,
+          "@radix-ui/react-presence": 2651,
+          "react-remove-scroll-bar": 2173,
+          "@radix-ui/react-context": 1731,
+          "aria-hidden": 1413,
+          "@radix-ui/react-use-controllable-state": 1235,
+          "@radix-ui/primitive": 1092,
+          "use-sidecar": 1064,
+          "tslib": 846,
+          "@swc/helpers": 844,
+          "class-variance-authority": 778,
+          "@radix-ui/react-focus-guards": 766,
+          "react-style-singleton": 663,
+          "use-callback-ref": 582,
+          "@radix-ui/react-primitive": 547,
+          "@radix-ui/react-compose-refs": 473,
+          "@radix-ui/react-use-effect-event": 415,
+          "clsx": 371,
+          "@radix-ui/react-use-callback-ref": 272,
+          "@radix-ui/react-portal": 267,
+          "@radix-ui/react-id": 225,
+          "get-nonce": 59,
+          "@radix-ui/react-use-layout-effect": 48
+        }
+      }
+    },
+    "/terms": {
+      "kind": "page",
+      "analyzer": {
+        "initialJs": {
+          "raw": 581281,
+          "gzip": 226623
+        },
+        "asyncJs": {
+          "raw": 0,
+          "gzip": 0
+        },
+        "initialCss": {
+          "raw": 249039,
+          "gzip": 34296
+        },
+        "initialJsChunks": [
+          "static/chunks/05ieumge748ou.js",
+          "static/chunks/0nqsj_70u2fm1.js",
+          "static/chunks/13my00uw5li9w.js",
+          "static/chunks/19r4euou7ofmq.js",
+          "static/chunks/1ya00gsj1p_te.js",
+          "static/chunks/2ff6hr100qplm.js",
+          "static/chunks/2h4-j9yva6dx3.js",
+          "static/chunks/3eqrbz4c9u_p6.js",
+          "static/chunks/3zugwmf-dzg75.js",
+          "static/chunks/40t7a4x_4thkd.js",
+          "static/chunks/turbopack-32g9idqqcaa90.js"
+        ],
+        "asyncJsChunks": [],
+        "initialJsByPackage": {
+          "next": 467397,
+          "tailwind-merge": 27372,
+          "(app src)": 20786,
+          "lucide-react": 12635,
+          "(other)": 11242,
+          "react-remove-scroll": 5546,
+          "@radix-ui/react-dialog": 5485,
+          "@radix-ui/react-dismissable-layer": 5209,
+          "@radix-ui/react-focus-scope": 4261,
+          "@radix-ui/react-slot": 2833,
+          "@radix-ui/react-presence": 2651,
+          "react-remove-scroll-bar": 2173,
+          "@radix-ui/react-context": 1731,
+          "aria-hidden": 1413,
+          "@radix-ui/react-use-controllable-state": 1235,
+          "@radix-ui/primitive": 1092,
+          "use-sidecar": 1064,
+          "tslib": 846,
+          "@swc/helpers": 844,
+          "class-variance-authority": 778,
+          "@radix-ui/react-focus-guards": 766,
+          "react-style-singleton": 663,
+          "use-callback-ref": 582,
+          "@radix-ui/react-primitive": 547,
+          "@radix-ui/react-compose-refs": 473,
+          "@radix-ui/react-use-effect-event": 415,
+          "clsx": 371,
+          "@radix-ui/react-use-callback-ref": 272,
+          "@radix-ui/react-portal": 267,
+          "@radix-ui/react-id": 225,
+          "get-nonce": 59,
+          "@radix-ui/react-use-layout-effect": 48
+        }
+      }
+    },
+    "/admin": {
+      "kind": "page",
+      "analyzer": {
+        "initialJs": {
+          "raw": 641357,
+          "gzip": 255338
+        },
+        "asyncJs": {
+          "raw": 0,
+          "gzip": 0
+        },
+        "initialCss": {
+          "raw": 249039,
+          "gzip": 34296
+        },
+        "initialJsChunks": [
+          "static/chunks/05ieumge748ou.js",
+          "static/chunks/0nqsj_70u2fm1.js",
+          "static/chunks/0qklzl1zc686e.js",
+          "static/chunks/13my00uw5li9w.js",
+          "static/chunks/16zsox1nigylz.js",
+          "static/chunks/19r4euou7ofmq.js",
+          "static/chunks/1ya00gsj1p_te.js",
+          "static/chunks/2h4-j9yva6dx3.js",
+          "static/chunks/3eqrbz4c9u_p6.js",
+          "static/chunks/3j18lc1b5hw28.js",
+          "static/chunks/3zugwmf-dzg75.js",
+          "static/chunks/40t7a4x_4thkd.js",
+          "static/chunks/turbopack-32g9idqqcaa90.js"
+        ],
+        "asyncJsChunks": [],
+        "initialJsByPackage": {
+          "next": 489978,
+          "(app src)": 42352,
+          "tailwind-merge": 27372,
+          "lucide-react": 25258,
+          "(other)": 11242,
+          "@radix-ui/react-slot": 5666,
+          "react-remove-scroll": 5546,
+          "@radix-ui/react-dialog": 5485,
+          "@radix-ui/react-dismissable-layer": 5209,
+          "@radix-ui/react-focus-scope": 4261,
+          "@radix-ui/react-presence": 2651,
+          "react-remove-scroll-bar": 2173,
+          "@radix-ui/react-context": 1731,
+          "aria-hidden": 1413,
+          "@radix-ui/react-use-controllable-state": 1235,
+          "@radix-ui/primitive": 1092,
+          "use-sidecar": 1064,
+          "@radix-ui/react-compose-refs": 946,
+          "tslib": 846,
+          "@swc/helpers": 844,
+          "class-variance-authority": 778,
+          "@radix-ui/react-focus-guards": 766,
+          "react-style-singleton": 663,
+          "use-callback-ref": 582,
+          "@radix-ui/react-primitive": 547,
+          "@radix-ui/react-use-effect-event": 415,
+          "clsx": 371,
+          "@radix-ui/react-use-callback-ref": 272,
+          "@radix-ui/react-portal": 267,
+          "@radix-ui/react-id": 225,
+          "get-nonce": 59,
+          "@radix-ui/react-use-layout-effect": 48
+        }
+      }
+    },
+    "/admin/bundles": {
+      "kind": "page",
+      "analyzer": {
+        "initialJs": {
+          "raw": 641357,
+          "gzip": 255338
+        },
+        "asyncJs": {
+          "raw": 0,
+          "gzip": 0
+        },
+        "initialCss": {
+          "raw": 357203,
+          "gzip": 58639
+        },
+        "initialJsChunks": [
+          "static/chunks/05ieumge748ou.js",
+          "static/chunks/0nqsj_70u2fm1.js",
+          "static/chunks/0qklzl1zc686e.js",
+          "static/chunks/13my00uw5li9w.js",
+          "static/chunks/16zsox1nigylz.js",
+          "static/chunks/19r4euou7ofmq.js",
+          "static/chunks/1ya00gsj1p_te.js",
+          "static/chunks/2h4-j9yva6dx3.js",
+          "static/chunks/3eqrbz4c9u_p6.js",
+          "static/chunks/3j18lc1b5hw28.js",
+          "static/chunks/3zugwmf-dzg75.js",
+          "static/chunks/40t7a4x_4thkd.js",
+          "static/chunks/turbopack-32g9idqqcaa90.js"
+        ],
+        "asyncJsChunks": [],
+        "initialJsByPackage": {
+          "next": 489978,
+          "(app src)": 42352,
+          "tailwind-merge": 27372,
+          "lucide-react": 25258,
+          "(other)": 11242,
+          "@radix-ui/react-slot": 5666,
+          "react-remove-scroll": 5546,
+          "@radix-ui/react-dialog": 5485,
+          "@radix-ui/react-dismissable-layer": 5209,
+          "@radix-ui/react-focus-scope": 4261,
+          "@radix-ui/react-presence": 2651,
+          "react-remove-scroll-bar": 2173,
+          "@radix-ui/react-context": 1731,
+          "aria-hidden": 1413,
+          "@radix-ui/react-use-controllable-state": 1235,
+          "@radix-ui/primitive": 1092,
+          "use-sidecar": 1064,
+          "@radix-ui/react-compose-refs": 946,
+          "tslib": 846,
+          "@swc/helpers": 844,
+          "class-variance-authority": 778,
+          "@radix-ui/react-focus-guards": 766,
+          "react-style-singleton": 663,
+          "use-callback-ref": 582,
+          "@radix-ui/react-primitive": 547,
+          "@radix-ui/react-use-effect-event": 415,
+          "clsx": 371,
+          "@radix-ui/react-use-callback-ref": 272,
+          "@radix-ui/react-portal": 267,
+          "@radix-ui/react-id": 225,
+          "get-nonce": 59,
+          "@radix-ui/react-use-layout-effect": 48
+        }
+      }
+    },
+    "/admin/catalog": {
+      "kind": "page",
+      "analyzer": {
+        "initialJs": {
+          "raw": 656415,
+          "gzip": 262349
+        },
+        "asyncJs": {
+          "raw": 0,
+          "gzip": 0
+        },
+        "initialCss": {
+          "raw": 249039,
+          "gzip": 34296
+        },
+        "initialJsChunks": [
+          "static/chunks/05ieumge748ou.js",
+          "static/chunks/086aseaqfmvcy.js",
+          "static/chunks/0nqsj_70u2fm1.js",
+          "static/chunks/0qklzl1zc686e.js",
+          "static/chunks/13my00uw5li9w.js",
+          "static/chunks/19r4euou7ofmq.js",
+          "static/chunks/1ya00gsj1p_te.js",
+          "static/chunks/2h4-j9yva6dx3.js",
+          "static/chunks/3eqrbz4c9u_p6.js",
+          "static/chunks/3j18lc1b5hw28.js",
+          "static/chunks/3zugwmf-dzg75.js",
+          "static/chunks/40t7a4x_4thkd.js",
+          "static/chunks/turbopack-32g9idqqcaa90.js"
+        ],
+        "asyncJsChunks": [],
+        "initialJsByPackage": {
+          "next": 489978,
+          "(app src)": 53171,
+          "tailwind-merge": 27372,
+          "lucide-react": 26744,
+          "(other)": 11242,
+          "@radix-ui/react-slot": 5666,
+          "react-remove-scroll": 5546,
+          "@radix-ui/react-dialog": 5485,
+          "@radix-ui/react-dismissable-layer": 5209,
+          "@radix-ui/react-focus-scope": 4261,
+          "@radix-ui/react-presence": 2651,
+          "react-remove-scroll-bar": 2173,
+          "@radix-ui/react-alert-dialog": 1975,
+          "@radix-ui/react-context": 1731,
+          "class-variance-authority": 1556,
+          "aria-hidden": 1413,
+          "@radix-ui/react-use-controllable-state": 1235,
+          "@radix-ui/primitive": 1092,
+          "use-sidecar": 1064,
+          "@radix-ui/react-compose-refs": 946,
+          "tslib": 846,
+          "@swc/helpers": 844,
+          "@radix-ui/react-focus-guards": 766,
+          "react-style-singleton": 663,
+          "use-callback-ref": 582,
+          "@radix-ui/react-primitive": 547,
+          "@radix-ui/react-use-effect-event": 415,
+          "clsx": 371,
+          "@radix-ui/react-use-callback-ref": 272,
+          "@radix-ui/react-portal": 267,
+          "@radix-ui/react-id": 225,
+          "get-nonce": 59,
+          "@radix-ui/react-use-layout-effect": 48
+        }
+      }
+    },
+    "/admin/coupons": {
+      "kind": "page",
+      "analyzer": {
+        "initialJs": {
+          "raw": 660551,
+          "gzip": 264019
+        },
+        "asyncJs": {
+          "raw": 0,
+          "gzip": 0
+        },
+        "initialCss": {
+          "raw": 249039,
+          "gzip": 34296
+        },
+        "initialJsChunks": [
+          "static/chunks/05ieumge748ou.js",
+          "static/chunks/0nqsj_70u2fm1.js",
+          "static/chunks/0qklzl1zc686e.js",
+          "static/chunks/13my00uw5li9w.js",
+          "static/chunks/19r4euou7ofmq.js",
+          "static/chunks/1lhmbbxdqkefm.js",
+          "static/chunks/1ya00gsj1p_te.js",
+          "static/chunks/2h4-j9yva6dx3.js",
+          "static/chunks/3eqrbz4c9u_p6.js",
+          "static/chunks/3j18lc1b5hw28.js",
+          "static/chunks/3zugwmf-dzg75.js",
+          "static/chunks/40t7a4x_4thkd.js",
+          "static/chunks/turbopack-32g9idqqcaa90.js"
+        ],
+        "asyncJsChunks": [],
+        "initialJsByPackage": {
+          "next": 489978,
+          "(app src)": 56458,
+          "lucide-react": 27593,
+          "tailwind-merge": 27372,
+          "(other)": 11242,
+          "@radix-ui/react-slot": 5666,
+          "react-remove-scroll": 5546,
+          "@radix-ui/react-dialog": 5485,
+          "@radix-ui/react-dismissable-layer": 5209,
+          "@radix-ui/react-focus-scope": 4261,
+          "@radix-ui/react-presence": 2651,
+          "react-remove-scroll-bar": 2173,
+          "@radix-ui/react-alert-dialog": 1975,
+          "@radix-ui/react-context": 1731,
+          "class-variance-authority": 1556,
+          "aria-hidden": 1413,
+          "@radix-ui/react-use-controllable-state": 1235,
+          "@radix-ui/primitive": 1092,
+          "use-sidecar": 1064,
+          "@radix-ui/react-compose-refs": 946,
+          "tslib": 846,
+          "@swc/helpers": 844,
+          "@radix-ui/react-focus-guards": 766,
+          "react-style-singleton": 663,
+          "use-callback-ref": 582,
+          "@radix-ui/react-primitive": 547,
+          "@radix-ui/react-use-effect-event": 415,
+          "clsx": 371,
+          "@radix-ui/react-use-callback-ref": 272,
+          "@radix-ui/react-portal": 267,
+          "@radix-ui/react-id": 225,
+          "get-nonce": 59,
+          "@radix-ui/react-use-layout-effect": 48
+        }
+      }
+    },
+    "/admin/coupons/[id]": {
+      "kind": "page",
+      "analyzer": {
+        "initialJs": {
+          "raw": 654172,
+          "gzip": 261651
+        },
+        "asyncJs": {
+          "raw": 0,
+          "gzip": 0
+        },
+        "initialCss": {
+          "raw": 249039,
+          "gzip": 34296
+        },
+        "initialJsChunks": [
+          "static/chunks/05ieumge748ou.js",
+          "static/chunks/0nqsj_70u2fm1.js",
+          "static/chunks/0qklzl1zc686e.js",
+          "static/chunks/13my00uw5li9w.js",
+          "static/chunks/19r4euou7ofmq.js",
+          "static/chunks/1ya00gsj1p_te.js",
+          "static/chunks/2h4-j9yva6dx3.js",
+          "static/chunks/2qmp65gp1s4-y.js",
+          "static/chunks/3eqrbz4c9u_p6.js",
+          "static/chunks/3j18lc1b5hw28.js",
+          "static/chunks/3zugwmf-dzg75.js",
+          "static/chunks/40t7a4x_4thkd.js",
+          "static/chunks/turbopack-32g9idqqcaa90.js"
+        ],
+        "asyncJsChunks": [],
+        "initialJsByPackage": {
+          "next": 489978,
+          "(app src)": 52054,
+          "lucide-react": 27593,
+          "tailwind-merge": 27372,
+          "(other)": 11242,
+          "@radix-ui/react-slot": 5666,
+          "react-remove-scroll": 5546,
+          "@radix-ui/react-dialog": 5485,
+          "@radix-ui/react-dismissable-layer": 5209,
+          "@radix-ui/react-focus-scope": 4261,
+          "@radix-ui/react-presence": 2651,
+          "react-remove-scroll-bar": 2173,
+          "@radix-ui/react-context": 1731,
+          "class-variance-authority": 1556,
+          "aria-hidden": 1413,
+          "@radix-ui/react-use-controllable-state": 1235,
+          "@radix-ui/primitive": 1092,
+          "use-sidecar": 1064,
+          "@radix-ui/react-compose-refs": 946,
+          "tslib": 846,
+          "@swc/helpers": 844,
+          "@radix-ui/react-focus-guards": 766,
+          "react-style-singleton": 663,
+          "use-callback-ref": 582,
+          "@radix-ui/react-primitive": 547,
+          "@radix-ui/react-use-effect-event": 415,
+          "clsx": 371,
+          "@radix-ui/react-use-callback-ref": 272,
+          "@radix-ui/react-portal": 267,
+          "@radix-ui/react-id": 225,
+          "get-nonce": 59,
+          "@radix-ui/react-use-layout-effect": 48
+        }
+      }
+    },
+    "/admin/earnings": {
+      "kind": "page",
+      "analyzer": {
+        "initialJs": {
+          "raw": 641357,
+          "gzip": 255338
+        },
+        "asyncJs": {
+          "raw": 0,
+          "gzip": 0
+        },
+        "initialCss": {
+          "raw": 249039,
+          "gzip": 34296
+        },
+        "initialJsChunks": [
+          "static/chunks/05ieumge748ou.js",
+          "static/chunks/0nqsj_70u2fm1.js",
+          "static/chunks/0qklzl1zc686e.js",
+          "static/chunks/13my00uw5li9w.js",
+          "static/chunks/16zsox1nigylz.js",
+          "static/chunks/19r4euou7ofmq.js",
+          "static/chunks/1ya00gsj1p_te.js",
+          "static/chunks/2h4-j9yva6dx3.js",
+          "static/chunks/3eqrbz4c9u_p6.js",
+          "static/chunks/3j18lc1b5hw28.js",
+          "static/chunks/3zugwmf-dzg75.js",
+          "static/chunks/40t7a4x_4thkd.js",
+          "static/chunks/turbopack-32g9idqqcaa90.js"
+        ],
+        "asyncJsChunks": [],
+        "initialJsByPackage": {
+          "next": 489978,
+          "(app src)": 42352,
+          "tailwind-merge": 27372,
+          "lucide-react": 25258,
+          "(other)": 11242,
+          "@radix-ui/react-slot": 5666,
+          "react-remove-scroll": 5546,
+          "@radix-ui/react-dialog": 5485,
+          "@radix-ui/react-dismissable-layer": 5209,
+          "@radix-ui/react-focus-scope": 4261,
+          "@radix-ui/react-presence": 2651,
+          "react-remove-scroll-bar": 2173,
+          "@radix-ui/react-context": 1731,
+          "aria-hidden": 1413,
+          "@radix-ui/react-use-controllable-state": 1235,
+          "@radix-ui/primitive": 1092,
+          "use-sidecar": 1064,
+          "@radix-ui/react-compose-refs": 946,
+          "tslib": 846,
+          "@swc/helpers": 844,
+          "class-variance-authority": 778,
+          "@radix-ui/react-focus-guards": 766,
+          "react-style-singleton": 663,
+          "use-callback-ref": 582,
+          "@radix-ui/react-primitive": 547,
+          "@radix-ui/react-use-effect-event": 415,
+          "clsx": 371,
+          "@radix-ui/react-use-callback-ref": 272,
+          "@radix-ui/react-portal": 267,
+          "@radix-ui/react-id": 225,
+          "get-nonce": 59,
+          "@radix-ui/react-use-layout-effect": 48
+        }
+      }
+    },
+    "/admin/orders": {
+      "kind": "page",
+      "analyzer": {
+        "initialJs": {
+          "raw": 641357,
+          "gzip": 255338
+        },
+        "asyncJs": {
+          "raw": 0,
+          "gzip": 0
+        },
+        "initialCss": {
+          "raw": 249039,
+          "gzip": 34296
+        },
+        "initialJsChunks": [
+          "static/chunks/05ieumge748ou.js",
+          "static/chunks/0nqsj_70u2fm1.js",
+          "static/chunks/0qklzl1zc686e.js",
+          "static/chunks/13my00uw5li9w.js",
+          "static/chunks/16zsox1nigylz.js",
+          "static/chunks/19r4euou7ofmq.js",
+          "static/chunks/1ya00gsj1p_te.js",
+          "static/chunks/2h4-j9yva6dx3.js",
+          "static/chunks/3eqrbz4c9u_p6.js",
+          "static/chunks/3j18lc1b5hw28.js",
+          "static/chunks/3zugwmf-dzg75.js",
+          "static/chunks/40t7a4x_4thkd.js",
+          "static/chunks/turbopack-32g9idqqcaa90.js"
+        ],
+        "asyncJsChunks": [],
+        "initialJsByPackage": {
+          "next": 489978,
+          "(app src)": 42352,
+          "tailwind-merge": 27372,
+          "lucide-react": 25258,
+          "(other)": 11242,
+          "@radix-ui/react-slot": 5666,
+          "react-remove-scroll": 5546,
+          "@radix-ui/react-dialog": 5485,
+          "@radix-ui/react-dismissable-layer": 5209,
+          "@radix-ui/react-focus-scope": 4261,
+          "@radix-ui/react-presence": 2651,
+          "react-remove-scroll-bar": 2173,
+          "@radix-ui/react-context": 1731,
+          "aria-hidden": 1413,
+          "@radix-ui/react-use-controllable-state": 1235,
+          "@radix-ui/primitive": 1092,
+          "use-sidecar": 1064,
+          "@radix-ui/react-compose-refs": 946,
+          "tslib": 846,
+          "@swc/helpers": 844,
+          "class-variance-authority": 778,
+          "@radix-ui/react-focus-guards": 766,
+          "react-style-singleton": 663,
+          "use-callback-ref": 582,
+          "@radix-ui/react-primitive": 547,
+          "@radix-ui/react-use-effect-event": 415,
+          "clsx": 371,
+          "@radix-ui/react-use-callback-ref": 272,
+          "@radix-ui/react-portal": 267,
+          "@radix-ui/react-id": 225,
+          "get-nonce": 59,
+          "@radix-ui/react-use-layout-effect": 48
+        }
+      }
+    },
+    "/admin/orders/[id]": {
+      "kind": "page",
+      "analyzer": {
+        "initialJs": {
+          "raw": 653049,
+          "gzip": 260503
+        },
+        "asyncJs": {
+          "raw": 0,
+          "gzip": 0
+        },
+        "initialCss": {
+          "raw": 249039,
+          "gzip": 34296
+        },
+        "initialJsChunks": [
+          "static/chunks/05ieumge748ou.js",
+          "static/chunks/0nqsj_70u2fm1.js",
+          "static/chunks/0qklzl1zc686e.js",
+          "static/chunks/13my00uw5li9w.js",
+          "static/chunks/19r4euou7ofmq.js",
+          "static/chunks/1ya00gsj1p_te.js",
+          "static/chunks/2h4-j9yva6dx3.js",
+          "static/chunks/322lohe2kqhbn.js",
+          "static/chunks/3eqrbz4c9u_p6.js",
+          "static/chunks/3j18lc1b5hw28.js",
+          "static/chunks/3zugwmf-dzg75.js",
+          "static/chunks/40t7a4x_4thkd.js",
+          "static/chunks/turbopack-32g9idqqcaa90.js"
+        ],
+        "asyncJsChunks": [],
+        "initialJsByPackage": {
+          "next": 489978,
+          "(app src)": 50319,
+          "tailwind-merge": 27372,
+          "lucide-react": 26230,
+          "(other)": 11242,
+          "@radix-ui/react-slot": 5666,
+          "react-remove-scroll": 5546,
+          "@radix-ui/react-dialog": 5485,
+          "@radix-ui/react-dismissable-layer": 5209,
+          "@radix-ui/react-focus-scope": 4261,
+          "@radix-ui/react-presence": 2651,
+          "react-remove-scroll-bar": 2173,
+          "@radix-ui/react-alert-dialog": 1975,
+          "@radix-ui/react-context": 1731,
+          "class-variance-authority": 1556,
+          "aria-hidden": 1413,
+          "@radix-ui/react-use-controllable-state": 1235,
+          "@radix-ui/primitive": 1092,
+          "use-sidecar": 1064,
+          "@radix-ui/react-compose-refs": 946,
+          "tslib": 846,
+          "@swc/helpers": 844,
+          "@radix-ui/react-focus-guards": 766,
+          "react-style-singleton": 663,
+          "use-callback-ref": 582,
+          "@radix-ui/react-primitive": 547,
+          "@radix-ui/react-use-effect-event": 415,
+          "clsx": 371,
+          "@radix-ui/react-use-callback-ref": 272,
+          "@radix-ui/react-portal": 267,
+          "@radix-ui/react-id": 225,
+          "get-nonce": 59,
+          "@radix-ui/react-use-layout-effect": 48
+        }
+      }
+    },
+    "/admin/products": {
+      "kind": "page",
+      "analyzer": {
+        "initialJs": {
+          "raw": 656038,
+          "gzip": 262048
+        },
+        "asyncJs": {
+          "raw": 0,
+          "gzip": 0
+        },
+        "initialCss": {
+          "raw": 357203,
+          "gzip": 58639
+        },
+        "initialJsChunks": [
+          "static/chunks/05ieumge748ou.js",
+          "static/chunks/0nqsj_70u2fm1.js",
+          "static/chunks/0qklzl1zc686e.js",
+          "static/chunks/13my00uw5li9w.js",
+          "static/chunks/19r4euou7ofmq.js",
+          "static/chunks/1ya00gsj1p_te.js",
+          "static/chunks/2h4-j9yva6dx3.js",
+          "static/chunks/3eqrbz4c9u_p6.js",
+          "static/chunks/3it1sv_33wk-3.js",
+          "static/chunks/3j18lc1b5hw28.js",
+          "static/chunks/3zugwmf-dzg75.js",
+          "static/chunks/40t7a4x_4thkd.js",
+          "static/chunks/turbopack-32g9idqqcaa90.js"
+        ],
+        "asyncJsChunks": [],
+        "initialJsByPackage": {
+          "next": 489978,
+          "(app src)": 52794,
+          "tailwind-merge": 27372,
+          "lucide-react": 26744,
+          "(other)": 11242,
+          "@radix-ui/react-slot": 5666,
+          "react-remove-scroll": 5546,
+          "@radix-ui/react-dialog": 5485,
+          "@radix-ui/react-dismissable-layer": 5209,
+          "@radix-ui/react-focus-scope": 4261,
+          "@radix-ui/react-presence": 2651,
+          "react-remove-scroll-bar": 2173,
+          "@radix-ui/react-alert-dialog": 1975,
+          "@radix-ui/react-context": 1731,
+          "class-variance-authority": 1556,
+          "aria-hidden": 1413,
+          "@radix-ui/react-use-controllable-state": 1235,
+          "@radix-ui/primitive": 1092,
+          "use-sidecar": 1064,
+          "@radix-ui/react-compose-refs": 946,
+          "tslib": 846,
+          "@swc/helpers": 844,
+          "@radix-ui/react-focus-guards": 766,
+          "react-style-singleton": 663,
+          "use-callback-ref": 582,
+          "@radix-ui/react-primitive": 547,
+          "@radix-ui/react-use-effect-event": 415,
+          "clsx": 371,
+          "@radix-ui/react-use-callback-ref": 272,
+          "@radix-ui/react-portal": 267,
+          "@radix-ui/react-id": 225,
+          "get-nonce": 59,
+          "@radix-ui/react-use-layout-effect": 48
+        }
+      }
+    },
+    "/admin/products/[id]": {
+      "kind": "page",
+      "analyzer": {
+        "initialJs": {
+          "raw": 692671,
+          "gzip": 277592
+        },
+        "asyncJs": {
+          "raw": 57235,
+          "gzip": 21204
+        },
+        "initialCss": {
+          "raw": 357203,
+          "gzip": 58639
+        },
+        "initialJsChunks": [
+          "static/chunks/05ieumge748ou.js",
+          "static/chunks/0nqsj_70u2fm1.js",
+          "static/chunks/0qklzl1zc686e.js",
+          "static/chunks/13my00uw5li9w.js",
+          "static/chunks/19r4euou7ofmq.js",
+          "static/chunks/1l0f-t0ksrhp9.js",
+          "static/chunks/1ya00gsj1p_te.js",
+          "static/chunks/2h4-j9yva6dx3.js",
+          "static/chunks/2zmdtyxuhdrrp.js",
+          "static/chunks/3eqrbz4c9u_p6.js",
+          "static/chunks/3j18lc1b5hw28.js",
+          "static/chunks/3zugwmf-dzg75.js",
+          "static/chunks/40t7a4x_4thkd.js",
+          "static/chunks/turbopack-32g9idqqcaa90.js"
+        ],
+        "asyncJsChunks": [
+          "[output]/.next/server/chunks/ssr/[externals]__1r-8xo9bmg9fq._.js",
+          "[output]/.next/server/chunks/ssr/[root-of-the-server]__13q429kzzzq85._.js",
+          "static/chunks/40kg7pt5v62uc.js"
+        ],
+        "initialJsByPackage": {
+          "next": 490349,
+          "(app src)": 85482,
+          "lucide-react": 30060,
+          "tailwind-merge": 27372,
+          "(other)": 11500,
+          "@radix-ui/react-slot": 5666,
+          "react-remove-scroll": 5546,
+          "@radix-ui/react-dialog": 5485,
+          "@radix-ui/react-dismissable-layer": 5209,
+          "@radix-ui/react-focus-scope": 4261,
+          "@radix-ui/react-presence": 2651,
+          "react-remove-scroll-bar": 2173,
+          "@radix-ui/react-alert-dialog": 1975,
+          "@radix-ui/react-context": 1731,
+          "class-variance-authority": 1556,
+          "aria-hidden": 1413,
+          "@radix-ui/react-use-controllable-state": 1235,
+          "@radix-ui/primitive": 1092,
+          "use-sidecar": 1064,
+          "@radix-ui/react-compose-refs": 946,
+          "tslib": 846,
+          "@swc/helpers": 844,
+          "@radix-ui/react-focus-guards": 766,
+          "react-style-singleton": 663,
+          "use-callback-ref": 582,
+          "@radix-ui/react-primitive": 547,
+          "@radix-ui/react-use-effect-event": 415,
+          "clsx": 371,
+          "@radix-ui/react-use-callback-ref": 272,
+          "@radix-ui/react-portal": 267,
+          "@radix-ui/react-id": 225,
+          "get-nonce": 59,
+          "@radix-ui/react-use-layout-effect": 48
+        }
+      }
+    },
+    "/admin/products/new": {
+      "kind": "page",
+      "analyzer": {
+        "initialJs": {
+          "raw": 668726,
+          "gzip": 266891
+        },
+        "asyncJs": {
+          "raw": 0,
+          "gzip": 0
+        },
+        "initialCss": {
+          "raw": 357203,
+          "gzip": 58639
+        },
+        "initialJsChunks": [
+          "static/chunks/05ieumge748ou.js",
+          "static/chunks/0nqsj_70u2fm1.js",
+          "static/chunks/0qklzl1zc686e.js",
+          "static/chunks/13my00uw5li9w.js",
+          "static/chunks/19r4euou7ofmq.js",
+          "static/chunks/1ya00gsj1p_te.js",
+          "static/chunks/2h4-j9yva6dx3.js",
+          "static/chunks/3eqrbz4c9u_p6.js",
+          "static/chunks/3j18lc1b5hw28.js",
+          "static/chunks/3x1-jwahkmof0.js",
+          "static/chunks/3zugwmf-dzg75.js",
+          "static/chunks/40t7a4x_4thkd.js",
+          "static/chunks/turbopack-32g9idqqcaa90.js"
+        ],
+        "asyncJsChunks": [],
+        "initialJsByPackage": {
+          "next": 489978,
+          "(app src)": 65787,
+          "lucide-react": 28414,
+          "tailwind-merge": 27372,
+          "(other)": 11242,
+          "@radix-ui/react-slot": 5666,
+          "react-remove-scroll": 5546,
+          "@radix-ui/react-dialog": 5485,
+          "@radix-ui/react-dismissable-layer": 5209,
+          "@radix-ui/react-focus-scope": 4261,
+          "@radix-ui/react-presence": 2651,
+          "react-remove-scroll-bar": 2173,
+          "@radix-ui/react-context": 1731,
+          "class-variance-authority": 1556,
+          "aria-hidden": 1413,
+          "@radix-ui/react-use-controllable-state": 1235,
+          "@radix-ui/primitive": 1092,
+          "use-sidecar": 1064,
+          "@radix-ui/react-compose-refs": 946,
+          "tslib": 846,
+          "@swc/helpers": 844,
+          "@radix-ui/react-focus-guards": 766,
+          "react-style-singleton": 663,
+          "use-callback-ref": 582,
+          "@radix-ui/react-primitive": 547,
+          "@radix-ui/react-use-effect-event": 415,
+          "clsx": 371,
+          "@radix-ui/react-use-callback-ref": 272,
+          "@radix-ui/react-portal": 267,
+          "@radix-ui/react-id": 225,
+          "get-nonce": 59,
+          "@radix-ui/react-use-layout-effect": 48
+        }
+      }
+    },
+    "/admin/profile": {
+      "kind": "page",
+      "analyzer": {
+        "initialJs": {
+          "raw": 664475,
+          "gzip": 265967
+        },
+        "asyncJs": {
+          "raw": 57235,
+          "gzip": 21204
+        },
+        "initialCss": {
+          "raw": 357203,
+          "gzip": 58639
+        },
+        "initialJsChunks": [
+          "static/chunks/05ieumge748ou.js",
+          "static/chunks/0nqsj_70u2fm1.js",
+          "static/chunks/0qklzl1zc686e.js",
+          "static/chunks/13my00uw5li9w.js",
+          "static/chunks/19r4euou7ofmq.js",
+          "static/chunks/1ya00gsj1p_te.js",
+          "static/chunks/2h4-j9yva6dx3.js",
+          "static/chunks/39fb6h2umxw3_.js",
+          "static/chunks/3eqrbz4c9u_p6.js",
+          "static/chunks/3j18lc1b5hw28.js",
+          "static/chunks/3zugwmf-dzg75.js",
+          "static/chunks/40t7a4x_4thkd.js",
+          "static/chunks/turbopack-32g9idqqcaa90.js"
+        ],
+        "asyncJsChunks": [
+          "[output]/.next/server/chunks/ssr/[externals]__1r-8xo9bmg9fq._.js",
+          "[output]/.next/server/chunks/ssr/[root-of-the-server]__13q429kzzzq85._.js",
+          "static/chunks/40kg7pt5v62uc.js"
+        ],
+        "initialJsByPackage": {
+          "next": 489978,
+          "(app src)": 60528,
+          "lucide-react": 27447,
+          "tailwind-merge": 27372,
+          "(other)": 11242,
+          "@radix-ui/react-slot": 5666,
+          "react-remove-scroll": 5546,
+          "@radix-ui/react-dialog": 5485,
+          "@radix-ui/react-dismissable-layer": 5209,
+          "@radix-ui/react-focus-scope": 4261,
+          "@radix-ui/react-presence": 2651,
+          "react-remove-scroll-bar": 2173,
+          "@radix-ui/react-alert-dialog": 1975,
+          "@radix-ui/react-context": 1731,
+          "class-variance-authority": 1556,
+          "aria-hidden": 1413,
+          "@radix-ui/react-use-controllable-state": 1235,
+          "@radix-ui/primitive": 1092,
+          "use-sidecar": 1064,
+          "@radix-ui/react-compose-refs": 946,
+          "tslib": 846,
+          "@swc/helpers": 844,
+          "@radix-ui/react-focus-guards": 766,
+          "react-style-singleton": 663,
+          "use-callback-ref": 582,
+          "@radix-ui/react-primitive": 547,
+          "@radix-ui/react-use-effect-event": 415,
+          "clsx": 371,
+          "@radix-ui/react-use-callback-ref": 272,
+          "@radix-ui/react-portal": 267,
+          "@radix-ui/react-id": 225,
+          "get-nonce": 59,
+          "@radix-ui/react-use-layout-effect": 48
+        }
+      }
+    },
+    "/admin/reports": {
+      "kind": "page",
+      "analyzer": {
+        "initialJs": {
+          "raw": 641357,
+          "gzip": 255338
+        },
+        "asyncJs": {
+          "raw": 0,
+          "gzip": 0
+        },
+        "initialCss": {
+          "raw": 249039,
+          "gzip": 34296
+        },
+        "initialJsChunks": [
+          "static/chunks/05ieumge748ou.js",
+          "static/chunks/0nqsj_70u2fm1.js",
+          "static/chunks/0qklzl1zc686e.js",
+          "static/chunks/13my00uw5li9w.js",
+          "static/chunks/16zsox1nigylz.js",
+          "static/chunks/19r4euou7ofmq.js",
+          "static/chunks/1ya00gsj1p_te.js",
+          "static/chunks/2h4-j9yva6dx3.js",
+          "static/chunks/3eqrbz4c9u_p6.js",
+          "static/chunks/3j18lc1b5hw28.js",
+          "static/chunks/3zugwmf-dzg75.js",
+          "static/chunks/40t7a4x_4thkd.js",
+          "static/chunks/turbopack-32g9idqqcaa90.js"
+        ],
+        "asyncJsChunks": [],
+        "initialJsByPackage": {
+          "next": 489978,
+          "(app src)": 42352,
+          "tailwind-merge": 27372,
+          "lucide-react": 25258,
+          "(other)": 11242,
+          "@radix-ui/react-slot": 5666,
+          "react-remove-scroll": 5546,
+          "@radix-ui/react-dialog": 5485,
+          "@radix-ui/react-dismissable-layer": 5209,
+          "@radix-ui/react-focus-scope": 4261,
+          "@radix-ui/react-presence": 2651,
+          "react-remove-scroll-bar": 2173,
+          "@radix-ui/react-context": 1731,
+          "aria-hidden": 1413,
+          "@radix-ui/react-use-controllable-state": 1235,
+          "@radix-ui/primitive": 1092,
+          "use-sidecar": 1064,
+          "@radix-ui/react-compose-refs": 946,
+          "tslib": 846,
+          "@swc/helpers": 844,
+          "class-variance-authority": 778,
+          "@radix-ui/react-focus-guards": 766,
+          "react-style-singleton": 663,
+          "use-callback-ref": 582,
+          "@radix-ui/react-primitive": 547,
+          "@radix-ui/react-use-effect-event": 415,
+          "clsx": 371,
+          "@radix-ui/react-use-callback-ref": 272,
+          "@radix-ui/react-portal": 267,
+          "@radix-ui/react-id": 225,
+          "get-nonce": 59,
+          "@radix-ui/react-use-layout-effect": 48
+        }
+      }
+    },
+    "/admin/review": {
+      "kind": "page",
+      "analyzer": {
+        "initialJs": {
+          "raw": 641357,
+          "gzip": 255338
+        },
+        "asyncJs": {
+          "raw": 0,
+          "gzip": 0
+        },
+        "initialCss": {
+          "raw": 249039,
+          "gzip": 34296
+        },
+        "initialJsChunks": [
+          "static/chunks/05ieumge748ou.js",
+          "static/chunks/0nqsj_70u2fm1.js",
+          "static/chunks/0qklzl1zc686e.js",
+          "static/chunks/13my00uw5li9w.js",
+          "static/chunks/16zsox1nigylz.js",
+          "static/chunks/19r4euou7ofmq.js",
+          "static/chunks/1ya00gsj1p_te.js",
+          "static/chunks/2h4-j9yva6dx3.js",
+          "static/chunks/3eqrbz4c9u_p6.js",
+          "static/chunks/3j18lc1b5hw28.js",
+          "static/chunks/3zugwmf-dzg75.js",
+          "static/chunks/40t7a4x_4thkd.js",
+          "static/chunks/turbopack-32g9idqqcaa90.js"
+        ],
+        "asyncJsChunks": [],
+        "initialJsByPackage": {
+          "next": 489978,
+          "(app src)": 42352,
+          "tailwind-merge": 27372,
+          "lucide-react": 25258,
+          "(other)": 11242,
+          "@radix-ui/react-slot": 5666,
+          "react-remove-scroll": 5546,
+          "@radix-ui/react-dialog": 5485,
+          "@radix-ui/react-dismissable-layer": 5209,
+          "@radix-ui/react-focus-scope": 4261,
+          "@radix-ui/react-presence": 2651,
+          "react-remove-scroll-bar": 2173,
+          "@radix-ui/react-context": 1731,
+          "aria-hidden": 1413,
+          "@radix-ui/react-use-controllable-state": 1235,
+          "@radix-ui/primitive": 1092,
+          "use-sidecar": 1064,
+          "@radix-ui/react-compose-refs": 946,
+          "tslib": 846,
+          "@swc/helpers": 844,
+          "class-variance-authority": 778,
+          "@radix-ui/react-focus-guards": 766,
+          "react-style-singleton": 663,
+          "use-callback-ref": 582,
+          "@radix-ui/react-primitive": 547,
+          "@radix-ui/react-use-effect-event": 415,
+          "clsx": 371,
+          "@radix-ui/react-use-callback-ref": 272,
+          "@radix-ui/react-portal": 267,
+          "@radix-ui/react-id": 225,
+          "get-nonce": 59,
+          "@radix-ui/react-use-layout-effect": 48
+        }
+      }
+    },
+    "/admin/settings": {
+      "kind": "page",
+      "analyzer": {
+        "initialJs": {
+          "raw": 678200,
+          "gzip": 271190
+        },
+        "asyncJs": {
+          "raw": 57235,
+          "gzip": 21204
+        },
+        "initialCss": {
+          "raw": 249039,
+          "gzip": 34296
+        },
+        "initialJsChunks": [
+          "static/chunks/05ieumge748ou.js",
+          "static/chunks/0nqsj_70u2fm1.js",
+          "static/chunks/0qklzl1zc686e.js",
+          "static/chunks/13my00uw5li9w.js",
+          "static/chunks/19r4euou7ofmq.js",
+          "static/chunks/1ya00gsj1p_te.js",
+          "static/chunks/2h4-j9yva6dx3.js",
+          "static/chunks/2zmdtyxuhdrrp.js",
+          "static/chunks/381gaw818ler6.js",
+          "static/chunks/3eqrbz4c9u_p6.js",
+          "static/chunks/3j18lc1b5hw28.js",
+          "static/chunks/3zugwmf-dzg75.js",
+          "static/chunks/40t7a4x_4thkd.js",
+          "static/chunks/turbopack-32g9idqqcaa90.js"
+        ],
+        "asyncJsChunks": [
+          "[output]/.next/server/chunks/ssr/[externals]__1r-8xo9bmg9fq._.js",
+          "[output]/.next/server/chunks/ssr/[root-of-the-server]__13q429kzzzq85._.js",
+          "static/chunks/40kg7pt5v62uc.js"
+        ],
+        "initialJsByPackage": {
+          "next": 489978,
+          "(app src)": 71572,
+          "lucide-react": 29904,
+          "tailwind-merge": 27372,
+          "(other)": 11500,
+          "@radix-ui/react-slot": 5666,
+          "react-remove-scroll": 5546,
+          "@radix-ui/react-dialog": 5485,
+          "@radix-ui/react-dismissable-layer": 5209,
+          "@radix-ui/react-focus-scope": 4261,
+          "@radix-ui/react-presence": 2651,
+          "react-remove-scroll-bar": 2173,
+          "@radix-ui/react-alert-dialog": 1975,
+          "@radix-ui/react-context": 1731,
+          "class-variance-authority": 1522,
+          "aria-hidden": 1413,
+          "@radix-ui/react-use-controllable-state": 1235,
+          "@radix-ui/primitive": 1092,
+          "use-sidecar": 1064,
+          "@radix-ui/react-compose-refs": 946,
+          "tslib": 846,
+          "@swc/helpers": 844,
+          "@radix-ui/react-focus-guards": 766,
+          "react-style-singleton": 663,
+          "use-callback-ref": 582,
+          "@radix-ui/react-primitive": 547,
+          "@radix-ui/react-use-effect-event": 415,
+          "clsx": 371,
+          "@radix-ui/react-use-callback-ref": 272,
+          "@radix-ui/react-portal": 267,
+          "@radix-ui/react-id": 225,
+          "get-nonce": 59,
+          "@radix-ui/react-use-layout-effect": 48
+        }
+      }
+    },
+    "/admin/students": {
+      "kind": "page",
+      "analyzer": {
+        "initialJs": {
+          "raw": 641357,
+          "gzip": 255338
+        },
+        "asyncJs": {
+          "raw": 0,
+          "gzip": 0
+        },
+        "initialCss": {
+          "raw": 249039,
+          "gzip": 34296
+        },
+        "initialJsChunks": [
+          "static/chunks/05ieumge748ou.js",
+          "static/chunks/0nqsj_70u2fm1.js",
+          "static/chunks/0qklzl1zc686e.js",
+          "static/chunks/13my00uw5li9w.js",
+          "static/chunks/16zsox1nigylz.js",
+          "static/chunks/19r4euou7ofmq.js",
+          "static/chunks/1ya00gsj1p_te.js",
+          "static/chunks/2h4-j9yva6dx3.js",
+          "static/chunks/3eqrbz4c9u_p6.js",
+          "static/chunks/3j18lc1b5hw28.js",
+          "static/chunks/3zugwmf-dzg75.js",
+          "static/chunks/40t7a4x_4thkd.js",
+          "static/chunks/turbopack-32g9idqqcaa90.js"
+        ],
+        "asyncJsChunks": [],
+        "initialJsByPackage": {
+          "next": 489978,
+          "(app src)": 42352,
+          "tailwind-merge": 27372,
+          "lucide-react": 25258,
+          "(other)": 11242,
+          "@radix-ui/react-slot": 5666,
+          "react-remove-scroll": 5546,
+          "@radix-ui/react-dialog": 5485,
+          "@radix-ui/react-dismissable-layer": 5209,
+          "@radix-ui/react-focus-scope": 4261,
+          "@radix-ui/react-presence": 2651,
+          "react-remove-scroll-bar": 2173,
+          "@radix-ui/react-context": 1731,
+          "aria-hidden": 1413,
+          "@radix-ui/react-use-controllable-state": 1235,
+          "@radix-ui/primitive": 1092,
+          "use-sidecar": 1064,
+          "@radix-ui/react-compose-refs": 946,
+          "tslib": 846,
+          "@swc/helpers": 844,
+          "class-variance-authority": 778,
+          "@radix-ui/react-focus-guards": 766,
+          "react-style-singleton": 663,
+          "use-callback-ref": 582,
+          "@radix-ui/react-primitive": 547,
+          "@radix-ui/react-use-effect-event": 415,
+          "clsx": 371,
+          "@radix-ui/react-use-callback-ref": 272,
+          "@radix-ui/react-portal": 267,
+          "@radix-ui/react-id": 225,
+          "get-nonce": 59,
+          "@radix-ui/react-use-layout-effect": 48
+        }
+      }
+    },
+    "/admin/students/[id]": {
+      "kind": "page",
+      "analyzer": {
+        "initialJs": {
+          "raw": 656415,
+          "gzip": 262349
+        },
+        "asyncJs": {
+          "raw": 0,
+          "gzip": 0
+        },
+        "initialCss": {
+          "raw": 249039,
+          "gzip": 34296
+        },
+        "initialJsChunks": [
+          "static/chunks/05ieumge748ou.js",
+          "static/chunks/086aseaqfmvcy.js",
+          "static/chunks/0nqsj_70u2fm1.js",
+          "static/chunks/0qklzl1zc686e.js",
+          "static/chunks/13my00uw5li9w.js",
+          "static/chunks/19r4euou7ofmq.js",
+          "static/chunks/1ya00gsj1p_te.js",
+          "static/chunks/2h4-j9yva6dx3.js",
+          "static/chunks/3eqrbz4c9u_p6.js",
+          "static/chunks/3j18lc1b5hw28.js",
+          "static/chunks/3zugwmf-dzg75.js",
+          "static/chunks/40t7a4x_4thkd.js",
+          "static/chunks/turbopack-32g9idqqcaa90.js"
+        ],
+        "asyncJsChunks": [],
+        "initialJsByPackage": {
+          "next": 489978,
+          "(app src)": 53171,
+          "tailwind-merge": 27372,
+          "lucide-react": 26744,
+          "(other)": 11242,
+          "@radix-ui/react-slot": 5666,
+          "react-remove-scroll": 5546,
+          "@radix-ui/react-dialog": 5485,
+          "@radix-ui/react-dismissable-layer": 5209,
+          "@radix-ui/react-focus-scope": 4261,
+          "@radix-ui/react-presence": 2651,
+          "react-remove-scroll-bar": 2173,
+          "@radix-ui/react-alert-dialog": 1975,
+          "@radix-ui/react-context": 1731,
+          "class-variance-authority": 1556,
+          "aria-hidden": 1413,
+          "@radix-ui/react-use-controllable-state": 1235,
+          "@radix-ui/primitive": 1092,
+          "use-sidecar": 1064,
+          "@radix-ui/react-compose-refs": 946,
+          "tslib": 846,
+          "@swc/helpers": 844,
+          "@radix-ui/react-focus-guards": 766,
+          "react-style-singleton": 663,
+          "use-callback-ref": 582,
+          "@radix-ui/react-primitive": 547,
+          "@radix-ui/react-use-effect-event": 415,
+          "clsx": 371,
+          "@radix-ui/react-use-callback-ref": 272,
+          "@radix-ui/react-portal": 267,
+          "@radix-ui/react-id": 225,
+          "get-nonce": 59,
+          "@radix-ui/react-use-layout-effect": 48
+        }
+      }
+    },
+    "/admin/teachers": {
+      "kind": "page",
+      "analyzer": {
+        "initialJs": {
+          "raw": 641357,
+          "gzip": 255338
+        },
+        "asyncJs": {
+          "raw": 0,
+          "gzip": 0
+        },
+        "initialCss": {
+          "raw": 249039,
+          "gzip": 34296
+        },
+        "initialJsChunks": [
+          "static/chunks/05ieumge748ou.js",
+          "static/chunks/0nqsj_70u2fm1.js",
+          "static/chunks/0qklzl1zc686e.js",
+          "static/chunks/13my00uw5li9w.js",
+          "static/chunks/16zsox1nigylz.js",
+          "static/chunks/19r4euou7ofmq.js",
+          "static/chunks/1ya00gsj1p_te.js",
+          "static/chunks/2h4-j9yva6dx3.js",
+          "static/chunks/3eqrbz4c9u_p6.js",
+          "static/chunks/3j18lc1b5hw28.js",
+          "static/chunks/3zugwmf-dzg75.js",
+          "static/chunks/40t7a4x_4thkd.js",
+          "static/chunks/turbopack-32g9idqqcaa90.js"
+        ],
+        "asyncJsChunks": [],
+        "initialJsByPackage": {
+          "next": 489978,
+          "(app src)": 42352,
+          "tailwind-merge": 27372,
+          "lucide-react": 25258,
+          "(other)": 11242,
+          "@radix-ui/react-slot": 5666,
+          "react-remove-scroll": 5546,
+          "@radix-ui/react-dialog": 5485,
+          "@radix-ui/react-dismissable-layer": 5209,
+          "@radix-ui/react-focus-scope": 4261,
+          "@radix-ui/react-presence": 2651,
+          "react-remove-scroll-bar": 2173,
+          "@radix-ui/react-context": 1731,
+          "aria-hidden": 1413,
+          "@radix-ui/react-use-controllable-state": 1235,
+          "@radix-ui/primitive": 1092,
+          "use-sidecar": 1064,
+          "@radix-ui/react-compose-refs": 946,
+          "tslib": 846,
+          "@swc/helpers": 844,
+          "class-variance-authority": 778,
+          "@radix-ui/react-focus-guards": 766,
+          "react-style-singleton": 663,
+          "use-callback-ref": 582,
+          "@radix-ui/react-primitive": 547,
+          "@radix-ui/react-use-effect-event": 415,
+          "clsx": 371,
+          "@radix-ui/react-use-callback-ref": 272,
+          "@radix-ui/react-portal": 267,
+          "@radix-ui/react-id": 225,
+          "get-nonce": 59,
+          "@radix-ui/react-use-layout-effect": 48
+        }
+      }
+    },
+    "/admin/teachers/[id]": {
+      "kind": "page",
+      "analyzer": {
+        "initialJs": {
+          "raw": 674247,
+          "gzip": 270532
+        },
+        "asyncJs": {
+          "raw": 57235,
+          "gzip": 21204
+        },
+        "initialCss": {
+          "raw": 249039,
+          "gzip": 34296
+        },
+        "initialJsChunks": [
+          "static/chunks/05ieumge748ou.js",
+          "static/chunks/0nqsj_70u2fm1.js",
+          "static/chunks/0qklzl1zc686e.js",
+          "static/chunks/13my00uw5li9w.js",
+          "static/chunks/19r4euou7ofmq.js",
+          "static/chunks/1u0b7tlent965.js",
+          "static/chunks/1ya00gsj1p_te.js",
+          "static/chunks/2h4-j9yva6dx3.js",
+          "static/chunks/2zmdtyxuhdrrp.js",
+          "static/chunks/3eqrbz4c9u_p6.js",
+          "static/chunks/3j18lc1b5hw28.js",
+          "static/chunks/3zugwmf-dzg75.js",
+          "static/chunks/40t7a4x_4thkd.js",
+          "static/chunks/turbopack-32g9idqqcaa90.js"
+        ],
+        "asyncJsChunks": [
+          "[output]/.next/server/chunks/ssr/[externals]__1r-8xo9bmg9fq._.js",
+          "[output]/.next/server/chunks/ssr/[root-of-the-server]__13q429kzzzq85._.js",
+          "static/chunks/40kg7pt5v62uc.js"
+        ],
+        "initialJsByPackage": {
+          "next": 489978,
+          "(app src)": 68436,
+          "lucide-react": 29053,
+          "tailwind-merge": 27372,
+          "(other)": 11500,
+          "@radix-ui/react-slot": 5666,
+          "react-remove-scroll": 5546,
+          "@radix-ui/react-dialog": 5485,
+          "@radix-ui/react-dismissable-layer": 5209,
+          "@radix-ui/react-focus-scope": 4261,
+          "@radix-ui/react-presence": 2651,
+          "react-remove-scroll-bar": 2173,
+          "@radix-ui/react-alert-dialog": 1975,
+          "@radix-ui/react-context": 1731,
+          "class-variance-authority": 1556,
+          "aria-hidden": 1413,
+          "@radix-ui/react-use-controllable-state": 1235,
+          "@radix-ui/primitive": 1092,
+          "use-sidecar": 1064,
+          "@radix-ui/react-compose-refs": 946,
+          "tslib": 846,
+          "@swc/helpers": 844,
+          "@radix-ui/react-focus-guards": 766,
+          "react-style-singleton": 663,
+          "use-callback-ref": 582,
+          "@radix-ui/react-primitive": 547,
+          "@radix-ui/react-use-effect-event": 415,
+          "clsx": 371,
+          "@radix-ui/react-use-callback-ref": 272,
+          "@radix-ui/react-portal": 267,
+          "@radix-ui/react-id": 225,
+          "get-nonce": 59,
+          "@radix-ui/react-use-layout-effect": 48
+        }
+      }
+    },
+    "/admin/teachers/new": {
+      "kind": "page",
+      "analyzer": {
+        "initialJs": {
+          "raw": 656551,
+          "gzip": 262659
+        },
+        "asyncJs": {
+          "raw": 0,
+          "gzip": 0
+        },
+        "initialCss": {
+          "raw": 249039,
+          "gzip": 34296
+        },
+        "initialJsChunks": [
+          "static/chunks/05ieumge748ou.js",
+          "static/chunks/0nqsj_70u2fm1.js",
+          "static/chunks/0qklzl1zc686e.js",
+          "static/chunks/13my00uw5li9w.js",
+          "static/chunks/19r4euou7ofmq.js",
+          "static/chunks/1ya00gsj1p_te.js",
+          "static/chunks/2h4-j9yva6dx3.js",
+          "static/chunks/2ya-2h3j5ubzt.js",
+          "static/chunks/3eqrbz4c9u_p6.js",
+          "static/chunks/3j18lc1b5hw28.js",
+          "static/chunks/3zugwmf-dzg75.js",
+          "static/chunks/40t7a4x_4thkd.js",
+          "static/chunks/turbopack-32g9idqqcaa90.js"
+        ],
+        "asyncJsChunks": [],
+        "initialJsByPackage": {
+          "next": 489978,
+          "(app src)": 54501,
+          "lucide-react": 27525,
+          "tailwind-merge": 27372,
+          "(other)": 11242,
+          "@radix-ui/react-slot": 5666,
+          "react-remove-scroll": 5546,
+          "@radix-ui/react-dialog": 5485,
+          "@radix-ui/react-dismissable-layer": 5209,
+          "@radix-ui/react-focus-scope": 4261,
+          "@radix-ui/react-presence": 2651,
+          "react-remove-scroll-bar": 2173,
+          "@radix-ui/react-context": 1731,
+          "class-variance-authority": 1556,
+          "aria-hidden": 1413,
+          "@radix-ui/react-use-controllable-state": 1235,
+          "@radix-ui/primitive": 1092,
+          "use-sidecar": 1064,
+          "@radix-ui/react-compose-refs": 946,
+          "tslib": 846,
+          "@swc/helpers": 844,
+          "@radix-ui/react-focus-guards": 766,
+          "react-style-singleton": 663,
+          "use-callback-ref": 582,
+          "@radix-ui/react-primitive": 547,
+          "@radix-ui/react-use-effect-event": 415,
+          "clsx": 371,
+          "@radix-ui/react-use-callback-ref": 272,
+          "@radix-ui/react-portal": 267,
+          "@radix-ui/react-id": 225,
+          "get-nonce": 59,
+          "@radix-ui/react-use-layout-effect": 48
+        }
+      }
+    },
+    "/api/admin/reports/export": {
+      "kind": "route-handler",
+      "analyzer": {
+        "initialJs": {
+          "raw": 0,
+          "gzip": 0
+        },
+        "asyncJs": {
+          "raw": 0,
+          "gzip": 0
+        },
+        "initialCss": {
+          "raw": 0,
+          "gzip": 0
+        },
+        "initialJsChunks": [],
+        "asyncJsChunks": [],
+        "initialJsByPackage": {}
+      }
+    },
+    "/api/admin/uploads/complete": {
+      "kind": "route-handler",
+      "analyzer": {
+        "initialJs": {
+          "raw": 0,
+          "gzip": 0
+        },
+        "asyncJs": {
+          "raw": 0,
+          "gzip": 0
+        },
+        "initialCss": {
+          "raw": 0,
+          "gzip": 0
+        },
+        "initialJsChunks": [],
+        "asyncJsChunks": [],
+        "initialJsByPackage": {}
+      }
+    },
+    "/api/admin/uploads/init": {
+      "kind": "route-handler",
+      "analyzer": {
+        "initialJs": {
+          "raw": 0,
+          "gzip": 0
+        },
+        "asyncJs": {
+          "raw": 0,
+          "gzip": 0
+        },
+        "initialCss": {
+          "raw": 0,
+          "gzip": 0
+        },
+        "initialJsChunks": [],
+        "asyncJsChunks": [],
+        "initialJsByPackage": {}
+      }
+    },
+    "/api/files/[fileId]": {
+      "kind": "route-handler",
+      "analyzer": {
+        "initialJs": {
+          "raw": 0,
+          "gzip": 0
+        },
+        "asyncJs": {
+          "raw": 0,
+          "gzip": 0
+        },
+        "initialCss": {
+          "raw": 0,
+          "gzip": 0
+        },
+        "initialJsChunks": [],
+        "asyncJsChunks": [],
+        "initialJsByPackage": {}
+      }
+    },
+    "/api/lessons/[lessonId]/progress": {
+      "kind": "route-handler",
+      "analyzer": {
+        "initialJs": {
+          "raw": 0,
+          "gzip": 0
+        },
+        "asyncJs": {
+          "raw": 0,
+          "gzip": 0
+        },
+        "initialCss": {
+          "raw": 0,
+          "gzip": 0
+        },
+        "initialJsChunks": [],
+        "asyncJsChunks": [],
+        "initialJsByPackage": {}
+      }
+    },
+    "/api/lessons/[lessonId]/stream": {
+      "kind": "route-handler",
+      "analyzer": {
+        "initialJs": {
+          "raw": 0,
+          "gzip": 0
+        },
+        "asyncJs": {
+          "raw": 0,
+          "gzip": 0
+        },
+        "initialCss": {
+          "raw": 0,
+          "gzip": 0
+        },
+        "initialJsChunks": [],
+        "asyncJsChunks": [],
+        "initialJsByPackage": {}
+      }
+    },
+    "/api/payments/myfatoorah/webhook": {
+      "kind": "route-handler",
+      "analyzer": {
+        "initialJs": {
+          "raw": 0,
+          "gzip": 0
+        },
+        "asyncJs": {
+          "raw": 0,
+          "gzip": 0
+        },
+        "initialCss": {
+          "raw": 0,
+          "gzip": 0
+        },
+        "initialJsChunks": [],
+        "asyncJsChunks": [],
+        "initialJsByPackage": {}
+      }
+    },
+    "/api/progress": {
+      "kind": "route-handler",
+      "analyzer": {
+        "initialJs": {
+          "raw": 0,
+          "gzip": 0
+        },
+        "asyncJs": {
+          "raw": 0,
+          "gzip": 0
+        },
+        "initialCss": {
+          "raw": 0,
+          "gzip": 0
+        },
+        "initialJsChunks": [],
+        "asyncJsChunks": [],
+        "initialJsByPackage": {}
+      }
+    },
+    "/api/uploads/local": {
+      "kind": "route-handler",
+      "analyzer": {
+        "initialJs": {
+          "raw": 0,
+          "gzip": 0
+        },
+        "asyncJs": {
+          "raw": 0,
+          "gzip": 0
+        },
+        "initialCss": {
+          "raw": 0,
+          "gzip": 0
+        },
+        "initialJsChunks": [],
+        "asyncJsChunks": [],
+        "initialJsByPackage": {}
+      }
+    },
+    "/api/video/bunny/webhook": {
+      "kind": "route-handler",
+      "analyzer": {
+        "initialJs": {
+          "raw": 0,
+          "gzip": 0
+        },
+        "asyncJs": {
+          "raw": 0,
+          "gzip": 0
+        },
+        "initialCss": {
+          "raw": 0,
+          "gzip": 0
+        },
+        "initialJsChunks": [],
+        "asyncJsChunks": [],
+        "initialJsByPackage": {}
+      }
+    },
+    "/lab/admin-kit": {
+      "kind": "page",
+      "analyzer": {
+        "initialJs": {
+          "raw": 648819,
+          "gzip": 258350
+        },
+        "asyncJs": {
+          "raw": 0,
+          "gzip": 0
+        },
+        "initialCss": {
+          "raw": 249039,
+          "gzip": 34296
+        },
+        "initialJsChunks": [
+          "static/chunks/05ieumge748ou.js",
+          "static/chunks/0nqsj_70u2fm1.js",
+          "static/chunks/13my00uw5li9w.js",
+          "static/chunks/19r4euou7ofmq.js",
+          "static/chunks/1ya00gsj1p_te.js",
+          "static/chunks/2h4-j9yva6dx3.js",
+          "static/chunks/322lohe2kqhbn.js",
+          "static/chunks/3eqrbz4c9u_p6.js",
+          "static/chunks/3j18lc1b5hw28.js",
+          "static/chunks/3zugwmf-dzg75.js",
+          "static/chunks/40t7a4x_4thkd.js",
+          "static/chunks/turbopack-32g9idqqcaa90.js"
+        ],
+        "asyncJsChunks": [],
+        "initialJsByPackage": {
+          "next": 489978,
+          "(app src)": 47595,
+          "tailwind-merge": 27372,
+          "lucide-react": 25502,
+          "(other)": 11242,
+          "@radix-ui/react-slot": 5666,
+          "react-remove-scroll": 5546,
+          "@radix-ui/react-dialog": 5485,
+          "@radix-ui/react-dismissable-layer": 5209,
+          "@radix-ui/react-focus-scope": 4261,
+          "@radix-ui/react-presence": 2651,
+          "react-remove-scroll-bar": 2173,
+          "@radix-ui/react-alert-dialog": 1975,
+          "@radix-ui/react-context": 1731,
+          "aria-hidden": 1413,
+          "@radix-ui/react-use-controllable-state": 1235,
+          "@radix-ui/primitive": 1092,
+          "use-sidecar": 1064,
+          "@radix-ui/react-compose-refs": 946,
+          "tslib": 846,
+          "@swc/helpers": 844,
+          "class-variance-authority": 778,
+          "@radix-ui/react-focus-guards": 766,
+          "react-style-singleton": 663,
+          "use-callback-ref": 582,
+          "@radix-ui/react-primitive": 547,
+          "@radix-ui/react-use-effect-event": 415,
+          "clsx": 371,
+          "@radix-ui/react-use-callback-ref": 272,
+          "@radix-ui/react-portal": 267,
+          "@radix-ui/react-id": 225,
+          "get-nonce": 59,
+          "@radix-ui/react-use-layout-effect": 48
+        }
+      }
+    },
+    "/lab/system": {
+      "kind": "page",
+      "analyzer": {
+        "initialJs": {
+          "raw": 601837,
+          "gzip": 237623
+        },
+        "asyncJs": {
+          "raw": 0,
+          "gzip": 0
+        },
+        "initialCss": {
+          "raw": 357203,
+          "gzip": 58639
+        },
+        "initialJsChunks": [
+          "static/chunks/05ieumge748ou.js",
+          "static/chunks/0nqsj_70u2fm1.js",
+          "static/chunks/13my00uw5li9w.js",
+          "static/chunks/19r4euou7ofmq.js",
+          "static/chunks/1ya00gsj1p_te.js",
+          "static/chunks/2h4-j9yva6dx3.js",
+          "static/chunks/2of0lgjc_ufad.js",
+          "static/chunks/3eqrbz4c9u_p6.js",
+          "static/chunks/3zugwmf-dzg75.js",
+          "static/chunks/40t7a4x_4thkd.js",
+          "static/chunks/turbopack-32g9idqqcaa90.js"
+        ],
+        "asyncJsChunks": [],
+        "initialJsByPackage": {
+          "next": 482213,
+          "tailwind-merge": 27372,
+          "(app src)": 24208,
+          "lucide-react": 14953,
+          "(other)": 11242,
+          "react-remove-scroll": 5546,
+          "@radix-ui/react-dialog": 5485,
+          "@radix-ui/react-dismissable-layer": 5209,
+          "@radix-ui/react-focus-scope": 4261,
+          "@radix-ui/react-slot": 2833,
+          "@radix-ui/react-presence": 2651,
+          "react-remove-scroll-bar": 2173,
+          "@radix-ui/react-context": 1731,
+          "aria-hidden": 1413,
+          "@radix-ui/react-use-controllable-state": 1235,
+          "@radix-ui/primitive": 1092,
+          "use-sidecar": 1064,
+          "tslib": 846,
+          "@swc/helpers": 844,
+          "class-variance-authority": 778,
+          "@radix-ui/react-focus-guards": 766,
+          "react-style-singleton": 663,
+          "use-callback-ref": 582,
+          "@radix-ui/react-primitive": 547,
+          "@radix-ui/react-compose-refs": 473,
+          "@radix-ui/react-use-effect-event": 415,
+          "clsx": 371,
+          "@radix-ui/react-use-callback-ref": 272,
+          "@radix-ui/react-portal": 267,
+          "@radix-ui/react-id": 225,
+          "get-nonce": 59,
+          "@radix-ui/react-use-layout-effect": 48
+        }
+      }
+    },
+    "/lab/v2-c": {
+      "kind": "page",
+      "analyzer": {
+        "initialJs": {
+          "raw": 597836,
+          "gzip": 234377
+        },
+        "asyncJs": {
+          "raw": 0,
+          "gzip": 0
+        },
+        "initialCss": {
+          "raw": 309518,
+          "gzip": 47707
+        },
+        "initialJsChunks": [
+          "static/chunks/05ieumge748ou.js",
+          "static/chunks/0c9tl88tu7fyz.js",
+          "static/chunks/0nqsj_70u2fm1.js",
+          "static/chunks/13my00uw5li9w.js",
+          "static/chunks/19r4euou7ofmq.js",
+          "static/chunks/1ya00gsj1p_te.js",
+          "static/chunks/2h4-j9yva6dx3.js",
+          "static/chunks/3eqrbz4c9u_p6.js",
+          "static/chunks/3zugwmf-dzg75.js",
+          "static/chunks/40t7a4x_4thkd.js",
+          "static/chunks/turbopack-32g9idqqcaa90.js"
+        ],
+        "asyncJsChunks": [],
+        "initialJsByPackage": {
+          "next": 475123,
+          "tailwind-merge": 27372,
+          "(app src)": 25146,
+          "lucide-react": 17882,
+          "(other)": 11242,
+          "react-remove-scroll": 5546,
+          "@radix-ui/react-dialog": 5485,
+          "@radix-ui/react-dismissable-layer": 5209,
+          "@radix-ui/react-focus-scope": 4261,
+          "@radix-ui/react-slot": 2833,
+          "@radix-ui/react-presence": 2651,
+          "react-remove-scroll-bar": 2173,
+          "@radix-ui/react-context": 1731,
+          "aria-hidden": 1413,
+          "@radix-ui/react-use-controllable-state": 1235,
+          "@radix-ui/primitive": 1092,
+          "use-sidecar": 1064,
+          "tslib": 846,
+          "@swc/helpers": 844,
+          "@radix-ui/react-focus-guards": 766,
+          "react-style-singleton": 663,
+          "use-callback-ref": 582,
+          "@radix-ui/react-primitive": 547,
+          "@radix-ui/react-compose-refs": 473,
+          "@radix-ui/react-use-effect-event": 415,
+          "clsx": 371,
+          "@radix-ui/react-use-callback-ref": 272,
+          "@radix-ui/react-portal": 267,
+          "@radix-ui/react-id": 225,
+          "get-nonce": 59,
+          "@radix-ui/react-use-layout-effect": 48
+        }
+      }
+    },
+    "/media/[...key]": {
+      "kind": "route-handler",
+      "analyzer": {
+        "initialJs": {
+          "raw": 0,
+          "gzip": 0
+        },
+        "asyncJs": {
+          "raw": 0,
+          "gzip": 0
+        },
+        "initialCss": {
+          "raw": 0,
+          "gzip": 0
+        },
+        "initialJsChunks": [],
+        "asyncJsChunks": [],
+        "initialJsByPackage": {}
+      }
+    },
+    "/payment/return": {
+      "kind": "route-handler",
+      "analyzer": {
+        "initialJs": {
+          "raw": 0,
+          "gzip": 0
+        },
+        "asyncJs": {
+          "raw": 0,
+          "gzip": 0
+        },
+        "initialCss": {
+          "raw": 0,
+          "gzip": 0
+        },
+        "initialJsChunks": [],
+        "asyncJsChunks": [],
+        "initialJsByPackage": {}
+      }
+    }
+  },
+  "measured": {
+    "method": "next build output: rootMainFiles + entryJSFiles of every segment in page_client-reference-manifest.js; gzip = zlib level 6 per file",
+    "rootMainFiles": [
+      {
+        "file": "static/chunks/37f-7seyrw29b.js",
+        "raw": 20926,
+        "gzip": 4964
+      },
+      {
+        "file": "static/chunks/3-1qug8s254_a.js",
+        "raw": 177874,
+        "gzip": 48998
+      },
+      {
+        "file": "static/chunks/0tbjpdo5bcf9u.js",
+        "raw": 234302,
+        "gzip": 73294
+      },
+      {
+        "file": "static/chunks/turbopack-077hmtqrhcoji.js",
+        "raw": 11199,
+        "gzip": 4354
+      }
+    ],
+    "polyfillFiles": [
+      {
+        "file": "static/chunks/0cz1d0mv5g_q7.js",
+        "raw": 112594,
+        "gzip": 39627,
+        "note": "nomodule, not loaded by modern browsers"
+      }
+    ],
+    "routes": {
+      "/": {
+        "initialJs": {
+          "raw": 589777,
+          "gzip": 181447
+        },
+        "initialCss": {
+          "raw": 357120,
+          "gzip": 54757
+        },
+        "jsFiles": 12
+      },
+      "/_global-error": {
+        "initialJs": {
+          "raw": 461040,
+          "gzip": 136409
+        },
+        "initialCss": {
+          "raw": 0,
+          "gzip": 0
+        },
+        "jsFiles": 5
+      },
+      "/_not-found": {
+        "initialJs": {
+          "raw": 577291,
+          "gzip": 176519
+        },
+        "initialCss": {
+          "raw": 248995,
+          "gzip": 34623
+        },
+        "jsFiles": 10
+      },
+      "/account": {
+        "initialJs": {
+          "raw": 592924,
+          "gzip": 182741
+        },
+        "initialCss": {
+          "raw": 357120,
+          "gzip": 54757
+        },
+        "jsFiles": 12
+      },
+      "/admin": {
+        "initialJs": {
+          "raw": 615519,
+          "gzip": 191111
+        },
+        "initialCss": {
+          "raw": 248995,
+          "gzip": 34623
+        },
+        "jsFiles": 13
+      },
+      "/admin/bundles": {
+        "initialJs": {
+          "raw": 615519,
+          "gzip": 191111
+        },
+        "initialCss": {
+          "raw": 357120,
+          "gzip": 54757
+        },
+        "jsFiles": 13
+      },
+      "/admin/catalog": {
+        "initialJs": {
+          "raw": 630577,
+          "gzip": 195971
+        },
+        "initialCss": {
+          "raw": 248995,
+          "gzip": 34623
+        },
+        "jsFiles": 13
+      },
+      "/admin/coupons": {
+        "initialJs": {
+          "raw": 634713,
+          "gzip": 197342
+        },
+        "initialCss": {
+          "raw": 248995,
+          "gzip": 34623
+        },
+        "jsFiles": 13
+      },
+      "/admin/coupons/[id]": {
+        "initialJs": {
+          "raw": 628334,
+          "gzip": 195589
+        },
+        "initialCss": {
+          "raw": 248995,
+          "gzip": 34623
+        },
+        "jsFiles": 13
+      },
+      "/admin/earnings": {
+        "initialJs": {
+          "raw": 615519,
+          "gzip": 191111
+        },
+        "initialCss": {
+          "raw": 248995,
+          "gzip": 34623
+        },
+        "jsFiles": 13
+      },
+      "/admin/orders": {
+        "initialJs": {
+          "raw": 615519,
+          "gzip": 191111
+        },
+        "initialCss": {
+          "raw": 248995,
+          "gzip": 34623
+        },
+        "jsFiles": 13
+      },
+      "/admin/orders/[id]": {
+        "initialJs": {
+          "raw": 627211,
+          "gzip": 195101
+        },
+        "initialCss": {
+          "raw": 248995,
+          "gzip": 34623
+        },
+        "jsFiles": 13
+      },
+      "/admin/products": {
+        "initialJs": {
+          "raw": 630200,
+          "gzip": 195832
+        },
+        "initialCss": {
+          "raw": 357120,
+          "gzip": 54757
+        },
+        "jsFiles": 13
+      },
+      "/admin/products/[id]": {
+        "initialJs": {
+          "raw": 666790,
+          "gzip": 207178
+        },
+        "initialCss": {
+          "raw": 357120,
+          "gzip": 54757
+        },
+        "jsFiles": 14
+      },
+      "/admin/products/new": {
+        "initialJs": {
+          "raw": 642888,
+          "gzip": 200271
+        },
+        "initialCss": {
+          "raw": 357120,
+          "gzip": 54757
+        },
+        "jsFiles": 13
+      },
+      "/admin/profile": {
+        "initialJs": {
+          "raw": 638637,
+          "gzip": 198782
+        },
+        "initialCss": {
+          "raw": 357120,
+          "gzip": 54757
+        },
+        "jsFiles": 13
+      },
+      "/admin/reports": {
+        "initialJs": {
+          "raw": 615519,
+          "gzip": 191111
+        },
+        "initialCss": {
+          "raw": 248995,
+          "gzip": 34623
+        },
+        "jsFiles": 13
+      },
+      "/admin/review": {
+        "initialJs": {
+          "raw": 615519,
+          "gzip": 191111
+        },
+        "initialCss": {
+          "raw": 248995,
+          "gzip": 34623
+        },
+        "jsFiles": 13
+      },
+      "/admin/settings": {
+        "initialJs": {
+          "raw": 652319,
+          "gzip": 202731
+        },
+        "initialCss": {
+          "raw": 248995,
+          "gzip": 34623
+        },
+        "jsFiles": 14
+      },
+      "/admin/students": {
+        "initialJs": {
+          "raw": 615519,
+          "gzip": 191111
+        },
+        "initialCss": {
+          "raw": 248995,
+          "gzip": 34623
+        },
+        "jsFiles": 13
+      },
+      "/admin/students/[id]": {
+        "initialJs": {
+          "raw": 630577,
+          "gzip": 195971
+        },
+        "initialCss": {
+          "raw": 248995,
+          "gzip": 34623
+        },
+        "jsFiles": 13
+      },
+      "/admin/teachers": {
+        "initialJs": {
+          "raw": 615519,
+          "gzip": 191111
+        },
+        "initialCss": {
+          "raw": 248995,
+          "gzip": 34623
+        },
+        "jsFiles": 13
+      },
+      "/admin/teachers/[id]": {
+        "initialJs": {
+          "raw": 648366,
+          "gzip": 201989
+        },
+        "initialCss": {
+          "raw": 248995,
+          "gzip": 34623
+        },
+        "jsFiles": 14
+      },
+      "/admin/teachers/new": {
+        "initialJs": {
+          "raw": 630713,
+          "gzip": 196448
+        },
+        "initialCss": {
+          "raw": 248995,
+          "gzip": 34623
+        },
+        "jsFiles": 13
+      },
+      "/bundles": {
+        "initialJs": {
+          "raw": 582512,
+          "gzip": 178826
+        },
+        "initialCss": {
+          "raw": 357120,
+          "gzip": 54757
+        },
+        "jsFiles": 11
+      },
+      "/cart": {
+        "initialJs": {
+          "raw": 587780,
+          "gzip": 181138
+        },
+        "initialCss": {
+          "raw": 357120,
+          "gzip": 54757
+        },
+        "jsFiles": 12
+      },
+      "/checkout": {
+        "initialJs": {
+          "raw": 591343,
+          "gzip": 182498
+        },
+        "initialCss": {
+          "raw": 357120,
+          "gzip": 54757
+        },
+        "jsFiles": 12
+      },
+      "/contact": {
+        "initialJs": {
+          "raw": 582512,
+          "gzip": 178826
+        },
+        "initialCss": {
+          "raw": 248995,
+          "gzip": 34623
+        },
+        "jsFiles": 11
+      },
+      "/forgot-password": {
+        "initialJs": {
+          "raw": 599079,
+          "gzip": 184731
+        },
+        "initialCss": {
+          "raw": 248995,
+          "gzip": 34623
+        },
+        "jsFiles": 12
+      },
+      "/grades/[gradeSlug]": {
+        "initialJs": {
+          "raw": 582512,
+          "gzip": 178826
+        },
+        "initialCss": {
+          "raw": 357120,
+          "gzip": 54757
+        },
+        "jsFiles": 11
+      },
+      "/grades/[gradeSlug]/[subjectSlug]": {
+        "initialJs": {
+          "raw": 582512,
+          "gzip": 178826
+        },
+        "initialCss": {
+          "raw": 357120,
+          "gzip": 54757
+        },
+        "jsFiles": 11
+      },
+      "/lab/admin-kit": {
+        "initialJs": {
+          "raw": 623024,
+          "gzip": 193122
+        },
+        "initialCss": {
+          "raw": 248995,
+          "gzip": 34623
+        },
+        "jsFiles": 12
+      },
+      "/lab/system": {
+        "initialJs": {
+          "raw": 603147,
+          "gzip": 186417
+        },
+        "initialCss": {
+          "raw": 357120,
+          "gzip": 54757
+        },
+        "jsFiles": 11
+      },
+      "/lab/v2-c": {
+        "initialJs": {
+          "raw": 599100,
+          "gzip": 184672
+        },
+        "initialCss": {
+          "raw": 309435,
+          "gzip": 46525
+        },
+        "jsFiles": 11
+      },
+      "/library": {
+        "initialJs": {
+          "raw": 582512,
+          "gzip": 178826
+        },
+        "initialCss": {
+          "raw": 357120,
+          "gzip": 54757
+        },
+        "jsFiles": 11
+      },
+      "/login": {
+        "initialJs": {
+          "raw": 598576,
+          "gzip": 184569
+        },
+        "initialCss": {
+          "raw": 248995,
+          "gzip": 34623
+        },
+        "jsFiles": 12
+      },
+      "/orders/[id]": {
+        "initialJs": {
+          "raw": 585183,
+          "gzip": 180142
+        },
+        "initialCss": {
+          "raw": 357120,
+          "gzip": 54757
+        },
+        "jsFiles": 12
+      },
+      "/preview/[fileId]": {
+        "initialJs": {
+          "raw": 606763,
+          "gzip": 187787
+        },
+        "initialCss": {
+          "raw": 248995,
+          "gzip": 34623
+        },
+        "jsFiles": 12
+      },
+      "/privacy": {
+        "initialJs": {
+          "raw": 582512,
+          "gzip": 178826
+        },
+        "initialCss": {
+          "raw": 248995,
+          "gzip": 34623
+        },
+        "jsFiles": 11
+      },
+      "/products/[slug]": {
+        "initialJs": {
+          "raw": 588349,
+          "gzip": 181234
+        },
+        "initialCss": {
+          "raw": 357120,
+          "gzip": 54757
+        },
+        "jsFiles": 12
+      },
+      "/read/[fileId]": {
+        "initialJs": {
+          "raw": 606763,
+          "gzip": 187787
+        },
+        "initialCss": {
+          "raw": 248995,
+          "gzip": 34623
+        },
+        "jsFiles": 12
+      },
+      "/refund-policy": {
+        "initialJs": {
+          "raw": 582512,
+          "gzip": 178826
+        },
+        "initialCss": {
+          "raw": 248995,
+          "gzip": 34623
+        },
+        "jsFiles": 11
+      },
+      "/register": {
+        "initialJs": {
+          "raw": 602545,
+          "gzip": 185674
+        },
+        "initialCss": {
+          "raw": 248995,
+          "gzip": 34623
+        },
+        "jsFiles": 12
+      },
+      "/reset-password": {
+        "initialJs": {
+          "raw": 594837,
+          "gzip": 183455
+        },
+        "initialCss": {
+          "raw": 248995,
+          "gzip": 34623
+        },
+        "jsFiles": 12
+      },
+      "/stages/[slug]": {
+        "initialJs": {
+          "raw": 582512,
+          "gzip": 178826
+        },
+        "initialCss": {
+          "raw": 357120,
+          "gzip": 54757
+        },
+        "jsFiles": 11
+      },
+      "/teachers": {
+        "initialJs": {
+          "raw": 582512,
+          "gzip": 178826
+        },
+        "initialCss": {
+          "raw": 357120,
+          "gzip": 54757
+        },
+        "jsFiles": 11
+      },
+      "/teachers/[slug]": {
+        "initialJs": {
+          "raw": 582512,
+          "gzip": 178826
+        },
+        "initialCss": {
+          "raw": 357120,
+          "gzip": 54757
+        },
+        "jsFiles": 11
+      },
+      "/terms": {
+        "initialJs": {
+          "raw": 582512,
+          "gzip": 178826
+        },
+        "initialCss": {
+          "raw": 248995,
+          "gzip": 34623
+        },
+        "jsFiles": 11
+      },
+      "/watch/[productId]": {
+        "initialJs": {
+          "raw": 626498,
+          "gzip": 194329
+        },
+        "initialCss": {
+          "raw": 248995,
+          "gzip": 34623
+        },
+        "jsFiles": 12
+      }
+    }
+  }
+}

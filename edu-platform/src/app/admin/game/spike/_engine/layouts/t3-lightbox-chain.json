@@ -1,0 +1,519 @@
+{
+ "version": 1,
+ "key": "t3-lightbox-chain",
+ "title": "سلسلة صناديق الضوء",
+ "tier": 3,
+ "slots": 4,
+ "par": 2,
+ "streakReward": "pulse",
+ "launcher": {
+  "x": 2600,
+  "y": 250
+ },
+ "bodies": [
+  {
+   "id": "t1",
+   "shape": "box",
+   "material": "teak",
+   "x": 830,
+   "y": 45,
+   "w": 20,
+   "h": 90,
+   "rot": 0,
+   "fixed": false
+  },
+  {
+   "id": "t2",
+   "shape": "box",
+   "material": "teak",
+   "x": 970,
+   "y": 45,
+   "w": 20,
+   "h": 90,
+   "rot": 0,
+   "fixed": false
+  },
+  {
+   "id": "t3",
+   "shape": "box",
+   "material": "teak",
+   "x": 900,
+   "y": 100,
+   "w": 180,
+   "h": 20,
+   "rot": 0,
+   "fixed": false
+  },
+  {
+   "id": "l4",
+   "shape": "box",
+   "material": "lightbox",
+   "x": 900,
+   "y": 135,
+   "w": 50,
+   "h": 50,
+   "rot": 0,
+   "fixed": false
+  },
+  {
+   "id": "f5",
+   "shape": "box",
+   "material": "frond",
+   "x": 855,
+   "y": 130,
+   "w": 20,
+   "h": 40,
+   "rot": 0,
+   "fixed": false
+  },
+  {
+   "id": "f6",
+   "shape": "box",
+   "material": "frond",
+   "x": 945,
+   "y": 130,
+   "w": 20,
+   "h": 40,
+   "rot": 0,
+   "fixed": false
+  },
+  {
+   "id": "t7",
+   "shape": "box",
+   "material": "teak",
+   "x": 830,
+   "y": 145,
+   "w": 20,
+   "h": 70,
+   "rot": 0,
+   "fixed": false
+  },
+  {
+   "id": "t8",
+   "shape": "box",
+   "material": "teak",
+   "x": 970,
+   "y": 145,
+   "w": 20,
+   "h": 70,
+   "rot": 0,
+   "fixed": false
+  },
+  {
+   "id": "g9",
+   "shape": "box",
+   "material": "glass",
+   "x": 900,
+   "y": 190,
+   "w": 180,
+   "h": 20,
+   "rot": 0,
+   "fixed": false
+  },
+  {
+   "id": "f10",
+   "shape": "box",
+   "material": "frond",
+   "x": 840,
+   "y": 220,
+   "w": 20,
+   "h": 40,
+   "rot": 0,
+   "fixed": false
+  },
+  {
+   "id": "f11",
+   "shape": "box",
+   "material": "frond",
+   "x": 960,
+   "y": 220,
+   "w": 20,
+   "h": 40,
+   "rot": 0,
+   "fixed": false
+  },
+  {
+   "id": "t12",
+   "shape": "box",
+   "material": "teak",
+   "x": 900,
+   "y": 248,
+   "w": 160,
+   "h": 16,
+   "rot": 0,
+   "fixed": false
+  },
+  {
+   "id": "t13",
+   "shape": "box",
+   "material": "teak",
+   "x": 1130,
+   "y": 45,
+   "w": 20,
+   "h": 90,
+   "rot": 0,
+   "fixed": false
+  },
+  {
+   "id": "t14",
+   "shape": "box",
+   "material": "teak",
+   "x": 1270,
+   "y": 45,
+   "w": 20,
+   "h": 90,
+   "rot": 0,
+   "fixed": false
+  },
+  {
+   "id": "t15",
+   "shape": "box",
+   "material": "teak",
+   "x": 1200,
+   "y": 100,
+   "w": 180,
+   "h": 20,
+   "rot": 0,
+   "fixed": false
+  },
+  {
+   "id": "l16",
+   "shape": "box",
+   "material": "lightbox",
+   "x": 1200,
+   "y": 135,
+   "w": 50,
+   "h": 50,
+   "rot": 0,
+   "fixed": false
+  },
+  {
+   "id": "f17",
+   "shape": "box",
+   "material": "frond",
+   "x": 1155,
+   "y": 130,
+   "w": 20,
+   "h": 40,
+   "rot": 0,
+   "fixed": false
+  },
+  {
+   "id": "f18",
+   "shape": "box",
+   "material": "frond",
+   "x": 1245,
+   "y": 130,
+   "w": 20,
+   "h": 40,
+   "rot": 0,
+   "fixed": false
+  },
+  {
+   "id": "t19",
+   "shape": "box",
+   "material": "teak",
+   "x": 1130,
+   "y": 145,
+   "w": 20,
+   "h": 70,
+   "rot": 0,
+   "fixed": false
+  },
+  {
+   "id": "t20",
+   "shape": "box",
+   "material": "teak",
+   "x": 1270,
+   "y": 145,
+   "w": 20,
+   "h": 70,
+   "rot": 0,
+   "fixed": false
+  },
+  {
+   "id": "g21",
+   "shape": "box",
+   "material": "glass",
+   "x": 1200,
+   "y": 190,
+   "w": 180,
+   "h": 20,
+   "rot": 0,
+   "fixed": false
+  },
+  {
+   "id": "f22",
+   "shape": "box",
+   "material": "frond",
+   "x": 1140,
+   "y": 220,
+   "w": 20,
+   "h": 40,
+   "rot": 0,
+   "fixed": false
+  },
+  {
+   "id": "f23",
+   "shape": "box",
+   "material": "frond",
+   "x": 1260,
+   "y": 220,
+   "w": 20,
+   "h": 40,
+   "rot": 0,
+   "fixed": false
+  },
+  {
+   "id": "t24",
+   "shape": "box",
+   "material": "teak",
+   "x": 1200,
+   "y": 248,
+   "w": 160,
+   "h": 16,
+   "rot": 0,
+   "fixed": false
+  },
+  {
+   "id": "t25",
+   "shape": "box",
+   "material": "teak",
+   "x": 1430,
+   "y": 45,
+   "w": 20,
+   "h": 90,
+   "rot": 0,
+   "fixed": false
+  },
+  {
+   "id": "t26",
+   "shape": "box",
+   "material": "teak",
+   "x": 1570,
+   "y": 45,
+   "w": 20,
+   "h": 90,
+   "rot": 0,
+   "fixed": false
+  },
+  {
+   "id": "t27",
+   "shape": "box",
+   "material": "teak",
+   "x": 1500,
+   "y": 100,
+   "w": 180,
+   "h": 20,
+   "rot": 0,
+   "fixed": false
+  },
+  {
+   "id": "l28",
+   "shape": "box",
+   "material": "lightbox",
+   "x": 1500,
+   "y": 135,
+   "w": 50,
+   "h": 50,
+   "rot": 0,
+   "fixed": false
+  },
+  {
+   "id": "f29",
+   "shape": "box",
+   "material": "frond",
+   "x": 1455,
+   "y": 130,
+   "w": 20,
+   "h": 40,
+   "rot": 0,
+   "fixed": false
+  },
+  {
+   "id": "f30",
+   "shape": "box",
+   "material": "frond",
+   "x": 1545,
+   "y": 130,
+   "w": 20,
+   "h": 40,
+   "rot": 0,
+   "fixed": false
+  },
+  {
+   "id": "t31",
+   "shape": "box",
+   "material": "teak",
+   "x": 1430,
+   "y": 145,
+   "w": 20,
+   "h": 70,
+   "rot": 0,
+   "fixed": false
+  },
+  {
+   "id": "t32",
+   "shape": "box",
+   "material": "teak",
+   "x": 1570,
+   "y": 145,
+   "w": 20,
+   "h": 70,
+   "rot": 0,
+   "fixed": false
+  },
+  {
+   "id": "g33",
+   "shape": "box",
+   "material": "glass",
+   "x": 1500,
+   "y": 190,
+   "w": 180,
+   "h": 20,
+   "rot": 0,
+   "fixed": false
+  },
+  {
+   "id": "f34",
+   "shape": "box",
+   "material": "frond",
+   "x": 1440,
+   "y": 220,
+   "w": 20,
+   "h": 40,
+   "rot": 0,
+   "fixed": false
+  },
+  {
+   "id": "f35",
+   "shape": "box",
+   "material": "frond",
+   "x": 1560,
+   "y": 220,
+   "w": 20,
+   "h": 40,
+   "rot": 0,
+   "fixed": false
+  },
+  {
+   "id": "t36",
+   "shape": "box",
+   "material": "teak",
+   "x": 1500,
+   "y": 248,
+   "w": 160,
+   "h": 16,
+   "rot": 0,
+   "fixed": false
+  },
+  {
+   "id": "f37",
+   "shape": "box",
+   "material": "frond",
+   "x": 1750,
+   "y": 20,
+   "w": 30,
+   "h": 40,
+   "rot": 0,
+   "fixed": false
+  },
+  {
+   "id": "f38",
+   "shape": "box",
+   "material": "frond",
+   "x": 1780,
+   "y": 20,
+   "w": 30,
+   "h": 40,
+   "rot": 0,
+   "fixed": false
+  },
+  {
+   "id": "f39",
+   "shape": "box",
+   "material": "frond",
+   "x": 1750,
+   "y": 60,
+   "w": 30,
+   "h": 40,
+   "rot": 0,
+   "fixed": false
+  },
+  {
+   "id": "f40",
+   "shape": "box",
+   "material": "frond",
+   "x": 1780,
+   "y": 60,
+   "w": 30,
+   "h": 40,
+   "rot": 0,
+   "fixed": false
+  },
+  {
+   "id": "f41",
+   "shape": "box",
+   "material": "frond",
+   "x": 1750,
+   "y": 100,
+   "w": 30,
+   "h": 40,
+   "rot": 0,
+   "fixed": false
+  },
+  {
+   "id": "f42",
+   "shape": "box",
+   "material": "frond",
+   "x": 1780,
+   "y": 100,
+   "w": 30,
+   "h": 40,
+   "rot": 0,
+   "fixed": false
+  },
+  {
+   "id": "g43",
+   "shape": "box",
+   "material": "glass",
+   "x": 1050,
+   "y": 60,
+   "w": 16,
+   "h": 120,
+   "rot": 0,
+   "fixed": false
+  },
+  {
+   "id": "g44",
+   "shape": "box",
+   "material": "glass",
+   "x": 1350,
+   "y": 60,
+   "w": 16,
+   "h": 120,
+   "rot": 0,
+   "fixed": false
+  }
+ ],
+ "lanterns": [
+  {
+   "id": "L1",
+   "x": 900,
+   "y": 220,
+   "r": 20
+  },
+  {
+   "id": "L2",
+   "x": 1200,
+   "y": 220,
+   "r": 20
+  },
+  {
+   "id": "L3",
+   "x": 1500,
+   "y": 220,
+   "r": 20
+  }
+ ]
+}

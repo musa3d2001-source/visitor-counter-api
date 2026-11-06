@@ -1,0 +1,88 @@
+{
+  "admin/game/spike/page.js.nft.json": {
+    "files": 13795,
+    "existingFiles": 13794,
+    "mb": 653.9,
+    "wasm": [
+      "node_modules/@dimforge/rapier2d-deterministic-compat/dist/rapier_wasm2d_bg.wasm",
+      "node_modules/@dimforge/rapier2d-deterministic/rapier_wasm2d_bg.wasm",
+      "node_modules/@dimforge/rapier3d-compat/rapier_wasm3d_bg.wasm",
+      "node_modules/@img/sharp-wasm32/lib/sharp-wasm32-0.35.5.node.wasm",
+      "node_modules/next/dist/compiled/@mswjs/interceptors/ClientRequest/llhttp/llhttp.wasm",
+      "node_modules/next/dist/compiled/@vercel/og/resvg.wasm",
+      "node_modules/next/dist/compiled/@vercel/og/yoga.wasm",
+      "node_modules/next/dist/compiled/source-map08/mappings.wasm",
+      "node_modules/pdfjs-dist/wasm/jbig2.wasm",
+      "node_modules/pdfjs-dist/wasm/openjpeg.wasm",
+      "node_modules/pdfjs-dist/wasm/qcms_bg.wasm",
+      "node_modules/pdfjs-dist/wasm/quickjs-eval.wasm",
+      "node_modules/playwright-core/lib/webp_codec.wasm",
+      "node_modules/three/examples/jsm/libs/basis/basis_transcoder.wasm",
+      "node_modules/three/examples/jsm/libs/draco/draco_decoder.wasm",
+      "node_modules/three/examples/jsm/libs/draco/gltf/draco_decoder.wasm",
+      "chunks/ssr/node_modules_@dimforge_rapier2d-deterministic_rapier_wasm2d_bg_05ek5-kaqh2we.wasm"
+    ],
+    "pkgFiles": {
+      "three": 1263,
+      "@dimforge": 105
+    }
+  },
+  "admin/game/spike/replay/route.js.nft.json": {
+    "files": 13724,
+    "existingFiles": 13724,
+    "mb": 652.2,
+    "wasm": [
+      "node_modules/@dimforge/rapier2d-deterministic-compat/dist/rapier_wasm2d_bg.wasm",
+      "node_modules/@dimforge/rapier2d-deterministic/rapier_wasm2d_bg.wasm",
+      "node_modules/@dimforge/rapier3d-compat/rapier_wasm3d_bg.wasm",
+      "node_modules/@img/sharp-wasm32/lib/sharp-wasm32-0.35.5.node.wasm",
+      "node_modules/next/dist/compiled/@mswjs/interceptors/ClientRequest/llhttp/llhttp.wasm",
+      "node_modules/next/dist/compiled/@vercel/og/resvg.wasm",
+      "node_modules/next/dist/compiled/@vercel/og/yoga.wasm",
+      "node_modules/next/dist/compiled/source-map08/mappings.wasm",
+      "node_modules/pdfjs-dist/wasm/jbig2.wasm",
+      "node_modules/pdfjs-dist/wasm/openjpeg.wasm",
+      "node_modules/pdfjs-dist/wasm/qcms_bg.wasm",
+      "node_modules/pdfjs-dist/wasm/quickjs-eval.wasm",
+      "node_modules/playwright-core/lib/webp_codec.wasm",
+      "node_modules/three/examples/jsm/libs/basis/basis_transcoder.wasm",
+      "node_modules/three/examples/jsm/libs/draco/draco_decoder.wasm",
+      "node_modules/three/examples/jsm/libs/draco/gltf/draco_decoder.wasm",
+      "chunks/node_modules_@dimforge_rapier2d-deterministic_rapier_wasm2d_bg_05ek5-kaqh2we.wasm"
+    ],
+    "pkgFiles": {
+      "three": 1263,
+      "@dimforge": 105
+    }
+  },
+  "admin/settings/page.js.nft.json": {
+    "files": 367,
+    "existingFiles": 366,
+    "mb": 4.4,
+    "wasm": [],
+    "pkgFiles": {
+      "three": 0,
+      "@dimforge": 0
+    }
+  },
+  "(site)/page.js.nft.json": {
+    "files": 174,
+    "existingFiles": 174,
+    "mb": 2.7,
+    "wasm": [],
+    "pkgFiles": {
+      "three": 0,
+      "@dimforge": 0
+    }
+  },
+  "api/progress/route.js.nft.json": {
+    "files": 115,
+    "existingFiles": 115,
+    "mb": 2,
+    "wasm": [],
+    "pkgFiles": {
+      "three": 0,
+      "@dimforge": 0
+    }
+  }
+}
