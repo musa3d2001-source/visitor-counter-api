@@ -4,7 +4,7 @@
   "bpm": 120,
   "beat": 0.5,
   "barStart": 1.5,
-  "duration": 25.5,
+  "duration": 27.0,
   "shots": [
     { "id": "HOOK",   "at": 0.00,  "end": 1.50,  "src": "ai-s1_hook",        "in": 0.22,  "speed": 1.0, "buys": "this is an ordinary phone photo of an ordinary product — yours" },
     { "id": "GLORY",  "at": 1.50,  "end": 3.50,  "src": "layl-final_3.00-6.00", "in": 3.30, "srcAt": 3.0, "speed": 1.0, "buys": "this is what its ad could look like: light, glass, gold — cinema" },
@@ -22,8 +22,8 @@
     { "id": "CAFE",   "at": 17.00, "end": 17.75, "src": "ai-s3_cafe",        "in": 0.80,  "speed": 0.9, "buys": "— at the café" },
     { "id": "CAR",    "at": 17.75, "end": 19.10, "src": "ai-s4_car",         "in": 0.55,  "speed": 0.9, "buys": "— someone is typing about you right now" },
     { "id": "STING",  "at": 19.10, "end": 21.50, "buys": "that typing is TASH: طشّ — make them talk about you" },
-    { "id": "ASK",    "at": 21.50, "end": 23.00, "src": "ai-s5_owner",       "in": 0.40,  "speed": 0.9, "buys": "you, the owner: got a project?" },
-    { "id": "CTA",    "at": 23.00, "end": 25.50, "buys": "leave your ad to us — DM to order" }
+    { "id": "ASK",    "at": 21.50, "end": 23.50, "src": "ai-s5_owner",       "in": 0.40,  "speed": 0.9, "buys": "you, the owner: got a project?" },
+    { "id": "CTA",    "at": 23.50, "end": 27.00, "buys": "leave your ad to us — DM to order" }
   ],
   "sting": { "t0": 18.38, "snap": 19.50 },
   "ev": {
@@ -47,12 +47,12 @@
     "sizes": [14.50, 14.84, 15.17],
     "toPhone": [15.17, 15.50],
     "bubbles": [15.75, 16.50, 17.25],
-    "collapse": [18.38, 18.80],
+    "collapse": [18.22, 18.52],
     "toInk": [18.50, 19.02],
     "ask": 21.62,
-    "ctaLine": 23.08,
-    "ctaSub": 23.42,
-    "ctaHandle": 23.62,
-    "end": 25.50
+    "ctaLine": 23.50,
+    "ctaSub": 23.86,
+    "ctaHandle": 24.06,
+    "end": 27.00
   }
 }

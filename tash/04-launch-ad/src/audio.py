@@ -72,7 +72,7 @@ DUM  = 'x.....x...x.....'
 TAK  = '...x.xx.x..x.xx.'
 HAT  = '..x...x...x...x.'
 def groove(bar, var=0, light=False):
-    for (t, v) in G.steps(bar, KICK): m.add(kick(150, 44, 0.5, 1.0, 0.4), t, gain=0.75 * v * (0.75 if light else 1), bus='music')
+    for (t, v) in G.steps(bar, KICK): m.add(kick(150, 44, 0.5, 1.0, 0.4), t, gain=0.52 * v * (0.75 if light else 1), bus='music')
     for (t, v) in G.steps(bar, CLAP): m.add(claps_ensemble(8, 0.36, seed_=bar * 7 + int(t * 10) % 5), t + r.uniform(-0.004, 0.004), gain=0.55 * v, bus='music')
     if not light:
         for (t, v) in G.steps(bar, KHAL): m.add(claps_ensemble(5, 0.3, seed_=31 + bar), t + 0.006, gain=0.32, bus='music')
@@ -118,7 +118,7 @@ P_RIM  = '..x...x...x..x.x'
 P_SHK  = 'xxxxxxxxxxxxxxxx'
 BASSL = [nf('D2'), nf('D2'), nf('F2'), nf('D2'), nf('Eb2'), nf('D2'), nf('C2'), nf('A1')]
 for bar in range(4, 7):
-    for (t, v) in G.steps(bar, P_KICK): m.add(kick(130, 46, 0.35, 0.6, 0.5), t, gain=0.5, bus='music')
+    for (t, v) in G.steps(bar, P_KICK): m.add(kick(130, 46, 0.35, 0.6, 0.5), t, gain=0.34, bus='music')
     for (t, v) in G.steps(bar, CLAP): m.add(claps_ensemble(6, 0.32, seed_=50 + bar), t, gain=0.42, bus='music')
     for k, (t, v) in enumerate(G.steps(bar, P_RIM)): m.add(rim(), t + r.uniform(-0.004, 0.004), gain=0.22 * (1 - 0.1 * (k % 2)), pan=-0.3, bus='music')
     for k, (t, v) in enumerate(G.steps(bar, P_SHK)): m.add(shaker(0.1), t, gain=0.09 * (1.0 if k % 4 == 2 else 0.6), pan=0.35, bus='music')
@@ -154,16 +154,20 @@ m.add(pad([nf('D3'), nf('A3'), nf('D4'), nf('F#4')], 3.6, cutoff=1300, attack=0.
 TAILP = [('A', 0), ('Bb', 0.5), ('A', 1.0), ('G', 1.5), ('F#', 2.0), ('Eb', 2.5), ('D', 3.0)]
 for k, (n, b) in enumerate(TAILP): m.add(pluck(HIJAZ[n], 1.3, bright=0.45), SH['ASK']['at'] + b * B * 0.5 + 0.0, gain=0.30, pan=-0.1, bus='music')
 for bar in (10, 11):
-    for (t, v) in G.steps(bar, '....x.......x...'): m.add(claps_ensemble(6, 0.3, seed_=90 + bar), t, gain=0.28, bus='music')
-    for (t, v) in G.steps(bar, 'x.....x...x.....'): m.add(mirwas_dum(), t, gain=0.24, pan=-0.2, bus='music')
-    for (t, v) in G.steps(bar, '...x.x....x..x..'): m.add(mirwas_tak(), t, gain=0.16, pan=0.25, bus='music')
-    m.add(sub808(nf('D1'), 1.0, decay=0.35), G.t(bar), gain=0.40, bus='bass')
+    rd = 1.0 if bar == 10 else 0.75   # bar 11 sits under the CTA: a reading dip
+    for (t, v) in G.steps(bar, '....x.......x...'): m.add(claps_ensemble(6, 0.3, seed_=90 + bar), t, gain=0.28 * rd, bus='music')
+    for (t, v) in G.steps(bar, 'x.....x...x.....'): m.add(mirwas_dum(), t, gain=0.24 * rd, pan=-0.2, bus='music')
+    for (t, v) in G.steps(bar, '...x.x....x..x..'): m.add(mirwas_tak(), t, gain=0.16 * rd, pan=0.25, bus='music')
+    m.add(sub808(nf('D1'), 1.0, decay=0.35), G.t(bar), gain=0.40 * rd, bus='bass')
 # TASH replies: a warm pop + glass ting as the lime bubble lands, then the cadence resolves on D (bar 11)
 m.add(pop(420, 1250, 0.08), EV['ctaLine'], gain=0.6, bus='sfx')
 m.add(bell(nf('D6'), 1.6, 0.7), EV['ctaLine'] + 0.02, gain=0.18, bus='sfx')
 m.add(stab([nf('D3'), nf('A3'), nf('D4'), nf('F#4'), nf('A4')], 1.6, 1800), G.t(11), gain=0.30, bus='music')
 m.add(pad([nf('D2'), nf('A2'), nf('D3'), nf('F#3'), nf('A3')], DUR - G.t(11), cutoff=1600, attack=0.05, release=1.2), G.t(11), gain=0.30, bus='music')
 m.add(pluck(nf('D5'), 1.8, bright=0.4), G.t(11, 2.0), gain=0.22, bus='music')
+m.add(mirwas_dum(), G.t(12), gain=0.16, pan=-0.2, bus='music')
+m.add(pluck(nf('D4'), 1.6, bright=0.35), G.t(12), gain=0.20, pan=0.1, bus='music')
+m.add(pluck(nf('A3'), 1.4, bright=0.3), G.t(12, 1.0), gain=0.14, pan=-0.1, bus='music')
 PULSE2 = DUR - 1.25  # the logo's dots type once more in the end hold (picture: main.js)
 for k, dt in enumerate((0.18, 0.30, 0.42)): m.add(tick([2600, 2900, 3200][k]), PULSE2 + dt, gain=0.20 - 0.02 * k, pan=[0.2, 0, -0.2][k], bus='sfx')
 
@@ -179,10 +183,10 @@ def gap(b, a0, a1, fade_s=0.004):
     b[i0 - f:i0] *= np.linspace(1, 0, f)[:, None]; b[i0:i1] = 0
     return b
 m.process_bus('music', lambda b: gap(b * (side * pre * sting_dip)[:, None], EV['drop'] - 0.07, EV['drop'] - 0.002))
-m.process_bus('bass', lambda b: lp(b * (pre * sting_dip)[:, None], 260, order=2) + hp(sat(lp(b, 900) * 2.0, 2.0), 160) * 0.18)  # phone-audible harmonics on the 808
+m.process_bus('bass', lambda b: lp(b * (pre * sting_dip)[:, None], 260, order=2) * 0.6 + hp(sat(lp(b, 900) * 2.0, 2.0), 160) * 0.3)  # phone-audible harmonics on the 808
 m.process_bus('sfx', lambda b: gap(peak_eq(b, 3500, -2.5, 1.2), EV['drop'] - 0.07, EV['drop'] - 0.004))
 m.process_bus('amb', lambda b: b)
-end_fade = np.ones(N); nf_ = n_(0.25); end_fade[-nf_:] = np.linspace(1, 0, nf_) ** 1.5
+end_fade = np.ones(N); nf_ = n_(0.6); end_fade[-nf_:] = np.linspace(1, 0, nf_) ** 1.5
 for k in list(m.buses):
     m.process_bus(k, lambda b: b * end_fade[:len(b), None])
 
