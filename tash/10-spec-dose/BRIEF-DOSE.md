@@ -116,3 +116,8 @@ Also add an Arabic posting note:
 - Story caption and mention «@sdosecafe».
 - The spec label is already in the frame.
 - No music sticker.
+
+## Owner notes during production (7 Nov)
+- The d2 carafe must pour from the **spout tip**. The first version poured from the opposite lip; it was re-shot.
+- The yellow cup must never straddle the tray rim. The terrace shot with a hand lifting the espresso is **rejected** («باهتة»). It was replaced by the d5b crane-up to the wall sign.
+- **Espresso does not steam** («الاسبرسو مايطلع منه دخان»). Paint out the wisp in d5b, and never prompt steam on espresso again.
