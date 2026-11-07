@@ -17,7 +17,7 @@ from PIL import Image, ImageDraw, ImageFont
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 from common import decode, ASSETS, SRC, k2c
 
-CLIP, K0, K1 = 'd1_grinders', 0, 64
+CLIP, K0, K1 = 'd1_grinders', 0, 74
 FONT = os.path.normpath(os.path.join(SRC, '..', '..', '_system', 'fonts', 'Archivo-VF.ttf'))
 # frame-0 corners (TL, TR, BR, BL) from the CD review, Kling px -> conformed
 START = {
@@ -72,9 +72,12 @@ def fit_quad(im, quad):
         t = (pts - a) @ d; dist = np.abs((pts - a) @ nr)
         L = np.linalg.norm(b - a)
         sel = pts[(dist < 7) & (t > 0.12 * L) & (t < 0.88 * L)]
+        if i == 1 and (len(sel) < 12 or np.median(sel[:, 0]) > im.shape[1] - 6): lines.append(None); continue   # cut by the frame edge
         if len(sel) < 12: return None
         lines.append(line_fit(sel))
-    return np.array([intersect(lines[3], lines[0]), intersect(lines[0], lines[1]), intersect(lines[1], lines[2]), intersect(lines[2], lines[3])])
+    TL, BL = intersect(lines[3], lines[0]), intersect(lines[2], lines[3])
+    if lines[1] is None: return np.array([TL, [np.nan, np.nan], [np.nan, np.nan], BL])
+    return np.array([TL, intersect(lines[0], lines[1]), intersect(lines[1], lines[2]), BL])
 
 
 def robust_poly(t, y, deg):
@@ -94,15 +97,29 @@ def analyse():
         quad = np.array([k2c(*p) for p in q0], np.float32); track = []
         for k in range(K0, K1 + 1):
             q = fit_quad(fr[k - K0], quad)
+            if q is not None and np.isnan(q).any():                     # the card is leaving frame right: keep the
+                q[1] = quad[1] + (q[0] - quad[0]); q[2] = quad[2] + (q[3] - quad[3])      # placeholder for the next search window
+                track.append((q, 'left')); quad = q; continue           # left corners; right ones predicted below
             if q is None or np.abs(q - quad).max() > 25: q = quad.copy(); ok = False
             else: ok = True
             track.append((q, ok)); quad = q
         Q = np.array([t[0] for t in track])
-        bad = [k for k, t in zip(range(K0, K1 + 1), track) if not t[1]]
-        t = np.arange(len(Q)); S = np.zeros_like(Q); med = []
-        for i in range(4):
+        bad = [k for k, t in zip(range(K0, K1 + 1), track) if t[1] is False]
+        part = np.array([t[1] == 'left' for t in track])
+        t = np.arange(len(Q)); S = np.zeros_like(Q); med = [0.0] * 8; whole = ~part
+        for i in (0, 3, 1, 2):                                       # left corners first (the right ones may lean on them)
             for j in range(2):
-                S[:, i, j], r = robust_poly(t, Q[:, i, j], 5); med.append(float(np.median(np.abs(r))))
+                if i in (1, 2) and part.any():
+                    S[whole, i, j], r = robust_poly(t[whole], Q[whole, i, j], 5)
+                    # while the card leaves frame: its width vector (right − left corner), quadratic on the whole frames,
+                    # carried forward from the tracked left corners
+                    L_ = 0 if i == 1 else 3
+                    pv = np.polyfit(t[whole], Q[whole, i, j] - Q[whole, L_, j], 2)
+                    S[part, i, j] = S[part, L_, j] + np.polyval(pv, t[part])
+                else:
+                    S[:, i, j], r = robust_poly(t, Q[:, i, j], 5)
+                med[i * 2 + j] = float(np.median(np.abs(r)))
+        if part.any(): print(f'{cid}: leaves frame right from frame {int(t[part][0])}; right corners carried by its width vector')
         print(f'{cid}: {len(Q)} frames, refit failures {bad}, median |raw - fit| per coord {np.round(med, 2).tolist()} px')
         out[cid] = {'label': LABEL[cid], 'cue': CUE[cid], 'blur': BLUR[cid], 'quad': {int(k): np.round(S[i], 2).tolist() for i, k in enumerate(range(K0, K1 + 1))}}
     json.dump(out, open(os.path.join(ASSETS, 'cards.json'), 'w'), indent=0)

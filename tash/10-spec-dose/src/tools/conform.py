@@ -9,12 +9,15 @@ round(t*30) - round(t0*30): a pure function of t.
 Modes (no synthesised in-betweens: motion interpolation warps clear ice and liquid streams):
   blend    linear blend of the two nearest source frames (slow camera moves, pours)
   nearest  the nearest source frame (24p cadence inside 30p; used for d2d's falling ice)
+  adaptive the blend where the picture is slow, the NEAREST source frame where it moves fast (a near cup is never
+           shown twice, half-transparent); the mask is |A-B| on a quarter-res copy, dilated and feathered
 Usage: python3 src/tools/conform.py [seg ...]      (bash src/tools/extract.sh runs prep + conform)"""
 import json, os, subprocess, sys
 import numpy as np
 from PIL import Image
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 from common import SRC, PREP, W, H, NSRC, cues, edit_frames
+from scipy import ndimage
 
 C = cues()
 OUT = os.path.join(SRC, 'footage')
@@ -27,6 +30,17 @@ def src_frame(clip, k, cache={}):
         if len(cache) > 6: cache.pop(next(iter(cache)))
         cache[key] = np.asarray(Image.open(os.path.join(PREP, clip, f'{k:03d}.png')).convert('RGB'), np.float32)
     return cache[key]
+
+
+def motion_mask(A, B):
+    """1 where the two source frames differ a lot (a fast, near object), feathered; computed at quarter resolution."""
+    a = A[::4, ::4].astype(np.int16); b = B[::4, ::4].astype(np.int16)
+    d = np.abs(a - b).sum(2).astype(np.float32)
+    m = np.clip((d - 36) / 40, 0, 1)
+    m = ndimage.maximum_filter(m, size=9)
+    m = ndimage.gaussian_filter(m, 3)
+    m = np.clip(m * 1.5, 0, 1)
+    return np.repeat(np.repeat(m, 4, 0), 4, 1)[:H, :W, None]
 
 
 def conform(seg):
@@ -45,7 +59,10 @@ def conform(seg):
             i = int(np.floor(p)); w = p - i
             A = src_frame(seg['clip'], i)
             if w < 1e-3 or i + 1 >= NSRC: out = A
-            else: out = A * (1 - w) + src_frame(seg['clip'], i + 1) * w
+            else:
+                B = src_frame(seg['clip'], i + 1); out = A * (1 - w) + B * w
+                if seg['mode'] == 'adaptive':
+                    m = motion_mask(A, B); out = out * (1 - m) + (B if w >= 0.5 else A) * m
             used.append(round(p, 3))
         enc.stdin.write(np.clip(out + 0.5, 0, 255).astype(np.uint8).tobytes())
     enc.stdin.close(); enc.wait()

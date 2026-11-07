@@ -14,7 +14,7 @@ export const LY = {
   meter: { homeCy: 306, hookCy: 905, hookS: 1.85, peakCy: 1010, peakS: 1.55 },   // the mood widget: centre y + scale at home / in the hook / at the ١٠٠٪ peak
   chipTop: 378,                                         // the dose lines, under the widget
   hook: { l1Top: 556, l2Top: 1112, size: 118 },
-  tagline: { top: 268, size: 64, endTop: 574 },          // «تعديل المزاج يبدأ من هنا.»: on the wall in d5, above the mark on the card
+  tagline: { top: 256, size: 64, endTop: 574 },          // «تعديل المزاج يبدأ من هنا.»: on the wall in d5, above the mark on the card
   card: { cx: 540, cy: 930, w: 600 },                    // end-card mark: centre and width (56 % of the frame; the plate filled 85 %)
   info: { top: 1178 },
   tag: { right: 64, bottom: 1612 },                      // the spec tag pill: bottom-right corner, above the reply bar

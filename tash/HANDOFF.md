@@ -161,7 +161,12 @@ The old split zips (`split/TASH-1..6-of-6`) and `TASH-Instagram-Kit.zip` were **
     - d4_cake job f1086e5b-fdd8-453e-90d1-8152648013c7: **morph** — the sauce channel down the front splits the cake; from ≈1.75 s it reads as a seam, by 2.75 s as two slices. Clean **0.00–1.75 s** only (needs ≈0.8× for the 2.2 s slot). Re-roll candidate (drop "runs down the side").
     - d5_terrace job 863648f9-9c59-4390-be41-a51b3ef64431 (start frame = approved v3 3e1df8d5…, not the rejected v2 90641f03… that the step text listed): hand lifts the cup up and out to the top right, rest stays put. **Steam rises from the empty saucer** from ≈1.75 s (wrong source) and a tiny invented orange mark appears on the saucer rim from ≈1.5 s → clean **0.00–1.50 s** (1.75 with the mark painted out). Re-roll candidate (drop the steam line). Budget left (17 above the floor) covers only ONE of d2 (still+video ≈11), d4 or d5 (10 each); owner/CD to pick.
     - All clips are 1080×1912 @ 24 fps with a Kling-generated AAC track (the model has no audio switch): drop audio (`-an`), scale/crop to 1080×1920 and conform to 30 fps in the edit.
-- Stage 3: build the edit + hostile review.
+- Stage 3: build the edit + hostile review. **Edit built 7 Nov (built + self-checked by the editor subagent; NOT delivered, NOT approved, NOT independently reviewed, NOT committed).**
+  - `10-spec-dose/DOSE-spec-story-9x16.mp4` (18.0 s, 1080×1920 30 fps, −14.0 LUFS / −1.5 dBTP), `poster.png`, `contact-sheet.png`, `SCRIPT.md` (idea AR/EN, timeline, every job id + credits, clean ranges, paint-outs, rebuild, «ملاحظة النشر»), `src/` (modelled on MOR; MOR untouched). No Higgsfield call was made.
+  - Footage fixes in post: d5b wall sign replaced with the real keyed mark (tracked, defocus-matched); d5b starts at 2.30 s so no espresso steam; d2d «specialty» re-comped over the stream/ice; d1 card names (ETHIOPIA / EL SALVADOR / COLOMBIA) tracked onto the blank cards; d1 rating plate kept out by a top-anchored 1.12× frame.
+  - `src/footage/_src/` (~590 MB lossless intermediates) is git-ignored by `src/.gitignore`; `src/footage/A–E` (~80 MB JPEGs) follow the MOR convention (MOR's are committed).
+  - Credits arithmetic in SCRIPT.md gives 214.25 for the ad (closing balance 39.50) — **needs confirmation with `balance`**.
+  - Next: independent hostile review → owner.
 - Then send the MP4 to the owner.
 
 Ask the owner for the studio email address, and confirm the email split. Then do item 6.1. Also still waiting on: did the two zips download on the iPhone, and any wording fixes in the plan.

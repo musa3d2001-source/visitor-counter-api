@@ -4,9 +4,9 @@ TASH engine (_system/audio/tashaudio.py); no library music, no Kling audio. Timi
 Shape: a flat, muffled room under the low mood battery (two low-battery blips, a slow charging riser) → the first dose
 lands on bar 1 (1.8 s): a warm ~100 BPM house/lo-fi groove in F (rootless e-piano chords, round bass, soft kick,
 finger snaps on 2 & 4, swung shaker). Every dose = one meter step = one rising pluck: C5, D5, F5, G5 (a 4-note motif)
-resolving on A5 + C6 at ١٠٠٪ (10.8 s). Foley on picture: grinder whirr + bean rattle, the iced pour and the ice
+resolving on A5 + C6 at ١٠٠٪ (10.8 s, on F6/9). Foley on picture: grinder whirr + bean rattle, the iced pour and the ice
 plunging into the cup (on the visible landings), the espresso into milk, the sauce, a spoon on the saucer, a bistro
-chair on the terrace pavement. The match cut resolves C9sus4 → Fmaj9 (the wall sign becomes the mark = home), then the
+chair on the terrace pavement. The match (12.6 s) resolves C9sus4 → Fmaj9 (the wall sign becomes the mark = home), then the
 TASH sonic logo. Run: python3 src/audio.py → src/audio.wav (pre-mastered to −14 LUFS, true peak ≤ −1.5 dBTP)."""
 import sys, os, json
 import numpy as np
@@ -165,11 +165,12 @@ m.add(shimmer(1.6, base=1760, n=6, seed_=7), EV['full'] + 0.02, gain=0.14, bus='
 m.add(riser(0.6, 500, 7000, tonal=False), EV['full'] - 0.6, gain=0.13, bus='sfx')
 m.add(impact(1.4, sub_f=50, bright=0.4, sub_decay=0.16, space=0.3), EV['full'] - 0.004, gain=0.26, bus='sfx')
 
-# ---- chords (F major): Fmaj9 | Dm9 | Bbmaj9 · Gm9 | C9sus4 … 100 % | Bbmaj9 (the line) · C9sus4 | Fmaj9 (the match)
+# ---- chords (F major): Fmaj9 | Dm9 | Bbmaj9 · Gm9 | C9sus4 → F6/9 on 100 % | Bbmaj9 (the line) · C9sus4 | Fmaj9 (the match)
 V = {'Fmaj9': ['A3', 'C4', 'E4', 'G4'], 'Dm9': ['F3', 'A3', 'C4', 'E4'], 'Bbmaj9': ['D4', 'F4', 'A4', 'C5'],
      'Gm9': ['Bb3', 'D4', 'F4', 'A4'], 'C9sus': ['Bb3', 'D4', 'F4', 'G4'], 'F69': ['A3', 'D4', 'G4', 'C5']}
 PROG = [(EV['dose1'], 'Fmaj9', 'F2'), (EV['dose2'], 'Dm9', 'D2'), (EV['dose3'], 'Bbmaj9', 'Bb1'), (EV['dose4'], 'Gm9', 'G1'),
-        (EV['dose5'], 'C9sus', 'C2'), (T(4), 'Bbmaj9', 'Bb1'), (T(4, 2), 'C9sus', 'C2'), (EV['match'], 'Fmaj9', 'F2')]
+        (EV['dose5'], 'C9sus', 'C2'), (EV['full'], 'F69', 'F2'), (T(4), 'Bbmaj9', 'Bb1'), (EV['match'] - B, 'C9sus', 'C2'),
+        (EV['match'], 'Fmaj9', 'F2')]
 for i, (at, name, root) in enumerate(PROG):
     nxt = PROG[i + 1][0] if i + 1 < len(PROG) else EV['dip']
     dur = nxt - at
@@ -202,7 +203,7 @@ bar_groove(EV['dose2'], 4, dens=0.95)                                   # d2: + 
 bar_groove(EV['dose3'], 3, dens=1.0)                                    # d3
 bar_groove(EV['dose4'], 3, dens=1.0)                                    # d4
 bar_groove(EV['dose5'], 1, kick_=False, snaps=False, dens=0.8)          # the build into 100 %
-bar_groove(EV['full'], 4, dens=1.0)                                     # 100 % → the line
+bar_groove(EV['full'], int(round((EV['match'] - EV['full']) / B)), dens=1.0)   # 100 % → the line → the match
 m.add(softkick(), EV['match'], gain=0.45, bus='drums')
 
 # ---- foley on picture
@@ -246,7 +247,7 @@ for bus in ('keys', 'bass', 'drums'): m.process_bus(bus, lambda b: b * duck * ar
 m.process_bus('pluck', lambda b: b * lin(EV['dip'] - 0.2, EV['sting'], 1, db(-12)))
 m.process_bus('bass', lambda b: hp(b, 50))
 m.process_bus('sfx', lambda b: peak_eq(b, 3500, -1.5, 1.2) * lin(EV['dip'] - 0.15, EV['sting'], 1, db(-14)))
-m.process_bus('amb', lambda b: b * lin(EV['dip'] - 0.2, EV['sting'], 1, db(-20)))
+m.process_bus('amb', lambda b: b * lin(EV['match'] - 0.05, EV['match'] + 0.5, 1, db(-12)) * lin(EV['dip'] - 0.2, EV['sting'], 1, db(-20)))
 
 endf = lin(DUR - 0.12, DUR, 1, 0)
 m.buf *= endf

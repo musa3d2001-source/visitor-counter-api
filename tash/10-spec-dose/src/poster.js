@@ -1,8 +1,9 @@
 // DOSE — story cover / thumbnail (?poster=1): the terrace at the end of the crane, dose's real mark on the wall, the
 // mood widget at ١٠٠٪, their line, and the spec label (the tag + the full slate line). All inside the story safe area.
 import { css } from '/_system/motion/kit.js';
-export const POSTER_T = 12.9;
+export const POSTER_T = 12.45;   // the sign sharp on the wall, their line landed, before the match
 export function makePosterOverlay({ h1, h2, mwrap, meter, fill, pct, ring, ring2, chips, tag1, logo, info, stingRoot, slate, tag, AR, FILLW }) {
+  const sheen = fill.querySelector('.sheen'); if (sheen) sheen.style.opacity = '0';
   for (const l of [h1, h2]) l.box.style.display = 'none';
   for (const c of chips) c.c.style.display = 'none';
   stingRoot.style.display = 'none'; info.style.display = 'none'; logo.style.display = 'none';

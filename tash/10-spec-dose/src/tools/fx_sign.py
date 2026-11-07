@@ -102,8 +102,15 @@ def analyse():
     lumi = im.mean(2)
     fi = im.astype(np.float32); gr = fi[..., 1] / (fi[..., 0] + 1)
     tan = (gr > 0.6) & (gr < 0.78) & (lumi < 175)                     # the arch's tan reveal (plaster G/R is 0.82-0.86)
-    arch = ndimage.binary_dilation(((lumi < 110) & (orng(im) < 0.2)) | ndimage.binary_opening(tan, iterations=2), iterations=5)
-    m = ndimage.binary_dilation(ai_mask(im, loose=True), iterations=3)
+    big = lambda b, n: (lambda lab, k: np.isin(lab, [i + 1 for i, a in enumerate(ndimage.sum(np.ones_like(lab), lab, range(1, k + 1))) if a > n]))(*ndimage.label(b))
+    # only the large tan / dark bodies (the arch reveal, the soffit): the letters' own soft edges are tan-ish too
+    arch = ndimage.binary_dilation(big(((lumi < 110) & (orng(im) < 0.2)) | ndimage.binary_opening(tan, iterations=2), 6000), iterations=5)
+    # the AI letters' faces (strict colour test: never the brown arch), swept toward the lower right to take their
+    # returns (the letters stand off the wall; the sun is upper left), plus their offset drop shadow
+    face = ai_mask(im)
+    m = face.copy()
+    for d in range(1, 9): m[d:, d:] |= face[:-d, :-d]
+    m = ndimage.binary_dilation(m, iterations=4)
     shm = np.zeros_like(m); shm[10:, 19:] = m[:-10, :-19]; shm = ndimage.binary_dilation(shm, iterations=6)
     mask = (m | shm) & ~arch
     valid = ~ndimage.binary_dilation(mask, iterations=4) & ~arch & (orng(im) < 0.15)

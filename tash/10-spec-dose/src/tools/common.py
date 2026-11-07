@@ -42,8 +42,11 @@ def smoothstep(e0, e1, x):
 
 
 def tmap(seg):
-    """edit time -> source seconds (2 keys: a straight line, extended; 3+: monotone cubic (Fritsch-Carlson), linear outside)."""
+    """edit time -> source seconds (2 keys: a straight line, extended; 3+: monotone cubic (Fritsch-Carlson), or piecewise linear with interp=linear)."""
     k = np.array(seg['keys'], float)
+    if seg.get('interp') == 'linear' and len(k) > 2:            # piecewise linear (a hold, then a constant speed)
+        return lambda t: float(np.interp(t, k[:, 0], k[:, 1], left=None, right=None)) if k[0, 0] <= t <= k[-1, 0] else \
+            (k[0, 1] if t < k[0, 0] else k[-1, 1] + (t - k[-1, 0]) * (k[-1, 1] - k[-2, 1]) / (k[-1, 0] - k[-2, 0]))
     if len(k) == 2:
         (t0, s0), (t1, s1) = k
         return lambda t: s0 + (t - t0) * (s1 - s0) / (t1 - t0)
