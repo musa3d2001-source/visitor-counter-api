@@ -35,7 +35,7 @@ Reference photos (owner's screenshots of their Instagram; **not in git, never sh
   - white retro ceramic cups with thin red/orange rim lines, on white saucers
   - orange spoon handles
 - **Space and objects:**
-  - **Outside:** a white curved plaster facade with a big **arched window**, an orange «dose» sign, orange folding bistro chairs and table, and an orange tray. A Jahra street sits behind.
+  - **Outside:** a white curved plaster facade with a big **arched window**, an orange «dose» sign, orange folding bistro chairs and square orange bistro tables, with a brushed stainless-steel tray on the table (ref08–ref11 all show steel trays; corrected from «an orange tray»). A Jahra street sits behind.
   - **Inside:** beige walls, a long oak ledge, terrazzo-like floor, menu and origin cards on the bar, glass carafes, an orange V60 dripper.
   - **Grinders:** a row of commercial grinders with tall clear hoppers full of beans and white origin cards.
 - **Service:**
@@ -57,11 +57,11 @@ rounded, condensed shapes.
 | Time (≈) | Shot | Text (Kuwaiti) · meter |
 |---|---|---|
 | 0.0–1.6 | **HOOK.** Dark, desaturated, tight on the empty meter blinking at ١٥٪. A low-battery blip. | «مزاجك ١٥٪؟» → «ناقصك دوز.» |
-| 1.6–4.0 | `d1_grinders`: a slow lateral dolly past tall hoppers of beans with blank origin cards | «جرعة من إثيوبيا…» «…والسلفادور» «…وكولومبيا» (word swaps on the beat) · ٣٥٪ |
+| 1.6–4.0 | `d1_grinders`: a slow lateral dolly past tall hoppers of beans. The origin cards are generated **blank** on purpose, and **we write the names on them in post**: track the cards and render crisp labels in their card style (bold black caps). Show **ETHIOPIA / EL SALVADOR / COLOMBIA**, the origins from their own caption, in sync with the on-screen copy. Name only: **no invented process / altitude / tasting notes**. The owner asked about this on 7 Nov. | «جرعة من إثيوبيا…» «…والسلفادور» «…وكولومبيا» (word swaps on the beat) · ٣٥٪ |
 | 4.0–6.4 | `d2_carafe`: a gloved hand pours filter coffee from a glass carafe into a clear dose cup | «جرعة صافية.» · ٥٥٪ |
 | 6.4–8.8 | `d3_iced`: macro, espresso cascading into iced milk in a clear dose cup, marbling | «جرعة باردة.» · ٧٥٪ |
 | 8.8–11.0 | `d4_cake`: the crumble cake; milky coffee sauce pours over it and pools | «وجرعة حلا.» · ٩٥٪ |
-| 11.0–13.2 | `d5_terrace`: the outdoor orange chairs and table, an orange tray with the retro espresso cup, a yellow iced cup and the cake, golden light, a gloved or plain hand lifts the cup | meter pops to **١٠٠٪** → «تعديل المزاج يبدأ من هنا.» |
+| 11.0–13.2 | `d5_terrace`: the outdoor orange chairs and table, a brushed stainless-steel tray on an orange square bistro table with the retro espresso cup, a yellow iced cup and the cake, golden light, a gloved or plain hand lifts the cup | meter pops to **١٠٠٪** → «تعديل المزاج يبدأ من هنا.» |
 | 13.2–15.6 | **End card** from `logo_plate.png`: the dose wordmark on orange (or orange on white plaster), «سبيشلتي دوز · الجهراء», `@sdosecafe` | — |
 | 15.6–18.0 | **TASH tail**: the short sting + the spec slate | slate text above |
 
