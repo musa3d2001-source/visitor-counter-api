@@ -1,0 +1,2 @@
+# fixed source frames (tools/prep.py, ~500 MB of lossless PNG): rebuild with bash src/tools/extract.sh
+footage/_src/

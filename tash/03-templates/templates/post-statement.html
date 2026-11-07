@@ -1,0 +1,26 @@
+<!doctype html>
+<!-- FEED POST 4:5 · STATEMENT — one big line, said like a message, and a short quiet answer under it.
+     The wordmark signs off bottom-left (where an RTL read ends) — same corner on every post.
+     data: theme (ink|paper|lime) · headline (\n = line break, ••• = brand dots, *x* = accent) · reply · slate (optional) -->
+<html lang="ar" dir="rtl"><head><meta charset="utf-8">
+<link rel="stylesheet" href="/_system/tokens.css"><link rel="stylesheet" href="/03-templates/src/base.css">
+<style>
+  .wmk { position: absolute; left: 96px; bottom: 100px; z-index: 10; }
+  .slate-top { position: absolute; top: 104px; right: 96px; z-index: 10; }
+  .block { position: absolute; right: 96px; left: 96px; top: 150px; bottom: 260px; z-index: 10; display: flex; flex-direction: column; justify-content: center; gap: 44px; }
+  .headline { color: var(--fg); }
+  .reply { color: var(--sub); font-size: 46px; line-height: 1.45; max-width: 760px; }
+</style></head><body><div id="stage"></div>
+<script type="module">
+import { run } from '/03-templates/src/tpl.js';
+run(async (d, { stage, T, rich, h, put, linesOf, wordmark }) => {
+  put(stage,
+    h('div', { class: 'wmk' }, wordmark(T, 112)),
+    d.slate ? h('div', { class: 'slate slate-top', text: d.slate }) : null,
+    put(h('div', { class: 'block' }),
+      h('div', { class: 'disp headline key', 'data-fit': '96,164', 'data-lines': linesOf(d.headline, 4), 'data-name': 'headline', html: rich(d.headline) }),
+      d.reply ? h('div', { class: 'txt reply key', 'data-name': 'reply', html: rich(d.reply) }) : null),
+  );
+  return { format: 'post', lightAt: '84% 4%' };
+});
+</script></body></html>

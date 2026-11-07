@@ -1,0 +1,11 @@
+{
+  "variant": "bts",
+  "theme": "ink",
+  "before": "/03-templates/assets/layl-bts-wire.png",
+  "after": "/03-templates/assets/layl-bts-final.png",
+  "dy": 150,
+  "band": [990, 1310],
+  "headline": "ورا الكواليس",
+  "line": "من الخطوط… للقطة النهائية.",
+  "concept": { "slate": "BTS — CONCEPT AD 01 / PERFUME" }
+}

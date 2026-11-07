@@ -1,0 +1,50 @@
+{
+  "_note": "STAKK concept ad — single source of truth for picture + sound. 120 BPM, beat k lands at t0 + 0.5k. Shot timings are LOCKED (launch-ad editor cuts from ?clean=1).",
+  "fps": 30,
+  "bpm": 120,
+  "t0": 0.4,
+  "duration": 13.8,
+  "shots": [
+    { "id": "S01", "name": "SMASH", "at": 0.0, "end": 0.9 },
+    { "id": "S02", "name": "CRUST + TITLE", "at": 0.9, "end": 2.15 },
+    { "id": "S03", "name": "BUILD A — heel, patty", "at": 2.15, "end": 3.9 },
+    { "id": "S04", "name": "INSERT — lacy crust edge", "at": 3.9, "end": 4.25 },
+    { "id": "S05", "name": "BUILD B — cheddar", "at": 4.25, "end": 4.9 },
+    { "id": "S06", "name": "INSERT — cheese melt (half-time)", "at": 4.9, "end": 5.75 },
+    { "id": "S07", "name": "BUILD C — double burst", "at": 5.75, "end": 7.15 },
+    { "id": "S08", "name": "INSERT — sauce splash", "at": 7.15, "end": 7.9 },
+    { "id": "S09", "name": "WIDE — top bun drop", "at": 7.9, "end": 8.4 },
+    { "id": "S10", "name": "HERO — turntable + offer", "at": 8.4, "end": 10.4 },
+    { "id": "S11", "name": "CLIENT END CARD", "at": 10.4, "end": 11.4 },
+    { "id": "S12", "name": "TASH SIGNATURE", "at": 11.4, "end": 13.8 }
+  ],
+  "smash": 0.4,
+  "whip": [1.95, 2.3],
+  "drops": {
+    "heel": 2.4,
+    "patty": 3.4,
+    "cheese": 4.4,
+    "patty2": 5.9,
+    "cheese2": 6.15,
+    "pickles": 6.4,
+    "onions": 6.65,
+    "sauce": 7.4,
+    "crown": 8.4
+  },
+  "text": {
+    "title": [0.9, 2.15],
+    "heel": [2.4, 3.3],
+    "patty": [3.4, 4.3],
+    "cheese": [4.4, 5.75],
+    "cheeseSlow": 4.9,
+    "double": [5.9, 6.36],
+    "crunch": [6.4, 7.35],
+    "sauce": [7.4, 8.3],
+    "product": 8.55,
+    "price": 8.9,
+    "cta": 9.4,
+    "slate": 10.4
+  },
+  "endcard": 10.4,
+  "sting": 11.4
+}

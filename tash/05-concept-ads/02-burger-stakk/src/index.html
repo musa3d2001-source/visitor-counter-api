@@ -1,0 +1,83 @@
+<!doctype html>
+<html lang="ar" dir="rtl"><head><meta charset="utf-8">
+<title>STAKK BURGER — concept ad (TASH)</title>
+<link rel="stylesheet" href="/_system/tokens.css">
+<style>
+  :root { --red:#E23B2E; --mus:#F2B705; --cre:#FFF3DC; --chr:#1F1C19; }
+  html,body { margin:0; background:#000; overflow:hidden; }
+  #stage { position:relative; width:1080px; height:1920px; overflow:hidden; background:#000; }
+  #stage > canvas, #stage > div { position:absolute; inset:0; width:1080px; height:1920px; }
+  #pic { display:block; }
+  /* one vignette for the whole film (footage and the client card under it, so the match cut keeps its corners) */
+  #vig { pointer-events:none; background:radial-gradient(ellipse 78% 62% at 50% 54%, rgba(10,7,5,0) 58%, rgba(10,7,5,.20) 100%); }
+  #grain { opacity:.04; pointer-events:none; }
+  #ec, #sig { display:none; }
+  .ui { direction:rtl; }
+  .ui .w, .ui .tw { display:inline-block; }
+  .lines { position:absolute; inset:0; width:1080px; height:1920px; overflow:visible; }
+  .leader { fill:none; stroke:var(--cre); stroke-width:4; stroke-linecap:round; }
+  .ldot { fill:var(--cre); stroke:var(--chr); stroke-width:3; }
+  .lring { fill:none; stroke:var(--cre); stroke-width:3; }
+  /* title — four words stacked like layers */
+  .title { position:absolute; left:0; right:0; text-align:center; }
+  .tline { line-height:1.0; }
+  .tw { font-family:Alexandria; font-weight:900; transform-origin:50% 100%; text-shadow:0 9px 0 var(--chr); }
+  .tw.cre { color:var(--cre); } .tw.mus { color:var(--mus); }
+  /* ingredient labels */
+  .label { position:absolute; width:936px; }
+  .label.right { right:72px; text-align:right; }
+  .label.left { left:72px; text-align:left; }
+  .l-sup { display:inline-block; font-family:Alexandria; font-weight:700; font-size:50px; line-height:1; }
+  .l-sup.pill { background:var(--mus); color:var(--chr); padding:12px 30px 20px; border-radius:999px; }
+  .label.right .l-sup { transform-origin:100% 50%; } .label.left .l-sup { transform-origin:0 50%; }
+  .l-hero { font-family:Alexandria; font-weight:900; font-size:126px; line-height:1.04; color:var(--cre); text-shadow:0 9px 0 var(--chr); margin-top:4px; }
+  .l-hero .w { transform-origin:50% 90%; }
+  .double { position:absolute; left:0; right:0; text-align:center; }
+  .d-hero { font-family:Alexandria; font-weight:900; font-size:170px; color:var(--mus); text-shadow:0 11px 0 var(--chr); }
+  /* hero offer */
+  .product { position:absolute; }
+  .p-hero { font-family:Alexandria; font-weight:900; font-size:150px; line-height:1.1; color:var(--cre); text-shadow:0 10px 0 var(--chr); white-space:nowrap; }
+  .badge { position:absolute; width:250px; height:250px; border-radius:50%; background:var(--mus); box-shadow:0 12px 0 var(--chr); display:flex; align-items:center; justify-content:center; }
+  .b-in { text-align:center; color:var(--chr); font-family:Alexandria; }
+  .b-num { font-weight:900; font-size:76px; line-height:1; }
+  .b-cur { font-weight:700; font-size:40px; line-height:1.15; }
+  .cta { position:absolute; }
+  .cta-in { display:flex; align-items:center; gap:24px; background:var(--cre); color:var(--chr); font-family:Alexandria; font-weight:900; font-size:60px; padding:18px 52px 28px; border-radius:999px; box-shadow:0 10px 0 var(--chr); white-space:nowrap; }
+  .cta-a { color:var(--red); font-family:Alexandria; font-weight:900; display:inline-block; }
+  /* client end card */
+  #ec { background:var(--red); }
+  .mark { position:absolute; left:390px; top:470px; width:300px; height:230px; overflow:visible; }
+  .ec-word { position:absolute; top:740px; left:0; right:0; text-align:center; }
+  .ec-ar { font-family:Alexandria; font-weight:900; font-size:160px; color:var(--cre); text-shadow:0 11px 0 var(--chr); line-height:1.2; }
+  .ec-lat { position:absolute; top:968px; left:0; right:0; text-align:center; direction:ltr; font-family:Archivo; font-weight:900; font-stretch:75%; font-size:66px; letter-spacing:.16em; color:var(--chr); }
+  .slate { position:absolute; top:1408px; left:0; right:0; text-align:center; }
+  .sl-ar { font-family:"IBM Plex Sans Arabic"; font-weight:500; font-size:32px; color:var(--cre); }
+  .sl-mono { font-family:"JetBrains Mono"; font-weight:600; font-size:24px; letter-spacing:.24em; color:var(--cre); opacity:.92; direction:ltr; margin-top:10px; }
+  /* TASH signature */
+  .sig-slate { position:absolute; top:1030px; left:0; right:0; text-align:center; }
+  .sig-ar { font-family:"IBM Plex Sans Arabic"; font-weight:500; font-size:36px; color:#F5F5E9; }
+  .sig-mono { font-family:"JetBrains Mono"; font-weight:600; font-size:22px; letter-spacing:.24em; color:#8E9088; direction:ltr; margin-top:22px; }
+  .sig-hd { font-family:"JetBrains Mono"; font-weight:600; font-size:24px; letter-spacing:.2em; color:#8E9088; direction:ltr; margin-top:12px; }
+  .sig-top { position:absolute; top:262px; left:72px; font-family:"JetBrains Mono"; font-weight:600; font-size:22px; letter-spacing:.24em; color:#8E9088; direction:ltr; }
+  /* poster */
+  .poster { position:absolute; inset:0; direction:rtl; }
+  .po-title { position:absolute; left:0; right:0; text-align:center; font-family:Alexandria; font-weight:900; line-height:1.36; } /* at 1.08 the dot of «طبقة»'s ب sat on «سالفة»'s ا/ل ascenders */
+  .po-l1 { font-size:132px; color:var(--cre); text-shadow:0 10px 0 var(--chr); }
+  .po-l2 { font-size:132px; color:var(--mus); text-shadow:0 10px 0 var(--chr); }
+  .po-sl { position:absolute; left:0; right:0; text-align:center; }
+  .po-sl-mono { font-family:"JetBrains Mono"; font-weight:600; font-size:22px; letter-spacing:.24em; color:var(--cre); direction:ltr; }
+  .po-sl-ar { font-family:"IBM Plex Sans Arabic"; font-weight:500; font-size:30px; color:var(--cre); margin-top:6px; }
+</style></head>
+<body><div id="stage">
+  <canvas id="pic"></canvas>
+  <div id="ec"></div>
+  <div id="vig"></div>
+  <div id="ui" class="ui"></div>
+  <div id="sig"></div>
+  <canvas id="grain"></canvas>
+</div>
+<script type="module">
+  await new Promise(r => (document.readyState === 'complete' ? r() : addEventListener('load', r, { once: true })));
+  await import('./main.js');
+</script>
+</body></html>

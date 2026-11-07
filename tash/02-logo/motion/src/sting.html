@@ -1,0 +1,18 @@
+<!doctype html>
+<html lang="ar" dir="rtl"><head><meta charset="utf-8">
+<link rel="stylesheet" href="/_system/tokens.css">
+<style>html,body{margin:0;background:#0B0B0B;overflow:hidden} #stage{position:relative;width:var(--w);height:var(--h)}</style>
+</head><body><div id="stage"></div>
+<script type="module">
+import { boot } from '/_system/motion/kit.js';
+import { createSting, CUES } from '/_system/motion/endcard.js';
+const q = new URLSearchParams(location.search);
+const fmt = q.get('fmt') || '916';             // 916 | 11
+const theme = q.get('theme') || 'ink';
+const W = 1080, H = fmt === '11' ? 1080 : 1920;
+const stage = document.getElementById('stage');
+stage.style.setProperty('--w', W + 'px'); stage.style.setProperty('--h', H + 'px');
+await document.fonts.load('700 56px Alexandria'); await document.fonts.load('600 26px "JetBrains Mono"');
+const sting = createSting(stage, { width: W, height: H, logoW: fmt === '11' ? 560 : 640, cy: fmt === '11' ? 0.42 : 0.46, theme });
+boot({ width: W, height: H, fps: 30, duration: CUES.duration, seek: t => sting.render(t) });
+</script></body></html>

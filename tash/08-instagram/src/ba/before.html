@@ -1,0 +1,89 @@
+<!doctype html>
+<html lang="ar" dir="rtl"><head><meta charset="utf-8">
+<title>Before/After — the ordinary photo (LAYL, same camera as the ad's S3 hero)</title>
+<link rel="stylesheet" href="/_system/tokens.css">
+<script type="importmap">{"imports":{"three":"/_system/vendor/three/three.module.min.js","three/addons/":"/_system/vendor/three/addons/"}}</script>
+<style>html,body{margin:0;background:#000;overflow:hidden} #stage{position:relative} canvas{display:block}
+#grain{position:absolute;inset:0;mix-blend-mode:overlay;opacity:.05;pointer-events:none}</style>
+</head><body><div id="stage"><canvas id="grain"></canvas></div>
+<script type="module">
+// The «before» half of post 6: LAYL No.07 photographed the ordinary way — on a desk against a wall, flat ceiling light,
+// phone-style deep focus, no styling. Same bottle model (LAYL's makeBottle) and the SAME camera as the ad's S3 hero
+// frame (frameSpec(4.70)), rendered on a canvas 1.4× larger with the FOV widened by the same factor, so the centre
+// 1080×1920 lines up pixel for pixel with the ad's still-hero.png and the post can be split full-bleed.
+import * as THREE from 'three';
+import { RoomEnvironment } from 'three/addons/environments/RoomEnvironment.js';
+import { boot, grain, rng } from '/_system/motion/kit.js';
+import { makeBottle, DIM } from '/05-concept-ads/01-perfume-layl/src/scene.js';
+import { frameSpec } from '/05-concept-ads/01-perfume-layl/src/shots.js';
+
+const K = 1.4, W = 1512, H = 2688, T_AD = 4.70;   // K: how much wider than the ad frame (W = 1080·K, H = 1920·K)
+const stage = document.getElementById('stage');
+stage.style.width = W + 'px'; stage.style.height = H + 'px';
+await Promise.all([document.fonts.load('300 120px Alexandria'), document.fonts.load('300 60px Archivo'), document.fonts.load('400 60px Archivo')]);
+await document.fonts.ready;
+
+const renderer = new THREE.WebGLRenderer({ antialias: true, preserveDrawingBuffer: true });
+renderer.setPixelRatio(1); renderer.setSize(W, H);
+renderer.toneMapping = THREE.NeutralToneMapping; renderer.toneMappingExposure = 1.0;
+renderer.outputColorSpace = THREE.SRGBColorSpace;
+renderer.shadowMap.enabled = true; renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+stage.prepend(renderer.domElement);
+
+const scene = new THREE.Scene();
+scene.background = new THREE.Color('#cfccc4');
+const pmrem = new THREE.PMREMGenerator(renderer);
+scene.environment = pmrem.fromScene(new RoomEnvironment(), 0.04).texture;
+scene.environmentIntensity = 0.6;
+
+// desk (light laminate with a faint seeded texture) and the wall behind it
+function noiseTex(seed, base, amp, w = 512, h = 512) {
+  const c = document.createElement('canvas'); c.width = w; c.height = h; const x = c.getContext('2d'); const r = rng(seed);
+  const img = x.createImageData(w, h);
+  for (let i = 0; i < w * h; i++) { const v = (r() - 0.5) * amp; img.data[i * 4] = base[0] + v; img.data[i * 4 + 1] = base[1] + v; img.data[i * 4 + 2] = base[2] + v; img.data[i * 4 + 3] = 255; }
+  x.putImageData(img, 0, 0);
+  const t = new THREE.CanvasTexture(c); t.wrapS = t.wrapT = THREE.RepeatWrapping; t.colorSpace = THREE.SRGBColorSpace; return t;
+}
+// light-oak laminate: long faint grain lines across a seeded noise
+function woodTex(seed) {
+  const w = 1024, h = 1024, c = document.createElement('canvas'); c.width = w; c.height = h; const x = c.getContext('2d'); const r = rng(seed);
+  x.fillStyle = '#c4ab88'; x.fillRect(0, 0, w, h);
+  for (let i = 0; i < 520; i++) { const y = r() * h, a = 0.03 + r() * 0.07, v = r() < 0.5 ? 120 : 228;
+    x.strokeStyle = `rgba(${v},${v - 18},${v - 40},${a})`; x.lineWidth = 0.6 + r() * 2.4; x.beginPath(); x.moveTo(0, y);
+    for (let k = 1; k <= 8; k++) x.lineTo(k * w / 8, y + (r() - 0.5) * 6); x.stroke(); }
+  const t = new THREE.CanvasTexture(c); t.wrapS = t.wrapT = THREE.RepeatWrapping; t.colorSpace = THREE.SRGBColorSpace; t.anisotropy = 8; return t;
+}
+const deskTex = woodTex(3); deskTex.repeat.set(2.2, 2.2);
+const desk = new THREE.Mesh(new THREE.PlaneGeometry(14, 14), new THREE.MeshStandardMaterial({ map: deskTex, roughness: 0.42, metalness: 0 }));
+desk.rotation.x = -Math.PI / 2; desk.receiveShadow = true; scene.add(desk);
+const wallTex = noiseTex(5, [214, 212, 206], 6); wallTex.repeat.set(4, 4);
+const wall = new THREE.Mesh(new THREE.PlaneGeometry(14, 8), new THREE.MeshStandardMaterial({ map: wallTex, roughness: 0.95, metalness: 0 }));
+wall.position.set(0, 4, -1.35); wall.receiveShadow = true; scene.add(wall);
+
+// flat overhead room light, a little cool; soft shadow straight down
+const sun = new THREE.DirectionalLight(0xf6f4ee, 2.1); sun.position.set(-1.6, 5.2, 2.6); sun.target.position.set(0, 0.6, 0);
+sun.castShadow = true; sun.shadow.mapSize.set(2048, 2048); sun.shadow.radius = 12; sun.shadow.intensity = 0.8; sun.shadow.bias = -0.0004;
+Object.assign(sun.shadow.camera, { left: -3, right: 3, top: 3, bottom: -3, near: 0.5, far: 12 });
+scene.add(sun, sun.target, new THREE.HemisphereLight(0xeef1f6, 0x9c8c74, 0.45));
+
+// the bottle — LAYL's own model and materials; the juice is not backlit here (no studio, no glow)
+const bottle = makeBottle(); scene.add(bottle.group);
+bottle.group.traverse(o => { if (o.isMesh) { o.castShadow = ['glass', 'cap', 'liquid'].includes(o.name); } });
+bottle.liqUniforms.uGlow.value = 0.32; bottle.liqUniforms.uGlowY.value = 2.0; bottle.liqUniforms.uRefr.value = 0.45;
+bottle.liqUniforms.uStripI.value = 0; bottle.cap.position.y = DIM.plateau - 0.004;
+
+// the ad's camera at t = 4.70 (S3 orbit), widened by K so the centre region matches the ad frame exactly
+const s = frameSpec(T_AD).cam;
+const camera = new THREE.PerspectiveCamera(36, W / H, 0.05, 60);
+camera.fov = 2 * THREE.MathUtils.radToDeg(Math.atan(Math.tan(THREE.MathUtils.degToRad(s.fov) / 2) * K));
+camera.position.set(...s.pos); camera.up.set(0, 1, 0); camera.lookAt(...s.target); camera.updateProjectionMatrix();
+if (s.shiftY) { camera.projectionMatrix.elements[9] = s.shiftY / K; camera.projectionMatrixInverse.copy(camera.projectionMatrix).invert(); }
+camera.updateMatrixWorld();
+
+const grainCv = document.getElementById('grain'); grainCv.width = W; grainCv.height = H;
+function seek() {
+  renderer.render(scene, camera);
+  grain(grainCv, 3, { amount: 30, scale: 1 });   // phone-sensor noise, fine
+}
+boot({ width: W, height: H, fps: 30, duration: 1, seek });
+</script></body></html>

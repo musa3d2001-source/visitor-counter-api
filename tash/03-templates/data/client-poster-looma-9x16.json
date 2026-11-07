@@ -1,0 +1,11 @@
+{
+  "size": "9x16",
+  "palette": { "ground": "#0F3D3A", "accent": "#E8A23A", "deep": "#3B2414", "cream": "#F3E9D2" },
+  "motif": "slice",
+  "product": { "placeholder": "can", "label": { "en": "LOOMA", "ar": "لومة" } },
+  "headline": "لومي…\nبس بارد.",
+  "offer": { "label": "عرض الافتتاح", "value": "0.350", "unit": "د.ك" },
+  "cta": "اطلبه الحين",
+  "logo": { "en": "LOOMA", "ar": "لومة" },
+  "concept": { "slate": "CONCEPT AD — TEMPLATE EXAMPLE" }
+}

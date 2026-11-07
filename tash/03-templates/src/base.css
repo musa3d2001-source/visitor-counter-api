@@ -1,0 +1,40 @@
+/* TASH templates — shared base. Tokens come from /_system/tokens.css (linked first by every template). */
+html, body { margin: 0; padding: 0; background: #000; }
+body { -webkit-font-smoothing: antialiased; text-rendering: geometricPrecision; }
+* { box-sizing: border-box; }
+
+#stage {
+  position: relative; overflow: hidden;
+  background: var(--bg); color: var(--fg);
+  direction: rtl; font-family: var(--f-text-ar);
+}
+#stage [lang="ar"], #stage .ar { direction: rtl; letter-spacing: 0; }
+
+/* ---- ground: built light + vignette + grain (never a glow) ---------------------------------- */
+.ground, .vig, .grain, .guides { position: absolute; inset: 0; pointer-events: none; }
+.ground { z-index: 0; }
+.vig { z-index: 50; }
+.grain { z-index: 51; width: 100%; height: 100%; mix-blend-mode: overlay; }
+.guides { z-index: 100; }
+.layer { position: absolute; z-index: 10; }
+
+/* ---- type roles ------------------------------------------------------------------------------ */
+.disp { font-family: var(--f-display-ar); font-weight: 800; line-height: 1.42; letter-spacing: 0; text-wrap: balance; }
+.txt  { font-family: var(--f-text-ar); font-weight: 500; line-height: 1.55; letter-spacing: 0; }
+.slate { font-family: var(--f-mono); font-weight: 600; font-size: 22px; line-height: 1; letter-spacing: .24em;
+         text-transform: uppercase; direction: ltr; white-space: nowrap; color: var(--sub); }
+.concept-ar { font-family: var(--f-text-ar); font-weight: 500; font-size: 26px; line-height: 1.3; color: var(--sub); white-space: nowrap; }
+bdi.lat { unicode-bidi: isolate; }
+
+/* inline brand dots (the typing indicator used as an ellipsis / bullet) */
+.tdots { display: inline-block; vertical-align: baseline; margin-inline-start: .1em; }
+.tdots svg { display: block; overflow: visible; }
+
+/* accent word: lime on ink; on light grounds the accent becomes weight/size only (never lime on paper) */
+.hl { color: var(--accent); }
+
+/* text boxes that auto-fit: height is fixed by layout, font-size shrinks to fit */
+[data-fit] { overflow: visible; }  /* never clip: Arabic dots and hamza below the last line must survive */
+
+.wm svg { display: block; width: 100%; height: auto; overflow: visible; }
+.bubble { position: relative; }

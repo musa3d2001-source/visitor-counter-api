@@ -1,0 +1,25 @@
+{
+  "_note": "LAYL — single source of truth for picture + sound. Read by src/shots.js (page) and src/audio.py. Times in seconds. LOCKED: the launch-ad editor cuts from ?clean=1 using these shot times.",
+  "bpm": 80,
+  "beat": 0.75,
+  "duration": 15.9,
+  "shots": [
+    { "id": "S1", "at": 0.00, "end": 1.50, "name": "light sweep — macro glass edge",       "buys": "this is glass, precious and thick, and something warm is inside" },
+    { "id": "S2", "at": 1.50, "end": 3.00, "name": "amber glow — the arch lights up",      "buys": "the juice is amber and alive; the bottle is an arch, like a lit window at night" },
+    { "id": "S3", "at": 3.00, "end": 6.00, "name": "orbit — gold dust (the notes)",        "buys": "this is an object of craft; its notes are oud, amber, saffron" },
+    { "id": "S4", "at": 6.00, "end": 8.25, "name": "atomiser — slow-motion mist",          "buys": "the heavy brass cap is the atomiser; the scent is real and it moves" },
+    { "id": "S5", "at": 8.25, "end": 10.50, "name": "typographic beat — the mist lingers", "buys": "the scent stays after you leave" },
+    { "id": "S6", "at": 10.50, "end": 15.90, "name": "hero pack shot — glossy black floor", "buys": "this is LAYL, No.07 — a product you could own" }
+  ],
+  "t": {
+    "notesIn": 3.20,
+    "notesOut": 5.48,
+    "spray": 6.30,
+    "line1": 8.30,
+    "line2": 8.65,
+    "linesOut": 10.08,
+    "endcard": 11.10,
+    "lightsOut": 12.95,
+    "sting": 13.15
+  }
+}
