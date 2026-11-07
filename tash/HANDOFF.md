@@ -1,7 +1,7 @@
 # HANDOFF: ذاكرة مشروع «طشّ | TASH Creative»
 
 > **Read this before resuming any TASH work. Update it after every stage and before the session ends.**
-> Last updated: 2026-11-07 (DOSE: 5 Kling videos generated and self-checked; not CD-reviewed).
+> Last updated: 2026-11-07 (DOSE v3 edit built after the CD re-review of v2 + the owner's COLOMBIA note; self-checked, not re-reviewed, not delivered, not committed).
 > Branch: `claude/optimistic-lovelace-0b5d7t` · PR #3 (draft) on `musa3d2001-source/visitor-counter-api`.
 > Status keys: **delivered** means sent to the owner as a file. **approved** means the owner said yes in writing.
 > **published** means it is live on Instagram/TikTok. *Claude never publishes.*
@@ -166,7 +166,28 @@ The old split zips (`split/TASH-1..6-of-6`) and `TASH-Instagram-Kit.zip` were **
   - Footage fixes in post: d5b wall sign replaced with the real keyed mark (tracked, defocus-matched); d5b starts at 2.30 s so no espresso steam; d2d «specialty» re-comped over the stream/ice; d1 card names (ETHIOPIA / EL SALVADOR / COLOMBIA) tracked onto the blank cards; d1 rating plate kept out by a top-anchored 1.12× frame.
   - `src/footage/_src/` (~590 MB lossless intermediates) is git-ignored by `src/.gitignore`; `src/footage/A–E` (~80 MB JPEGs) follow the MOR convention (MOR's are committed).
   - Credits arithmetic in SCRIPT.md gives 214.25 for the ad (closing balance 39.50) — **needs confirmation with `balance`**.
-  - Next: independent hostile review → owner.
+  - Independent hostile review of v1 (picture / Arabic-truth / sound lenses) → NOT READY; the owner also watched v1 and caught «COLOMBIA» running off card 3 («و كلمة colombia على الكرت طالعة برا»).
+  - **v2 built 7 Nov (built + self-checked by the fix subagent; NOT delivered, NOT approved, NOT independently re-reviewed, NOT committed). No Higgsfield / paid call.**
+    - Cards re-tracked from hand-measured reference quads (ECC); one label size on all three cards; measured ≥ 10.9 % margin on every side on every frame, checked at 1:1 on every printed frame of all three cards (COLOMBIA fully inside).
+    - Hook now moves from frame 1: the start of the iced pour (d2d f0–36), grey + defocused, text landed on frame 0; hard cut to the grinders on the 1.8 downbeat.
+    - Widget + chip re-placed per shot (left, 0.8×) so they never cover the ice/pour, the espresso pitcher or the sauce; the widget cuts to centre on 10.2 (wall sign never covered).
+    - Meter number + bump + fill land on each cue frame (١٠٠٪ on f324 with the pluck). S5 is true 30p (optical-flow in-betweens). d4 out-point pulled to f30.6 (no split).
+    - The S2 hero cup now carries a faithful recreation of dose's mark (logo_plate.png, GPT Image 2.6 job 836ec4b1, keyed; matched to ref06 in proportion), used under the owner-approved brief, cylinder-wrapped, replacing the AI's off-model «dose» (hairline counters). It is NOT dose's own logo file: never tell dose «we used your logo».
+    - Copy: origin chips 2.70 / 3.30; «ناقصك دوز.» 0.72; spec slate moved under the TASH lockup and enlarged; @sdosecafe in ink.
+    - Sound: ice plunks moved onto visible landings; chair scrape, spoon clink and d3 ice removed; end-card bass held, tail ducked −10 dB (was −18), ink-wipe whoosh. −14.0 LUFS, −1.5 dBTP, LRA 2.0.
+    - Still open (in SCRIPT.md known weaknesses): sign plate halo right of «e» / around «cafe» not re-cloned; tail bed ≈ −44 dBFS (CD asked ≈ −40); cup comp shows a slight fill smear around «specialty» when ice passes behind it.
+  - Independent re-review of v2 (picture / Arabic-truth / sound-spec) → not ready, no fatal: COLOMBIA confirmed inside card 3 on every frame, but 4 majors (S5 in-between tears on the ١٠٠٪ frame, doubled «e» on the S2 cup, origin chips too short, end-card energy hole on a phone speaker) + minors.
+  - **v3 built 7 Nov (built + self-checked by the fix subagent; NOT delivered, NOT approved, NOT independently re-reviewed, NOT committed). No Higgsfield / paid call.**
+    - COLOMBIA (owner note): still fully inside card 3 on every frame, now readable: Archivo width 90 (was 118), card-3 ink σ 1.3 (was 1.8), and a push-in on card 3 from 3.30 (1.14→1.30×). Measured every frame f0–f74: ≥ 11.7 % clear on every side of all three cards; checked at 1:1 on the rendered f101–f125 (card 3) and f60–f125 (cards 1–2). The dark cap band of COLOMBIA measures 15–17 px on screen (v2: 9 px).
+    - Origin chips stack (one row each) 2.0/2.7/3.3 → 4.08; «ناقصك دوز.» 0.42 with the second blink + chirp; slate from 15.30 (0.25 s fade).
+    - S5: optical-flow in-betweens fixed in `conform.py` (error map carried to the in-between time, one-sided fallback, wider feather); checked at 1:1 on f306–f340 (espresso rim + red line, saucer, table edge clean, incl. f324).
+    - S2 cup (`fx_specialty.py`): one clean «e» (deep-red shadowed AI ink now lifted out; thumb restore guarded; light falloff = fitted plane), «specialty» / «cafe» opaque; the hook plate f0–f35 now carries the recreated lockup too.
+    - Match: under the end-card dissolve the wall plate cross-fades to a clean wall with no sign (`Ec`, f380–f381), so no ghost sign trails the mark.
+    - Their line rides the wall above the sign (lands 11.70, 40 px right of centre, clear of the tree; ink ≈ 262 px at landing, ≥ 290 from ≈ 12.1 s); widget stack +30 px; spec tag bottom 1590.
+    - Sound: end card re-struck (13.50, 14.55) + F3 bass partial + light shaker → 300 Hz high-passed 200 ms RMS −22.0…−26.1 dBFS over 12.6–15.0 (v2 to −31); tail: music duck −15 + a separate tail pad → bed −37.5…−40.0 dBFS between the ticks (v2 −44…−48), ticks ≈ 15 dB above. MP4: −14.0 LUFS, −2.1 dBTP, LRA 1.6.
+    - Docs: SCRIPT.md / source comments no longer call the mark «real»; it is «a faithful recreation».
+    - Still open (SCRIPT.md known weaknesses): the wall-sign plate halo (not re-cloned); a few px of smooth fill around «specialty» and by the thumb on some S2 frames; their line lands 12 px inside the 250 px top line (the sign is still high in frame at 11.7).
+  - Next: independent re-review of v3 → owner.
 - Then send the MP4 to the owner.
 
 Ask the owner for the studio email address, and confirm the email split. Then do item 6.1. Also still waiting on: did the two zips download on the iPhone, and any wording fixes in the plan.

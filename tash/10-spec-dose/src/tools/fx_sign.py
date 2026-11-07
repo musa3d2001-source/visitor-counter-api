@@ -1,4 +1,5 @@
-"""DOSE: replace the AI wall sign in d5b_terrace with dose's real mark (CD review: the clip's sign is spelled right but
+"""DOSE: replace the AI wall sign in d5b_terrace with the faithful recreation of dose's mark (the keyed logo plate,
+not their own file; CD review: the clip's sign is spelled right but
 REDRAWN: separate letters and a bold condensed specialty/cafe, where the real sign has the merged ultra-condensed ovals
 and a wide geometric specialty/cafe; a match cut to the logo end card would put the two side by side).
 
@@ -185,7 +186,9 @@ def mark_quad(k):
     return M[:2].tolist()
 
 
-def apply(k, rgb):
+def apply(k, rgb, mark=True):
+    """mark=False: the clean wall only (the AI sign and its shadow removed, no mark): v3 uses it under the end-card
+    dissolve, so only the flat end-card mark carries the logo once it leaves the wall (v2 left a ghost sign behind)"""
     C = _load(); meta = C['meta']
     if str(k) not in meta['frames']: return rgb
     A, sg, s = ref_to_frame(k)
@@ -203,6 +206,9 @@ def apply(k, rgb):
     else: pm = cv2.GaussianBlur(pm, (0, 0), 1.2)
     win = out[Y0:Y1, X0:X1]
     wall = win * (1 - pm[..., None]) + plate * pm[..., None]
+    if not mark:
+        out[Y0:Y1, X0:X1] = wall
+        return np.clip(out + 0.5, 0, 255).astype(np.uint8)
     # the mark, its return and its shadow (window px)
     M = np.vstack([A, [0, 0, 1]]) @ np.vstack([C['M0'], [0, 0, 1]]); M = M[:2].copy(); M[:, 2] -= [X0, Y0]
     warp = lambda img, d=(0, 0): cv2.warpAffine(img, (M + np.array([[0, 0, d[0]], [0, 0, d[1]]])).astype(np.float32), (Wd, Hd), flags=cv2.INTER_LINEAR)
@@ -212,7 +218,13 @@ def apply(k, rgb):
     # leaf shadows: the wall's own light pattern, as a multiplier (sunlit plaster = 1)
     lum = cv2.GaussianBlur(plate.mean(2), (0, 0), 4.0)                 # leaf-shadow shapes only, no plaster grain
     shade = np.clip(lum / meta['sunlit'], 0.5, 1.0)[..., None]
-    col_face = FACE * (0.45 + 0.55 * shade) * (1 + 0.012 * tex[..., None])
+    # v2 (CD: the faces read evenly lit while the leaf shadows stop at the letter edges): the faces stand proud of the
+    # wall, so they catch the same leaf shadows at full strength, shifted toward the light by the sign's depth (the
+    # drop shadow's offset, reversed)
+    sx, sy = SHADOW_OFF[0] * s, SHADOW_OFF[1] * s
+    lum_f = cv2.warpAffine(lum, np.float32([[1, 0, sx], [0, 1, sy]]), (Wd, Hd), flags=cv2.INTER_LINEAR | cv2.WARP_INVERSE_MAP, borderMode=cv2.BORDER_REPLICATE)
+    shade_f = np.clip(lum_f / meta['sunlit'], 0.45, 1.0)[..., None]
+    col_face = FACE * (0.1 + 0.9 * shade_f) * (1 + 0.012 * tex[..., None])
     col_ret = RETURN * (0.35 + 0.65 * shade)
     if sg > 0.05:
         face = cv2.GaussianBlur(face, (0, 0), sg); ret = cv2.GaussianBlur(ret, (0, 0), sg); shad = cv2.GaussianBlur(shad, (0, 0), sg)

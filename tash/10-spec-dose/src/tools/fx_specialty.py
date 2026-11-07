@@ -1,13 +1,24 @@
-"""DOSE: re-comp the cup's small «specialty» line in d2d_carafe (CD review: the coffee stream, the falling cubes and
-the foam are drawn IN FRONT of «specialty», which is printed on the cup's outer wall, so letters break: f54
-«specia|ty», f62 «spec|alty» ...; the big «dose» correctly stays on top).
+"""DOSE: re-comp the print on the S2 hero cup (d2d_carafe) with a faithful recreation of dose's lockup (the keyed
+logo plate: frames/logo_plate.png, GPT Image 2.6 job 836ec4b1, matched to ref06 in proportion; not their own file).
 
-Method (conformed 1080x1920 px, d2d upscaled x1.5): the print is rigid on the cup, so the big «dose» letters are
-tracked (uniform scale + translation, orange-ness map, Nelder-Mead, frame to frame, then a quadratic fit over time)
-against REF = f110, where «specialty» is clean on dark coffee. The clean line's alpha is keyed off REF by colour
-(orange ink vs the dark coffee behind it), warped into every frame of the used range and laid on top as opaque ink in
-the colour of that frame's own «dose» letters, so the stream, ice and foam sit BEHIND the print.
-Run: python3 src/tools/fx_specialty.py  (writes assets/specialty.json + specialty_a.png). Used by tools/prep.py.
+v1 re-comped only the small «specialty» line (the stream, cubes and foam were drawn IN FRONT of it). The CD review of
+v1 then found the big «dose» off-model too: the AI drew its stencil counters as 1-3 px hairlines (the real mark has
+wide slits, as on the S3 cup and the end card), a much taller d ascender and squatter bowls. v2 replaces the whole
+printed lockup (specialty / dose / cafe) with the keyed logo plate's own pixels (assets/logo_a.png, never redrawn).
+
+Method (conformed 1080x1920 px, d2d upscaled x1.5):
+  track   unchanged from v1: the rigid «dose» letters give a per-frame similarity (scale + translation) against REF = f110
+          (analyse(), assets/specialty.json).
+  place   the plate lockup wraps the cup: logo px -> REF px through a cylinder (radius R) with a uniform scale, a 0.3 deg
+          tilt and the ellipse sag of the cup's horizontal lines (k), fitted by least squares on 14 landmarks read off a
+          pixel grid of REF (d bowl, e edge, the four slits, tops and bottoms of the bowls), then scaled 2.5 % about the
+          lockup centre so the e stays clear of the thumb (assets/cup_lockup.json).
+  remove  the AI print: REF's own print mask (assets/cup_ai_mask.png) carried into the frame, plus this frame's own
+          orange ink near it, dilated 4 px, filled from the coffee / foam / stream around it (Telea).
+  print   the plate alpha (remapped through the inverse similarity and cylinder) laid on as opaque ink in the frame's own
+          ink colour, shaded by the AI print's smooth light falloff; the thumb (in front of the cup) is kept in front.
+Run: python3 src/tools/fx_specialty.py  (writes assets/specialty.json, cup_lockup.json, cup_ai_mask.png). Used by
+tools/prep.py.
 """
 import os, json, sys
 import numpy as np, cv2
@@ -19,11 +30,19 @@ from common import decode, ASSETS
 
 CLIP, REF, K0, K1 = 'd2d_carafe', 110, 34, 112
 FIX = (36, 99)          # frames that get the re-comp (the edit uses 37-95; a guard frame each side for the blend)
+CUR_THR = 0.3           # v3 (was 0.5): this frame's own AI ink, down into the shadow by the thumb
 
 
 def orng(im):
     f = im.astype(np.float32); R, G, B = f[..., 0] + 1, f[..., 1], f[..., 2]
     return np.clip(((R - B) / R - 0.45) / 0.3, 0, 1) * np.clip((0.62 - G / R) / 0.2, 0, 1) * np.clip((R - 120) / 60, 0, 1)
+
+
+def inkish(im):
+    """v3: the AI print's ink, lit OR in shadow: orange-ness > CUR_THR, or a deep red-orange (R > 78, G/R < 0.36,
+    B/R < 0.15; the e's right half by the thumb measures ~(90-130, 14-30, 0-6), the coffee behind it R < 60)"""
+    f = im.astype(np.float32) + 0.5; R, G, B = f[..., 0], f[..., 1], f[..., 2]
+    return (orng(im) > CUR_THR) | ((R > 78) & (G < 0.36 * R) & (B < 0.15 * R))
 
 
 def comps(o, box, thr=0.5):
@@ -116,30 +135,166 @@ def analyse():
     return meta
 
 
+HOOK = (0, 35)          # v3: the hook plate (d2d f0-f35, grey and 8x defocused) gets the plate lockup too
+
+
+def track_hook():
+    """v3: extend the rigid «dose» track to the hook plate (f0-f35), which v2 left with the AI's off-model print
+    (rounded counters, read as «doee» through the defocus). Same objective as analyse() (the REF letters' orange-ness
+    under a similarity), chained from f36 down to f0, smoothed by a cubic in time (the hand moves the cup a little);
+    the frames f36+ are left exactly as they are."""
+    meta = json.load(open(os.path.join(ASSETS, 'specialty.json')))
+    fr = decode(CLIP, 0, max(REF, 40)); get = lambda k: fr[k]
+    ref = get(REF); o = orng(ref)
+    lab, objs, sz = comps(o, (300, 1050, 900, 1550))
+    dose = lab == int(np.argmax(sz)) + 1
+    c = np.array(meta['c'])
+    region = ndimage.binary_dilation(dose, iterations=8).astype(np.float32)
+    oref = cv2.GaussianBlur(orng(ref) * region, (0, 0), 1.5)
+    sc = 0.5; small = lambda q: cv2.resize(q, None, fx=sc, fy=sc, interpolation=cv2.INTER_AREA)
+    oref_s, reg_s = small(oref), small(region)
+    def As(p): return np.array([[p[0], 0, (c[0] * (1 - p[0]) + p[1]) * sc], [0, p[0], (c[1] * (1 - p[0]) + p[2]) * sc]], np.float32)
+    hist = [meta['frames'][str(k)]['raw'][:3] for k in (38, 37, 36)]
+    raw = {}
+    for k in range(HOOK[1], HOOK[0] - 1, -1):
+        o_s = small(cv2.GaussianBlur(orng(get(k)), (0, 0), 1.5))
+        p0 = list(2 * np.array(hist[-1]) - np.array(hist[-2]))
+        def f(p):
+            if not 0.6 < p[0] < 1.4: return 1e9
+            wr = cv2.warpAffine(reg_s, As(p), o_s.shape[::-1]); wv = cv2.warpAffine(oref_s, As(p), o_s.shape[::-1])
+            return float((((wv - o_s) ** 2) * wr).sum())
+        r = minimize(f, p0, method='Nelder-Mead', options={'xatol': 1e-4, 'fatol': 1e-5, 'maxiter': 2000,
+                     'initial_simplex': np.array(p0) + np.array([[0, 0, 0], [0.01, 0, 0], [0, 3, 0], [0, 0, 3]])})
+        hist.append(list(r.x)); raw[k] = [float(x) for x in r.x] + [float(r.fun)]
+    ks = np.arange(HOOK[0], HOOK[1] + 1); P = np.array([raw[k][:3] for k in ks])
+    sm = np.stack([np.polyval(np.polyfit(ks, P[:, j], 3), ks) for j in range(3)], 1)
+    res = np.abs(sm - P)
+    print(f'hook track f{HOOK[0]}-f{HOOK[1]}: cubic-fit residual max s {res[:, 0].max():.4f}  x {res[:, 1].max():.2f}  y {res[:, 2].max():.2f} px;'
+          f' at f35 {np.round(sm[-1], 3).tolist()} vs f36 {[round(meta["frames"]["36"][q], 3) for q in ("s", "tx", "ty")]}')
+    for i, k in enumerate(ks):
+        meta['frames'][str(int(k))] = {'s': float(sm[i, 0]), 'tx': float(sm[i, 1]), 'ty': float(sm[i, 2]), 'raw': [round(x, 3) for x in raw[int(k)]]}
+    meta['fix'] = [HOOK[0], meta['fix'][1]]
+    meta['frames'] = {str(k): meta['frames'][str(k)] for k in sorted(int(x) for x in meta['frames'])}
+    json.dump(meta, open(os.path.join(ASSETS, 'specialty.json'), 'w'), indent=0)
+
+
+LOCKUP = {'landmarks_logo': [[9, 427], [1282, 427], [144, 262], [144, 592], [496, 262], [496, 592], [1144, 262], [880, 363],
+                             [496, 695], [85, 690], [1200, 695], [496, 160], [1150, 160], [1144, 385]],
+          'landmarks_ref': [[438, 1325], [803, 1318], [470, 1283], [470, 1360], [564.5, 1293], [564.5, 1372], [769.5, 1288],
+                            [695, 1313], [564, 1408], [480, 1398], [780, 1405], [564, 1257], [770, 1255], [769.5, 1313]],
+          'uc': 645.5, 'vc': 370.0, 'shrink': 0.975}
+
+
+def cyl_fwd(p, L, uc, vc):
+    s, R, cx, cy, th, k = p
+    X = (L[:, 0] - uc) * s; Y = (L[:, 1] - vc) * s
+    c, sn = np.cos(th), np.sin(th); Xr = c * X - sn * Y; Yr = sn * X + c * Y
+    return np.c_[cx + R * np.sin(Xr / R), cy + Yr + k * (1 - np.cos(Xr / R))]
+
+
+def analyse_lockup():
+    from scipy.optimize import least_squares
+    L, Aref = np.array(LOCKUP['landmarks_logo'], float), np.array(LOCKUP['landmarks_ref'], float)
+    uc, vc = LOCKUP['uc'], LOCKUP['vc']
+    r = least_squares(lambda p: np.r_[(cyl_fwd(p, L, uc, vc) - Aref)[:, 0] * 2, (cyl_fwd(p, L, uc, vc) - Aref)[:, 1]],
+                      [0.33, 270, 620, 1310, 0.02, -30])
+    res = cyl_fwd(r.x, L, uc, vc) - Aref
+    print('lockup cylinder fit: s %.4f R %.1f centre (%.1f, %.1f) tilt %.4f rad sag %.1f; rms x %.1f y %.1f px' % (
+        *r.x, np.sqrt((res[:, 0] ** 2).mean()), np.sqrt((res[:, 1] ** 2).mean())))
+    p = r.x.copy(); p[0] *= LOCKUP['shrink']
+    ref = decode(CLIP, REF, REF)[0]
+    m = orng(ref) > 0.5; box = np.zeros_like(m); box[1150:1480, 400:830] = True; m &= box
+    m = ndimage.binary_closing(m, iterations=2)
+    lab, n = ndimage.label(m); sz = ndimage.sum(np.ones_like(lab), lab, range(1, n + 1))
+    m = np.isin(lab, [i + 1 for i in range(n) if sz[i] > 20])
+    Image.fromarray((m * 255).astype(np.uint8)).save(os.path.join(ASSETS, 'cup_ai_mask.png'))
+    json.dump({'p': [float(x) for x in p], 'uc': uc, 'vc': vc, 'fit': [float(x) for x in r.x]}, open(os.path.join(ASSETS, 'cup_lockup.json'), 'w'), indent=1)
+
+
 _C = {}
 def apply(k, rgb):
     if not _C:
         _C['m'] = json.load(open(os.path.join(ASSETS, 'specialty.json')))
-        _C['a'] = np.asarray(Image.open(os.path.join(ASSETS, 'specialty_a.png')), np.float32) / 255
-    meta, a = _C['m'], _C['a']
+        _C['L'] = json.load(open(os.path.join(ASSETS, 'cup_lockup.json')))
+        la = np.asarray(Image.open(os.path.join(ASSETS, 'logo_a.png')), np.float32) / 255
+        # v3: the small words («specialty», «cafe») are every piece of the mark except the big «dose» body; they get
+        # a lighter pre-blur and an alpha gain after the warp so their strokes print opaque (v2: σ 1.1 at a ~3.3x
+        # downscale left them see-through, with the ice / the Telea fill showing through «cialty»)
+        lab, n = ndimage.label(la > 0.5); sz = ndimage.sum(np.ones_like(lab), lab, range(1, n + 1))
+        small = (lab > 0) & (lab != int(np.argmax(sz)) + 1)
+        _C['sm'] = cv2.GaussianBlur(ndimage.binary_dilation(small, iterations=8).astype(np.float32), (0, 0), 2)
+        _C['la'] = cv2.GaussianBlur(la, (0, 0), 1.1) * (1 - _C['sm']) + cv2.GaussianBlur(la, (0, 0), 0.7) * _C['sm']
+        _C['ai'] = (np.asarray(Image.open(os.path.join(ASSETS, 'cup_ai_mask.png'))) > 127).astype(np.uint8)
+    meta, Lk = _C['m'], _C['L']
     if not (meta['fix'][0] <= k <= meta['fix'][1]) or str(k) not in meta['frames']: return rgb
-    fm = meta['frames'][str(k)]; s, c = fm['s'], meta['c']; bx, by = meta['spec_box'][:2]
-    A = np.array([[s, 0, c[0] * (1 - s) + fm['tx'] + s * bx], [0, s, c[1] * (1 - s) + fm['ty'] + s * by]], np.float32)
-    al = cv2.warpAffine(a, A, (1080, 1920), flags=cv2.INTER_LINEAR)
-    # the AI's own (misplaced / broken) ink just around our letters: lift it out first (small Telea fill), so no
-    # second outline shows beside the re-comped print
-    ys, xs = np.where(al > 0.05); y0, y1, x0, x1 = ys.min() - 12, ys.max() + 13, xs.min() - 12, xs.max() + 13
-    crop = rgb[y0:y1, x0:x1].copy(); ac = al[y0:y1, x0:x1]
-    near = cv2.dilate((ac > 0.25).astype(np.uint8), np.ones((9, 9), np.uint8)) > 0
-    stray = near & (orng(crop) > 0.3) & (ac < 0.6)
-    if stray.any():
-        stray = cv2.dilate(stray.astype(np.uint8), np.ones((3, 3), np.uint8))
-        crop = cv2.inpaint(crop, stray, 3, cv2.INPAINT_TELEA)
-    base = rgb.copy(); base[y0:y1, x0:x1] = crop
-    ink = np.array(fm['ink'], np.float32)
-    out = base.astype(np.float32) * (1 - al[..., None]) + ink * al[..., None]
-    return np.clip(out + 0.5, 0, 255).astype(np.uint8)
+    fm = meta['frames'][str(k)]; s_, c = fm['s'], meta['c']
+    A = np.array([[s_, 0, c[0] * (1 - s_) + fm['tx']], [0, s_, c[1] * (1 - s_) + fm['ty']]], np.float64)   # REF -> frame
+    X0, Y0, X1, Y1 = 360, 1100, 880, 1520
+    im = rgb; crop = im[Y0:Y1, X0:X1].copy(); f = crop.astype(np.float32)
+    # 1. where the AI print is: REF's print mask carried into this frame + this frame's own ink near it
+    # v3: the carried mask is dilated 13 px (the AI print drifts against the rigid track by up to ~10 px at the e) and
+    # this frame's ink is taken down to orange-ness 0.3, so the shadowed right half of the AI «e» next to the thumb and
+    # its slit are lifted out too (v2 left a darker-red second «e» there, f150-f197 of the edit)
+    m0 = cv2.warpAffine(_C['ai'], A.astype(np.float32), (1080, 1920), flags=cv2.INTER_NEAREST)
+    cur = inkish(im)
+    # this frame's ink: every ink-coloured piece within 31 px of the carried mask that is CONNECTED to it (the AI e's
+    # shadowed half is one piece with its lit half; loose coffee / foam specks are dropped)
+    cand = cur & cv2.dilate(m0, np.ones((31, 31), np.uint8)).astype(bool)
+    lab, n = ndimage.label(cand)
+    hit = np.unique(lab[(m0 > 0) & (lab > 0)])
+    m = cv2.dilate(m0, np.ones((13, 13), np.uint8)) | np.isin(lab, hit[hit > 0]).astype(np.uint8)
+    m = cv2.dilate(m, np.ones((9, 9), np.uint8))
+    mc = m[Y0:Y1, X0:X1]
+    # 2. the thumb in front of the cup: per row (right part of the lockup only), the first run of >= 12 glove/skin pixels
+    mx = f.max(2); sat = (mx - f.min(2)) / (mx + 1)
+    skin = (f[..., 0] > 200) & (f[..., 1] > 150) & (f[..., 2] > 140) & ((f[..., 0] - f[..., 2]) > 15) & (sat < 0.35)
+    xa = int(A[0, 0] * 760 + A[0, 2]) - X0
+    bnd = np.full(Y1 - Y0, np.nan)
+    for yy in range(Y1 - Y0):
+        run = np.where(np.convolve(skin[yy, xa:].astype(np.int32), np.ones(12, np.int32), 'valid') == 12)[0]
+        if len(run): bnd[yy] = xa + run[0]
+    ok = ~np.isnan(bnd); occ = np.zeros((Y1 - Y0, X1 - X0), np.float32); thumb = occ > 0.5
+    if ok.sum() > 10:
+        idx = np.arange(len(bnd)); b = bnd.copy(); b[~ok] = np.interp(idx[~ok], idx[ok], bnd[ok])
+        b = ndimage.uniform_filter1d(ndimage.median_filter(b, 9), 5)
+        occ = np.clip(np.arange(X1 - X0)[None, :] - b[:, None] + 0.5, 0, 1) * ok[:, None]
+        # v3: the thumb restore never brings back orange pixels (that is the AI print in the shadow by the thumb, not
+        # the glove)
+        thumb = occ > 0.5
+        occ = cv2.GaussianBlur((occ * ~inkish(crop)).astype(np.float32), (0, 0), 0.7)
+    # 3. lift the AI print out (fill from the coffee / foam / stream around it)
+    # v3: the thumb next to the print is masked too, so the fill comes from the coffee / foam only (v2 pulled the
+    # glove's pink into the gap between the e and the thumb); the thumb itself goes back on top below
+    near = cv2.dilate(mc, np.ones((41, 41), np.uint8)) > 0
+    bg = cv2.inpaint(crop, ((mc > 0) | (thumb & near)).astype(np.uint8), 5, cv2.INPAINT_TELEA).astype(np.float32)
+    # 4. the plate lockup's alpha: frame px -> REF px (inverse similarity) -> logo px (inverse cylinder)
+    gx, gy = np.meshgrid(np.arange(X0, X1, dtype=np.float64), np.arange(Y0, Y1, dtype=np.float64))
+    rx = (gx - A[0, 2]) / A[0, 0]; ry = (gy - A[1, 2]) / A[1, 1]
+    s, R, cx, cy, th, kk = Lk['p']
+    q = np.clip((rx - cx) / R, -0.999, 0.999); Xr = R * np.arcsin(q); Yr = ry - cy - kk * (1 - np.cos(Xr / R))
+    ct, st = np.cos(-th), np.sin(-th); X = ct * Xr - st * Yr; Y = st * Xr + ct * Yr
+    mx_, my_ = (Lk['uc'] + X / s).astype(np.float32), (Lk['vc'] + Y / s).astype(np.float32)
+    al = cv2.remap(_C['la'], mx_, my_, cv2.INTER_LINEAR, borderValue=0)
+    smw = cv2.remap(_C['sm'], mx_, my_, cv2.INTER_LINEAR, borderValue=0)
+    al = cv2.GaussianBlur(al, (0, 0), 0.6) * (np.abs(q) < 0.995)
+    al = al * (1 - smw) + np.clip(al * 1.45, 0, 1) * smw                  # v3: small-word strokes opaque
+    # 5. ink: this frame's own print colour, with the AI print's smooth light falloff across the cup
+    o = orng(crop); mi = (o > 0.6) & (mc > 0)
+    # v3: the light falloff is a PLANE fitted to the AI print's own lit ink (v2's local sigma-20 ratio saturated at its
+    # 0.93 clip where the lit samples ran out by the thumb, which drew a hard, darker curved patch through the e)
+    L = f.mean(2); yy, xx = np.nonzero(mi); Lm = float(np.median(L[mi]))
+    P = np.linalg.lstsq(np.c_[np.ones(len(xx)), xx / 100.0, yy / 100.0], L[mi] / Lm, rcond=None)[0]
+    gy_, gx_ = np.mgrid[0:Y1 - Y0, 0:X1 - X0]
+    shade = np.clip(P[0] + P[1] * gx_ / 100.0 + P[2] * gy_ / 100.0, 0.93, 1.06).astype(np.float32)
+    ink = np.median(f[mi], 0)[None, None, :] * shade[..., None]
+    out = bg * (1 - al[..., None]) + ink * al[..., None]
+    out = out * (1 - occ[..., None]) + f * occ[..., None]
+    res = rgb.copy(); res[Y0:Y1, X0:X1] = np.clip(out + 0.5, 0, 255).astype(np.uint8)
+    return res
 
 
 if __name__ == '__main__':
-    analyse()
+    if '--hook-only' in sys.argv: track_hook(); sys.exit()
+    if '--lockup-only' not in sys.argv: analyse()
+    analyse_lockup()
+    track_hook()

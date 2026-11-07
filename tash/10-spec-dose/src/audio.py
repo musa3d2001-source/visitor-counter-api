@@ -5,8 +5,8 @@ Shape: a flat, muffled room under the low mood battery (two low-battery blips, a
 lands on bar 1 (1.8 s): a warm ~100 BPM house/lo-fi groove in F (rootless e-piano chords, round bass, soft kick,
 finger snaps on 2 & 4, swung shaker). Every dose = one meter step = one rising pluck: C5, D5, F5, G5 (a 4-note motif)
 resolving on A5 + C6 at ١٠٠٪ (10.8 s, on F6/9). Foley on picture: grinder whirr + bean rattle, the iced pour and the ice
-plunging into the cup (on the visible landings), the espresso into milk, the sauce, a spoon on the saucer, a bistro
-chair on the terrace pavement. The match (12.6 s) resolves C9sus4 → Fmaj9 (the wall sign becomes the mark = home), then the
+plunging into the cup (on the visible landings), the espresso into milk, the sauce, the terrace air (v2: no foley
+without a visible cause). The match (12.6 s) resolves C9sus4 → Fmaj9 (the wall sign becomes the mark = home), then the
 TASH sonic logo. Run: python3 src/audio.py → src/audio.wav (pre-mastered to −14 LUFS, true peak ≤ −1.5 dBTP)."""
 import sys, os, json
 import numpy as np
@@ -142,6 +142,10 @@ def street(d):
 
 # ----------------------------------------------------------------------------- arrangement
 m = Mix(DUR, tail=0.5)
+# v3 end card + tail (measured: 300 Hz high-passed 200 ms RMS >= -26 dBFS over 12.6-15.0; 50 ms RMS between the
+# sting's ticks -38..-40 dBFS, the ticks 15-16 dB above it): the end-card pad 0.18 -> 0.26, two Fmaj9 re-strikes
+# (13.50 and the pushed 16th 14.55), the music ducked -15 dB for the tail, and a separate tail pad on the sting bus
+PADG, RSG, RS2, TAILDUCK, TAILGAIN = 0.26, 0.32, 3.25, -15, 0.065
 T = lambda bar, beat=0: g.t(bar, beat)
 
 # ---- HOOK (0–1.8): a flat, muffled room; the battery is low
@@ -152,6 +156,8 @@ for t0 in (0.0, 0.6, 1.2):                                         # a muffled p
     m.add(lp(softkick(), 300), t0, gain=0.32, bus='amb')
 m.add(low_batt(), EV['blip1'], gain=0.55, bus='sfx', pan=0.0)
 m.add(low_batt(), EV['blip2'], gain=0.5, bus='sfx', pan=0.0)
+# v2: the hook plate is the start of the iced pour (grey, defocused): the pour heard through the same muffled room
+m.add(fade(lp(pour(1.9, seed_=11), 420), 0.08, 0.3), 0.0, gain=0.42, bus='amb', pan=-0.1)
 m.add(riser(0.85, 400, 6000, tonal=False), EV['dose1'] - 0.85, gain=0.2, bus='sfx')                 # charging
 m.add(whoosh(0.4, 600, 5200, pan_from=0.2, pan_to=-0.2, peak=0.8), EV['dose1'] - 0.32, gain=0.22, bus='sfx')
 m.add(impact(1.2, sub_f=55, bright=0.35, sub_decay=0.14, space=0.25), EV['dose1'] - 0.004, gain=0.3, bus='sfx')
@@ -177,13 +183,21 @@ for i, (at, name, root) in enumerate(PROG):
     big = name == 'Fmaj9' and at == EV['match']
     chord(m, at, V[name], vel=0.66 if not big else 0.72, d=min(3.2, dur + 0.8), bright=0.5, gain=0.26 if not big else 0.3)
     if dur > 1.0 and not big: chord(m, at + 2.5 * B if dur > 2.0 else at + 1.5 * B, V[name][1:], vel=0.42, d=1.2, gain=0.2)   # the off-beat comp
-    m.add(pad([nf(n) for n in V[name][:3]], dur + 0.4, cutoff=1100, detune=0.07, attack=0.25, release=0.5), at - 0.03, gain=0.1, bus='keys')
+    pd = dur + 0.4 if not big else EV['sting'] + 1.2 - at              # v2: the Fmaj9 pad carries on under the tail's ticks
+    m.add(pad([nf(n) for n in V[name][:3]], pd, cutoff=1100, detune=0.07, attack=0.25, release=0.5), at - 0.03, gain=0.1 if not big else PADG, bus='keys')
     # bass: root on the beat, a pickup an octave up on the "and" of 3 (none on the end card hold)
     nb = int(round(dur / B))
     for bt in range(nb):
         if big and bt > 0: break
-        if bt % 2 == 0: m.add(roundbass(nf(root), 0.5 if not big else 1.6, 1.0), at + bt * B + 0.003, gain=0.5, bus='bass')
+        # v2: the end-card bass holds the whole card and decays under the ink wipe (v1: a 1.6 s note left a hole at 14.2)
+        if bt % 2 == 0: m.add(roundbass(nf(root), 0.5 if not big else EV['dip'] - EV['match'] + 0.15, 1.0), at + bt * B + 0.003, gain=0.5, bus='bass')
         elif bt % 4 == 3: m.add(roundbass(nf(root) * 2, 0.22, 0.6), at + (bt - 0.5) * B + 0.003, gain=0.26, bus='bass')
+# v3 (CD: the end card held only a full-band F2 bass, which a phone speaker barely plays; above 300 Hz the card sagged
+# to -29..-31 dB while «سبيشلتي دوز · الجهراء» and @sdosecafe are on screen): the Fmaj9 voicing re-strikes twice, the
+# held bass gets an octave partial a phone can play, and a light shaker keeps air under the info line
+chord(m, EV['match'] + 1.5 * B, V['Fmaj9'][1:], vel=0.5, d=1.8, gain=RSG)
+chord(m, EV['match'] + RS2 * B, V['Fmaj9'][1:], vel=0.46, d=1.6, gain=RSG)
+m.add(roundbass(nf('F3'), EV['dip'] - EV['match'] + 0.15, 0.6), EV['match'] + 0.003, gain=0.14, bus='bass')
 m.add(bell(nf('C6'), 2.4, bright=0.45), EV['match'] + 0.01, gain=0.08, bus='verb')
 m.add(bell(nf('A5'), 2.2, bright=0.4), EV['match'] + 0.12, gain=0.06, bus='verb')
 
@@ -205,26 +219,34 @@ bar_groove(EV['dose4'], 3, dens=1.0)                                    # d4
 bar_groove(EV['dose5'], 1, kick_=False, snaps=False, dens=0.8)          # the build into 100 %
 bar_groove(EV['full'], int(round((EV['match'] - EV['full']) / B)), dens=1.0)   # 100 % → the line → the match
 m.add(softkick(), EV['match'], gain=0.45, bus='drums')
+bar_groove(EV['match'] + B, 3, kick_=False, snaps=False, dens=0.55)    # v3: shaker only under the end card's info line
 
 # ---- foley on picture
 m.add(grinder(1.5), EV['dose1'] + 0.05, gain=0.5, bus='sfx')
 m.add(beans(1.6, 50, 4), EV['origin1'] - 0.05, gain=0.42, bus='sfx')
 pour_c = lp(pour(2.5, seed_=21), 2600)
 m.add(pour_c, EV['dose2'] - 0.05, gain=0.6, bus='sfx', pan=-0.1)
-for k, te in enumerate((4.758, 5.05, 5.258, 5.508, 5.758, 6.008, 6.467)):   # the cubes plunging in (source f51 … f92)
+# the cubes plunging in, on the VISIBLE landings (v2, checked at 30 fps on the cup: f141-142, f150, f163, f168-169,
+# f172-173, the f180 splash, the f184-185 splash; v1 had two hits with no contact on screen)
+for k, te in enumerate((4.758, 5.05, 5.433, 5.633, 5.758, 6.008, 6.15)):
     m.add(ice_plunk(2700 + 380 * ((k * 3) % 5), k + 3, splash=0.5 + 0.1 * (k % 3)), te, gain=0.42 - 0.02 * (k % 2), bus='sfx', pan=[-0.1, 0.12, 0.0, -0.15, 0.1, 0.05, -0.05][k])
 esp = lp(pour(1.9, seed_=33), 1500)
 m.add(esp, EV['dose3'] - 0.02, gain=0.5, bus='sfx', pan=0.08)
-for k, te in enumerate((6.95, 7.6)): m.add(lp(ice_plunk(3300 - 300 * k, 20 + k, splash=0.15), 6000), te, gain=0.2, bus='sfx')   # the ice shifting in the milk
+# (v2: no ice clinks in d3: the ice does not move on screen)
 sauce = lp(pour(1.9, seed_=44), 900)
 m.add(sauce, EV['dose4'] - 0.02, gain=0.45, bus='sfx', pan=-0.05)
-m.add(porcelain(2480), EV['dose5'] + 0.06, gain=0.42, bus='sfx', pan=-0.2)          # the spoon on the saucer (the tray)
+# (v2: no spoon clink and no chair scrape on the terrace: nothing on screen moves them)
 m.add(street(3.2), EV['dose5'] - 0.05, gain=1.0, bus='amb')
-m.add(chair_scrape(0.42), 11.35, gain=0.5, bus='sfx')
 m.add(whoosh(0.5, 400, 3800, pan_from=-0.2, pan_to=0.2, peak=0.55), EV['match'] - 0.28, gain=0.2, bus='sfx')
 
 # ---- TASH signature (aligned to endcard-cues.json)
 m.add(sonic_logo(), EV['sting'], gain=0.9, bus='sting')
+m.add(whoosh(0.3, 300, 3000, peak=0.5), EV['dip'], gain=0.25, bus='sting')            # the ink wipe (15.08-15.30) is heard (v3: 0.15 -> 0.25)
+# v3 (CD: 15.7-16.05 sat at -44..-48 dBFS between the sting's ticks, a fade to near-silence on a phone): a soft Fmaj9
+# pad on the sting bus (outside the music's duck) holds the bed at about -40 dBFS until the طشّ hit at 16.42
+TAILPAD = (EV['sting'] - 0.1, 16.42)
+m.add(fade(pad([nf(n) for n in ('A3', 'C4', 'E4', 'G4')], TAILPAD[1] - TAILPAD[0], cutoff=1500, detune=0.07, attack=0.35, release=0.3), 0.05, 0.12),
+      TAILPAD[0], gain=TAILGAIN, bus='sting')
 
 # ----------------------------------------------------------------------------- buses
 N = len(m.buf)
@@ -242,7 +264,7 @@ duck = duck_curve(N, kicks, depth_db=-2.5, attack=0.006, hold=0.03, release=0.16
 # thins under the line; full warm chord on the match; bows out for the TASH tail
 arc = (lin(EV['dose1'] - 0.05, EV['dose1'] + 0.08, db(-24), 1) * lin(EV['full'] - 0.1, EV['full'] + 0.05, db(-1.0), db(0.8))
        * lin(EV['tagline'] - 0.2, EV['tagline'] + 0.2, 1, db(-2.0)) * lin(EV['match'] - 0.05, EV['match'] + 0.1, 1, db(1.5))
-       * lin(EV['dip'] - 0.2, EV['sting'] + 0.1, 1, db(-18)))
+       * lin(EV['dip'] - 0.2, EV['sting'] + 0.1, 1, db(TAILDUCK)))      # the music bows out for the tail; v3: the bed under the ticks is the TAILPAD below
 for bus in ('keys', 'bass', 'drums'): m.process_bus(bus, lambda b: b * duck * arc)
 m.process_bus('pluck', lambda b: b * lin(EV['dip'] - 0.2, EV['sting'], 1, db(-12)))
 m.process_bus('bass', lambda b: hp(b, 50))

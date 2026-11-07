@@ -1,8 +1,8 @@
 // specialty dose «ناقصك دوز.» — unofficial spec STORY ad by TASH (not commissioned by specialty dose). The page is a
 // pure function of time. Picture: the five CD-reviewed AI clips (../footage/ai/), fixed and conformed to the edit as
 // 30 fps JPEG sequences (tools/extract.sh: prep.py → conform.py), drawn by frame index, one shared grade (grade.js).
-// The hook is the grinders' first frame held grey, dark and out of focus under the low mood battery; the first dose
-// brings focus and colour back. The wall sign in d5b is dose's real mark (tools/fx_sign.py), and the end card is a
+// The hook is the START of the iced pour (d2d f0-36, ice tumbling from frame 1; S2 continues the same pour), grey,
+// dark and out of focus under the low mood battery; the first dose cuts to the grinders in full colour on the downbeat. The wall sign in d5b is the recreated dose mark (keyed logo plate; tools/fx_sign.py), and the end card is a
 // graphic match: the world dissolves to white plaster while the mark stays put, then the lockup settles.
 // Type, the mood widget, the tag, the end-card mark, the slate and the TASH tail: overlay.js.
 // URL: ?clean=1 (no type) · ?poster=1 (story cover) · ?t=… / ?play (preview) · ?info=1 (HUD)
@@ -32,19 +32,29 @@ const MATCH = {
   d5b_terrace: makeMatch({ black: [4, 3, 2], stops: -0.04, wb: [1.0, 0.995, 0.99], sat: 0.98, contrast: 1.03 }),
 };
 const SEG = Object.fromEntries(SEGS.map(s => [s.id, s]));
-const segAt = f => { for (let i = SEGS.length - 1; i >= 0; i--) if (f >= Math.round(SEGS[i].t0 * FPS)) return SEGS[i]; return SEGS[0]; };
+const CUTS = SEGS.filter(s => !s.variant);              // a 'variant' seg (Ec) is not a cut: drawn explicitly below
+const segAt = f => { for (let i = CUTS.length - 1; i >= 0; i--) if (f >= Math.round(CUTS[i].t0 * FPS)) return CUTS[i]; return CUTS[0]; };
 
 /** framing of a segment at time t: screen = (source − [sx, sy]) · z */
 export function framing(id, t) {
-  const s = SEG[id], f = LY.frame[id], u = clamp((t - s.t0) / (s.t1 - s.t0));
-  const z = lerp(f.z0, f.z1, u);
+  const s = SEG[id], f = LY.frame[id];
+  const zAt = tt => lerp(f.z0, f.z1, clamp((tt - s.t0) / (s.t1 - s.t0)));
+  if (f.push && t > f.push.at) {
+    // v3 (owner: COLOMBIA must read): from the moment COLOMBIA prints, the frame pushes in on card 3, the window's
+    // top-left corner held where the top-right-anchored frame had it (so card 3 grows toward the centre and the
+    // invented rating plate stays below the frame)
+    const z0 = zAt(f.push.at), z = lerp(z0, f.push.z, E.inOutSine(clamp((t - f.push.at) / (s.t1 - f.push.at))));
+    return { z, sx: W - W / z0, sy: 0 };
+  }
+  const z = zAt(t);
   if (f.anchor === 'tr') return { z, sx: W - W / z, sy: 0 };
   return { z, sx: f.fx - f.fx / z, sy: f.fy - f.fy / z };
 }
 
-// the hook's soft focus: a cheap, deterministic blur (box downscale to 1/16, then a ladder of 2x bilinear upscales,
-// which is smooth where a single 16x upscale would show the grid)
-const LAD = [[540, 960], [270, 480], [135, 240], [68, 120]].map(([w, h]) => { const c = new OffscreenCanvas(w, h), x = c.getContext('2d'); x.imageSmoothingEnabled = true; x.imageSmoothingQuality = 'high'; return { c, x, w, h }; });
+// the hook's soft focus: a cheap, deterministic blur (box downscale, then a ladder of 2x bilinear upscales, which is
+// smooth where a single big upscale would show the grid). v2: 8x (LY.hookBlur levels), so the falling ice and the
+// stream still read as moving shapes under the type
+const LAD = [[540, 960], [270, 480], [135, 240], [68, 120]].slice(0, LY.hookBlur).map(([w, h]) => { const c = new OffscreenCanvas(w, h), x = c.getContext('2d'); x.imageSmoothingEnabled = true; x.imageSmoothingQuality = 'high'; return { c, x, w, h }; });
 function softFocus(amount) {
   if (amount <= 0.001) return;
   let src = cv;
@@ -53,14 +63,22 @@ function softFocus(amount) {
   g.save(); g.globalAlpha = Math.min(1, amount); g.drawImage(LAD[0].c, 0, 0, W, H); g.restore();
 }
 
+const CLEAN_F = [Math.round(EV.match * FPS) + 2, 0.5];  // v3: the clean wall (no sign) cross-fades in on f380 (50 %) → f381
 async function drawFootage(t) {
   const f = Math.round(t * FPS), seg = segAt(f);
   const img = await F.frame(seg.id, f);
   const { z, sx, sy } = framing(seg.id, t);
   g.drawImage(img, sx, sy, W / z, H / z, 0, 0, W, H);
-  // HOOK: grey, dark, out of focus; the first dose (1.8 s) brings focus, light and colour back
-  const on = tw(t, EV.dose1 - 0.06, 0.5, E.inOutSine);
-  softFocus(1 - tw(t, EV.dose1 - 0.04, 0.34, E.outCubic));
+  // under the end-card dissolve: the same plate with the AI sign removed and no mark, once the flat mark (overlay) is
+  // opaque over the sign and before it moves, so the mark never leaves a ghost sign on the wall
+  if (seg.id === 'E' && SEG.Ec && f >= CLEAN_F[0]) {
+    const im2 = await F.frame('Ec', f);
+    g.save(); g.globalAlpha = f === CLEAN_F[0] ? CLEAN_F[1] : 1; g.drawImage(im2, sx, sy, W / z, H / z, 0, 0, W, H); g.restore();
+  }
+  // HOOK: grey, dark, out of focus; the first dose (1.8 s) is a hard cut to the grinders in full colour, focus and
+  // light (+16 % flash), on the downbeat
+  const on = t >= EV.dose1 - 1e-6 ? 1 : 0;
+  softFocus(1 - on);
   const flash = t > EV.dose1 ? 0.16 * Math.exp(-(t - EV.dose1) * 7) : 0;
   grade(g, { match: MATCH[seg.clip], exp: lerp(0.4, 1, on) * (1 + flash), satMul: lerp(0.1, 1, on) });
   return { seg, f };
