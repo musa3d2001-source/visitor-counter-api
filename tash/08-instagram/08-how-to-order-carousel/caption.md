@@ -35,7 +35,7 @@
 | 03 | الخطوة ٢: عرض مكتوب فيه الباقة والسعر والموعد قبل لا نبدأ. |
 | 04 | الخطوة ٣: تثبّت بعربون، نكتب الفكرة والسكربت، وبعد الاعتماد نبدأ الإنتاج. |
 | 05 | الخطوة ٤: تستلم ملف جاهز بأعلى جودة وتنزّله وين ما تبي. |
-| 06 | الخاص مفتوح… تابعونا بالإنستقرام والتيك توك. |
+| 06 | الخاص مفتوح… تابعونا على الإنستقرام والتيك توك. |
 
 ## Notes for this post
 - The steps follow `07-ops/05-process-and-timeline.md` (written offer, 50% deposit, two approval gates, two revision rounds). If ops changes the process, change this post too.

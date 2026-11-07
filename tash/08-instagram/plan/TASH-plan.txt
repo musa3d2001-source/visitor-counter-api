@@ -16,7 +16,7 @@
 ادخل مجلد 01-posts: كل بوست بمجلده ومرقّم (01 لين 09).
 لكل مجلد: Select ← اختر الصور/الفيديو ← زر المشاركة ← Save Image / Save Video. كذا تصير بالاستوديو (Photos).
 نصوص الكابشن: افتح caption.txt بكل مجلد، اضغط مطولاً ← Select All ← Copy. (أو انسخها وقت النشر مباشرة.)
-بإنستقرام: الإعدادات ← Media quality ← فعّل Upload at highest quality. بالتيك توك: عند النشر فعّل High quality upload.
+في إنستقرام: الإعدادات ← Media quality ← فعّل Upload at highest quality. وفي التيك توك: عند النشر فعّل High quality upload.
 
 نصيحة: سوِّ ألبوم بالصور اسمه «طشّ — نشر» وحط فيه كل الملفات، يسهّل عليك الاختيار وقت النشر.
 
