@@ -4,7 +4,7 @@
  "fps": 30,
  "clips": {
   "b1_smash_v3": "footage/ai/b1_smash_v3.mp4",
-  "b2_lift": "footage/ai/b2_lift.mp4",
+  "b2_sear": "footage/ai/b2_sear.mp4",
   "c1_patty": "footage/ai/c1_patty.mp4",
   "c2_double": "footage/ai/c2_double.mp4",
   "c3_toppings": "footage/ai/c3_toppings.mp4",
@@ -48,7 +48,7 @@
   },
   {
    "id": "S02",
-   "clip": "b2_lift",
+   "clip": "b2_sear",
    "from": 0.9,
    "to": 2.4,
    "keys": [
@@ -68,10 +68,13 @@
    "blend": false,
    "frame": {
     "z": 1.0,
-    "shiftY": 300,
-    "fadeTop": 260
+    "nd": [
+     760,
+     980,
+     0.72
+    ]
    },
-   "why": "owner: the old top-down crust (b2_crust) looked ugly («شكل البرجر قبيح»); replaced by the CD-approved b2_lift: low griddle-level side view, the black-gloved hand's spatula lifts a thin smash patty and shows its deep mahogany, lacy crust; fat sizzling, steam, warm kitchen bokeh (same glove and kitchen as the S01 hook). One source frame per output frame (1.25x, nearest, no blends): f1 (0.042 s) at 0.90 -> f45 (1.875 s) at 2.367, then the hard cut on the 2.40 beat. f0 is a held start frame (f0->f1 differs by 0.5/255) and is skipped; after f45 the lifted patty stands up into a cone (AI) and the steam thins. Frame lowered 300 px into a dark falloff so the stacked title sits on the steam and bokeh, above the spatula blade"
+   "why": "owner laughed at b2_lift: the spatula carried the patty on TOP of the blade, lifted backwards. Replaced by the CD-approved b2_sear (Kling 3.0 Turbo): low side-angle macro of a smash patty searing on the black griddle, crispy lacy browned edges, fat sizzling, steam rising through warm amber bokeh, no tools or hands, slow push-in. One source frame per output frame (1.25x, nearest, no blends): f1 (0.042 s) at 0.90 -> f45 (1.875 s) at 2.367, then the hard cut on the 2.40 beat. f0 is a held start frame (f0->f1 differs by 0.4/255) and is skipped. f1-f45 is the window where the steam curls up left of the title and only reaches «سالفة» in the last frames, and the bokeh lights stay left of the words (from ~f50 a thick steam cloud fills the title band; f76-f120 put a bokeh light behind «طبقة»); the lace edges hold their shape frame to frame. nd: a graduated ND (x0.72 in linear light above y 760, clear by y 980) takes the steam and kitchen behind the title down to S01's background density; the white-balance trim (conform.py TRIM) pulls the amber haze toward S01's kitchen"
   },
   {
    "id": "S03a",

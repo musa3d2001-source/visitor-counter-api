@@ -2,7 +2,7 @@
 
 # طشّ | TASH Creative: ملف تسليم الإطلاق
 
-*Launch delivery index · 6 Nov 2026 · photoreal update · STAKK one-stage cut (23:20)*
+*Launch delivery index · 6 Nov 2026 · photoreal update · STAKK one-stage cut (23:20) · STAKK S02 sear re-cut (7 Nov, 00:08)*
 
 هذا الفهرس يجمع كل ملفات إطلاق طشّ: الهوية، الشعار، القوالب، إعلان الإطلاق، الإعلانات التجريبية، الكلام، التشغيل، حزمة إنستغرام، ومقترح «مور» (مو للنشر).
 «ستاك» و«حبّة» صاروا بلقطات واقعية بدال الـCGI، والتحديث وصل لإعلان الإطلاق والقوالب والدليل وإنستغرام. كل رقم بهالصفحة مقاس على الملفات نفسها يوم 6 نوفمبر 2026 بعد هالتحديث (فحص الجودة الأخير، §10). وبعدها انعاد مونتاج «ستاك» (ملف 23:20): من 2.40 لين الهيرو صار برجر واحد ينبني على نفس المسرح الأحمر، ووصل لإنستغرام (§10).
@@ -23,7 +23,7 @@
 | `03-templates/` | قوالب إنستغرام · *Templates*: 13 قالب + ستوري متحرّك | `README.md` · `templates/*.html` · `data/*.json` · `examples/` · `examples/_overview.png` (نظرة شاملة) · `render.mjs` | جاهز. أمثلة «ستاك» صارت بالبرجر الواقعي، وانصلح لون نقاط الكتابة بغلاف الكاروسيل (مثالين جديدين: ليموني وفاتح) |
 | `04-launch-ad/` | إعلان الإطلاق «هذا منتجك. / وهذا إعلانه.» · *Launch ad* | `TASH-launch-9x16.mp4` · `TASH-launch-4x5.mp4` · `poster.png` · `contact-sheet.png` · `SCRIPT.md` · `footage/` | جاهز. لقطة البرجر ولقطة القهوة صارت من «ستاك» و«حبّة» الواقعيين، والخاتم انضبط على حافة الفنجان الجديد. قرارات المالك بـ§8 |
 | `05-concept-ads/01-perfume-layl/` | «ليل» عطر · *LAYL perfume*، 3D مبني بالكود بالكامل | `LAYL-concept-9x16.mp4` · `poster.png` · `still-hero.png` · `contact-sheet.png` · `bts/` (wire / clay / final) · `SCRIPT.md` | جاهز |
-| `05-concept-ads/02-burger-stakk/` | «ستاك برجر» · *STAKK burger*، لقطات واقعية (Higgsfield) | `STAKK-concept-9x16.mp4` · `poster.png` · `still-hero.png` · `contact-sheet.png` · `SCRIPT.md` · `footage/HANDOFF-launch.md` · `footage/ai/` | جاهز (ملف 6 نوفمبر 23:20). من 2.40 لين الهيرو البرجر ينبني طبقة طبقة بشكل متواصل: نفس البرجر، نفس المسرح الأحمر، نفس الكاميرا (أربع مقاطع متسلسلة c1–c4 وبعدها التاج b7)، بدال ثلاث أربع برجرات على خلفيتين. لقطة السماش انعادت بطلب المالك، ولقطة رفع اللحمة عن الصاج (S02) صارت بدال اللقطة من فوق. مصادر الـCGI القديمة بـ`src/_cgi-v1/` للمرجع بس، والفيلم ما يقراها |
+| `05-concept-ads/02-burger-stakk/` | «ستاك برجر» · *STAKK burger*، لقطات واقعية (Higgsfield) | `STAKK-concept-9x16.mp4` · `poster.png` · `still-hero.png` · `contact-sheet.png` · `SCRIPT.md` · `footage/HANDOFF-launch.md` · `footage/ai/` | جاهز (ملف 7 نوفمبر 00:08). من 2.40 لين الهيرو البرجر ينبني طبقة طبقة بشكل متواصل: نفس البرجر، نفس المسرح الأحمر، نفس الكاميرا (أربع مقاطع متسلسلة c1–c4 وبعدها التاج b7)، بدال ثلاث أربع برجرات على خلفيتين. لقطة السماش انعادت بطلب المالك، ولقطة S02 (تحت «كل طبقة لها سالفة») صارت قرص اللحم وهو ينشوي على الصاج بلا ملعقة ولا يد، بدال لقطة الرفع اللي كانت اللحمة فيها فوق الملعقة بالمقلوب. مصادر الـCGI القديمة بـ`src/_cgi-v1/` للمرجع بس، والفيلم ما يقراها |
 | `05-concept-ads/03-coffee-habba/` | «حبّة» قهوة مختصة · *HABBA coffee*، لقطات واقعية (Higgsfield) | `HABBA-concept-9x16.mp4` · `poster.png` · `still-hero.png` · `contact-sheet.png` · `SCRIPT.md` · `footage/HANDOFF-launch.md` · `footage/ai/` | جاهز. مصادر الـCGI القديمة بـ`src/_cgi-v1/` للمرجع بس |
 | `06-copy/` | صوت طشّ والكلام · *Voice & copy* | `voice-and-tone.md` · `instagram-profile.md` · `grid-captions.md` · `pinned-posts.md` · `cta-bank.md` · `content-calendar-first-4-weeks.md` · `scripts-voiceover-options.md` | جاهز. `grid-captions.md` مسودة (صارت مطابقة للكابشن النهائي)؛ الكابشن اللي ينلصق بـ`08-instagram` |
 | `07-ops/` | تشغيل العملاء · *Client ops* | `README.md` · `01…09-*.md` · `10-project-tracker.csv` · `rate-card.png` · `rate-card-story.png` · `order-form.png` · `order-form.pdf` | جاهز. الأسعار مبدئية لين يعتمدها المالك (§8) |
@@ -43,7 +43,7 @@
 | `04-launch-ad/TASH-launch-9x16.mp4` | 1080×1920 | 27.0 ث | −14.0 · −1.5 | ريل، والماستر لبوست 9. البرجر والقهوة من «ستاك» و«حبّة» الواقعيين؛ صوت الصبّ يوقف مع خيط الحليب |
 | `04-launch-ad/TASH-launch-4x5.mp4` | 1080×1350 | 27.0 ث | −14.0 · −1.5 | مو قصّة: كل لقطة متركّبة من جديد للمقاس |
 | `05-concept-ads/01-perfume-layl/LAYL-concept-9x16.mp4` | 1080×1920 | 15.9 ث | −14.0 · −1.8 | 3D بالكود |
-| `05-concept-ads/02-burger-stakk/STAKK-concept-9x16.mp4` | 1080×1920 | 13.8 ث | −13.6 · −1.6 | لقطات واقعية: برجر واحد ينبني على مسرح أحمر واحد (ملف 23:20، 37.4 MB) |
+| `05-concept-ads/02-burger-stakk/STAKK-concept-9x16.mp4` | 1080×1920 | 13.8 ث | −13.6 · −1.6 | لقطات واقعية: برجر واحد ينبني على مسرح أحمر واحد (ملف 7 نوفمبر 00:08، 36.9 MB) |
 | `05-concept-ads/03-coffee-habba/HABBA-concept-9x16.mp4` | 1080×1920 | 15.6 ث | −14.0 · −1.5 | لقطات واقعية (ملف 18:51) |
 | `02-logo/motion/tash-logo-sting-9x16.mp4` (و`-lime`) | 1080×1920 | 4.2 ث | −13.6 · −1.5 | |
 | `02-logo/motion/tash-logo-sting-1x1.mp4` | 1080×1080 | 4.2 ث | −13.6 · −1.5 | |
@@ -147,7 +147,7 @@ cd tash && python3 -m http.server 8000
 6. **نفس القارورة بأربع مربعات** بالشبكة (9 و3 و6 و5). الحل بـ`08-instagram/POSTING-PLAN.md` §3a (قرار المالك).
 7. **الصوت انحكم عليه بالقياس** (LUFS، الذروة، الطيف) مو بالسمع على أجهزة كثيرة. ما في تعليق صوتي.
 8. **الاعتماد على `review/`**: إعلان الإطلاق وريل الكواليس يقرون لقطاتهم من `review/` (مستبعد من git)، فلازم تشغّلون `extract.sh` أول بأي نسخة جديدة من المستودع.
-9. **حجم المستودع:** حوالي 850 MB برّا `review/` و`09-pitch-mor/` (و1.17 GB مع «مور»). ما في ملف أكبر من 40 MB (أكبر واحد 37.8 MB: فيلم «مور»؛ و«ستاك» ونسخته بإنستغرام 37.4 MB). الريلز بـ`08-instagram` نسخ مكررة (124 MB)، وتسلسلات JPEG بـ`05-concept-ads/{02-burger-stakk,03-coffee-habba}/src/footage/` (115 MB) تنعاد من `footage/ai/`.
+9. **حجم المستودع:** حوالي 840 MB برّا `review/` و`09-pitch-mor/` (و1.15 GB مع «مور»). ما في ملف أكبر من 40 MB (أكبر واحد 37.8 MB: فيلم «مور»؛ و«ستاك» ونسخته بإنستغرام 36.9 MB). الريلز بـ`08-instagram` نسخ مكررة (123 MB)، وتسلسلات JPEG بـ`05-concept-ads/{02-burger-stakk,03-coffee-habba}/src/footage/` (114 MB) تنعاد من `footage/ai/`.
 10. **`_system/BRIEF.md`** (ملاحظة الذكاء الاصطناعي فوق) للحين تقول اقروا `_CD-NOTES.md` قبل المونتاج. هالملفات انشالت، ومحتواها (أوقات اللقطات، المقاطع المعتمدة، العيوب، الكريدت) صار بـ`SCRIPT.md` و`footage/HANDOFF-launch.md` كل فيلم. ما عدّلناها لأن `_system/` ممنوع؛ القائد يحدّثها.
 
 ---

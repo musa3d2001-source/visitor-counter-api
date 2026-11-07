@@ -41,7 +41,7 @@ lands at 0.79 s (0.50 s in). That is ungraded and has no punch or shake.
 | What | Clean range | Source (clip, s, frames) | Speed | Notes |
 |---|---|---|---|---|
 | **SMASH** (gloved press slams a compact, finely ground beef ball on a black griddle) | **0.000 → 0.900** | `b1_smash_v3.mp4` 1.250 (f30) → 2.333 (f56) | 1.25×, nearest, no blends | unchanged: ball whole and sharp 0.000–0.367; first compressed frame on **0.400** (f42); first sharp pressed frame 0.500 (f45). Dark griddle, not red. Never blend f36–f44 (the press's motion blur doubles into a ghost rim) |
-| **SPATULA LIFT** (griddle-level side view: the gloved hand's spatula lifts a thin smash patty, mahogany lacy crust, sizzle, steam, kitchen bokeh) | **0.900 → 2.400** | `b2_lift.mp4` 0.042 (f1) → 1.875 (f45) | 1.25×, nearest, no blends | **new in the ECD pass** (replaces the top-down CRUST, which the owner disliked; `b2_crust.mp4` is deleted). Same glove and kitchen as SMASH; ends on a hard cut at 2.40. The frame is lowered 300 px for the title, so the top 300 px are a graded dark falloff. Raw source: don't use it past f45 (1.88 s), where the lifted patty stands up into a cone |
+| **SEAR** (low side-angle macro: a smash patty searing on the black griddle, crispy lacy browned edges, fat sizzling, steam rising through warm amber bokeh; no tools or hands; slow push-in) | **0.900 → 2.400** | `b2_sear.mp4` 0.042 (f1) → 1.875 (f45) | 1.25×, nearest, no blends | **new: replaces the SPATULA LIFT** (`b2_lift.mp4` is deleted: the owner spotted that its patty sat on top of the blade, lifted backwards). Dark griddle in the SMASH grade family; ends on a hard cut at 2.40. A graduated ND is baked into the top of the frame for the title (×0.72 in linear light above y 760, clear by y 980), so the upper part is darker than the raw clip. Steam curls up on the left, then rises off the patty from ≈1.9. Raw source: f0 is a held start frame; from ≈f50 (2.1 s) a thick steam cloud fills the upper middle |
 | **HEEL → PATTY SLAM** (empty toasted brioche heel on red, the patty drops onto it) | **2.400 → 3.633** | `c1_patty.mp4` 0.000 (f0) → 0.292 (f7, on 3.233) at 0.35× blended, then f8 → f11 one-to-one, **jump f11 → f18** on 3.400, then f18 → f25 | 0.35× → 1.25× | the stage opens with a 4.5 % scale settle on 2.400; the patty enters the top on 3.267 and touches on **3.367** (f11, motion smear); 3.400 first clean landed frame. Raw source if you conform it yourself: don't use f12–f17 (the patty slides, curls and ghosts its edges) |
 | **LACE PUNCH-IN** (the patty's charred, crispy rim over the brioche, 1.31× crop) | **3.667 → 4.233** | `c1_patty.mp4` 1.083 (f26) → 1.792 (f43) | 1.25× | same burger, slow creep; a little soft at 1.31× |
 | **CHEDDAR LANDS** (slice drops onto the patty on red) | **4.267 → 4.900** | `c1_patty.mp4` 2.833 (f68) → 3.583 (f86) | 1.25×, nearest | the slice is falling on the first frame; corner touches 4.333 (f70), slaps down, **flat on 4.400** (f72, one frame of flap blur), then the melt starts |
@@ -57,11 +57,11 @@ lands at 0.79 s (0.50 s in). That is ungraded and has no punch or shake.
   in STAKK on its beat, odd if it lands mid-phrase elsewhere. (7.867 → 7.900 is now only the pool settling: since the ECD pass the stream has
   already broken before it.)
 - Clean **7.400 → 7.867** played slower than 1×: it is a speed ramp up to 7.3×, and slowing it shows the frame steps.
-- `b2_lift.mp4` after f45 (1.88 s): the lifted patty stands up into a cone (AI).
 - `c1_patty.mp4` f12–f17 (0.50–0.71 s): the landed patty slides, its tips curl and its edges ghost (AI). STAKK jumps f11 → f18.
 - `c3_toppings.mp4` f43–f45 (1.79–1.88 s): broken ring-shaped motion smears.
 - Never frame-blend anything that falls (patties, slices, pickles, rings, the sauce tip, the crown): blending doubles it into a ghost. Use
   1.25× (24 → 30 fps one-to-one) or nearest frames.
 - `b1_smash_v3.mp4` 1.50–1.83 s (f36–f44) slowed down with frame blending: the press's motion blur doubles into a ghost rim.
-- The deleted clips (`b1_smash.mp4`, `b2_crust.mp4`, `b3_heel.mp4`, `b4_melt.mp4`, `b5_stack.mp4`, `b6_sauce.mp4`), even from an old export.
-  They show different burgers on a different background (and the owner disliked the top-down crust).
+- The deleted clips (`b1_smash.mp4`, `b2_crust.mp4`, `b2_lift.mp4`, `b3_heel.mp4`, `b4_melt.mp4`, `b5_stack.mp4`, `b6_sauce.mp4`), even from an
+  old export. They show different burgers on a different background (and the owner disliked the top-down crust, and laughed at the spatula
+  lift: the patty sat on top of the blade).

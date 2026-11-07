@@ -135,7 +135,8 @@ sfx.add(claps_ensemble(9, 0.45, seed_=2), C['smash'], gain=0.55)
 for k in range(4):
     sfx.add(mirwas_tak(), X['title'][0] + k * 0.125, gain=0.42, pan=0.15 - 0.1 * k)
     sfx.add(pop(260 + 70 * k, 520 + 120 * k, 0.06), X['title'][0] + k * 0.125, gain=0.3)
-# S02 is now the spatula lift (b2_lift): a short gritty steel-on-griddle scrape on the 0.90 cut, under the first thock.
+# S02: a short gritty band-passed scrape on the 0.90 cut, under the first thock. Written for the retired spatula lift (b2_lift); left
+# unchanged when S02 became the sear (b2_sear, no tool on screen), where it sits under the first thock and the griddle sizzle bed.
 # Its noise comes from its own seeded generator, so the global noise stream (and every SFX after it) is unchanged.
 def scrape(d=0.34, seed_=41):
     r = np.random.default_rng(seed_); N = n_(d); t = np.arange(N) / SR

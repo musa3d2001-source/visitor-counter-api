@@ -9,11 +9,14 @@ Pipeline per output frame:
   pixels             : the two neighbouring 24 fps source frames, blended in linear light (slow motion),
                        or the nearest frame (crisp: real-speed action and every event frame)
   framing            : cover crop at zoom z around (cx, cy), one Lanczos resample to 1080x1920
-                       (S02 b2_lift: frame lowered with a dark falloff on top, see edl.json)
+                       (optional 'shiftY': frame lowered into a dark falloff; used by the retired b2_lift S02, kept as an option)
   grade (shared)     : 0) the one-stage chain (c1..c4) is first matched to b7_crown: they end / start on the same
                           frame (c4 f120 = b7 f0, pixel-aligned), so a quadratic RGB transfer is fitted on that pair
-                       1) per-clip black match (dark clips)  2) one look (sat trim, gentle S, highlight roll-off to cream)
+                       1) per-clip black match (dark clips), then an optional per-clip white-balance trim (TRIM)
+                       2) one look (sat trim, gentle S, highlight roll-off to cream)
                        3) red-stage secondary: the seamless red of b7 (and so of the matched chain) is pulled to #E23B2E
+  nd grad (per seq)  : optional 'nd': [y_full, y_clear, k] in edl frame{}: a graduated ND on the graded frame (linear light x k
+                       above y_full, feathered to x1 at y_clear, output px). S02 b2_sear: darkens the steam and bokeh behind the title
 Usage: python3 conform.py [seq ...]     (no args: all sequences)
 """
 import json, os, subprocess, sys, shutil
@@ -43,10 +46,13 @@ CHAIN = ('c1_patty', 'c2_double', 'c3_toppings', 'c4_sauce')
 CHAIN_PAIR = ('c4_sauce', 120, 'b7_crown', 0)      # the shared frame: c4 ends where b7 starts
 # stage-red sample region (source px) of the red-seamless clips (nothing falls through it on the reference frames)
 STAGE = {c: (100, 100, 980, 500) for c in CHAIN + ('b7_crown',)}
-DARK = {'b1_smash_v3', 'b2_lift'}
+DARK = {'b1_smash_v3', 'b2_sear'}
+# per-clip white-balance trim (linear-light RGB gains, after the black match), measured against the S01 griddle look:
+# b2_sear's steam haze runs more amber than b1_smash_v3's kitchen (background median R/B 1.93 vs 1.59 on S01's last frame)
+TRIM = {'b2_sear': (0.92, 1.0, 1.04)}
 # the frame each clip's correction is measured on (clean stage, nothing falling through the sample region),
 # so every sequence cut from the same clip gets identical numbers
-REF = {'b1_smash_v3': 40, 'b2_lift': 20, 'c1_patty': 40, 'c2_double': 50, 'c3_toppings': 100, 'c4_sauce': 110, 'b7_crown': 60}
+REF = {'b1_smash_v3': 40, 'b2_sear': 40, 'c1_patty': 40, 'c2_double': 50, 'c3_toppings': 100, 'c4_sauce': 110, 'b7_crown': 60}
 
 
 def smooth(e0, e1, x):
@@ -140,6 +146,8 @@ class ClipGrade:
             x = feats(x) @ self.pre
         if np.any(self.d):
             x = x + self.d * np.clip(1 - x / 0.35, 0, 1) ** 2
+        if self.clip in TRIM:
+            x = (np.clip(x, 0, 1) ** 2.2 * np.array(TRIM[self.clip], np.float32)) ** (1 / 2.2)
         return x
 
     def __call__(self, x):
@@ -219,6 +227,16 @@ def frame_img(seq, x):
     return out * (1 - a) + top * a
 
 
+def nd(seq, y):
+    """graduated ND on the graded output frame: linear light x k above y_full, smoothstep to x1 at y_clear"""
+    g = seq.get('frame', {}).get('nd')
+    if not g:
+        return y
+    y0, y1, k = g
+    m = 1 - (1 - k) * (1 - smooth(y0, y1, np.arange(H, dtype=np.float32)[:, None, None]))
+    return np.clip((np.clip(y, 0, 1) ** 2.2 * m) ** (1 / 2.2), 0, 1)
+
+
 def run(seq):
     sid, clip = seq['id'], seq['clip']
     st = make_st(seq['keys'])
@@ -249,7 +267,7 @@ def run(seq):
     for (a, b, w) in fidx:
         if w == 0: x = src[a].astype(np.float32) / 255
         else: x = to_srgb(to_lin(src[a]) * (1 - w) + to_lin(src[b]) * w)
-        y = grade(frame_img(seq, x))
+        y = nd(seq, grade(frame_img(seq, x)))
         enc.stdin.write((y * 255 + 0.5).astype(np.uint8).tobytes())
     enc.stdin.close(); enc.wait()
     size = sum(os.path.getsize(os.path.join(d, f)) for f in os.listdir(d))

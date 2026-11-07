@@ -11,7 +11,7 @@
 | # | Folder | Upload files | Format |
 |---|---|---|---|
 | 1 | `01-habba-concept-reel/` | `reel.mp4` + `cover.png` | Reel 9:16, 15.6 s (photoreal cut, re-delivered 6 Nov 18:51) · **AI label ON** |
-| 2 | `02-stakk-concept-reel/` | `reel.mp4` + `cover.png` | Reel 9:16, 13.8 s (photoreal **one-stage cut**, 6 Nov 23:20: one burger built on one red stage, with the owner-approved smash retake) · **AI label ON** |
+| 2 | `02-stakk-concept-reel/` | `reel.mp4` + `cover.png` | Reel 9:16, 13.8 s (photoreal **one-stage cut**, 6 Nov 23:20: one burger built on one red stage, with the owner-approved smash retake; S02 re-cut 7 Nov 00:08 with the sear shot) · **AI label ON** |
 | 3 | `03-layl-concept-reel/` | `reel.mp4` + `cover.png` | Reel 9:16, 15.9 s |
 | 4 | `04-ehna-tash-carousel/` | `slide-01.png` … `slide-06.png` | Carousel 4:5, 6 slides |
 | 5 | `05-bts-reel/` | `reel.mp4` + `cover.png` | Reel 9:16, 13.07 s, original score (new for this package) |
@@ -23,7 +23,7 @@
 | — | `stories/new-work-stakk.png` | | Story 9:16, STAKK «شغل جديد» (photoreal; for later, see §4). The other first stories reuse `03-templates/examples/`, see §4 |
 
 Every post folder also has a `caption.md` with the caption to paste, the alt text, and that post's own checks.
-Reels 1, 2, 3 and 9 are the teams' masters, copied byte for byte (`cmp`, 6 Nov 20:12; post 2 again at 23:26 after STAKK's one-stage re-edit). Their covers are the teams' posters. Two were moved down a little so their top line clears the 3:4 profile-grid crop: 3 by 30 px and 9 by 24 px, with only the empty background above the type stretched to fill. 1 and 2 are pixel-identical to their posters: their top type already starts at y 292 (HABBA's TASH pill) and y 271 (STAKK's slate), inside the crop (240). See `src/sources.json`.
+Reels 1, 2, 3 and 9 are the teams' masters, copied byte for byte (`cmp`, 6 Nov 20:12; post 2 again at 23:26 after STAKK's one-stage re-edit, and on 7 Nov at 00:13 after its S02 sear re-cut). Their covers are the teams' posters. Two were moved down a little so their top line clears the 3:4 profile-grid crop: 3 by 30 px and 9 by 24 px, with only the empty background above the type stretched to fill. 1 and 2 are pixel-identical to their posters: their top type already starts at y 292 (HABBA's TASH pill) and y 271 (STAKK's slate), inside the crop (240). See `src/sources.json`.
 
 ---
 
@@ -148,7 +148,7 @@ Every story showing a concept ad keeps its `CONCEPT AD` slate and «إعلان �
 | Post | Frames · length | Loudness · true peak | Notes |
 |---|---|---|---|
 | 1 HABBA | 468 · 15.60 s | −14.0 LUFS · −1.5 dBTP · LRA 3.2 | byte-identical (`cmp`) to `05-concept-ads/03-coffee-habba/HABBA-concept-9x16.mp4`, photoreal cut re-delivered 18:51 (sha1 84b7d460…) |
-| 2 STAKK | 414 · 13.80 s | −13.6 LUFS · −1.6 dBTP · LRA 2.8 | byte-identical (`cmp`) to `05-concept-ads/02-burger-stakk/STAKK-concept-9x16.mp4`, the one-stage cut, 23:20 (sha1 98fc5df3…, 37.4 MB). STAKK's loudness step now stays linear, so it sits 0.4 LU above −14 (inside ±1; STAKK `SCRIPT.md` §5) |
+| 2 STAKK | 414 · 13.80 s | −13.6 LUFS · −1.6 dBTP · LRA 2.8 | byte-identical (`cmp`) to `05-concept-ads/02-burger-stakk/STAKK-concept-9x16.mp4`, the one-stage cut with the S02 sear re-cut, 7 Nov 00:08 (sha1 9075ce33…, 36.9 MB). STAKK's loudness step now stays linear, so it sits 0.4 LU above −14 (inside ±1; STAKK `SCRIPT.md` §5) |
 | 3 LAYL | 477 · 15.90 s | −14.0 LUFS · −1.8 dBTP | byte-identical (`cmp`) to the team master (unchanged in this refresh) |
 | 5 BTS | 392 · 13.07 s | −14.0 LUFS · −2.2 dBTP · LRA 5.5 | see below |
 | 9 Launch | 810 · 27.00 s | −14.0 LUFS · −1.5 dBTP · LRA 3.2 | byte-identical (`cmp`) to `04-launch-ad/TASH-launch-9x16.mp4`, the cut with the photoreal burger and coffee, 19:52 (sha1 5c16cf81…) |
@@ -174,6 +174,8 @@ Every story showing a concept ad keeps its `CONCEPT AD` slate and «إعلان �
 - A second full `build.sh` run gave byte-identical files throughout (sha1 of every PNG, JPEG, MP4 and JSON here, plus the 03-templates STAKK story). One small caveat, not ours: across three renders of STAKK's clean page at 9.40 s, one differed from the others in 4 pixels by 1 level, so the STAKK story can occasionally change by that much.
 
 **STAKK one-stage refresh (6 Nov, 23:26).** The burger team re-edited STAKK (23:20): from 2.40 to the hero it is now one burger built on one red stage (four chained clips + the crown clip), replacing the cut that showed three or four different burgers on red and charcoal. `package_reels.py --check` reported only post 2 changed (its video; `poster.png` is the same file). `build.sh` then changed exactly two files here: `02-stakk-concept-reel/reel.mp4` (now byte-identical, `cmp`, to the new master) and `src/sources.json`. Every other file came out byte-identical to before the run (sha1 of every PNG, JPEG, MP4, JSON and MD in this folder and in `03-templates/examples/`): cover 2, both profile previews, all carousels and posts, and the STAKK story. The story is built from STAKK's clean frame at 9.40 s, inside the crown section the re-edit did not touch, so neither `stories/new-work-stakk.png` nor `03-templates/examples/story-new-work-02.png` changed. Post 2's caption and alt text stay true of the new cut. Only its team notes (source, credit, beat list) were updated.
+
+**STAKK S02 sear refresh (7 Nov, 00:13).** The burger team replaced S02 (0.90–2.40, under «كل طبقة لها سالفة»): the spatula lift, where the owner spotted that the patty sat on top of the blade, is now the CD-approved sear shot (a smash patty searing on the griddle, no tools or hands). The audio stream is bit-identical to the 23:20 master and only frames 0.900–2.367 differ. `package_reels.py --check` reported only post 2 changed; `build.sh` then changed exactly two files here, `02-stakk-concept-reel/reel.mp4` (byte-identical, `cmp`, to the new master, sha1 9075ce33…) and `src/sources.json`. Every other file in this folder and in `03-templates/examples/` came out byte-identical (sha1 before and after the run), including cover 2 (`poster.png` is unchanged) and the STAKK story (built from the clean frame at 9.40 s). The caption and alt text say nothing about S02, so they stay true; post 2's team notes (source line, credit) were updated.
 
 **Grid rhythm (pinned state, as in the preview)**
 

@@ -25,7 +25,7 @@ REELS = [
     (1, '01-habba-concept-reel', '05-concept-ads/03-coffee-habba/HABBA-concept-9x16.mp4', '05-concept-ads/03-coffee-habba/poster.png', 0,
      'photoreal cut (re-delivered 18:51): its poster keeps the TASH pill at y≈292, inside the grid crop; the old CGI poster needed 30 px'),
     (2, '02-stakk-concept-reel', '05-concept-ads/02-burger-stakk/STAKK-concept-9x16.mp4', '05-concept-ads/02-burger-stakk/poster.png', 0,
-     'photoreal one-stage cut (23:20; poster.png unchanged since the 19:48 S01 retake): the poster slate starts at y≈271, inside the grid crop (240) with 31 px to spare'),
+     'photoreal one-stage cut, S02 re-cut with the sear shot (7 Nov; poster.png unchanged since the 19:48 S01 retake): the poster slate starts at y≈271, inside the grid crop (240) with 31 px to spare'),
     (3, '03-layl-concept-reel', '05-concept-ads/01-perfume-layl/LAYL-concept-9x16.mp4', '05-concept-ads/01-perfume-layl/poster.png', 30,
      'TASH mark shadda at y≈235 crossed the grid crop (240)'),
     (9, '09-launch-reel', '04-launch-ad/TASH-launch-9x16.mp4', '04-launch-ad/poster.png', 24,
