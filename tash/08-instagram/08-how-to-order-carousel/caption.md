@@ -39,4 +39,4 @@
 
 ## Notes for this post
 - The steps follow `07-ops/05-process-and-timeline.md` (written offer, 50% deposit, two approval gates, two revision rounds). If ops changes the process, change this post too.
-- The closing slide points to «الرابط بالبايو» rather than printing a phone number, so it never goes stale. Put the WhatsApp link in the bio before posting (see POSTING-PLAN).
+- The closing slide points to «الرابط بالبايو» rather than printing a phone number. Contact is DM only (no WhatsApp for now); the slide says «تابعونا على الإنستقرام والتيك توك.»

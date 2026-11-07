@@ -1,7 +1,7 @@
 # HANDOFF: ذاكرة مشروع «طشّ | TASH Creative»
 
 > **Read this before resuming any TASH work. Update it after every stage and before the session ends.**
-> Last updated: 2026-11-07 (after commit `adc3fa3` and the MOR zip delivery).
+> Last updated: 2026-11-07 (WhatsApp removed everywhere, incl. 07-ops; email split proposed).
 > Branch: `claude/optimistic-lovelace-0b5d7t` · PR #3 (draft) on `musa3d2001-source/visitor-counter-api`.
 > Status keys: **delivered** means sent to the owner as a file. **approved** means the owner said yes in writing.
 > **published** means it is live on Instagram/TikTok. *Claude never publishes.*
@@ -37,6 +37,8 @@
 ## 3. Approved decisions (owner said so)
 | Decision | Source |
 |---|---|
+| **No WhatsApp anywhere for now** — public account *and* client ops (`07-ops`). DM is the door for everything (orders, questions, notes, problems). | Owner: «واتس مانبيه حاليا تم» (7 Nov) |
+| Email for formal/recorded things only: written offer, invoice, usage rights, final-file links, final approval. On the profile as an **Email contact button** only, not in the bio. | Claude proposed it; owner replied «تم» in the same message. **Needs confirmation** that «تم» covered the email part. The address is unknown: `[[الإيميل]]`. |
 | **Contact is DM only for now.** No phone number, no WhatsApp, no contact buttons. | Message «والتواصل خاص فقط حاليا بدون رقم تلفون» (7 Nov) |
 | Instagram is **@tash.creative.kw** and TikTok is **@tash.creative**. Both handles go at the end of **every** post caption. | Same message |
 | Bio link is `https://www.tiktok.com/@tash.creative`. | Claude inferred this from "no phone". **Needs confirmation.** |
@@ -104,19 +106,17 @@ The old split zips (`split/TASH-1..6-of-6`) and `TASH-Instagram-Kit.zip` were **
 - MOR has **not** approved anything.
 
 ## 6. Still to do
-1. **Remaining WhatsApp/phone mentions**, not yet changed to DM only:
-   - `tash/06-copy/cta-bank.md` (lines ~60, ~136)
-   - `tash/06-copy/grid-captions.md` (~277, ~301)
-   - `tash/README.md` §8 item 2 (the WhatsApp number as an open decision)
-   - `tash/07-ops/*` (`order-form.html`, `02-order-form.md`, `01-welcome-and-quick-replies.md`, and others)
-
-   The `07-ops` files are client-process docs, so ask the owner before removing WhatsApp from client ops. The decision covers the public account; whether it covers private client chats too is unclear.
+1. ~~Remaining WhatsApp mentions~~ **done** (06-copy, README §8, 07-ops incl. re-rendered `order-form.png/pdf`, tracker example). The only remaining mentions say "no WhatsApp", or are the plan's tip to share on the owner's *personal* WhatsApp status.
+   - Still open: get the email address from the owner, then:
+     - replace `[[الإيميل]]` in `06-copy/instagram-profile.md` and `tash/README.md` §8;
+     - add an "Email contact button" step to `08-instagram/plan/plan.html`;
+     - rebuild the plan PDF and TASH-Kit.zip.
 2. Update `tash/README.md` delivery index: add `08-instagram/plan/` and the DM-only decision.
 3. PR #3 body: mention the plan + DM-only change.
 4. If the iPhone download fails: shrink the reels further, or split into 2 zips of about 30 MB each.
 
 ## 7. Next step
-Wait for the owner's feedback on the plan PDF and the two zips (did they download? any wording fixes?). Then do item 6.1 after asking about `07-ops`.
+Ask the owner for the studio email address, and confirm the email split. Then do item 6.1. Also still waiting on: did the two zips download on the iPhone, and any wording fixes in the plan.
 If the container was reset and the owner needs the zip again, rebuild it:
 1. Re-encode the 5 reels:
    ```

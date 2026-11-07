@@ -163,7 +163,7 @@ Highlight names show about 10–12 characters under the circle. Every name below
 - **Contact buttons:** none for now. **Address:** empty. Don't invent an office.
 - Every post caption ends with both handles: إنستقرام @tash.creative.kw · تيك توك @tash.creative.
 - DM greeting and quick replies: `07-ops/01-welcome-and-quick-replies.md` (`/hala` etc.) as Instagram Saved Replies.
-- When a WhatsApp number is ready later, swap the link to `https://wa.me/965XXXXXXXX` and update the bio line.
+- **No WhatsApp for now** (owner, 7 Nov: «واتس مانبيه حاليا»). Formal things (written offer, invoice, usage rights, delivery links, final approval) go by email `[[الإيميل]]` once the owner sets one up; it then goes on the profile as an Email contact button only, not in the bio.
 
 ---
 
