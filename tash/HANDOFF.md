@@ -1,5 +1,7 @@
 # HANDOFF: ذاكرة مشروع «طشّ | TASH Creative»
 
+> **Latest approved prices, 7 Nov 2026:** Product advertising image KWD 10 with one revision. Vertical reel/story up to 15 seconds starts at KWD 40 with idea, editing, suitable audio and two revisions. Confirm final video price after reviewing scope and materials. Instagram price post: https://www.instagram.com/p/Dfc9_f0jBXd/. These prices supersede KWD 90/190/390 and old rate cards. Do not quote old prices, rush fees, or turnaround promises without owner confirmation. Highlight creation is pending because planned Kit stories are not visible in the desktop archive picker. TikTok refund support ticket 4543451 was submitted; refund not yet approved or received.
+
 > **Read this before resuming any TASH work. Update it after every stage and before the session ends.**
 > Last updated: 2026-11-07 ~17:45 UTC.
 > - The DOSE v3 story ad was **delivered** to the owner (sent as `DOSE-spec-story-v2.mp4`; it is the same file as `tash/10-spec-dose/DOSE-spec-story-9x16.mp4`) and committed in `8e0bd40`.
@@ -58,7 +60,7 @@
 
 **Not yet decided:**
 - Profile name. The plan suggests «طشّ TASH | استوديو إعلانات»; the preview shows «طشّ | صناعة إعلانات 🎬».
-- Prices. `07-ops/04-pricing.md` is still not approved, so the «الأسعار» highlight is on hold.
+- Prices are approved as stated at the top. The price highlight is pending story availability.
   - Note: `07-ops/01` `/hala2` and `/price` quote prices. Don't send those replies until the prices are approved.
 - Who goes in pinned slot 2.
 
