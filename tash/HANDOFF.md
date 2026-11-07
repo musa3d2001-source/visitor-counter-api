@@ -1,7 +1,7 @@
 # HANDOFF: ذاكرة مشروع «طشّ | TASH Creative»
 
 > **Read this before resuming any TASH work. Update it after every stage and before the session ends.**
-> Last updated: 2026-11-07 (WhatsApp removed everywhere, incl. 07-ops; email split proposed).
+> Last updated: 2026-11-07 (DOSE d5_terrace re-rolled after hostile review; brief tray corrected).
 > Branch: `claude/optimistic-lovelace-0b5d7t` · PR #3 (draft) on `musa3d2001-source/visitor-counter-api`.
 > Status keys: **delivered** means sent to the owner as a file. **approved** means the owner said yes in writing.
 > **published** means it is live on Instagram/TikTok. *Claude never publishes.*
@@ -139,6 +139,14 @@ The old split zips (`split/TASH-1..6-of-6`) and `TASH-Instagram-Kit.zip` were **
   - Balance 253.75 → **247.75** (6 credits spent of the 75 cap; checked with `balance` before/after each job).
   - Refs were uploaded as sanitised crops (face cropped out of ref02; Mahlkönig badges + card text blanked on ref05; story sticker removed from ref11; Toyota badge/plates/card blurred on ref08; ref06 split into arch-only and sign-only crops). The crops live only in the scratchpad (not in git).
   - Known nits for the CD: logo_plate orange measures ≈ #EC6C19 (target #F26A21) and fills ≈ 84 % of the width (scale down in the edit); its «specialty» is a little heavier than ref04. d3 is cooler/whiter than the other shots (matches ref07). d5's espresso cup has one red rim line.
+  - **Hostile review → d5_terrace failed (major); re-rolled 7 Nov.** Only d5 was in the failed list.
+    - Cause: the brief said «an orange tray»; ref08–ref11 show **brushed steel trays**. `BRIEF-DOSE.md` corrected (Identity > Outside + d5 row).
+    - v2 (job 90641f03-4d2e-406c-b9d0-3e769372fba5; refs ref08 crop, ref06 arch crop, d4_cake job as cake/tray ref): steel tray, square tables, cup shadow on saucer; plate still touching the right edge.
+    - **v3 accepted** (job 3e1df8d5-c10b-429d-8a47-5c5b3f540062; refs v2 job + ref08 crop; «same frame, camera pulled back»). Whole tray inside frame (plate right edge ≈ x 938/1080, plate bottom ≈ y 1414, tray bottom ≈ y 1493, all above the IG reply bar), square orange table, cake identical to d4, lifted cup shadows on its saucer, clean plaster space at y ≈ 250–570 for the line and meter. Measured: table ≈ #EB681F, cup ≈ #FBB814, plaster ≈ #F0D8C7.
+    - Rejected kept: `frames/_rejected/d5_terrace_v1.png`, `_v2.png`. Prompts: scratchpad `dose/v2/d5_terrace_v2.txt`, `_v3.txt`.
+    - Still minor in v3 (grade/edit can handle): chair backs are one wide plank, not slats; hero objects are smaller than v1 (push-in can be up to ~12 % now); the cake interior is unlayered (same as d4, consistent).
+    - **Not yet re-reviewed by the CD.**
+  - Balance 247.75 → **245.75** after the re-roll (2 credits). Stills total **8 of 12**; ad total 8 of 75.
 - Stage 2: CD review, then the videos.
 - Stage 3: build the edit + hostile review.
 - Then send the MP4 to the owner.
