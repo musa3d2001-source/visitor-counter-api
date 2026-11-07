@@ -134,7 +134,11 @@ The old split zips (`split/TASH-1..6-of-6`) and `TASH-Instagram-Kit.zip` were **
 
 ## 7. Next step
 **In progress (7 Nov):** the specialty dose spec story ad (`tash/10-spec-dose/`).
-- Stage 1: generate the stills.
+- Stage 1: generate the stills. **Done (generated + self-checked by Claude; NOT CD-reviewed, NOT delivered, NOT approved).**
+  - 6 frames, GPT Image 2.6 medium 2k 9:16, 1 credit each, one generation each, no re-rolls: `10-spec-dose/footage/ai/frames/` d1_grinders (job df7f621d-2e12-4d8a-b2e2-8ec0fbc07313) · d2_carafe (9fb417e2-7c57-4a4d-bfc2-524aa126122a) · d3_iced (291248a5-6f75-4700-8c8e-1debbdaa9e39) · d4_cake (2a4787a0-99c1-4fd1-a897-37daef6e9da4) · d5_terrace (792c7a49-b9b5-425f-af95-7b4777f068df) · logo_plate (836ec4b1-c66c-4f9d-b693-9588a89047bc). `_rejected/` is empty.
+  - Balance 253.75 → **247.75** (6 credits spent of the 75 cap; checked with `balance` before/after each job).
+  - Refs were uploaded as sanitised crops (face cropped out of ref02; Mahlkönig badges + card text blanked on ref05; story sticker removed from ref11; Toyota badge/plates/card blurred on ref08; ref06 split into arch-only and sign-only crops). The crops live only in the scratchpad (not in git).
+  - Known nits for the CD: logo_plate orange measures ≈ #EC6C19 (target #F26A21) and fills ≈ 84 % of the width (scale down in the edit); its «specialty» is a little heavier than ref04. d3 is cooler/whiter than the other shots (matches ref07). d5's espresso cup has one red rim line.
 - Stage 2: CD review, then the videos.
 - Stage 3: build the edit + hostile review.
 - Then send the MP4 to the owner.
