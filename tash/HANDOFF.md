@@ -1,7 +1,10 @@
 # HANDOFF: ذاكرة مشروع «طشّ | TASH Creative»
 
 > **Read this before resuming any TASH work. Update it after every stage and before the session ends.**
-> Last updated: 2026-11-07 (DOSE v3 edit built after the CD re-review of v2 + the owner's COLOMBIA note; self-checked, not re-reviewed, not delivered, not committed).
+> Last updated: 2026-11-07 ~17:45 UTC.
+> - The DOSE v3 story ad was **delivered** to the owner (sent as `DOSE-spec-story-v2.mp4`; it is the same file as `tash/10-spec-dose/DOSE-spec-story-9x16.mp4`) and committed in `8e0bd40`.
+> - It is **not approved and not published**.
+> - DOSE Higgsfield total: **214.25** credits (253.75 → 39.50).
 > Branch: `claude/optimistic-lovelace-0b5d7t` · PR #3 (draft) on `musa3d2001-source/visitor-counter-api`.
 > Status keys: **delivered** means sent to the owner as a file. **approved** means the owner said yes in writing.
 > **published** means it is live on Instagram/TikTok. *Claude never publishes.*
@@ -136,7 +139,16 @@ The old split zips (`split/TASH-1..6-of-6`) and `TASH-Instagram-Kit.zip` were **
 4. If the iPhone download fails: shrink the reels further, or split into 2 zips of about 30 MB each.
 
 ## 7. Next step
-**In progress (7 Nov):** the specialty dose spec story ad (`tash/10-spec-dose/`).
+**DOSE status (7 Nov, 17:45 UTC):**
+- v3 was delivered to the owner. Owner feedback is pending.
+- The posting note is in `tash/10-spec-dose/SCRIPT.md` («ملاحظة النشر»).
+- Next: apply the owner's notes if any.
+- Known residuals are listed in SCRIPT.md:
+  - Seedance micro-judder on d2.
+  - 720p source upscaled.
+  - A small Telea fill around «specialty».
+
+History: the specialty dose spec story ad (`tash/10-spec-dose/`).
 - Stage 1: generate the stills. **Done (generated + self-checked by Claude; NOT CD-reviewed, NOT delivered, NOT approved).**
   - 6 frames, GPT Image 2.6 medium 2k 9:16, 1 credit each, one generation each, no re-rolls: `10-spec-dose/footage/ai/frames/` d1_grinders (job df7f621d-2e12-4d8a-b2e2-8ec0fbc07313) · d2_carafe (9fb417e2-7c57-4a4d-bfc2-524aa126122a) · d3_iced (291248a5-6f75-4700-8c8e-1debbdaa9e39) · d4_cake (2a4787a0-99c1-4fd1-a897-37daef6e9da4) · d5_terrace (792c7a49-b9b5-425f-af95-7b4777f068df) · logo_plate (836ec4b1-c66c-4f9d-b693-9588a89047bc). `_rejected/` is empty.
   - Balance 253.75 → **247.75** (6 credits spent of the 75 cap; checked with `balance` before/after each job).
