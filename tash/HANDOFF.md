@@ -1,7 +1,7 @@
 # HANDOFF: ذاكرة مشروع «طشّ | TASH Creative»
 
 > **Read this before resuming any TASH work. Update it after every stage and before the session ends.**
-> Last updated: 2026-11-07 (DOSE d5_terrace re-rolled after hostile review; brief tray corrected).
+> Last updated: 2026-11-07 (DOSE: 5 Kling videos generated and self-checked; not CD-reviewed).
 > Branch: `claude/optimistic-lovelace-0b5d7t` · PR #3 (draft) on `musa3d2001-source/visitor-counter-api`.
 > Status keys: **delivered** means sent to the owner as a file. **approved** means the owner said yes in writing.
 > **published** means it is live on Instagram/TikTok. *Claude never publishes.*
@@ -148,6 +148,13 @@ The old split zips (`split/TASH-1..6-of-6`) and `TASH-Instagram-Kit.zip` were **
     - **Not yet re-reviewed by the CD.**
   - Balance 247.75 → **245.75** after the re-roll (2 credits). Stills total **8 of 12**; ad total 8 of 75.
 - Stage 2: CD review, then the videos.
+  - **Videos generated 7 Nov (generated + self-checked by Claude; NOT CD-reviewed, NOT delivered, NOT approved).** Kling 3.0 Turbo (`kling3_0_turbo`), 1080p, 5 s, 9:16, one generation each, no re-rolls; preflight cost 10/clip. Files: `10-spec-dose/footage/ai/<id>.mp4`. Prompts: scratchpad `dose/vid/<id>.txt`. Balance **245.75 → 195.75** (50 credits); ad total **58 of 75**; absolute floor 178.75 leaves room for **one** 10-credit re-roll only.
+    - d1_grinders job 966b1da7-deb5-4d4c-9585-79499a8a934b: slider move right→left with correct parallax; cards blank, flat, stable. A small rating-plate sticker with fake micro-text appears on the grinder bases from ≈2.25 s → clean **0.00–2.25 s** (or paint it out).
+    - d2_carafe job cb2b423b-fe8b-4b4b-8b7b-883c0d2729dc: **rejected** (moved by the parent session at 13:05 to `footage/ai/_rejected/d2_carafe_v1_wrong-side-pour.mp4`, commit `4a3d15d`). The coffee leaves the carafe's bottom lip, opposite the pinched spout at the top. The fault is **already in the approved still** `frames/d2_carafe.png`, so a fix needs a corrected still (≈1) + a new video (10). Otherwise fine: continuous stream, wordmark rigid, hands OK. Claude's first self-check missed the spout fault.
+    - d3_iced job 46fb5e98-5dc8-4381-8d83-791f4d8edd5f: **the model inserted a hard cut** at 1.958 s (frame 47). Part A 0.00–1.92 s = start-frame framing; part B 1.96–5.04 s = tighter macro, wordmark rigid. Marbling motion weak. Use part B (or A) alone.
+    - d4_cake job f1086e5b-fdd8-453e-90d1-8152648013c7: **morph** — the sauce channel down the front splits the cake; from ≈1.75 s it reads as a seam, by 2.75 s as two slices. Clean **0.00–1.75 s** only (needs ≈0.8× for the 2.2 s slot). Re-roll candidate (drop "runs down the side").
+    - d5_terrace job 863648f9-9c59-4390-be41-a51b3ef64431 (start frame = approved v3 3e1df8d5…, not the rejected v2 90641f03… that the step text listed): hand lifts the cup up and out to the top right, rest stays put. **Steam rises from the empty saucer** from ≈1.75 s (wrong source) and a tiny invented orange mark appears on the saucer rim from ≈1.5 s → clean **0.00–1.50 s** (1.75 with the mark painted out). Re-roll candidate (drop the steam line). Budget left (17 above the floor) covers only ONE of d2 (still+video ≈11), d4 or d5 (10 each); owner/CD to pick.
+    - All clips are 1080×1912 @ 24 fps with a Kling-generated AAC track (the model has no audio switch): drop audio (`-an`), scale/crop to 1080×1920 and conform to 30 fps in the edit.
 - Stage 3: build the edit + hostile review.
 - Then send the MP4 to the owner.
 
