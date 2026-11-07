@@ -37,6 +37,7 @@
 ## 3. Approved decisions (owner said so)
 | Decision | Source |
 |---|---|
+| **specialty dose (@sdosecafe, Al Jahra) spec story ad**: Higgsfield cap **75 credits** (balance before: 253.75, so stop below 178.75). Owner will post it as a TASH **story with a mention**, with a clear spec label in the frame the whole time + an end slate. | Owner answers, 7 Nov: «إي، لين ٧٥» and «ستوري مع علامة واضحة». Brief: `tash/10-spec-dose/BRIEF-DOSE.md` |
 | **No WhatsApp anywhere for now** — public account *and* client ops (`07-ops`). DM is the door for everything (orders, questions, notes, problems). | Owner: «واتس مانبيه حاليا تم» (7 Nov) |
 | Email for formal/recorded things only: written offer, invoice, usage rights, final-file links, final approval. On the profile as an **Email contact button** only, not in the bio. | Claude proposed it; owner replied «تم» in the same message. **Needs confirmation** that «تم» covered the email part. The address is unknown: `[[الإيميل]]`. |
 | **Contact is DM only for now.** No phone number, no WhatsApp, no contact buttons. | Message «والتواصل خاص فقط حاليا بدون رقم تلفون» (7 Nov) |
@@ -132,6 +133,12 @@ The old split zips (`split/TASH-1..6-of-6`) and `TASH-Instagram-Kit.zip` were **
 4. If the iPhone download fails: shrink the reels further, or split into 2 zips of about 30 MB each.
 
 ## 7. Next step
+**In progress (7 Nov):** the specialty dose spec story ad (`tash/10-spec-dose/`).
+- Stage 1: generate the stills.
+- Stage 2: CD review, then the videos.
+- Stage 3: build the edit + hostile review.
+- Then send the MP4 to the owner.
+
 Ask the owner for the studio email address, and confirm the email split. Then do item 6.1. Also still waiting on: did the two zips download on the iPhone, and any wording fixes in the plan.
 If the container was reset and the owner needs the zip again, rebuild it:
 1. Re-encode the 5 reels:
