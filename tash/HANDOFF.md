@@ -85,6 +85,22 @@
 The kit's images are **JPG q95 (4:4:4)** conversions of the PNG masters, and its reels are re-encodes. Both were made so the zip downloads on iPhone: 241 MB failed, 44 MB worked, and 60 MB is **not confirmed** to work. They are not byte-identical to the masters in git.
 The old split zips (`split/TASH-1..6-of-6`) and `TASH-Instagram-Kit.zip` were **deleted**; they still had WhatsApp text.
 
+## 4b. Playbook adopted from Agency Agents (7 Nov)
+- The owner asked to review all files of `msitarzewski/agency-agents` (MIT) and take what's useful.
+  - 28 relevant files (marketing, paid-media creative, design, sales, customer service) were read by three subagents.
+  - The result is adapted to TASH rules in **`tash/_system/PLAYBOOK.md`**.
+- New logs:
+  - `08-instagram/plan/hook-log.csv`
+  - `07-ops/11-outreach-tracker.csv`
+- Pointers were added in `AI-BRIEF-posting.md` and `07-ops/README.md`.
+- Not adopted:
+  - the library's statistics (unsourced);
+  - trending audio, influencers, client ads, outcome guarantees.
+- Needs confirmation:
+  - TikTok rejecting PNG for photo posts.
+  - The «تجديد الإعلان» monthly pack is an idea only. Owner to decide.
+- Other three repos the owner shared (OpenMontage AGPL, Graphify, codebase-memory-mcp): reviewed from their READMEs, not adopted.
+
 ## 5. Verified vs not verified
 **Verified by Claude:**
 - All 9 `caption.md` files pass `check_captions.py`, end with both handles, and have no WhatsApp.
