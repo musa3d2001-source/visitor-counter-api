@@ -18,6 +18,9 @@
 
 عندك كافيه أو محمصة؟ خلّ إعلانك علينا •••
 
+إنستقرام: @tash.creative.kw
+تيك توك: @tash.creative
+
 #TASHcreative #اعلانات_الكويت #كافيهات_الكويت #conceptad #kuwait #قهوة_مختصة #coffeead #موشن_جرافيك
 ```
 

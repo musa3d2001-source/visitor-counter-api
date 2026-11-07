@@ -18,6 +18,9 @@
 
 مطعمك يستاهل إعلان يجوّع. دزّ لنا بالخاص •••
 
+إنستقرام: @tash.creative.kw
+تيك توك: @tash.creative
+
 #TASHcreative #اعلانات_الكويت #مطاعم_الكويت #conceptad #kuwait #سماش_برجر #foodad #motiondesign
 ```
 

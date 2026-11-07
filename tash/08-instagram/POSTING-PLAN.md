@@ -38,11 +38,11 @@ Reels 1, 2, 3 and 9 are the teams' masters, copied byte for byte (`cmp`, 6 Nov 2
    ```text
    خلّهم يسولفون عنك •••
    نسوي الإعلان نفسه: فكرة وسكربت، فيديو، تصميم، موشن ومونتاج — للريلز والتيك توك والستوري.
-   🇰🇼 الخاص مفتوح، أو واتساب ↓
+   🇰🇼 الخاص مفتوح — اطلب إعلانك بالخاص ↓
    ```
-5. **Link:** the WhatsApp link from `06-copy/instagram-profile.md` §5, with `965XXXXXXXX` replaced by the real number. Title: «واتساب — اطلب إعلانك». Open it from another phone and check that the pre-filled message reads «هلا طشّ، عندي مشروع وأبي إعلان.»
+5. **Link:** `https://www.tiktok.com/@tash.creative` (title: «تيك توك»). **Contact is DM only for now**: no phone number, no WhatsApp (owner's decision, 7 Nov).
 6. **Category:** the closest *production* category the picker offers, otherwise "Advertising/Marketing". Not "Agency", not "Digital creator". The preview shows "Video production" only as a stand-in.
-7. **Contact buttons:** WhatsApp and email. **No address** (don't invent an office). Only add a Call button if someone answers the phone.
+7. **Contact buttons:** none for now (DM only). **No address, no phone, no WhatsApp.**
 8. **Highlights.** Covers: `03-templates/examples/highlight-1-work.png` … `highlight-5-faq.png`. Names, typed in the app: «شغلنا» · «خدماتنا» · «شلون تطلب؟» · «الأسعار» · «أسئلة». A highlight needs at least one story, so post the Day −1 stories in §4, add each to its highlight, and set the cover from the camera roll.
 
 ---
@@ -83,13 +83,13 @@ Every file is 1080×1920. Story text sits inside y 250–1620, and the poll and 
 | Day −1 → highlight «شغلنا» | The «شغلنا» opening frame from `instagram-profile.md` §4 (text-only, ink) | type it with the app's text tool on an ink background, or reuse `03-templates/examples/post-statement-01.png` | — |
 | Day −1 → «شغلنا» | LAYL «شغل جديد» | `03-templates/examples/story-new-work-01.png` | — |
 | Day −1 → «خدماتنا» | the services slides | share post 7's slides as stories (`07-services-carousel/slide-02…06.png`) | — |
-| Day −1 → «شلون تطلب؟» | the four steps | `03-templates/examples/story-how-to-order.png` | link sticker «اطلب إعلانك» → WhatsApp |
+| Day −1 → «شلون تطلب؟» | the four steps | `03-templates/examples/story-how-to-order.png` | DM sticker / text «اطلب إعلانك بالخاص» (no WhatsApp) |
 | Day −1 → «الأسعار» | **hold until the owner approves prices** (`07-ops/04-pricing.md`). Meanwhile: «دزّ لنا تفاصيلك ونرسلك سعر واضح قبل لا نبدأ.» | text on ink | — |
 | Day −1 → «أسئلة» | «تصورون بالموقع؟ — حالياً لا.» | `03-templates/examples/story-qa-answer.png` | — |
 | **Day 0 · 1** | the launch reel | share **post 9** to story (in-app "add to story") | text: «توّنا فاتحين…» |
 | **Day 0 · 2** | who we are | share **post 4** to story | text: «إحنا طشّ — نسوي الإعلان نفسه» |
 | **Day 0 · 3** | poll | `03-templates/examples/story-qa-poll.png` | poll «هادي» / «حماس» in the empty band |
-| **Day 0 · 4** | ask | `03-templates/examples/story-how-to-order.png` | link sticker «اطلب إعلانك» → WhatsApp |
+| **Day 0 · 4** | ask | `03-templates/examples/story-how-to-order.png` | DM sticker / text «اطلب إعلانك بالخاص» (no WhatsApp) |
 | Day 1 | LAYL «شغل جديد», animated | `03-templates/examples/story-new-work-anim.mp4` (7 s, own audio) | mention: none; the concept label is in the frame |
 | Day 1 | question box | ink background | «اسألنا أي شي عن الإعلانات.» |
 | Day 2 | HABBA «شغل جديد» (photoreal cut) | **`stories/day2-new-work-habba.png`** (made for this package) | — |
@@ -105,7 +105,7 @@ Every story showing a concept ad keeps its `CONCEPT AD` slate and «إعلان �
 **Once, before Day −1**
 - [ ] Settings → media quality: **upload at highest quality** ON (the wording varies by app version), so the app doesn't compress the MP4s on upload.
 - [ ] Move the files to the phone **as originals**: AirDrop, a cable, or a Drive/Files download. **Not WhatsApp**, which recompresses video and PNGs.
-- [ ] Name, bio, link, category, contact buttons and highlights done (§2). The WhatsApp link tested from another phone.
+- [ ] Name, bio, link, category, contact buttons and highlights done (§2). The TikTok link opens the right profile.
 - [ ] The phone number placeholder `965XXXXXXXX` is replaced everywhere it appears (bio link, any DM template you use).
 
 **For every post**
@@ -136,7 +136,7 @@ Every story showing a concept ad keeps its `CONCEPT AD` slate and «إعلان �
 
 **Launch day (after post 9)**
 - [ ] Pins 8 → 3 → 9; the profile matches `profile-preview.png`.
-- [ ] Turn on DM notifications; WhatsApp quick replies from `07-ops/01-welcome-and-quick-replies.md` are ready.
+- [ ] Turn on DM notifications; Instagram Saved Replies from `07-ops/01-welcome-and-quick-replies.md` are ready.
 - [ ] First comments: replies from `06-copy/cta-bank.md` §4. No fake comments, no buying engagement.
 
 ---

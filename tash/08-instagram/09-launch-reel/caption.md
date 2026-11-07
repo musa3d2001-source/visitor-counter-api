@@ -16,6 +16,9 @@
 
 عندك مشروع؟ خلّ إعلانك علينا. الخاص مفتوح •••
 
+إنستقرام: @tash.creative.kw
+تيك توك: @tash.creative
+
 #TASHcreative #اعلانات_الكويت #مشاريع_كويتية #kuwait #adproduction #ريلز #موشن_جرافيك #q8
 ```
 
