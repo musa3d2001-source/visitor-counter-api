@@ -5,7 +5,8 @@ import type { ActionState } from "@/lib/action-state";
 import { parseKwdToFils } from "@/lib/money";
 import { sql } from "@/server/db";
 import { OrderError, refundOrder } from "@/server/commerce/orders";
-import { paymentsConfig, requestGatewayRefund, verifyAndApplyPayment } from "@/server/payments/service";
+import { ExtraPaymentRefundError, checkOrderInvoices, paymentsConfig, refundExtraPayment, requestGatewayRefund } from "@/server/payments/service";
+import { dismissExtraPayment } from "@/server/payments/extras";
 import { resolvePaymentAlert } from "@/server/payments/monitoring";
 import { audit } from "@/server/platform/audit";
 import { AdminError, adminAction, isUuid, str } from "@/server/admin/common";
@@ -72,27 +73,66 @@ export async function resolvePaymentAlertAction(_p: ActionState, fd: FormData): 
   });
 }
 
+/** إعادة التحقق من كل فواتير الطلب غير المؤكدة، لا من آخرها فقط: الدفعة قد تكون على فاتورة أقدم */
 export async function reverifyPaymentAction(_p: ActionState, fd: FormData): Promise<ActionState> {
-  return adminAction(async ({ adminId }) => {
+  return adminAction(async ({ adminId, ip }) => {
     const orderId = str(fd, "orderId");
-    const invoiceId = str(fd, "invoiceId");
-    if (!isUuid(orderId) || !/^\d{1,20}$/.test(invoiceId)) throw new AdminError("طلب غير صالح");
-    const [p] = await sql`select 1 from payments where order_id = ${orderId} and gateway_invoice_id = ${invoiceId}`;
-    if (!p) throw new AdminError("الفاتورة لا تخص هذا الطلب");
-    let result;
-    try {
-      result = await verifyAndApplyPayment({ invoiceId });
-    } catch (err) {
-      throw new AdminError(`تعذر الاستعلام من البوابة: ${err instanceof Error ? err.message : String(err)}`);
-    }
-    await audit({ actorId: adminId, action: "order.reverify", entityType: "order", entityId: orderId, metadata: { invoiceId, state: result.state } });
+    if (!isUuid(orderId)) throw new AdminError("طلب غير صالح");
+    const [order] = await sql`select 1 from orders where id = ${orderId}`;
+    if (!order) throw new AdminError("الطلب غير موجود");
+    const walk = await checkOrderInvoices(orderId);
+    await audit({
+      actorId: adminId,
+      action: "order.reverify",
+      entityType: "order",
+      entityId: orderId,
+      metadata: { total: walk.total, checked: walk.checked, allChecked: walk.allChecked, anyPaid: walk.anyPaid, anyFlagged: walk.anyFlagged },
+      ip,
+    });
     revalidatePath(`/admin/orders/${orderId}`);
-    const msg = {
-      paid: "الدفع مؤكد لدى البوابة وتم منح الصلاحيات",
-      failed: "البوابة تفيد بفشل الدفع",
-      pending: "الدفع ما زال معلقًا لدى البوابة",
-      invalid: `نتيجة غير صالحة: ${"error" in result ? result.error : ""}`,
-    }[result.state];
-    return result.state === "invalid" ? { error: msg } : { ok: true, message: msg };
+    revalidatePath("/admin/orders");
+    if (!walk.allChecked) return { error: `تعذر التحقق من كل الفواتير (تم فحص ${walk.checked} من ${walk.total}): ${walk.error}` };
+    if (walk.anyFlagged) return { ok: true, message: "وصلت دفعة زائدة على هذا الطلب وسُجلت في قائمة الدفعات الزائدة" };
+    if (walk.anyPaid) return { ok: true, message: "الدفع مؤكد لدى البوابة وتم منح الصلاحيات" };
+    if (walk.total === 0) return { ok: true, message: "لا توجد فواتير غير مؤكدة على هذا الطلب" };
+    return { ok: true, message: `تم فحص كل الفواتير (${walk.checked}): لا توجد دفعة مؤكدة لدى البوابة` };
+  });
+}
+
+/** استرداد دفعة زائدة واحدة لدى البوابة. الطلب والوصول والأرباح لا تتغير */
+export async function refundExtraPaymentAction(_p: ActionState, fd: FormData): Promise<ActionState> {
+  return adminAction(async ({ adminId, ip }) => {
+    const extraId = str(fd, "extraId");
+    const reason = str(fd, "reason");
+    if (!isUuid(extraId)) throw new AdminError("طلب غير صالح");
+    if (reason.length < 3) throw new AdminError("اكتب سبب الاسترداد (٣ أحرف على الأقل)");
+    let out;
+    try {
+      out = await refundExtraPayment({ extraId, adminId, reason, ip });
+    } catch (err) {
+      if (err instanceof ExtraPaymentRefundError) throw new AdminError(err.userMessage);
+      throw err;
+    }
+    revalidatePath("/admin/orders");
+    revalidatePath("/admin");
+    if (out.state === "refund_requested") return { ok: true, message: "تم إرسال طلب الاسترداد إلى البوابة. ستتحدث الحالة عند وصول إشعارها." };
+    if (out.state === "refunded") return { ok: true, message: "البوابة تؤكد أن هذه الدفعة مستردة" };
+    if (out.state === "refund_unknown") return { error: "لم نتأكد من نتيجة الطلب لدى البوابة. أعد المحاولة، وسنتحقق أولًا حتى لا يتكرر الاسترداد." };
+    return { error: `رفضت البوابة طلب الاسترداد: ${out.error ?? ""}` };
+  });
+}
+
+/** إغلاق سجل دفعة زائدة بلا استرداد، مثل التسوية خارج البوابة */
+export async function dismissExtraPaymentAction(_p: ActionState, fd: FormData): Promise<ActionState> {
+  return adminAction(async ({ adminId, ip }) => {
+    const extraId = str(fd, "extraId");
+    const reason = str(fd, "reason");
+    if (!isUuid(extraId)) throw new AdminError("طلب غير صالح");
+    if (reason.length < 3) throw new AdminError("اكتب سبب الإغلاق (٣ أحرف على الأقل)");
+    const done = await dismissExtraPayment({ extraId, adminId, reason, ip });
+    if (!done) throw new AdminError("لا يمكن إغلاق هذه الدفعة في حالتها الحالية");
+    revalidatePath("/admin/orders");
+    revalidatePath("/admin");
+    return { ok: true, message: "أُغلق سجل الدفعة" };
   });
 }

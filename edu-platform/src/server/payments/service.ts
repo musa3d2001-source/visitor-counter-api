@@ -1,21 +1,31 @@
 import "server-only";
 import { createHash } from "node:crypto";
-import { sql } from "../db";
+import { sql, type Db } from "../db";
 import { env, type Env } from "../env";
 import { filsToKwdString, kwdNumberToFils } from "@/lib/money";
-import { markOrderPaid, type OrderRow } from "../commerce/orders";
+import { closeOrder, findOpenOrdersCovering, markOrderPaid, type OrderClosedReason, type OrderRow } from "../commerce/orders";
+import { computeCart } from "../commerce/cart";
+import { accessibleProductIds } from "../access/entitlements";
+import { audit } from "../platform/audit";
 import {
   MyFatoorahClient,
   MyFatoorahError,
+  gatewayExpiryDate,
+  hasOpenTransaction,
   interpretPaymentStatus,
+  isDefiniteGatewayRefusal,
   isKuwaitiDinarDisplay,
   sanitizeCustomerName,
   verifyWebhookV2Signature,
   webhookV2SigningString,
   type MfPaymentMethod,
+  type MfPaymentStatus,
+  type MfTransaction,
   type WebhookV2Body,
 } from "./myfatoorah";
 import { WEBHOOK_STALE_CLAIM_MINUTES, raiseDisputeAlert, recordWebhookRejection, type WebhookRejectionReason } from "./monitoring";
+import { applyExtraRefundEvent, recordExtraPayment, type ExtraPaymentKind, type ExtraPaymentState } from "./extras";
+import { CLAIM_STALE_SECONDS, INVOICE_REUSE_MARGIN_MINUTES, INVOICE_TTL_MINUTES, IN_PROGRESS_GRACE_MINUTES, ORDER_LIFETIME_HOURS } from "./limits";
 
 /**
  * خدمة الدفع — قواعد حاسمة:
@@ -92,8 +102,8 @@ export function paymentsConfig(): PaymentsConfig {
   return { enabled: true, environment, baseUrl, apiKey: e.MYFATOORAH_API_KEY, webhookSecret };
 }
 
-function client(cfg: Extract<PaymentsConfig, { enabled: true }>) {
-  return new MyFatoorahClient({ baseUrl: cfg.baseUrl, apiKey: cfg.apiKey });
+function client(cfg: Extract<PaymentsConfig, { enabled: true }>, timeoutMs?: number) {
+  return new MyFatoorahClient({ baseUrl: cfg.baseUrl, apiKey: cfg.apiKey, timeoutMs });
 }
 
 // ذاكرة مؤقتة لوسائل الدفع (10 دقائق)
@@ -126,36 +136,216 @@ export class PaymentModeMismatchError extends MyFatoorahError {
   }
 }
 
-/** بدء الدفع: إنشاء سجل دفع ثم فاتورة لدى MyFatoorah وإرجاع رابط صفحة الدفع */
-export async function startPayment(order: OrderRow, paymentMethodId: number | null): Promise<{ url: string }> {
+/** الطلب لم يعد بانتظار الدفع: دُفع أو أُغلق أثناء التحقق من فواتيره */
+export class OrderSettledError extends MyFatoorahError {
+  constructor(public readonly orderId: string) {
+    super("هذا الطلب لم يعد بانتظار الدفع");
+    this.name = "OrderSettledError";
+  }
+}
+
+/** فاتورة تُنشأ الآن من تبويب آخر، أو عملية جارية عند البنك: إنشاء فاتورة جديدة قد ينتهي بخصمين */
+export class PaymentInProgressError extends MyFatoorahError {
+  constructor() {
+    super("عملية دفع جارية على هذا الطلب");
+    this.name = "PaymentInProgressError";
+  }
+}
+
+/** أُغلق الطلب بدل إنشاء فاتورة له: انتهت مدته أو أصبح منتجه مملوكًا */
+export class OrderClosedError extends MyFatoorahError {
+  constructor(public readonly reason: OrderClosedReason) {
+    super("أُغلق هذا الطلب");
+    this.name = "OrderClosedError";
+  }
+}
+
+export type InvoiceWalk = {
+  total: number;
+  checked: number;
+  /** لم يتعذر أي فحص: كل فاتورة غير مؤكدة ردت عنها البوابة */
+  allChecked: boolean;
+  anyPaid: boolean;
+  anyFlagged: boolean;
+  /** فواتير عليها عملية لم تُحسم عند البنك */
+  inProgressInvoiceIds: string[];
+  error: string | null;
+};
+
+/**
+ * فحص كل فواتير الطلب غير المؤكدة لدى البوابة وتطبيق نتيجتها، بالتتابع ودون أي معاملة مفتوحة أثناء الاستدعاءات.
+ * لا يرمي عند تعذر البوابة: النتيجة allChecked=false، والمستدعي هو من يقرر. stopOnError يوقف عند أول تعذر.
+ */
+export async function checkOrderInvoices(orderId: string, opts: { stopOnError?: boolean; timeoutMs?: number } = {}): Promise<InvoiceWalk> {
+  const cfg = paymentsConfig();
+  const rows = await sql<{ gateway_invoice_id: string; environment: string }[]>`
+    select gateway_invoice_id, environment from payments
+    where order_id = ${orderId} and provider = 'myfatoorah' and gateway_invoice_id is not null and status not in ('paid', 'refunded')
+    order by created_at asc
+  `;
+  const walk: InvoiceWalk = { total: rows.length, checked: 0, allChecked: true, anyPaid: false, anyFlagged: false, inProgressInvoiceIds: [], error: null };
+  const note = (message: string) => {
+    walk.allChecked = false;
+    walk.error ??= message;
+  };
+  if (!cfg.enabled) {
+    if (rows.length) note(cfg.reason);
+    return walk;
+  }
+  for (const row of rows) {
+    if (row.environment !== cfg.environment) {
+      note("فاتورة من وضع دفع مختلف");
+      if (opts.stopOnError) break;
+      continue;
+    }
+    try {
+      const result = await verifyAndApplyPayment({ invoiceId: row.gateway_invoice_id }, { timeoutMs: opts.timeoutMs });
+      if (result.state === "invalid") {
+        note(result.error);
+        if (opts.stopOnError) break;
+        continue;
+      }
+      walk.checked++;
+      if (result.state === "paid") walk.anyPaid = true;
+      if (result.state === "flagged") walk.anyFlagged = true;
+      if (result.state === "pending" && result.inProgress) walk.inProgressInvoiceIds.push(row.gateway_invoice_id);
+    } catch (err) {
+      note(err instanceof Error ? err.message : String(err));
+      if (opts.stopOnError) break;
+    }
+  }
+  return walk;
+}
+
+/**
+ * قرار الدفع تحت قفل الطلب (D3). لماذا هكذا؟
+ * - لا نُبقي معاملة مفتوحة أثناء استدعاء البوابة (حتى ٢٠ ثانية): على Supabase pooler ستحجز اتصالًا نادرًا وتوقف الـ Webhook المنتظر على القفل نفسه.
+ * - لذلك القفل قصير: نقفل صف الطلب، نقرر، ونترك صف "initiated" كمطالبة قبل تحرير القفل.
+ *   أي تبويب آخر يدخل بعدها يجد إما رابطًا جاهزًا فيعيده، أو المطالبة فينتظرها ولا ينشئ فاتورة ثانية.
+ * - لو تعطل الخادم بعد إنشاء الفاتورة لدى البوابة وقبل حفظها: الرابط لم يصل لأحد فلا يمكن دفعه، والمطالبة تُعد متروكة بعد ٦٠ ثانية.
+ * - لم نضف فهرسًا فريدًا على المطالبات: صفوف initiated القديمة قد تجعل الترحيل يفشل على قاعدة فيها بيانات، وقفل الطلب يكفي لأن كل مطالبة تمر به.
+ * - ترتيب الأقفال دائمًا الطلب ثم صفوف الدفع، وهو نفس ترتيب تأكيد الدفع والاسترداد، فلا يحدث deadlock.
+ */
+type PaymentDecision =
+  | { kind: "reuse"; url: string }
+  | { kind: "wait"; claimId: string }
+  | { kind: "closed"; reason: OrderClosedReason }
+  | { kind: "blocked" }
+  | { kind: "settled" }
+  | { kind: "create"; order: OrderRow; claimId: string; expiresAt: Date };
+
+async function decidePayment(orderId: string, environment: "sandbox" | "live", walk: InvoiceWalk): Promise<PaymentDecision> {
+  return sql.begin(async (db): Promise<PaymentDecision> => {
+    const [order] = await db<(OrderRow & { past_lifetime: boolean })[]>`
+      select *, created_at <= now() - make_interval(hours => ${ORDER_LIFETIME_HOURS}) as past_lifetime from orders where id = ${orderId} for update
+    `;
+    if (!order || (order.status !== "pending" && order.status !== "failed")) return { kind: "settled" };
+    if (order.past_lifetime) {
+      await closeOrder(db, { orderId, reason: "expired", actorId: null });
+      return { kind: "closed", reason: "expired" };
+    }
+    // ربما اشترى الطالب المنتج من طلب آخر بعد إنشاء هذا الطلب: لا نحاسبه مرتين
+    const owned = await accessibleProductIds(order.user_id, db);
+    const items = await db<{ product_id: string }[]>`select product_id from order_items where order_id = ${orderId}`;
+    if (items.some((i) => owned.has(i.product_id))) {
+      await closeOrder(db, { orderId, reason: "already_owned", actorId: null });
+      return { kind: "closed", reason: "already_owned" };
+    }
+    const [open] = await db<{ payment_url: string }[]>`
+      select payment_url from payments
+      where order_id = ${orderId} and provider = 'myfatoorah' and environment = ${environment} and status = 'pending'
+        and gateway_invoice_id is not null and payment_url is not null
+        and coalesce(expires_at, created_at + make_interval(mins => ${INVOICE_TTL_MINUTES})) > now() + make_interval(mins => ${INVOICE_REUSE_MARGIN_MINUTES})
+      order by created_at desc limit 1
+    `;
+    if (open) {
+      if (order.status === "failed") await db`update orders set status = 'pending' where id = ${orderId}`;
+      return { kind: "reuse", url: open.payment_url };
+    }
+    const [claim] = await db<{ id: string }[]>`
+      select id from payments
+      where order_id = ${orderId} and status = 'initiated' and gateway_invoice_id is null and created_at > now() - make_interval(secs => ${CLAIM_STALE_SECONDS})
+      order by created_at desc limit 1
+    `;
+    if (claim) return { kind: "wait", claimId: claim.id };
+    await db`
+      update payments set status = 'failed', error_message = 'لم تكتمل محاولة إنشاء رابط الدفع'
+      where order_id = ${orderId} and status = 'initiated' and gateway_invoice_id is null
+    `;
+    if (walk.inProgressInvoiceIds.length) {
+      // عملية عند البنك على فاتورة انتهى رابطها: ننتظر حسمها، لكن بمهلة محدودة حتى لا يعلق الطالب بسبب عملية تُركت بلا نهاية
+      const [blocking] = await db`
+        select 1 from payments
+        where order_id = ${orderId} and gateway_invoice_id = any(${walk.inProgressInvoiceIds}::text[])
+          and coalesce(expires_at, created_at + make_interval(mins => ${INVOICE_TTL_MINUTES})) + make_interval(mins => ${IN_PROGRESS_GRACE_MINUTES}) > now()
+        limit 1
+      `;
+      if (blocking) return { kind: "blocked" };
+    }
+    if (order.status === "failed") await db`update orders set status = 'pending' where id = ${orderId}`;
+    const [created] = await db<{ id: string; expires_at: Date }[]>`
+      insert into payments (order_id, provider, environment, status, amount_fils, expires_at)
+      values (${orderId}, 'myfatoorah', ${environment}, 'initiated', ${order.total_fils}, now() + make_interval(mins => ${INVOICE_TTL_MINUTES}))
+      returning id, expires_at
+    `;
+    return { kind: "create", order, claimId: created.id, expiresAt: created.expires_at };
+  });
+}
+
+const CLAIM_WAIT_ATTEMPTS = 40;
+const CLAIM_WAIT_STEP_MS = 250;
+
+/** تبويب آخر يُنشئ الفاتورة الآن: ننتظر رابطه بدل إنشاء فاتورة ثانية قابلة للدفع */
+async function waitForClaim(claimId: string): Promise<string> {
+  for (let i = 0; i < CLAIM_WAIT_ATTEMPTS; i++) {
+    await new Promise((r) => setTimeout(r, CLAIM_WAIT_STEP_MS));
+    const [row] = await sql<{ status: string; payment_url: string | null }[]>`select status, payment_url from payments where id = ${claimId}`;
+    if (row?.status === "pending" && row.payment_url) return row.payment_url;
+    if (row?.status !== "initiated") break;
+  }
+  throw new PaymentInProgressError();
+}
+
+/**
+ * بدء الدفع (D3): لا ينشئ فاتورة جديدة إلا بعد التأكد من كل الفواتير السابقة.
+ * يفحص كل فاتورة لدى البوابة ويطبق أي دفعة (عند التعذر لا ينشئ شيئًا)، ثم يعيد رابطًا مفتوحًا إن وجد،
+ * وأخيرًا ينشئ فاتورة بعمر قصير. انظر تعليق decidePayment عن التزامن.
+ */
+export async function startPayment(order: OrderRow, paymentMethodId: number | null): Promise<{ url: string; reused: boolean }> {
   const cfg = paymentsConfig();
   if (!cfg.enabled) throw new MyFatoorahError(cfg.reason);
   if (order.status !== "pending" && order.status !== "failed") throw new MyFatoorahError("حالة الطلب لا تسمح بالدفع");
   if (order.total_fils <= 0) throw new MyFatoorahError("قيمة الطلب غير صالحة للدفع الإلكتروني");
   // طلب تجريبي لا يُدفع في وضع حقيقي (وإلا مُنح بدفع حقيقي ووُسم تجريبيًا)، والعكس
   if (order.is_test !== (cfg.environment === "sandbox")) throw new PaymentModeMismatchError();
-  // إعادة المحاولة بعد فشل سابق
-  if (order.status === "failed") await sql`update orders set status = 'pending' where id = ${order.id} and status = 'failed'`;
 
-  const [payment] = await sql<{ id: string }[]>`
-    insert into payments (order_id, provider, environment, status, amount_fils)
-    values (${order.id}, 'myfatoorah', ${cfg.environment}, 'initiated', ${order.total_fils})
-    returning id
-  `;
+  const walk = await checkOrderInvoices(order.id, { stopOnError: true });
+  if (!walk.allChecked) throw new MyFatoorahError(`تعذر التحقق من فواتير الطلب: ${walk.error}`);
+  if (walk.anyPaid) throw new OrderSettledError(order.id);
+
+  const decision = await decidePayment(order.id, cfg.environment, walk);
+  if (decision.kind === "settled") throw new OrderSettledError(order.id);
+  if (decision.kind === "closed") throw new OrderClosedError(decision.reason);
+  if (decision.kind === "blocked") throw new PaymentInProgressError();
+  if (decision.kind === "reuse") return { url: decision.url, reused: true };
+  if (decision.kind === "wait") return { url: await waitForClaim(decision.claimId), reused: true };
+
+  const current = decision.order;
   const appUrl = env().APP_URL.replace(/\/$/, "");
-  const phone = order.customer_phone?.replace(/^\+965/, "");
+  const phone = current.customer_phone?.replace(/^\+965/, "");
   const input = {
-    InvoiceValue: Number(filsToKwdString(order.total_fils)),
+    InvoiceValue: Number(filsToKwdString(current.total_fils)),
     DisplayCurrencyIso: "KWD" as const,
-    CustomerName: sanitizeCustomerName(order.customer_name),
-    CustomerEmail: order.customer_email || null,
+    CustomerName: sanitizeCustomerName(current.customer_name),
+    CustomerEmail: current.customer_email || null,
     ...(phone ? { MobileCountryCode: "+965", CustomerMobile: phone } : {}),
-    CustomerReference: order.number,
-    UserDefinedField: payment.id,
+    CustomerReference: current.number,
+    UserDefinedField: decision.claimId,
     Language: "AR" as const,
     CallBackUrl: `${appUrl}/payment/return`,
     ErrorUrl: `${appUrl}/payment/return`,
     SourceInfo: "edu-platform",
+    ExpiryDate: gatewayExpiryDate(decision.expiresAt),
   };
   try {
     const mf = client(cfg);
@@ -163,36 +353,142 @@ export async function startPayment(order: OrderRow, paymentMethodId: number | nu
       ? await mf.executePayment({ ...input, PaymentMethodId: paymentMethodId })
       : await mf.sendPayment(input);
     const url = "PaymentURL" in res ? res.PaymentURL : res.InvoiceURL;
-    await sql`
+    // الشرط على المطالبة: إن أُغلق الطلب أثناء الاستدعاء لا نسلّم رابطًا لطلب مغلق، والفاتورة لم يرها أحد فلا يمكن دفعها
+    const saved = await sql`
       update payments set status = 'pending', gateway_invoice_id = ${String(res.InvoiceId)}, payment_url = ${url},
         payment_method = ${paymentMethodId ? String(paymentMethodId) : "all"}
-      where id = ${payment.id}
+      where id = ${decision.claimId} and status = 'initiated'
+      returning id
     `;
-    return { url };
+    if (saved.length === 0) throw new OrderSettledError(current.id);
+    return { url, reused: false };
   } catch (err) {
     const message = err instanceof Error ? err.message : String(err);
-    await sql`update payments set status = 'failed', error_message = ${message.slice(0, 500)} where id = ${payment.id}`;
+    await sql`update payments set status = 'failed', error_message = ${message.slice(0, 500)} where id = ${decision.claimId} and status = 'initiated'`;
     throw err;
   }
+}
+
+/** توجيه الشراء: هل لدى الطالب طلب مفتوح يغطي ما في سلته؟ نتحقق من فواتيره أولًا، فقد يكون دُفع فعلًا */
+export type OpenOrderResolution = { kind: "none" } | { kind: "paid"; orderId: string } | { kind: "open"; orderId: string };
+
+const OPEN_ORDERS_WALK_LIMIT = 8;
+
+export async function resolveOpenOrderForCheckout(input: { userId: string; productIds: string[]; isTest: boolean }): Promise<OpenOrderResolution> {
+  const cart = await computeCart(input.productIds, input.userId);
+  const open = await findOpenOrdersCovering(sql, { userId: input.userId, productIds: cart.payableLines.map((l) => l.id), isTest: input.isTest });
+  let stillOpen: string | null = null;
+  for (const { id } of open.slice(0, OPEN_ORDERS_WALK_LIMIT)) {
+    const walk = await checkOrderInvoices(id);
+    if (walk.error) console.error("[checkout] open order check incomplete", walk.error);
+    const [row] = await sql<{ status: OrderRow["status"] }[]>`select status from orders where id = ${id}`;
+    if (row?.status === "paid") return { kind: "paid", orderId: id };
+    if (!stillOpen && (row?.status === "pending" || row?.status === "failed")) stillOpen = id;
+  }
+  return stillOpen ? { kind: "open", orderId: stillOpen } : { kind: "none" };
 }
 
 export type VerifyResult =
   | { state: "paid"; orderId: string; changed: boolean }
   | { state: "failed"; orderId: string; error: string }
-  | { state: "pending"; orderId: string }
+  | { state: "pending"; orderId: string; inProgress?: true }
+  | { state: "expired"; orderId: string }
+  | { state: "refunded"; orderId: string }
+  | { state: "flagged"; orderId: string; kind: ExtraPaymentKind }
   | { state: "invalid"; error: string };
+
+/** صف دفع له أثر على طلب مغلق نقرأه تحت القفل */
+type ConfirmedPayment = {
+  orderId: string;
+  paymentId: string;
+  invoiceFils: number;
+  status: MfPaymentStatus;
+  transaction: MfTransaction | null;
+};
+
+/**
+ * موانع إكمال طلب مغلق وصلته دفعة متأخرة. القرار:
+ * نكمل الطلب فقط إن أُغلق بسبب انتهاء المدة أو إلغاء الطالب، وكل منتج ما زال منشورًا ومتاحًا،
+ * وسعره اليوم لا يزيد عن السعر المدفوع (الزيادة تعني أنه يأخذه بأقل من ثمنه، والنقص لا يمنعه لأنه دفع ثمنه كاملًا)،
+ * ولم يصبح مملوكًا له من طريق آخر (وإلا أصبح الخصم مكررًا).
+ * القسيمة لا تُعاد مراجعتها: تحققنا منها عند إنشاء الطلب والمبلغ مطابق له.
+ * أي مانع يعني أن الدفعة تُسجل للمالك ولا يتغير الطلب.
+ */
+async function lateCompletionBlockers(db: Db, order: OrderRow): Promise<string[]> {
+  const blockers: string[] = [];
+  if (order.closed_reason !== "expired" && order.closed_reason !== "student_cancelled") blockers.push(`closed_reason:${order.closed_reason ?? "none"}`);
+  const items = await db<{ product_id: string; unit_price_fils: number; status: string | null; price_fils: number | null; access_mode: string | null; access_until: Date | null }[]>`
+    select oi.product_id, oi.unit_price_fils, p.status, p.price_fils, p.access_mode, p.access_until
+    from order_items oi left join products p on p.id = oi.product_id
+    where oi.order_id = ${order.id}
+  `;
+  const owned = await accessibleProductIds(order.user_id, db);
+  for (const it of items) {
+    if (it.status !== "published") blockers.push(`unavailable:${it.product_id}`);
+    else if (it.price_fils === null || it.price_fils > it.unit_price_fils) blockers.push(`price:${it.product_id}`);
+    else if (it.access_mode === "until_date" && it.access_until && new Date(it.access_until).getTime() <= Date.now()) blockers.push(`access_ended:${it.product_id}`);
+    if (owned.has(it.product_id)) blockers.push(`owned:${it.product_id}`);
+  }
+  return blockers;
+}
+
+/**
+ * تطبيق دفعة أكدتها البوابة، داخل معاملة واحدة ودون رمي استثناء: المال وصل، فلا تراجع ولا ضياع.
+ * يقفل الطلب ثم صف الدفع (نفس ترتيب startPayment وrefundOrder).
+ *  - pending أو failed: تأكيد الطلب ومنح الوصول.
+ *  - paid: الدفعة التي أكملته لا تتغير، وأي دفعة أخرى تُسجل duplicate.
+ *  - refunded: الدفعة المستردة لا ترجع، وأي دفعة أخرى تُسجل after_refund.
+ *  - cancelled: يكتمل الطلب إن لم يوجد مانع (انظر lateCompletionBlockers)، وإلا تُسجل late_review.
+ */
+async function applyConfirmedPayment(db: Db, p: ConfirmedPayment): Promise<VerifyResult> {
+  const [order] = await db<OrderRow[]>`select * from orders where id = ${p.orderId} for update`;
+  const [row] = await db<{ status: string; amount_fils: number }[]>`select status, amount_fils from payments where id = ${p.paymentId} for update`;
+  const [extra] = await db<{ kind: ExtraPaymentKind }[]>`select kind from payment_extras where payment_id = ${p.paymentId}`;
+  await db`
+    update payments set status = case when status = 'refunded' then status else 'paid' end, paid_at = coalesce(paid_at, now()),
+      gateway_payment_id = coalesce(gateway_payment_id, ${p.transaction?.PaymentId ?? null}),
+      payment_method = coalesce(${p.transaction?.PaymentGateway ?? null}, payment_method),
+      last_gateway_status = ${db.json(p.status as never)}, error_message = null, last_checked_at = now()
+    where id = ${p.paymentId}
+  `;
+  if (extra) return { state: "flagged", orderId: order.id, kind: extra.kind };
+
+  const flag = async (kind: ExtraPaymentKind, details: Record<string, unknown> = {}): Promise<VerifyResult> => {
+    await recordExtraPayment(db, { paymentId: p.paymentId, orderId: order.id, kind, amountFils: p.invoiceFils, details });
+    return { state: "flagged", orderId: order.id, kind };
+  };
+
+  switch (order.status) {
+    case "pending":
+    case "failed": {
+      const out = await markOrderPaid(db, { orderId: order.id, paidAmountFils: p.invoiceFils, paymentRowId: p.paymentId });
+      return { state: "paid", orderId: order.id, changed: out.changed };
+    }
+    case "paid":
+      return row.status === "paid" ? { state: "paid", orderId: order.id, changed: false } : flag("duplicate");
+    case "refunded":
+      return row.status === "refunded" ? { state: "refunded", orderId: order.id } : flag("after_refund");
+    case "cancelled": {
+      const blockers = await lateCompletionBlockers(db, order);
+      if (blockers.length) return flag("late_review", { blockers, closedReason: order.closed_reason });
+      const out = await markOrderPaid(db, { orderId: order.id, paidAmountFils: p.invoiceFils, paymentRowId: p.paymentId, allowClosed: true });
+      await audit({ actorId: null, action: "order.paid_after_close", entityType: "order", entityId: order.id, metadata: { paymentRowId: p.paymentId, closedReason: order.closed_reason, closedAt: order.closed_at } }, db);
+      return { state: "paid", orderId: order.id, changed: out.changed };
+    }
+  }
+}
 
 /**
  * التحقق من الدفع عبر الخادم (من صفحة العودة أو Webhook) وتطبيق النتيجة.
  * يتحقق من: الفاتورة تخص سجل دفع لدينا، الرقم المرجعي = رقم الطلب، المبلغ والعملة مطابقان.
  */
-export async function verifyAndApplyPayment(key: { paymentId?: string; invoiceId?: string }): Promise<VerifyResult> {
+export async function verifyAndApplyPayment(key: { paymentId?: string; invoiceId?: string }, opts: { timeoutMs?: number } = {}): Promise<VerifyResult> {
   const cfg = paymentsConfig();
   if (!cfg.enabled) return { state: "invalid", error: cfg.reason };
   const keyValue = key.paymentId ?? key.invoiceId;
   if (!keyValue || !/^[0-9A-Za-z-]{1,64}$/.test(keyValue)) return { state: "invalid", error: "مرجع دفع غير صالح" };
 
-  const status = await client(cfg).getPaymentStatus(keyValue, key.paymentId ? "PaymentId" : "InvoiceId");
+  const status = await client(cfg, opts.timeoutMs).getPaymentStatus(keyValue, key.paymentId ? "PaymentId" : "InvoiceId");
   const [payment] = await sql<{ id: string; order_id: string; amount_fils: number; status: string; environment: string }[]>`
     select id, order_id, amount_fils, status, environment from payments
     where provider = 'myfatoorah' and gateway_invoice_id = ${String(status.InvoiceId)}
@@ -205,34 +501,48 @@ export async function verifyAndApplyPayment(key: { paymentId?: string; invoiceId
   if (status.CustomerReference && status.CustomerReference !== order.number) {
     return { state: "invalid", error: "الفاتورة لا تخص هذا الطلب" };
   }
+  const result = interpretPaymentStatus(status, key.paymentId);
   const invoiceFils = kwdNumberToFils(Number(status.InvoiceValue));
   if (invoiceFils !== order.total_fils || invoiceFils !== payment.amount_fils || !isKuwaitiDinarDisplay(status.InvoiceDisplayValue)) {
-    await sql`update payments set error_message = 'amount/currency mismatch', last_gateway_status = ${sql.json(status as never)} where id = ${payment.id}`;
+    await sql.begin(async (db) => {
+      await db`select id from orders where id = ${order.id} for update`;
+      await db`
+        update payments set error_message = 'amount/currency mismatch', last_gateway_status = ${db.json(status as never)}, last_checked_at = now(),
+          gateway_payment_id = coalesce(gateway_payment_id, ${result.state === "paid" ? (result.transaction?.PaymentId ?? null) : null})
+        where id = ${payment.id}
+      `;
+      // خُصم مبلغ لا يطابق الطلب: لا يكمل الطلب ولا يضيع، ويراجعه المالك
+      if (result.state === "paid") {
+        await recordExtraPayment(db, {
+          paymentId: payment.id,
+          orderId: order.id,
+          kind: "amount_mismatch",
+          amountFils: Number.isInteger(invoiceFils) && invoiceFils > 0 ? invoiceFils : payment.amount_fils,
+          details: { gatewayAmountFils: Number.isInteger(invoiceFils) ? invoiceFils : null, gatewayDisplayValue: status.InvoiceDisplayValue ?? null },
+        });
+      }
+    });
     return { state: "invalid", error: "المبلغ لا يطابق الطلب" };
   }
 
-  const result = interpretPaymentStatus(status, key.paymentId);
-  const tx = result.transaction;
-
   if (result.state === "paid") {
-    const out = await sql.begin(async (db) => {
-      await db`
-        update payments set status = 'paid', paid_at = coalesce(paid_at, now()),
-          gateway_payment_id = coalesce(gateway_payment_id, ${tx?.PaymentId ?? null}),
-          payment_method = coalesce(${tx?.PaymentGateway ?? null}, payment_method),
-          last_gateway_status = ${db.json(status as never)}, error_message = null
-        where id = ${payment.id}
-      `;
-      return markOrderPaid(db, { orderId: order.id, paidAmountFils: invoiceFils, paymentRowId: payment.id });
-    });
-    return { state: "paid", orderId: order.id, changed: out.changed };
+    return sql.begin((db) => applyConfirmedPayment(db, { orderId: order.id, paymentId: payment.id, invoiceFils, status, transaction: result.transaction }));
+  }
+
+  if (result.state === "expired") {
+    await sql`
+      update payments set status = case when status in ('paid', 'refunded') then status else 'expired' end,
+        last_gateway_status = ${sql.json(status as never)}, last_checked_at = now()
+      where id = ${payment.id}
+    `;
+    return { state: "expired", orderId: order.id };
   }
 
   if (result.state === "failed") {
     await sql.begin(async (db) => {
       await db`
-        update payments set status = case when status = 'paid' then status else 'failed' end,
-          error_message = ${result.error}, last_gateway_status = ${db.json(status as never)}
+        update payments set status = case when status in ('paid', 'refunded') then status else 'failed' end,
+          error_message = ${result.error}, last_gateway_status = ${db.json(status as never)}, last_checked_at = now()
         where id = ${payment.id}
       `;
       await db`update orders set status = 'failed' where id = ${order.id} and status = 'pending'`;
@@ -240,8 +550,17 @@ export async function verifyAndApplyPayment(key: { paymentId?: string; invoiceId
     return { state: "failed", orderId: order.id, error: result.error ?? "فشل الدفع" };
   }
 
-  await sql`update payments set last_gateway_status = ${sql.json(status as never)} where id = ${payment.id}`;
-  return { state: "pending", orderId: order.id };
+  const inProgress = hasOpenTransaction(status);
+  // الوثائق لا تذكر كيف تظهر الفاتورة بعد انتهاء رابطها. إن بقيت Pending بعد المهلة ولا عملية عليها، نعدها منتهية محليًا ونستمر في فحصها
+  await sql`
+    update payments set last_gateway_status = ${sql.json(status as never)}, last_checked_at = now(),
+      status = case
+        when status = 'pending' and not ${inProgress}
+          and coalesce(expires_at, created_at + make_interval(mins => ${INVOICE_TTL_MINUTES})) + make_interval(mins => ${IN_PROGRESS_GRACE_MINUTES}) < now()
+        then 'expired' else status end
+    where id = ${payment.id}
+  `;
+  return inProgress ? { state: "pending", orderId: order.id, inProgress: true } : { state: "pending", orderId: order.id };
 }
 
 const isRecord = (v: unknown): v is Record<string, unknown> => typeof v === "object" && v !== null && !Array.isArray(v);
@@ -313,9 +632,9 @@ export async function handleMyFatoorahWebhook(
       const paymentId = data.Transaction?.PaymentId ? String(data.Transaction.PaymentId) : undefined;
       const invoiceId = data.Invoice?.Id ? String(data.Invoice.Id) : undefined;
       const r = await verifyAndApplyPayment(paymentId ? { paymentId } : { invoiceId });
-      result = r.state === "paid" ? `paid${r.changed ? "" : " (already)"}` : r.state;
+      result = r.state === "paid" ? `paid${r.changed ? "" : " (already)"}` : r.state === "flagged" ? `flagged ${r.kind}` : r.state;
     } else if (Number(body.Event.Code) === 2) {
-      const data = body.Data as { Refund?: { Id?: string | number; Status?: string }; ReferencedInvoice?: { Id?: string | number } };
+      const data = body.Data as { Refund?: { Id?: string | number; Status?: string }; ReferencedInvoice?: { Id?: string | number }; Amount?: { ValueInBaseCurrency?: string | number } };
       const refundStatus = String(data.Refund?.Status ?? "").toUpperCase();
       if (data.ReferencedInvoice?.Id && data.Refund?.Id) {
         await sql`
@@ -324,6 +643,10 @@ export async function handleMyFatoorahWebhook(
           where r.payment_id = p.id and p.gateway_invoice_id = ${String(data.ReferencedInvoice.Id)}
             and (r.gateway_refund_id = ${String(data.Refund.Id)} or r.gateway_refund_id is null)
         `;
+        const refundAmount = Number(data.Amount?.ValueInBaseCurrency);
+        const invoiceId = String(data.ReferencedInvoice.Id);
+        const refundId = String(data.Refund.Id);
+        await sql.begin((db) => applyExtraRefundEvent(db, { invoiceId, refundId, status: refundStatus, amountFils: Number.isFinite(refundAmount) ? kwdNumberToFils(refundAmount) : null }));
       }
       result = `refund ${refundStatus}`;
     } else if (Number(body.Event.Code) === 6) {
@@ -355,4 +678,96 @@ export async function requestGatewayRefund(input: { refundId: string; paymentRow
   });
   await sql`update refunds set status = 'requested', gateway_refund_id = ${String(res.RefundId)} where id = ${input.refundId}`;
   return res;
+}
+
+export class ExtraPaymentRefundError extends Error {
+  constructor(public readonly userMessage: string) {
+    super(userMessage);
+    this.name = "ExtraPaymentRefundError";
+  }
+}
+
+const REFUND_SENDING_STALE_MINUTES = 2;
+
+type ExtraRefundOutcome = { state: Extract<ExtraPaymentState, "refund_requested" | "refunded" | "refund_failed" | "refund_unknown">; error?: string };
+
+/**
+ * استرداد دفعة زائدة واحدة لدى البوابة بأمر من المالك. يخص هذه الدفعة فقط: لا يلمس حالة الطلب ولا الوصول ولا الأرباح.
+ * المشكلة التي يحلها: رد مقطوع قد يعني أن المال أُعيد فعلًا، وإعادة الإرسال العمياء تعني استردادًا مضاعفًا. لذلك:
+ *  - صف الاسترداد يُطالب به تحت قفل، فلا يُرسل طلبان معًا.
+ *  - نتيجة مجهولة (انقطاع، 5xx) تبقى refund_unknown وتعيد استخدام Idempotency-Key نفسه.
+ *  - أي إعادة محاولة تسأل GetRefundStatus أولًا بمعرفنا الخارجي، وإن تعذر السؤال لا نرسل شيئًا.
+ *  - الرفض الصريح فقط يستهلك رقم المحاولة ويولد مفتاحًا جديدًا.
+ */
+export async function refundExtraPayment(input: { extraId: string; adminId: string; reason: string; ip?: string }): Promise<ExtraRefundOutcome> {
+  const cfg = paymentsConfig();
+  if (!cfg.enabled) throw new ExtraPaymentRefundError(`بوابة الدفع غير مفعلة: ${cfg.reason}`);
+  const claim = await sql.begin(async (db) => {
+    const [row] = await db<
+      { id: string; order_id: string; state: ExtraPaymentState; amount_fils: number; refund_attempt: number; payment_id: string; gateway_payment_id: string | null; gateway_invoice_id: string | null; environment: string; stale_sending: boolean }[]
+    >`
+      select e.id, e.order_id, e.state, e.amount_fils, e.refund_attempt, e.payment_id, p.gateway_payment_id, p.gateway_invoice_id, p.environment,
+        coalesce(e.refund_claimed_at < now() - make_interval(mins => ${REFUND_SENDING_STALE_MINUTES}), true) as stale_sending
+      from payment_extras e join payments p on p.id = e.payment_id
+      where e.id = ${input.extraId}
+      for update of e
+    `;
+    if (!row) throw new ExtraPaymentRefundError("الدفعة غير موجودة");
+    const allowed = row.state === "open" || row.state === "refund_failed" || row.state === "refund_unknown" || (row.state === "refund_sending" && row.stale_sending);
+    if (!allowed) throw new ExtraPaymentRefundError(row.state === "refund_sending" ? "يجري إرسال طلب الاسترداد الآن" : "لا يمكن طلب استرداد هذه الدفعة في حالتها الحالية");
+    if (row.environment !== cfg.environment) throw new ExtraPaymentRefundError("هذه الدفعة من وضع دفع مختلف عن الوضع الحالي");
+    if (!row.gateway_invoice_id) throw new ExtraPaymentRefundError("لا يوجد مرجع دفع لدى البوابة");
+    const attempt = row.state === "open" || row.state === "refund_failed" ? row.refund_attempt + 1 : row.refund_attempt;
+    await db`
+      update payment_extras set state = 'refund_sending', refund_attempt = ${attempt}, refund_claimed_at = now(),
+        refund_reason = ${input.reason.slice(0, 500)}, refund_requested_by = ${input.adminId}, refund_error = null
+      where id = ${row.id}
+    `;
+    await audit({ actorId: input.adminId, action: "payment_extra.refund_started", entityType: "payment_extra", entityId: row.id, reason: input.reason, metadata: { orderId: row.order_id, attempt }, ip: input.ip ?? null }, db);
+    return { ...row, attempt, hadPriorAttempt: row.refund_attempt > 0 };
+  });
+
+  const externalId = `extra:${claim.id}`;
+  const mf = client(cfg);
+  const finish = async (state: ExtraRefundOutcome["state"], patch: { error?: string; refundId?: string; reference?: string }): Promise<ExtraRefundOutcome> => {
+    await sql.begin(async (db) => {
+      await db`
+        update payment_extras set state = ${state}, refund_claimed_at = null, refund_error = ${patch.error?.slice(0, 500) ?? null},
+          gateway_refund_id = coalesce(${patch.refundId ?? null}, gateway_refund_id),
+          gateway_refund_reference = coalesce(${patch.reference ?? null}, gateway_refund_reference),
+          refund_requested_at = case when ${state} in ('refund_requested', 'refunded') then coalesce(refund_requested_at, now()) else refund_requested_at end,
+          resolved_at = case when ${state} = 'refunded' then now() else resolved_at end
+        where id = ${claim.id}
+      `;
+      if (state === "refunded") await db`update payments set status = 'refunded' where id = ${claim.payment_id}`;
+      await audit({ actorId: input.adminId, action: `payment_extra.${state}`, entityType: "payment_extra", entityId: claim.id, reason: input.reason, metadata: { orderId: claim.order_id, attempt: claim.attempt, gatewayRefundId: patch.refundId ?? null, error: patch.error?.slice(0, 200) ?? null }, ip: input.ip ?? null }, db);
+    });
+    return patch.error ? { state, error: patch.error } : { state };
+  };
+
+  if (claim.hadPriorAttempt) {
+    let existing;
+    try {
+      existing = await mf.getRefundStatus(claim.gateway_invoice_id!, "InvoiceId");
+    } catch (err) {
+      return finish("refund_unknown", { error: `تعذر التأكد من الاسترداد السابق: ${err instanceof Error ? err.message : String(err)}` });
+    }
+    const mine = existing.find((r) => r.ExternalIdentifier === externalId && r.RefundStatus !== "Canceled");
+    if (mine) return finish(mine.RefundStatus === "Refunded" ? "refunded" : "refund_requested", { refundId: String(mine.RefundId), reference: mine.RefundReference });
+  }
+
+  try {
+    const res = await mf.makeRefund({
+      key: (claim.gateway_payment_id ?? claim.gateway_invoice_id)!,
+      keyType: claim.gateway_payment_id ? "PaymentId" : "InvoiceId",
+      amountKwd: filsToKwdString(claim.amount_fils),
+      comment: input.reason.slice(0, 200),
+      externalIdentifier: externalId,
+      idempotencyKey: `extra-${claim.id}-${claim.attempt}`,
+    });
+    return finish("refund_requested", { refundId: String(res.RefundId), reference: res.RefundReference });
+  } catch (err) {
+    const message = err instanceof Error ? err.message : String(err);
+    return finish(isDefiniteGatewayRefusal(err) ? "refund_failed" : "refund_unknown", { error: message });
+  }
 }

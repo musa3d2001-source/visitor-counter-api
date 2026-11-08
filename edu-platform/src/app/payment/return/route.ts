@@ -27,6 +27,7 @@ export async function GET(req: NextRequest) {
       return NextResponse.redirect(`${base}/account?payment=invalid`, 303);
     }
     const res = NextResponse.redirect(`${base}/orders/${result.orderId}?from=payment`, 303);
+    // دفعة سُجلت للمراجعة أو طلب مسترد لا يعنيان أن الطالب امتلك المنتج، فتبقى سلته كما هي
     if (result.state === "paid") {
       // إزالة المنتجات المدفوعة من السلة
       const items = await sql<{ product_id: string }[]>`select product_id from order_items where order_id = ${result.orderId}`;

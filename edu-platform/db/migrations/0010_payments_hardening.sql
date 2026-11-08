@@ -57,3 +57,76 @@ create index payment_alerts_order_idx on payment_alerts (order_id) where order_i
 
 alter table payment_webhook_rejections enable row level security;
 alter table payment_alerts enable row level security;
+
+-- ---------------------------------------------------------------------
+-- 4) عمر الطلب وعمر الفاتورة (D3)
+--    الطلب يعيش ٧٢ ساعة، ويُغلق بحالة cancelled مع سبب الإغلاق (لا نوسع قيد الحالات حتى يبقى
+--    الكود المنشور حاليًا صحيحًا). الفاتورة تحمل expires_at لأننا نرسل ExpiryDate قصيرًا للبوابة.
+--    last_checked_at = آخر مرة ردّت فيها البوابة عن هذه الفاتورة، وعليه تعتمد جملة «لم يُخصم مبلغ» وإغلاق الطلب.
+--    reconcile_claimed_at = مطالبة وظيفة التسوية بالفاتورة حتى لا تعالجها نسختان معًا.
+--    كل الأعمدة فارغة افتراضيًا: لا إعادة كتابة للجداول، والكود المنشور لا يقرؤها.
+-- ---------------------------------------------------------------------
+alter table orders add column closed_at timestamptz;
+alter table orders add column closed_reason text check (closed_reason is null or closed_reason in ('expired', 'student_cancelled', 'already_owned'));
+
+alter table payments add column expires_at timestamptz;
+alter table payments add column last_checked_at timestamptz;
+alter table payments add column reconcile_claimed_at timestamptz;
+
+create index payments_recheck_idx on payments (last_checked_at asc nulls first)
+  where gateway_invoice_id is not null and status in ('initiated', 'pending', 'failed', 'expired');
+
+-- ---------------------------------------------------------------------
+-- 5) الدفعات الزائدة: مال حقيقي وصل ولا يكمل طلبًا (دفعة ثانية على طلب مدفوع أو مسترد،
+--    أو دفعة متأخرة على طلب مغلق تعذر إكماله، أو مبلغ لا يطابق الطلب).
+--    الصف يبقى للأبد كسجل. استرداده لا يمس الطلب ولا الوصول ولا الأرباح.
+-- ---------------------------------------------------------------------
+create table payment_extras (
+  id uuid primary key default gen_random_uuid(),
+  payment_id uuid not null unique references payments(id) on delete restrict,
+  order_id uuid not null references orders(id) on delete restrict,
+  kind text not null check (kind in ('duplicate', 'after_refund', 'late_review', 'amount_mismatch')),
+  amount_fils integer not null check (amount_fils > 0),
+  details jsonb not null default '{}'::jsonb,
+  state text not null default 'open' check (state in ('open', 'refund_sending', 'refund_unknown', 'refund_requested', 'refunded', 'refund_failed', 'dismissed')),
+  refund_attempt integer not null default 0,
+  refund_claimed_at timestamptz,
+  gateway_refund_id text,
+  gateway_refund_reference text,
+  refund_error text check (char_length(refund_error) <= 500),
+  refund_reason text check (char_length(refund_reason) <= 500),
+  refund_requested_by uuid references users(id) on delete set null,
+  refund_requested_at timestamptz,
+  resolved_by uuid references users(id) on delete set null,
+  resolved_at timestamptz,
+  created_at timestamptz not null default now(),
+  updated_at timestamptz not null default now()
+);
+create index payment_extras_open_idx on payment_extras (created_at desc) where state not in ('refunded', 'dismissed');
+create index payment_extras_order_idx on payment_extras (order_id);
+create trigger payment_extras_updated before update on payment_extras for each row execute function set_updated_at();
+alter table payment_extras enable row level security;
+
+-- BEGIN backfill payment_extras
+-- دفعات ناجحة سابقة لهذا الترحيل بلا أي علامة: أقدمها هو الدفعة الأصلية، والبقية زائدة.
+-- على طلب مسترد صف «paid» المتبقي دفعة لم تُسترد.
+insert into payment_extras (payment_id, order_id, kind, amount_fils, details)
+select p.id, p.order_id, case when o.status = 'refunded' then 'after_refund' else 'duplicate' end, p.amount_fils, jsonb_build_object('source', 'backfill')
+from payments p
+join orders o on o.id = p.order_id
+where p.provider = 'myfatoorah'
+  and p.status = 'paid'
+  and p.amount_fils > 0
+  and (
+    o.status = 'refunded'
+    or (
+      o.status = 'paid'
+      and exists (
+        select 1 from payments first_paid
+        where first_paid.order_id = p.order_id and first_paid.provider = 'myfatoorah' and first_paid.status = 'paid' and first_paid.id <> p.id
+          and (coalesce(first_paid.paid_at, first_paid.created_at), first_paid.id) < (coalesce(p.paid_at, p.created_at), p.id)
+      )
+    )
+  )
+on conflict (payment_id) do nothing;
+-- END backfill payment_extras
