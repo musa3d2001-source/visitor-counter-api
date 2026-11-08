@@ -192,7 +192,7 @@ export type ExecuteInput = {
 
 /**
  * هل تدل قيمة InvoiceDisplayValue على الدينار الكويتي؟
- * الوثائق تعرضها هكذا: "1.000 KD" و"12,345.000 KD"، ونقبل أيضًا التهجئة ISO: "3.000 KWD".
+ * الوثائق تعرضها هكذا: "1.000 KD" و"12,345.000 KD"، ونقبل أيضًا التهجئة ISO: "3.000 KWD" والرمز العربي "3.000 د.ك" لأننا نرسل Language=AR.
  * أي عملة أخرى أو نص بلا عملة نرفضه (عند الشك لا نؤكد الدفع). الحقل الفارغ مقبول
  * لأن InvoiceValue تأتي دائمًا بالعملة الأساسية للحساب، وهي الدينار.
  */
@@ -200,7 +200,7 @@ export function isKuwaitiDinarDisplay(displayValue: string | null | undefined): 
   const text = (displayValue ?? "").trim();
   if (!text) return true;
   const unit = text.split(/\s+/).pop()!.toUpperCase();
-  return unit === "KD" || unit === "KWD";
+  return unit === "KD" || unit === "KWD" || unit === "د.ك" || unit === "د.ك.";
 }
 
 /** الاسم بدون رموز خاصة (نفس قاعدة المكتبة الرسمية) */

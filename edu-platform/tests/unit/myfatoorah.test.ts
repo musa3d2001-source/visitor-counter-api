@@ -134,8 +134,11 @@ describe("isKuwaitiDinarDisplay (InvoiceDisplayValue)", () => {
   it("accepts the documented KD samples and the ISO spelling", () => {
     for (const v of ["1.000 KD", "100.000 KD", "12,345.000 KD", "3.000 KWD", "3.000 kd", "  3.000   KD  "]) expect(isKuwaitiDinarDisplay(v)).toBe(true);
   });
+  it("accepts the Arabic symbol too: we send Language AR, the docs only show English samples, and a false mismatch would leave a paid order without access", () => {
+    for (const v of ["3.000 د.ك", "3.000 د.ك."]) expect(isKuwaitiDinarDisplay(v)).toBe(true);
+  });
   it("rejects any other currency, and text with no clear currency", () => {
-    for (const v of ["3.000 USD", "3.000 SAR", "3.000 SR", "3.000 KDX", "3.000", "3.000KD"]) expect(isKuwaitiDinarDisplay(v)).toBe(false);
+    for (const v of ["3.000 USD", "3.000 SAR", "3.000 SR", "3.000 KDX", "3.000", "3.000KD", "3.000 ر.س", "3.000 د.إ", "3.000 د.ب", "3.000 دينار"]) expect(isKuwaitiDinarDisplay(v)).toBe(false);
   });
   it("an absent value is not a foreign currency (InvoiceValue is in the account's KWD base currency)", () => {
     for (const v of ["", "   ", null, undefined]) expect(isKuwaitiDinarDisplay(v)).toBe(true);
