@@ -12,6 +12,7 @@ import { Alert } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/form";
 import { PageHeader, StatPill } from "@/components/ui/page-header";
+import { PaymentUnavailableNotice } from "@/components/site/payment-unavailable-notice";
 import { ProductCover } from "@/components/site/product-cover";
 import { PRODUCT_TYPE_LABELS } from "@/lib/labels";
 import { filsToKwdString } from "@/lib/money";
@@ -52,9 +53,9 @@ export default async function CheckoutPage({ searchParams }: { searchParams: Pro
     <>
       <PageHeader
         breadcrumbs={[{ label: "السلة", href: "/cart" }, { label: "إتمام الشراء" }]}
-        eyebrow={{ icon: <Lock />, label: total > 0 ? "دفع آمن" : "طلب مجاني", tone: "teal" }}
+        eyebrow={{ icon: <Lock />, label: total > 0 ? (cfg.enabled ? "دفع آمن" : "الدفع غير متاح حاليًا") : "طلب مجاني", tone: "teal" }}
         title="إتمام الشراء"
-        sub={total > 0 ? "ثلاث خطوات قصيرة، ثم ننقلك إلى صفحة الدفع الآمنة لإتمام العملية." : "ثلاث خطوات قصيرة، ويُضاف المحتوى إلى مكتبتك مباشرة."}
+        sub={total > 0 ? (cfg.enabled ? "ثلاث خطوات قصيرة، ثم ننقلك إلى صفحة الدفع الآمنة لإتمام العملية." : "يمكنك مراجعة طلبك هنا، لكن الدفع الإلكتروني متوقف في الوقت الحالي.") : "ثلاث خطوات قصيرة، ويُضاف المحتوى إلى مكتبتك مباشرة."}
         aside={
           <TiltedPosters
             items={cart.payableLines.map((l) => ({ key: l.id, title: l.title, type: l.type, subjectName: l.subjectName, subjectSlug: l.subjectSlug, gradeName: l.gradeName, coverUrl: l.coverUrl }))}
@@ -171,19 +172,7 @@ export default async function CheckoutPage({ searchParams }: { searchParams: Pro
 
             <CheckoutStep n={3} title={total > 0 ? "الدفع" : "التأكيد"} tone="grade-8">
               <div className="flex flex-col gap-4">
-                {total > 0 && !cfg.enabled ? (
-                  <Alert tone="warning" title="الدفع الإلكتروني غير متاح حاليًا">
-                    {cfg.reason}.{" "}
-                    {settings.whatsapp_number ? (
-                      <a href={`https://wa.me/${settings.whatsapp_number.replace(/\D/g, "")}`} target="_blank" rel="noopener noreferrer">
-                        تواصل معنا عبر واتساب
-                      </a>
-                    ) : (
-                      <Link href="/contact">تواصل معنا</Link>
-                    )}{" "}
-                    لإتمام طلبك.
-                  </Alert>
-                ) : null}
+                {total > 0 && !cfg.enabled ? <PaymentUnavailableNotice settings={settings} /> : null}
                 {methodsError ? <Alert tone="warning">تعذر تحميل وسائل الدفع، وستظهر كل الوسائل المتاحة في صفحة الدفع.</Alert> : null}
                 <CheckoutForm
                   coupon={coupon?.ok ? couponCode : ""}

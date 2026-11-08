@@ -7,7 +7,9 @@ import { requireUser } from "@/server/auth/guards";
 import { getUserOrder } from "@/server/commerce/orders";
 import { sql } from "@/server/db";
 import { getSettings } from "@/server/platform/settings";
+import { paymentsConfig } from "@/server/payments/service";
 import { retryPaymentAction, refreshOrderStatusAction } from "../../checkout/actions";
+import { PaymentUnavailableNotice, realContactLinks } from "@/components/site/payment-unavailable-notice";
 import { Alert } from "@/components/ui/alert";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -50,6 +52,11 @@ export default async function OrderPage({ params, searchParams }: { params: Prom
   const statusTone = order.status === "paid" ? "success" : order.status === "failed" ? "danger" : order.status === "pending" ? "warning" : "neutral";
   const heroKey = order.status === "paid" || order.status === "pending" || order.status === "failed" ? order.status : "other";
   const hero = HERO[heroKey];
+  // الدفع متوقف: لا نعرض أزرارًا لا تعمل
+  const paymentsOn = paymentsConfig().enabled;
+  const unpaid = order.status === "pending" || order.status === "failed";
+  const hasContact = realContactLinks(settings).length > 0;
+  const showHelp = unpaid && hasContact;
 
   return (
     <div className="bg-sunny">
@@ -84,6 +91,11 @@ export default async function OrderPage({ params, searchParams }: { params: Prom
                     </Button>
                   </div>
                 </>
+              ) : order.status === "pending" && !paymentsOn ? (
+                <>
+                  <h1 className="font-display text-[clamp(1.9rem,1.3rem+2.4vw,3rem)] leading-tight font-black">هذا الطلب لم يكتمل بعد</h1>
+                  <p className="mt-2 max-w-2xl text-[1.05rem] leading-8 font-semibold text-accent-900/90">لا يمكن إكمال الدفع الآن، ولن تُضاف مشترياتك إلى مكتبتك قبل تأكيد بوابة الدفع.</p>
+                </>
               ) : order.status === "pending" ? (
                 <>
                   <h1 className="font-display text-[clamp(1.9rem,1.3rem+2.4vw,3rem)] leading-tight font-black">بانتظار تأكيد الدفع</h1>
@@ -107,14 +119,16 @@ export default async function OrderPage({ params, searchParams }: { params: Prom
                     لم تكتمل عملية الدفع
                   </h1>
                   <p className="mt-2 max-w-2xl text-[1.05rem] leading-8 text-white/90">
-                    {payment?.error_message ? `السبب: ${payment.error_message}. ` : ""}لم يتم خصم أي مبلغ مقابل هذا الطلب. يمكنك المحاولة مرة أخرى.
+                    {payment?.error_message ? `السبب: ${payment.error_message}. ` : ""}لم يتم خصم أي مبلغ مقابل هذا الطلب.{paymentsOn ? " يمكنك المحاولة مرة أخرى." : ""}
                   </p>
-                  <form action={retryPaymentAction} className="mt-6 flex justify-center sm:justify-start">
-                    <input type="hidden" name="orderId" value={order.id} />
-                    <SubmitButton size="xl" variant="light">
-                      <RotateCcw aria-hidden /> إعادة محاولة الدفع
-                    </SubmitButton>
-                  </form>
+                  {paymentsOn ? (
+                    <form action={retryPaymentAction} className="mt-6 flex justify-center sm:justify-start">
+                      <input type="hidden" name="orderId" value={order.id} />
+                      <SubmitButton size="xl" variant="light">
+                        <RotateCcw aria-hidden /> إعادة محاولة الدفع
+                      </SubmitButton>
+                    </form>
+                  ) : null}
                 </>
               ) : (
                 <>
@@ -132,13 +146,19 @@ export default async function OrderPage({ params, searchParams }: { params: Prom
           </div>
         </section>
 
-        {sp.error ? (
+        {unpaid && !paymentsOn ? <PaymentUnavailableNotice settings={settings} className="mt-6 no-print" /> : null}
+
+        {sp.error === "mode" ? (
+          <Alert tone="danger" className="mt-6 no-print" title="لا يمكن إكمال دفع هذا الطلب">
+            أُنشئ هذا الطلب في وضع دفع مختلف عن الوضع الحالي. لم يتم خصم أي مبلغ، ويمكنك إنشاء طلب جديد من <Link href="/cart">السلة</Link>.
+          </Alert>
+        ) : sp.error ? (
           <Alert tone="danger" className="mt-6 no-print">
             تعذر بدء الدفع حاليًا. حاول بعد قليل.
           </Alert>
         ) : null}
 
-        <div className={cn("mt-8 grid gap-6", order.status !== "cancelled" && order.status !== "refunded" && "lg:grid-cols-[minmax(0,1fr)_20rem]")}>
+        <div className={cn("mt-8 grid gap-6", (order.status === "paid" || showHelp) && "lg:grid-cols-[minmax(0,1fr)_20rem]")}>
           <section className="panel p-5 sm:p-8" aria-labelledby="invoice-title">
             <div className="flex flex-wrap items-start justify-between gap-4">
               <div className="flex items-center gap-3.5">
@@ -234,7 +254,7 @@ export default async function OrderPage({ params, searchParams }: { params: Prom
                 </Link>
               </Button>
             </aside>
-          ) : order.status === "pending" || order.status === "failed" ? (
+          ) : showHelp ? (
             <aside className="panel h-fit p-6 no-print" aria-labelledby="help-title">
               <span className="icon-tile tone-arabic size-12 rounded-[0.95rem] [&_svg]:size-6" aria-hidden>
                 <Headset />

@@ -55,18 +55,20 @@ export function CheckoutForm({
       ) : null}
       <SubmitButton size="xl" variant={total === 0 ? "accent" : "primary"} className="mt-6 w-full" disabled={disabled} pendingText="جارٍ التحويل لصفحة الدفع…" data-testid="place-order">
         {total === 0 ? <Gift aria-hidden /> : <Lock aria-hidden />}
-        {total === 0 ? "إتمام الطلب مجانًا" : `ادفع ${filsToKwdString(total)} د.ك`}
+        {total === 0 ? "إتمام الطلب مجانًا" : disabled ? "الدفع غير متاح حاليًا" : `ادفع ${filsToKwdString(total)} د.ك`}
       </SubmitButton>
-      <div className="mt-4 flex items-start gap-3 rounded-2xl bg-brand-50 p-3.5">
-        <span className="grid size-9 shrink-0 place-items-center rounded-[0.8rem] bg-linear-to-br from-brand-400 to-brand-600 text-white" aria-hidden>
-          <ShieldCheck className="size-[1.15rem]" />
-        </span>
-        <p className="text-[0.9rem] leading-7 font-semibold text-brand-800">
-          {total === 0
-            ? "يُضاف المحتوى إلى مكتبتك مباشرة بعد التأكيد."
-            : `${sandbox ? "بيئة اختبار: لن يُخصم أي مبلغ. " : ""}ننقلك إلى صفحة الدفع الآمنة لدى ماي فاتورة، ولا نحتفظ ببيانات بطاقتك.`}
-        </p>
-      </div>
+      {disabled ? null : (
+        <div className="mt-4 flex items-start gap-3 rounded-2xl bg-brand-50 p-3.5">
+          <span className="grid size-9 shrink-0 place-items-center rounded-[0.8rem] bg-linear-to-br from-brand-400 to-brand-600 text-white" aria-hidden>
+            <ShieldCheck className="size-[1.15rem]" />
+          </span>
+          <p className="text-[0.9rem] leading-7 font-semibold text-brand-800">
+            {total === 0
+              ? "يُضاف المحتوى إلى مكتبتك مباشرة بعد التأكيد."
+              : `${sandbox ? "بيئة اختبار: لن يُخصم أي مبلغ. " : ""}ننقلك إلى صفحة الدفع الآمنة لدى ماي فاتورة، ولا نحتفظ ببيانات بطاقتك.`}
+          </p>
+        </div>
+      )}
     </form>
   );
 }
