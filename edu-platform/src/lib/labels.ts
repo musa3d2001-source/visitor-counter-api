@@ -158,6 +158,23 @@ export const WEBHOOK_REJECTION_LABELS: Record<string, string> = {
   invalid_signature: "توقيع غير صحيح",
 };
 
+/** الدفعات الزائدة: مال وصل ولا يكمل طلبًا (تظهر للمالك) */
+export const EXTRA_PAYMENT_KIND_LABELS: Record<string, string> = {
+  duplicate: "دفعة ثانية على طلب مدفوع",
+  after_refund: "دفعة على طلب مسترد",
+  late_review: "دفعة متأخرة على طلب مغلق",
+  amount_mismatch: "مبلغ لا يطابق الطلب",
+};
+export const EXTRA_PAYMENT_STATE_LABELS: Record<string, string> = {
+  open: "بانتظار قرارك",
+  refund_sending: "يُرسل الآن",
+  refund_unknown: "نتيجة غير مؤكدة",
+  refund_requested: "أُرسل للبوابة",
+  refunded: "مسترد",
+  refund_failed: "رفضته البوابة",
+  dismissed: "مغلق",
+};
+
 export const PAYMENT_STATUS_LABELS: Record<string, string> = {
   initiated: "تم الإنشاء",
   pending: "قيد المعالجة",

@@ -3,6 +3,7 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import type * as React from "react";
 import {
+  Banknote,
   Bell,
   CircleCheck,
   CircleX,
@@ -26,6 +27,8 @@ import {
 import { getAdminOrder } from "@/server/admin/records";
 import { paymentsConfig } from "@/server/payments/service";
 import { openPaymentAlerts } from "@/server/payments/monitoring";
+import { orderExtraPayments } from "@/server/payments/extras";
+import { ExtraPaymentsList } from "../_components/extra-payments";
 import { Alert } from "@/components/ui/alert";
 import { Section } from "@/components/admin/page-header";
 import { EmptyValue, InfoList } from "@/components/admin/data-list";
@@ -63,9 +66,9 @@ export default async function AdminOrderPage({ params }: { params: Promise<{ id:
   const data = await getAdminOrder(id);
   if (!data) notFound();
   const { order, items, payments, events, refunds } = data;
-  const alerts = await openPaymentAlerts({ orderId: order.id });
+  const [alerts, extras] = await Promise.all([openPaymentAlerts({ orderId: order.id }), orderExtraPayments(order.id)]);
   const cfg = paymentsConfig();
-  const pendingInvoice = order.status !== "paid" && order.status !== "refunded" ? payments.find((p) => p.provider === "myfatoorah" && p.gateway_invoice_id) : null;
+  const hasInvoice = payments.some((p) => p.provider === "myfatoorah" && p.gateway_invoice_id);
   const tone = orderTone(order.status);
 
   // مسار الطلب: يُبنى من التواريخ المسجلة فعلًا فقط (الإنشاء، محاولات الدفع، تأكيد الدفع، الاسترداد)
@@ -241,15 +244,15 @@ export default async function AdminOrderPage({ params }: { params: Promise<{ id:
         tone="green"
         description="الحالة تُؤكَّد دائمًا من خادم MyFatoorah (GetPaymentStatus) وليس من صفحة العودة."
         actions={
-          pendingInvoice && cfg.enabled ? (
+          hasInvoice && cfg.enabled ? (
             <ConfirmButton
               action={reverifyPaymentAction}
-              hidden={{ orderId: order.id, invoiceId: pendingInvoice.gateway_invoice_id! }}
+              hidden={{ orderId: order.id }}
               label="إعادة التحقق من البوابة"
               icon={<RefreshCw aria-hidden />}
               variant="outline"
               title="إعادة التحقق من حالة الدفع؟"
-              description="سيتم الاستعلام من MyFatoorah عن الفاتورة. إذا كانت مدفوعة فعليًا ستُمنح الصلاحيات تلقائيًا."
+              description="سيتم الاستعلام من MyFatoorah عن كل فواتير هذا الطلب غير المؤكدة. أي دفعة مؤكدة تُطبق فورًا: تُمنح الصلاحيات إن كان الطلب غير مدفوع، وتُسجل كدفعة زائدة إن كان مكتملًا."
               confirmLabel="تحقق الآن"
             />
           ) : null
@@ -325,6 +328,12 @@ export default async function AdminOrderPage({ params }: { params: Promise<{ id:
           </div>
         ) : null}
       </Section>
+
+      {extras.length ? (
+        <Section title="دفعات زائدة على هذا الطلب" description="استرداد الدفعة الزائدة لا يغيّر الطلب ولا وصول الطالب ولا الأرباح." icon={<Banknote />} tone="coral">
+          <ExtraPaymentsList extras={extras} canRefund={cfg.enabled} />
+        </Section>
+      ) : null}
 
       <Section title="الاسترداد" icon={<RotateCcw />} tone="violet" description="تسجيل الاسترداد يسحب صلاحيات المنتجات المرتبطة بهذا الطلب ويُحفظ في سجل التدقيق.">
         {refunds.length ? (

@@ -1,8 +1,11 @@
 import { requireOwnerPage } from "@/server/auth/permissions";
 import Link from "next/link";
-import { CircleCheck, Clock3, FlaskConical, Package, Receipt, ShieldAlert } from "lucide-react";
+import { Banknote, CircleCheck, Clock3, FlaskConical, Package, Receipt, ShieldAlert } from "lucide-react";
 import { listAdminOrders } from "@/server/admin/records";
 import { openPaymentAlerts } from "@/server/payments/monitoring";
+import { openExtraPayments } from "@/server/payments/extras";
+import { paymentsConfig } from "@/server/payments/service";
+import { ExtraPaymentsList } from "./_components/extra-payments";
 import { resolvePaymentAlertAction } from "./actions";
 import { AdminPageHeader, Section } from "@/components/admin/page-header";
 import { ConfirmButton } from "@/components/admin/confirm-button";
@@ -27,7 +30,7 @@ export default async function AdminOrdersPage({ searchParams }: { searchParams: 
   const sp = await searchParams;
   const status = ORDER_STATUSES.includes(sp.status as never) ? sp.status : undefined;
   const test = sp.test === "real" || sp.test === "test" ? sp.test : undefined;
-  const [orders, alerts] = await Promise.all([listAdminOrders({ q: sp.q?.slice(0, 80), status, test }), openPaymentAlerts()]);
+  const [orders, alerts, extras] = await Promise.all([listAdminOrders({ q: sp.q?.slice(0, 80), status, test }), openPaymentAlerts(), openExtraPayments()]);
   const filtered = Boolean(sp.q || status || test);
   const paid = orders.filter((o) => o.status === "paid").length;
   const pending = orders.filter((o) => o.status === "pending").length;
@@ -129,6 +132,12 @@ export default async function AdminOrdersPage({ searchParams }: { searchParams: 
               );
             })}
           </ul>
+        </Section>
+      ) : null}
+
+      {extras.length ? (
+        <Section id="extra-payments" title="دفعات زائدة" description="مبالغ أكدتها البوابة ولا تكمل طلبًا. استرداد الدفعة لا يغيّر الطلب ولا وصول الطالب ولا الأرباح." icon={<Banknote />} tone="coral">
+          <ExtraPaymentsList extras={extras} canRefund={paymentsConfig().enabled} showOrder />
         </Section>
       ) : null}
 

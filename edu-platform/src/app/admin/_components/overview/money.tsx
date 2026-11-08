@@ -17,6 +17,9 @@ export const SALE: CountWord = { one: "عملية بيع", two: "عمليتا ب
 /** «تنبيه واحد / تنبيهان / ٣ تنبيهات / ١١ تنبيهًا» */
 export const ALERT: CountWord = { one: "تنبيه", two: "تنبيهان", plural: "تنبيهات", acc: "تنبيهًا" };
 
+/** «دفعة زائدة واحدة / دفعتان زائدتان / ٣ دفعات زائدة / ١١ دفعة زائدة» */
+export const EXTRA_PAYMENT: CountWord = { one: "دفعة زائدة", two: "دفعتان زائدتان", plural: "دفعات زائدة", acc: "دفعة زائدة", single: "دفعة زائدة واحدة" };
+
 /** «إشعار واحد / إشعاران / ٣ إشعارات / ١١ إشعارًا» */
 export const DELIVERY: CountWord = { one: "إشعار", two: "إشعاران", plural: "إشعارات", acc: "إشعارًا" };
 
