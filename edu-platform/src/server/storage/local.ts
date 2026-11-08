@@ -2,7 +2,7 @@ import "server-only";
 import { createHmac, timingSafeEqual } from "node:crypto";
 import { createReadStream } from "node:fs";
 import { mkdir, readFile, rm, stat, writeFile, open } from "node:fs/promises";
-import { dirname, join, resolve } from "node:path";
+import { dirname, join, resolve, sep } from "node:path";
 import { Readable } from "node:stream";
 import { env } from "../env";
 import { assertSafeKey, type Bucket, type StorageDriver, type UploadTarget } from "./types";
@@ -19,7 +19,7 @@ function pathFor(bucket: Bucket, key: string) {
   assertSafeKey(key);
   const base = join(root(), bucket);
   const full = resolve(base, key);
-  if (!full.startsWith(base + "/")) throw new Error("Invalid storage path");
+  if (!full.startsWith(base + sep)) throw new Error("Invalid storage path");
   return full;
 }
 

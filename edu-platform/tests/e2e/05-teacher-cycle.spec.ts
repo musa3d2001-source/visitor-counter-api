@@ -1,7 +1,6 @@
 import { test, expect, type Page } from "@playwright/test";
-import { mkdirSync } from "node:fs";
+import { mkdirSync, writeFileSync } from "node:fs";
 import { join, resolve } from "node:path";
-import { execFileSync } from "node:child_process";
 import { checkoutAndPay, db, login, loginAdmin, registerStudent } from "./helpers";
 import { E2E_BUNNY } from "./e2e-env";
 
@@ -17,7 +16,14 @@ function clip(seconds: number): string {
   const dir = resolve(__dirname, "../.tmp/e2e-clips");
   mkdirSync(dir, { recursive: true });
   const out = join(dir, `lesson-${seconds}s.mp4`);
-  execFileSync("ffmpeg", ["-y", "-loglevel", "error", "-f", "lavfi", "-i", `testsrc=duration=${seconds}:size=320x240:rate=15`, "-c:v", "libvpx-vp9", "-b:v", "150k", "-pix_fmt", "yuv420p", out]);
+  // حاوية MP4 صغيرة صحيحة البنية (ftyp ثم mdat). محاكي Bunny لا يفك الترميز، فلا حاجة إلى ffmpeg.
+  const u32 = (n: number) => {
+    const b = Buffer.alloc(4);
+    b.writeUInt32BE(n);
+    return b;
+  };
+  const payload = Buffer.alloc(seconds * 4096, 0x5a);
+  writeFileSync(out, Buffer.concat([u32(24), Buffer.from("ftypisom"), u32(512), Buffer.from("isommp42"), u32(payload.length + 8), Buffer.from("mdat"), payload]));
   return out;
 }
 
