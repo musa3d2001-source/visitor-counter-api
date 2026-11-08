@@ -8,7 +8,8 @@ import { getUserOrder } from "@/server/commerce/orders";
 import { sql } from "@/server/db";
 import { getSettings } from "@/server/platform/settings";
 import { paymentsConfig } from "@/server/payments/service";
-import { retryPaymentAction, refreshOrderStatusAction } from "../../checkout/actions";
+import { canSayNothingWasCharged } from "@/server/payments/extras";
+import { cancelOrderAction, retryPaymentAction, refreshOrderStatusAction } from "../../checkout/actions";
 import { PaymentUnavailableNotice, realContactLinks } from "@/components/site/payment-unavailable-notice";
 import { Alert } from "@/components/ui/alert";
 import { Badge } from "@/components/ui/badge";
@@ -30,6 +31,13 @@ const HERO = {
   pending: { bg: "linear-gradient(150deg, #ffe08a, #ffc531 50%, #f5a70f)", dark: false },
   failed: { bg: "linear-gradient(150deg, #d9402f, #b4322a 55%, #8a221d)", dark: true },
   other: { bg: "linear-gradient(150deg, #8f7be8, #5a3fc9 55%, #3e2a96)", dark: true },
+} as const;
+
+/** سبب إغلاق الطلب كما يراه الطالب */
+const CLOSED_COPY = {
+  expired: { title: "انتهت مدة هذا الطلب", body: "مرت ٧٢ ساعة دون تأكيد دفع، فأغلقنا الطلب." },
+  student_cancelled: { title: "ألغيت هذا الطلب", body: "يمكنك إنشاء طلب جديد من السلة متى شئت." },
+  already_owned: { title: "هذا المنتج في مكتبتك", body: "أصبح أحد منتجات هذا الطلب في مكتبتك، فأغلقنا الطلب حتى لا تدفع مرتين." },
 } as const;
 
 function itemLook(type: string) {
@@ -57,6 +65,10 @@ export default async function OrderPage({ params, searchParams }: { params: Prom
   const unpaid = order.status === "pending" || order.status === "failed";
   const hasContact = realContactLinks(settings).length > 0;
   const showHelp = unpaid && hasContact;
+  // هذه الجملة لا تُقال إلا بعد فحص كل الفواتير لدى البوابة
+  const nothingCharged = await canSayNothingWasCharged(order.id);
+  const [extraPayment] = await sql`select 1 from payment_extras where order_id = ${order.id} and state not in ('refunded', 'dismissed') limit 1`;
+  const closedCopy = order.status === "cancelled" && order.closed_reason ? CLOSED_COPY[order.closed_reason] : null;
 
   return (
     <div className="bg-sunny">
@@ -103,13 +115,15 @@ export default async function OrderPage({ params, searchParams }: { params: Prom
                   <div className="mt-6 flex flex-wrap justify-center gap-3 sm:justify-start">
                     <form action={refreshOrderStatusAction}>
                       <input type="hidden" name="orderId" value={order.id} />
-                      <SubmitButton variant="outline" size="lg">
+                      <SubmitButton size="lg">
                         <RotateCcw aria-hidden /> تحديث الحالة
                       </SubmitButton>
                     </form>
                     <form action={retryPaymentAction}>
                       <input type="hidden" name="orderId" value={order.id} />
-                      <SubmitButton size="lg">إكمال الدفع</SubmitButton>
+                      <SubmitButton variant="outline" size="lg">
+                        إكمال الدفع
+                      </SubmitButton>
                     </form>
                   </div>
                 </>
@@ -119,16 +133,44 @@ export default async function OrderPage({ params, searchParams }: { params: Prom
                     لم تكتمل عملية الدفع
                   </h1>
                   <p className="mt-2 max-w-2xl text-[1.05rem] leading-8 text-white/90">
-                    {payment?.error_message ? `السبب: ${payment.error_message}. ` : ""}لم يتم خصم أي مبلغ مقابل هذا الطلب.{paymentsOn ? " يمكنك المحاولة مرة أخرى." : ""}
+                    {payment?.error_message ? `السبب: ${payment.error_message}. ` : ""}
+                    {nothingCharged
+                      ? `لم يتم خصم أي مبلغ مقابل هذا الطلب.${paymentsOn ? " يمكنك المحاولة مرة أخرى." : ""}`
+                      : paymentsOn
+                        ? "إذا خُصم مبلغ من حسابك، اضغط «تحديث الحالة» لنتحقق منه لدى بوابة الدفع."
+                        : "إذا خُصم مبلغ من حسابك، تواصل معنا واذكر رقم الطلب."}
                   </p>
                   {paymentsOn ? (
-                    <form action={retryPaymentAction} className="mt-6 flex justify-center sm:justify-start">
-                      <input type="hidden" name="orderId" value={order.id} />
-                      <SubmitButton size="xl" variant="light">
-                        <RotateCcw aria-hidden /> إعادة محاولة الدفع
-                      </SubmitButton>
-                    </form>
+                    <div className="mt-6 flex flex-wrap justify-center gap-3 sm:justify-start">
+                      <form action={retryPaymentAction}>
+                        <input type="hidden" name="orderId" value={order.id} />
+                        <SubmitButton size="xl" variant="light">
+                          <RotateCcw aria-hidden /> إعادة محاولة الدفع
+                        </SubmitButton>
+                      </form>
+                      <form action={refreshOrderStatusAction}>
+                        <input type="hidden" name="orderId" value={order.id} />
+                        <SubmitButton size="xl" variant="outline">
+                          تحديث الحالة
+                        </SubmitButton>
+                      </form>
+                    </div>
                   ) : null}
+                </>
+              ) : closedCopy ? (
+                <>
+                  <h1 className="font-display text-[clamp(1.9rem,1.3rem+2.4vw,3rem)] leading-tight font-black" data-testid="order-closed">
+                    {closedCopy.title}
+                  </h1>
+                  <p className="mt-2 max-w-2xl text-[1.05rem] leading-8 text-white/90">
+                    {closedCopy.body}
+                    {nothingCharged ? " لم يتم خصم أي مبلغ مقابل هذا الطلب." : ""}
+                  </p>
+                  <div className="mt-6 flex flex-wrap justify-center gap-3 sm:justify-start">
+                    <Button asChild size="lg" variant="light">
+                      <Link href={order.closed_reason === "already_owned" ? "/library" : "/cart"}>{order.closed_reason === "already_owned" ? "افتح مكتبتي" : "العودة إلى السلة"}</Link>
+                    </Button>
+                  </div>
                 </>
               ) : (
                 <>
@@ -148,11 +190,35 @@ export default async function OrderPage({ params, searchParams }: { params: Prom
 
         {unpaid && !paymentsOn ? <PaymentUnavailableNotice settings={settings} className="mt-6 no-print" /> : null}
 
+        {sp.from === "open-order" && unpaid ? (
+          <Alert tone="info" className="mt-6 no-print" title="لديك طلب مفتوح لهذا المنتج">
+            أكمل الدفع من هنا، أو ألغِ الطلب لتبدأ من جديد. لا ننشئ طلبًا ثانيًا حتى لا تدفع مرتين.
+          </Alert>
+        ) : null}
+
+        {extraPayment ? (
+          <Alert tone="warning" className="mt-6 no-print" title="وصلتنا دفعة أخرى على هذا الطلب">
+            سجّلناها وسيراجعها فريقنا. إن كان لديك سؤال عنها، تواصل معنا واذكر رقم الطلب <span className="num font-bold">{order.number}</span>.
+          </Alert>
+        ) : null}
+
         {sp.error === "mode" ? (
           <Alert tone="danger" className="mt-6 no-print" title="لا يمكن إكمال دفع هذا الطلب">
-            أُنشئ هذا الطلب في وضع دفع مختلف عن الوضع الحالي. لم يتم خصم أي مبلغ، ويمكنك إنشاء طلب جديد من <Link href="/cart">السلة</Link>.
+            أُنشئ هذا الطلب في وضع دفع مختلف عن الوضع الحالي. يمكنك إنشاء طلب جديد من <Link href="/cart">السلة</Link>.
           </Alert>
-        ) : sp.error ? (
+        ) : sp.error === "inprogress" ? (
+          <Alert tone="warning" className="mt-6 no-print" title="توجد عملية دفع لم تكتمل بعد">
+            انتظر قليلًا ثم اضغط «تحديث الحالة». لا ننشئ عملية دفع جديدة قبل أن تتضح نتيجتها.
+          </Alert>
+        ) : sp.error === "check" ? (
+          <Alert tone="warning" className="mt-6 no-print" title="تعذر التأكد من حالة الدفع الآن">
+            لم تصلنا إجابة كاملة من بوابة الدفع. حاول بعد قليل.
+          </Alert>
+        ) : sp.error === "rate" ? (
+          <Alert tone="warning" className="mt-6 no-print">
+            محاولات كثيرة. حاول بعد قليل.
+          </Alert>
+        ) : sp.error && sp.error !== "closed" ? (
           <Alert tone="danger" className="mt-6 no-print">
             تعذر بدء الدفع حاليًا. حاول بعد قليل.
           </Alert>
@@ -235,6 +301,12 @@ export default async function OrderPage({ params, searchParams }: { params: Prom
               <Button asChild variant="outline">
                 <Link href="/account">كل طلباتي</Link>
               </Button>
+              {unpaid && paymentsOn ? (
+                <form action={cancelOrderAction}>
+                  <input type="hidden" name="orderId" value={order.id} />
+                  <SubmitButton variant="ghost">إلغاء هذا الطلب</SubmitButton>
+                </form>
+              ) : null}
             </div>
           </section>
 
