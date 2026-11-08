@@ -10,7 +10,7 @@ import {
   type MfPaymentStatus,
   type WebhookV2Body,
 } from "@/server/payments/myfatoorah";
-import { simSignPaymentWebhook } from "../mocks/myfatoorah-simulator";
+import { simSignDisputeWebhook, simSignPaymentWebhook } from "../mocks/myfatoorah-simulator";
 
 const body: WebhookV2Body = {
   Event: { Code: 1, Name: "PAYMENT_STATUS_CHANGED" },
@@ -36,6 +36,27 @@ describe("MyFatoorah Webhook V2 signature", () => {
   it("refund event fields", () => {
     const b = { Event: { Code: 2, Name: "REFUND_STATUS_CHANGED" }, Data: { Refund: { Id: 5, Status: "REFUNDED" }, Amount: { ValueInBaseCurrency: "1.500" }, ReferencedInvoice: { Id: 77 } } };
     expect(webhookV2SigningString(b)).toBe("Refund.Id=5,Refund.Status=REFUNDED,Amount.ValueInBaseCurrency=1.500,ReferencedInvoice.Id=77");
+  });
+
+  it("dispute event fields, exactly as in the official Webhook Signature page", () => {
+    const b = {
+      Event: { Code: 6, Name: "DISPUTE_STATUS_CHANGED" },
+      Data: {
+        Dispute: { DisputeTransactionId: 112, Status: "PENDING" },
+        Invoice: { Id: "5897264", Status: "PAID", ExternalIdentifier: "1hGonC7bf2vNuJWuTgCGURYzi6Yu" },
+        Transaction: { Status: "SUCCESS", PaymentId: "07075897264282534874" },
+      },
+    };
+    expect(webhookV2SigningString(b)).toBe(
+      "Dispute.DisputeTransactionId=112,Dispute.Status=PENDING,Invoice.Id=5897264,Invoice.Status=PAID,Transaction.Status=SUCCESS,Transaction.PaymentId=07075897264282534874,Invoice.ExternalIdentifier=1hGonC7bf2vNuJWuTgCGURYzi6Yu",
+    );
+    expect(signWebhookV2(b, "my-secret")).toBe(simSignDisputeWebhook(b.Data, "my-secret"));
+  });
+
+  it("supplier update request event fields, as in the official page", () => {
+    expect(webhookV2SigningString({ Event: { Code: 7, Name: "SUPPLIER_UPDATE_REQUEST_CHANGED" }, Data: { Supplier: { Code: 236 }, RequestStatus: { Status: "APPROVED" } } })).toBe(
+      "Supplier.Code=236,RequestStatus.Status=APPROVED",
+    );
   });
 
   it("unknown event code is not signable", () => {

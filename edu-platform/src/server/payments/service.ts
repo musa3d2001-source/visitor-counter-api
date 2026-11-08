@@ -11,9 +11,11 @@ import {
   isKuwaitiDinarDisplay,
   sanitizeCustomerName,
   verifyWebhookV2Signature,
+  webhookV2SigningString,
   type MfPaymentMethod,
   type WebhookV2Body,
 } from "./myfatoorah";
+import { WEBHOOK_STALE_CLAIM_MINUTES, raiseDisputeAlert, recordWebhookRejection, type WebhookRejectionReason } from "./monitoring";
 
 /**
  * خدمة الدفع — قواعد حاسمة:
@@ -26,7 +28,7 @@ import {
 const DEFAULT_URLS = { sandbox: "https://apitest.myfatoorah.com", live: "https://api.myfatoorah.com" } as const;
 
 export type PaymentsConfig =
-  | { enabled: true; environment: "sandbox" | "live"; baseUrl: string; apiKey: string; webhookSecret: string | null }
+  | { enabled: true; environment: "sandbox" | "live"; baseUrl: string; apiKey: string; webhookSecret: string }
   | { enabled: false; environment: "none"; reason: string };
 
 export function paymentsConfig(): PaymentsConfig {
@@ -36,13 +38,16 @@ export function paymentsConfig(): PaymentsConfig {
   if (e.PAYMENTS_MODE === "live") {
     if (!e.MYFATOORAH_LIVE_CONFIRMED) return { enabled: false, environment: "none", reason: "وضع الإنتاج يتطلب تأكيدًا صريحًا" };
     if (!e.MYFATOORAH_WEBHOOK_SECRET) return { enabled: false, environment: "none", reason: "مفتاح توقيع Webhook مطلوب في الإنتاج" };
+  } else if (!e.MYFATOORAH_WEBHOOK_SECRET) {
+    return { enabled: false, environment: "none", reason: "مفتاح توقيع Webhook مطلوب حتى في الوضع التجريبي" };
   }
+  const webhookSecret = e.MYFATOORAH_WEBHOOK_SECRET as string;
   const environment = e.PAYMENTS_MODE;
   const baseUrl = e.MYFATOORAH_BASE_URL ?? DEFAULT_URLS[environment];
   if (environment === "live" && /apitest\./.test(baseUrl)) {
     return { enabled: false, environment: "none", reason: "رابط بوابة الدفع لا يطابق وضع الإنتاج" };
   }
-  return { enabled: true, environment, baseUrl, apiKey: e.MYFATOORAH_API_KEY, webhookSecret: e.MYFATOORAH_WEBHOOK_SECRET ?? null };
+  return { enabled: true, environment, baseUrl, apiKey: e.MYFATOORAH_API_KEY, webhookSecret };
 }
 
 function client(cfg: Extract<PaymentsConfig, { enabled: true }>) {
@@ -187,44 +192,67 @@ export async function verifyAndApplyPayment(key: { paymentId?: string; invoiceId
   return { state: "pending", orderId: order.id };
 }
 
+const isRecord = (v: unknown): v is Record<string, unknown> => typeof v === "object" && v !== null && !Array.isArray(v);
+
 /**
  * معالجة Webhook V2 من MyFatoorah:
- * - رفض أي طلب بتوقيع غير صحيح
- * - منع المعالجة المكررة لنفس الحدث (event_key فريد)
+ * - رفض أي طلب بتوقيع غير صحيح، مع تسجيل الرفض في حلقة ثابتة الحجم (دون جسم الطلب)
+ * - الوثائق لا تذكر ترويسة إصدار: غيابها مقبول، ونرفض فقط قيمة صريحة غير v2
+ * - منع المعالجة المكررة لنفس الحدث (event_key فريد) بمطالبة ذرّية،
+ *   والحدث الذي تعطلت معالجته أكثر من ٥ دقائق يمكن إعادة معالجته
  * - إعادة الاستعلام من البوابة لتحديد الحالة الفعلية
  */
 export async function handleMyFatoorahWebhook(
   rawBody: string,
   headers: Headers,
 ): Promise<{ status: number; result: string }> {
-  const cfg = paymentsConfig();
-  if (!cfg.enabled) return { status: 503, result: "payments disabled" };
-  const version = (headers.get("myfatoorah-webhook-version") ?? "").toLowerCase();
-  const signature = headers.get("myfatoorah-signature");
-  let body: WebhookV2Body;
-  try {
-    body = JSON.parse(rawBody) as WebhookV2Body;
-  } catch {
-    return { status: 400, result: "invalid json" };
-  }
-  if (version !== "v2" || !body?.Event || !body?.Data) return { status: 400, result: "unsupported webhook" };
+  const reject = async (reason: WebhookRejectionReason, status: number, result: string, parsed?: unknown) => {
+    await recordWebhookRejection({ reason, httpStatus: status, rawBody, headers, parsed });
+    return { status, result };
+  };
 
-  const secret = cfg.webhookSecret;
-  const valid = secret ? verifyWebhookV2Signature(body, signature, secret) : false;
-  if (!valid) {
+  const cfg = paymentsConfig();
+  if (!cfg.enabled) return reject("payments_disabled", 503, "payments disabled");
+  const signature = headers.get("myfatoorah-signature");
+  let parsed: unknown;
+  try {
+    parsed = JSON.parse(rawBody);
+  } catch {
+    return reject("invalid_json", 400, "invalid json");
+  }
+  const version = (headers.get("myfatoorah-webhook-version") ?? "").trim().toLowerCase();
+  if (version && version !== "v2") return reject("unsupported_version", 400, "unsupported webhook", parsed);
+  if (!isRecord(parsed) || !isRecord(parsed.Event) || !isRecord(parsed.Data)) {
+    // حدث V1 يأتي بـ Event نصي أو EventType
+    const v1 = isRecord(parsed) && (typeof parsed.Event === "string" || "EventType" in parsed);
+    return reject(v1 ? "unsupported_version" : "unsupported_shape", 400, "unsupported webhook", parsed);
+  }
+  const body = parsed as WebhookV2Body;
+
+  if (!signature?.trim()) return reject("missing_signature", 401, "invalid signature", body);
+  if (webhookV2SigningString(body) === null) return reject("unsupported_event", 401, "invalid signature", body);
+  if (!verifyWebhookV2Signature(body, signature, cfg.webhookSecret)) {
     console.warn("[webhook] invalid signature");
-    return { status: 401, result: "invalid signature" };
+    return reject("invalid_signature", 401, "invalid signature", body);
   }
 
   const eventKey = createHash("sha256").update(`${body.Event.Code}|${signature}|${rawBody}`).digest("hex");
-  const inserted = await sql<{ id: string }[]>`
-    insert into payment_events (provider, event_key, event_name, payload, signature_valid)
-    values ('myfatoorah', ${eventKey}, ${String(body.Event.Name ?? body.Event.Code)}, ${sql.json(body as never)}, true)
-    on conflict (event_key) do nothing
+  // مطالبة ذرّية: نسخة واحدة فقط تعالج الحدث، ويمكن إعادة المطالبة بحدث عالق منذ أكثر من ٥ دقائق
+  const claimed = await sql<{ id: string }[]>`
+    insert into payment_events (provider, event_key, event_name, payload, signature_valid, claimed_at)
+    values ('myfatoorah', ${eventKey}, ${String(body.Event.Name ?? body.Event.Code)}, ${sql.json(body as never)}, true, now())
+    on conflict (event_key) do update set claimed_at = now(), result = null
+      where payment_events.processed_at is null
+        and (payment_events.claimed_at is null or payment_events.claimed_at < now() - make_interval(mins => ${WEBHOOK_STALE_CLAIM_MINUTES}))
     returning id
   `;
-  if (inserted.length === 0) return { status: 200, result: "duplicate ignored" };
-  const eventId = inserted[0].id;
+  if (claimed.length === 0) {
+    const [existing] = await sql<{ processed_at: Date | null }[]>`select processed_at from payment_events where event_key = ${eventKey}`;
+    if (existing?.processed_at) return { status: 200, result: "duplicate ignored" };
+    // ليس 200: البوابة تتوقف عن الإرسال عند النجاح، ولو تعطلت المعالجة الجارية لضاع الحدث
+    return { status: 409, result: "in progress" };
+  }
+  const eventId = claimed[0].id;
 
   let result = "ignored";
   try {
@@ -246,12 +274,13 @@ export async function handleMyFatoorahWebhook(
         `;
       }
       result = `refund ${refundStatus}`;
+    } else if (Number(body.Event.Code) === 6) {
+      result = await raiseDisputeAlert(body, eventKey);
     }
   } catch (err) {
     result = `error: ${err instanceof Error ? err.message : String(err)}`.slice(0, 300);
-    await sql`update payment_events set result = ${result}, processed_at = now() where id = ${eventId}`;
-    // نسمح بإعادة المحاولة من البوابة بحذف قيد التكرار لهذا الحدث
-    await sql`delete from payment_events where id = ${eventId}`;
+    // نُبقي الحدث ونحرر المطالبة كي تنجح إعادة إرسال البوابة فورًا
+    await sql`update payment_events set result = ${result}, claimed_at = null where id = ${eventId}`;
     return { status: 500, result };
   }
   await sql`update payment_events set result = ${result}, processed_at = now() where id = ${eventId}`;

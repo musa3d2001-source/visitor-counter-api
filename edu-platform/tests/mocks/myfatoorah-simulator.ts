@@ -324,7 +324,7 @@ export async function startSimulator(opts: SimulatorOptions): Promise<Simulator>
     const signature = simSignPaymentWebhook(payload.Data, secret);
     if (o.tamper) payload.Data.Invoice.Status = payload.Data.Invoice.Status === "PAID" ? "PENDING" : "PAID";
     const headers = new Headers({ "content-type": "application/json", "MyFatoorah-Signature": signature });
-    headers.set("MyFatoorah-Webhook-Version", o.versionHeader ?? "v2");
+    if (o.versionHeader !== undefined) headers.set("MyFatoorah-Webhook-Version", o.versionHeader);
     return { body: JSON.stringify(payload), headers };
   };
 

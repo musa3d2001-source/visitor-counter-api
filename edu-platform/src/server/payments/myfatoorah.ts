@@ -233,6 +233,8 @@ const V2_SIGNED_FIELDS: Record<number, string[]> = {
   3: ["Deposit.Reference", "Deposit.ValueInBaseCurrency", "Deposit.NumberOfTransactions"],
   4: ["Supplier.Code", "KycDecision.Status"],
   5: ["Recurring.Id", "Recurring.Status", "Recurring.InitialInvoiceId"],
+  6: ["Dispute.DisputeTransactionId", "Dispute.Status", "Invoice.Id", "Invoice.Status", "Transaction.Status", "Transaction.PaymentId", "Invoice.ExternalIdentifier"],
+  7: ["Supplier.Code", "RequestStatus.Status"],
 };
 
 export function webhookV2SigningString(body: WebhookV2Body): string | null {

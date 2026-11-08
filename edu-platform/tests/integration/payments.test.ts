@@ -318,7 +318,8 @@ describe("Webhook V2", () => {
       verifyAndApplyPayment({ paymentId }),
     ]);
     const webhookResults = results.slice(0, 3).map((r) => (r as { result: string }).result);
-    expect(webhookResults.filter((r) => r === "duplicate ignored")).toHaveLength(2);
+    // نسخة واحدة تعالج الحدث؛ والبقية إما 409 (ما زالت المعالجة جارية) أو 200 (انتهت)
+    expect(webhookResults.filter((r) => r === "duplicate ignored" || r === "in progress")).toHaveLength(2);
     const changed = results.filter((r) => ("changed" in r && r.changed) || ("result" in r && r.result === "paid"));
     expect(changed).toHaveLength(1);
     expect(await activeEntitlements(user.id)).toEqual([product.id]);
@@ -370,7 +371,7 @@ describe("Webhook V2", () => {
     forged.Data.Invoice.Status = "PAID";
     forged.Data.Transaction.Status = "SUCCESS";
     const { simSignPaymentWebhook } = await import("../mocks/myfatoorah-simulator");
-    const headers = new Headers({ "MyFatoorah-Signature": simSignPaymentWebhook(forged.Data, WEBHOOK_SECRET), "MyFatoorah-Webhook-Version": "v2" });
+    const headers = new Headers({ "MyFatoorah-Signature": simSignPaymentWebhook(forged.Data, WEBHOOK_SECRET) });
     expect(await handleMyFatoorahWebhook(JSON.stringify(forged), headers)).toEqual({ status: 200, result: "failed" });
     expect(await activeEntitlements(user.id)).toEqual([]);
   });
