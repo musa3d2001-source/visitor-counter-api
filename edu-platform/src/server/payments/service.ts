@@ -8,6 +8,7 @@ import {
   MyFatoorahClient,
   MyFatoorahError,
   interpretPaymentStatus,
+  isKuwaitiDinarDisplay,
   sanitizeCustomerName,
   verifyWebhookV2Signature,
   type MfPaymentMethod,
@@ -94,7 +95,7 @@ export async function startPayment(order: OrderRow, paymentMethodId: number | nu
     ...(phone ? { MobileCountryCode: "+965", CustomerMobile: phone } : {}),
     CustomerReference: order.number,
     UserDefinedField: payment.id,
-    Language: "ar" as const,
+    Language: "AR" as const,
     CallBackUrl: `${appUrl}/payment/return`,
     ErrorUrl: `${appUrl}/payment/return`,
     SourceInfo: "edu-platform",
@@ -148,8 +149,7 @@ export async function verifyAndApplyPayment(key: { paymentId?: string; invoiceId
     return { state: "invalid", error: "الفاتورة لا تخص هذا الطلب" };
   }
   const invoiceFils = kwdNumberToFils(Number(status.InvoiceValue));
-  const displayCurrency = (status.InvoiceDisplayValue ?? "").split(" ").pop()?.trim();
-  if (invoiceFils !== order.total_fils || invoiceFils !== payment.amount_fils || (displayCurrency && displayCurrency !== "KWD")) {
+  if (invoiceFils !== order.total_fils || invoiceFils !== payment.amount_fils || !isKuwaitiDinarDisplay(status.InvoiceDisplayValue)) {
     await sql`update payments set error_message = 'amount/currency mismatch', last_gateway_status = ${sql.json(status as never)} where id = ${payment.id}`;
     return { state: "invalid", error: "المبلغ لا يطابق الطلب" };
   }

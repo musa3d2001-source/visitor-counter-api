@@ -2,6 +2,7 @@ import { createHmac } from "node:crypto";
 import { describe, expect, it } from "vitest";
 import {
   interpretPaymentStatus,
+  isKuwaitiDinarDisplay,
   sanitizeCustomerName,
   signWebhookV2,
   verifyWebhookV2Signature,
@@ -72,7 +73,7 @@ function status(partial: Partial<MfPaymentStatus>): MfPaymentStatus {
     CreatedDate: "",
     ExpiryDate: "",
     InvoiceValue: 3,
-    InvoiceDisplayValue: "3.000 KWD",
+    InvoiceDisplayValue: "3.000 KD",
     CustomerName: null,
     CustomerEmail: null,
     UserDefinedField: null,
@@ -81,7 +82,7 @@ function status(partial: Partial<MfPaymentStatus>): MfPaymentStatus {
   };
 }
 const tx = (PaymentId: string, TransactionStatus: string, Error: string | null = null) =>
-  ({ PaymentId, TransactionStatus, Error, TransactionDate: "", PaymentGateway: "KNET", ReferenceId: null, TrackId: null, TransactionId: null, AuthorizationId: null, TransationValue: "3.000", PaidCurrency: "KWD", PaidCurrencyValue: "3.000" }) as MfPaymentStatus["InvoiceTransactions"][number];
+  ({ PaymentId, TransactionStatus, Error, TransactionDate: "", PaymentGateway: "KNET", ReferenceId: null, TrackId: null, TransactionId: null, AuthorizationId: null, TransationValue: "3.000", PaidCurrency: "KD", PaidCurrencyValue: "3.000" }) as MfPaymentStatus["InvoiceTransactions"][number];
 
 describe("interpretPaymentStatus (same rules as official library)", () => {
   it("Paid + Succss transaction → paid", () => {
@@ -105,6 +106,18 @@ describe("interpretPaymentStatus (same rules as official library)", () => {
   it("InProgress / no transactions → pending", () => {
     expect(interpretPaymentStatus(status({ InvoiceTransactions: [tx("1", "InProgress")] }), "1").state).toBe("pending");
     expect(interpretPaymentStatus(status({})).state).toBe("pending");
+  });
+});
+
+describe("isKuwaitiDinarDisplay (InvoiceDisplayValue)", () => {
+  it("accepts the documented KD samples and the ISO spelling", () => {
+    for (const v of ["1.000 KD", "100.000 KD", "12,345.000 KD", "3.000 KWD", "3.000 kd", "  3.000   KD  "]) expect(isKuwaitiDinarDisplay(v)).toBe(true);
+  });
+  it("rejects any other currency, and text with no clear currency", () => {
+    for (const v of ["3.000 USD", "3.000 SAR", "3.000 SR", "3.000 KDX", "3.000", "3.000KD"]) expect(isKuwaitiDinarDisplay(v)).toBe(false);
+  });
+  it("an absent value is not a foreign currency (InvoiceValue is in the account's KWD base currency)", () => {
+    for (const v of ["", "   ", null, undefined]) expect(isKuwaitiDinarDisplay(v)).toBe(true);
   });
 });
 

@@ -34,6 +34,7 @@ export type MfPaymentMethod = {
   CurrencyIso: string;
   ImageUrl: string;
   IsEmbeddedSupported?: boolean;
+  PaymentCurrencyIso?: string;
 };
 
 export type MfTransaction = {
@@ -135,7 +136,7 @@ export class MyFatoorahClient {
   }
 
   async executePayment(input: ExecuteInput & { PaymentMethodId: number }) {
-    return this.call<{ InvoiceId: number; PaymentURL: string; CustomerReference: string | null; UserDefinedField: string | null }>(
+    return this.call<{ InvoiceId: number; IsDirectPayment?: boolean; PaymentURL: string; CustomerReference: string | null; UserDefinedField: string | null; RecurringId?: string | null }>(
       "/v2/ExecutePayment",
       input,
     );
@@ -153,13 +154,21 @@ export class MyFatoorahClient {
   }
 
   async makeRefund(input: { key: string; keyType: "PaymentId" | "InvoiceId"; amountKwd: string; comment: string }) {
-    return this.call<{ RefundId: number; RefundReference: string; Amount: number; Comment: string }>("/v2/MakeRefund", {
+    // لا نرسل عملة: الوثائق تنص على أن مبلغ الاسترداد يُحسب دائمًا بالعملة الأساسية للحساب
+    return this.call<{
+      Key: string;
+      RefundId: number;
+      RefundReference: string;
+      RefundInvoiceId?: number;
+      Amount: number;
+      Comment: string;
+      ExternalIdentifier?: string | null;
+    }>("/v2/MakeRefund", {
       Key: input.key,
       KeyType: input.keyType,
       RefundChargeOnCustomer: false,
       ServiceChargeOnCustomer: false,
       Amount: Number(input.amountKwd),
-      CurrencyIso: "KWD",
       Comment: input.comment,
     });
   }
@@ -174,11 +183,25 @@ export type ExecuteInput = {
   CustomerMobile?: string;
   CustomerReference: string;
   UserDefinedField: string;
-  Language: "ar" | "en";
+  /** القيم الموثقة: AR | EN */
+  Language: "AR" | "EN";
   CallBackUrl: string;
   ErrorUrl: string;
   SourceInfo?: string;
 };
+
+/**
+ * هل تدل قيمة InvoiceDisplayValue على الدينار الكويتي؟
+ * الوثائق تعرضها هكذا: "1.000 KD" و"12,345.000 KD"، ونقبل أيضًا التهجئة ISO: "3.000 KWD".
+ * أي عملة أخرى أو نص بلا عملة نرفضه (عند الشك لا نؤكد الدفع). الحقل الفارغ مقبول
+ * لأن InvoiceValue تأتي دائمًا بالعملة الأساسية للحساب، وهي الدينار.
+ */
+export function isKuwaitiDinarDisplay(displayValue: string | null | undefined): boolean {
+  const text = (displayValue ?? "").trim();
+  if (!text) return true;
+  const unit = text.split(/\s+/).pop()!.toUpperCase();
+  return unit === "KD" || unit === "KWD";
+}
 
 /** الاسم بدون رموز خاصة (نفس قاعدة المكتبة الرسمية) */
 export function sanitizeCustomerName(name: string): string {

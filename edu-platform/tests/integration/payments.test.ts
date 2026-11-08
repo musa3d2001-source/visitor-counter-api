@@ -28,6 +28,7 @@ afterAll(async () => {
 });
 afterEach(() => {
   sim.setAmountTamper(null);
+  sim.setDisplayCurrency(null);
   for (const [k, v] of Object.entries(TEST_ENV)) process.env[k] = v;
   delete process.env.MYFATOORAH_BASE_URL_OVERRIDE;
   resetEnvCache();
@@ -117,7 +118,7 @@ describe("InitiatePayment / ExecutePayment", () => {
       UserDefinedField: pay.id,
       CallBackUrl: "http://localhost:3000/payment/return",
       ErrorUrl: "http://localhost:3000/payment/return",
-      Language: "ar",
+      Language: "AR",
       MobileCountryCode: "+965",
       CustomerMobile: "99887766",
       CustomerName: "سارة أحمد",
@@ -206,6 +207,43 @@ describe("verifyAndApplyPayment (server-side confirmation)", () => {
     expect(await verifyAndApplyPayment({ paymentId })).toEqual({ state: "invalid", error: "المبلغ لا يطابق الطلب" });
     expect((await orderRow(order.id)).status).toBe("pending");
     expect(await activeEntitlements(user.id)).toEqual([]);
+  });
+
+  it("the documented 'x.xxx KD' display value confirms the payment", async () => {
+    const { order, user, product } = await newOrder(3000);
+    const { url } = await startPayment(order, 1);
+    const { paymentId } = await sim.pay(invoiceIdFromUrl(url), "success");
+    const status = await fetch(`${sim.url}/v2/GetPaymentStatus`, {
+      method: "POST",
+      headers: { Authorization: `Bearer ${SIM_API_KEY}`, "Content-Type": "application/json" },
+      body: JSON.stringify({ Key: paymentId, KeyType: "PaymentId" }),
+    });
+    const { Data } = (await status.json()) as { Data: { InvoiceDisplayValue: string; InvoiceTransactions: { Currency: string; PaidCurrency: string }[] } };
+    expect(Data.InvoiceDisplayValue).toBe("3.000 KD");
+    expect(Data.InvoiceTransactions[0]).toMatchObject({ Currency: "KD", PaidCurrency: "KD" });
+    expect(await verifyAndApplyPayment({ paymentId })).toEqual({ state: "paid", orderId: order.id, changed: true });
+    expect(await activeEntitlements(user.id)).toEqual([product.id]);
+  });
+
+  it("the ISO spelling 'x.xxx KWD' also confirms the payment", async () => {
+    const { order, user, product } = await newOrder(3000);
+    const { url } = await startPayment(order, 1);
+    const { paymentId } = await sim.pay(invoiceIdFromUrl(url), "success");
+    sim.setDisplayCurrency("KWD");
+    expect(await verifyAndApplyPayment({ paymentId })).toEqual({ state: "paid", orderId: order.id, changed: true });
+    expect(await activeEntitlements(user.id)).toEqual([product.id]);
+  });
+
+  it("a foreign display currency is rejected, nothing granted", async () => {
+    const { order, user } = await newOrder(3000);
+    const { url } = await startPayment(order, 1);
+    const { paymentId } = await sim.pay(invoiceIdFromUrl(url), "success");
+    sim.setDisplayCurrency("USD");
+    expect(await verifyAndApplyPayment({ paymentId })).toEqual({ state: "invalid", error: "المبلغ لا يطابق الطلب" });
+    expect((await orderRow(order.id)).status).toBe("pending");
+    expect(await activeEntitlements(user.id)).toEqual([]);
+    const [p] = await sql<{ error_message: string }[]>`select error_message from payments where order_id = ${order.id}`;
+    expect(p.error_message).toBe("amount/currency mismatch");
   });
 
   it("an invoice that is not ours (created outside the app) is rejected", async () => {
@@ -372,7 +410,9 @@ describe("refund via gateway", () => {
     const [ref] = await sql<{ status: string; gateway_refund_id: string }[]>`select status, gateway_refund_id from refunds where id = ${r.refundId}`;
     expect(ref).toEqual({ status: "requested", gateway_refund_id: String(gw.RefundId) });
     const req = sim.state.requests.filter((x) => x.path === "/v2/MakeRefund").pop()!;
-    expect(req.body).toMatchObject({ Key: paymentId, KeyType: "PaymentId", Amount: 3, CurrencyIso: "KWD" });
+    expect(req.body).toMatchObject({ Key: paymentId, KeyType: "PaymentId", Amount: 3 });
+    // الوثائق: لا حقل عملة في الاسترداد، فالمبلغ دائمًا بالعملة الأساسية للحساب
+    expect(req.body).not.toHaveProperty("CurrencyIso");
     expect(await activeEntitlements(user.id)).toEqual([]);
   });
 });

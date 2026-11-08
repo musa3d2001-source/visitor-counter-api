@@ -5,17 +5,19 @@
  *
  * لماذا؟ بيئة التطوير هذه لا تستطيع الوصول إلى apitest.myfatoorah.com (الشبكة مقيدة)،
  * لذلك نختبر مسار الدفع كاملًا (إنشاء الفاتورة ← صفحة الدفع ← العودة ← التحقق من الخادم ← Webhook)
- * مقابل محاكٍ محلي يطابق عقد المكتبة الرسمية myfatoorah/library 2.2.10:
+ * مقابل محاكٍ محلي يطابق الوثائق الرسمية (docs.myfatoorah.com) وعقد المكتبة myfatoorah/library 2.2.10:
  *   - POST /v2/InitiatePayment, /v2/ExecutePayment, /v2/SendPayment, /v2/GetPaymentStatus, /v2/MakeRefund
  *   - غلاف الاستجابة: { IsSuccess, Message, ValidationErrors, Data }
  *   - Authorization: Bearer <token>
  *   - InvoiceStatus: Pending | Paid ؛ TransactionStatus: InProgress | Succss | Failed (بنفس تهجئة البوابة "Succss")
- *   - InvoiceDisplayValue بصيغة "3.000 KWD"
- *   - Webhook V2: ترويسات MyFatoorah-Signature و MyFatoorah-Webhook-Version: v2
+ *   - InvoiceDisplayValue بصيغة الوثائق "3.000 KD" و"12,345.000 KD"، وCurrency/PaidCurrency = "KD"
+ *   - Language: AR | EN فقط، وأي قيمة أخرى تُرفض بخطأ تحقق
+ *   - Webhook V2: الترويسة MyFatoorah-Signature فقط (الوثائق لا تذكر أي ترويسة إصدار)
  *     التوقيع = Base64(HMAC-SHA256(secret, "Invoice.Id=..,Invoice.Status=..,Transaction.Status=..,Transaction.PaymentId=..,Invoice.ExternalIdentifier=.."))
  *
  * التطبيق يُوجَّه إليه فقط عبر MYFATOORAH_BASE_URL في بيئة الاختبار. قبل الإطلاق يجب اختبار
  * التكامل مقابل بيئة MyFatoorah التجريبية الحقيقية بمفاتيح التاجر.
+ * فرق مقصود عن البوابة: الاختبارات تعمل على localhost، لذا لا يرفض المحاكي CallBackUrl المحلي.
  */
 import { createHmac, randomInt } from "node:crypto";
 import { createServer, type IncomingMessage, type Server, type ServerResponse } from "node:http";
@@ -72,6 +74,13 @@ export type SimulatorOptions = {
   webhookDelayMs?: number;
 };
 
+export type SimWebhookOptions = {
+  secret?: string;
+  tamper?: boolean;
+  /** ترويسة إصدار صريحة — الوثائق لا تذكر هذه الترويسة، لذا الافتراضي عدم إرسالها */
+  versionHeader?: string;
+};
+
 export type WebhookDelivery = { invoiceId: number; paymentId: string; status: number | null; error?: string; body: string };
 
 export type SimulatorState = {
@@ -87,10 +96,14 @@ export type Simulator = {
   close(): Promise<void>;
   /** يضيف فرقًا (بالفلس) على InvoiceValue في GetPaymentStatus — لاختبار رفض المبلغ غير المطابق */
   setAmountTamper(deltaFils: number | null): void;
+  /** يستبدل عملة InvoiceDisplayValue في GetPaymentStatus (null يعيد "KD" الموثقة) */
+  setDisplayCurrency(label: string | null): void;
   /** محاكاة دفع مباشرة (بدون متصفح) — تُعيد PaymentId */
   pay(invoiceId: number, outcome: "success" | "fail"): Promise<{ paymentId: string; redirectUrl: string }>;
   /** بناء Webhook V2 موقّع لفاتورة/عملية — لاستدعاء معالج Webhook مباشرة في الاختبارات */
-  buildWebhook(invoiceId: number, paymentId: string, opts?: { secret?: string; tamper?: boolean }): { body: string; headers: Headers };
+  buildWebhook(invoiceId: number, paymentId: string, opts?: SimWebhookOptions): { body: string; headers: Headers };
+  /** بناء حدث نزاع (Code 6) موقّع كما في الوثائق */
+  buildDisputeWebhook(invoiceId: number, paymentId: string, dispute: SimDispute, opts?: Omit<SimWebhookOptions, "tamper">): { body: string; headers: Headers };
   lastInvoice(): SimInvoice | undefined;
 };
 
@@ -102,6 +115,10 @@ const METHODS = [
 ];
 
 const kwd = (fils: number) => `${Math.floor(fils / 1000)}.${String(fils % 1000).padStart(3, "0")}`;
+/** بالفواصل كما في أمثلة الوثائق: 12,345.000 */
+const kwdGrouped = (fils: number) => `${Math.floor(fils / 1000).toLocaleString("en-US")}.${String(fils % 1000).padStart(3, "0")}`;
+
+export type SimDispute = { DisputeTransactionId: number; Status: "PENDING" | "RESOLVED" | "LOST"; Type?: string; Reason?: string };
 
 /** نفس منطق MyFatoorahWebhook::checkSignatureValidation في المكتبة الرسمية (تنفيذ مستقل عن كود التطبيق) */
 export function simSignPaymentWebhook(data: { Invoice: Record<string, unknown>; Transaction: Record<string, unknown> }, secret: string): string {
@@ -114,6 +131,24 @@ export function simSignPaymentWebhook(data: { Invoice: Record<string, unknown>; 
     ["Invoice.ExternalIdentifier", v(data.Invoice.ExternalIdentifier)],
   ];
   const output = model.map(([k, val]) => `${k}=${val}`).join(",");
+  return createHmac("sha256", secret).update(output, "utf8").digest("base64");
+}
+
+/** نص التوقيع لحدث النزاع كما في صفحة Webhook Signature الرسمية (تنفيذ مستقل عن كود التطبيق) */
+export function simSignDisputeWebhook(
+  data: { Dispute: Record<string, unknown>; Invoice: Record<string, unknown>; Transaction: Record<string, unknown> },
+  secret: string,
+): string {
+  const v = (x: unknown) => (x === null || x === undefined ? "" : String(x));
+  const output = [
+    `Dispute.DisputeTransactionId=${v(data.Dispute.DisputeTransactionId)}`,
+    `Dispute.Status=${v(data.Dispute.Status)}`,
+    `Invoice.Id=${v(data.Invoice.Id)}`,
+    `Invoice.Status=${v(data.Invoice.Status)}`,
+    `Transaction.Status=${v(data.Transaction.Status)}`,
+    `Transaction.PaymentId=${v(data.Transaction.PaymentId)}`,
+    `Invoice.ExternalIdentifier=${v(data.Invoice.ExternalIdentifier)}`,
+  ].join(",");
   return createHmac("sha256", secret).update(output, "utf8").digest("base64");
 }
 
@@ -152,6 +187,7 @@ export async function startSimulator(opts: SimulatorOptions): Promise<Simulator>
   let nextInvoiceId = 6_400_000 + randomInt(0, 50_000);
   let nextRefundId = 900_000;
   let amountTamper: number | null = null;
+  let displayCurrency: string | null = null;
   let baseUrl = "";
 
   const createInvoice = (b: Record<string, unknown>, paymentMethodId: number | null): SimInvoice => {
@@ -194,6 +230,9 @@ export async function startSimulator(opts: SimulatorOptions): Promise<Simulator>
     if (b.DisplayCurrencyIso !== undefined && b.DisplayCurrencyIso !== "KWD") {
       errors.push({ Name: "DisplayCurrencyIso", Error: "Simulator supports KWD only." });
     }
+    if (b.Language !== undefined && b.Language !== null && b.Language !== "AR" && b.Language !== "EN") {
+      errors.push({ Name: "Language", Error: "The Language field must be EN or AR." });
+    }
     return errors;
   };
 
@@ -214,7 +253,7 @@ export async function startSimulator(opts: SimulatorOptions): Promise<Simulator>
       CustomerMobile: inv.CustomerMobile,
       CustomerEmail: inv.CustomerEmail,
       UserDefinedField: inv.UserDefinedField,
-      InvoiceDisplayValue: `${kwd(shownFils)} KWD`,
+      InvoiceDisplayValue: `${kwdGrouped(shownFils)} ${displayCurrency ?? "KD"}`,
       DueDeposit: 0,
       DepositStatus: "Not Deposited",
       InvoiceItems: [],
@@ -284,11 +323,37 @@ export async function startSimulator(opts: SimulatorOptions): Promise<Simulator>
     const secret = o.secret ?? opts.webhookSecret ?? "";
     const signature = simSignPaymentWebhook(payload.Data, secret);
     if (o.tamper) payload.Data.Invoice.Status = payload.Data.Invoice.Status === "PAID" ? "PENDING" : "PAID";
-    const headers = new Headers({
-      "content-type": "application/json",
-      "MyFatoorah-Signature": signature,
-      "MyFatoorah-Webhook-Version": "v2",
-    });
+    const headers = new Headers({ "content-type": "application/json", "MyFatoorah-Signature": signature });
+    headers.set("MyFatoorah-Webhook-Version", o.versionHeader ?? "v2");
+    return { body: JSON.stringify(payload), headers };
+  };
+
+  const buildDisputeWebhook: Simulator["buildDisputeWebhook"] = (invoiceId, paymentId, dispute, o = {}) => {
+    const inv = state.invoices.get(invoiceId);
+    if (!inv) throw new Error(`unknown invoice ${invoiceId}`);
+    const tx = inv.Transactions.find((t) => t.PaymentId === paymentId);
+    if (!tx) throw new Error(`unknown payment ${paymentId}`);
+    const base = webhookPayload(inv, tx);
+    const payload = {
+      Event: { ...base.Event, Code: 6, Name: "DISPUTE_STATUS_CHANGED", Reference: `WH-D${dispute.DisputeTransactionId}-${dispute.Status}` },
+      Data: {
+        Dispute: {
+          Type: dispute.Type ?? "CHARGEBACK",
+          Status: dispute.Status,
+          CreatedDate: new Date().toISOString(),
+          ChargeBackType: "General",
+          Reason: dispute.Reason ?? "CreditNotProcessed",
+          DisputeTransactionId: dispute.DisputeTransactionId,
+          InvoiceTransactionId: Number(tx.TransactionId),
+        },
+        Invoice: base.Data.Invoice,
+        Transaction: base.Data.Transaction,
+        Customer: base.Data.Customer,
+        Amount: base.Data.Amount,
+      },
+    };
+    const headers = new Headers({ "content-type": "application/json", "MyFatoorah-Signature": simSignDisputeWebhook(payload.Data, o.secret ?? opts.webhookSecret ?? "") });
+    if (o.versionHeader !== undefined) headers.set("MyFatoorah-Webhook-Version", o.versionHeader);
     return { body: JSON.stringify(payload), headers };
   };
 
@@ -325,9 +390,9 @@ export async function startSimulator(opts: SimulatorOptions): Promise<Simulator>
       CustomerServiceCharge: "0.000",
       TotalServiceCharge: "0.000",
       DueValue: kwd(inv.InvoiceValueFils),
-      PaidCurrency: "KWD",
+      PaidCurrency: "KD",
       PaidCurrencyValue: kwd(inv.InvoiceValueFils),
-      Currency: "KWD",
+      Currency: "KD",
       Error: success ? null : "Transaction declined (simulated)",
       ErrorCode: success ? null : "MF020",
       CardNumber: method.PaymentMethodCode === "kn" ? null : "450875xxxxxx1019",
@@ -372,6 +437,7 @@ export async function startSimulator(opts: SimulatorOptions): Promise<Simulator>
               ServiceCharge: 0,
               TotalAmount: amount,
               CurrencyIso: "KWD",
+              PaymentCurrencyIso: "KWD",
               ImageUrl: `https://portal.myfatoorah.com/imgs/payment-methods/${m.PaymentMethodCode}.png`,
             })),
           },
@@ -445,7 +511,15 @@ export async function startSimulator(opts: SimulatorOptions): Promise<Simulator>
         return envelope(res, 200, {
           IsSuccess: true,
           Message: "Refund request submitted successfully",
-          Data: { Key: key, RefundId: refund.RefundId, RefundReference: `RF${refund.RefundId}`, Amount: amountFils / 1000, Comment: refund.Comment },
+          Data: {
+            Key: key,
+            RefundId: refund.RefundId,
+            RefundReference: `RF${refund.RefundId}`,
+            RefundInvoiceId: nextInvoiceId++,
+            Amount: amountFils / 1000,
+            Comment: refund.Comment,
+            ExternalIdentifier: inv.CustomerReference,
+          },
         });
       }
       default:
@@ -525,8 +599,12 @@ ${inv.InvoiceStatus === "Paid" ? `<p data-testid="sim-already-paid">هذه ال�
     setAmountTamper: (d) => {
       amountTamper = d;
     },
+    setDisplayCurrency: (label) => {
+      displayCurrency = label;
+    },
     pay,
     buildWebhook,
+    buildDisputeWebhook,
     lastInvoice: () => [...state.invoices.values()].pop(),
   };
 }
