@@ -1,7 +1,7 @@
 import "server-only";
 import { sql, type Db } from "../db";
 import { audit } from "../platform/audit";
-import { getSettings } from "../platform/settings";
+import { readSettings } from "../platform/settings";
 
 /**
  * السجل المحاسبي لأرباح المعلمين (اختياري لكل معلم — يفعّله المالك بتحديد نسبة):
@@ -79,7 +79,7 @@ export async function recordEarnings(db: Db, order: { id: string; total_fils: nu
   `;
   const eligible = items.some((i) => i.teacher_id && i.share_bps !== null);
   if (!eligible) return 0;
-  const settings = await getSettings();
+  const settings = await readSettings(db);
   const fee = computeOrderFee(order.total_fils, settings.fee_percent_bps, settings.fee_fixed_fils);
   const lines = computeEarningLines(
     items.map((i) => ({ orderItemId: i.id, grossFils: i.unit_price_fils, shareBps: i.teacher_id ? i.share_bps : null })),

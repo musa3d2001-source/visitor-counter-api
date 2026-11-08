@@ -84,15 +84,21 @@ export const DEFAULT_SETTINGS: PlatformSettings = {
   fee_fixed_fils: 0,
 };
 
-export const getSettings = cache(async (): Promise<PlatformSettings> => {
-  const rows = await sql<{ key: string; value: unknown }[]>`select key, value from settings`;
+/**
+ * قراءة الإعدادات عبر اتصال محدد. داخل معاملة مرّر tx: طلب اتصال ثانٍ من الحوض
+ * أثناء حجز المعاملة لاتصالها قد يعلّق تأكيد الدفع عندما يمتلئ الحوض.
+ */
+export async function readSettings(db: Db = sql): Promise<PlatformSettings> {
+  const rows = await db<{ key: string; value: unknown }[]>`select key, value from settings`;
   const merged: Record<string, unknown> = { ...DEFAULT_SETTINGS };
   for (const r of rows) {
     if (r.key in DEFAULT_SETTINGS) merged[r.key] = r.value;
   }
   const parsed = settingsSchema.safeParse(merged);
   return parsed.success ? parsed.data : DEFAULT_SETTINGS;
-});
+}
+
+export const getSettings = cache((): Promise<PlatformSettings> => readSettings());
 
 export async function saveSettings(patch: Partial<PlatformSettings>, actorId: string, db: Db = sql) {
   const current = await getSettings();
