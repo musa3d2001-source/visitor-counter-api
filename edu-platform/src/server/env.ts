@@ -42,6 +42,8 @@ const schema = z.object({
     .transform((v) => v === "true"),
   /** يضبطه Vercel تلقائيًا: production | preview | development */
   VERCEL_ENV: z.string().optional(),
+  /** سر وظائف Cron: يرسله Vercel في Authorization: Bearer. غيابه يعني رفض كل استدعاء */
+  CRON_SECRET: z.string().optional(),
 
   MAIL_DRIVER: z.enum(["log", "smtp"]).default("log"),
   SMTP_HOST: z.string().optional(),
