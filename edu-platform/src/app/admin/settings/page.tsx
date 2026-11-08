@@ -3,8 +3,12 @@ import Image from "next/image";
 import { CircleCheck, CreditCard, Database, Image as ImageIcon, TriangleAlert, Video } from "lucide-react";
 import { getSettings } from "@/server/platform/settings";
 import { paymentsConfig } from "@/server/payments/service";
+import { webhookDeliveryStatus } from "@/server/payments/monitoring";
 import { bunnyConfigured } from "@/server/video/bunny";
+import { count } from "@/lib/design";
+import { WEBHOOK_REJECTION_LABELS } from "@/lib/labels";
 import { filsToKwdString } from "@/lib/money";
+import { formatDateTime } from "@/lib/utils";
 import { env } from "@/server/env";
 import { storage } from "@/server/storage";
 import { AdminPageHeader, Section } from "@/components/admin/page-header";
@@ -14,6 +18,7 @@ import { QuickAction } from "@/components/admin/confirm-button";
 import { StatusPill } from "@/components/admin/status-badge";
 import { LogoMark } from "@/components/art";
 import { PageBand } from "../_components/overview/bands";
+import { DELIVERY } from "../_components/overview/money";
 import { removeLogoAction, saveSettingsAction } from "./actions";
 
 export const metadata = { title: "إعدادات المنصة" };
@@ -45,6 +50,7 @@ export default async function SettingsPage() {
   const s = await getSettings();
   const e = env();
   const cfg = paymentsConfig();
+  const delivery = await webhookDeliveryStatus();
   const logoUrl = s.logo_key ? storage().publicUrl(s.logo_key) : null;
   const webhookUrl = `${e.APP_URL.replace(/\/$/, "")}/api/payments/myfatoorah/webhook`;
   const callbackUrl = `${e.APP_URL.replace(/\/$/, "")}/payment/return`;
@@ -113,6 +119,12 @@ export default async function SettingsPage() {
               <Row label="مفتاح API" ok={Boolean(e.MYFATOORAH_API_KEY)} text={e.MYFATOORAH_API_KEY ? "مضبوط" : "غير مضبوط"} />
               <Row label="مفتاح توقيع Webhook" ok={Boolean(e.MYFATOORAH_WEBHOOK_SECRET)} text={e.MYFATOORAH_WEBHOOK_SECRET ? "مضبوط" : "غير مضبوط"} />
               {e.PAYMENTS_MODE === "live" ? <Row label="تأكيد الإنتاج" ok={e.MYFATOORAH_LIVE_CONFIRMED} text={e.MYFATOORAH_LIVE_CONFIRMED ? "مؤكد" : "غير مؤكد"} /> : null}
+              <Row label="آخر إشعار صحيح من البوابة" ok={Boolean(delivery.lastValid)} text={delivery.lastValid ? formatDateTime(delivery.lastValid.at) : "لم يصل بعد"} />
+              <Row label="إشعارات مرفوضة (٢٤ ساعة)" ok={delivery.rejectedLast24h === 0} text={delivery.rejectedLast24h ? count(delivery.rejectedLast24h, DELIVERY) : "لا يوجد"} />
+              {delivery.lastRejected ? (
+                <Row label="آخر سبب رفض" ok={false} text={`${WEBHOOK_REJECTION_LABELS[delivery.lastRejected.reason] ?? delivery.lastRejected.reason}، ${formatDateTime(delivery.lastRejected.at)}`} />
+              ) : null}
+              {delivery.stuckEvents ? <Row label="إشعارات عالقة بانتظار إعادة الإرسال" ok={false} text={count(delivery.stuckEvents, DELIVERY)} /> : null}
             </ul>
             <div className="mt-4 space-y-3">
               <Url label="رابط Webhook (يُضاف في لوحة MyFatoorah، الإصدار V2):" url={webhookUrl} />

@@ -137,6 +137,27 @@ export const ORDER_STATUS_LABELS: Record<OrderStatus, string> = {
   refunded: "مسترد",
 };
 
+/** القيم الموثقة في حدث DISPUTE_STATUS_CHANGED */
+export const DISPUTE_TYPE_LABELS: Record<string, string> = {
+  CHARGEBACK: "رد مبلغ من البنك",
+  DOCUMENTREQUEST: "طلب مستندات",
+  FRAUDALERT: "تنبيه احتيال",
+  UNVERIFY: "عدم تحقق",
+};
+export const DISPUTE_STATUS_LABELS: Record<string, string> = { PENDING: "قيد المتابعة", RESOLVED: "تمت التسوية", LOST: "خُسر النزاع" };
+
+/** أسباب رفض إشعارات Webhook (تظهر للمالك في الإعدادات) */
+export const WEBHOOK_REJECTION_LABELS: Record<string, string> = {
+  payments_disabled: "الدفع غير مفعّل",
+  body_too_large: "حجم أكبر من المسموح",
+  invalid_json: "محتوى غير صالح",
+  unsupported_version: "إصدار غير مدعوم",
+  unsupported_shape: "صيغة غير مدعومة",
+  missing_signature: "بدون توقيع",
+  unsupported_event: "حدث غير معروف",
+  invalid_signature: "توقيع غير صحيح",
+};
+
 export const PAYMENT_STATUS_LABELS: Record<string, string> = {
   initiated: "تم الإنشاء",
   pending: "قيد المعالجة",

@@ -25,6 +25,8 @@ import {
 } from "lucide-react";
 import { getAdminOrder } from "@/server/admin/records";
 import { paymentsConfig } from "@/server/payments/service";
+import { openPaymentAlerts } from "@/server/payments/monitoring";
+import { Alert } from "@/components/ui/alert";
 import { Section } from "@/components/admin/page-header";
 import { EmptyValue, InfoList } from "@/components/admin/data-list";
 import { OrderStatusBadge, PaymentStatusBadge, StatusPill, TestBadge } from "@/components/admin/status-badge";
@@ -34,7 +36,7 @@ import type { AdminTone } from "@/components/admin/tones";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { filsToKwdString } from "@/lib/money";
-import { PRODUCT_TYPE_LABELS, PAYMENT_STATUS_LABELS, type ProductType } from "@/lib/labels";
+import { DISPUTE_STATUS_LABELS, DISPUTE_TYPE_LABELS, PRODUCT_TYPE_LABELS, PAYMENT_STATUS_LABELS, type ProductType } from "@/lib/labels";
 import { displayPhone } from "@/lib/phone";
 import { count, W } from "@/lib/design";
 import { formatDateTime } from "@/lib/utils";
@@ -61,6 +63,7 @@ export default async function AdminOrderPage({ params }: { params: Promise<{ id:
   const data = await getAdminOrder(id);
   if (!data) notFound();
   const { order, items, payments, events, refunds } = data;
+  const alerts = await openPaymentAlerts({ orderId: order.id });
   const cfg = paymentsConfig();
   const pendingInvoice = order.status !== "paid" && order.status !== "refunded" ? payments.find((p) => p.provider === "myfatoorah" && p.gateway_invoice_id) : null;
   const tone = orderTone(order.status);
@@ -127,6 +130,12 @@ export default async function AdminOrderPage({ params }: { params: Promise<{ id:
         }
         art={<OrdersArt className="size-full motion-safe:animate-bob" />}
       />
+
+      {alerts.map((a) => (
+        <Alert key={a.id} tone="danger" title={`نزاع مفتوح على هذا الطلب: ${DISPUTE_TYPE_LABELS[a.details.type ?? ""] ?? "نزاع على دفعة"}`}>
+          الحالة لدى البوابة: {DISPUTE_STATUS_LABELS[a.details.status ?? ""] ?? a.details.status ?? "غير معروفة"}. لم يتغير الطلب ولا وصول الطالب تلقائيًا. <Link href="/admin/orders#payment-alerts">كل تنبيهات الدفع</Link>
+        </Alert>
+      ))}
 
       <div className="grid items-start gap-6 lg:grid-cols-[minmax(0,1.5fr)_minmax(0,1fr)]">
         <Section title="المنتجات" icon={<ShoppingBag />} tone="sky">

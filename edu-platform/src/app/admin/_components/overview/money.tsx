@@ -14,6 +14,12 @@ export function Kwd({ fils, className, unitClassName }: { fils: number; classNam
 /** «عملية بيع واحدة / عمليتا بيع / ٣ عمليات بيع / ١١ عملية بيع» */
 export const SALE: CountWord = { one: "عملية بيع", two: "عمليتا بيع", plural: "عمليات بيع", acc: "عملية بيع", single: "عملية بيع واحدة" };
 
+/** «تنبيه واحد / تنبيهان / ٣ تنبيهات / ١١ تنبيهًا» */
+export const ALERT: CountWord = { one: "تنبيه", two: "تنبيهان", plural: "تنبيهات", acc: "تنبيهًا" };
+
+/** «إشعار واحد / إشعاران / ٣ إشعارات / ١١ إشعارًا» */
+export const DELIVERY: CountWord = { one: "إشعار", two: "إشعاران", plural: "إشعارات", acc: "إشعارًا" };
+
 /** «عملية واحدة / عمليتان / ٣ عمليات / ١١ عملية» */
 export const OP: CountWord = { one: "عملية", two: "عمليتان", plural: "عمليات", acc: "عملية", oneSuffix: "واحدة" };
 

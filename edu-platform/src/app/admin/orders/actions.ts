@@ -6,6 +6,7 @@ import { parseKwdToFils } from "@/lib/money";
 import { sql } from "@/server/db";
 import { OrderError, refundOrder } from "@/server/commerce/orders";
 import { paymentsConfig, requestGatewayRefund, verifyAndApplyPayment } from "@/server/payments/service";
+import { resolvePaymentAlert } from "@/server/payments/monitoring";
 import { audit } from "@/server/platform/audit";
 import { AdminError, adminAction, isUuid, str } from "@/server/admin/common";
 
@@ -57,6 +58,17 @@ export async function gatewayRefundAction(_p: ActionState, fd: FormData): Promis
     }
     revalidatePath(`/admin/orders/${orderId}`);
     return { ok: true, message: "تم إرسال طلب الاسترداد إلى MyFatoorah. ستتحدث الحالة عند وصول إشعار البوابة." };
+  });
+}
+
+export async function resolvePaymentAlertAction(_p: ActionState, fd: FormData): Promise<ActionState> {
+  return adminAction(async ({ adminId, ip }) => {
+    const alertId = str(fd, "alertId");
+    if (!isUuid(alertId)) throw new AdminError("تنبيه غير صالح");
+    const done = await resolvePaymentAlert({ alertId, adminId, ip });
+    revalidatePath("/admin/orders");
+    revalidatePath("/admin");
+    return done ? { ok: true, message: "أُغلق التنبيه" } : { ok: true, message: "هذا التنبيه مغلق مسبقًا" };
   });
 }
 

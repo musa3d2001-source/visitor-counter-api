@@ -12,6 +12,7 @@ import {
   Plus,
   Receipt,
   Settings,
+  ShieldAlert,
   Ticket,
   Trophy,
   UserRound,
@@ -22,6 +23,7 @@ import { dashboardTotals, latestOrders, salesByDay, topProducts, topTeachers } f
 import { requireStaff, type Actor } from "@/server/auth/permissions";
 import { pendingReviewCount } from "@/server/admin/products";
 import { teacherDashboard } from "@/server/admin/teachers";
+import { openPaymentAlertCount } from "@/server/payments/monitoring";
 import { Button } from "@/components/ui/button";
 import { Eyebrow } from "@/components/ui/section-head";
 import { AdminNotice, MiniStat, MoreLink, Section, StatGrid, StatTile } from "@/components/admin/page-header";
@@ -35,7 +37,7 @@ import { ar, count, W } from "@/lib/design";
 import { PRODUCT_TYPE_LABELS, type ProductType } from "@/lib/labels";
 import { formatDateTime } from "@/lib/utils";
 import { DashHero, HeroChip } from "./_components/overview/bands";
-import { Kwd, CONTENT, SALE, todayLabel } from "./_components/overview/money";
+import { ALERT, Kwd, CONTENT, SALE, todayLabel } from "./_components/overview/money";
 import { QuickTiles } from "./_components/overview/quick-tiles";
 
 export const metadata = { title: "الرئيسية" };
@@ -46,13 +48,14 @@ export default async function AdminDashboard({ searchParams }: { searchParams: P
   const sp = await searchParams;
   const days = [7, 30, 90].includes(Number(sp.days)) ? Number(sp.days) : 30;
   const includeTest = sp.test === "1";
-  const [totals, latest, top, series, pending, teachersTop] = await Promise.all([
+  const [totals, latest, top, series, pending, teachersTop, paymentAlerts] = await Promise.all([
     dashboardTotals(includeTest),
     latestOrders(8, includeTest),
     topProducts(6, includeTest),
     salesByDay(days, includeTest),
     pendingReviewCount(),
     topTeachers(days, includeTest),
+    openPaymentAlertCount(),
   ]);
   const qs = (patch: Record<string, string | undefined>) => {
     const p = new URLSearchParams({ ...(sp.days ? { days: sp.days } : {}), ...(includeTest ? { test: "1" } : {}) });
@@ -102,6 +105,12 @@ export default async function AdminDashboard({ searchParams }: { searchParams: P
           </>
         }
       />
+
+      {paymentAlerts > 0 ? (
+        <AdminNotice href="/admin/orders#payment-alerts" icon={<ShieldAlert />} tone="coral" action="عرض التنبيهات">
+          لديك {count(paymentAlerts, ALERT)} بخصوص المدفوعات بانتظار مراجعتك
+        </AdminNotice>
+      ) : null}
 
       {pending > 0 ? (
         <AdminNotice href="/admin/review" icon={<BadgeCheck />} action="مراجعة الآن">

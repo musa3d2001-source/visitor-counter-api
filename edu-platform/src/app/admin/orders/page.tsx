@@ -1,15 +1,18 @@
 import { requireOwnerPage } from "@/server/auth/permissions";
 import Link from "next/link";
-import { CircleCheck, Clock3, FlaskConical, Package, Receipt } from "lucide-react";
+import { CircleCheck, Clock3, FlaskConical, Package, Receipt, ShieldAlert } from "lucide-react";
 import { listAdminOrders } from "@/server/admin/records";
-import { AdminPageHeader } from "@/components/admin/page-header";
+import { openPaymentAlerts } from "@/server/payments/monitoring";
+import { resolvePaymentAlertAction } from "./actions";
+import { AdminPageHeader, Section } from "@/components/admin/page-header";
+import { ConfirmButton } from "@/components/admin/confirm-button";
 import { FilterBar, FilterSearch, FilterSubmit, ResultCount, Toolbar } from "@/components/admin/filter-bar";
-import { OrderStatusBadge, PaymentStatusBadge, TestBadge } from "@/components/admin/status-badge";
+import { OrderStatusBadge, PaymentStatusBadge, StatusPill, TestBadge, type StatusTone } from "@/components/admin/status-badge";
 import { STRETCHED_FOCUS } from "@/components/admin/tones";
 import { ToneIcon } from "@/components/admin/icon-tile";
 import { EmptyState } from "@/components/ui/empty-state";
 import { Select } from "@/components/ui/form";
-import { ORDER_STATUSES, ORDER_STATUS_LABELS } from "@/lib/labels";
+import { DISPUTE_STATUS_LABELS, DISPUTE_TYPE_LABELS, ORDER_STATUSES, ORDER_STATUS_LABELS } from "@/lib/labels";
 import { count, W } from "@/lib/design";
 import { cn, formatDateTime } from "@/lib/utils";
 import { PeopleBand, BandChip, BandChips } from "../_components/people/band";
@@ -24,7 +27,7 @@ export default async function AdminOrdersPage({ searchParams }: { searchParams: 
   const sp = await searchParams;
   const status = ORDER_STATUSES.includes(sp.status as never) ? sp.status : undefined;
   const test = sp.test === "real" || sp.test === "test" ? sp.test : undefined;
-  const orders = await listAdminOrders({ q: sp.q?.slice(0, 80), status, test });
+  const [orders, alerts] = await Promise.all([listAdminOrders({ q: sp.q?.slice(0, 80), status, test }), openPaymentAlerts()]);
   const filtered = Boolean(sp.q || status || test);
   const paid = orders.filter((o) => o.status === "paid").length;
   const pending = orders.filter((o) => o.status === "pending").length;
@@ -66,6 +69,68 @@ export default async function AdminOrdersPage({ searchParams }: { searchParams: 
           description="كل الطلبات مع حالة الدفع. الطلبات التجريبية (Sandbox) مميزة بشارة."
         />
       </PeopleBand>
+
+      {alerts.length ? (
+        <Section id="payment-alerts" title="تنبيهات الدفع" description="نزاعات أبلغت عنها بوابة الدفع. لا يتغير الطلب ولا وصول الطالب تلقائيًا، والقرار لك." icon={<ShieldAlert />} tone="coral">
+          <ul className="flex flex-col gap-3" aria-label="تنبيهات الدفع المفتوحة" data-testid="payment-alerts">
+            {alerts.map((a) => {
+              const status = a.details.status ?? "";
+              const tone: StatusTone = status === "RESOLVED" ? "success" : status === "LOST" ? "danger" : "warning";
+              return (
+                <li key={a.id} className="flex min-w-0 flex-wrap items-center gap-x-4 gap-y-3 rounded-[1.4rem] border border-[rgb(23_32_38/0.06)] bg-surface p-3.5 shadow-xs sm:p-4">
+                  <ToneIcon tone="coral" size="md" className="max-sm:size-11">
+                    <ShieldAlert />
+                  </ToneIcon>
+                  <div className="min-w-[min(100%,13rem)] flex-1">
+                    <p className="flex flex-wrap items-center gap-1.5 font-display font-extrabold text-ink">
+                      {DISPUTE_TYPE_LABELS[a.details.type ?? ""] ?? "نزاع على دفعة"}
+                      <StatusPill tone={tone}>{DISPUTE_STATUS_LABELS[status] ?? (status || "غير معروفة")}</StatusPill>
+                      {a.order_is_test ? <TestBadge /> : null}
+                    </p>
+                    <p className="text-[0.84rem] leading-6 text-muted">
+                      {a.order_id ? (
+                        <Link href={`/admin/orders/${a.order_id}`} className="num font-bold text-brand-700 hover:underline">
+                          {a.order_number}
+                        </Link>
+                      ) : (
+                        <>فاتورة غير مرتبطة بطلب</>
+                      )}
+                      {a.details.invoiceId ? (
+                        <>
+                          {" · "}فاتورة <span className="num">{a.details.invoiceId}</span>
+                        </>
+                      ) : null}
+                      {a.details.amount ? (
+                        <>
+                          {" · "}
+                          <span className="num">{a.details.amount}</span> {a.details.currency === "KWD" || a.details.currency === "KD" ? "د.ك" : a.details.currency}
+                        </>
+                      ) : null}
+                      {" · "}
+                      <span className="whitespace-nowrap">{formatDateTime(a.updated_at)}</span>
+                    </p>
+                    {a.details.reason ? (
+                      <p className="text-[0.84rem] leading-6 text-ink-soft" dir="ltr">
+                        {a.details.reason}
+                      </p>
+                    ) : null}
+                  </div>
+                  <ConfirmButton
+                    action={resolvePaymentAlertAction}
+                    hidden={{ alertId: a.id }}
+                    label="تمت المراجعة"
+                    icon={<CircleCheck aria-hidden />}
+                    variant="outline"
+                    title="إغلاق هذا التنبيه؟"
+                    description="يختفي التنبيه من القائمة ويُسجَّل الإغلاق في سجل التدقيق، ولا يتغير الطلب ولا وصول الطالب. يعود التنبيه إذا غيّرت البوابة حالة النزاع."
+                    confirmLabel="إغلاق التنبيه"
+                  />
+                </li>
+              );
+            })}
+          </ul>
+        </Section>
+      ) : null}
 
       <div>
         <FilterBar label="تصفية الطلبات">
