@@ -4,7 +4,7 @@ import { redirect } from "next/navigation";
 import { getCartIds, writeCartIds } from "@/server/commerce/cart";
 import { assertUser } from "@/server/auth/guards";
 import { createOrder, completeFreeOrder, getUserOrder, OrderError } from "@/server/commerce/orders";
-import { paymentsConfig, startPayment, verifyAndApplyPayment } from "@/server/payments/service";
+import { PaymentModeMismatchError, paymentsConfig, startPayment, verifyAndApplyPayment } from "@/server/payments/service";
 import { MyFatoorahError } from "@/server/payments/myfatoorah";
 import { hitRateLimit } from "@/server/auth/rate-limit";
 import { sql } from "@/server/db";
@@ -23,7 +23,14 @@ export async function placeOrderAction(_prev: ActionState, fd: FormData): Promis
   let orderId: string;
   let paymentUrl: string | null = null;
   try {
-    const order = await createOrder({ user, productIds: ids, couponCode: coupon, isTest: cfg.enabled && cfg.environment === "sandbox" });
+    const order = await createOrder({
+      user,
+      productIds: ids,
+      couponCode: coupon,
+      isTest: cfg.enabled && cfg.environment === "sandbox",
+      // لا نترك طلبًا معلّقًا لا يمكن دفعه؛ الطلبات المجانية تكتمل كالمعتاد
+      paidCheckoutBlockedReason: cfg.enabled ? undefined : "الدفع الإلكتروني غير متاح حاليًا. تبقى المنتجات في سلتك لتعود إليها لاحقًا.",
+    });
     orderId = order.id;
     if (order.total_fils === 0) {
       await completeFreeOrder(order.id, user.id);
@@ -31,7 +38,6 @@ export async function placeOrderAction(_prev: ActionState, fd: FormData): Promis
       const paidIds = new Set(paid.map((p) => p.product_id));
       await writeCartIds(ids.filter((x) => !paidIds.has(x)));
     } else {
-      if (!cfg.enabled) return { error: `${cfg.reason}. تواصل معنا لإتمام الطلب.` };
       const res = await startPayment(order, methodId);
       paymentUrl = res.url;
     }
@@ -56,8 +62,8 @@ export async function retryPaymentAction(fd: FormData) {
   let url: string;
   try {
     url = (await startPayment(found.order, null)).url;
-  } catch {
-    redirect(`/orders/${found.order.id}?error=payment`);
+  } catch (err) {
+    redirect(`/orders/${found.order.id}?error=${err instanceof PaymentModeMismatchError ? "mode" : "payment"}`);
   }
   redirect(url);
 }

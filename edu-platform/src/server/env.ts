@@ -35,6 +35,13 @@ const schema = z.object({
     .enum(["true", "false"])
     .default("false")
     .transform((v) => v === "true"),
+  /** يسمح بوضع sandbox على نشر NODE_ENV=production بنطاق لا يدل على بيئة اختبار (للتجارب المقصودة فقط) */
+  ALLOW_SANDBOX_ON_PRODUCTION: z
+    .enum(["true", "false"])
+    .default("false")
+    .transform((v) => v === "true"),
+  /** يضبطه Vercel تلقائيًا: production | preview | development */
+  VERCEL_ENV: z.string().optional(),
 
   MAIL_DRIVER: z.enum(["log", "smtp"]).default("log"),
   SMTP_HOST: z.string().optional(),

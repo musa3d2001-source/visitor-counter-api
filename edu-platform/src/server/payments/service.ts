@@ -1,7 +1,7 @@
 import "server-only";
 import { createHash } from "node:crypto";
 import { sql } from "../db";
-import { env } from "../env";
+import { env, type Env } from "../env";
 import { filsToKwdString, kwdNumberToFils } from "@/lib/money";
 import { markOrderPaid, type OrderRow } from "../commerce/orders";
 import {
@@ -31,6 +31,42 @@ export type PaymentsConfig =
   | { enabled: true; environment: "sandbox" | "live"; baseUrl: string; apiKey: string; webhookSecret: string }
   | { enabled: false; environment: "none"; reason: string };
 
+/** كلمات تدل بوضوح على نشر اختباري في الجزء الأول من النطاق. لا نضيف "preview": نطاق الإنتاج الحالي darb-preview.vercel.app */
+const TEST_HOST_WORDS = new Set(["sandbox", "staging", "test", "testing", "dev", "qa"]);
+
+function hostOf(url: string): string | null {
+  try {
+    return new URL(url).hostname.toLowerCase();
+  } catch {
+    return null;
+  }
+}
+
+function isObviousTestHost(appUrl: string, vercelEnv: string | undefined): boolean {
+  const host = hostOf(appUrl);
+  if (!host) return false;
+  if (host.split(".")[0].split("-").some((word) => TEST_HOST_WORDS.has(word))) return true;
+  // APP_URL الافتراضي هو localhost: على نشر Vercel Production لا يُعد دليلًا على بيئة اختبار
+  if (vercelEnv === "production") return false;
+  return host === "localhost" || host.endsWith(".localhost") || host.startsWith("127.") || host === "[::1]" || /\.(test|invalid|example|local)$/.test(host);
+}
+
+/**
+ * الوضع التجريبي لا يعمل على نشر إنتاجي بلا دليل واضح أنه نشر اختباري:
+ * ALLOW_SANDBOX_ON_PRODUCTION=true، أو معاينة Vercel، أو نطاق اختباري صريح.
+ */
+function sandboxBlockedOnProduction(e: Env): boolean {
+  if (e.NODE_ENV !== "production" || e.ALLOW_SANDBOX_ON_PRODUCTION) return false;
+  if (e.VERCEL_ENV === "preview" || e.VERCEL_ENV === "development") return false;
+  return !isObviousTestHost(e.APP_URL, e.VERCEL_ENV);
+}
+
+/** أي خادم MyFatoorah غير apitest ينقل أموالًا حقيقية بينما تقول الواجهة إنه لا خصم */
+function isLiveGatewayHost(baseUrl: string): boolean {
+  const host = hostOf(baseUrl);
+  return Boolean(host && host !== "apitest.myfatoorah.com" && (host === "myfatoorah.com" || host.endsWith(".myfatoorah.com")));
+}
+
 export function paymentsConfig(): PaymentsConfig {
   const e = env();
   if (e.PAYMENTS_MODE === "disabled") return { enabled: false, environment: "none", reason: "الدفع الإلكتروني غير مفعّل حاليًا" };
@@ -46,6 +82,12 @@ export function paymentsConfig(): PaymentsConfig {
   const baseUrl = e.MYFATOORAH_BASE_URL ?? DEFAULT_URLS[environment];
   if (environment === "live" && /apitest\./.test(baseUrl)) {
     return { enabled: false, environment: "none", reason: "رابط بوابة الدفع لا يطابق وضع الإنتاج" };
+  }
+  if (environment === "sandbox") {
+    if (isLiveGatewayHost(baseUrl)) return { enabled: false, environment: "none", reason: "رابط بوابة الدفع لا يطابق الوضع التجريبي" };
+    if (sandboxBlockedOnProduction(e)) {
+      return { enabled: false, environment: "none", reason: "الوضع التجريبي محظور على نشر الإنتاج. استخدم PAYMENTS_MODE=live أو اضبط ALLOW_SANDBOX_ON_PRODUCTION=true" };
+    }
   }
   return { enabled: true, environment, baseUrl, apiKey: e.MYFATOORAH_API_KEY, webhookSecret };
 }
@@ -76,12 +118,22 @@ export function resetPaymentMethodsCache() {
   methodsCache = null;
 }
 
+/** طلب أُنشئ في وضع دفع (تجريبي/حقيقي) لا يطابق الوضع الحالي للخادم */
+export class PaymentModeMismatchError extends MyFatoorahError {
+  constructor() {
+    super("وضع الطلب لا يطابق وضع الدفع الحالي");
+    this.name = "PaymentModeMismatchError";
+  }
+}
+
 /** بدء الدفع: إنشاء سجل دفع ثم فاتورة لدى MyFatoorah وإرجاع رابط صفحة الدفع */
 export async function startPayment(order: OrderRow, paymentMethodId: number | null): Promise<{ url: string }> {
   const cfg = paymentsConfig();
   if (!cfg.enabled) throw new MyFatoorahError(cfg.reason);
   if (order.status !== "pending" && order.status !== "failed") throw new MyFatoorahError("حالة الطلب لا تسمح بالدفع");
   if (order.total_fils <= 0) throw new MyFatoorahError("قيمة الطلب غير صالحة للدفع الإلكتروني");
+  // طلب تجريبي لا يُدفع في وضع حقيقي (وإلا مُنح بدفع حقيقي ووُسم تجريبيًا)، والعكس
+  if (order.is_test !== (cfg.environment === "sandbox")) throw new PaymentModeMismatchError();
   // إعادة المحاولة بعد فشل سابق
   if (order.status === "failed") await sql`update orders set status = 'pending' where id = ${order.id} and status = 'failed'`;
 

@@ -45,6 +45,8 @@ export async function createOrder(input: {
   productIds: string[];
   couponCode?: string | null;
   isTest: boolean;
+  /** إن وُجد: الدفع الإلكتروني غير متاح، فيُرفض كل طلب بقيمة أكبر من صفر برسالة للطالب ولا يُكتب شيء */
+  paidCheckoutBlockedReason?: string;
 }): Promise<OrderRow> {
   const cart = await computeCart(input.productIds, input.user.id);
   if (cart.payableLines.length === 0) {
@@ -62,6 +64,7 @@ export async function createOrder(input: {
       couponCode = check.coupon.code;
     }
     const total = cart.subtotalFils - discountFils;
+    if (total > 0 && input.paidCheckoutBlockedReason) throw new OrderError(input.paidCheckoutBlockedReason);
     const [order] = await tx<OrderRow[]>`
       insert into orders (user_id, subtotal_fils, discount_fils, total_fils, coupon_id, coupon_code, is_test,
                           customer_name, customer_email, customer_phone)

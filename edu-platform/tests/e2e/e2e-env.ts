@@ -31,6 +31,8 @@ export const E2E_SERVER_ENV: Record<string, string> = {
   MYFATOORAH_BASE_URL: `http://127.0.0.1:${E2E_SIM_PORT}`,
   MYFATOORAH_API_KEY: E2E_SIM_KEY,
   MYFATOORAH_WEBHOOK_SECRET: E2E_WEBHOOK_SECRET,
+  // الخادم هنا NODE_ENV=production مع بوابة محاكاة: السماح صريح ومقصود
+  ALLOW_SANDBOX_ON_PRODUCTION: "true",
   TRUST_PROXY: "true",
   // الفيديو عبر محاكي Bunny Stream (بديل اختبار مطابق للعقد الموثق)
   VIDEO_PROVIDER: "bunny",
