@@ -1,7 +1,11 @@
 import { createHmac } from "node:crypto";
 import { describe, expect, it } from "vitest";
 import {
+  MyFatoorahError,
+  gatewayExpiryDate,
+  hasOpenTransaction,
   interpretPaymentStatus,
+  isDefiniteGatewayRefusal,
   isKuwaitiDinarDisplay,
   sanitizeCustomerName,
   signWebhookV2,
@@ -127,6 +131,53 @@ describe("interpretPaymentStatus (same rules as official library)", () => {
   it("InProgress / no transactions → pending", () => {
     expect(interpretPaymentStatus(status({ InvoiceTransactions: [tx("1", "InProgress")] }), "1").state).toBe("pending");
     expect(interpretPaymentStatus(status({})).state).toBe("pending");
+  });
+  it("Canceled invoice → expired, not failed: the order stays payable with a new invoice", () => {
+    expect(interpretPaymentStatus(status({ InvoiceStatus: "Canceled" })).state).toBe("expired");
+    expect(interpretPaymentStatus(status({ InvoiceStatus: "canceled", InvoiceTransactions: [tx("1", "Failed", "Declined")] }), "1").state).toBe("expired");
+  });
+  it("a Paid invoice is never read as expired", () => {
+    expect(interpretPaymentStatus(status({ InvoiceStatus: "Paid", InvoiceTransactions: [tx("1", "Succss")] }), "1").state).toBe("paid");
+  });
+  it("Canceled transaction on a Pending invoice is still a failed attempt", () => {
+    expect(interpretPaymentStatus(status({ InvoiceTransactions: [tx("1", "Canceled")] }), "1").state).toBe("failed");
+  });
+});
+
+describe("hasOpenTransaction", () => {
+  it("is true while the bank has not decided", () => {
+    expect(hasOpenTransaction(status({ InvoiceTransactions: [tx("1", "InProgress")] }))).toBe(true);
+    expect(hasOpenTransaction(status({ InvoiceTransactions: [tx("1", "Failed"), tx("2", "Authorize")] }))).toBe(true);
+  });
+  it("is false with nothing open", () => {
+    expect(hasOpenTransaction(status({}))).toBe(false);
+    expect(hasOpenTransaction(status({ InvoiceTransactions: [tx("1", "Failed"), tx("2", "Canceled")] }))).toBe(false);
+  });
+});
+
+describe("gatewayExpiryDate", () => {
+  it("writes Kuwait wall-clock time with the explicit offset", () => {
+    expect(gatewayExpiryDate(new Date("2026-11-09T15:30:45.900Z"))).toBe("2026-11-09T18:30:45+03:00");
+  });
+  it("crosses midnight correctly", () => {
+    expect(gatewayExpiryDate(new Date("2026-12-31T22:15:00Z"))).toBe("2027-01-01T01:15:00+03:00");
+  });
+  it("is the same instant when read back", () => {
+    const at = new Date("2026-11-09T15:30:45.000Z");
+    expect(Date.parse(gatewayExpiryDate(at))).toBe(at.getTime());
+  });
+});
+
+describe("isDefiniteGatewayRefusal", () => {
+  it("a reply under 500 is a refusal", () => {
+    expect(isDefiniteGatewayRefusal(new MyFatoorahError("x", 400))).toBe(true);
+    expect(isDefiniteGatewayRefusal(new MyFatoorahError("x", 200))).toBe(true);
+  });
+  it("a network failure or a 5xx is unknown", () => {
+    expect(isDefiniteGatewayRefusal(new MyFatoorahError("x"))).toBe(false);
+    expect(isDefiniteGatewayRefusal(new MyFatoorahError("x", 500))).toBe(false);
+    expect(isDefiniteGatewayRefusal(new MyFatoorahError("x", 503))).toBe(false);
+    expect(isDefiniteGatewayRefusal(new Error("x"))).toBe(false);
   });
 });
 

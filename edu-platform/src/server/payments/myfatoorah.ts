@@ -8,6 +8,7 @@ import { createHmac, timingSafeEqual } from "node:crypto";
  *  - POST /v2/SendPayment       → فاتورة برابط (كل الوسائل) وإرجاع InvoiceURL
  *  - POST /v2/GetPaymentStatus  → الاستعلام عن الحالة من الخادم (مصدر الحقيقة)
  *  - POST /v2/MakeRefund        → طلب استرداد
+ *  - POST /v2/GetRefundStatus   → الاستعلام عن حالة الاسترداد
  *  - Webhook V2: الترويسة MyFatoorah-Signature = Base64(HMAC-SHA256(secret, "k=v,k=v,..."))
  *
  * لا تُخزَّن أي بيانات بطاقات — الدفع يتم بالكامل في صفحة MyFatoorah.
@@ -95,7 +96,7 @@ function extractError(json: MfEnvelope<unknown> | null, raw: string): string {
 export class MyFatoorahClient {
   constructor(private readonly cfg: MfConfig) {}
 
-  private async call<T>(path: string, body: unknown): Promise<T> {
+  private async call<T>(path: string, body: unknown, extraHeaders?: Record<string, string>): Promise<T> {
     const controller = new AbortController();
     const timer = setTimeout(() => controller.abort(), this.cfg.timeoutMs ?? 20_000);
     let res: Response;
@@ -106,6 +107,7 @@ export class MyFatoorahClient {
           Authorization: `Bearer ${this.cfg.apiKey}`,
           "Content-Type": "application/json",
           Accept: "application/json",
+          ...extraHeaders,
         },
         body: JSON.stringify(body),
         signal: controller.signal,
@@ -153,7 +155,11 @@ export class MyFatoorahClient {
     return this.call<MfPaymentStatus>("/v2/GetPaymentStatus", { Key: key, KeyType: keyType });
   }
 
-  async makeRefund(input: { key: string; keyType: "PaymentId" | "InvoiceId"; amountKwd: string; comment: string }) {
+  /**
+   * externalIdentifier يربط الاسترداد بسجلنا ليُعثر عليه في GetRefundStatus،
+   * وidempotencyKey (ترويسة موثقة، صالحة ٢٥٠ دقيقة) يجعل إعادة الإرسال بالمفتاح نفسه تعيد الرد الأصلي دون استرداد ثانٍ.
+   */
+  async makeRefund(input: { key: string; keyType: "PaymentId" | "InvoiceId"; amountKwd: string; comment: string; externalIdentifier?: string; idempotencyKey?: string }) {
     // لا نرسل عملة: الوثائق تنص على أن مبلغ الاسترداد يُحسب دائمًا بالعملة الأساسية للحساب
     return this.call<{
       Key: string;
@@ -163,16 +169,37 @@ export class MyFatoorahClient {
       Amount: number;
       Comment: string;
       ExternalIdentifier?: string | null;
-    }>("/v2/MakeRefund", {
-      Key: input.key,
-      KeyType: input.keyType,
-      RefundChargeOnCustomer: false,
-      ServiceChargeOnCustomer: false,
-      Amount: Number(input.amountKwd),
-      Comment: input.comment,
-    });
+    }>(
+      "/v2/MakeRefund",
+      {
+        Key: input.key,
+        KeyType: input.keyType,
+        RefundChargeOnCustomer: false,
+        ServiceChargeOnCustomer: false,
+        Amount: Number(input.amountKwd),
+        Comment: input.comment,
+        ...(input.externalIdentifier ? { ExternalIdentifier: input.externalIdentifier } : {}),
+      },
+      input.idempotencyKey ? { "Idempotency-Key": input.idempotencyKey } : undefined,
+    );
+  }
+
+  async getRefundStatus(key: string, keyType: "InvoiceId" | "RefundId" | "RefundReference") {
+    const data = await this.call<{ RefundStatusResult?: MfRefundStatus[] | null }>("/v2/GetRefundStatus", { Key: key, KeyType: keyType });
+    return data.RefundStatusResult ?? [];
   }
 }
+
+export type MfRefundStatus = {
+  RefundId: number;
+  /** القيم الموثقة: Refunded | Canceled | Pending */
+  RefundStatus: string;
+  InvoiceId: number;
+  Amount: number;
+  RefundReference: string;
+  RefundAmount: number;
+  ExternalIdentifier: string | null;
+};
 
 export type ExecuteInput = {
   InvoiceValue: number;
@@ -188,7 +215,25 @@ export type ExecuteInput = {
   CallBackUrl: string;
   ErrorUrl: string;
   SourceInfo?: string;
+  /** صيغة date-time: متى ينتهي رابط الفاتورة. انظر gatewayExpiryDate */
+  ExpiryDate?: string;
 };
+
+/**
+ * وقت انتهاء الفاتورة بالصيغة التي نرسلها: توقيت الكويت مع إزاحة صريحة (2026-11-09T18:30:00+03:00).
+ * الوثائق تطلب date-time ولا تذكر منطقة زمنية. الإزاحة الصريحة صيغة date-time صحيحة ولا تحتمل التأويل إن قرأتها البوابة كما هي.
+ * لم نرسل Z لأن البوابة إن قرأت الأرقام كوقت محلي للكويت فسينتهي الرابط قبل فتحه. وإن تجاهلت الإزاحة
+ * فالأرقام أصلًا بتوقيت الكويت. أي قراءة خاطئة في الاتجاه الآخر تطيل عمر الرابط فقط، وعندها يبقى منع الدفع المزدوج
+ * قائمًا على فحص كل الفواتير. يجب التأكد من ذلك على بيئة البوابة التجريبية الحقيقية قبل الإطلاق.
+ */
+export function gatewayExpiryDate(at: Date): string {
+  return `${new Date(at.getTime() + 3 * 3600_000).toISOString().slice(0, 19)}+03:00`;
+}
+
+/** رفض صريح من البوابة وصلنا رده: العملية لم تُنفذ. انقطاع الاتصال أو خطأ 5xx نتيجته مجهولة */
+export function isDefiniteGatewayRefusal(err: unknown): boolean {
+  return err instanceof MyFatoorahError && err.status !== undefined && err.status < 500;
+}
 
 /**
  * هل تدل قيمة InvoiceDisplayValue على الدينار الكويتي؟
@@ -262,15 +307,22 @@ export function verifyWebhookV2Signature(body: WebhookV2Body, signature: string 
 export function interpretPaymentStatus(
   data: MfPaymentStatus,
   paymentId?: string,
-): { state: "paid" | "failed" | "pending"; transaction: MfTransaction | null; error: string | null } {
+): { state: "paid" | "failed" | "pending" | "expired"; transaction: MfTransaction | null; error: string | null } {
   const txs = data.InvoiceTransactions ?? [];
   if (data.InvoiceStatus === "Paid" || data.InvoiceStatus === "DuplicatePayment") {
     const ok = txs.find((t) => t.TransactionStatus === "Succss" || t.TransactionStatus === "SUCCESS");
     if (ok) return { state: "paid", transaction: ok, error: null };
   }
+  // Canceled هي القيمة الموثقة الوحيدة لفاتورة أُغلقت دون دفع. نعاملها كانتهاء: الطلب نفسه لا يتغير، ويمكن إنشاء فاتورة جديدة
+  if (/^(canceled|cancelled|expired)$/i.test(data.InvoiceStatus ?? "")) return { state: "expired", transaction: null, error: null };
   const focus = paymentId ? txs.find((t) => t.PaymentId === paymentId) : txs[txs.length - 1];
   if (focus && (focus.TransactionStatus === "Failed" || focus.TransactionStatus === "Canceled")) {
     return { state: "failed", transaction: focus, error: focus.Error || "فشلت عملية الدفع" };
   }
   return { state: "pending", transaction: focus ?? null, error: null };
+}
+
+/** هل لدى البنك عملية لم تُحسم على هذه الفاتورة؟ إنشاء فاتورة جديدة الآن قد ينتهي بخصمين */
+export function hasOpenTransaction(data: MfPaymentStatus): boolean {
+  return (data.InvoiceTransactions ?? []).some((t) => t.TransactionStatus === "InProgress" || t.TransactionStatus === "Authorize");
 }
