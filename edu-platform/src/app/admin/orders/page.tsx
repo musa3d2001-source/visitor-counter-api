@@ -110,8 +110,8 @@ export default async function AdminOrdersPage({ searchParams }: { searchParams: 
                       <span className="whitespace-nowrap">{formatDateTime(a.updated_at)}</span>
                     </p>
                     {a.details.reason ? (
-                      <p className="text-[0.84rem] leading-6 text-ink-soft" dir="ltr">
-                        {a.details.reason}
+                      <p className="text-[0.84rem] leading-6 text-ink-soft">
+                        السبب حسب البوابة: <bdi dir="ltr">{a.details.reason}</bdi>
                       </p>
                     ) : null}
                   </div>
