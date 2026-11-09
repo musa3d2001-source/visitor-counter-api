@@ -11,6 +11,7 @@ import { getSettings } from "../platform/settings";
 import { AdminError } from "./common";
 import { enforceOwnerLimits, generateTemporaryPassword } from "./student-accounts";
 import { randomSuffix } from "@/lib/utils";
+import { REFUND_HOLD_DAYS } from "@/lib/teacher-terms";
 
 /**
  * إدارة المعلمين (للمالك فقط — الاستدعاءات تأتي من إجراءات adminAction):
@@ -48,8 +49,9 @@ export async function listTeachersAdmin(q?: string): Promise<TeacherListRow[]> {
       (select count(*)::int from products p where p.teacher_id = t.id and p.status = 'published') as published_products,
       (select count(*)::int from ${saleLines()} l join orders o on o.id = l.order_id where l.teacher_id = t.id and o.status = 'paid' and not o.is_test) as paid_items,
       (select coalesce(sum(l.gross_fils), 0)::bigint from ${saleLines()} l join orders o on o.id = l.order_id where l.teacher_id = t.id and o.status = 'paid' and not o.is_test) as paid_gross,
-      (select coalesce(sum(te.teacher_fils), 0)::bigint from teacher_earnings te where te.teacher_id = t.id and te.status = 'active' and not te.is_test) as earned,
-      (select coalesce(sum(tp.amount_fils), 0)::bigint from teacher_payouts tp where tp.teacher_id = t.id) as paid_out
+      (select coalesce(sum(te.teacher_fils), 0)::bigint from teacher_earnings te where te.teacher_id = t.id and te.status = 'active' and not te.is_test
+        and te.created_at <= now() - make_interval(days => ${REFUND_HOLD_DAYS})) as earned,
+      (select coalesce(sum(tp.amount_fils), 0)::bigint from teacher_payouts tp where tp.teacher_id = t.id and tp.voided_at is null) as paid_out
     from teachers t left join users u on u.id = t.user_id
     where true ${q ? sql`and (t.display_name ilike ${"%" + q + "%"} or t.slug ilike ${"%" + q + "%"} or u.email ilike ${"%" + q + "%"})` : sql``}
     order by t.sort_order, t.display_name

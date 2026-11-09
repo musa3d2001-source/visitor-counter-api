@@ -48,6 +48,7 @@ import { filsToKwdString } from "@/lib/money";
 import { PRODUCT_TYPE_LABELS } from "@/lib/labels";
 import { ar, count, subjectVars, W } from "@/lib/design";
 import { cn, formatDate, formatDateTime } from "@/lib/utils";
+import { REFUND_HOLD_DAYS } from "@/lib/teacher-terms";
 import {
   enableAccountAction,
   recordPayoutAction,
@@ -57,6 +58,7 @@ import {
   setCanUploadAction,
   switchToManagedAction,
   updateTeacherAction,
+  voidPayoutAction,
 } from "../actions";
 import { BandChip, ProfileHero } from "../../_components/people/band";
 import { TeachersArt } from "../../_components/people/art";
@@ -66,6 +68,12 @@ import { SALE_WORD, sharePct, subjectSlugOf } from "../../_components/people/hel
 export const metadata = { title: "ملف المعلم" };
 
 const METHOD_LABELS: Record<string, string> = { bank_transfer: "تحويل بنكي", cash: "نقدًا", other: "أخرى" };
+
+function EarningStatus({ status, isHeld, heldUntil }: { status: string; isHeld: boolean; heldUntil: Date }) {
+  if (status === "reversed") return <StatusPill tone="danger">معكوس (استرداد)</StatusPill>;
+  if (isHeld) return <StatusPill tone="warning">قيد فترة الاسترداد حتى {formatDate(heldUntil)}</StatusPill>;
+  return <StatusPill tone="success">مستحق</StatusPill>;
+}
 
 export default async function TeacherAdminPage({ params, searchParams }: { params: Promise<{ id: string }>; searchParams: Promise<{ created?: string; test?: string }> }) {
   const owner = await requireOwnerPage();
@@ -303,24 +311,43 @@ export default async function TeacherAdminPage({ params, searchParams }: { param
           </Link>
         }
       >
-        <StatGrid cols={4}>
+        <StatGrid cols={3}>
           <StatCard label="عمليات بيع" tone="green" value={<span>{ar(summary.items)}</span>} hint={count(summary.orders, W.order)} icon={<FileText />} />
           <StatCard label="إجمالي المبيعات" tone="sky" value={<><span className="num">{filsToKwdString(summary.grossFils)}</span> <span className="text-sm text-muted">د.ك</span></>} icon={<Banknote />} />
           <StatCard
-            label="المستحق للمعلم"
+            label="إجمالي أرباح المعلم"
             tone="violet"
             value={<><span className="num">{filsToKwdString(balance.earnedFils)}</span> <span className="text-sm text-muted">د.ك</span></>}
             hint={balance.reversedFils ? `معكوس بسبب استرداد: ${filsToKwdString(balance.reversedFils)}` : undefined}
             icon={<Wallet />}
           />
           <StatCard
-            label="الرصيد غير المسدد"
+            label="قيد فترة الاسترداد"
+            tone="coral"
+            value={<><span className="num" data-testid="teacher-held">{filsToKwdString(balance.heldFils)}</span> <span className="text-sm text-muted">د.ك</span></>}
+            hint={`لا تُدفع قبل مرور ${count(REFUND_HOLD_DAYS, W.day)} على البيع`}
+            icon={<Clock3 />}
+          />
+          <StatCard
+            label="المسدد"
+            tone="teal"
+            value={<><span className="num" data-testid="teacher-paid">{filsToKwdString(balance.paidFils)}</span> <span className="text-sm text-muted">د.ك</span></>}
+            icon={<Landmark />}
+          />
+          <StatCard
+            label="الرصيد المستحق الآن"
             tone="gold"
             value={<><span className={`num ${balance.balanceFils < 0 ? "text-danger" : ""}`} data-testid="teacher-balance">{filsToKwdString(balance.balanceFils)}</span> <span className="text-sm text-muted">د.ك</span></>}
-            hint={`المسدد: ${filsToKwdString(balance.paidFils)} د.ك`}
+            hint="الأرباح بعد فترة الاسترداد ناقص المسدد"
             icon={<Wallet />}
           />
         </StatGrid>
+
+        {balance.balanceFils < 0 ? (
+          <Alert tone="warning" title="المسدد أكبر من الأرباح المتاحة الآن" className="mt-5">
+            الفرق <span className="num">{filsToKwdString(-balance.balanceFils)}</span> د.ك. يحدث هذا عند استرداد طلب بعد تسويته، أو عند تسوية مبلغ ما زال قيد فترة الاسترداد. يُخصم الفرق من أرباح المعلم القادمة، ولا تتحرك أي أموال تلقائيًا.
+          </Alert>
+        ) : null}
 
         <div className="mt-5 flex flex-wrap items-center gap-3 rounded-[1.4rem] border-2 border-dashed border-[#F0C766] bg-[linear-gradient(160deg,#fffaf0,#fff1cf)] p-3.5">
           <ToneIcon tone="gold" size="sm">
@@ -337,12 +364,13 @@ export default async function TeacherAdminPage({ params, searchParams }: { param
             variant="primary"
             size="md"
             title="تسجيل تسوية للمعلم"
-            description="سجّل مبلغًا دفعته للمعلم خارج المنصة (تحويل بنكي أو نقدًا). لا تتم أي تحويلات تلقائية."
+            description={`سجّل مبلغًا دفعته للمعلم خارج المنصة (تحويل بنكي أو نقدًا). لا تتم أي تحويلات تلقائية. الرصيد المستحق الآن ${filsToKwdString(Math.max(balance.balanceFils, 0))} د.ك، ولا يشمل ${filsToKwdString(balance.heldFils)} د.ك قيد فترة الاسترداد. لا تكتب الآيبان أو بيانات الحساب هنا، فالمنصة لا تحفظها.`}
             selectField={{ name: "method", label: "طريقة الدفع", options: Object.entries(METHOD_LABELS).map(([value, label]) => ({ value, label })) }}
             fields={[
-              { name: "amount", label: "المبلغ (د.ك)", placeholder: filsToKwdString(Math.max(balance.balanceFils, 0)), ltr: true },
-              { name: "reference", label: "المرجع (رقم التحويل)", ltr: true },
+              { name: "amount", label: "المبلغ (د.ك)", placeholder: filsToKwdString(Math.max(balance.balanceFils, 0)), ltr: true, testId: "payout-amount" },
+              { name: "reference", label: "المرجع (رقم عملية التحويل)", ltr: true, testId: "payout-reference" },
             ]}
+            checkbox={{ name: "confirmOverBalance", label: "إن كان المبلغ أكبر من الرصيد المستحق الآن، أؤكد تسجيله دفعة زائدة، ويصبح رصيد المعلم سالبًا بالفرق.", testId: "payout-over-balance" }}
             requireReason
             reasonLabel="ملاحظة (إلزامي)"
             confirmLabel="تسجيل التسوية"
@@ -395,7 +423,7 @@ export default async function TeacherAdminPage({ params, searchParams }: { param
                   <TD className="num">{filsToKwdString(e.platform_fils)}</TD>
                   <TD>
                     <div className="flex flex-wrap gap-1">
-                      {e.status === "reversed" ? <StatusPill tone="danger">معكوس (استرداد)</StatusPill> : <StatusPill tone="success">مستحق</StatusPill>}
+                      <EarningStatus status={e.status} isHeld={e.is_held} heldUntil={e.held_until} />
                       {e.is_test ? <StatusPill tone="info">تجريبي</StatusPill> : null}
                     </div>
                   </TD>
@@ -430,7 +458,7 @@ export default async function TeacherAdminPage({ params, searchParams }: { param
                 aside={
                   <>
                     <span className="flex flex-wrap gap-1">
-                      {e.status === "reversed" ? <StatusPill tone="danger">معكوس (استرداد)</StatusPill> : <StatusPill tone="success">مستحق</StatusPill>}
+                      <EarningStatus status={e.status} isHeld={e.is_held} heldUntil={e.held_until} />
                       {e.is_test ? <StatusPill tone="info">تجريبي</StatusPill> : null}
                     </span>
                     <span className="text-end">
@@ -476,11 +504,11 @@ export default async function TeacherAdminPage({ params, searchParams }: { param
               <DataRow
                 key={p.id}
                 leading={
-                  <ToneIcon tone="gold" size="sm">
+                  <ToneIcon tone={p.voided_at ? "coral" : "gold"} size="sm">
                     <Banknote />
                   </ToneIcon>
                 }
-                title={<Kwd fils={p.amount_fils} />}
+                title={<Kwd fils={p.amount_fils} className={p.voided_at ? "text-muted line-through" : undefined} />}
                 sub={
                   <span className="flex flex-wrap items-center gap-x-2">
                     <span>{METHOD_LABELS[p.method] ?? p.method}</span>
@@ -490,12 +518,35 @@ export default async function TeacherAdminPage({ params, searchParams }: { param
                       </span>
                     ) : null}
                     {p.note ? <span className="text-xs">{p.note}</span> : null}
+                    {p.voided_at ? (
+                      <span className="basis-full text-xs">
+                        سبب الإلغاء: {p.void_reason}
+                        {p.voided_by_name ? ` (${p.voided_by_name}، ${formatDateTime(p.voided_at)})` : ""}
+                      </span>
+                    ) : null}
                   </span>
                 }
                 aside={
-                  <span className="text-end text-xs text-muted">
-                    {formatDateTime(p.paid_at)}
-                    {p.created_by_name ? <span className="block">{p.created_by_name}</span> : null}
+                  <span className="flex flex-col items-end gap-1.5 text-end text-xs text-muted">
+                    <span>
+                      {formatDateTime(p.paid_at)}
+                      {p.created_by_name ? <span className="block">{p.created_by_name}</span> : null}
+                    </span>
+                    {p.voided_at ? (
+                      <StatusPill tone="danger">ملغاة</StatusPill>
+                    ) : (
+                      <ConfirmButton
+                        action={voidPayoutAction}
+                        hidden={{ payoutId: p.id }}
+                        label="إلغاء التسوية"
+                        variant="danger-outline"
+                        title="إلغاء هذه التسوية؟"
+                        description={`استخدمها عند تسجيل تسوية بالخطأ. يبقى السطر في السجل ظاهرًا كملغى، ويعود ${filsToKwdString(p.amount_fils)} د.ك إلى رصيد المعلم مرة واحدة. هذا لا يعيد أي مبلغ حُوّل فعلًا.`}
+                        requireReason
+                        reasonLabel="سبب الإلغاء (إلزامي)"
+                        confirmLabel="إلغاء التسوية"
+                      />
+                    )}
                   </span>
                 }
               />

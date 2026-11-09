@@ -7,7 +7,7 @@ import { CircleCheck, LoaderCircle, TriangleAlert } from "lucide-react";
 import type * as React from "react";
 import type { ActionState } from "@/lib/action-state";
 import { Button, type ButtonProps } from "@/components/ui/button";
-import { Input, Select, Textarea } from "@/components/ui/form";
+import { Checkbox, Input, Select, Textarea } from "@/components/ui/form";
 import { cn } from "@/lib/utils";
 
 type ServerAction = (prev: ActionState, fd: FormData) => Promise<ActionState>;
@@ -29,6 +29,7 @@ export function ConfirmButton({
   icon,
   fields,
   selectField,
+  checkbox,
 }: {
   action: ServerAction;
   hidden?: Record<string, string>;
@@ -45,6 +46,8 @@ export function ConfirmButton({
   fields?: { name: string; label: string; placeholder?: string; ltr?: boolean; required?: boolean; autoComplete?: string; maxLength?: number; testId?: string }[];
   /** قائمة اختيار داخل نافذة التأكيد */
   selectField?: { name: string; label: string; options: { value: string; label: string }[] };
+  /** خانة موافقة داخل نافذة التأكيد، والخادم هو من يفرضها */
+  checkbox?: { name: string; label: string; testId?: string };
 }) {
   const { state, formAction, pending, formRef } = usePreservingAction(action);
   const [open, setOpen] = useState(false);
@@ -114,6 +117,7 @@ export function ConfirmButton({
                 <Input id={`${formId}-${f.name}`} name={f.name} form={formId} placeholder={f.placeholder} dir={f.ltr ? "ltr" : undefined} className={f.ltr ? "num text-start" : undefined} required={f.required} autoComplete={f.autoComplete} maxLength={f.maxLength} data-testid={f.testId} />
               </div>
             ))}
+            {checkbox ? <Checkbox name={checkbox.name} form={formId} data-testid={checkbox.testId} className="mt-4 items-start text-[0.85rem] leading-6" label={checkbox.label} /> : null}
             {state?.error ? (
               <p role="alert" className="mt-3 rounded-xl bg-danger-50 px-3 py-2 text-sm font-bold text-danger">
                 {state.error}

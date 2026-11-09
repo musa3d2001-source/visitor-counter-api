@@ -5,7 +5,7 @@ import { redirect } from "next/navigation";
 import { z } from "zod";
 import type { ActionState } from "@/lib/action-state";
 import { emailSchema, fieldErrors, fullNameSchema } from "@/lib/validation";
-import { parseKwdToFils } from "@/lib/money";
+import { filsToKwdString, parseKwdToFils } from "@/lib/money";
 import { AdminError, adminAction, bool, int, isUuid, str } from "@/server/admin/common";
 import {
   createTeacher,
@@ -18,7 +18,7 @@ import {
   updateTeacher,
   type TeacherInput,
 } from "@/server/admin/teachers";
-import { recordPayout } from "@/server/commerce/earnings";
+import { PayoutRefused, recordPayout, voidPayout } from "@/server/commerce/earnings";
 
 /** كل إجراءات هذا الملف للمالك فقط (adminAction يرفض المعلم) */
 
@@ -178,9 +178,39 @@ export async function recordPayoutAction(_prev: ActionState, fd: FormData): Prom
     if (!["bank_transfer", "cash", "other"].includes(method)) throw new AdminError("اختر طريقة التسوية");
     const reference = str(fd, "reference").slice(0, 120);
     const note = str(fd, "reason").slice(0, 500);
-    await recordPayout({ teacherId: id, amountFils: amount, method: method as "bank_transfer" | "cash" | "other", reference, note, ownerId: adminId, ip });
+    try {
+      await recordPayout({ teacherId: id, amountFils: amount, method: method as "bank_transfer" | "cash" | "other", reference, note, ownerId: adminId, ip, confirmOverBalance: bool(fd, "confirmOverBalance") });
+    } catch (err) {
+      throw payoutError(err);
+    }
     revalidatePath(`/admin/teachers/${id}`);
     revalidatePath("/admin/teachers");
     return { ok: true, message: "تم تسجيل التسوية" };
   });
+}
+
+export async function voidPayoutAction(_prev: ActionState, fd: FormData): Promise<ActionState> {
+  return adminAction(async ({ adminId, ip }) => {
+    const id = str(fd, "payoutId");
+    if (!isUuid(id)) throw new AdminError("طلب غير صالح");
+    let teacherId: string;
+    try {
+      teacherId = await voidPayout({ payoutId: id, reason: str(fd, "reason"), ownerId: adminId, ip });
+    } catch (err) {
+      throw payoutError(err);
+    }
+    revalidatePath(`/admin/teachers/${teacherId}`);
+    revalidatePath("/admin/teachers");
+    return { ok: true, message: "تم إلغاء التسوية وعاد مبلغها إلى الرصيد" };
+  });
+}
+
+function payoutError(err: unknown) {
+  if (!(err instanceof PayoutRefused)) return err;
+  if (err.reason === "over_balance") {
+    return new AdminError(`المبلغ أكبر من الرصيد المستحق الآن (${filsToKwdString(Math.max(err.payableFils, 0))} د.ك). راجع المبلغ، أو أشّر خانة التأكيد لتسجيله دفعة زائدة.`);
+  }
+  if (err.reason === "bank_details") return new AdminError("لا تكتب الآيبان أو بيانات الحساب البنكي هنا. اكتب رقم عملية التحويل فقط.");
+  if (err.reason === "void_reason") return new AdminError("اكتب سبب الإلغاء");
+  return new AdminError("هذه التسوية ملغاة مسبقًا أو غير موجودة");
 }

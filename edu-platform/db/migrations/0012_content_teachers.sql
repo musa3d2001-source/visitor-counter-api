@@ -59,3 +59,13 @@ alter table teacher_earnings alter column order_item_id drop not null;
 alter table teacher_earnings add column if not exists order_item_part_id uuid unique references order_item_parts(id) on delete restrict;
 alter table teacher_earnings drop constraint if exists teacher_earnings_one_source;
 alter table teacher_earnings add constraint teacher_earnings_one_source check ((order_item_id is null) <> (order_item_part_id is null));
+
+-- ---------------------------------------------------------------------
+-- إلغاء التسوية: لا يُحذف السطر، ويُستبعد من الرصيد ويبقى ظاهرًا بسبب إلغائه
+-- ---------------------------------------------------------------------
+alter table teacher_payouts add column if not exists voided_at timestamptz;
+alter table teacher_payouts add column if not exists voided_by uuid references users(id) on delete set null;
+alter table teacher_payouts add column if not exists void_reason text;
+alter table teacher_payouts drop constraint if exists teacher_payouts_void_has_reason;
+alter table teacher_payouts add constraint teacher_payouts_void_has_reason
+  check (voided_at is null or (void_reason is not null and char_length(void_reason) between 1 and 500));

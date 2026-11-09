@@ -180,7 +180,9 @@ test.describe("دورة المعلم الكاملة", () => {
     await expect(page.getByTestId("teacher-balance")).toContainText("0.000");
     await page.goto(`/admin/teachers/${teacherId}?test=1`);
     await expect(page.getByText(unitTitle).first()).toBeVisible();
-    await expect(page.getByTestId("teacher-balance")).toContainText("1.400");
+    // البيع الجديد قيد فترة الاسترداد: لا يدخل الرصيد المستحق الآن
+    await expect(page.getByTestId("teacher-held")).toContainText("1.400");
+    await expect(page.getByTestId("teacher-balance")).toContainText("0.000");
     await page.goto("/admin/reports?test=1");
     await expect(page.getByText(teacherName).first()).toBeVisible();
 

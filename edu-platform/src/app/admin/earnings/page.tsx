@@ -1,5 +1,5 @@
 import { notFound, redirect } from "next/navigation";
-import { Banknote, FileText, FlaskConical, HandCoins, Info, Percent, Receipt, Wallet } from "lucide-react";
+import { Banknote, Clock3, FileText, FlaskConical, HandCoins, Info, Landmark, Percent, Receipt, Wallet } from "lucide-react";
 import { requireStaff } from "@/server/auth/permissions";
 import { sql } from "@/server/db";
 import { listEarnings, listPayouts, saleLines, teacherBalance, teacherSalesSummary } from "@/server/commerce/earnings";
@@ -7,12 +7,14 @@ import { AdminPageHeader, Section, StatGrid, StatTile } from "@/components/admin
 import { CellTitle, DataList, DataRow } from "@/components/admin/data-list";
 import { ToneIcon } from "@/components/admin/icon-tile";
 import { StatusPill } from "@/components/admin/status-badge";
+import { Alert } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
 import { EmptyState } from "@/components/ui/empty-state";
 import { Table, TD, TH, THead, TR } from "@/components/ui/table";
-import { ar, count } from "@/lib/design";
+import { ar, count, W } from "@/lib/design";
 import { filsToKwdString } from "@/lib/money";
 import { formatDate, formatDateTime } from "@/lib/utils";
+import { REFUND_HOLD_DAYS } from "@/lib/teacher-terms";
 import { PageBand } from "../_components/overview/bands";
 import { Kwd, PAYOUT, SALE } from "../_components/overview/money";
 
@@ -67,26 +69,24 @@ export default async function TeacherEarningsPage({ searchParams }: { searchPara
         </AdminPageHeader>
       </PageBand>
 
-      <StatGrid>
+      <StatGrid cols={3}>
         <StatTile label="عمليات بيع" value={<span className="num">{ar(summary.items)}</span>} icon={<FileText />} />
         <StatTile label="قيمة المبيعات" value={<Kwd fils={summary.grossFils} />} icon={<Banknote />} />
         {shareOn ? (
           <>
-            <StatTile label="أرباحي المستحقة" value={<Kwd fils={balance.earnedFils} />} hint={`نسبتي ${sharePct}٪ من الصافي`} icon={<Wallet />} />
-            <StatTile
-              label="الرصيد غير المسدد"
-              value={<Kwd fils={balance.balanceFils} />}
-              hint={
-                <>
-                  المسدد: <span className="num">{filsToKwdString(balance.paidFils)}</span> د.ك
-                </>
-              }
-              icon={<HandCoins />}
-              tone="teal"
-            />
+            <StatTile label="إجمالي أرباحي" value={<Kwd fils={balance.earnedFils} />} hint={`نسبتي ${sharePct}٪ من الصافي`} icon={<Wallet />} />
+            <StatTile label="قيد فترة الاسترداد" value={<Kwd fils={balance.heldFils} data-testid="my-held" />} hint={`لا تُدفع قبل مرور ${count(REFUND_HOLD_DAYS, W.day)} على البيع`} icon={<Clock3 />} />
+            <StatTile label="المسدد لي" value={<Kwd fils={balance.paidFils} />} icon={<Landmark />} />
+            <StatTile label="رصيدي المستحق الآن" value={<Kwd fils={balance.balanceFils} data-testid="my-balance" />} hint="الأرباح بعد فترة الاسترداد ناقص المسدد" icon={<HandCoins />} tone="teal" />
           </>
         ) : null}
       </StatGrid>
+
+      {shareOn && balance.balanceFils < 0 ? (
+        <Alert tone="warning" title="ما سُدد لك أكبر من أرباحك المتاحة الآن">
+          الفرق <span className="num">{filsToKwdString(-balance.balanceFils)}</span> د.ك. يحدث هذا عند استرداد طلب بعد تسويته، أو عند تسوية مبلغ ما زال قيد فترة الاسترداد. يُخصم الفرق من أرباحك القادمة.
+        </Alert>
+      ) : null}
 
       {!shareOn ? (
         <p className="flex items-center gap-3 rounded-[1.4rem] border-2 border-sky/20 bg-sky-50 p-4 font-display text-[0.95rem] font-bold text-sky-700">
@@ -98,7 +98,7 @@ export default async function TeacherEarningsPage({ searchParams }: { searchPara
       ) : null}
 
       {shareOn ? (
-        <Section title="تفاصيل الأرباح" description="الصافي = قيمة البيع − حصته من الخصم − الرسوم المعتمدة. المستردات تُعكس تلقائيًا." icon={<Wallet />} tone="gold" flush>
+        <Section title="تفاصيل الأرباح" description={`الصافي = قيمة البيع − حصته من الخصم − الرسوم المعتمدة. تبقى أرباح كل بيع قيد فترة الاسترداد ${count(REFUND_HOLD_DAYS, W.day)} من تأكيد الدفع ثم تدخل رصيدك المستحق، والمستردات تُعكس تلقائيًا.`} icon={<Wallet />} tone="gold" flush>
           {earnings.length === 0 ? (
             <div className="p-4 sm:p-6">
               <EmptyState art="receipt" compact title="لا توجد أرباح بعد." />
@@ -134,7 +134,15 @@ export default async function TeacherEarningsPage({ searchParams }: { searchPara
                     <TD>
                       <span className="num inline-flex min-h-8 items-center rounded-full bg-[#FFF4D6] px-3 font-display font-black text-[#8A5A00]">{filsToKwdString(e.teacher_fils)}</span>
                     </TD>
-                    <TD>{e.status === "reversed" ? <StatusPill tone="danger">معكوس (استرداد)</StatusPill> : <StatusPill tone="success">مستحق</StatusPill>}</TD>
+                    <TD>
+                      {e.status === "reversed" ? (
+                        <StatusPill tone="danger">معكوس (استرداد)</StatusPill>
+                      ) : e.is_held ? (
+                        <StatusPill tone="warning">قيد فترة الاسترداد حتى {formatDate(e.held_until)}</StatusPill>
+                      ) : (
+                        <StatusPill tone="success">مستحق</StatusPill>
+                      )}
+                    </TD>
                   </TR>
                 ))}
               </tbody>
@@ -190,11 +198,11 @@ export default async function TeacherEarningsPage({ searchParams }: { searchPara
                 <DataRow
                   key={p.id}
                   leading={
-                    <ToneIcon tone="green" size="sm">
+                    <ToneIcon tone={p.voided_at ? "coral" : "green"} size="sm">
                       <HandCoins />
                     </ToneIcon>
                   }
-                  title={<Kwd fils={p.amount_fils} className="text-[1.1rem]" />}
+                  title={<Kwd fils={p.amount_fils} className={p.voided_at ? "text-[1.1rem] text-muted line-through" : "text-[1.1rem]"} />}
                   sub={
                     <span className="flex flex-wrap items-center gap-x-3 gap-y-1">
                       <span>{METHOD_LABELS[p.method] ?? p.method}</span>
@@ -205,7 +213,12 @@ export default async function TeacherEarningsPage({ searchParams }: { searchPara
                       ) : null}
                     </span>
                   }
-                  aside={<span className="text-xs whitespace-nowrap text-muted">{formatDateTime(p.paid_at)}</span>}
+                  aside={
+                    <span className="flex flex-col items-end gap-1 text-xs whitespace-nowrap text-muted">
+                      {formatDateTime(p.paid_at)}
+                      {p.voided_at ? <StatusPill tone="danger">ملغاة ولا تُحتسب</StatusPill> : null}
+                    </span>
+                  }
                 />
               ))}
             </DataList>

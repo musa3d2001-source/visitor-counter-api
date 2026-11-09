@@ -128,7 +128,10 @@ describe("الاسترداد، التسوية اليدوية والرصيد", ()
     const unit = await createVideoProduct({ teacherId: teacher.id, priceFils: 4000 });
     const order = await createOrder({ user: await createUser(), productIds: [unit.id], isTest: false });
     await pay(order);
-    expect(await teacherBalance(teacher.id)).toEqual({ earnedFils: 2000, reversedFils: 0, paidFils: 0, balanceFils: 2000, salesCount: 1 });
+    // البيع الجديد داخل فترة الاسترداد، فلا يصح دفعه بعد
+    expect(await teacherBalance(teacher.id)).toEqual({ earnedFils: 2000, heldFils: 2000, reversedFils: 0, paidFils: 0, balanceFils: 0, salesCount: 1 });
+    await sql`update teacher_earnings set created_at = now() - interval '8 days' where order_id = ${order.id}`;
+    expect(await teacherBalance(teacher.id)).toEqual({ earnedFils: 2000, heldFils: 0, reversedFils: 0, paidFils: 0, balanceFils: 2000, salesCount: 1 });
 
     const payoutId = await recordPayout({ teacherId: teacher.id, amountFils: 2000, method: "bank_transfer", reference: "TRX-1", note: "تسوية نوفمبر", ownerId: owner.id });
     expect(payoutId).toMatch(/[0-9a-f-]{36}/);
@@ -139,7 +142,7 @@ describe("الاسترداد، التسوية اليدوية والرصيد", ()
     await applyAcceptedRefund(order.id, owner.id, "طلب العميل");
     const [row] = await earningsOf(order.id);
     expect(row.status).toBe("reversed");
-    expect(await teacherBalance(teacher.id)).toEqual({ earnedFils: 0, reversedFils: 2000, paidFils: 2000, balanceFils: -2000, salesCount: 0 });
+    expect(await teacherBalance(teacher.id)).toEqual({ earnedFils: 0, heldFils: 0, reversedFils: 2000, paidFils: 2000, balanceFils: -2000, salesCount: 0 });
   });
 
   it("rejects invalid payout amounts", async () => {

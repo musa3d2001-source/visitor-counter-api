@@ -382,8 +382,8 @@ async function TeacherHome({ actor }: { actor: Extract<Actor, { kind: "teacher" 
 
       {d.balance.earnedFils > 0 || d.balance.paidFils > 0 ? (
         <StatGrid cols={2}>
-          <StatTile label="أرباحي المستحقة" value={<Kwd fils={d.balance.earnedFils} />} icon={<Wallet />} />
-          <StatTile label="الرصيد غير المسدد" value={<Kwd fils={d.balance.balanceFils} />} icon={<Wallet />} />
+          <StatTile label="إجمالي أرباحي" value={<Kwd fils={d.balance.earnedFils} />} hint={d.balance.heldFils ? <>قيد فترة الاسترداد: <Kwd fils={d.balance.heldFils} unitClassName="text-[var(--tink)]" /></> : undefined} icon={<Wallet />} />
+          <StatTile label="رصيدي المستحق الآن" value={<Kwd fils={d.balance.balanceFils} />} icon={<Wallet />} />
         </StatGrid>
       ) : null}
 

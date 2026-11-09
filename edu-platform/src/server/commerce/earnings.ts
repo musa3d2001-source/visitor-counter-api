@@ -2,6 +2,7 @@ import "server-only";
 import { sql, type Db } from "../db";
 import { audit } from "../platform/audit";
 import { readSettings } from "../platform/settings";
+import { looksLikeBankDetails, REFUND_HOLD_DAYS } from "@/lib/teacher-terms";
 
 /**
  * السجل المحاسبي لأرباح المعلمين (اختياري لكل معلم — يفعّله المالك بتحديد نسبة):
@@ -252,22 +253,28 @@ export async function reverseEarnings(db: Db, orderId: string, reason: string) {
   return rows.length;
 }
 
-export type TeacherBalance = { earnedFils: number; reversedFils: number; paidFils: number; balanceFils: number; salesCount: number };
+/**
+ * earnedFils كل الأرباح النشطة، heldFils ما زال منها داخل فترة الاسترداد، balanceFils ما يصح دفعه الآن.
+ * الرصيد قد يكون سالبًا: استرداد بعد التسوية، أو تسوية سبقت انتهاء الفترة.
+ */
+export type TeacherBalance = { earnedFils: number; heldFils: number; reversedFils: number; paidFils: number; balanceFils: number; salesCount: number };
 
-/** الرصيد: المستحق النشط − المسدد (قد يكون سالبًا إن حدث استرداد بعد التسوية) */
+/** الرصيد المستحق الآن: الأرباح النشطة − المعلق في فترة الاسترداد − التسويات غير الملغاة */
 export async function teacherBalance(teacherId: string, opts: { includeTest?: boolean } = {}, db: Db = sql): Promise<TeacherBalance> {
   const includeTest = opts.includeTest ?? false;
-  const [e] = await db<{ earned: string; reversed: string; sales: number }[]>`
+  const [e] = await db<{ earned: string; held: string; reversed: string; sales: number }[]>`
     select
       coalesce(sum(teacher_fils) filter (where status = 'active'), 0)::bigint as earned,
+      coalesce(sum(teacher_fils) filter (where status = 'active' and created_at > now() - make_interval(days => ${REFUND_HOLD_DAYS})), 0)::bigint as held,
       coalesce(sum(teacher_fils) filter (where status = 'reversed'), 0)::bigint as reversed,
       count(*) filter (where status = 'active')::int as sales
     from teacher_earnings where teacher_id = ${teacherId} and (${includeTest} or not is_test)
   `;
-  const [p] = await db<{ paid: string }[]>`select coalesce(sum(amount_fils), 0)::bigint as paid from teacher_payouts where teacher_id = ${teacherId}`;
+  const [p] = await db<{ paid: string }[]>`select coalesce(sum(amount_fils), 0)::bigint as paid from teacher_payouts where teacher_id = ${teacherId} and voided_at is null`;
   const earned = Number(e.earned);
+  const held = Number(e.held);
   const paid = Number(p.paid);
-  return { earnedFils: earned, reversedFils: Number(e.reversed), paidFils: paid, balanceFils: earned - paid, salesCount: e.sales };
+  return { earnedFils: earned, heldFils: held, reversedFils: Number(e.reversed), paidFils: paid, balanceFils: earned - held - paid, salesCount: e.sales };
 }
 
 export type EarningRow = {
@@ -289,12 +296,17 @@ export type EarningRow = {
   is_test: boolean;
   created_at: Date;
   reversed_at: Date | null;
+  /** هل ما زال السطر داخل فترة الاسترداد، ومتى تنتهي */
+  is_held: boolean;
+  held_until: Date;
 };
 
 export async function listEarnings(teacherId: string, opts: { includeTest?: boolean; from?: Date; to?: Date; limit?: number } = {}, db: Db = sql) {
   return db<EarningRow[]>`
     select te.id, te.order_id, o.number as order_number, te.product_title, root.title as bundle_title, te.teacher_name, te.gross_fils, te.discount_fils, te.fee_fils,
-      te.net_fils, te.share_bps, te.teacher_fils, te.platform_fils, te.status, te.is_test, te.created_at, te.reversed_at
+      te.net_fils, te.share_bps, te.teacher_fils, te.platform_fils, te.status, te.is_test, te.created_at, te.reversed_at,
+      (te.status = 'active' and te.created_at > now() - make_interval(days => ${REFUND_HOLD_DAYS})) as is_held,
+      te.created_at + make_interval(days => ${REFUND_HOLD_DAYS}) as held_until
     from teacher_earnings te join orders o on o.id = te.order_id
       left join order_item_parts part on part.id = te.order_item_part_id
       left join order_items root on root.id = part.order_item_id
@@ -307,16 +319,44 @@ export async function listEarnings(teacherId: string, opts: { includeTest?: bool
   `;
 }
 
+export type PayoutRow = {
+  id: string;
+  amount_fils: number;
+  method: string;
+  reference: string;
+  note: string;
+  paid_at: Date;
+  created_by_name: string | null;
+  voided_at: Date | null;
+  void_reason: string | null;
+  voided_by_name: string | null;
+};
+
 export async function listPayouts(teacherId: string, db: Db = sql) {
-  return db<{ id: string; amount_fils: number; method: string; reference: string; note: string; paid_at: Date; created_by_name: string | null }[]>`
-    select tp.id, tp.amount_fils, tp.method, tp.reference, tp.note, tp.paid_at, u.full_name as created_by_name
-    from teacher_payouts tp left join users u on u.id = tp.created_by
+  return db<PayoutRow[]>`
+    select tp.id, tp.amount_fils, tp.method, tp.reference, tp.note, tp.paid_at, u.full_name as created_by_name,
+      tp.voided_at, tp.void_reason, v.full_name as voided_by_name
+    from teacher_payouts tp left join users u on u.id = tp.created_by left join users v on v.id = tp.voided_by
     where tp.teacher_id = ${teacherId}
     order by tp.paid_at desc
   `;
 }
 
-/** تسجيل تسوية يدوية (تحويل بنكي/نقدي تم خارج المنصة) — للمالك فقط */
+/** رفض تسوية لسبب يخص المالك، والإجراء يحوّله إلى رسالة مفهومة */
+export class PayoutRefused extends Error {
+  constructor(
+    public readonly reason: "over_balance" | "bank_details" | "already_voided" | "void_reason",
+    public readonly payableFils = 0,
+  ) {
+    super(`PAYOUT_REFUSED_${reason}`);
+    this.name = "PayoutRefused";
+  }
+}
+
+/**
+ * تسجيل تسوية يدوية (تحويل بنكي/نقدي تم خارج المنصة) — للمالك فقط.
+ * المبلغ فوق الرصيد المستحق الآن يُرفض ما لم يؤكده المالك صراحة، والفحص تحت قفل صف المعلم حتى لا تمر تسويتان معًا.
+ */
 export async function recordPayout(input: {
   teacherId: string;
   amountFils: number;
@@ -326,11 +366,16 @@ export async function recordPayout(input: {
   paidAt?: Date;
   ownerId: string;
   ip?: string;
+  confirmOverBalance?: boolean;
 }) {
   if (!Number.isInteger(input.amountFils) || input.amountFils <= 0) throw new Error("INVALID_AMOUNT");
+  if (looksLikeBankDetails(input.reference) || looksLikeBankDetails(input.note)) throw new PayoutRefused("bank_details");
   return sql.begin(async (tx) => {
     const [t] = await tx<{ id: string; display_name: string }[]>`select id, display_name from teachers where id = ${input.teacherId} for update`;
     if (!t) throw new Error("TEACHER_NOT_FOUND");
+    const { balanceFils } = await teacherBalance(input.teacherId, {}, tx);
+    const overByFils = Math.max(0, input.amountFils - Math.max(balanceFils, 0));
+    if (overByFils > 0 && !input.confirmOverBalance) throw new PayoutRefused("over_balance", balanceFils);
     const [row] = await tx<{ id: string }[]>`
       insert into teacher_payouts (teacher_id, amount_fils, method, reference, note, paid_at, created_by)
       values (${input.teacherId}, ${input.amountFils}, ${input.method}, ${input.reference}, ${input.note}, ${input.paidAt ?? new Date()}, ${input.ownerId})
@@ -343,12 +388,42 @@ export async function recordPayout(input: {
         entityType: "teacher",
         entityId: input.teacherId,
         reason: input.note || null,
-        metadata: { payoutId: row.id, amountFils: input.amountFils, method: input.method, reference: input.reference },
+        metadata: { payoutId: row.id, amountFils: input.amountFils, method: input.method, reference: input.reference, payableFils: balanceFils, overByFils },
         ip: input.ip,
       },
       tx,
     );
     return row.id;
+  });
+}
+
+/**
+ * إلغاء تسوية سُجلت بالخطأ: السطر يبقى في السجل، ويعود مبلغه للرصيد مرة واحدة.
+ * شرط voided_at is null داخل التحديث نفسه هو ما يمنع الإلغاء مرتين مهما تزامن الطلبان.
+ */
+export async function voidPayout(input: { payoutId: string; reason: string; ownerId: string; ip?: string }) {
+  const reason = input.reason.trim().slice(0, 500);
+  if (!reason) throw new PayoutRefused("void_reason");
+  return sql.begin(async (tx) => {
+    const [row] = await tx<{ id: string; teacher_id: string; amount_fils: number; method: string; reference: string }[]>`
+      update teacher_payouts set voided_at = now(), voided_by = ${input.ownerId}, void_reason = ${reason}
+      where id = ${input.payoutId} and voided_at is null
+      returning id, teacher_id, amount_fils, method, reference
+    `;
+    if (!row) throw new PayoutRefused("already_voided");
+    await audit(
+      {
+        actorId: input.ownerId,
+        action: "teacher.payout_void",
+        entityType: "teacher",
+        entityId: row.teacher_id,
+        reason,
+        metadata: { payoutId: row.id, amountFils: row.amount_fils, method: row.method, reference: row.reference },
+        ip: input.ip,
+      },
+      tx,
+    );
+    return row.teacher_id;
   });
 }
 
