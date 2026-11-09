@@ -1,23 +1,25 @@
 import Link from "next/link";
 import type * as React from "react";
-import { ArrowLeft, CalendarClock, FileLock2, FileText, ListOrdered, MessagesSquare, RotateCcw, ScrollText, type LucideIcon } from "lucide-react";
+import { ArrowLeft, CalendarClock, Copyright, FileLock2, FileText, ListOrdered, MessagesSquare, RotateCcw, ScrollText, type LucideIcon } from "lucide-react";
+import { Alert } from "@/components/ui/alert";
 import { Breadcrumbs } from "@/components/ui/breadcrumbs";
 import { Sparkle } from "@/components/art";
 import { ar, count, SUBJECT_ORDER, subjectVars } from "@/lib/design";
 import { cn } from "@/lib/utils";
 
 /**
- * قالب الصفحات القانونية (الشروط، الخصوصية، الاسترجاع) بأسلوب «الفصل المشمس»:
+ * قالب الصفحات القانونية (الشروط، الخصوصية، الاسترجاع، بلاغات الحقوق) بأسلوب «الفصل المشمس»:
  * شريط عنوان ملون بلون الصفحة + رسم، فهرس ملون مثبت على الحاسوب، أقسام مرقمة في لوح أبيض،
- * ودعوة «تواصل معنا» وروابط الصفحات الأخرى في الأسفل. يُستخدم من الصفحات الثلاث.
+ * ودعوة «تواصل معنا» وروابط الصفحات الأخرى في الأسفل. كل نصوصها مسودات، فتحمل تنبيهًا ظاهرًا حتى يعتمدها محامٍ.
  */
 export type LegalSection = { id: string; title: string; Icon: LucideIcon; body: React.ReactNode };
-export type LegalKey = "terms" | "privacy" | "refund";
+export type LegalKey = "terms" | "privacy" | "refund" | "copyright";
 
 const PAGES: Record<LegalKey, { href: string; title: string; blurb: string; Icon: LucideIcon; tone: string }> = {
   terms: { href: "/terms", title: "الشروط والأحكام", blurb: "الحساب والمحتوى والدفع", Icon: ScrollText, tone: "math" },
   privacy: { href: "/privacy", title: "سياسة الخصوصية", blurb: "ما نجمعه وكيف نحميه", Icon: FileLock2, tone: "english" },
   refund: { href: "/refund-policy", title: "سياسة الاسترجاع", blurb: "متى وكيف يُسترجع المبلغ", Icon: RotateCcw, tone: "arabic" },
+  copyright: { href: "/copyright", title: "بلاغات حقوق المحتوى", blurb: "إن نُشر عملك دون إذنك", Icon: Copyright, tone: "science" },
 };
 
 /** ألوان شريط العنوان: فيروزي للشروط، بنفسجي للخصوصية، شمسي ذهبي للاسترجاع (النص داكن عليه) */
@@ -25,6 +27,7 @@ const BAND: Record<LegalKey, { cls: string; dark: boolean }> = {
   terms: { cls: "bg-teal-night", dark: true },
   privacy: { cls: "bg-[radial-gradient(60%_90%_at_0%_0%,rgb(255_133_184/0.55),transparent_60%),linear-gradient(90deg,#9a6bff,#6a3fe0_50%,#4b2fb0)] text-white", dark: true },
   refund: { cls: "bg-[radial-gradient(55%_90%_at_0%_100%,rgb(255_107_90/0.45),transparent_60%),linear-gradient(90deg,#ff9f43,#ffc531_55%,#ffd25e)] text-[#3d2a00]", dark: false },
+  copyright: { cls: "bg-[radial-gradient(55%_90%_at_0%_0%,rgb(52_217_160/0.4),transparent_60%),linear-gradient(90deg,#0b8a66,#076b4f_55%,#064f3b)] text-white", dark: true },
 };
 
 const SECTION_WORD = { one: "قسم", two: "قسمان", plural: "أقسام", acc: "قسمًا" };
@@ -51,6 +54,7 @@ export function LegalDoc({
   sections,
   updated,
   version,
+  seller = [],
 }: {
   page: LegalKey;
   sub: string;
@@ -60,6 +64,8 @@ export function LegalDoc({
   updated: string;
   /** رقم النسخة التي تُسجل عند الموافقة على هذه الصفحة، إن كانت لها موافقة */
   version?: string;
+  /** ما أدخله المالك من هوية البائع. لا يُعرض شيء إن كان فارغًا */
+  seller?: { key: string; label: string; value: string }[];
 }) {
   const meta = PAGES[page];
   const band = BAND[page];
@@ -117,6 +123,22 @@ export function LegalDoc({
             <DocArt Icon={meta.Icon} tone={meta.tone} />
           </div>
         </header>
+
+        <div className="mt-6 grid gap-3">
+          <Alert tone="warning" title="مسودة بانتظار مراجعة محامٍ" data-testid="legal-draft-notice">
+            لم يُعتمد هذا النص قانونيًا بعد، وقد تتغير صياغته.
+          </Alert>
+          {seller.length ? (
+            <dl className="card-soft flex flex-wrap gap-x-8 gap-y-2 p-4 text-[0.95rem] sm:p-5" data-testid="legal-seller">
+              {seller.map((x) => (
+                <div key={x.key} className="min-w-0">
+                  <dt className="font-display text-[0.85rem] font-extrabold text-ink-soft">{x.label}</dt>
+                  <dd className="break-words text-ink">{x.value}</dd>
+                </div>
+              ))}
+            </dl>
+          ) : null}
+        </div>
 
         <div className="mt-8 grid gap-6 lg:mt-10 lg:grid-cols-[17.5rem_minmax(0,1fr)] lg:gap-10">
           {/* الفهرس */}

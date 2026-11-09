@@ -63,6 +63,7 @@ export async function SiteFooter() {
             { href: "/terms", label: "الشروط والأحكام" },
             { href: "/privacy", label: "سياسة الخصوصية" },
             { href: "/refund-policy", label: "سياسة الاسترجاع" },
+            { href: "/copyright", label: "بلاغات حقوق المحتوى" },
           ]}
         />
       </div>

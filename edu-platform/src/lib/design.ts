@@ -124,6 +124,7 @@ export const W = {
   order: { one: "طلب", two: "طلبان", plural: "طلبات", acc: "طلبًا" },
   student: { one: "طالب", two: "طالبان", plural: "طلاب", acc: "طالبًا" },
   day: { one: "يوم", two: "يومان", plural: "أيام", acc: "يومًا" },
+  session: { one: "جلسة", two: "جلستان", plural: "جلسات", acc: "جلسة", oneSuffix: "واحدة" },
   minute: { one: "دقيقة", two: "دقيقتان", plural: "دقائق", acc: "دقيقة", single: "دقيقة", oneSuffix: "واحدة" },
   hour: { one: "ساعة", two: "ساعتان", plural: "ساعات", acc: "ساعة", single: "ساعة", oneSuffix: "واحدة" },
 } as const satisfies Record<string, CountWord>;

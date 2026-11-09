@@ -13,7 +13,7 @@ import { adminTwoFactorRequired, env } from "../env";
  * - الطالب ٣ جلسات فعالة على الأكثر، والدخول الجديد يُخرج الأقدم.
  */
 export const SESSION_COOKIE = "session";
-const SESSION_DAYS = 30;
+export const SESSION_DAYS = 30;
 const RENEW_AFTER_DAYS = 15;
 export const ADMIN_SESSION_MS = 12 * 60 * 60 * 1000;
 export const STUDENT_ACTIVE_SESSIONS = 3;

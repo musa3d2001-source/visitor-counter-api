@@ -25,7 +25,7 @@ export class EmailVerificationRequiredError extends Error {
   }
 }
 
-const LINK_HOURS = 24;
+export const VERIFICATION_LINK_HOURS = 24;
 
 export function verifyEmailPath(next: string) {
   return `/verify-email?next=${encodeURIComponent(next)}`;
@@ -82,7 +82,7 @@ export async function sendEmailVerificationLink(userId: string, email: string, o
   const fingerprint = opts.verifiedPasswordHash ? hashToken(opts.verifiedPasswordHash) : null;
   const inserted = await sql`
     insert into email_verification_tokens (id, user_id, email, password_fingerprint, expires_at)
-    select ${id}, u.id, ${email}::citext, ${fingerprint}, now() + make_interval(hours => ${LINK_HOURS})
+    select ${id}, u.id, ${email}::citext, ${fingerprint}, now() + make_interval(hours => ${VERIFICATION_LINK_HOURS})
     from users u
     where u.id = ${userId} and u.anonymized_at is null ${opts.verifiedPasswordHash ? sql`and u.password_hash = ${opts.verifiedPasswordHash}` : sql``}
     returning id

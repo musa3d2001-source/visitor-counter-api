@@ -11,8 +11,8 @@
  * tests/integration/legal-pages.test.ts يفشل إذا تغير نص الصفحة ولم يتغير رقمها.
  */
 export const CONSENT_VERSIONS = {
-  terms: "2026-11-draft-1",
-  privacy: "2026-11-draft-2",
+  terms: "2026-11-draft-2",
+  privacy: "2026-11-draft-3",
   guardian_purchase: "2026-11-draft-1",
   teacher_agreement: "2026-11-draft-1",
 } as const;

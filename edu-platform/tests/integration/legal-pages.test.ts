@@ -18,8 +18,8 @@ const sha256 = (text: string) => createHash("sha256").update(text).digest("hex")
  * إذا فشل هذا الاختبار بعد تعديل الصفحة: ارفع رقم النسخة في src/lib/consent.ts، ثم حدّث الرقم والبصمة هنا.
  */
 const PINNED = {
-  terms: { version: "2026-11-draft-1", sha256: "86668fafb010de8b44f869edbb450fc3eb1c2fbb8bc63e5b3dea149d3f8934a3" },
-  privacy: { version: "2026-11-draft-2", sha256: "a42df7fecc3a3bdf107d6d5f100f1a749cdb125477a30b549881aaa7392c645a" },
+  terms: { version: "2026-11-draft-2", sha256: "9cad2913d5d4337ba56ebc070ff4283ddce7723f12f2c893e3b01efc59eaa17f" },
+  privacy: { version: "2026-11-draft-3", sha256: "29b464ca0cbf9ceffefd9fd63743b831ef8fa7eee0755aa680b51584e6535441" },
 };
 
 describe("each consent version names one exact text", () => {
