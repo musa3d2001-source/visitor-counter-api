@@ -30,6 +30,7 @@ import { applyExtraRefundEvent, recordExtraPayment, type ExtraPaymentKind, type 
 import { CLAIM_STALE_SECONDS, INVOICE_REUSE_MARGIN_MINUTES, INVOICE_TTL_MINUTES, IN_PROGRESS_GRACE_MINUTES, ORDER_LIFETIME_HOURS, REFUND_SENDING_STALE_MINUTES } from "./limits";
 import { RefundError, applyRefundEvent, recheckRefund, requestRefund, type RefundOutcome } from "./refunds";
 import { sendExtraPaymentEmail, sendOrderConfirmationEmail } from "../commerce/order-mail";
+import { EmailVerificationRequiredError, emailVerificationRequired } from "../auth/email-verification";
 
 /**
  * خدمة الدفع — قواعد حاسمة:
@@ -373,6 +374,8 @@ export async function startPayment(order: OrderRow, paymentMethodId: number | nu
   if (order.total_fils <= 0) throw new MyFatoorahError("قيمة الطلب غير صالحة للدفع الإلكتروني");
   // طلب تجريبي لا يُدفع في وضع حقيقي (وإلا مُنح بدفع حقيقي ووُسم تجريبيًا)، والعكس
   if (order.is_test !== (cfg.environment === "sandbox")) throw new PaymentModeMismatchError();
+  // كل طريق إلى صفحة الدفع يمر من هنا، فلا يفلت منه إعادة المحاولة ولا طلب قديم
+  if (await emailVerificationRequired(order.user_id)) throw new EmailVerificationRequiredError();
 
   const walk = await checkOrderInvoices(order.id, { stopOnError: true });
   if (walk.otherMode && !walk.unreachable) throw new PaymentModeMismatchError();

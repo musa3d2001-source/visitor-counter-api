@@ -8,6 +8,7 @@ import { recordEarnings, reverseEarnings } from "./earnings";
 import { sendOrderConfirmationEmail } from "./order-mail";
 import { INVOICE_TTL_MINUTES, ORDER_LIFETIME_HOURS } from "../payments/limits";
 import type { SessionUser } from "../auth/session";
+import { EmailVerificationRequiredError, emailVerificationRequired } from "../auth/email-verification";
 
 export type OrderRow = {
   id: string;
@@ -115,6 +116,8 @@ export async function createOrder(input: {
     }
     const total = cart.subtotalFils - discountFils;
     if (total > 0 && input.paidCheckoutBlockedReason) throw new OrderError(input.paidCheckoutBlockedReason);
+    // بعد حساب الخصم: طلب مجاني بالكامل (أو بكوبون ١٠٠٪) لا يُمنع
+    if (total > 0 && (await emailVerificationRequired(input.user.id, tx))) throw new EmailVerificationRequiredError();
     const [order] = await tx<OrderRow[]>`
       insert into orders (user_id, subtotal_fils, discount_fils, total_fils, coupon_id, coupon_code, is_test,
                           customer_name, customer_email, customer_phone)

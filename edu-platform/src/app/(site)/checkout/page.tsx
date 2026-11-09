@@ -4,6 +4,7 @@ import Link from "next/link";
 import { redirect } from "next/navigation";
 import { ArrowRight, Lock, Package, Ticket, Wallet } from "lucide-react";
 import { requireUser } from "@/server/auth/guards";
+import { emailVerificationRequired, verifyEmailPath } from "@/server/auth/email-verification";
 import { computeCart, getCartIds } from "@/server/commerce/cart";
 import { evaluateCoupon } from "@/server/commerce/coupons";
 import { getPaymentMethods, paymentsConfig, type PaymentMethodOption } from "@/server/payments/service";
@@ -37,6 +38,9 @@ export default async function CheckoutPage({ searchParams }: { searchParams: Pro
   const saved = cart.payableLines.reduce((sum, l) => sum + (savings(l.priceFils, l.compareAtPriceFils)?.fils ?? 0), 0);
   const cfg = paymentsConfig();
   const settings = await getSettings();
+  if (total > 0 && cfg.enabled && (await emailVerificationRequired(user.id))) {
+    redirect(verifyEmailPath(couponCode ? `/checkout?coupon=${encodeURIComponent(couponCode)}` : "/checkout"));
+  }
 
   let methods: PaymentMethodOption[] = [];
   let methodsError = false;

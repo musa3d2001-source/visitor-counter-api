@@ -3,6 +3,7 @@ import Link from "next/link";
 import { ChevronLeft, CircleCheck, Clock, GraduationCap, KeyRound, Library, LogOut, Mail, Receipt, UserRound, XCircle } from "lucide-react";
 import { requireUser } from "@/server/auth/guards";
 import { listUserOrders } from "@/server/commerce/orders";
+import { emailVerificationRequired } from "@/server/auth/email-verification";
 import { listGrades } from "@/server/catalog/queries";
 import { logoutAction } from "../(auth)/actions";
 import { Alert } from "@/components/ui/alert";
@@ -38,7 +39,7 @@ const STATUS_LOOK = {
 export default async function AccountPage({ searchParams }: { searchParams: Promise<{ payment?: string }> }) {
   const user = await requireUser("/account");
   const sp = await searchParams;
-  const [orders, grades] = await Promise.all([listUserOrders(user.id), listGrades()]);
+  const [orders, grades, mustVerify] = await Promise.all([listUserOrders(user.id), listGrades(), emailVerificationRequired(user.id)]);
   const myGrade = grades.find((g) => g.id === user.gradeId) ?? null;
 
   return (
@@ -113,6 +114,14 @@ export default async function AccountPage({ searchParams }: { searchParams: Prom
         {sp.payment && PAYMENT_MESSAGES[sp.payment] ? (
           <Alert tone="warning" className="mb-6">
             {PAYMENT_MESSAGES[sp.payment]}
+          </Alert>
+        ) : null}
+
+        {mustVerify ? (
+          <Alert tone="warning" title="بريدك غير مؤكد" className="mb-6">
+            <p>
+              تأكيده مطلوب قبل أول عملية دفع. <Link href="/verify-email?next=/account">أكّد بريدك</Link>
+            </p>
           </Alert>
         ) : null}
 

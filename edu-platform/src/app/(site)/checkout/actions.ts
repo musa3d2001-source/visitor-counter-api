@@ -18,6 +18,7 @@ import {
 } from "@/server/payments/service";
 import { MyFatoorahError } from "@/server/payments/myfatoorah";
 import { hitRateLimit } from "@/server/auth/rate-limit";
+import { EmailVerificationRequiredError, verifyEmailPath } from "@/server/auth/email-verification";
 import { sql } from "@/server/db";
 import type { ActionState } from "@/lib/action-state";
 
@@ -63,6 +64,7 @@ export async function placeOrderAction(_prev: ActionState, fd: FormData): Promis
       paymentUrl = res.url;
     }
   } catch (err) {
+    if (err instanceof EmailVerificationRequiredError) redirect(verifyEmailPath("/checkout"));
     if (err instanceof OpenOrderExistsError) redirect(`/orders/${err.orderId}?from=open-order`);
     if (err instanceof OrderError) return { error: err.userMessage };
     if (err instanceof OrderClosedError && err.reason === "already_owned") return { error: "أصبح أحد المنتجات في مكتبتك، فلم ننشئ طلبًا لتجنب الدفع مرتين." };
@@ -94,6 +96,7 @@ export async function retryPaymentAction(fd: FormData) {
   try {
     url = (await startPayment(found.order, null)).url;
   } catch (err) {
+    if (err instanceof EmailVerificationRequiredError) redirect(verifyEmailPath(`/orders/${found.order.id}`));
     if (err instanceof OrderSettledError) redirect(`/orders/${found.order.id}`);
     const code = err instanceof PaymentModeMismatchError ? "mode" : err instanceof InvoiceNeedsReviewError ? "review" : err instanceof OrderClosedError ? "closed" : err instanceof PaymentInProgressError ? "inprogress" : "payment";
     redirect(`/orders/${found.order.id}?error=${code}`);

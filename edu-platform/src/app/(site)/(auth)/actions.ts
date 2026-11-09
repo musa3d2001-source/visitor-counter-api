@@ -9,6 +9,7 @@ import { safeNextPath } from "@/lib/utils";
 import { clientIp, userAgent } from "@/server/http";
 import { completeForcedPasswordChange, loginWithPassword, registerStudent, requestPasswordReset, resetPassword } from "@/server/auth/service";
 import { clearSessionCookie, getCurrentSession, invalidateSession, setSessionCookie } from "@/server/auth/session";
+import { sendRegistrationVerification } from "@/server/auth/email-verification";
 import { mailIsReal, redactSecrets } from "@/server/platform/mailer";
 
 export async function loginAction(_prev: ActionState, fd: FormData): Promise<ActionState> {
@@ -39,6 +40,9 @@ export async function registerAction(_prev: ActionState, fd: FormData): Promise<
   const res = await registerStudent(parsed.data, { ip: await clientIp(), userAgent: await userAgent() });
   if (!res.ok) return { error: res.error, values };
   await setSessionCookie(res.token, res.expiresAt);
+  // التسجيل فوري: الرابط يخرج بعد الرد، وفشله لا يعطل الحساب ويمكن إعادة طلبه
+  const newUserId = res.userId;
+  if (mailIsReal()) after(() => sendRegistrationVerification(newUserId).catch((err) => console.error("[auth] verification mail failed", redactSecrets(err instanceof Error ? err.message : String(err)))));
   redirect(safeNextPath(fd.get("next") as string | null, "/library"));
 }
 
