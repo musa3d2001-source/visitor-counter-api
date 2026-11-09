@@ -69,12 +69,13 @@ export async function containerCoverage(containerIds: string[]): Promise<Map<str
 
 /**
  * حساب السلة: يستبعد المنتجات غير المنشورة، والمنتجات التي يملكها الطالب،
- * والمنتجات المضمنة في باقة موجودة في نفس السلة (منع الدفع المكرر).
+ * والمنتجات التي انتهى تاريخ إتاحتها، والمنتجات المضمنة في باقة موجودة في نفس السلة (منع الدفع المكرر).
  */
 export async function computeCart(ids: string[], userId: string | null): Promise<CartView> {
   const products = await getPublishedProductsByIds(ids);
   const owned = userId ? await accessibleProductIds(userId) : new Set<string>();
-  const coverage = await containerCoverage(products.filter((p) => isContainerType(p.type)).map((p) => p.id));
+  // باقة انتهى بيعها لا تُحتسب، فلا تغطي ما بداخلها
+  const coverage = await containerCoverage(products.filter((p) => isContainerType(p.type) && !p.saleEnded).map((p) => p.id));
   const notices: string[] = [];
   const lines: CartLine[] = products.map((p) => ({
     ...p,
@@ -83,10 +84,11 @@ export async function computeCart(ids: string[], userId: string | null): Promise
   }));
   if (products.length < ids.length) notices.push("تمت إزالة منتج لم يعد متاحًا من سلتك.");
   for (const l of lines) {
-    if (l.owned) notices.push(`«${l.title}» موجود في مكتبتك مسبقًا ولن يُحتسب.`);
+    if (l.saleEnded && !l.owned) notices.push(`انتهى بيع «${l.title}» ولن يُحتسب.`);
+    else if (l.owned) notices.push(`«${l.title}» موجود في مكتبتك مسبقًا ولن يُحتسب.`);
     else if (l.coveredByBundleId) notices.push(`«${l.title}» مضمّن في الباقة الموجودة في سلتك ولن يُحتسب مرتين.`);
   }
-  const payableLines = lines.filter((l) => !l.owned && !l.coveredByBundleId);
+  const payableLines = lines.filter((l) => !l.owned && !l.coveredByBundleId && !l.saleEnded);
   const subtotalFils = payableLines.reduce((sum, l) => sum + l.priceFils, 0);
   return { lines, payableLines, subtotalFils, notices };
 }

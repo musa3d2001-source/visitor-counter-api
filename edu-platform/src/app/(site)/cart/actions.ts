@@ -28,6 +28,7 @@ async function addProduct(productId: string): Promise<{ ok: boolean; message: st
   if (!id.success) return { ok: false, message: "منتج غير صحيح" };
   const [product] = await getPublishedProductsByIds([id.data]);
   if (!product) return { ok: false, message: "هذا المنتج غير متاح حاليًا" };
+  if (product.saleEnded) return { ok: false, message: "انتهى بيع هذا المنتج" };
   const ids = await getCartIds();
   if (ids.includes(product.id)) return { ok: true, message: "المنتج موجود في سلتك" };
 

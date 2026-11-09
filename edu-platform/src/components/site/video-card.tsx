@@ -7,7 +7,7 @@ import { SubjectArt } from "@/components/art";
 import { PRODUCT_TYPE_LABELS } from "@/lib/labels";
 import { toneClass } from "@/lib/design";
 import { cn } from "@/lib/utils";
-import { CompactPrice, Kicker, OwnedChip, catalogStyles as s, contentChips, previewHref } from "./card-parts";
+import { CompactPrice, Kicker, OwnedChip, SaleEndedChip, catalogStyles as s, contentChips, previewHref } from "./card-parts";
 import { TeacherAvatar } from "./teacher-avatar";
 import { ProductList } from "./product-row";
 
@@ -83,7 +83,7 @@ export function VideoCard({
         {p.teacherName ? <p className={s.vteacher}>{p.teacherName}</p> : null}
         {chips.length ? <p className={s.metaChips}>{chips}</p> : <span className="mb-3.5" />}
         <div className={s.vfoot}>
-          {owned ? <OwnedChip /> : <CompactPrice fils={p.priceFils} compareAt={p.compareAtPriceFils} />}
+          {owned ? <OwnedChip /> : p.saleEnded ? <SaleEndedChip /> : <CompactPrice fils={p.priceFils} compareAt={p.compareAtPriceFils} />}
           {preview ? (
             <Link href={preview} className={s.footBtn} aria-describedby={titleId}>
               <Play fill="currentColor" aria-hidden />

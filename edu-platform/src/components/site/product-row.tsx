@@ -2,7 +2,7 @@ import type { ProductCard as ProductCardData } from "@/server/catalog/queries";
 import { count, W } from "@/lib/design";
 import { formatTotalDuration } from "./format";
 import { cn } from "@/lib/utils";
-import { CompactPrice, catalogStyles as s, shortTerm } from "./card-parts";
+import { CompactPrice, SaleEndedChip, catalogStyles as s, shortTerm } from "./card-parts";
 import { ExamTicket, TICKET_TYPES } from "./exam-ticket";
 
 /** سطر وصفي مختصر: المعلم، المدة/الدروس أو الصفحات، الفصل — بفواصل عربية */
@@ -18,6 +18,7 @@ export function productMeta(p: ProductCardData, opts: { teacher?: boolean; grade
 
 /** السعر المضغوط للمنتج (مجانًا، أو السعر مع السعر قبل الخصم عند خصم حقيقي) */
 export function PriceInline({ p, showPercent = false, className }: { p: ProductCardData; showPercent?: boolean; className?: string }) {
+  if (p.saleEnded) return <SaleEndedChip className={className} />;
   return <CompactPrice fils={p.priceFils} compareAt={p.compareAtPriceFils} showPercent={showPercent} className={className} />;
 }
 

@@ -5,7 +5,7 @@
  */
 import { Fragment } from "react";
 import type * as React from "react";
-import { CircleCheck, Clock3, FileText, PlayCircle, Sparkles } from "lucide-react";
+import { CalendarX2, CircleCheck, Clock3, FileText, PlayCircle, Sparkles } from "lucide-react";
 import type { ProductCard as ProductCardData } from "@/server/catalog/queries";
 import { termLabel } from "@/lib/labels";
 import { filsToKwdString } from "@/lib/money";
@@ -58,6 +58,16 @@ export function CompactPrice({ fils, compareAt, size = "md", showPercent = true,
           {showPercent ? <span className={s.pct}>خصم {ar(save.pct)}٪</span> : null}
         </>
       ) : null}
+    </span>
+  );
+}
+
+/** بدل السعر لمنتج انتهى تاريخ إتاحته: لا يدخل السلة ولا يُفوتر */
+export function SaleEndedChip({ className }: { className?: string }) {
+  return (
+    <span className={cn("chip chip-coral", className)} data-testid="sale-ended">
+      <CalendarX2 aria-hidden />
+      انتهى البيع
     </span>
   );
 }

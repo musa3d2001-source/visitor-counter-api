@@ -30,7 +30,7 @@ export type OrderRow = {
   closed_reason: OrderClosedReason | null;
 };
 
-export type OrderClosedReason = "expired" | "student_cancelled" | "already_owned" | "coupon_unavailable";
+export type OrderClosedReason = "expired" | "student_cancelled" | "already_owned" | "coupon_unavailable" | "product_ended";
 
 export type OrderItemRow = { id: string; product_id: string; title: string; product_type: string; unit_price_fils: number; slug: string | null };
 
@@ -93,7 +93,7 @@ export async function createOrder(input: {
 }): Promise<OrderRow> {
   const cart = await computeCart(input.productIds, input.user.id);
   if (cart.payableLines.length === 0) {
-    throw new OrderError(cart.lines.length ? "كل المنتجات في سلتك موجودة في مكتبتك مسبقًا." : "سلتك فارغة.");
+    throw new OrderError(cart.lines.some((l) => l.saleEnded) ? "انتهى بيع ما تبقى في سلتك، فلم ننشئ طلبًا." : cart.lines.length ? "كل المنتجات في سلتك موجودة في مكتبتك مسبقًا." : "سلتك فارغة.");
   }
   return sql.begin(async (tx) => {
     if (input.refuseOverlappingOpenOrders) {
@@ -137,6 +137,15 @@ export async function createOrder(input: {
     }
     return order;
   });
+}
+
+/** منتجات الطلب التي انتهى تاريخ إتاحتها: لا تُفوتر ولا تُمنح */
+export async function endedProductsInOrder(db: Db, orderId: string): Promise<string[]> {
+  const rows = await db<{ product_id: string }[]>`
+    select oi.product_id from order_items oi join products p on p.id = oi.product_id
+    where oi.order_id = ${orderId} and p.access_mode = 'until_date' and p.access_until is not null and p.access_until <= now()
+  `;
+  return rows.map((r) => r.product_id);
 }
 
 /** جلب طلب يخص المستخدم فقط (منع IDOR) */

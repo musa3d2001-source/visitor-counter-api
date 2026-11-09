@@ -6,7 +6,7 @@ import { PRODUCT_TYPE_LABELS } from "@/lib/labels";
 import { filsToKwdString } from "@/lib/money";
 import { ar, countAcc, gradeClass, gradeLevelFromSlug, gradeTone, savings, subjectTone, toneClass, W } from "@/lib/design";
 import { cn } from "@/lib/utils";
-import { CompactPrice, Kicker, OwnedChip, catalogStyles as s } from "./card-parts";
+import { CompactPrice, Kicker, OwnedChip, SaleEndedChip, catalogStyles as s } from "./card-parts";
 
 /** ألوان أوراق الباقة: مواد محتوياتها الفعلية إن مُرّرت، وإلا ألوان الصف (دون ادعاء مواد) */
 export function bundleColors(p: Pick<ProductCard, "gradeSlug">, items?: ProductCard[]): string[] {
@@ -76,7 +76,7 @@ export function BundleCard({ product: p, items, owned, level, showGrade = true, 
           </Link>
         </H>
         {items?.length ? <ItemIcons items={items} /> : p.summary ? <p className={s.bsummary}>{p.summary}</p> : null}
-        <div className={s.bfoot}>{owned ? <OwnedChip /> : <CompactPrice fils={p.priceFils} compareAt={p.compareAtPriceFils} size="lg" />}</div>
+        <div className={s.bfoot}>{owned ? <OwnedChip /> : p.saleEnded ? <SaleEndedChip /> : <CompactPrice fils={p.priceFils} compareAt={p.compareAtPriceFils} size="lg" />}</div>
       </div>
     </article>
   );
@@ -106,6 +106,8 @@ export function BundleWide({ product: p, items, owned, showGrade = true, heading
       <div className={s.browSide}>
         {owned ? (
           <OwnedChip />
+        ) : p.saleEnded ? (
+          <SaleEndedChip />
         ) : (
           <>
             <CompactPrice fils={p.priceFils} compareAt={p.compareAtPriceFils} size="lg" />

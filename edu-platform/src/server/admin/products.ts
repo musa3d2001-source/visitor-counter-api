@@ -41,6 +41,7 @@ export type AdminProductRow = {
   items: number;
   has_preview: boolean;
   sold: number;
+  sale_ended: boolean;
   review_note: string | null;
   submitted_at: Date | null;
   updated_at: Date;
@@ -67,6 +68,7 @@ export async function listAdminProducts(actor: Actor, f: ProductFilters, limit =
       (select count(*)::int from lessons l where l.product_id = p.id) as lessons,
       (select count(*)::int from bundle_items bi where bi.bundle_id = p.id) as items,
       exists (select 1 from product_files pf where pf.product_id = p.id and pf.kind = 'preview') as has_preview,
+      (p.access_mode = 'until_date' and p.access_until is not null and p.access_until <= now()) as sale_ended,
       (select count(*)::int from order_items oi join orders o on o.id = oi.order_id
         where oi.product_id = p.id and o.status = 'paid' and not o.is_test) as sold
     from products p
@@ -221,12 +223,20 @@ function assertContent(input: ProductContentInput) {
   }
 }
 
-function assertOwnerFields(o: ProductOwnerInput) {
+const kuwaitDay = (d: Date) => new Date(new Date(d).getTime() + 3 * 3600_000).toISOString().slice(0, 10);
+
+/** تاريخ إتاحة مضى: منتج لا يمكن بيعه. لا تدخل هنا الدقائق المتبقية من يوم اليوم، فالنموذج يحفظ نهاية اليوم */
+const accessDatePassed = (d: Date | null) => Boolean(d && new Date(d).getTime() <= Date.now());
+
+function assertOwnerFields(o: ProductOwnerInput, existing?: { status: ProductStatus; accessUntil: Date | null }) {
   if (o.compareAtPriceFils !== null && o.compareAtPriceFils <= o.priceFils) {
     throw new AdminError("السعر السابق يجب أن يكون أكبر من السعر الحالي", { compareAtPrice: "اتركه فارغًا إن لم يكن هناك عرض حقيقي" });
   }
   if (o.accessMode === "until_date") {
     if (!o.accessUntil) throw new AdminError("حدد تاريخ نهاية الإتاحة", { accessUntil: "التاريخ مطلوب" });
+    // منتج غير منشور انتهى تاريخه يبقى قابلًا لتعديل بقية حقوله ما لم يغيّر التاريخ. المنشور لا يُحفظ بتاريخ مضى، والنشر نفسه يرفضه
+    const unchangedOffSale = existing && existing.status !== "published" && existing.accessUntil && kuwaitDay(existing.accessUntil) === kuwaitDay(o.accessUntil);
+    if (accessDatePassed(o.accessUntil) && !unchangedOffSale) throw new AdminError("تاريخ نهاية الإتاحة مضى، فلن يمكن بيع المنتج", { accessUntil: "اختر تاريخًا قادمًا" });
   }
   if (o.accessMode === "days" && (!o.accessDays || o.accessDays < 1)) throw new AdminError("حدد عدد أيام الإتاحة", { accessDays: "عدد الأيام مطلوب" });
 }
@@ -330,7 +340,7 @@ export async function updateProduct(id: string, input: ProductInput, actor: Acto
     accessUntil: input.accessUntil === undefined ? current.access_until : input.accessUntil,
     accessDays: input.accessDays === undefined ? current.access_days : input.accessDays,
   };
-  assertOwnerFields(o);
+  assertOwnerFields(o, { status: current.status, accessUntil: current.access_until });
   await assertTeacherExists(o.teacherId);
   await sql`
     update products set
@@ -370,11 +380,12 @@ export async function updateProduct(id: string, input: ProductInput, actor: Acto
  *  - منتجات الفيديو: درس منشور أو منتج مضمّن، وكل الدروس المنشورة مكتملة المعالجة
  *  - الحاويات: عنصر واحد على الأقل (للباقة)
  */
-export async function publishBlockers(productId: string, opts: { ignorePrice?: boolean } = {}): Promise<string[]> {
+export async function publishBlockers(productId: string, opts: { ignorePrice?: boolean; ignoreAccessDate?: boolean } = {}): Promise<string[]> {
   const p = await getAdminProduct(productId);
   if (!p) return ["المنتج غير موجود"];
   const issues: string[] = [];
   if (!p.title.trim()) issues.push("العنوان مطلوب");
+  if (!opts.ignoreAccessDate && p.access_mode === "until_date" && accessDatePassed(p.access_until)) issues.push("تاريخ نهاية الإتاحة مضى، فاختر تاريخًا قادمًا قبل النشر");
   if (PDF_PRODUCT_TYPES.includes(p.type)) {
     const [{ n }] = await sql<{ n: number }[]>`select count(*)::int as n from product_files where product_id = ${productId} and kind = 'main'`;
     if (n === 0) issues.push("ارفع ملف PDF واحدًا على الأقل قبل النشر");
@@ -419,7 +430,8 @@ export async function setProductStatus(id: string, status: ProductStatus, actor:
 export async function submitForReview(id: string, actor: Actor, ip?: string) {
   const p = await assertProductAccess(actor, id, actor.kind === "teacher" ? "edit" : "view");
   if (p.status !== "draft") throw new AdminError("يمكن إرسال المسودات فقط للمراجعة");
-  const issues = await publishBlockers(id, { ignorePrice: true });
+  // فترة الإتاحة يحددها المالك عند الاعتماد، فلا يوقف تاريخها إرسال المعلم للمراجعة
+  const issues = await publishBlockers(id, { ignorePrice: true, ignoreAccessDate: true });
   if (issues.length) throw new AdminError(issues.join("، "));
   await sql`update products set status = 'in_review', submitted_at = now() where id = ${id} and status = 'draft'`;
   await audit({ actorId: actor.userId, action: "product.submit_review", entityType: "product", entityId: id, ip });
@@ -437,7 +449,8 @@ export async function approveAndPublish(
   if (!current) throw new AdminError("المنتج غير موجود");
   if (current.status !== "in_review" && current.status !== "draft") throw new AdminError("المنتج ليس بانتظار المراجعة");
   assertOwnerFields({ ...input, isDownloadable: false, isFeatured: false, sortOrder: 0, teacherId: null });
-  const issues = await publishBlockers(id);
+  // assertOwnerFields فحصت التاريخ الجديد الذي سيُحفظ، والتاريخ المحفوظ حاليًا سيُستبدل
+  const issues = await publishBlockers(id, { ignoreAccessDate: true });
   if (issues.length) throw new AdminError(issues.join("، "));
   await sql.begin(async (tx) => {
     await tx`

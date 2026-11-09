@@ -5,7 +5,7 @@ import { catalogOptions, listAdminProducts, teacherOptions, type AdminProductRow
 import { requireStaff } from "@/server/auth/permissions";
 import { storage } from "@/server/storage";
 import { AdminPageHeader } from "@/components/admin/page-header";
-import { ProductStatusBadge } from "@/components/admin/status-badge";
+import { ProductStatusBadge, StatusPill } from "@/components/admin/status-badge";
 import { ActionForm } from "@/components/admin/action-form";
 import { QuickAction } from "@/components/admin/confirm-button";
 import { FilterBar, FilterSearch, FilterSubmit, ResultCount, Toolbar } from "@/components/admin/filter-bar";
@@ -424,7 +424,14 @@ function ProductListRow({ p, owner, sorting, level }: { p: AdminProductRow; owne
             <span className="font-display text-[1.05rem] font-black text-ink">{ar(p.sold)}</span>
           </p>
           <div className="max-lg:ms-auto lg:min-w-[8.5rem]">
-            <ProductStatusBadge status={p.status} />
+            <span className="inline-flex flex-wrap items-center gap-1.5">
+              <ProductStatusBadge status={p.status} />
+              {p.sale_ended ? (
+                <span data-testid="admin-sale-ended">
+                  <StatusPill tone="danger">انتهى البيع</StatusPill>
+                </span>
+              ) : null}
+            </span>
           </div>
           {owner && sorting ? (
             <ActionForm action={updateSortAction} compact className="flex items-center gap-1 max-lg:basis-auto">

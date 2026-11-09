@@ -3,6 +3,7 @@ import Link from "next/link";
 import { CalendarClock, CircleCheck } from "lucide-react";
 import { Price } from "@/components/ui/price";
 import { AddToCart } from "@/components/site/add-to-cart";
+import { Alert } from "@/components/ui/alert";
 import { filsToKwdString } from "@/lib/money";
 import { formatDate, cn } from "@/lib/utils";
 import s from "./product.module.css";
@@ -13,6 +14,15 @@ export type TrustItem = { icon: React.ReactNode; text: React.ReactNode; bg: stri
  * لوح الشراء: رأس بلون المادة (النوع والصف)، السعر الكبير مع الخصم الحقيقي فقط، توفير الباقة الفعلي،
  * أزرار السلة (AddToCart) وزر المعاينة الذهبي، مدة الوصول (data-testid="access-period")، وضمانات صحيحة.
  */
+/** يحل محل أزرار الشراء لمنتج انتهى تاريخ إتاحته */
+export function SaleEndedNotice() {
+  return (
+    <div data-testid="sale-ended-notice">
+      <Alert tone="warning">انتهت مدة إتاحة هذا المنتج، فلم يعد متاحًا للشراء.</Alert>
+    </div>
+  );
+}
+
 export function PurchasePanel({
   toneClass,
   typeIcon,

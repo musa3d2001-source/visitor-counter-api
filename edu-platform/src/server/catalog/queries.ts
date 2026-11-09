@@ -53,6 +53,8 @@ export type ProductCard = {
   previewLessonId: string | null;
   /** صورة البطاقة: الغلاف، أو صورة أول درس، أو صورة Bunny التلقائية */
   thumbnailUrl: string | null;
+  /** انتهى تاريخ إتاحته: لا يدخل السلة ولا يُفوتر */
+  saleEnded?: boolean;
 };
 
 export type TeacherBrief = { id: string; slug: string; name: string; headline: string; photoUrl: string | null };
@@ -100,6 +102,7 @@ type ProductRow = {
   preview_lesson_id: string | null;
   lesson_thumb_key: string | null;
   bunny_ref: string | null;
+  sale_ended: boolean;
 };
 
 export function coverUrl(key: string | null): string | null {
@@ -133,6 +136,7 @@ function toCard(r: ProductRow): ProductCard {
     totalDurationSeconds: r.total_duration,
     previewLessonId: r.preview_lesson_id,
     thumbnailUrl: coverUrl(r.cover_key) ?? coverUrl(r.lesson_thumb_key) ?? (r.bunny_ref ? bunnyThumbnailUrl(r.bunny_ref, "thumbnail.jpg") : null),
+    saleEnded: r.sale_ended,
   };
 }
 
@@ -145,7 +149,8 @@ const cardColumns = () => sql`
   (select t.display_name from teachers t where t.id = p.teacher_id) as teacher_name,
   (select t.slug from teachers t where t.id = p.teacher_id and t.is_published) as teacher_slug,
   (select t.photo_key from teachers t where t.id = p.teacher_id) as teacher_photo_key,
-  vs.lesson_count, vs.total_duration, vs.preview_lesson_id, vs.lesson_thumb_key, vs.bunny_ref
+  vs.lesson_count, vs.total_duration, vs.preview_lesson_id, vs.lesson_thumb_key, vs.bunny_ref,
+  (p.access_mode = 'until_date' and p.access_until is not null and p.access_until <= now()) as sale_ended
 `;
 
 /**

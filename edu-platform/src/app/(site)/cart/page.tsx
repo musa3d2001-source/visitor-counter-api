@@ -9,7 +9,7 @@ import { Alert } from "@/components/ui/alert";
 import { PageHeader, StatPill } from "@/components/ui/page-header";
 import { ProductCover } from "@/components/site/product-cover";
 import { listGrades } from "@/server/catalog/queries";
-import { CompactPrice, Kicker, contentChips, shortTerm } from "@/components/site/card-parts";
+import { CompactPrice, Kicker, SaleEndedChip, contentChips, shortTerm } from "@/components/site/card-parts";
 import { PRODUCT_TYPE_LABELS } from "@/lib/labels";
 import { filsToKwdString } from "@/lib/money";
 import { ar, count, savings, toneClass, W } from "@/lib/design";
@@ -111,12 +111,12 @@ export default async function CartPage() {
                           {chips.length ? <div className="mt-2 hidden flex-wrap gap-1.5 sm:flex">{chips}</div> : null}
                         </div>
                         <div className="hidden shrink-0 flex-col items-end gap-2 sm:flex">
-                          <LinePrice owned={l.owned} covered={!!l.coveredByBundleId} fils={l.priceFils} compareAt={l.compareAtPriceFils} />
+                          <LinePrice owned={l.owned} covered={!!l.coveredByBundleId} ended={!!l.saleEnded} fils={l.priceFils} compareAt={l.compareAtPriceFils} />
                           <RemoveButton id={l.id} title={l.title} />
                         </div>
                       </div>
                       <div className="mt-3 flex items-center justify-between gap-3 border-t-2 border-dashed border-[var(--soft)] pt-3 sm:hidden">
-                        <LinePrice owned={l.owned} covered={!!l.coveredByBundleId} fils={l.priceFils} compareAt={l.compareAtPriceFils} />
+                        <LinePrice owned={l.owned} covered={!!l.coveredByBundleId} ended={!!l.saleEnded} fils={l.priceFils} compareAt={l.compareAtPriceFils} />
                         <RemoveButton id={l.id} title={l.title} />
                       </div>
                     </li>
@@ -184,8 +184,9 @@ export default async function CartPage() {
   );
 }
 
-function LinePrice({ owned, covered, fils, compareAt }: { owned: boolean; covered: boolean; fils: number; compareAt: number | null }) {
+function LinePrice({ owned, covered, ended, fils, compareAt }: { owned: boolean; covered: boolean; ended: boolean; fils: number; compareAt: number | null }) {
   if (owned) return <OwnedNote>في مكتبتك</OwnedNote>;
+  if (ended) return <SaleEndedChip />;
   if (covered) return <span className="chip chip-mint">ضمن الباقة</span>;
   return <CompactPrice fils={fils} compareAt={compareAt} />;
 }

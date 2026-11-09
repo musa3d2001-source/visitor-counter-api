@@ -26,7 +26,7 @@ import { filsToKwdString } from "@/lib/money";
 import { academicYearLabel, count, gradeClass, gradeLevelFromSlug, toneClass, W } from "@/lib/design";
 import { GlassChip, HeroStat, HeroStats, ProductHero } from "./_components/hero";
 import { BundleFanArt, NotePaperArt } from "./_components/hero-art";
-import { MobileBuyBar, PurchasePanel, type TrustItem } from "./_components/purchase";
+import { MobileBuyBar, PurchasePanel, SaleEndedNotice, type TrustItem } from "./_components/purchase";
 import { FactGrid, FileList, LearnList, SectionPanel, WideHead } from "./_components/sections";
 import { LessonTimeline } from "./_components/lesson-timeline";
 import { aboutTitle, includesLabel, previewLabel, shortTermLabel } from "./_components/labels";
@@ -114,7 +114,7 @@ export default async function ProductPage({ params }: { params: Promise<Params> 
           ownedUntil={ownedUntil}
           resumeLessonId={resumeLessonId}
           watchedIds={watchedIds}
-          canBuy={product.status === "published"}
+          canBuy={product.status === "published" && !product.saleEnded}
           breadcrumbs={breadcrumbs}
         />
       </div>
@@ -165,7 +165,7 @@ export default async function ProductPage({ params }: { params: Promise<Params> 
       "@type": "Offer",
       priceCurrency: "KWD",
       price: filsToKwdString(product.priceFils),
-      availability: "https://schema.org/InStock",
+      availability: product.saleEnded ? "https://schema.org/Discontinued" : "https://schema.org/InStock",
       url: new URL(`/products/${product.slug}`, env().APP_URL).toString(),
     },
   };
@@ -246,7 +246,7 @@ export default async function ProductPage({ params }: { params: Promise<Params> 
               compareAtPriceFils={product.compareAtPriceFils}
               bundleSaving={isBundle && itemsValue > product.priceFils ? { fils: itemsValue - product.priceFils, label: "مقارنة بشراء المذكرات منفردة" } : null}
               owned={isOwned ? { until: null, href: "/library", label: "افتح في مكتبتي", icon: <BookOpen aria-hidden /> } : null}
-              buy={videosOff ? <Alert tone="info">دروس الفيديو ستتوفر قريبًا.</Alert> : product.status === "published" ? <AddToCart productId={product.id} /> : null}
+              buy={videosOff ? <Alert tone="info">دروس الفيديو ستتوفر قريبًا.</Alert> : product.saleEnded ? <SaleEndedNotice /> : product.status === "published" ? <AddToCart productId={product.id} /> : null}
               preview={preview && !isOwned ? { href: `/preview/${preview.id}`, label: previewLabel(preview.pageCount), icon: <Eye aria-hidden />, testId: "free-preview" } : null}
               accessText={accessText}
               trust={trust}
@@ -319,7 +319,7 @@ export default async function ProductPage({ params }: { params: Promise<Params> 
       ) : null}
 
       {/* شريط شراء ثابت على الجوال */}
-      {!isOwned && product.status === "published" && !videosOff ? (
+      {!isOwned && product.status === "published" && !videosOff && !product.saleEnded ? (
         <MobileBuyBar productId={product.id} priceFils={product.priceFils} compareAtPriceFils={product.compareAtPriceFils} accessText={accessText} />
       ) : null}
     </div>

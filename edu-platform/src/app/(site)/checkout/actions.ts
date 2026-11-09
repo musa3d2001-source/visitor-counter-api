@@ -64,6 +64,7 @@ export async function placeOrderAction(_prev: ActionState, fd: FormData): Promis
     if (err instanceof OpenOrderExistsError) redirect(`/orders/${err.orderId}?from=open-order`);
     if (err instanceof OrderError) return { error: err.userMessage };
     if (err instanceof OrderClosedError && err.reason === "already_owned") return { error: "أصبح أحد المنتجات في مكتبتك، فلم ننشئ طلبًا لتجنب الدفع مرتين." };
+    if (err instanceof OrderClosedError && err.reason === "product_ended") return { error: "انتهى بيع أحد المنتجات، فأغلقنا الطلب ولم يُخصم شيء." };
     if (err instanceof OrderClosedError && err.reason === "coupon_unavailable") return { error: "نفدت مرات استخدام كود الخصم، فأغلقنا الطلب. يمكنك إنشاء طلب جديد." };
     if (err instanceof MyFatoorahError) {
       console.error("[checkout] payment init failed", err.message);

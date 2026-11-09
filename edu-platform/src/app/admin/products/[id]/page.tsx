@@ -117,6 +117,7 @@ export default async function EditProductPage({
   const product = await getAdminProduct(id, actor);
   if (!product) notFound();
 
+  const saleEnded = product.access_mode === "until_date" && product.access_until !== null && new Date(product.access_until).getTime() <= Date.now();
   const isPdf = isPdfType(product.type);
   const isVideo = isVideoType(product.type);
   const isContainer = isContainerType(product.type);
@@ -234,6 +235,12 @@ export default async function EditProductPage({
           </div>
         </AdminPageHeader>
       </CatalogBand>
+
+      {saleEnded ? (
+        <Alert tone="warning" title="انتهى بيع هذا المنتج">
+          مضى تاريخ نهاية الإتاحة، فلا يدخل المنتج السلة ولا يُفوتر، ويظهر للطلاب «انتهى البيع». لإعادة بيعه اختر تاريخًا قادمًا في فترة الإتاحة.
+        </Alert>
+      ) : null}
 
       {sp.created ? (
         <Alert tone="success" title="تم إنشاء المسودة">

@@ -4,7 +4,7 @@ import { SubjectIcon } from "@/components/art";
 import { PRODUCT_TYPE_LABELS } from "@/lib/labels";
 import { toneClass } from "@/lib/design";
 import { cn } from "@/lib/utils";
-import { CompactPrice, Kicker, OwnedChip, catalogStyles as s, contentChips, shortTerm } from "./card-parts";
+import { CompactPrice, Kicker, OwnedChip, SaleEndedChip, catalogStyles as s, contentChips, shortTerm } from "./card-parts";
 
 /**
  * بطاقة المذكرة «الورقة المطوية» (v2-c NoteTile): ورقة بيضاء برأس بلون المادة (أيقونة + اسم المادة)،
@@ -40,7 +40,7 @@ export function NoteCard({ product: p, owned, showGrade = true, headingLevel = 3
           </Link>
         </H>
         {chips.length ? <p className={s.metaChips}>{chips}</p> : null}
-        <div className={s.nfoot}>{owned ? <OwnedChip /> : <CompactPrice fils={p.priceFils} compareAt={p.compareAtPriceFils} />}</div>
+        <div className={s.nfoot}>{owned ? <OwnedChip /> : p.saleEnded ? <SaleEndedChip /> : <CompactPrice fils={p.priceFils} compareAt={p.compareAtPriceFils} />}</div>
       </div>
     </article>
   );

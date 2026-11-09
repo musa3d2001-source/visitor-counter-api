@@ -3,7 +3,7 @@ import { createHash } from "node:crypto";
 import { sql, type Db } from "../db";
 import { env, type Env } from "../env";
 import { filsToKwdString, kwdNumberToFils } from "@/lib/money";
-import { closeOrder, findOpenOrdersCovering, markOrderPaid, type OrderClosedReason, type OrderRow } from "../commerce/orders";
+import { closeOrder, endedProductsInOrder, findOpenOrdersCovering, markOrderPaid, type OrderClosedReason, type OrderRow } from "../commerce/orders";
 import { reacquireCouponHold } from "../commerce/coupons";
 import { computeCart } from "../commerce/cart";
 import { accessibleProductIds } from "../access/entitlements";
@@ -252,6 +252,11 @@ async function decidePayment(orderId: string, environment: "sandbox" | "live", w
       await closeOrder(db, { orderId, reason: "already_owned", actorId: null });
       return { kind: "closed", reason: "already_owned" };
     }
+    // انتهى تاريخ إتاحة منتج بعد إنشاء الطلب: لا نصدر عليه فاتورة ولا نعيد رابطًا قديمًا
+    if ((await endedProductsInOrder(db, orderId)).length) {
+      await closeOrder(db, { orderId, reason: "product_ended", actorId: null });
+      return { kind: "closed", reason: "product_ended" };
+    }
     // الطلب الذي فشل دفعه حرر كوده، فيعيد حجزه تحت قفل الكود قبل أي فاتورة
     if (order.status === "failed" && order.coupon_id && !(await reacquireCouponHold(db, { couponId: order.coupon_id, userId: order.user_id }))) {
       await closeOrder(db, { orderId, reason: "coupon_unavailable", actorId: null });
@@ -467,6 +472,12 @@ async function applyConfirmedPayment(db: Db, p: ConfirmedPayment): Promise<Verif
   switch (order.status) {
     case "pending":
     case "failed": {
+      // دفعة وصلت بعد انتهاء إتاحة المنتج: منحه الآن يعني وصولًا منتهيًا مقابل مال. تُسجل للمالك ليستردها
+      const ended = await endedProductsInOrder(db, order.id);
+      if (ended.length) {
+        await closeOrder(db, { orderId: order.id, reason: "product_ended", actorId: null });
+        return flag("late_review", { blockers: ended.map((id) => `access_ended:${id}`), closedReason: "product_ended" });
+      }
       const out = await markOrderPaid(db, { orderId: order.id, paidAmountFils: p.invoiceFils, paymentRowId: p.paymentId });
       return { state: "paid", orderId: order.id, changed: out.changed };
     }

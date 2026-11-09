@@ -8,7 +8,7 @@ import { PRODUCT_TYPE_LABELS, isPdfType } from "@/lib/labels";
 import { gradeClass, gradeLevelFromSlug, toneClass } from "@/lib/design";
 import { bundleColors } from "./bundle-card";
 import { cn } from "@/lib/utils";
-import { CompactPrice, OwnedChip, catalogStyles as s, contentChips, previewHref } from "./card-parts";
+import { CompactPrice, OwnedChip, SaleEndedChip, catalogStyles as s, contentChips, previewHref } from "./card-parts";
 
 /** المراجعات تأخذ شكل التذكرة المثقوبة */
 export const TICKET_TYPES = new Set<string>(["exam_review", "quiz_review"]);
@@ -113,7 +113,7 @@ export function ExamTicket({
           {chips.length ? <p className={s.metaChips}>{chips}</p> : null}
         </div>
         <div className={s.tstub}>
-          {owned ? <OwnedChip /> : <CompactPrice fils={p.priceFils} compareAt={p.compareAtPriceFils} />}
+          {owned ? <OwnedChip /> : p.saleEnded ? <SaleEndedChip /> : <CompactPrice fils={p.priceFils} compareAt={p.compareAtPriceFils} />}
           {preview ? (
             <Link href={preview} className={cn(s.footBtn, s.footBtnGold)} aria-describedby={titleId}>
               <Sparkles aria-hidden />
