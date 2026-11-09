@@ -2,6 +2,7 @@ import "server-only";
 import { sql } from "../db";
 import { adminTwoFactorRequired, env } from "../env";
 import { hashPassword, verifyPassword, burnPasswordTime } from "./password";
+import { loginFailurePrefix } from "./password-core";
 import { createSession, createSessionIn, generateToken, hashToken } from "./session";
 import { hitRateLimit, clearRateLimit, peekRateLimit, reserveFailureSlot, type FailurePolicy } from "./rate-limit";
 import { completeLoginChallenge, startLoginChallenge, twoFactorIsActive, type CompleteChallengeResult } from "./two-factor";
@@ -42,9 +43,7 @@ const LOGIN_IP = { failingAccounts: 100, windowSec: 15 * 60 };
 /** جلسة تغيير كلمة المرور المؤقتة قصيرة، ولا تفتح أي صفحة أخرى */
 const MUST_CHANGE_SESSION_MS = 60 * 60 * 1000;
 
-export function loginFailurePrefix(email: string) {
-  return `login:fail:${email.toLowerCase()}|`;
-}
+export { loginFailurePrefix };
 
 function lockoutMessage(retryAfterSeconds: number) {
   const remaining = retryAfterSeconds < 60 ? "أقل من دقيقة" : count(Math.ceil(retryAfterSeconds / 60), W.minute);
@@ -172,7 +171,7 @@ export async function requestPasswordReset(email: string, ip: string): Promise<v
       to: email,
       template: "password_reset_refused",
       subject: `طلب استعادة كلمة المرور، ${settings.site_name}`,
-      text: `وصلنا طلب لاستعادة كلمة مرور هذا الحساب الإداري. حسابات الإدارة لا تُستعاد عبر البريد، فلم يتغير شيء.\n\nإذا لم تطلب ذلك فقد يكون أحدهم يحاول الوصول إلى الحساب.\n\n${settings.site_name}`,
+      text: `وصلنا طلب لاستعادة كلمة مرور هذا الحساب الإداري. حسابات الإدارة لا تُستعاد عبر البريد، فلم يتغير شيء.\n\nإذا كنت أنت من طلب ذلك: تُستعاد كلمة المرور بأمر admin:create من جهازك باستخدام رابط قاعدة البيانات، والخطوات في دليل التشغيل README.\n\nإذا لم تطلب ذلك فقد يكون أحدهم يحاول الوصول إلى الحساب.\n\n${settings.site_name}`,
     });
     return;
   }

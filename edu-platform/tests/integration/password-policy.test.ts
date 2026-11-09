@@ -101,6 +101,7 @@ describe("the owner account does not recover by email", () => {
     const [mail] = await sql<{ template: string; body: string }[]>`select template, body from email_log where to_email = ${admin.email}`;
     expect(mail.template).toBe("password_reset_refused");
     expect(mail.body).not.toContain("reset-password");
+    expect(mail.body).toContain("admin:create");
   });
 
   it("a token that somehow exists for an admin is refused", async () => {

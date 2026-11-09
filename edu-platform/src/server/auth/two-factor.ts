@@ -17,6 +17,7 @@ import {
   otpauthUri,
   parseSecondFactorCode,
   sealTotpSecret,
+  twoFactorFailureKey as failureKey,
   type SecondFactorInput,
 } from "./two-factor-core";
 
@@ -47,10 +48,6 @@ const CHALLENGE_EXPIRED = "انتهت مهلة هذه الخطوة. سجّل د�
 
 type CodeContext = { ip?: string | null; purpose: "login" | "step_up" | "manage" };
 type Refused = { ok: false; error: string; retryAfter?: number };
-
-function failureKey(userId: string) {
-  return `2fa:fail:${userId}`;
-}
 
 function waitMessage(seconds: number) {
   const remaining = seconds < 60 ? "أقل من دقيقة" : count(Math.ceil(seconds / 60), W.minute);

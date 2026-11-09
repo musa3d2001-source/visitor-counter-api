@@ -6,6 +6,10 @@ import { randomBytes, scrypt as scryptCb, timingSafeEqual, type ScryptOptions } 
  * المعاملات وفق توصيات OWASP: N=2^15, r=8, p=3 (≈32MiB ذاكرة).
  * الصيغة المخزنة: scrypt$N$r$p$salt(base64)$hash(base64)
  */
+export function loginFailurePrefix(email: string) {
+  return `login:fail:${email.toLowerCase()}|`;
+}
+
 const N = 2 ** 15;
 const R = 8;
 const P = 3;

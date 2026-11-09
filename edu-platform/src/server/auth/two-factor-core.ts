@@ -13,6 +13,11 @@ export const TOTP_DIGITS = 6;
 export const TOTP_WINDOW = 1;
 export const RECOVERY_CODE_COUNT = 10;
 
+/** عدّاد الرموز الخاطئة للحساب. هنا لأن أمر إعادة الضبط يصفّره أيضًا */
+export function twoFactorFailureKey(userId: string) {
+  return `2fa:fail:${userId}`;
+}
+
 const BASE32_ALPHABET = "ABCDEFGHIJKLMNOPQRSTUVWXYZ234567";
 
 /** ٣٢ حرفًا بلا حروف ملتبسة (0 و O و 1 و I)، و byte & 31 يبقي التوزيع متساويًا */

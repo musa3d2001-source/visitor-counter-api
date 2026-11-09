@@ -45,6 +45,11 @@ export function TwoFactorLoginForm({ next }: { next: string }) {
       >
         {recovery ? "استخدم الرمز من التطبيق" : "ليس معك جوالك؟ استخدم رمز استرداد"}
       </button>
+      {recovery ? (
+        <p className="text-center text-[0.88rem] leading-6 text-ink-soft" data-testid="two-factor-lost-help">
+          فقدت رموز الاسترداد أيضًا؟ يُعاد ضبط التحقق بأمر من جهازك يصل إلى قاعدة البيانات، والخطوات في دليل التشغيل README.
+        </p>
+      ) : null}
     </form>
   );
 }
