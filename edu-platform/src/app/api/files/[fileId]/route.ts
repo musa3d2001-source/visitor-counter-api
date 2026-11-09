@@ -5,6 +5,7 @@ import { bytesToStream, loadDeliverablePdf } from "@/server/access/delivery";
 import { PdfUnusableError } from "@/server/access/pdf";
 import { recordFileCheck, statusForProblem } from "@/server/access/file-check";
 import { logAccess } from "@/server/platform/audit";
+import { reportError } from "@/server/platform/report-error";
 import { hitRateLimit } from "@/server/auth/rate-limit";
 import { ipFromHeaders } from "@/server/http";
 
@@ -81,11 +82,11 @@ export async function GET(req: NextRequest, ctx: { params: Promise<{ fileId: str
   try {
     bytes = await loadDeliverablePdf({ storageKey: access.file.storageKey, kind: access.file.kind, user, productId: access.product.id, checkStatus: access.file.checkStatus });
   } catch (err) {
-    console.error("[files] delivery failed", err);
+    await reportError("files:delivery", err);
     // ملف نجح في الفحص لا يتلف وحده: تعثر ختمه الآن (مهلة أو ضغط على الخادم) عارض، فلا يوصف بأنه معيب
     if (err instanceof PdfUnusableError && access.file.checkStatus !== "ok") {
       // ملف قديم لم يُفحص: يظهر للمالك فورًا في «سلامة المحتوى» بدل أن يفشل عند الطالب بصمت
-      await recordFileCheck(access.file.id, statusForProblem(err.problem)).catch((e) => console.error("[files] flag failed", e));
+      await recordFileCheck(access.file.id, statusForProblem(err.problem)).catch((e) => reportError("files:flag", e));
       return refuse(req, 503, "هذا الملف يحتاج إلى إصلاح من إدارة المنصة، وقد سُجلت المشكلة لديهم. وصولك إليه محفوظ.");
     }
     return refuse(req, 500, "تعذر تحميل الملف حاليًا. حاول مرة أخرى بعد قليل.");

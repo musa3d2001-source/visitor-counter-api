@@ -5,6 +5,7 @@ import { ipFromHeaders } from "@/server/http";
 import { sql } from "@/server/db";
 import { parseCartCookie } from "@/server/commerce/cart";
 import { env } from "@/server/env";
+import { reportError } from "@/server/platform/report-error";
 
 /**
  * صفحة العودة من بوابة الدفع (CallBackUrl / ErrorUrl).
@@ -43,7 +44,7 @@ export async function GET(req: NextRequest) {
     }
     return res;
   } catch (err) {
-    console.error("[payment-return] verification error", err);
+    await reportError("payment-return:verify", err);
     return NextResponse.redirect(`${base}/account?payment=error`, 303);
   }
 }

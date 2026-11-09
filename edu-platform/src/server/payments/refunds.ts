@@ -2,6 +2,7 @@ import "server-only";
 import { sql, type Db } from "../db";
 import { filsToKwdString, kwdNumberToFils } from "@/lib/money";
 import { audit } from "../platform/audit";
+import { reportError } from "../platform/report-error";
 import { applyRefundToOrder, undoRefundOnOrder, type OrderRow } from "../commerce/orders";
 import { sendRefundCancelledEmail, sendRefundCompletedEmail, sendRefundEmail } from "../commerce/order-mail";
 import { isDefiniteGatewayRefusal, type MfRefundStatus, type MyFatoorahClient } from "./myfatoorah";
@@ -321,7 +322,7 @@ export async function requestRefund(gateway: RefundGateway, environment: Environ
     if (!res?.RefundId) return await finishWithoutEffect(claim, "unknown", "لم تُعد البوابة رقم استرداد", actor);
     return await transitionById(claim.refundId, { kind: "accepted", refundId: String(res.RefundId), reference: res.RefundReference }, actor);
   } catch (err) {
-    console.error("[refund] could not save the gateway result", message(err));
+    await reportError("refund:save-result", err);
     return { state: "unknown", error: SAVE_FAILED };
   }
 }

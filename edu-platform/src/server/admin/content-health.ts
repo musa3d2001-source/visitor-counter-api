@@ -1,6 +1,7 @@
 import "server-only";
 import { sql } from "../db";
 import { audit } from "../platform/audit";
+import { reportError } from "../platform/report-error";
 import { checkStoredFile, FLAGGED_STATUSES, type FileCheckStatus, type FlaggedStatus } from "../access/file-check";
 import { servablePreviewSql } from "../access/preview-rule";
 import { AdminError } from "./common";
@@ -126,7 +127,7 @@ export async function recheckFile(
   try {
     status = await checkStoredFile(f);
   } catch (err) {
-    console.error("[content-health] recheck failed", fileId, err);
+    await reportError("content-health:recheck", err);
     await audit({ actorId, action: "content.file_recheck", entityType: "product", entityId: f.product_id, metadata: { fileId, from: f.check_status, to: null, storageError: true }, ip });
     return { outcome: "storage_error" };
   }
@@ -152,7 +153,7 @@ export async function scanUncheckedFiles(actorId: string, ip?: string, budgetMs 
       result.checked++;
       if (status !== "ok") result.flagged++;
     } catch (err) {
-      console.error("[content-health] scan failed", f.id, err);
+      await reportError("content-health:scan", err);
       result.errors++;
     }
   }
@@ -189,7 +190,7 @@ export async function regenerateBadPreviews(actorId: string, ip?: string, budget
     try {
       outcome = await regenerateAutoPreview(product_id, { replaceCustom: true, keepRepairable: true });
     } catch (err) {
-      console.error("[content-health] preview regenerate failed", product_id, err);
+      await reportError("content-health:preview", err);
       result.failed++;
       continue;
     }

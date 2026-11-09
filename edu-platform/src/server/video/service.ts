@@ -5,6 +5,7 @@ import { env } from "../env";
 import { storage } from "../storage";
 import { BunnyError, getVideo, mapBunnyStatus, verifyBunnyWebhookSignature } from "./bunny";
 import { mp4DurationSeconds } from "./mp4";
+import { reportError } from "../platform/report-error";
 
 /** المزود المستخدم للرفع الجديد */
 export function activeVideoProvider(): "file" | "bunny" {
@@ -56,7 +57,7 @@ export async function syncPendingLessons(productId?: string, limit = 50) {
       const s = await syncLessonStatus(r.id);
       if (s) out.push({ id: r.id, status: s.status });
     } catch (err) {
-      console.error("[video-sync]", r.id, err);
+      await reportError("video:sync", err);
     }
   }
   return out;

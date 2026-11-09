@@ -3,6 +3,7 @@ import { PDFDocument, PDFName, ParseSpeeds, StandardFonts, degrees, rgb, type PD
 import { maxPreviewPages } from "@/lib/preview-policy";
 import { assertIsolated, isolatePages, PreviewNotIsolatedError } from "./pdf-isolate";
 import { openInReader } from "./pdf-reader-engine";
+import { reportError } from "../platform/report-error";
 
 export { PreviewNotIsolatedError };
 
@@ -128,7 +129,7 @@ async function buildIsolatedPreview(src: PDFDocument, count: number, label: bool
     return saved;
   } catch (err) {
     if (err instanceof PreviewNotIsolatedError) throw err;
-    console.error("[pdf] preview isolation failed", err);
+    await reportError("pdf:preview-isolation", err);
     throw new PreviewNotIsolatedError("could not rebuild pages");
   }
 }

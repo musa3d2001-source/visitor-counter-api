@@ -4,6 +4,7 @@ import { getActor, PermissionError } from "@/server/auth/permissions";
 import { AdminError } from "@/server/admin/common";
 import { initSchema, initUpload } from "@/server/admin/uploads";
 import { BunnyError } from "@/server/video/bunny";
+import { reportError } from "@/server/platform/report-error";
 
 export const dynamic = "force-dynamic";
 
@@ -27,10 +28,10 @@ export async function POST(req: Request) {
     if (err instanceof AdminError) return NextResponse.json({ error: err.userMessage }, { status: 400 });
     if (err instanceof PermissionError) return NextResponse.json({ error: err.userMessage }, { status: 403 });
     if (err instanceof BunnyError) {
-      console.error("[upload-init] bunny", err.message);
+      await reportError("upload:init-bunny", err);
       return NextResponse.json({ error: "تعذر تجهيز رفع الفيديو لدى مزود البث. حاول مرة أخرى." }, { status: 502 });
     }
-    console.error("[upload-init]", err);
+    await reportError("upload:init", err);
     return NextResponse.json({ error: "تعذر تجهيز الرفع. حاول مرة أخرى." }, { status: 500 });
   }
 }

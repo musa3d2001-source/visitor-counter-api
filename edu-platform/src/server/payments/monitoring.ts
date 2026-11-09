@@ -2,6 +2,8 @@ import "server-only";
 import { createHash } from "node:crypto";
 import { sql, type Db } from "../db";
 import { audit } from "../platform/audit";
+import { alertAfterResponse } from "../platform/ops-alerts";
+import { reportError } from "../platform/report-error";
 import type { WebhookV2Body } from "./myfatoorah";
 
 /**
@@ -73,7 +75,7 @@ export async function recordWebhookRejection(input: { reason: WebhookRejectionRe
         version_header = excluded.version_header, body_bytes = excluded.body_bytes, body_sha256 = excluded.body_sha256, received_at = now()
     `;
   } catch (err) {
-    console.error("[webhook] could not record a rejected delivery", err);
+    await reportError("webhook:rejection-log", err);
   }
 }
 
@@ -177,7 +179,8 @@ export async function raiseDisputeAlert(body: WebhookV2Body, eventKey: string): 
     ? await sql<{ id: string; order_id: string }[]>`select id, order_id from payments where provider = 'myfatoorah' and gateway_invoice_id = ${details.invoiceId} limit 1`
     : [];
   const dedupeKey = `dispute:${details.disputeTransactionId ?? eventKey}`;
-  await sql`
+  const [row] = await sql<{ existed: boolean; previous_status: string | null }[]>`
+    with prev as (select details->>'status' as status from payment_alerts where dedupe_key = ${dedupeKey})
     insert into payment_alerts (kind, dedupe_key, order_id, payment_id, details)
     values ('dispute', ${dedupeKey}, ${payment?.order_id ?? null}, ${payment?.id ?? null}, ${sql.json(details as never)})
     on conflict (dedupe_key) do update set
@@ -187,7 +190,10 @@ export async function raiseDisputeAlert(body: WebhookV2Body, eventKey: string): 
       updated_at = now(),
       resolved_at = case when payment_alerts.details->>'status' is distinct from excluded.details->>'status' then null else payment_alerts.resolved_at end,
       resolved_by = case when payment_alerts.details->>'status' is distinct from excluded.details->>'status' then null else payment_alerts.resolved_by end
+    returning exists (select 1 from prev) as existed, (select status from prev) as previous_status
   `;
+  // إعادة إرسال الحدث نفسه لا تصنع رسالة ثانية
+  if (!row.existed || row.previous_status !== details.status) await alertAfterResponse("payment_dispute");
   return `dispute ${details.status ?? "UNKNOWN"}`;
 }
 

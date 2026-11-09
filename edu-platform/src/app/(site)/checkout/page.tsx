@@ -11,6 +11,7 @@ import { getPaymentMethods, paymentsConfig, type PaymentMethodOption } from "@/s
 import { paymentPublicState } from "@/server/payments/public-state";
 import { paymentClaims } from "@/lib/site-truth";
 import { getSettings } from "@/server/platform/settings";
+import { reportError } from "@/server/platform/report-error";
 import { missingAccountConsents } from "@/server/platform/consent";
 import { Alert } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
@@ -54,7 +55,7 @@ export default async function CheckoutPage({ searchParams }: { searchParams: Pro
     try {
       methods = await getPaymentMethods(total);
     } catch (err) {
-      console.error("[checkout] InitiatePayment failed", err);
+      await reportError("checkout:payment-methods", err);
       methodsError = true;
     }
   }

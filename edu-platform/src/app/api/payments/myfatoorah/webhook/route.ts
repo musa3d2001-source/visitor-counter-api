@@ -1,6 +1,7 @@
 import { NextResponse, type NextRequest } from "next/server";
 import { handleMyFatoorahWebhook } from "@/server/payments/service";
 import { recordWebhookRejection } from "@/server/payments/monitoring";
+import { reportError } from "@/server/platform/report-error";
 
 /** أقل بكثير من مهلة إعادة المطالبة بالحدث (٥ دقائق)، فلا تتداخل معالجتان لحدث واحد */
 export const maxDuration = 60;
@@ -22,7 +23,7 @@ export async function POST(req: NextRequest) {
     const out = await handleMyFatoorahWebhook(raw, req.headers);
     return NextResponse.json({ result: out.result }, { status: out.status });
   } catch (err) {
-    console.error("[webhook] unhandled", err);
+    await reportError("webhook:unhandled", err);
     return NextResponse.json({ error: "internal" }, { status: 500 });
   }
 }

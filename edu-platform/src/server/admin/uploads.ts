@@ -6,6 +6,7 @@ import { storage, newStorageKey, sniffMime, storageFileCap, toMb, uploadLimitByt
 import { inspectPdf, PreviewNotIsolatedError, rebuildCustomPreview } from "../access/pdf";
 import { UPLOAD_REJECTION } from "../access/file-check";
 import { audit } from "../platform/audit";
+import { reportError } from "../platform/report-error";
 import { getSettings, saveSettings } from "../platform/settings";
 import { assertProductAccess, PermissionError, type Actor } from "../auth/permissions";
 import { createVideo, deleteVideo, tusUploadCredentials } from "../video/bunny";
@@ -35,8 +36,10 @@ async function fromStorage<T>(work: () => Promise<T>): Promise<T> {
   try {
     return await work();
   } catch (err) {
-    console.error("[upload-complete] storage", err);
-    throw new UploadStorageError("تعذر قراءة الملف من التخزين الآن. حاول مرة أخرى.");
+    // قد نكون داخل معاملة، فالتسجيل في مسار الرفع نفسه بعد انتهائها
+    const failure = new UploadStorageError("تعذر قراءة الملف من التخزين الآن. حاول مرة أخرى.");
+    failure.cause = err;
+    throw failure;
   }
 }
 
@@ -198,7 +201,7 @@ export async function initUpload(input: z.infer<typeof initSchema>, actor: Actor
       // ملف آخر غير الذي انقطع: لا يبقى الدرس غير المكتمل معلقًا بجانب الجديد
       if (unfinished) {
         await sql`delete from lessons where id = ${unfinished.id}`;
-        await deleteVideo(input.resumeVideoId).catch((err) => console.error("[upload-init] unfinished video cleanup", err));
+        await deleteVideo(input.resumeVideoId).catch((err) => reportError("upload:video-cleanup", err));
       }
     }
     const video = await createVideo(title);
@@ -269,7 +272,7 @@ export async function completeUpload(input: z.infer<typeof completeSchema>, acto
     try {
       await syncLessonStatus(lesson.id);
     } catch (err) {
-      console.error("[upload-complete] bunny sync", err);
+      await reportError("upload:bunny-sync", err);
     }
     await audit({ actorId: actor.userId, action: "lesson.create", entityType: "product", entityId: productId, metadata: { lessonId: lesson.id, title: lesson.title, provider: "bunny", videoId: input.key } });
     return { id: lesson.id, message: `تم رفع «${lesson.title}»، جارٍ معالجة الفيديو، ولن يظهر للطلاب قبل اكتمالها` };
@@ -340,7 +343,7 @@ export async function completeUpload(input: z.infer<typeof completeSchema>, acto
         isolated = (await rebuildCustomPreview(bytes)).bytes;
       } catch (err) {
         if (!(err instanceof PreviewNotIsolatedError)) throw err;
-        console.error("[upload-complete] custom preview not isolated", productId, err.message);
+        await reportError("upload:preview-not-isolated", err);
         return reject("تعذر تجهيز هذه المعاينة للعرض العام. صدّرها بصيغة PDF من جديد ثم ارفعها، أو استخدم التوليد التلقائي.");
       }
     }
@@ -382,8 +385,8 @@ export async function completeUpload(input: z.infer<typeof completeSchema>, acto
     let previewNote = "";
     if (input.target === "main") {
       // الملف الرئيسي نجح رفعه وتسجيله. تعثر المعاينة لا يُفشل الرفع، ويقال للرافع
-      const result = await regenerateAutoPreview(productId!).catch((err): PreviewResult => {
-        console.error("[upload-complete] preview generation failed", err);
+      const result = await regenerateAutoPreview(productId!).catch(async (err): Promise<PreviewResult> => {
+        await reportError("upload:preview-generation", err);
         return "unreadable";
       });
       previewNote = PREVIEW_RESULT_NOTE[result] ?? "";

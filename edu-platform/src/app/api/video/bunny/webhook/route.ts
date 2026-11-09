@@ -1,5 +1,6 @@
 import { NextResponse, type NextRequest } from "next/server";
 import { handleBunnyWebhook } from "@/server/video/service";
+import { reportError } from "@/server/platform/report-error";
 
 /**
  * Webhook من Bunny Stream — يُضبط في إعدادات المكتبة على:
@@ -13,7 +14,7 @@ export async function POST(req: NextRequest) {
     const out = await handleBunnyWebhook(raw, req.headers);
     return NextResponse.json({ result: out.result }, { status: out.status });
   } catch (err) {
-    console.error("[bunny-webhook]", err);
+    await reportError("video:webhook", err);
     return NextResponse.json({ error: "internal" }, { status: 500 });
   }
 }

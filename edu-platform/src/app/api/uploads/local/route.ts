@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { getActor } from "@/server/auth/permissions";
 import { verifyLocalUploadToken } from "@/server/storage/local";
 import { storage } from "@/server/storage";
+import { reportError } from "@/server/platform/report-error";
 
 /**
  * مستقبل الرفع المباشر في وضع التخزين المحلي فقط (بديل رابط الرفع الموقّع في Supabase).
@@ -48,7 +49,7 @@ export async function PUT(req: Request) {
   } catch (err) {
     const code = (err as { code?: string })?.code;
     if (code === "EEXIST") return NextResponse.json({ error: "تم رفع هذا الملف مسبقًا" }, { status: 409 });
-    console.error("[local-upload]", err);
+    await reportError("upload:local", err);
     return NextResponse.json({ error: "تعذر حفظ الملف" }, { status: 500 });
   }
   return NextResponse.json({ ok: true, size: total });

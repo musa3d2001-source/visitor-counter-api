@@ -21,6 +21,7 @@ import { hitRateLimit } from "@/server/auth/rate-limit";
 import { EmailVerificationRequiredError, verifyEmailPath } from "@/server/auth/email-verification";
 import { ConsentRequiredError, recordOrderPageConsent, requestConsentMeta } from "@/server/platform/consent";
 import { sql } from "@/server/db";
+import { reportError } from "@/server/platform/report-error";
 import type { ActionState } from "@/lib/action-state";
 
 export async function placeOrderAction(_prev: ActionState, fd: FormData): Promise<ActionState> {
@@ -75,7 +76,7 @@ export async function placeOrderAction(_prev: ActionState, fd: FormData): Promis
     if (err instanceof OrderClosedError && err.reason === "product_ended") return { error: "انتهى بيع أحد المنتجات، فأغلقنا الطلب ولم يُخصم شيء." };
     if (err instanceof OrderClosedError && err.reason === "coupon_unavailable") return { error: "نفدت مرات استخدام كود الخصم، فأغلقنا الطلب. يمكنك إنشاء طلب جديد." };
     if (err instanceof MyFatoorahError) {
-      console.error("[checkout] payment init failed", err.message);
+      await reportError("checkout:init", err);
       return { error: "تعذر بدء عملية الدفع حاليًا. حاول مرة أخرى بعد قليل." };
     }
     throw err;
@@ -121,7 +122,7 @@ export async function refreshOrderStatusAction(fd: FormData) {
   if (found.order.status === "pending" || found.order.status === "failed") {
     const walk = await checkOrderInvoices(found.order.id);
     if (!walk.allChecked) {
-      console.error("[refresh-order] incomplete", walk.error);
+      if (walk.error) await reportError("checkout:refresh", walk.error);
       // انتظار البوابة ينفع فقط إن كانت هي التي لم ترد
       redirect(`/orders/${found.order.id}?error=${walk.unreachable ? "check" : walk.otherMode ? "mode" : "review"}`);
     }

@@ -3,6 +3,7 @@ import { assertAdmin } from "../auth/guards";
 import { assertStaff, PermissionError, type Actor } from "../auth/permissions";
 import type { ActionState } from "@/lib/action-state";
 import { clientIp } from "../http";
+import { reportError } from "../platform/report-error";
 
 /**
  * غلاف موحد لـ Server Actions الخاصة بالإدارة:
@@ -26,7 +27,7 @@ function isNextControlFlow(err: unknown) {
   );
 }
 
-function toActionError(err: unknown): ActionState {
+async function toActionError(err: unknown): Promise<ActionState> {
   if (err instanceof AdminError) return { error: err.userMessage, fieldErrors: err.fieldErrors };
   if (err instanceof PermissionError) return { error: err.userMessage };
   // إعادة رمي أخطاء التوجيه الخاصة بـ Next.js (redirect/notFound)
@@ -39,7 +40,7 @@ function toActionError(err: unknown): ActionState {
   if (/bundle cycle detected/.test(msg)) return { error: "لا يمكن الإضافة: سيؤدي ذلك إلى احتواء دائري (المحتوى يضم الحاوية نفسها)." };
   if (/bundle nesting too deep/.test(msg)) return { error: "لا يمكن الإضافة: الحد الأقصى للتداخل أربعة مستويات." };
   if (/container must be/.test(msg)) return { error: "هذا النوع لا يمكن أن يضم منتجات أخرى." };
-  console.error("[admin-action]", err);
+  await reportError("admin:action", err);
   return { error: "حدث خطأ غير متوقع. حاول مرة أخرى." };
 }
 

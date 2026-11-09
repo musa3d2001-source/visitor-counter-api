@@ -32,6 +32,8 @@ import { applyExtraRefundEvent, recordExtraPayment, type ExtraPaymentKind, type 
 import { CLAIM_STALE_SECONDS, INVOICE_REUSE_MARGIN_MINUTES, INVOICE_TTL_MINUTES, IN_PROGRESS_GRACE_MINUTES, ORDER_LIFETIME_HOURS, REFUND_SENDING_STALE_MINUTES } from "./limits";
 import { RefundError, applyRefundEvent, recheckRefund, requestRefund, type RefundOutcome } from "./refunds";
 import { sendExtraPaymentEmail, sendOrderConfirmationEmail } from "../commerce/order-mail";
+import { alertAfterResponse } from "../platform/ops-alerts";
+import { reportError } from "../platform/report-error";
 import { EmailVerificationRequiredError, emailVerificationRequired } from "../auth/email-verification";
 import { assertOrderConsent } from "../platform/consent";
 import { redactGatewayStatus, redactWebhookPayload } from "@/lib/anonymize";
@@ -451,7 +453,7 @@ export async function resolveOpenOrderForCheckout(input: { userId: string; produ
   let stillOpen: string | null = null;
   for (const { id } of open.slice(0, OPEN_ORDERS_WALK_LIMIT)) {
     const walk = await checkOrderInvoices(id);
-    if (walk.error) console.error("[checkout] open order check incomplete", walk.error);
+    if (walk.error) await reportError("checkout:open-order", walk.error);
     const [row] = await sql<{ status: OrderRow["status"] }[]>`select status from orders where id = ${id}`;
     if (row?.status === "paid") return { kind: "paid", orderId: id };
     if (!stillOpen && (row?.status === "pending" || row?.status === "failed")) stillOpen = id;
@@ -521,6 +523,12 @@ async function recordOtherSuccesses(
     if (await recordExtraPayment(db, { paymentId: p.paymentId, orderId: p.orderId, kind: p.kind, amountFils: p.amountFils, gatewayPaymentId, details: { source: "second_transaction" } })) recorded = true;
   }
   return { found: others.size > 0, recorded };
+}
+
+/** بعد التزام المعاملة فقط: بريد الطالب ورسالة المالك لا يحجزان اتصالًا ثانيًا داخلها */
+async function notifyExtraPayment(orderId: string): Promise<void> {
+  await sendExtraPaymentEmail(orderId);
+  await alertAfterResponse("extra_payment");
 }
 
 /**
@@ -662,7 +670,7 @@ export async function verifyAndApplyPayment(key: { paymentId?: string; invoiceId
       const others = await recordOtherSuccesses(db, { paymentId: payment.id, orderId: order.id, settlingId: row.gateway_payment_id, amountFils, status, kind: "amount_mismatch" });
       return recorded || others.recorded;
     });
-    if (newExtra) await sendExtraPaymentEmail(order.id);
+    if (newExtra) await notifyExtraPayment(order.id);
     return { state: "invalid", error: "المبلغ لا يطابق الطلب" };
   }
 
@@ -670,7 +678,7 @@ export async function verifyAndApplyPayment(key: { paymentId?: string; invoiceId
     const { result: applied, newExtra } = await sql.begin((db) => applyConfirmedPayment(db, { orderId: order.id, paymentId: payment.id, invoiceFils, status, transaction: result.transaction }));
     // بعد الالتزام، ولا يرمي: تعذر البريد لا يؤثر على الدفع
     if (applied.state === "paid" && applied.changed) await sendOrderConfirmationEmail(order.id);
-    if (newExtra) await sendExtraPaymentEmail(order.id);
+    if (newExtra) await notifyExtraPayment(order.id);
     return applied;
   }
 
@@ -819,6 +827,7 @@ export async function handleMyFatoorahWebhook(
     }
   } catch (err) {
     result = `error: ${err instanceof Error ? err.message : String(err)}`.slice(0, 300);
+    await reportError("webhook:processing", err);
     // نُبقي الحدث ونحرر المطالبة كي تنجح إعادة إرسال البوابة فورًا
     await sql`update payment_events set result = ${result}, claimed_at = null where id = ${eventId}`;
     return { status: 500, result };

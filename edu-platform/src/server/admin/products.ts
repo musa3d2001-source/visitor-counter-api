@@ -5,6 +5,7 @@ import { storage } from "../storage";
 import { extractPreview, PdfUnusableError, PreviewNotIsolatedError, rebuildCustomPreview } from "../access/pdf";
 import { ensureProductFilesChecked, FILE_PROBLEM_LABELS, FLAGGED_STATUSES, recordFileCheck, statusForProblem, type FileCheckStatus, type FlaggedStatus } from "../access/file-check";
 import { audit } from "../platform/audit";
+import { reportError } from "../platform/report-error";
 import { assertProductAccess, PermissionError, type Actor } from "../auth/permissions";
 import { deleteVideo } from "../video/bunny";
 import { closedVideoProductIds } from "../video/policy";
@@ -488,7 +489,7 @@ async function ensureFilesCheckedForPublish(id: string) {
   try {
     await ensureProductFilesChecked(id);
   } catch (err) {
-    console.error("[publish] file check failed", err);
+    await reportError("publish:file-check", err);
     throw new AdminError("تعذر فحص ملفات المنتج الآن. حاول مرة أخرى بعد قليل");
   }
 }
@@ -721,7 +722,7 @@ async function repairCustomPreview(productId: string, custom: AdminFile): Promis
     rebuilt = await rebuildCustomPreview(await storage().read("private", custom.storage_key));
   } catch (err) {
     if (!(err instanceof PreviewNotIsolatedError) && !(err instanceof PdfUnusableError)) throw err;
-    console.error("[preview] custom preview could not be isolated", productId, err);
+    await reportError("preview:custom-not-isolated", err);
     return "not_isolated";
   }
   const key = `previews/${productId}/${randomUUID()}.pdf`;
@@ -775,7 +776,7 @@ export async function regenerateAutoPreview(productId: string, opts: { replaceCu
   } catch (err) {
     // لم يثبت العزل: لا تُسلَّم معاينة، والملف الرئيسي نفسه ليس معيبًا فلا يُعلَّم
     if (err instanceof PreviewNotIsolatedError) {
-      console.error("[preview] not isolated", productId, err.message);
+      await reportError("preview:not-isolated", err);
       return "not_isolated";
     }
     if (!(err instanceof PdfUnusableError)) throw err;

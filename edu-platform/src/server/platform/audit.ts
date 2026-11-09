@@ -1,5 +1,6 @@
 import "server-only";
 import { sql, type Db } from "../db";
+import { reportError } from "./report-error";
 
 /** سجل التدقيق للعمليات الحساسة (منح/سحب صلاحيات، تعديل أسعار، استرداد...) */
 export async function audit(
@@ -39,6 +40,6 @@ export async function logAccess(entry: {
     `;
   } catch (err) {
     // تسجيل الوصول لا يجب أن يمنع الطالب من محتواه
-    console.error("[access-log] failed", err);
+    await reportError("access-log:write", err);
   }
 }

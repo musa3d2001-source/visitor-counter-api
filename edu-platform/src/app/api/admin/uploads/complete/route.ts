@@ -4,6 +4,7 @@ import { isSameOriginRequest } from "@/server/http";
 import { getActor, PermissionError } from "@/server/auth/permissions";
 import { AdminError } from "@/server/admin/common";
 import { completeSchema, completeUpload, UploadMissingError, UploadStorageError } from "@/server/admin/uploads";
+import { reportError } from "@/server/platform/report-error";
 
 export const dynamic = "force-dynamic";
 export const maxDuration = 120;
@@ -32,11 +33,14 @@ export async function POST(req: Request) {
     return NextResponse.json({ ok: true, ...res }, { headers: { "cache-control": "no-store" } });
   } catch (err) {
     // عطل التخزين يستحق إعادة التأكيد نفسه، وملف لم يصل يحتاج رفعًا جديدًا، وغيرهما رفض نهائي
-    if (err instanceof UploadStorageError) return NextResponse.json({ error: err.userMessage }, { status: 503 });
+    if (err instanceof UploadStorageError) {
+      await reportError("upload:storage", err.cause);
+      return NextResponse.json({ error: err.userMessage }, { status: 503 });
+    }
     if (err instanceof UploadMissingError) return NextResponse.json({ error: err.userMessage }, { status: 409 });
     if (err instanceof AdminError) return NextResponse.json({ error: err.userMessage }, { status: 400 });
     if (err instanceof PermissionError) return NextResponse.json({ error: err.userMessage }, { status: 403 });
-    console.error("[upload-complete]", err);
+    await reportError("upload:complete", err);
     return NextResponse.json({ error: "تعذر إكمال حفظ الملف. حاول مرة أخرى." }, { status: 500 });
   }
 }

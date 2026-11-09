@@ -150,6 +150,7 @@ export const EMAIL_TEMPLATE_LABELS: Record<string, string> = {
   order_refund_completed: "اكتمال استرداد",
   order_refund_cancelled: "إلغاء استرداد",
   order_extra_payment: "دفعة زائدة",
+  ops_alert: "تنبيه تشغيل للمالك",
 };
 
 /** القيم الموثقة في حدث DISPUTE_STATUS_CHANGED */
