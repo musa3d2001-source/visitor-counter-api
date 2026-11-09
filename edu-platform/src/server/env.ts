@@ -77,7 +77,6 @@ const schema = z.object({
 
   /** مزود الفيديو للرفع الجديد: file (التخزين الخاص للمنصة) أو bunny (Bunny Stream — موصى به للإنتاج) */
   VIDEO_PROVIDER: z.enum(["file", "bunny"]).default("file"),
-  /** يسمح بنشر وبيع فيديو ملف خام (رابط MP4 يمكن تنزيله) على نشر NODE_ENV=production. الافتراضي الإطلاق بالمذكرات فقط */
   /** false: لا فهرسة في محركات البحث على هذا النشر. رابط vercel.app لا يُفهرس أصلًا مهما كانت القيمة */
   SITE_INDEXABLE: z.preprocess(
     (v) => (v === "" ? undefined : v),
@@ -86,6 +85,7 @@ const schema = z.object({
       .default("true")
       .transform((v) => v === "true"),
   ),
+  /** يسمح بنشر وبيع فيديو ملف خام (رابط MP4 يمكن تنزيله) على نشر NODE_ENV=production. الافتراضي الإطلاق بالمذكرات فقط */
   ALLOW_FILE_VIDEO: z
     .enum(["true", "false"])
     .default("false")
@@ -122,6 +122,9 @@ const schema = z.object({
 });
 
 export type Env = z.infer<typeof schema>;
+
+/** كل متغير يقرؤه الخادم. اختبار tests/unit/env-example.test.ts يفشل إن اختلف عنها ملف .env.example */
+export const ENV_KEYS = Object.keys(schema.shape) as (keyof Env)[];
 
 let cached: Env | null = null;
 
