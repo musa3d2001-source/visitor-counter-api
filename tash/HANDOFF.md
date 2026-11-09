@@ -3,7 +3,7 @@
 > **Latest approved prices, 7 Nov 2026:** Product advertising image KWD 10 with one revision. Vertical reel/story up to 15 seconds starts at KWD 40 with idea, editing, suitable audio and two revisions. Confirm final video price after reviewing scope and materials. Instagram price post: https://www.instagram.com/p/Dfc9_f0jBXd/. These prices supersede KWD 90/190/390 and old rate cards. Do not quote old prices, rush fees, or turnaround promises without owner confirmation. Highlight creation is pending because planned Kit stories are not visible in the desktop archive picker. TikTok refund support ticket 4543451 was submitted; refund not yet approved or received.
 
 > **Read this before resuming any TASH work. Update it after every stage and before the session ends.**
-> Last updated: 2026-11-07 ~17:45 UTC.
+> Last updated: 2026-11-09 (boost ad build, see §7). Before that: 2026-11-07 ~17:45 UTC.
 > - The DOSE v3 story ad was **delivered** to the owner (sent as `DOSE-spec-story-v2.mp4`; it is the same file as `tash/10-spec-dose/DOSE-spec-story-9x16.mp4`) and committed in `8e0bd40`.
 > - It is **not approved and not published**.
 > - DOSE Higgsfield total: **214.25** credits (253.75 → 39.50).
@@ -141,6 +141,21 @@ The old split zips (`split/TASH-1..6-of-6`) and `TASH-Instagram-Kit.zip` were **
 4. If the iPhone download fails: shrink the reels further, or split into 2 zips of about 30 MB each.
 
 ## 7. Next step
+**Boost ad «نقاط مشروعك» (`tash/11-boost-ad/`), 9 Nov. Status: built and self-checked by Claude; independent review running; NOT delivered, NOT approved, NOT published.**
+- The owner asked for a brand-new, code-built «اعلان تاريخي» for paid boosting on IG + TikTok (not a re-cut of the launch ad, which is already posted).
+- Flow so far:
+  - research → `STRATEGY.md`;
+  - 6-team concept panel + red team → `TREATMENT.md` (locked rev. 2);
+  - build → `src/` (2D canvas + Three.js studio + synthesised score);
+  - P1 renders → `out/`;
+  - record → `SCRIPT.md`, including the deviations from the treatment.
+- Picture is 100% code, sound 100% synthesis, so the AI label is OFF. No café or brand footage is in the master. No Higgsfield or other paid tool was used.
+- Voices and real claps have NOT been recorded. This cut uses the treatment's fallback (no voices). The recording card is in SCRIPT §8.
+- The muted 10-phone test (SCRIPT §8) has NOT been run. It must run before spend, as must the owner's written OK on the caption price wording.
+- The sound was checked by measurement only, not by ear.
+- CD rule (from MOR): don't send files to the owner directly; the CD sends finals after review.
+
+**Previous next-step notes (DOSE, 7 Nov):**
 **DOSE status (7 Nov, 17:45 UTC):**
 - v3 was delivered to the owner. Owner feedback is pending.
 - The posting note is in `tash/10-spec-dose/SCRIPT.md` («ملاحظة النشر»).
