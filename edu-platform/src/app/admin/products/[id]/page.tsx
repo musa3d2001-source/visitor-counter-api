@@ -29,6 +29,7 @@ import {
 import { requireStaff } from "@/server/auth/permissions";
 import { bundleCandidates, catalogOptions, getAdminProduct, getBundleItemsAdmin, getLessonsAdmin, getProductFiles, isExtremeShare, productTeacherShares, publishBlockers, teacherOptions } from "@/server/admin/products";
 import { FILE_PROBLEM_LABELS, isFlagged, type FlaggedStatus } from "@/server/access/file-check";
+import { hasCurrentAgreement, latestRightsAttestation } from "@/server/admin/teacher-agreement";
 import { activeVideoProvider } from "@/server/video/service";
 import { bunnyConfigured } from "@/server/video/bunny";
 import { storage, uploadLimitLabel } from "@/server/storage";
@@ -50,6 +51,7 @@ import { filsToKwdString } from "@/lib/money";
 import { W, ar, count, duration, gradeClass, gradeVars, subjectVars, toneClass, type CountWord } from "@/lib/design";
 import { ACCESS_MODE_LABELS, PROCESSING_STATUS_LABELS, PRODUCT_TYPE_LABELS, isContainerType, isPdfType, isVideoType } from "@/lib/labels";
 import { cn, formatDate, formatDateTime } from "@/lib/utils";
+import { RIGHTS_ATTESTATION_TEXT } from "@/lib/teacher-agreement";
 import { PREVIEW_ISSUE_LABELS, PREVIEW_POLICY, PREVIEW_RULE_TEXT, maxPreviewPages, previewIssue } from "@/lib/preview-policy";
 import { CatalogBand } from "../../_components/catalog/band";
 import { AdminThumb } from "../../_components/catalog/thumb";
@@ -131,7 +133,7 @@ export default async function EditProductPage({
   const provider = activeVideoProvider();
 
   const reviewing = owner && product.status === "in_review";
-  const [files, blockers, options, bundleItems, candidates, lessons, teachers, shares] = await Promise.all([
+  const [files, blockers, options, bundleItems, candidates, lessons, teachers, shares, attestation, agreementOk] = await Promise.all([
     getProductFiles(id),
     // السعر والنسبة قرار يُتخذ داخل نموذج الاعتماد، والمعلم لا يملكهما
     publishBlockers(id, { ...(reviewing || !owner ? { ignorePrice: true, ignoreShare: true } : {}), ignoreVideoHosting: !owner }),
@@ -141,6 +143,8 @@ export default async function EditProductPage({
     isVideo ? getLessonsAdmin(id) : Promise.resolve([]),
     owner ? teacherOptions() : Promise.resolve([]),
     owner ? productTeacherShares(id) : Promise.resolve([]),
+    owner ? latestRightsAttestation(id) : Promise.resolve(null),
+    actor.kind === "teacher" ? hasCurrentAgreement(actor.userId) : Promise.resolve(true),
   ]);
   const shareMissing = shares.filter((t) => t.share_bps === null);
   const shareExtreme = shares.filter((t) => isExtremeShare(t.share_bps));
@@ -315,6 +319,11 @@ export default async function EditProductPage({
                       ، السعر المقترح: <span className="num font-bold">{filsToKwdString(product.proposed_price_fils)}</span> د.ك
                     </>
                   ) : null}
+                </p>
+                <p className="mt-1 text-sm leading-7 text-ink-soft" data-testid="rights-attestation">
+                  {attestation
+                    ? `أقرّ ${attestation.attested_by ?? "المعلم"} بحقوق هذا المحتوى في ${formatDateTime(attestation.attested_at)}، نسخة الإقرار ${attestation.statement_version}.`
+                    : "لا يوجد إقرار حقوق مسجل لهذا المحتوى، فقد أرسله المالك أو أُرسل قبل هذا السجل."}
                 </p>
               </div>
             </div>
@@ -491,7 +500,19 @@ export default async function EditProductPage({
                   ) : null}
                 </>
               ) : product.status === "draft" ? (
-                <QuickAction action={submitForReviewAction} hidden={{ id }} icon={<Send aria-hidden />} label="إرسال للمراجعة" variant="primary" size="lg" />
+                agreementOk ? (
+                  <ActionForm action={submitForReviewAction} compact className="w-full">
+                    <input type="hidden" name="id" value={id} />
+                    <Checkbox name="rightsAttested" required data-testid="rights-attest" className="items-start text-[0.85rem] leading-6" label={RIGHTS_ATTESTATION_TEXT} />
+                    <SubmitButton size="lg" className="mt-2 w-full" pendingText="جارٍ الإرسال…">
+                      <Send aria-hidden /> إرسال للمراجعة
+                    </SubmitButton>
+                  </ActionForm>
+                ) : (
+                  <Alert tone="warning" title="اقبل اتفاقية المعلم أولًا" className="w-full" data-testid="agreement-needed">
+                    لإرسال المحتوى للمراجعة، اقرأ <Link href="/admin/agreement">اتفاقية المعلم</Link> واقبلها. مسودتك محفوظة وتبقى كما هي.
+                  </Alert>
+                )
               ) : null}
               {editable ? (
                 <ConfirmButton

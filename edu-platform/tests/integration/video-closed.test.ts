@@ -14,7 +14,7 @@ import { closedVideoProductIds, rawVideoForbidden, videoHostingBlocked, videoSal
 import { startSimulator, type Simulator } from "../mocks/myfatoorah-simulator";
 import { closeDb, resetDb, sql } from "../helpers/db";
 import { invoiceIdOf, invoicesCreated, orderRow, startPayment } from "../helpers/payment-flow";
-import { activeEntitlements, createContainer, createProduct, createTeacher, createUser, createVideoProduct } from "../helpers/factories";
+import { acceptAgreement, activeEntitlements, ATTESTED, createContainer, createProduct, createTeacher, createUser, createVideoProduct } from "../helpers/factories";
 import { SIM_API_KEY, SIM_PORT, TEST_ENV, WEBHOOK_SECRET } from "../test-env";
 
 const ctx = vi.hoisted(() => ({ cart: [] as string[], user: null as unknown }));
@@ -131,7 +131,8 @@ describe("D12:a raw video file is not published on production without explicit p
     const p = await createVideoProduct({ status: "draft", teacherId: teacher.id });
     production();
     const actor: Actor = { kind: "teacher", userId: teacher.user!.id, name: teacher.displayName, email: teacher.user!.email, teacherId: teacher.id, teacherName: teacher.displayName, canUpload: true };
-    await expect(submitForReview(p.id, actor)).resolves.toBeUndefined();
+    await acceptAgreement(actor.userId);
+    await expect(submitForReview(p.id, actor, undefined, ATTESTED)).resolves.toBeUndefined();
   });
 
   it("notes are never affected", async () => {

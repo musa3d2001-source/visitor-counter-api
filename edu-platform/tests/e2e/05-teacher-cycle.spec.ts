@@ -116,6 +116,16 @@ test.describe("دورة المعلم الكاملة", () => {
 
     // الإرسال للمراجعة — بعدها يصبح المحتوى للقراءة فقط
     await tp.reload();
+    // بلا الاتفاقية لا يوجد زر إرسال أصلًا، وصفحة المحتوى تدل عليها
+    await expect(tp.getByTestId("agreement-needed")).toBeVisible();
+    await tp.goto("/admin/agreement");
+    await expect(tp.getByTestId("agreement-draft")).toBeVisible();
+    await tp.getByTestId("agreement-accept").check();
+    await tp.getByRole("button", { name: "قبول الاتفاقية" }).click();
+    await expect(tp.getByText("قبلت هذه النسخة")).toBeVisible();
+    await tp.goBack();
+    await tp.reload();
+    await tp.getByTestId("rights-attest").check();
     await tp.getByRole("button", { name: "إرسال للمراجعة" }).click();
     await expect.poll(async () => (await db()`select status from products where id = ${productId}`)[0].status).toBe("in_review");
     await tp.reload();

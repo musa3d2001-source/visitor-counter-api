@@ -9,6 +9,7 @@ import { formValues } from "@/lib/action-state";
 import { academicYearSchema, fieldErrors, optionalPriceSchema, priceSchema, productStatusSchema, productTypeSchema } from "@/lib/validation";
 import { sql } from "@/server/db";
 import { audit } from "@/server/platform/audit";
+import { requestConsentMeta } from "@/server/platform/consent";
 import { storage } from "@/server/storage";
 import { assertProductAccess, PermissionError, type Actor } from "@/server/auth/permissions";
 import { syncLessonStatus } from "@/server/video/service";
@@ -242,7 +243,7 @@ export async function submitForReviewAction(_prev: ActionState, fd: FormData): P
   return staffAction(async ({ actor, ip }) => {
     const id = str(fd, "id");
     if (!isUuid(id)) throw new AdminError("طلب غير صالح");
-    await submitForReview(id, actor, ip);
+    await submitForReview(id, actor, ip, { attested: bool(fd, "rightsAttested"), meta: await requestConsentMeta() });
     revalidateProduct(id);
     return { ok: true, message: "أُرسل المحتوى للمراجعة. سيُنشر بعد اعتماده من إدارة المنصة." };
   });

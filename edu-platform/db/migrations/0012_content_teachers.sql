@@ -69,3 +69,25 @@ alter table teacher_payouts add column if not exists void_reason text;
 alter table teacher_payouts drop constraint if exists teacher_payouts_void_has_reason;
 alter table teacher_payouts add constraint teacher_payouts_void_has_reason
   check (voided_at is null or (void_reason is not null and char_length(void_reason) between 1 and 500));
+
+-- ---------------------------------------------------------------------
+-- اتفاقية المعلم تُسجَّل في سجل الموافقات نفسه (النسخة والوقت)، وإقرار الحقوق يُحفظ لكل منتج عند كل إرسال للمراجعة.
+-- الصف يبقى إن حُذفت المسودة أو المعلم: هذا سجل أدلة، وعنوان المنتج محفوظ فيه.
+-- ---------------------------------------------------------------------
+alter table consent_records drop constraint if exists consent_records_kind_check;
+alter table consent_records add constraint consent_records_kind_check check (kind in ('terms', 'privacy', 'guardian_purchase', 'teacher_agreement'));
+
+create table if not exists product_rights_attestations (
+  id uuid primary key default gen_random_uuid(),
+  product_id uuid references products(id) on delete set null,
+  product_title text not null,
+  teacher_id uuid references teachers(id) on delete set null,
+  user_id uuid references users(id) on delete set null,
+  statement_version text not null check (char_length(statement_version) between 1 and 40),
+  agreement_version text not null check (char_length(agreement_version) between 1 and 40),
+  ip text check (ip is null or char_length(ip) <= 64),
+  user_agent text check (user_agent is null or char_length(user_agent) <= 300),
+  attested_at timestamptz not null default now()
+);
+create index if not exists product_rights_attestations_product_idx on product_rights_attestations (product_id, attested_at desc);
+alter table product_rights_attestations enable row level security;

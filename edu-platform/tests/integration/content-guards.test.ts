@@ -14,7 +14,7 @@ import { computeCart, unsellableProductIds } from "@/server/commerce/cart";
 import { resetEnvCache } from "@/server/env";
 import { storage, storageFileCap, SUPABASE_FREE_MAX_BYTES, UPLOAD_RULES, uploadLimitBytes, uploadLimitLabel } from "@/server/storage";
 import { closeDb, resetDb, sql } from "../helpers/db";
-import { createBundle, createProduct, createTeacher, createUser, makePdf, type TestTeacher } from "../helpers/factories";
+import { acceptAgreement, ATTESTED, createBundle, createProduct, createTeacher, createUser, makePdf, type TestTeacher } from "../helpers/factories";
 import { TEST_ENV, TEST_STORAGE_DIR } from "../test-env";
 
 const session = vi.hoisted(() => ({ user: null as null | { id: string; email: string; role: string } }));
@@ -410,7 +410,8 @@ describe("C3 لا نشر بسعر صفر أو بتوزيع خاطئ", () => {
     const t = await createTeacher({ mode: "self_managed", shareBps: null });
     const p = await createProduct({ status: "draft", priceFils: 1 });
     await sql`update products set teacher_id = ${t.id}, price_fils = 0 where id = ${p.id}`;
-    await expect(submitForReview(p.id, teacherActor(t))).resolves.toBeUndefined();
+    await acceptAgreement(t.user!.id);
+    await expect(submitForReview(p.id, teacherActor(t), undefined, ATTESTED)).resolves.toBeUndefined();
     await expect(rawProduct(p.id)).resolves.toMatchObject({ status: "in_review" });
   });
 

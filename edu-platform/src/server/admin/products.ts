@@ -9,6 +9,8 @@ import { assertProductAccess, PermissionError, type Actor } from "../auth/permis
 import { deleteVideo } from "../video/bunny";
 import { closedVideoProductIds } from "../video/policy";
 import { getSettings } from "../platform/settings";
+import type { ConsentMeta } from "../platform/consent";
+import { hasCurrentAgreement, recordRightsAttestation } from "./teacher-agreement";
 import { AdminError } from "./common";
 import { CONTAINER_PRODUCT_TYPES, PDF_PRODUCT_TYPES, VIDEO_PRODUCT_TYPES, isContainerType, isVideoType, type ProductStatus, type ProductType } from "@/lib/labels";
 import { randomSuffix } from "@/lib/utils";
@@ -515,16 +517,27 @@ export async function setProductStatus(id: string, status: ProductStatus, actor:
   });
 }
 
-/** المعلم يرسل مسودته للمراجعة (بعد اكتمال المحتوى) */
-export async function submitForReview(id: string, actor: Actor, ip?: string) {
+/**
+ * المعلم يرسل مسودته للمراجعة (بعد اكتمال المحتوى).
+ * يلزمه قبول النسخة الحالية من الاتفاقية، وإقرار حقوق هذا المنتج في كل إرسال. الفحص هنا حتى لا يتجاوزه طلب مصنوع.
+ */
+export async function submitForReview(id: string, actor: Actor, ip?: string, rights?: { attested: boolean; meta: ConsentMeta }) {
   const p = await assertProductAccess(actor, id, actor.kind === "teacher" ? "edit" : "view");
   if (p.status !== "draft") throw new AdminError("يمكن إرسال المسودات فقط للمراجعة");
+  if (actor.kind === "teacher") {
+    if (!(await hasCurrentAgreement(actor.userId))) throw new AdminError("اقرأ اتفاقية المعلم واقبلها أولًا، ثم أرسل المحتوى للمراجعة");
+    if (!rights?.attested) throw new AdminError("أقرّ بحقوق هذا المحتوى قبل إرساله للمراجعة");
+  }
   // فترة الإتاحة يحددها المالك عند الاعتماد، فلا يوقف تاريخها إرسال المعلم للمراجعة
   // السعر ونسبة المعلم قرار المالك عند الاعتماد، فلا يوقفان إرسال المعلم للمراجعة
   const issues = await publishBlockers(id, { ignorePrice: true, ignoreAccessDate: true, ignoreShare: true, ignoreVideoHosting: true });
   if (issues.length) throw new AdminError(issues.join("، "));
-  await sql`update products set status = 'in_review', submitted_at = now() where id = ${id} and status = 'draft'`;
-  await audit({ actorId: actor.userId, action: "product.submit_review", entityType: "product", entityId: id, ip });
+  await sql.begin(async (tx) => {
+    const [row] = await tx<{ title: string }[]>`update products set status = 'in_review', submitted_at = now() where id = ${id} and status = 'draft' returning title`;
+    if (!row) throw new AdminError("يمكن إرسال المسودات فقط للمراجعة");
+    if (actor.kind === "teacher") await recordRightsAttestation(tx, { productId: id, productTitle: row.title, actor, meta: rights!.meta });
+    await audit({ actorId: actor.userId, action: "product.submit_review", entityType: "product", entityId: id, ip }, tx);
+  });
 }
 
 /** المالك يعتمد المحتوى: يحدد السعر وفترة الإتاحة ثم ينشر */

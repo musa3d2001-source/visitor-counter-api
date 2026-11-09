@@ -5,7 +5,7 @@ import { PDFDocument, StandardFonts } from "pdf-lib";
 import { sql } from "@/server/db";
 import { hashPassword } from "@/server/auth/password-core";
 import { recordConsent } from "@/server/platform/consent";
-import { ACCOUNT_CONSENT_KINDS } from "@/lib/consent";
+import { ACCOUNT_CONSENT_KINDS, CONSENT_VERSIONS } from "@/lib/consent";
 import type { SessionUser } from "@/server/auth/session";
 import { TEST_STORAGE_DIR } from "../test-env";
 
@@ -106,6 +106,13 @@ export async function createProduct(opts: {
   }
   return { id: p.id, slug, priceFils: p.price_fils, mainFileId, previewFileId };
 }
+
+/** حساب معلم قبل النسخة الحالية من الاتفاقية */
+export async function acceptAgreement(userId: string) {
+  await sql`insert into consent_records (user_id, kind, document_version) values (${userId}, 'teacher_agreement', ${CONSENT_VERSIONS.teacher_agreement})`;
+}
+/** إقرار حقوق المنتج عند الإرسال للمراجعة */
+export const ATTESTED = { attested: true, meta: { ip: "192.0.2.80", userAgent: "vitest" } };
 
 export async function createBundle(opts: { items: string[]; priceFils?: number; level?: number; status?: "draft" | "published" }): Promise<TestProduct> {
   const { gradeId } = await gradeAndSubject(opts.level ?? 6, "math");

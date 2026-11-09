@@ -7,13 +7,14 @@
  * النظام يسجل ما أقر به المشتري ولا يتحقق من عمره أو من حضور ولي أمره، فلا تكتب في الواجهة ما يوحي بغير ذلك.
  *
  * تغيير جوهري في نص وثيقة = رقم نسخة جديد هنا. من وافق على نسخة أقدم يُسأل عند شرائه التالي ولا يُقفل حسابه.
- * كل رقم يطابق نصًا بعينه: terms ← صفحة /terms و privacy ← صفحة /privacy، ويظهر الرقم في الصفحة نفسها.
+ * كل رقم يطابق نصًا بعينه: terms ← صفحة /terms و privacy ← صفحة /privacy و teacher_agreement ← lib/teacher-agreement.ts، ويظهر الرقم في الصفحة نفسها.
  * tests/integration/legal-pages.test.ts يفشل إذا تغير نص الصفحة ولم يتغير رقمها.
  */
 export const CONSENT_VERSIONS = {
   terms: "2026-11-draft-1",
   privacy: "2026-11-draft-2",
   guardian_purchase: "2026-11-draft-1",
+  teacher_agreement: "2026-11-draft-1",
 } as const;
 
 export type ConsentKind = keyof typeof CONSENT_VERSIONS;
@@ -25,6 +26,7 @@ export const CONSENT_KIND_LABELS: Record<ConsentKind, string> = {
   terms: "الشروط والأحكام",
   privacy: "سياسة الخصوصية",
   guardian_purchase: "إقرار البالغ أو ولي الأمر قبل الدفع",
+  teacher_agreement: "اتفاقية المعلم",
 };
 
 export const GUARDIAN_DECLARATION_TEXT = "أقرّ بأن عمري ١٨ سنة أو أكثر، أو أن ولي أمري معي الآن ووافق على هذا الشراء.";

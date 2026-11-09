@@ -15,15 +15,17 @@ export function Alert({
   title,
   children,
   className,
+  ...rest
 }: {
   tone?: keyof typeof tones;
   title?: string;
   children?: React.ReactNode;
   className?: string;
+  "data-testid"?: string;
 }) {
   const { cls, icon, Icon } = tones[tone];
   return (
-    <div role={tone === "danger" ? "alert" : "status"} className={cn("flex items-start gap-3 rounded-2xl border p-4 text-sm leading-7", cls, className)}>
+    <div role={tone === "danger" ? "alert" : "status"} className={cn("flex items-start gap-3 rounded-2xl border p-4 text-sm leading-7", cls, className)} {...rest}>
       <span className={cn("mt-0.5 grid size-8 shrink-0 place-items-center rounded-full shadow-[inset_0_-2px_0_rgb(0_0_0/0.1)]", icon)}>
         <Icon className="size-4.5" aria-hidden />
       </span>

@@ -16,6 +16,7 @@ import {
   Mail,
   Percent,
   Plus,
+  ScrollText,
   ShieldCheck,
   ShieldOff,
   UserCog,
@@ -29,6 +30,7 @@ import { listAdminProducts } from "@/server/admin/products";
 import { listEarnings, listPayouts, teacherBalance, teacherSalesSummary } from "@/server/commerce/earnings";
 import { storage } from "@/server/storage";
 import { getSettings } from "@/server/platform/settings";
+import { latestAgreementAcceptance } from "@/server/admin/teacher-agreement";
 import { Section, StatCard, StatGrid } from "@/components/admin/page-header";
 import { TeacherForm } from "@/components/admin/teacher-form";
 import { TeacherMoneyRules } from "@/components/admin/teacher-money-rules";
@@ -84,7 +86,7 @@ export default async function TeacherAdminPage({ params, searchParams }: { param
   const teacher = await getTeacherAdmin(id);
   if (!teacher) notFound();
   const includeTest = sp.test === "1";
-  const [subjects, chosen, products, summary, balance, earnings, payouts, settings] = await Promise.all([
+  const [subjects, chosen, products, summary, balance, earnings, payouts, settings, agreement] = await Promise.all([
     subjectOptions(),
     teacherSubjectIds(id),
     listAdminProducts(owner, { teacherId: id }),
@@ -93,6 +95,7 @@ export default async function TeacherAdminPage({ params, searchParams }: { param
     listEarnings(id, { includeTest, limit: 200 }),
     listPayouts(id),
     getSettings(),
+    teacher.user_id ? latestAgreementAcceptance(teacher.user_id) : Promise.resolve(null),
   ]);
   const photo = teacher.photo_key ? storage().publicUrl(teacher.photo_key) : null;
   const shareOn = teacher.revenue_share_bps !== null;
@@ -200,6 +203,12 @@ export default async function TeacherAdminPage({ params, searchParams }: { param
                     <p className="mt-1 flex items-center gap-1.5 text-xs text-muted">
                       <Clock3 className="size-3.5" aria-hidden />
                       آخر دخول: {formatDateTime(teacher.account_last_login)}
+                    </p>
+                    <p className="mt-1 flex items-start gap-1.5 text-xs leading-5 text-muted" data-testid="teacher-agreement-status">
+                      <ScrollText className="mt-0.5 size-3.5 shrink-0" aria-hidden />
+                      {agreement
+                        ? `الاتفاقية: قبل النسخة ${agreement.version} في ${formatDateTime(agreement.acceptedAt)}${agreement.isCurrent ? "" : "، ويُسأل عن الأحدث عند إرساله التالي"}`
+                        : "الاتفاقية: لم يقبلها بعد، ويُسأل عند إرساله التالي"}
                     </p>
                   </div>
                   <div className="flex flex-col items-stretch gap-2 [&_button]:w-full [&>div]:w-full">

@@ -14,7 +14,7 @@ import { resetEnvCache } from "@/server/env";
 import { startSimulator, type Simulator } from "../mocks/myfatoorah-simulator";
 import { closeDb, resetDb, sql } from "../helpers/db";
 import { invoiceIdOf, invoicesCreated, orderRow, startPayment } from "../helpers/payment-flow";
-import { activeEntitlements, createContainer, createProduct, createTeacher, createUser, createVideoProduct, gradeAndSubject } from "../helpers/factories";
+import { acceptAgreement, activeEntitlements, ATTESTED, createContainer, createProduct, createTeacher, createUser, createVideoProduct, gradeAndSubject } from "../helpers/factories";
 import { SIM_API_KEY, SIM_PORT, TEST_ENV, WEBHOOK_SECRET } from "../test-env";
 
 const ctx = vi.hoisted(() => ({ cart: [] as string[] }));
@@ -297,6 +297,7 @@ describe("the owner's screens", () => {
     const teacher = await createTeacher({ mode: "self_managed" });
     const product = await createVideoProduct({ teacherId: teacher.id, status: "draft", accessMode: "until_date", accessUntil: past() });
     const actor: Actor = { kind: "teacher", userId: teacher.user!.id, name: teacher.displayName, email: teacher.user!.email, teacherId: teacher.id, teacherName: teacher.displayName, canUpload: true };
-    await expect(submitForReview(product.id, actor)).resolves.toBeUndefined();
+    await acceptAgreement(actor.userId);
+    await expect(submitForReview(product.id, actor, undefined, ATTESTED)).resolves.toBeUndefined();
   });
 });

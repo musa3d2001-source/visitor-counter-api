@@ -26,6 +26,7 @@ import {
   Wallet,
   X,
   type LucideIcon,
+  ScrollText,
 } from "lucide-react";
 import { LogoMark, Sparkle } from "@/components/art";
 import { ar, initial } from "@/lib/design";
@@ -83,6 +84,7 @@ const TEACHER_GROUPS: NavGroup[] = [
       { href: "/admin/products", label: "محتواي", Icon: FileText, tone: "sky" },
       { href: "/admin/earnings", label: "أرباحي ومبيعاتي", Icon: Wallet, tone: "gold" },
       { href: "/admin/profile", label: "ملفي التعريفي", Icon: UserRound, tone: "pink" },
+      { href: "/admin/agreement", label: "اتفاقية المعلم", Icon: ScrollText, tone: "violet" },
     ],
   },
 ];

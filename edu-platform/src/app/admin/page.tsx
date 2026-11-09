@@ -21,6 +21,7 @@ import {
   UserRound,
   Users,
   Wallet,
+  ScrollText,
 } from "lucide-react";
 import { dashboardTotals, latestOrders, salesByDay, topProducts, topTeachers } from "@/server/admin/stats";
 import { requireStaff, type Actor } from "@/server/auth/permissions";
@@ -37,6 +38,7 @@ import { Button } from "@/components/ui/button";
 import { Eyebrow } from "@/components/ui/section-head";
 import { AdminNotice, MiniStat, MoreLink, Section, StatGrid, StatTile } from "@/components/admin/page-header";
 import { getSettings } from "@/server/platform/settings";
+import { hasCurrentAgreement } from "@/server/admin/teacher-agreement";
 import { DataList, DataRow, RankList } from "@/components/admin/data-list";
 import { Segmented } from "@/components/admin/filter-bar";
 import { ToneIcon } from "@/components/admin/icon-tile";
@@ -314,7 +316,7 @@ export default async function AdminDashboard({ searchParams }: { searchParams: P
 
 /** الصفحة الرئيسية للمعلم: أرقامه فقط — بدون بيانات الطلاب */
 async function TeacherHome({ actor }: { actor: Extract<Actor, { kind: "teacher" }> }) {
-  const d = await teacherDashboard(actor.teacherId);
+  const [d, agreementOk] = await Promise.all([teacherDashboard(actor.teacherId), hasCurrentAgreement(actor.userId)]);
   const today = todayLabel();
   const inReview = d.counts.in_review;
   return (
@@ -349,6 +351,12 @@ async function TeacherHome({ actor }: { actor: Extract<Actor, { kind: "teacher" 
           </>
         }
       />
+
+      {!agreementOk ? (
+        <AdminNotice href="/admin/agreement" icon={<ScrollText />} tone="gold" action="قراءة الاتفاقية">
+          <b>اتفاقية المعلم بانتظار قبولك.</b> محتواك الحالي يبقى كما هو، وتحتاج إليها عند إرسال محتوى للمراجعة.
+        </AdminNotice>
+      ) : null}
 
       {!actor.canUpload ? (
         <p className="flex items-center gap-3 rounded-[1.4rem] border-2 border-accent-200 bg-warning-50 p-4 font-display text-[0.95rem] font-bold text-warning shadow-[0_4px_0_color-mix(in_oklab,var(--accent-edge)_25%,white)]">
