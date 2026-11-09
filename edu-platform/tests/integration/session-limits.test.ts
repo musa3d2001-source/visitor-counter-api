@@ -66,13 +66,17 @@ describe("a student's active sessions", () => {
     expect(await countSessions(student.id)).toBe(3);
   });
 
-  it("keeps the session that signed in last, under concurrency", async () => {
+  it("keeps the three sessions that signed in last, under concurrency", async () => {
     const student = await createUser();
     const results = await Promise.all(Array.from({ length: 10 }, () => createSession(student.id)));
     const alive = await Promise.all(results.map((r) => validateSessionToken(r.token)));
-    expect(alive.filter(Boolean)).toHaveLength(3);
-    const [latest] = await sql<{ id: string }[]>`select id from sessions where user_id = ${student.id} order by created_at desc limit 1`;
-    expect(results.some((r) => hashToken(r.token) === latest.id)).toBe(true);
+    const survivors = results.filter((_, i) => alive[i]);
+    const evicted = results.filter((_, i) => !alive[i]);
+    expect(survivors).toHaveLength(3);
+    // expiresAt يُحسب بعد الحصول على قفل الحساب، فترتيبه هو ترتيب الدخول الفعلي، بخلاف ترتيب بدء الطلبات
+    const oldestSurvivor = Math.min(...survivors.map((r) => r.expiresAt.getTime()));
+    const newestEvicted = Math.max(...evicted.map((r) => r.expiresAt.getTime()));
+    expect(oldestSurvivor).toBeGreaterThanOrEqual(newestEvicted);
   });
 
   it("orders sessions by who got the lock, not by who started first", async () => {

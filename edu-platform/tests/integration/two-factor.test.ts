@@ -547,6 +547,48 @@ describe("signing in", () => {
     expect(await sessionsOf(user.id)).toHaveLength(1);
   });
 
+  it("one challenge finished with two different valid codes at once opens one session and spends one code", async () => {
+    const user = await admin();
+    const { recoveryCodes } = await enrolAdmin(user);
+    await sql`delete from sessions where user_id = ${user.id}`;
+    const { token } = await challengeFor(user);
+    let release!: () => void;
+    let locked!: () => void;
+    const gate = new Promise<void>((r) => (release = r));
+    const isLocked = new Promise<void>((r) => (locked = r));
+    const holder = sql.begin(async (tx) => {
+      await tx`select id from login_challenges where id = ${hashToken(token)} for update`;
+      locked();
+      await gate;
+    });
+    await isLocked;
+    const racing = Promise.all([completeTwoFactorLogin(token, recoveryCodes[0], meta), completeTwoFactorLogin(token, recoveryCodes[1], meta)]);
+    // الطلبان يقفان عند قفل صف التحدي، فيبدأ كلاهما قبل أن يكتمل أي منهما
+    for (let waited = 0; waited < 3000; waited += 20) {
+      const [{ n }] = await sql<{ n: number }[]>`select count(*)::int as n from pg_stat_activity where datname = current_database() and wait_event_type = 'Lock'`;
+      if (n >= 2) break;
+      await new Promise((r) => setTimeout(r, 20));
+    }
+    release();
+    await holder;
+    const results = await racing;
+    expect(results.filter((r) => r.ok)).toHaveLength(1);
+    expect(await sessionsOf(user.id)).toHaveLength(1);
+    expect(await sql`select 1 from user_recovery_codes where user_id = ${user.id} and used_at is not null`).toHaveLength(1);
+  });
+
+  it("a code that signed in once cannot sign in again or approve a refund", async () => {
+    const user = await admin();
+    const { secret } = await enrolAdmin(user);
+    const step = currentStep();
+    // خطوة واحدة قبل الحالية، حتى يكون رمز هذه الخطوة أول رمز جديد. بعدها لا يُلمس هذا العمود
+    await sql`update user_totp set last_used_step = ${step - 1} where user_id = ${user.id}`;
+    const code = codeAt(secret, step);
+    await expect(completeTwoFactorLogin((await challengeFor(user)).token, code, meta)).resolves.toMatchObject({ ok: true, method: "totp" });
+    await expect(completeTwoFactorLogin((await challengeFor(user)).token, code, meta)).resolves.toMatchObject({ ok: false, error: expect.stringContaining("سبق استخدامه") });
+    await expect(verifyStepUpCode({ userId: user.id, code, ip })).resolves.toMatchObject({ ok: false, error: expect.stringContaining("سبق استخدامه") });
+  });
+
   it("limits bad challenge tokens from one address", async () => {
     const ipMeta = { ip: "198.51.100.200", userAgent: "vitest" };
     for (let i = 0; i < 60; i++) await completeTwoFactorLogin("nope", "123456", ipMeta);
