@@ -1,5 +1,6 @@
 import { readFileSync } from "node:fs";
 import { afterAll, beforeAll, beforeEach, describe, expect, it, vi } from "vitest";
+import { renderToStaticMarkup } from "react-dom/server";
 import { ar } from "@/lib/design";
 import { looksLikeBankDetails, REFUND_HOLD_DAYS } from "@/lib/teacher-terms";
 import { createOrder, markOrderPaid } from "@/server/commerce/orders";
@@ -12,6 +13,7 @@ import { createTeacher, createUser, createVideoProduct, type TestTeacher } from 
 const ctx = vi.hoisted(() => ({ user: null as unknown }));
 vi.mock("@/server/http", async (original) => ({ ...(await original<typeof import("@/server/http")>()), clientIp: async () => "192.0.2.71", userAgent: async () => "t" }));
 vi.mock("next/cache", () => ({ revalidatePath: () => {} }));
+vi.mock("next/navigation", async (original) => ({ ...(await original<typeof import("next/navigation")>()), useRouter: () => ({ refresh() {} }), usePathname: () => "/admin/earnings" }));
 vi.mock("@/server/auth/session", async (original) => ({
   ...(await original<typeof import("@/server/auth/session")>()),
   getCurrentUser: async () => ctx.user,
@@ -19,6 +21,7 @@ vi.mock("@/server/auth/session", async (original) => ({
 }));
 
 const { recordPayoutAction, voidPayoutAction } = await import("@/app/admin/teachers/actions");
+const { default: TeacherEarningsPage } = await import("@/app/admin/earnings/page");
 
 let owner: Awaited<ReturnType<typeof createUser>>;
 beforeAll(async () => {
@@ -269,6 +272,21 @@ describe("بعد التسوية يحدث الاسترداد", () => {
     expect(await teacherBalance(t.id)).toMatchObject({ earnedFils: 0, reversedFils: 1000, paidFils: 1000, balanceFils: -1000 });
     await sale(t, 3000, 8);
     expect((await teacherBalance(t.id)).balanceFils).toBe(500);
+  });
+});
+
+describe("ما يراه المعلم", () => {
+  const figure = (html: string, id: string) => html.match(new RegExp(`data-testid="${id}"[^>]*><span class="num">([^<]+)<`))?.[1];
+
+  it("the teacher's own page shows what is payable now, apart from what is still held", async () => {
+    const t = await createTeacher({ mode: "self_managed", shareBps: 5000 });
+    await sale(t, 2000, 8);
+    await sale(t, 3000);
+    await pay(t.id, 400);
+    ctx.user = { id: t.user!.id, email: t.user!.email, fullName: "معلم", phone: null, role: "teacher", gradeId: null, isActive: true };
+    const html = renderToStaticMarkup(await TeacherEarningsPage({ searchParams: Promise.resolve({}) }));
+    expect(figure(html, "my-held")).toBe("1.500");
+    expect(figure(html, "my-balance")).toBe("0.600");
   });
 });
 
