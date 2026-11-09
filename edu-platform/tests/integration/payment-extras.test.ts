@@ -187,6 +187,41 @@ describe("a real payment arriving on a closed order", () => {
     expect(await extraOf(order.id)).toBeUndefined();
   });
 
+  describe("when only the webhook reports it", () => {
+    const deliver = (invoice: number) => {
+      const paymentId = sim.state.invoices.get(invoice)!.Transactions[0].PaymentId;
+      const { body, headers } = sim.buildWebhook(invoice, paymentId);
+      return handleMyFatoorahWebhook(body, headers);
+    };
+
+    it.each(["expired", "student_cancelled"] as const)("completes an order closed as %s", async (reason) => {
+      const { user, order, product, invoice } = await closedAndPaid(reason);
+      await expect(deliver(invoice)).resolves.toMatchObject({ status: 200 });
+      expect(await orderRow(order.id)).toMatchObject({ status: "paid", closed_at: null, closed_reason: null });
+      expect(await activeEntitlements(user.id)).toContain(product.id);
+      expect(await auditCount("order.paid_after_close", order.id)).toBe(1);
+      expect(await extraOf(order.id)).toBeUndefined();
+    });
+
+    it.each(["expired", "student_cancelled"] as const)("records a charge it cannot complete on an order closed as %s", async (reason) => {
+      const { user, order, product, invoice } = await closedAndPaid(reason);
+      await sql`update products set price_fils = 9000 where id = ${product.id}`;
+      await expect(deliver(invoice)).resolves.toMatchObject({ status: 200, result: "flagged late_review" });
+      expect((await orderRow(order.id)).status).toBe("cancelled");
+      expect(await activeEntitlements(user.id)).not.toContain(product.id);
+      expect((await extraOf(order.id)).kind).toBe("late_review");
+    });
+
+    it("a repeated delivery changes nothing", async () => {
+      const { order, invoice } = await closedAndPaid();
+      await deliver(invoice);
+      const before = await moneySnapshot(order.id);
+      await expect(deliver(invoice)).resolves.toMatchObject({ status: 200 });
+      expect(await moneySnapshot(order.id)).toBe(before);
+      expect(await auditCount("order.paid_after_close", order.id)).toBe(1);
+    });
+  });
+
   it("a lower price today does not block it: the student paid in full", async () => {
     const { order, product, invoice } = await closedAndPaid();
     await sql`update products set price_fils = 1000 where id = ${product.id}`;

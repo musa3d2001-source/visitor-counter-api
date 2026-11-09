@@ -103,6 +103,21 @@ describe("who may call it", () => {
   });
 });
 
+describe("the runbook", () => {
+  const readme = readFileSync(resolve(__dirname, "../../README.md"), "utf8");
+  // خطوة الاشتراك نفسها: البوابة لا ترسل إلا ما يُحدد فيها
+  const subscribeStep = readme.split("\n").find((line) => line.trim().startsWith("- فعّل الأحداث")) ?? "";
+
+  it.each(["Payment Status Changed", "Refund Status Changed", "Dispute Status Changed"])("tells the owner to subscribe to %s", (event) => {
+    expect(subscribeStep).toContain(`**${event}**`);
+  });
+
+  it("gives the plan decision and the schedule that works on Hobby", () => {
+    expect(readme).toContain("قرار قبل الدمج");
+    expect(readme).toContain("`0 0 * * *`");
+  });
+});
+
 describe("vercel.json", () => {
   const config = JSON.parse(readFileSync(resolve(__dirname, "../../vercel.json"), "utf8")) as { crons: { path: string; schedule: string }[] };
 

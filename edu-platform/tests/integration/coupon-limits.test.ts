@@ -199,6 +199,29 @@ describe("retrying a failed order that carries a code", () => {
     return { coupon, product, student, order: await orderRow(order.id) };
   }
 
+  it("waits for a checkout holding the code, and closes when that checkout took the last use", async () => {
+    const { coupon, order } = await failedOrder({ maxRedemptions: 1 });
+    const [other] = await users(1);
+    // نسخة خادم أخرى تمسك صف الكود وتأخذ آخر مرة استخدام قبل أن تلتزم
+    const out = await asOtherServer(async (tx) => {
+      await tx`select id from coupons where id = ${coupon.id} for no key update`;
+      const retrying = startPayment(order, null).then(
+        () => "started",
+        (e: OrderClosedError) => e.reason,
+      );
+      await pause(300);
+      const settledEarly = await Promise.race([retrying, Promise.resolve("still waiting")]);
+      await tx`
+        insert into orders (user_id, subtotal_fils, discount_fils, total_fils, coupon_id, coupon_code, is_test, customer_name, customer_email)
+        values (${other.id}, 3000, 300, 2700, ${coupon.id}, ${coupon.code}, true, 'طالب', ${other.email})
+      `;
+      return { settledEarly, retrying };
+    });
+    expect(out.settledEarly).toBe("still waiting");
+    await expect(out.retrying).resolves.toBe("coupon_unavailable");
+    expect(await orderRow(order.id)).toMatchObject({ status: "cancelled", closed_reason: "coupon_unavailable" });
+  });
+
   it("takes the code back when it is still free, and holds it again", async () => {
     const { coupon, product, order } = await failedOrder({ maxRedemptions: 1 });
     await expect(startPayment(order, null)).resolves.toMatchObject({ reused: false });
