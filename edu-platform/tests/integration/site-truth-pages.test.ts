@@ -154,8 +154,10 @@ describe("the sign-in pages hand their card the real perks", () => {
     const perks = await authPagePerks();
     for (const markup of [html(await LoginPage({ searchParams: Promise.resolve({}) })), html(await RegisterPage({ searchParams: Promise.resolve({}) }))]) {
       const text = textOf(markup);
-      for (const { text: perk } of perks) expect(text).toContain(perk);
-      if (state !== "live") expect(text).not.toMatch(/دفع آمن|تأكيد الدفع/);
+      // مرة في الجانب المرسوم ومرة في شريط الجوال
+      for (const { text: perk } of perks) expect(text.split(perk).length - 1).toBe(2);
+      if (state !== "live") expect(text).not.toMatch(PAYMENT_CLAIM);
+      if (state === "off") expect(text).not.toContain("تأكيد الدفع");
     }
   });
 });
