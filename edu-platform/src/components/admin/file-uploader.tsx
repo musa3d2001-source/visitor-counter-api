@@ -2,7 +2,9 @@
 
 import { useRef, useState } from "react";
 import { useRouter } from "next/navigation";
-import { CircleCheck, ImageUp, LoaderCircle, TriangleAlert, Upload } from "lucide-react";
+import { CircleCheck, ImageUp, LoaderCircle, RefreshCw, TriangleAlert, Upload, WifiOff } from "lucide-react";
+import { ar } from "@/lib/design";
+import { classifyPutResponse, isTransientServerStatus, networkFailure, putWithRetry, retryDelayMs, UPLOAD_RETRY, type PutOutcome, type RetryNotice } from "@/lib/upload-retry";
 import { cn } from "@/lib/utils";
 
 export type UploadTargetName = "main" | "preview" | "cover" | "lesson" | "logo" | "teacher_photo" | "lesson_thumb";
@@ -50,6 +52,68 @@ async function tusUpload(file: File, init: Extract<InitResponse, { method: "TUS"
   });
 }
 
+export type UploadPhase = "uploading" | "processing" | "retrying" | "offline";
+export type UploadProgress = (pct: number, phase: UploadPhase, retry?: { attempt: number; of: number }) => void;
+export type UploadResult = { ok: true; message: string } | { ok: false; error: string; canRetry?: boolean };
+
+const sleep = (ms: number) => new Promise<void>((r) => setTimeout(r, ms));
+
+function waitForOnline(timeoutMs: number): Promise<boolean> {
+  return new Promise((resolve) => {
+    const done = (back: boolean) => {
+      window.removeEventListener("online", onOnline);
+      clearTimeout(timer);
+      resolve(back);
+    };
+    const onOnline = () => done(true);
+    const timer = setTimeout(() => done(navigator.onLine), timeoutMs);
+    window.addEventListener("online", onOnline);
+  });
+}
+
+/** محاولة PUT واحدة، تنقطع إن توقف التقدم طويلًا (اتصال هاتف معلق لا يُعلن فشله) */
+function putOnce(file: File, put: Extract<InitResponse, { method: "PUT" }>, attempt: number, onProgress: (pct: number) => void): Promise<PutOutcome> {
+  return new Promise((resolve) => {
+    const xhr = new XMLHttpRequest();
+    let watchdog: ReturnType<typeof setTimeout>;
+    const arm = () => {
+      clearTimeout(watchdog);
+      watchdog = setTimeout(() => xhr.abort(), UPLOAD_RETRY.stallMs);
+    };
+    xhr.open(put.method, put.url);
+    for (const [k, v] of Object.entries(put.headers)) xhr.setRequestHeader(k, v);
+    xhr.upload.onprogress = (e) => {
+      arm();
+      if (e.lengthComputable) onProgress(Math.round((e.loaded / e.total) * 100));
+    };
+    xhr.onload = () => {
+      clearTimeout(watchdog);
+      resolve(classifyPutResponse(xhr.status, xhr.responseText, attempt));
+    };
+    xhr.onerror = xhr.onabort = () => {
+      clearTimeout(watchdog);
+      resolve(networkFailure());
+    };
+    arm();
+    xhr.send(file);
+  });
+}
+
+/** طلب JSON إلى الخادم، يُعاد عند انقطاع الشبكة أو عطل البوابة فقط. أخطاء التحقق تعود كما هي */
+async function postJson<T>(url: string, body: unknown, tries: number, onRetry?: (attempt: number, of: number) => void): Promise<{ res: Response; data: T } | null> {
+  for (let attempt = 1; attempt <= tries; attempt++) {
+    try {
+      const res = await fetch(url, { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify(body) });
+      if (!isTransientServerStatus(res.status) || attempt === tries) return { res, data: (await res.json().catch(() => ({}))) as T };
+    } catch {
+      if (attempt === tries) return null;
+    }
+    onRetry?.(attempt + 1, tries);
+    await sleep(retryDelayMs(attempt));
+  }
+  return null;
+}
+
 /** رفع ملف واحد: تجهيز ← رفع مباشر بمؤشر تقدم ← تأكيد وتحقق على الخادم */
 export async function uploadFile(
   file: File,
@@ -60,8 +124,8 @@ export async function uploadFile(
     lessonId?: string | null;
     extra?: Record<string, unknown>;
   },
-  onProgress: (pct: number, phase: "uploading" | "processing") => void,
-): Promise<{ ok: true; message: string } | { ok: false; error: string }> {
+  onProgress: UploadProgress,
+): Promise<UploadResult> {
   const lower = file.name.toLowerCase();
   const mime = file.type || (lower.endsWith(".pdf") ? "application/pdf" : lower.endsWith(".mp4") ? "video/mp4" : "");
   const ids = {
@@ -69,85 +133,60 @@ export async function uploadFile(
     teacherId: opts.teacherId ?? null,
     lessonId: opts.lessonId ?? null,
   };
-  let init: InitResponse;
-  try {
-    const res = await fetch("/api/admin/uploads/init", {
-      method: "POST",
-      headers: { "content-type": "application/json" },
-      body: JSON.stringify({
-        target: opts.target,
-        ...ids,
-        fileName: file.name,
-        size: file.size,
-        mime,
-        ...(opts.extra ?? {}),
-      }),
-    });
-    init = (await res.json()) as InitResponse;
-    if (!res.ok) return { ok: false, error: init.error ?? "تعذر تجهيز الرفع" };
-  } catch {
-    return { ok: false, error: "تعذر الاتصال بالخادم" };
-  }
+  // تجهيز الدرس قد يُنشئ سجلًا عند مزود الفيديو، فلا يُعاد تلقائيًا
+  const initTries = opts.target === "lesson" ? 1 : 3;
+  const started = await postJson<InitResponse>(
+    "/api/admin/uploads/init",
+    { target: opts.target, ...ids, fileName: file.name, size: file.size, mime, ...(opts.extra ?? {}) },
+    initTries,
+    (attempt, of) => onProgress(0, "retrying", { attempt, of }),
+  );
+  if (!started) return { ok: false, error: "تعذر الاتصال بالخادم. تحقق من الشبكة ثم أعد المحاولة.", canRetry: true };
+  if (!started.res.ok) return { ok: false, error: started.data.error ?? "تعذر تجهيز الرفع", canRetry: isTransientServerStatus(started.res.status) };
+  const init = started.data;
 
+  let lastPct = 0;
   const putOk =
     init.method === "TUS"
       ? await tusUpload(file, init, (pct) => onProgress(pct, "uploading"))
-      : await new Promise<{ ok: boolean; error?: string }>((resolve) => {
-          const xhr = new XMLHttpRequest();
-          const put = init as Extract<InitResponse, { method: "PUT" }>;
-          xhr.open(put.method, put.url);
-          for (const [k, v] of Object.entries(put.headers)) xhr.setRequestHeader(k, v);
-          xhr.upload.onprogress = (e) => {
-            if (e.lengthComputable) onProgress(Math.round((e.loaded / e.total) * 100), "uploading");
-          };
-          xhr.onload = () => {
-            if (xhr.status >= 200 && xhr.status < 300) resolve({ ok: true });
-            else {
-              let msg = "فشل رفع الملف";
-              try {
-                msg = (JSON.parse(xhr.responseText) as { error?: string }).error ?? msg;
-              } catch {
-                /* ignore */
-              }
-              resolve({ ok: false, error: `${msg} (${xhr.status})` });
-            }
-          };
-          xhr.onerror = () => resolve({ ok: false, error: "انقطع الاتصال أثناء الرفع" });
-          xhr.send(file);
-        });
-  if (!putOk.ok) return { ok: false, error: putOk.error ?? "فشل رفع الملف" };
+      : await putWithRetry(
+          (attempt) => {
+            onProgress(attempt === 1 ? 0 : lastPct, "uploading");
+            return putOnce(file, init, attempt, (pct) => {
+              lastPct = pct;
+              onProgress(pct, "uploading");
+            });
+          },
+          {
+            sleep,
+            isOffline: () => navigator.onLine === false,
+            waitForOnline,
+            onNotice: (n: RetryNotice) => (n.reason === "offline" ? onProgress(lastPct, "offline") : onProgress(lastPct, "retrying", { attempt: n.attempt, of: n.of })),
+          },
+        );
+  if (!putOk.ok) return { ok: false, error: putOk.error ?? "فشل رفع الملف", canRetry: (putOk as { canRetry?: boolean }).canRetry === true };
 
   onProgress(100, "processing");
-  try {
-    const res = await fetch("/api/admin/uploads/complete", {
-      method: "POST",
-      headers: { "content-type": "application/json" },
-      body: JSON.stringify({
-        target: opts.target,
-        key: init.key,
-        ...ids,
-        originalName: file.name,
-        ...opts.extra,
-      }),
-    });
-    const data = (await res.json()) as {
-      ok?: boolean;
-      message?: string;
-      error?: string;
-    };
-    if (!res.ok || !data.ok) return { ok: false, error: data.error ?? "تعذر التحقق من الملف" };
-    return { ok: true, message: data.message ?? "تم الرفع" };
-  } catch {
-    return { ok: false, error: "تعذر الاتصال بالخادم أثناء التحقق" };
-  }
+  const finished = await postJson<{ ok?: boolean; message?: string; error?: string }>(
+    "/api/admin/uploads/complete",
+    { target: opts.target, key: init.key, ...ids, originalName: file.name, size: init.method === "PUT" ? file.size : undefined, ...opts.extra },
+    3,
+    (attempt, of) => onProgress(100, "retrying", { attempt, of }),
+  );
+  if (!finished) return { ok: false, error: "وصل الملف لكن تعذر تأكيده. تحقق من الشبكة ثم أعد المحاولة.", canRetry: true };
+  if (!finished.res.ok || !finished.data.ok) return { ok: false, error: finished.data.error ?? "تعذر التحقق من الملف", canRetry: isTransientServerStatus(finished.res.status) };
+  return { ok: true, message: finished.data.message ?? "تم الرفع" };
 }
 
 type Item = {
   name: string;
   size: number;
   pct: number;
-  phase: "queued" | "uploading" | "processing" | "done" | "error";
+  phase: "queued" | "uploading" | "processing" | "retrying" | "offline" | "done" | "error";
   message?: string;
+  retry?: { attempt: number; of: number };
+  /** الملف نفسه محفوظ هنا لتكون إعادة المحاولة بضغطة واحدة */
+  file?: File;
 };
 
 export function fmtSize(n: number) {
@@ -182,6 +221,23 @@ export function FileUploader({
   const [busy, setBusy] = useState(false);
   const [drag, setDrag] = useState(false);
 
+  async function runItem(idx: number, file: File): Promise<boolean> {
+    const update = (patch: Partial<Item>) => setItems((prev) => prev.map((it, j) => (j === idx ? { ...it, ...patch } : it)));
+    update({ phase: "uploading", pct: 0, message: undefined, file: undefined });
+    const res = await uploadFile(file, { target, productId, teacherId, lessonId }, (pct, phase, retry) => update({ pct, phase, retry }));
+    if (res.ok) update({ phase: "done", pct: 100, message: res.message });
+    else update({ phase: "error", message: res.error, file: res.canRetry ? file : undefined });
+    return res.ok;
+  }
+
+  async function retryItem(idx: number, file: File) {
+    if (busy) return;
+    setBusy(true);
+    const ok = await runItem(idx, file);
+    setBusy(false);
+    if (ok) router.refresh();
+  }
+
   async function handle(files: FileList | File[]) {
     const list = Array.from(files);
     if (!list.length || busy) return;
@@ -198,14 +254,7 @@ export function FileUploader({
     ]);
     let anyOk = false;
     for (let i = 0; i < list.length; i++) {
-      const idx = start + i;
-      const update = (patch: Partial<Item>) => setItems((prev) => prev.map((it, j) => (j === idx ? { ...it, ...patch } : it)));
-      update({ phase: "uploading" });
-      const res = await uploadFile(list[i], { target, productId, teacherId, lessonId }, (pct, phase) => update({ pct, phase }));
-      if (res.ok) {
-        anyOk = true;
-        update({ phase: "done", pct: 100, message: res.message });
-      } else update({ phase: "error", message: res.error });
+      if (await runItem(start + i, list[i])) anyOk = true;
     }
     setBusy(false);
     if (inputRef.current) inputRef.current.value = "";
@@ -283,6 +332,8 @@ export function FileUploader({
                     <CircleCheck className="size-5 shrink-0 text-success" aria-hidden />
                   ) : it.phase === "error" ? (
                     <TriangleAlert className="size-5 shrink-0 text-danger" aria-hidden />
+                  ) : it.phase === "offline" ? (
+                    <WifiOff className="size-5 shrink-0 text-warning" aria-hidden />
                   ) : (
                     <LoaderCircle className="size-5 shrink-0 animate-spin text-brand-600" aria-hidden />
                   )}
@@ -292,7 +343,7 @@ export function FileUploader({
                 </span>
                 <span className="num shrink-0 text-xs text-muted">{fmtSize(it.size)}</span>
               </div>
-              {it.phase === "uploading" || it.phase === "processing" || it.phase === "queued" ? (
+              {it.phase === "uploading" || it.phase === "processing" || it.phase === "queued" || it.phase === "retrying" || it.phase === "offline" ? (
                 <div className="mt-2">
                   <div className="h-2.5 overflow-hidden rounded-full bg-mist" role="progressbar" aria-label={`تقدم رفع ${it.name}`} aria-valuemin={0} aria-valuemax={100} aria-valuenow={it.pct}>
                     <div className="h-full rounded-full bg-linear-to-l from-brand-400 to-brand-600 transition-[width]" style={{ width: `${it.pct}%` }} />
@@ -300,6 +351,12 @@ export function FileUploader({
                   <p className="mt-1 text-xs text-muted">
                     {it.phase === "queued" ? (
                       "في الانتظار…"
+                    ) : it.phase === "offline" ? (
+                      <span className="font-bold text-ink-soft" data-testid="upload-offline">انقطعت الشبكة. سيُستأنف الرفع تلقائيًا عند عودتها، أبقِ الصفحة مفتوحة.</span>
+                    ) : it.phase === "retrying" ? (
+                      <span className="font-bold text-ink-soft" data-testid="upload-retrying">
+                        تعثر الاتصال، جارٍ إعادة المحاولة {it.retry ? `(${ar(it.retry.attempt)} من ${ar(it.retry.of)})` : ""}، أبقِ الصفحة مفتوحة.
+                      </span>
                     ) : it.phase === "processing" ? (
                       "جارٍ التحقق من الملف…"
                     ) : (
@@ -310,9 +367,16 @@ export function FileUploader({
                   </p>
                 </div>
               ) : it.message ? (
-                <p className={cn("mt-1 text-xs font-bold", it.phase === "error" ? "text-danger" : "text-success")} role={it.phase === "error" ? "alert" : undefined}>
-                  {it.message}
-                </p>
+                <div className="mt-1 flex flex-wrap items-center justify-between gap-2">
+                  <p className={cn("text-xs font-bold", it.phase === "error" ? "text-danger" : "text-success")} role={it.phase === "error" ? "alert" : undefined}>
+                    {it.message}
+                  </p>
+                  {it.phase === "error" && it.file ? (
+                    <button type="button" className="btn btn-3d btn-soft btn-sm min-h-11" disabled={busy} onClick={() => void retryItem(i, it.file as File)} data-testid="upload-retry">
+                      <RefreshCw className="size-4" aria-hidden /> إعادة المحاولة
+                    </button>
+                  ) : null}
+                </div>
               ) : null}
             </li>
           ))}

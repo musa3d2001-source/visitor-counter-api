@@ -3,7 +3,8 @@
 import { useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { FileVideo, LoaderCircle, Upload } from "lucide-react";
-import { fmtSize, uploadFile } from "./file-uploader";
+import { fmtSize, uploadFile, type UploadPhase } from "./file-uploader";
+import { ar } from "@/lib/design";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { Checkbox, Field, Input, Textarea } from "@/components/ui/form";
@@ -14,14 +15,15 @@ import { Alert } from "@/components/ui/alert";
  *  - provider = file  : رفع MP4 إلى التخزين الخاص للمنصة (جاهز فور التحقق)
  *  - provider = bunny : رفع TUS مباشر إلى Bunny Stream ثم انتظار اكتمال المعالجة
  */
-export function LessonUploader({ productId, provider = "file" }: { productId: string; provider?: "file" | "bunny" }) {
+export function LessonUploader({ productId, provider = "file", maxLabel = "2 جيجابايت" }: { productId: string; provider?: "file" | "bunny"; maxLabel?: string }) {
   const router = useRouter();
   const formRef = useRef<HTMLFormElement>(null);
   const fileRef = useRef<HTMLInputElement>(null);
   const [picked, setPicked] = useState<{ name: string; size: number } | null>(null);
   const [drag, setDrag] = useState(false);
   const [pct, setPct] = useState<number | null>(null);
-  const [phase, setPhase] = useState<"uploading" | "processing" | null>(null);
+  const [phase, setPhase] = useState<UploadPhase | null>(null);
+  const [retry, setRetry] = useState<{ attempt: number; of: number } | undefined>();
   const [result, setResult] = useState<{ ok: boolean; text: string } | null>(null);
 
   async function onSubmit(e: React.FormEvent<HTMLFormElement>) {
@@ -45,9 +47,10 @@ export function LessonUploader({ productId, provider = "file" }: { productId: st
           isFreePreview: fd.get("isFreePreview") === "on",
         },
       },
-      (p, ph) => {
+      (p, ph, r) => {
         setPct(p);
         setPhase(ph);
+        setRetry(r);
       },
     );
     setPct(null);
@@ -73,7 +76,7 @@ export function LessonUploader({ productId, provider = "file" }: { productId: st
         <Textarea id="l-desc" name="description" rows={2} maxLength={2000} disabled={busy} />
       </Field>
       <Field
-        label={provider === "bunny" ? "ملف الفيديو (MP4 / MOV / WEBM حتى 8 جيجابايت)" : "ملف الفيديو (MP4 حتى 2 جيجابايت)"}
+        label={provider === "bunny" ? "ملف الفيديو (MP4 / MOV / WEBM حتى 8 جيجابايت)" : `ملف الفيديو (MP4 حتى ${maxLabel})`}
         htmlFor="l-file"
         className="sm:col-span-2"
         required
@@ -161,7 +164,11 @@ export function LessonUploader({ productId, provider = "file" }: { productId: st
             <div className="h-full rounded-full bg-linear-to-l from-brand-400 to-brand-600 transition-[width]" style={{ width: `${pct}%` }} />
           </div>
           <p className="mt-1 text-xs text-muted">
-            {phase === "processing" ? (
+            {phase === "offline" ? (
+              "انقطعت الشبكة. سيُستأنف الرفع تلقائيًا عند عودتها، أبقِ الصفحة مفتوحة."
+            ) : phase === "retrying" ? (
+              <>تعثر الاتصال، جارٍ إعادة المحاولة {retry ? `(${ar(retry.attempt)} من ${ar(retry.of)})` : ""}، أبقِ الصفحة مفتوحة.</>
+            ) : phase === "processing" ? (
               "جارٍ التحقق من الملف…"
             ) : (
               <>
