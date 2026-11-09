@@ -43,30 +43,34 @@ export async function runDataPruning(): Promise<PruneReport> {
   const signalDays = IP_SIGNAL.windowDays + 1;
   const accessDays = Math.max(ACCESS_LOG_RETENTION_DAYS, signalDays);
 
+  // كل دفعة MATERIALIZED تُحسب مرة واحدة: داخل IN قد يعيد المخطط تنفيذها لكل صف، فيتخطى القفل ما حذفه الأمر نفسه ويتجاوز الحد
   const rateLimits = await inBatches(() => pruneRateLimits(PRUNE_BATCH_SIZE));
   const sessions = await inBatches(
     () => deleted(sql`
-      delete from sessions where id in (
+      with batch as materialized (
         select id from sessions
         where expires_at < now() and created_at < now() - make_interval(days => ${signalDays})
         limit ${PRUNE_BATCH_SIZE} for update skip locked
       )
+      delete from sessions s using batch where s.id = batch.id
     `),
   );
   const accessLogs = await inBatches(
     () => deleted(sql`
-      delete from access_logs where id in (
+      with batch as materialized (
         select id from access_logs where created_at < now() - make_interval(days => ${accessDays})
         limit ${PRUNE_BATCH_SIZE} for update skip locked
       )
+      delete from access_logs l using batch where l.id = batch.id
     `),
   );
   const errorEvents = await inBatches(
     () => deleted(sql`
-      delete from error_events where id in (
+      with batch as materialized (
         select id from error_events where last_seen_at < now() - make_interval(days => ${ERROR_EVENT_RETENTION_DAYS})
         limit ${PRUNE_BATCH_SIZE} for update skip locked
       )
+      delete from error_events e using batch where e.id = batch.id
     `),
   );
   return { rateLimits, sessions, accessLogs, errorEvents, finished };

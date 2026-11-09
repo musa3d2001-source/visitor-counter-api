@@ -69,9 +69,9 @@ export async function runPaymentReconciliation(): Promise<ReconcileReport> {
 
   if (cfg.enabled) {
     const started = Date.now();
+    // كل دفعة هنا MATERIALIZED تُحسب مرة واحدة: داخل IN قد يعيد المخطط تنفيذها لكل صف، فيتخطى القفل ما حدّثه الأمر نفسه ويتجاوز الحد
     const claimed = await sql<{ id: string; gateway_invoice_id: string }[]>`
-      update payments set reconcile_claimed_at = now()
-      where id in (
+      with batch as materialized (
         select q.id from payments q
         join orders o on o.id = q.order_id
         where q.provider = 'myfatoorah' and q.gateway_invoice_id is not null
@@ -88,7 +88,9 @@ export async function runPaymentReconciliation(): Promise<ReconcileReport> {
         limit ${RECONCILE_BATCH_SIZE}
         for update of q skip locked
       )
-      returning id, gateway_invoice_id
+      update payments p set reconcile_claimed_at = now()
+      from batch where p.id = batch.id
+      returning p.id, p.gateway_invoice_id
     `;
     report.claimed = claimed.length;
     let consecutiveFailures = 0;
@@ -134,8 +136,7 @@ export async function runPaymentReconciliation(): Promise<ReconcileReport> {
     };
     if (budgetLeft()) {
       const refunds = await sql<{ id: string }[]>`
-        update refunds set swept_at = now()
-        where id in (
+        with batch as materialized (
           select r.id from refunds r join payments p on p.id = r.payment_id
           where r.status = 'requested' and p.environment = ${cfg.environment}
             and coalesce(r.accepted_at, r.created_at) < now() - make_interval(hours => ${REFUND_SWEEP_HOURS})
@@ -144,7 +145,9 @@ export async function runPaymentReconciliation(): Promise<ReconcileReport> {
           limit ${REFUND_SWEEP_BATCH}
           for update of r skip locked
         )
-        returning id
+        update refunds r set swept_at = now()
+        from batch where r.id = batch.id
+        returning r.id
       `;
       await sweep(
         refunds.map((r) => r.id),
@@ -154,8 +157,7 @@ export async function runPaymentReconciliation(): Promise<ReconcileReport> {
     }
     if (budgetLeft()) {
       const extras = await sql<{ id: string }[]>`
-        update payment_extras set swept_at = now()
-        where id in (
+        with batch as materialized (
           select e.id from payment_extras e join payments p on p.id = e.payment_id
           where e.state = 'refund_requested' and p.environment = ${cfg.environment}
             and coalesce(e.refund_requested_at, e.created_at) < now() - make_interval(hours => ${REFUND_SWEEP_HOURS})
@@ -164,7 +166,9 @@ export async function runPaymentReconciliation(): Promise<ReconcileReport> {
           limit ${REFUND_SWEEP_BATCH}
           for update of e skip locked
         )
-        returning id
+        update payment_extras e set swept_at = now()
+        from batch where e.id = batch.id
+        returning e.id
       `;
       await sweep(
         extras.map((e) => e.id),
@@ -225,9 +229,9 @@ export async function closeExpiredOrders(opts: { rounds?: number } = {}): Promis
     if (closedThisRound === 0) break;
   }
 
+  // الدفعة MATERIALIZED تُحسب مرة واحدة: داخل IN قد يعيد المخطط تنفيذها لكل صف، فيتخطى القفل ما حدّثه الأمر نفسه ويتجاوز الحد
   const abandoned = await sql`
-    update payments set status = 'failed', error_message = 'لم تكتمل محاولة إنشاء رابط الدفع'
-    where id in (
+    with batch as materialized (
       select id from payments
       where provider = 'myfatoorah' and status = 'initiated' and gateway_invoice_id is null
         and created_at < now() - make_interval(mins => ${ABANDONED_CLAIM_MINUTES})
@@ -235,7 +239,9 @@ export async function closeExpiredOrders(opts: { rounds?: number } = {}): Promis
       limit ${ABANDONED_CLAIM_BATCH}
       for update skip locked
     )
-    returning id
+    update payments p set status = 'failed', error_message = 'لم تكتمل محاولة إنشاء رابط الدفع'
+    from batch where p.id = batch.id
+    returning p.id
   `;
   return { closed, abandonedClaims: abandoned.length, finished };
 }

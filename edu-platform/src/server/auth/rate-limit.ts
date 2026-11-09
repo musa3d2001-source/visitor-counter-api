@@ -79,12 +79,16 @@ export async function reserveFailureSlot(key: string, policy: FailurePolicy): Pr
   return { allowed: false, retryAfterSeconds: wait?.seconds ?? first };
 }
 
-/** يحذف دفعة محدودة من الحدود المنتهية منذ يوم على الأقل، ويعيد عدد ما حذف */
+/**
+ * يحذف دفعة محدودة من الحدود المنتهية منذ يوم على الأقل، ويعيد عدد ما حذف.
+ * الدفعة MATERIALIZED تُحسب مرة واحدة: داخل IN قد يعيد المخطط تنفيذها لكل صف، فيتخطى القفل ما حذفه الأمر نفسه ويتجاوز الحد.
+ */
 export async function pruneRateLimits(batchSize: number): Promise<number> {
   const { count } = await sql`
-    delete from rate_limits where key in (
+    with batch as materialized (
       select key from rate_limits where reset_at < now() - interval '1 day' limit ${batchSize} for update skip locked
     )
+    delete from rate_limits r using batch where r.key = batch.key
   `;
   return count;
 }
