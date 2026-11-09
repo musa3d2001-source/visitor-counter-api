@@ -206,9 +206,16 @@ export default async function TeacherAdminPage({ params, searchParams }: { param
                     </p>
                     <p className="mt-1 flex items-start gap-1.5 text-xs leading-5 text-muted" data-testid="teacher-agreement-status">
                       <ScrollText className="mt-0.5 size-3.5 shrink-0" aria-hidden />
-                      {agreement
-                        ? `الاتفاقية: قبل النسخة ${agreement.version} في ${formatDateTime(agreement.acceptedAt)}${agreement.isCurrent ? "" : "، ويُسأل عن الأحدث عند إرساله التالي"}`
-                        : "الاتفاقية: لم يقبلها بعد، ويُسأل عند إرساله التالي"}
+                      <span>
+                        {agreement ? (
+                          <>
+                            الاتفاقية: قبل النسخة <bdi dir="ltr">{agreement.version}</bdi> في {formatDateTime(agreement.acceptedAt)}
+                            {agreement.isCurrent ? "" : "، ويُسأل عن الأحدث عند إرساله التالي"}
+                          </>
+                        ) : (
+                          "الاتفاقية: لم يقبلها بعد، ويُسأل عند إرساله التالي"
+                        )}
+                      </span>
                     </p>
                   </div>
                   <div className="flex flex-col items-stretch gap-2 [&_button]:w-full [&>div]:w-full">

@@ -321,9 +321,13 @@ export default async function EditProductPage({
                   ) : null}
                 </p>
                 <p className="mt-1 text-sm leading-7 text-ink-soft" data-testid="rights-attestation">
-                  {attestation
-                    ? `أقرّ ${attestation.attested_by ?? "المعلم"} بحقوق هذا المحتوى في ${formatDateTime(attestation.attested_at)}، نسخة الإقرار ${attestation.statement_version}.`
-                    : "لا يوجد إقرار حقوق مسجل لهذا المحتوى، فقد أرسله المالك أو أُرسل قبل هذا السجل."}
+                  {attestation ? (
+                    <>
+                      أقرّ {attestation.attested_by ?? "المعلم"} بحقوق هذا المحتوى في {formatDateTime(attestation.attested_at)}، نسخة الإقرار <bdi dir="ltr">{attestation.statement_version}</bdi>.
+                    </>
+                  ) : (
+                    "لا يوجد إقرار حقوق مسجل لهذا المحتوى، فقد أرسله المالك أو أُرسل قبل هذا السجل."
+                  )}
                 </p>
               </div>
             </div>

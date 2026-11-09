@@ -23,10 +23,12 @@ export function OneTimeSecretForm({ action, children, className }: { action: Ser
   const [dismissed, setDismissed] = useState<ActionState>(null);
   const shown = state?.ok && state !== dismissed ? state : null;
   const secret = shown ? (shown.message?.match(/:\s*(\S+)$/)?.[1] ?? null) : null;
+  // السر يظهر في خانته وحدها: داخل جملة عربية تقلب الشرطات ترتيبه فيضلل من ينسخه
+  const note = secret ? shown?.message?.replace(/:\s*\S+$/, ".") : shown?.message;
   if (shown) {
     return (
       <div className="space-y-3" role="status">
-        <Alert tone="success">{shown.message}</Alert>
+        <Alert tone="success">{note}</Alert>
         {secret ? (
           <div className="relative overflow-hidden rounded-[1.4rem] border-2 border-dashed border-[#F0C766] bg-[linear-gradient(160deg,#fffaf0,#fff1cf)] p-3.5">
             <p className="mb-2.5 flex items-center gap-2 font-display text-[0.9rem] font-black text-[#6e4700]">

@@ -22,7 +22,11 @@ export default async function TeacherAgreementPage() {
   return (
     <div className="space-y-6">
       <PageBand tone="violet" art="review">
-        <AdminPageHeader className="mb-0" title="اتفاقية المعلم" description={`النسخة ${CONSENT_VERSIONS.teacher_agreement}`} />
+        <AdminPageHeader className="mb-0" title="اتفاقية المعلم" description={
+            <>
+              النسخة <bdi dir="ltr">{CONSENT_VERSIONS.teacher_agreement}</bdi>
+            </>
+          } />
       </PageBand>
 
       <Alert tone="warning" title="مسودة بانتظار مراجعة محامٍ" data-testid="agreement-draft">
@@ -35,7 +39,7 @@ export default async function TeacherAgreementPage() {
         </Alert>
       ) : acceptance ? (
         <Alert tone="info" title="تغيرت الاتفاقية منذ آخر قبول">
-          قبلت النسخة {acceptance.version} في {formatDateTime(acceptance.acceptedAt)}. راجع هذه النسخة واقبلها قبل إرسالك التالي للمراجعة. محتواك الحالي يبقى كما هو.
+          قبلت النسخة <bdi dir="ltr">{acceptance.version}</bdi> في {formatDateTime(acceptance.acceptedAt)}. راجع هذه النسخة واقبلها قبل إرسالك التالي للمراجعة. محتواك الحالي يبقى كما هو.
         </Alert>
       ) : null}
 
