@@ -141,7 +141,11 @@ The old split zips (`split/TASH-1..6-of-6`) and `TASH-Instagram-Kit.zip` were **
 4. If the iPhone download fails: shrink the reels further, or split into 2 zips of about 30 MB each.
 
 ## 7. Next step
-**Boost ad «نقاط مشروعك» (`tash/11-boost-ad/`), 9 Nov. Status: built and self-checked by Claude; independent review running; NOT delivered, NOT approved, NOT published.**
+**Boost ad «نقاط مشروعك» (`tash/11-boost-ad/`), 9 Nov.**
+- **Status:** v2, built after an independent 4-lens review (26 confirmed findings fixed, see SCRIPT §4).
+- **Master DELIVERED** to the owner at the owner's request («ارسل المقطع اذا خلص»), ~16:00 UTC: `out/TASH-boost-A-20s-9x16-ig.mp4` (10 Mbps delivery encode, 19.3 MB) and `out/poster-ig.png`.
+- NOT CD-reviewed, NOT approved, NOT published.
+- The other variants (TT, B, 14 s, 4:5) are rendered or rendering, with a re-verification workflow next.
 - The owner asked for a brand-new, code-built «اعلان تاريخي» for paid boosting on IG + TikTok (not a re-cut of the launch ad, which is already posted).
 - Flow so far:
   - research → `STRATEGY.md`;
