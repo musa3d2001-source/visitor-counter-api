@@ -347,6 +347,21 @@ describe("a timeout", () => {
     expect((await refundOf(order.id)).status).toBe("not_sent");
   });
 
+  it("a resend does not go out over a refund the gateway reports in a state we do not know", async () => {
+    const { order, invoice } = await paidOrder();
+    sim.setFault("/v2/MakeRefund", "drop-after");
+    await ask(order);
+    sim.clearFaults();
+    await sql`update refunds set status = 'not_sent', claimed_at = null where order_id = ${order.id}`;
+    sim.setRefundStatus(refundsOnGateway(invoice)[0].RefundId, "UnderReview" as never);
+    sim.state.requests.length = 0;
+    await expect(ask(order, undefined)).resolves.toMatchObject({ state: "not_sent", error: expect.stringContaining("UnderReview") });
+    expect(makeRefundCalls()).toHaveLength(0);
+    expect(refundsOnGateway(invoice)).toHaveLength(1);
+    expect((await refundOf(order.id)).status).toBe("not_sent");
+    expect((await orderRow(order.id)).status).toBe("paid");
+  });
+
   it("a re-check that cannot reach the gateway changes nothing", async () => {
     const { order } = await paidOrder();
     sim.setFault("/v2/MakeRefund", "down");

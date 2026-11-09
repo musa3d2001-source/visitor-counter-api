@@ -276,17 +276,21 @@ export async function requestRefund(gateway: RefundGateway, environment: Environ
   // بعد المطالبة لا يخرج أي استثناء: فشل الحفظ لا يعني رفض البوابة، والصف يبقى sending حتى تكشفه إعادة التحقق
   try {
     if (claim.checkFirst) {
+      const holdBack = async (error: string): Promise<RefundOutcome> => {
+        await sql`update refunds set status = ${claim.prior ?? "failed"}, claimed_at = null, error = ${error.slice(0, 500)} where id = ${claim.refundId} and status = 'sending'`;
+        return { state: claim.prior === "not_sent" ? "not_sent" : "failed", error };
+      };
       let list: MfRefundStatus[];
       try {
         list = await gateway.getRefundStatus(claim.invoiceId, "InvoiceId");
       } catch (err) {
-        const error = `تعذر سؤال البوابة عن الطلب السابق فلم نرسل شيئًا: ${message(err)}`;
-        await sql`update refunds set status = ${claim.prior ?? "failed"}, claimed_at = null, error = ${error.slice(0, 500)} where id = ${claim.refundId} and status = 'sending'`;
-        return { state: claim.prior === "not_sent" ? "not_sent" : "failed", error };
+        return await holdBack(`تعذر سؤال البوابة عن الطلب السابق فلم نرسل شيئًا: ${message(err)}`);
       }
       const found = matchGatewayRefund(list, { refundId: claim.refundId, attempt: claim.attempt, gatewayRefundId: null, amountFils: claim.amountFils });
       const kind = found ? gatewayFactKind(found.RefundStatus) : null;
       if (found && kind && kind !== "cancelled") return await transitionById(claim.refundId, { kind, refundId: String(found.RefundId), reference: found.RefundReference }, actor);
+      // حالة لا نعرفها تعني أن لدى البوابة عملية قائمة: إرسال آخر فوقها قد يكرر الاسترداد
+      if (found && !kind) return await holdBack(`لدى البوابة طلب استرداد بحالة غير معروفة (${found.RefundStatus}) فلم نرسل شيئًا. راجعه في لوحة MyFatoorah.`);
     }
 
     let res: Awaited<ReturnType<RefundGateway["makeRefund"]>>;
