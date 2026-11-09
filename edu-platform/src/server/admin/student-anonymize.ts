@@ -178,6 +178,8 @@ export async function anonymizeStudent(input: { studentId: string; adminId: stri
 
     // بعد إغلاق الحساب، فالمشغّل لا يسمح بهذا التعديل قبله: ما يثبت الموافقة يبقى (النوع والنسخة والوقت والطلب)، وما يدل على الجهاز يُزال
     await tx`update consent_records set ip = null, user_agent = null where user_id = ${id} and (ip is not null or user_agent is not null)`;
+    // معلم سابق عاد طالبًا: إقرار الحقوق يبقى دليلًا، بلا عنوان ولا جهاز
+    await tx`update product_rights_attestations set ip = null, user_agent = null where user_id = ${id} and (ip is not null or user_agent is not null)`;
 
     await audit({ actorId: input.adminId, action: "student.anonymized", entityType: "user", entityId: id, reason: scrub(input.reason), metadata: { ...counts }, ip: input.ip ?? null }, tx);
     return { alreadyAnonymized: false };

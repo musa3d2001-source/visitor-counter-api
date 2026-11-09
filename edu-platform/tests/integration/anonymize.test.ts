@@ -247,6 +247,8 @@ describe("a student with a full history", () => {
     token = (await createSession(u.id, meta)).token;
     await sql`update users set email_verified_at = now(), last_login_at = now(), grade_id = (select id from grades limit 1) where id = ${u.id}`;
     await sql`insert into consent_records (user_id, kind, document_version, order_id, ip, user_agent) values (${u.id}, 'guardian_purchase', 'v1', ${paid.id}, ${IP}, 'Safari-of-student')`;
+    // حساب كان معلمًا ثم عاد طالبًا
+    await sql`insert into product_rights_attestations (user_id, product_title, statement_version, agreement_version, ip, user_agent) values (${u.id}, 'مذكرة قديمة', 'v1', 'v1', ${IP}, 'Safari-of-student')`;
     await sql`insert into password_reset_tokens (id, user_id, expires_at) values (${hashToken("r".repeat(43))}, ${u.id}, now() + interval '1 hour')`;
     await sql`insert into email_verification_tokens (id, user_id, email, expires_at) values (${hashToken("v".repeat(43))}, ${u.id}, 'pending.address@farqad.test', now() + interval '1 hour')`;
     await sql`insert into login_challenges (id, user_id, expires_at) values (${hashToken("c".repeat(43))}, ${u.id}, now() + interval '1 hour')`;
@@ -353,6 +355,11 @@ describe("a student with a full history", () => {
     expect(rows.map((r) => r.kind)).toEqual(["guardian_purchase", "privacy", "terms"]);
     for (const r of rows) expect(r).toMatchObject({ ip: null, user_agent: null });
     expect(rows[0]).toMatchObject({ document_version: "v1", order_id: paid.id });
+  });
+
+  it("keeps a rights attestation from a teaching past, without the address or device", async () => {
+    const rows = await sql<{ product_title: string; ip: string | null; user_agent: string | null }[]>`select product_title, ip, user_agent from product_rights_attestations where user_id = ${u.id}`;
+    expect(rows).toEqual([{ product_title: "مذكرة قديمة", ip: null, user_agent: null }]);
   });
 
   it("revokes access and removes the identity from the reasons", async () => {
