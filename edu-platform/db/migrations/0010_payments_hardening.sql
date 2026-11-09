@@ -67,7 +67,7 @@ alter table payment_alerts enable row level security;
 --    كل الأعمدة فارغة افتراضيًا: لا إعادة كتابة للجداول، والكود المنشور لا يقرؤها.
 -- ---------------------------------------------------------------------
 alter table orders add column closed_at timestamptz;
-alter table orders add column closed_reason text check (closed_reason is null or closed_reason in ('expired', 'student_cancelled', 'already_owned'));
+alter table orders add column closed_reason text check (closed_reason is null or closed_reason in ('expired', 'student_cancelled', 'already_owned', 'coupon_unavailable', 'product_ended'));
 
 alter table payments add column expires_at timestamptz;
 alter table payments add column last_checked_at timestamptz;
@@ -130,3 +130,33 @@ where p.provider = 'myfatoorah'
   )
 on conflict (payment_id) do nothing;
 -- END backfill payment_extras
+
+-- ---------------------------------------------------------------------
+-- 6) الاسترداد أمر واحد (D1): البوابة أولًا، ثم الحالة وسحب الوصول وعكس الأرباح معًا.
+--    sending   = مطالبة ذرّية قبل استدعاء البوابة
+--    unknown   = انقطع الرد، ولا إعادة إرسال قبل إعادة التحقق
+--    not_sent  = تأكدنا من البوابة أن الطلب لم يصلها
+--    requested = قبلته البوابة وينتظر التنفيذ، completed = نفذته، failed = رفضته أو ألغته
+--    dismissed = أغلقه المالك بلا استرداد. recorded تبقى للصفوف القديمة فقط.
+--    الأعمدة الجديدة لها قيم افتراضية أو فارغة: لا إعادة كتابة للجدول، والكود المنشور لا يقرؤها.
+--    الفهرس الفريد آمن على البيانات الحالية: الكود القديم لا يدرج إلا لطلب مدفوع ويقلبه في المعاملة نفسها.
+-- ---------------------------------------------------------------------
+alter table refunds drop constraint refunds_status_check;
+alter table refunds add constraint refunds_status_check
+  check (status in ('recorded', 'sending', 'unknown', 'not_sent', 'requested', 'completed', 'failed', 'dismissed'));
+alter table refunds add column attempt integer not null default 0;
+alter table refunds add column claimed_at timestamptz;
+alter table refunds add column gateway_refund_reference text;
+alter table refunds add column error text check (char_length(error) <= 500);
+alter table refunds add column source text not null default 'owner' check (source in ('owner', 'portal'));
+alter table refunds add column accepted_at timestamptz;
+alter table refunds add column completed_at timestamptz;
+alter table refunds add column updated_at timestamptz not null default now();
+create trigger refunds_updated before update on refunds for each row execute function set_updated_at();
+create unique index refunds_one_live_per_order on refunds (order_id) where status <> 'dismissed';
+create index refunds_open_idx on refunds (created_at desc) where status not in ('completed', 'dismissed');
+
+-- ---------------------------------------------------------------------
+-- 7) الطلب المفتوح يحجز كود الخصم: عدّ الحجوزات يتم تحت قفل صف الكود عند كل طلب جديد
+-- ---------------------------------------------------------------------
+create index orders_coupon_open_idx on orders (coupon_id) where coupon_id is not null and status = 'pending';
