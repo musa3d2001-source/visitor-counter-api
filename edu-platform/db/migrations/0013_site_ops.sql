@@ -1,5 +1,5 @@
 -- =====================================================================
--- 0013: تشغيل الموقع — سجل الأخطاء، تنبيهات المالك، ونبض الوظائف المجدولة
+-- 0013: تشغيل الموقع — سجل الأخطاء، تنبيهات المالك، نبض الوظائف المجدولة، وخطوات الإطلاق
 -- إضافي بالكامل: جداول جديدة فقط، لا يقرؤها الكود المنشور حاليًا، ولا يلمس أي جدول قائم.
 -- =====================================================================
 
@@ -48,7 +48,21 @@ create table job_heartbeats (
   created_at timestamptz not null default now()
 );
 
+-- ---------------------------------------------------------------------
+-- 4) خطوات الإطلاق التي لا يكشفها النظام بنفسه (مراجعة المحامي، الرخصة، تجربة الدفع الحقيقية...).
+--    صف واحد لكل خطوة بآخر حالة، والتاريخ الكامل لكل تأشير وإلغاء في audit_logs.
+--    version = نسخة نص الخطوة في الكود يوم التأشير: إن تغيرت عادت الخطوة مفتوحة.
+-- ---------------------------------------------------------------------
+create table launch_checks (
+  key text primary key check (key ~ '^[a-z][a-z0-9_]{0,47}$'),
+  version text not null check (char_length(version) between 1 and 200),
+  done boolean not null,
+  changed_by uuid references users(id) on delete set null,
+  changed_at timestamptz not null default now()
+);
+
 -- كل الوصول من الخادم بدور موثوق، وواجهة Data API لا ترى شيئًا (نفس قاعدة 0001)
 alter table error_events enable row level security;
 alter table ops_alert_state enable row level security;
 alter table job_heartbeats enable row level security;
+alter table launch_checks enable row level security;
