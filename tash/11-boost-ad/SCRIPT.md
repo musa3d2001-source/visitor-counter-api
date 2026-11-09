@@ -1,6 +1,7 @@
 # «نقاط مشروعك» / The Dots on Your Project: TASH's paid boost ad (Instagram + TikTok)
 
-> **Status (9 Nov 2026): built and self-checked by Claude; QC numbers are in §9.**
+> **Status (9 Nov 2026): built and self-checked by Claude, after two independent review rounds; QC numbers are in §9.**
+> - **The opening voice is AI (ElevenLabs), so the AI label is ON** (§7).
 > - Not yet approved by the owner and not reviewed by the CD.
 > - **Not published.** Claude never logs in, never posts and never boosts.
 >
@@ -14,17 +15,18 @@
 
 **عربي.** الشين في «مشروعك» فوقها ثلاث نقاط: نقاط طشّ، ونفس نقاط «يكتب الحين…».
 - المشروع اللي محد يسولف عنه تطيح نقاطه، والكلمة تصير «مسروعك»: نفس الشكل، بس ما تنقرى.
-- طشّ يرجّع النقاط: تصير ثلاث لمبات تحدّد الكلمة بالنور. أول ما تقعد على الشين يشتغل النور كله، والكلمة تنقرى من جديد، والسالفة تبدأ: «من وين طلبتيه؟!».
+- طشّ يرجّع النقاط: تصير ثلاث لمبات تحدّد الكلمة بالنور. أول ما تقعد على الشين يشتغل النور كله، والكلمة تنقرى من جديد، والسالفة تبدأ: «شنو حسابهم؟!».
 - والسالفة نفسها… هي «طشّ».
 
 **English.** The ش in «مشروعك» ("your project") carries three dots: TASH's dots, and also the "typing…" indicator.
 - When nobody talks about a project, its dots fall off and the word stops reading: «مسروعك», the same shape saying nothing.
 - TASH brings the dots back as three studio lamps that outline the word in light. When the dots land back on the ش, the
-  full light comes on, the word reads again, and the talk starts: «من وين طلبتيه؟!».
+  full light comes on, the word reads again, and the talk starts: «شنو حسابهم؟!» ("what's their account?!", the question people ask in Kuwait when an ad works).
 - The talk turns out to be **طشّ**.
 
-The picture is 100% code: 2D canvas plus a Three.js studio. The sound is synthesised here, with no AI anywhere.
-**The AI label stays OFF, truthfully.**
+The picture is 100% code: 2D canvas plus a Three.js studio. The music and effects are synthesised here.
+**The opening voice («مشروعك حلو…») is AI-generated (ElevenLabs), at the owner's choice (9 Nov), so the AI label is ON** on both
+platforms (§7).
 
 ## 2. Files
 
@@ -44,7 +46,7 @@ The picture is 100% code: 2D canvas plus a Three.js studio. The sound is synthes
 
 | t | Picture | Sound |
 |---|---|---|
-| 0.00–1.00 | «مشروعك» slams in (1.06→1.00) under lime dots that are already typing on its ش, with contact shadows; «حلو…» under it | onset thump · ticks D6/E♭6/F♯6 · (voice 1 if recorded) |
+| 0.00–1.00 | «مشروعك» slams in (1.06→1.00) under lime dots that are already typing on its ش, with contact shadows; «حلو…» under it | onset thump · ticks D6/E♭6/F♯6 · **voice 1 (AI, ElevenLabs): «مشروعك حلو…» 0.00–0.98** (hook A only) |
 | 1.00–1.50 | The talk breaks: the tick cracks, «حلو…» is knocked out, and the dots fall toward the camera one by one (Ø28→Ø160, as lime smears). The word dims to «مسروعك» | broken tick · three falls + heavy thumps |
 | 1.50–2.40 | «محد يسولف عنه؟»; the dim word keeps sinking | room air + a low D pad (never digital silence) |
 | 2.40–3.00 | The dots come back from below right, arc over the line, line up and drop | low dum · rising ticks · six rapid ticks · whoosh |
@@ -53,7 +55,7 @@ The picture is 100% code: 2D canvas plus a Three.js studio. The sound is synthes
 | 6.00–7.00 | The dots lift and fly out to three lamp stations; each lamp lights up on arrival | three lamp clacks + filament hum |
 | 7.00–8.40 | Edge-lit: lime-paper rims on the bevels; the camera orbits ≈10° to a low angle | hum bed · riser |
 | 8.40–9.00 | The dots fly home, line up above the ش and drop; the camera lands frontal | three wooden tocks |
-| 9.00–11.50 | **HERO 2:** lights on: the key floods and the word reads again, lit. «من وين طلبتيه؟!» rises above it | lamp thunk + dum + claps; back to D · (voice 2 if recorded) |
+| 9.00–11.50 | **HERO 2:** lights on: the key floods and the word reads again, lit. «شنو حسابهم؟!» rises above it | lamp thunk + dum + claps; back to D (no voice 2: §4) |
 | 11.50–12.62 | Punch-in ×1.10 rendered in 3D; 18 small typing triplets bloom on the floor, fold into single dots and stream into the ش | group claps on the triplets + an applause swell · riser |
 | 12.62–15.40 | **HERO 3:** the studio falls away; «طشّ» snaps around the dots; the shadda drops; «خلّهم يسولفون عنك!» | the local sonic logo: ticks on the typing peaks, one tash_hit, the shadda pop |
 | 15.40–20.00 | Hand-back: «مشروعك» with the dots typing, «اطلب إعلانك بالخاص» (lime «بالخاص») + @tash.creative.kw; held 3.87 s; the wind-up lands in f0's slam | G minor → E♭ → D cadence; the last bar ends on the triplet |
@@ -105,10 +107,17 @@ The body winds up 1.00→1.06 over f594–f599, and f0 starts at 1.06.
    - each smear is capped at 2×Ø and fades over the last 45% of its flight.
 9. **The fall-away (12.62)** shrinks in the camera, not by CSS, so the frame edge never shows; CSS only blurs, with 3% overscan.
 10. **Sound.**
-    - The voices and real claps aren't recorded yet, so this cut runs the treatment's fallback (no voices, synthesised claps).
+    - **Voices (owner's decision, 9 Nov: «ركب الأصوات», AI voices chosen over recording).**
+      - Voice 1 «مشروعك حلو…» is an ElevenLabs take, trimmed 0.12 s and sped up ×1.2 (pitch kept) so it ends at 0.98 s, just before the crack. On hook A only.
+      - Voice 2 («شنو حسابهم؟!») could not be generated: after the first take, ElevenLabs disabled the account's free tier ("unusual activity", asks for a paid plan).
+      - The talk line therefore stays on screen with the typing ticks only. With a paid ElevenLabs plan, or a recorded voice note, it is an audio-only remux (§8).
+      - Claps are still synthesised.
+    - **The talk line changed** (owner, 9 Nov) from «من وين طلبتيه؟!» to «شنو حسابهم؟!».
+      - The old line could read as being about TASH itself, and it addressed a woman.
+      - The new one is what people ask in Kuwait when an ad works: they want the seller's account.
     - Hook A fills its voice slot with dotted-8th echoes of the typing triplet and a tock under «حلو…» (0.50 s). Hook B keeps its word-swap tocks (0.50 / 1.00 s) and has no echoes.
     - The two are closer in density, but A still has no voice.
-    - **Record voice 1 before the A/B if at all possible** (§8): without it, the A/B partly tests hook A's audio, not just its copy.
+    - Hook A now has its voice, so the A/B tests hook A (voice + «حلو…») against hook B (the word roll-call, no voice), as the treatment planned.
 11. **Mastering is loop-aware and done in `audio.py`.**
     - The 2 s tail is folded onto the head.
     - Compression and limiting are primed on a 3× tile, so frame 0 has its full transient and the seam is continuous.
@@ -142,13 +151,13 @@ The body winds up 1.00→1.06 over f594–f599, and f0 starts at 1.06.
 | «محد يسولف عنه؟» | 1.50–3.00 | «؟» on the left ✓ |
 | «طشّ» (wordmark) | 3.00–5.00, 13.00–15.57 | shadda ✓ |
 | «خلّ إعلانك علينا» | 3.10–5.00 | shadda on خلّ, hamza on إ ✓ |
-| «من وين طلبتيه؟!» | 9.40–11.47 | ي and ه in طلبتيه; «؟!» on the left ✓ |
+| «شنو حسابهم؟!» | 9.40–11.47 | «؟!» on the left ✓ (616 px at 84 px, x 182–798) |
 | «خلّهم يسولفون عنك!» | 13.43–15.47 | shadda ✓ |
 | IG «اطلب إعلانك بالخاص» + `@tash.creative.kw` | 15.60–20.00 | ✓ |
 | TT «دزّ لنا بالخاص» + `@tash.creative` | 15.60–20.00 | shadda on دزّ ✓ |
 | Hook B «مشاوي؟» · «رموش؟» | 0.00 · 0.50 | ✓ (a native read of «رموش؟» is still wanted; the backup is «شموع؟») |
 
-**The talk line is dramatised.** «من وين طلبتيه؟!» is a question about the viewer's hypothetical project. It has no name,
+**The talk line is dramatised.** «شنو حسابهم؟!» is a question about the viewer's hypothetical project. It has no name,
 avatar, quote marks or timestamp. Never quote it as a real reaction in ad text or DMs. «خلّهم يسولفون عنك!» states an aim,
 not a result.
 
@@ -160,6 +169,7 @@ not a result.
 ريل أو ستوري عمودي حتى ١٥ ثانية: يبدأ من ٤٠ د.ك، فكرة ومونتاج وصوت مناسب وجولتان، والسعر النهائي بعد مراجعة المطلوب.
 شوف نماذج من شغلنا بالهايلايت «شغلنا»
 اطلب إعلانك بالخاص •••
+الصوت بأول الإعلان مولّد بالذكاء الاصطناعي.
 
 إنستقرام: @tash.creative.kw
 تيك توك: tash.creative
@@ -178,7 +188,7 @@ not a result.
   Use it only with the owner's written OK.
 - No café or brand name and no tagged handle other than ours.
 - **The ad arms (A-20, B-20, A-14) all use the same primary text:** lines 1–4 + the two handle lines, no hashtags. Never put
-  «من وين طلبتيه؟!» in any ad text or DM: it is a dramatised line, not a real reaction.
+  «شنو حسابهم؟!» in any ad text or DM as a real reaction: it is a dramatised line.
 
 **TikTok** (organic post = the Spark Ad; 48 characters before the handles):
 ```text
@@ -215,9 +225,12 @@ not a result.
   - **Never** pick a frame from 1.1–3.0 s or 5.5–9.0 s: the dotless «مسروعك» on a still reads as a typo.
 - **TikTok** (from week 2, budget ≥ ~KWD 12/day): Spark Ad of the organic post with `-tt.mp4`.
   - Inbox open to Everyone.
-  - At upload: Content disclosure **ON** → "Your brand"; Branded content **OFF**; AI-generated content **OFF**.
+  - At upload: Content disclosure **ON** → "Your brand"; Branded content **OFF**; AI-generated content **ON** (the opening voice is AI).
   - Original sound, no in-app music.
-- **AI label: OFF on both platforms, truthfully.** There is no AI picture, footage or voice in these files (§10).
+- **AI label: ON on both platforms** (§1 and §10: the opening voice is AI-generated).
+  - Instagram: switch on "Add AI label" when posting the Reel, and keep it on the ads.
+  - TikTok: at upload, More options → "AI-generated content" **ON**. Content disclosure stays ON ("Your brand").
+  - The caption carries the plain line «الصوت بأول الإعلان مولّد بالذكاء الاصطناعي.». The other two arms' primary text gets the same line.
 
 ## 8. Before the first fils of spend (gates)
 
@@ -226,8 +239,9 @@ not a result.
    - Ask: «شنو صار للكلمة؟», «منو هذول وشنو يسوون؟» and "did it freeze?".
    - Ship if ≥6/10 say the dots fell or left or the word broke, and ≤2/10 report a freeze.
 2. **Recording session (optional, ≈30 min, phone ≈50 cm away in a quiet room).** It makes hook A stronger.
+   - Optional now that voice 1 is AI. **Real recordings would replace the AI voice and let the AI label go OFF.**
    - Voice 1, a man, warm: «مشروعك حلو…» (3 takes).
-   - Voice 2, a woman, delighted: «من وين طلبتيه؟!» (3 takes).
+   - Voice 2: «شنو حسابهم؟!» (3 takes).
    - Claps: 3–4 friends clapping together once, 6–8 separate takes (`clap_1.wav`, `clap_2.wav` …). `audio.py` uses them round-robin
      for every group clap in place of the synthesised ones.
    - Release from each person, sent in writing: «أوافق إن طشّ تستخدم التسجيل الصوتي اللي سجّلته لها في إعلاناتها على الإنستقرام وتيك توك، بدون مقابل.»
@@ -266,9 +280,14 @@ Filled in from the final renders (see the end of this section).
   - The «مشروعك» outline: Alexandria glyphs, unioned by `tools/word_export.py`.
   - The «طشّ» wordmark comes from `_system/brand/`.
 - **Sound.** Synthesised by `src/audio.py` on `_system/audio/tashaudio.py`.
-- **Nothing else is used:** no AI images, footage, voices or music; no samples, loops, stock or library music. No café,
+- **Voice 1 (AI):**
+  - ElevenLabs (the owner's account), model `eleven_v4`, library voice "Jassim Almathkour" (Kuwaiti accent).
+  - Generation `QQiRBH4bZbjANleBcY3V` in flow `fWTyslWaw5D2KMezp94O`, 43 credits; prompt «[warmly, like telling a friend] مشروعك حلو…».
+  - Edited here: trimmed 0.12 s, ×1.2 time-stretch (pitch kept), HPF 90 Hz, light de-ess, loudness-matched.
+  - File: `src/assets/rec/voice1.wav`.
+- **Nothing else is used:** no AI images or footage, no other AI voice or music; no samples, loops, stock or library music. No café,
   brand or person appears.
-- **Paid tools: none.** No Higgsfield or other paid generation was used.
+- **Paid/credit tools:** ElevenLabs only (43 credits on the owner's account, for voice 1, at the owner's request). No Higgsfield.
 
 ## 11. Rebuild
 

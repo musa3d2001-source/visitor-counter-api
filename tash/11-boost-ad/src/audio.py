@@ -178,7 +178,7 @@ m.add(stereo(hp(noise(0.25, 'pink'), 2500) * env_exp(0.25, 0.05) * 0.18, 0, widt
 v1 = load_stem('voice1.wav')
 vdk = db(-6) if (v1 is not None and args.hook == 'A') else 1.0      # ticks duck under a recorded voice 1
 for i in range(3): m.add(wtick(NOTES[i]), tickT(0.0, i), gain=0.5 * vdk, pan=[0.25, 0, -0.25][i], bus='sfx')
-if args.hook == 'A':                                                 # the voice-1 slot: typing echoes + a tock under «حلو…»
+if args.hook == 'A' and v1 is None:                                 # no voice 1: fill its slot with typing echoes + a tock under «حلو…»
     for k, (dly, gn) in enumerate([(0.375, 0.2), (0.75, 0.1)]):
         for i in range(3): m.add(lp(wtick(NOTES[i]), 3200), tickT(0.0, i) + dly, gain=gn * vdk, pan=[-0.4, 0.4][k % 2], bus='sfx')
     m.add(wood_tock(560, 0.45 * vdk), fr(15), bus='sfx')

@@ -136,7 +136,7 @@ const LINE = {
   hilu: makeLine('حلو…', F.l2, 470, 775),
   q: makeLine('محد يسولف عنه؟', F.l2, 497, 775),
   prop: makeLine('خلّ إعلانك علينا', F.l3, 620, 815),
-  talk: makeLine('من وين طلبتيه؟!', F.l2, 490, 400),
+  talk: makeLine('شنو حسابهم؟!', F.l2, 490, 400),                 // owner's pick (9 Nov): what people ask when an ad works in Kuwait
   tag: makeLine('خلّهم يسولفون عنك!', F.tag, 620, 815),
   cta: PLAT === 'tt' ? makeLine('دزّ لنا بالخاص', F.cta, 506, 755, { lime: 2 }) : makeLine('اطلب إعلانك بالخاص', F.cta, 506, 755, { lime: 2 }),
   handle: makeLine(PLAT === 'tt' ? '@tash.creative' : '@tash.creative.kw', F.handle, 506, 840, { ltr: true }),
