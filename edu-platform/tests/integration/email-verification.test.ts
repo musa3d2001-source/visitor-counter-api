@@ -438,6 +438,16 @@ describe("correcting a mistyped address", () => {
     expect(mailsTo(u.email)).toHaveLength(0);
   });
 
+  it("a student can go back to the account's address after a wrong correction", async () => {
+    const u = await createUser();
+    await requestEmailCorrection(u.id, "second-typo@farqad.test", TEST_PASSWORD, IP);
+    const wrongLink = tokenSentTo("second-typo@farqad.test");
+    expect(await requestEmailCorrection(u.id, u.email.toLowerCase(), TEST_PASSWORD, IP)).toEqual({ ok: true, message: ACCEPTED });
+    expect((await verificationState(u.id)).pendingEmail).toBeNull();
+    expect((await confirmEmailToken(wrongLink, IP)).ok).toBe(false);
+    expect(await confirmEmailToken(tokenSentTo(u.email), IP)).toEqual({ ok: true });
+  });
+
   it("a verified address cannot be swapped this way", async () => {
     const u = await createUser();
     await sql`update users set email_verified_at = now() where id = ${u.id}`;

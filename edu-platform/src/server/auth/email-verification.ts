@@ -135,7 +135,12 @@ export async function requestEmailCorrection(userId: string, email: string, curr
   }
   if (!(await verifyPassword(currentPassword, u.password_hash))) return { ok: false, error: "كلمة المرور غير صحيحة.", field: "currentPassword" };
   if (u.email_verified_at) return { ok: false, error: "بريدك مؤكد. لتغييره تواصل مع إدارة المنصة." };
-  if (u.email.toLowerCase() === email) return { ok: false, error: "هذا هو بريدك الحالي. استخدم «إرسال رابط جديد».", field: "email" };
+  if (u.email.toLowerCase() === email) {
+    // الرجوع عن تصحيح سابق: رابط جديد لعنوان الحساب يبطل الرابط المرسل إلى العنوان الآخر
+    if (!(await verificationState(userId)).pendingEmail) return { ok: false, error: "هذا هو بريدك الحالي. استخدم «إرسال رابط جديد».", field: "email" };
+    await sendEmailVerificationLink(userId, email);
+    return { ok: true, message: CORRECTION_ACCEPTED };
+  }
 
   const perTarget = await hitRateLimit(`verify:correct:target:${email}`, CORRECTION.perTarget, CORRECTION.windowSec);
   if (!perTarget.allowed) return { ok: true, message: CORRECTION_ACCEPTED };

@@ -4,6 +4,7 @@ import { useRouter } from "next/navigation";
 import { useState } from "react";
 import { Check, Copy, EyeOff, KeyRound, Mail } from "lucide-react";
 import { correctStudentEmailAction, resetStudentPasswordAction } from "../actions";
+import type { ActionState } from "@/lib/action-state";
 import { ActionForm } from "@/components/admin/action-form";
 import { ToneIcon } from "@/components/admin/icon-tile";
 import { usePreservingAction } from "@/components/admin/use-preserving-action";
@@ -55,7 +56,9 @@ function SecretRow({ label, value, testId }: { label: string; value: string; tes
 export function StudentPasswordReset({ userId }: { userId: string }) {
   const router = useRouter();
   const { state, formAction, formRef } = usePreservingAction(resetStudentPasswordAction);
-  const secrets = state?.ok ? state.secrets : undefined;
+  // router.refresh لا يمسح حالة React، فنخفي هذه النتيجة بعينها ويبقى إصدار جديد ممكنًا
+  const [dismissed, setDismissed] = useState<ActionState>(null);
+  const secrets = state?.ok && state !== dismissed ? state.secrets : undefined;
 
   if (secrets) {
     return (
@@ -67,7 +70,15 @@ export function StudentPasswordReset({ userId }: { userId: string }) {
           <EyeOff className="mt-1 size-3.5 shrink-0" aria-hidden />
           يظهران مرة واحدة فقط. أرسل أحدهما للطالب: كلاهما يعمل مرة واحدة خلال ٢٤ ساعة، واستخدام أحدهما يلغي الآخر.
         </p>
-        <Button type="button" size="md" className="w-full" onClick={() => router.refresh()}>
+        <Button
+          type="button"
+          size="md"
+          className="w-full"
+          onClick={() => {
+            setDismissed(state);
+            router.refresh();
+          }}
+        >
           تم، متابعة
         </Button>
       </div>
