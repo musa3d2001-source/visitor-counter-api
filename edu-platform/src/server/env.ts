@@ -83,6 +83,12 @@ const schema = z.object({
   BUNNY_STREAM_TUS_ENDPOINT: z.string().url().default("https://video.bunnycdn.com/tusupload"),
   BUNNY_STREAM_EMBED_BASE: z.string().url().default("https://iframe.mediadelivery.net"),
 
+  /**
+   * التحقق بخطوتين لحسابات الإدارة: إلزامي في الإنتاج ما لم يُضبط هذا المتغير على false.
+   * انظر adminTwoFactorRequired. القيمة true تفرضه خارج الإنتاج أيضًا.
+   */
+  ADMIN_2FA_REQUIRED: z.enum(["true", "false"]).optional(),
+
   /** يُفعَّل فقط عند تشغيل الخادم خلف وكيل موثوق (Vercel) لقراءة IP العميل */
   TRUST_PROXY: z
     .enum(["true", "false"])
@@ -115,6 +121,13 @@ export function env(): Env {
   }
   cached = e;
   return e;
+}
+
+/** هل التحقق بخطوتين إلزامي على حسابات الإدارة في هذا النشر؟ */
+export function adminTwoFactorRequired(): boolean {
+  const e = env();
+  if (e.ADMIN_2FA_REQUIRED) return e.ADMIN_2FA_REQUIRED === "true";
+  return e.NODE_ENV === "production";
 }
 
 /** لإعادة القراءة في الاختبارات */
