@@ -2,7 +2,7 @@ import "server-only";
 import { randomUUID } from "node:crypto";
 import { sql, type Db } from "../db";
 import { storage } from "../storage";
-import { extractPreview, PdfUnusableError } from "../access/pdf";
+import { extractPreview, PdfUnusableError, PreviewNotIsolatedError, rebuildCustomPreview } from "../access/pdf";
 import { ensureProductFilesChecked, FILE_PROBLEM_LABELS, FLAGGED_STATUSES, recordFileCheck, statusForProblem, type FileCheckStatus, type FlaggedStatus } from "../access/file-check";
 import { audit } from "../platform/audit";
 import { assertProductAccess, PermissionError, type Actor } from "../auth/permissions";
@@ -14,6 +14,8 @@ import { hasCurrentAgreement, recordRightsAttestation } from "./teacher-agreemen
 import { AdminError } from "./common";
 import { CONTAINER_PRODUCT_TYPES, PDF_PRODUCT_TYPES, VIDEO_PRODUCT_TYPES, isContainerType, isVideoType, type ProductStatus, type ProductType } from "@/lib/labels";
 import { randomSuffix } from "@/lib/utils";
+import { previewIssue } from "@/lib/preview-policy";
+import { isExtremeShare } from "@/lib/teacher-terms";
 
 /**
  * إدارة المنتجات للمالك والمعلم (لوحة واحدة):
@@ -163,11 +165,12 @@ export type AdminFile = {
   created_at: Date;
   check_status: FileCheckStatus;
   source_file_id: string | null;
+  pages_isolated: boolean;
 };
 
 export async function getProductFiles(productId: string, db: Db = sql): Promise<AdminFile[]> {
   const rows = await db<(Omit<AdminFile, "size_bytes"> & { size_bytes: string | number })[]>`
-    select id, kind, title, storage_key, original_name, size_bytes, page_count, is_auto_preview, sort_order, created_at, check_status, source_file_id
+    select id, kind, title, storage_key, original_name, size_bytes, page_count, is_auto_preview, sort_order, created_at, check_status, source_file_id, pages_isolated
     from product_files where product_id = ${productId}
     order by kind, sort_order, created_at, id
   `;
@@ -428,13 +431,15 @@ export async function publishBlockers(productId: string, opts: PublishCheckOptio
   const [{ items }] = await sql<{ items: number }[]>`select count(*)::int as items from bundle_items where bundle_id = ${productId}`;
   if (p.type === "bundle" && items === 0) issues.push("أضف منتجًا واحدًا على الأقل إلى الباقة قبل النشر");
   if (VIDEO_PRODUCT_TYPES.includes(p.type)) {
-    const [l] = await sql<{ published: number; not_ready: number; failed: number }[]>`
+    const [l] = await sql<{ published: number; not_ready: number; failed: number; uploading: number }[]>`
       select count(*) filter (where is_published)::int as published,
-        count(*) filter (where is_published and processing_status <> 'ready')::int as not_ready,
-        count(*) filter (where is_published and processing_status = 'failed')::int as failed
+        count(*) filter (where is_published and processing_status = 'processing')::int as not_ready,
+        count(*) filter (where is_published and processing_status = 'failed')::int as failed,
+        count(*) filter (where processing_status = 'uploading')::int as uploading
       from lessons where product_id = ${productId}
     `;
     if (l.published === 0 && items === 0) issues.push("أضف درس فيديو منشورًا واحدًا على الأقل (أو محتوى مضمّنًا) قبل النشر");
+    if (l.uploading > 0) issues.push("يوجد درس لم يكتمل رفعه ولن يكتمل وحده. احذفه من قائمة الدروس ثم ارفعه من جديد");
     if (l.failed > 0) issues.push("يوجد درس فشلت معالجته، احذفه أو ارفعه من جديد");
     else if (l.not_ready > 0) issues.push("لا يمكن النشر قبل اكتمال معالجة الفيديو");
   }
@@ -467,15 +472,16 @@ export async function productTeacherShares(productId: string): Promise<{ teacher
   `;
 }
 
-/** 0٪ أو 100٪: قد تكون مقصودة، لكنها لا تُنشر إلا بتأكيد صريح */
-export const isExtremeShare = (bps: number | null) => bps === 0 || bps === 10000;
+export { isExtremeShare };
 
 async function extremeShareTeachers(productId: string) {
   return (await productTeacherShares(productId)).filter((t) => isExtremeShare(t.share_bps));
 }
 
-const shareConfirmText = (ts: { display_name: string; share_bps: number | null }[]) =>
-  `نسبة ${ts.map((t) => `${t.display_name} ${(t.share_bps as number) / 100}٪`).join("، ")}. أكد النسبة قبل النشر`;
+const shareConfirmText = (ts: { display_name: string; share_bps: number | null }[], when = "النشر") =>
+  `نسبة ${ts.map((t) => `${t.display_name} ${(t.share_bps as number) / 100}٪`).join("، ")}. أكد النسبة قبل ${when}`;
+
+const STALE_REVIEW = "تغيّر هذا المحتوى بعد فتح الصفحة. حدّث الصفحة وراجعه من جديد";
 
 /** ملف قديم لم يُفحص يُفحص قبل نشره. خطأ التخزين يوقف النشر ولا يصف الملف بأنه معيب */
 async function ensureFilesCheckedForPublish(id: string) {
@@ -543,14 +549,16 @@ export async function submitForReview(id: string, actor: Actor, ip?: string, rig
 /** المالك يعتمد المحتوى: يحدد السعر وفترة الإتاحة ثم ينشر */
 export async function approveAndPublish(
   id: string,
-  input: { priceFils: number; isFree?: boolean; confirmShare?: boolean; compareAtPriceFils: number | null; accessMode: "unlimited" | "until_date" | "days"; accessUntil: Date | null; accessDays: number | null },
+  input: { submittedAt: string | null; priceFils: number; isFree?: boolean; confirmShare?: boolean; compareAtPriceFils: number | null; accessMode: "unlimited" | "until_date" | "days"; accessUntil: Date | null; accessDays: number | null },
   actor: Actor,
   ip?: string,
 ) {
   if (actor.kind !== "owner") throw new PermissionError("اعتماد المحتوى متاح لإدارة المنصة فقط");
   const current = await getAdminProduct(id);
   if (!current) throw new AdminError("المنتج غير موجود");
-  if (current.status !== "in_review" && current.status !== "draft") throw new AdminError("المنتج ليس بانتظار المراجعة");
+  if (current.status !== "in_review") throw new AdminError("المنتج ليس بانتظار المراجعة");
+  // يُنشر ما فُتح للمراجعة فقط: سحب المعلم ثم تعديله ثم إرساله من جديد يغيّر وقت الإرسال
+  if ((current.submitted_at?.toISOString() ?? null) !== input.submittedAt) throw new AdminError(STALE_REVIEW);
   const isFree = input.isFree === true;
   assertOwnerFields({ ...input, isFree, isDownloadable: false, isFeatured: false, sortOrder: 0, teacherId: null });
   if (!isFree && input.priceFils <= 0) throw new AdminError("حدد سعرًا أكبر من صفر، أو اختر «مجاني» صراحة", { price: "السعر مطلوب" });
@@ -562,14 +570,17 @@ export async function approveAndPublish(
   const confirmedShares = isFree ? [] : await extremeShareTeachers(id);
   if (confirmedShares.length && !input.confirmShare) throw new AdminError(shareConfirmText(confirmedShares));
   await sql.begin(async (tx) => {
-    await tx`
+    // الفحوص أعلاه تمت خارج المعاملة: السحب بينها وبين هذا السطر لا ينشر مسودة
+    const [approved] = await tx<{ id: string }[]>`
       update products set price_fils = ${input.priceFils}, is_free = ${isFree}, compare_at_price_fils = ${input.compareAtPriceFils},
         access_mode = ${input.accessMode}, access_until = ${input.accessMode === "until_date" ? input.accessUntil : null},
         access_days = ${input.accessMode === "days" ? input.accessDays : null},
         status = 'published', published_at = coalesce(published_at, now()), reviewed_at = now(), reviewed_by = ${actor.userId},
         review_note = null
-      where id = ${id}
+      where id = ${id} and status = 'in_review' and date_trunc('milliseconds', submitted_at) is not distinct from ${input.submittedAt}::timestamptz
+      returning id
     `;
+    if (!approved) throw new AdminError(STALE_REVIEW);
     await audit(
       {
         actorId: actor.userId,
@@ -701,18 +712,41 @@ export async function firstMainFile(productId: string): Promise<{ id: string; st
   return f ?? null;
 }
 
-export type PreviewResult = "custom" | "generated" | "none" | "too_short" | "unreadable";
+export type PreviewResult = "custom" | "repaired" | "generated" | "none" | "too_short" | "unreadable" | "not_isolated";
+
+/** معاينة مخصصة قديمة ضمن القاعدة: تُبنى نسختها المعزولة وتبقى مكانها، فهي اختيار صاحب المحتوى */
+async function repairCustomPreview(productId: string, custom: AdminFile): Promise<PreviewResult> {
+  let rebuilt: Awaited<ReturnType<typeof rebuildCustomPreview>>;
+  try {
+    rebuilt = await rebuildCustomPreview(await storage().read("private", custom.storage_key));
+  } catch (err) {
+    if (!(err instanceof PreviewNotIsolatedError) && !(err instanceof PdfUnusableError)) throw err;
+    console.error("[preview] custom preview could not be isolated", productId, err);
+    return "not_isolated";
+  }
+  const key = `previews/${productId}/${randomUUID()}.pdf`;
+  await storage().put("private", key, rebuilt.bytes, "application/pdf");
+  await sql`
+    update product_files set storage_key = ${key}, size_bytes = ${rebuilt.bytes.length}, page_count = ${rebuilt.pageCount}, pages_isolated = true
+    where id = ${custom.id} and storage_key = ${custom.storage_key}
+  `;
+  await storage().remove("private", custom.storage_key).catch(() => {});
+  return "repaired";
+}
 
 /**
  * توليد المعاينة المجانية تلقائيًا من أول ملف رئيسي، ضمن قاعدة المعاينة الواحدة.
  * لا يلمس المعاينة المرفوعة يدويًا إلا بطلب replaceCustom.
  * المعاينة الجديدة تُصنع أولًا، ثم تُستبدل بالقديمة في معاملة واحدة، فلا يضيع الموجود عند تعثر التوليد.
  */
-export async function regenerateAutoPreview(productId: string, opts: { replaceCustom?: boolean } = {}): Promise<PreviewResult> {
+export async function regenerateAutoPreview(productId: string, opts: { replaceCustom?: boolean; keepRepairable?: boolean } = {}): Promise<PreviewResult> {
   const files = await getProductFiles(productId);
-  if (!opts.replaceCustom && files.some((f) => f.kind === "preview" && !f.is_auto_preview)) return "custom";
   const [p] = await sql<{ preview_pages: number }[]>`select preview_pages from products where id = ${productId}`;
   const firstMain = files.find((f) => f.kind === "main");
+  const custom = files.find((f) => f.kind === "preview" && !f.is_auto_preview);
+  if (custom && (!opts.replaceCustom || (opts.keepRepairable && previewIssue(custom, firstMain) === "not_isolated"))) {
+    return custom.pages_isolated ? "custom" : repairCustomPreview(productId, custom);
+  }
 
   const swapPreviews = async (next: { key: string; bytes: number; pages: number; sourceId: string } | null) => {
     const old = await sql.begin(async (tx) => {
@@ -722,8 +756,8 @@ export async function regenerateAutoPreview(productId: string, opts: { replaceCu
       `;
       if (next) {
         await tx`
-          insert into product_files (product_id, kind, title, storage_key, original_name, mime_type, size_bytes, page_count, is_auto_preview, check_status, checked_at, source_file_id)
-          values (${productId}, 'preview', 'معاينة مجانية', ${next.key}, 'preview.pdf', 'application/pdf', ${next.bytes}, ${next.pages}, true, 'ok', now(), ${next.sourceId})
+          insert into product_files (product_id, kind, title, storage_key, original_name, mime_type, size_bytes, page_count, is_auto_preview, check_status, checked_at, source_file_id, pages_isolated)
+          values (${productId}, 'preview', 'معاينة مجانية', ${next.key}, 'preview.pdf', 'application/pdf', ${next.bytes}, ${next.pages}, true, 'ok', now(), ${next.sourceId}, true)
         `;
       }
       return removed;
@@ -739,6 +773,11 @@ export async function regenerateAutoPreview(productId: string, opts: { replaceCu
   try {
     preview = await extractPreview(await storage().read("private", firstMain.storage_key), p.preview_pages);
   } catch (err) {
+    // لم يثبت العزل: لا تُسلَّم معاينة، والملف الرئيسي نفسه ليس معيبًا فلا يُعلَّم
+    if (err instanceof PreviewNotIsolatedError) {
+      console.error("[preview] not isolated", productId, err.message);
+      return "not_isolated";
+    }
     if (!(err instanceof PdfUnusableError)) throw err;
     await recordFileCheck(firstMain.id, statusForProblem(err.problem));
     await swapPreviews(null);
@@ -831,15 +870,25 @@ export async function bundleCandidates(bundleId: string, gradeId: string, actor:
   `;
 }
 
-export async function addBundleItem(bundleId: string, productId: string, actor: Actor) {
+export async function addBundleItem(bundleId: string, productId: string, actor: Actor, opts: { confirmShare?: boolean } = {}) {
   const container = await assertProductAccess(actor, bundleId, "edit");
   if (!CONTAINER_PRODUCT_TYPES.includes(container.type as ProductType)) throw new AdminError("هذا النوع لا يمكن أن يضم منتجات أخرى");
-  const [p] = await sql<{ type: string; grade_id: string; teacher_id: string | null }[]>`select type, grade_id, teacher_id from products where id = ${productId}`;
+  const [p] = await sql<{ type: string; grade_id: string; teacher_id: string | null; is_free: boolean }[]>`select type, grade_id, teacher_id, is_free from products where id = ${productId}`;
   if (!p) throw new AdminError("المنتج غير موجود");
   if (actor.kind === "teacher" && p.teacher_id !== actor.teacherId) throw new PermissionError("يمكنك إضافة محتواك فقط");
+  // ما يدخل باقة معروضة يدخل بيعًا قائمًا فورًا: نسبته تُحسم هنا كما تُحسم عند النشر
+  let confirmedShares: { display_name: string; share_bps: number | null }[] = [];
+  const [holder] = await sql<{ is_free: boolean }[]>`select is_free from products where id = ${bundleId}`;
+  if (container.status === "published" && !holder.is_free && !p.is_free) {
+    const shares = await productTeacherShares(productId);
+    const missing = shares.filter((t) => t.share_bps === null);
+    if (missing.length) throw new AdminError(`لم تُحدَّد نسبة ${missing.map((t) => t.display_name).join("، ")}، وإضافته توقف بيع هذه الباقة. حدد النسبة في صفحة المعلم أولًا.`);
+    confirmedShares = shares.filter((t) => isExtremeShare(t.share_bps));
+    if (confirmedShares.length && !opts.confirmShare) throw new AdminError(shareConfirmText(confirmedShares, "الإضافة"));
+  }
   const [{ next }] = await sql<{ next: number }[]>`select coalesce(max(sort_order), -1)::int + 1 as next from bundle_items where bundle_id = ${bundleId}`;
   await sql`insert into bundle_items (bundle_id, product_id, sort_order) values (${bundleId}, ${productId}, ${next}) on conflict do nothing`;
-  await audit({ actorId: actor.userId, action: "bundle.add_item", entityType: "product", entityId: bundleId, metadata: { productId } });
+  await audit({ actorId: actor.userId, action: "bundle.add_item", entityType: "product", entityId: bundleId, metadata: { productId, ...(confirmedShares.length ? { confirmedShares } : {}) } });
 }
 
 export async function removeBundleItem(bundleId: string, productId: string, actor: Actor) {
@@ -906,8 +955,8 @@ export async function getLessonsAdmin(productId: string): Promise<AdminLesson[]>
   `;
 }
 
-export async function nextLessonOrder(productId: string): Promise<number> {
-  const [{ next }] = await sql<{ next: number }[]>`select coalesce(max(sort_order), -1)::int + 1 as next from lessons where product_id = ${productId}`;
+export async function nextLessonOrder(productId: string, db: Db = sql): Promise<number> {
+  const [{ next }] = await db<{ next: number }[]>`select coalesce(max(sort_order), -1)::int + 1 as next from lessons where product_id = ${productId}`;
   return next;
 }
 

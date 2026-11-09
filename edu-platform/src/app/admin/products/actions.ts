@@ -279,7 +279,7 @@ export async function approveAndPublishAction(_prev: ActionState, fd: FormData):
     if (!access.success) throw new AdminError("راجع فترة الإتاحة", fieldErrors(access.error));
     await approveAndPublish(
       id,
-      { priceFils: price.data, isFree, confirmShare: bool(fd, "confirmShare"), compareAtPriceFils: compare.data, accessMode: access.data.accessMode, accessUntil: access.data.accessUntil, accessDays: access.data.accessDays },
+      { submittedAt: str(fd, "submittedAt") || null, priceFils: price.data, isFree, confirmShare: bool(fd, "confirmShare"), compareAtPriceFils: compare.data, accessMode: access.data.accessMode, accessUntil: access.data.accessUntil, accessDays: access.data.accessDays },
       actor,
       ip,
     );
@@ -387,11 +387,15 @@ export async function regeneratePreviewAction(_prev: ActionState, fd: FormData):
           ? "تم توليد المعاينة المجانية"
           : r === "custom"
             ? "توجد معاينة مخصصة مرفوعة يدويًا"
-            : r === "too_short"
-              ? `الملف أقل من ${ar(PREVIEW_POLICY.pagesPerFreePage)} صفحات فلا تتاح له معاينة`
-              : r === "unreadable"
-                ? "تعذر قراءة الملف الرئيسي، راجع سلامة المحتوى"
-                : "لا توجد معاينة (عدد الصفحات صفر أو لا يوجد ملف)",
+            : r === "repaired"
+              ? "تمت معالجة المعاينة المخصصة وصارت جاهزة للعرض"
+              : r === "too_short"
+                ? `الملف أقل من ${ar(PREVIEW_POLICY.pagesPerFreePage)} صفحات فلا تتاح له معاينة`
+                : r === "unreadable"
+                  ? "تعذر قراءة الملف الرئيسي، راجع سلامة المحتوى"
+                  : r === "not_isolated"
+                    ? "تعذر تجهيز معاينة آمنة من هذا الملف، فلن تظهر له معاينة. صدّره بصيغة PDF من جديد ثم ارفعه"
+                    : "لا توجد معاينة (عدد الصفحات صفر أو لا يوجد ملف)",
     };
   });
 }
@@ -419,7 +423,7 @@ export async function addBundleItemAction(_prev: ActionState, fd: FormData): Pro
     const bundleId = str(fd, "bundleId");
     const ids = fd.getAll("productId").filter((x): x is string => typeof x === "string" && isUuid(x));
     if (!isUuid(bundleId) || ids.length === 0) throw new AdminError("اختر منتجًا واحدًا على الأقل");
-    for (const id of ids) await addBundleItem(bundleId, id, actor);
+    for (const id of ids) await addBundleItem(bundleId, id, actor, { confirmShare: bool(fd, "confirmShare") });
     revalidatePath(`/admin/products/${bundleId}`);
     revalidatePath("/admin/bundles");
     return { ok: true, message: `تمت إضافة ${ids.length} عنصر` };

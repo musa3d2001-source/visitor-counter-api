@@ -11,7 +11,7 @@ import { getSettings } from "../platform/settings";
 import { AdminError } from "./common";
 import { enforceOwnerLimits, generateTemporaryPassword } from "./student-accounts";
 import { randomSuffix } from "@/lib/utils";
-import { REFUND_HOLD_DAYS } from "@/lib/teacher-terms";
+import { isExtremeShare, REFUND_HOLD_DAYS } from "@/lib/teacher-terms";
 
 /**
  * إدارة المعلمين (للمالك فقط — الاستدعاءات تأتي من إجراءات adminAction):
@@ -89,6 +89,8 @@ export type TeacherInput = {
   isPublished: boolean;
   canUpload: boolean;
   revenueShareBps: number | null;
+  /** تأكيد المالك حين تصبح النسبة ٠٪ أو ١٠٠٪ لمعلم له محتوى مدفوع معروض */
+  confirmExtremeShare?: boolean;
   sortOrder: number;
   subjectIds: string[];
 };
@@ -132,6 +134,19 @@ export async function createTeacher(input: TeacherInput, ownerId: string, ip?: s
   return row.id;
 }
 
+/** للمعلم محتوى مدفوع معروض الآن، بنفسه أو داخل باقة منشورة مدفوعة بأي عمق */
+async function teacherHasPaidContentOnSale(teacherId: string): Promise<boolean> {
+  const [{ on_sale }] = await sql<{ on_sale: boolean }[]>`
+    with recursive holders(id) as (
+      select id from products where teacher_id = ${teacherId} and not is_free
+      union
+      select bi.bundle_id from bundle_items bi join holders h on bi.product_id = h.id
+    )
+    select exists (select 1 from holders h join products p on p.id = h.id where p.status = 'published' and not p.is_free) as on_sale
+  `;
+  return on_sale;
+}
+
 export async function updateTeacher(id: string, input: TeacherInput, ownerId: string, ip?: string) {
   const current = await getTeacherAdmin(id);
   if (!current) throw new AdminError("المعلم غير موجود");
@@ -146,6 +161,13 @@ export async function updateTeacher(id: string, input: TeacherInput, ownerId: st
     const [{ n }] = await sql<{ n: number }[]>`select count(*)::int as n from products where teacher_id = ${id} and status = 'published' and not is_free`;
     if (n > 0) throw new AdminError("للمعلم منتجات منشورة مدفوعة، ولا تُحذف نسبته حتى لا تُسجَّل مبيعاتها دون حقه. أخفِ منتجاته أولًا أو أبقِ النسبة", { revenueShare: "النسبة مطلوبة" });
   }
+  // نسبة تعدم حق أحد الطرفين في مبيعات قائمة لا تمر بكتابة رقم فقط
+  const extremeChange = current.revenue_share_bps !== input.revenueShareBps && isExtremeShare(input.revenueShareBps);
+  const needsConfirm = extremeChange && (await teacherHasPaidContentOnSale(id));
+  if (needsConfirm && !input.confirmExtremeShare) {
+    const effect = input.revenueShareBps === 0 ? "لن يحصل المعلم على شيء من مبيعاته" : "لن تحصل المنصة على شيء من مبيعاته";
+    throw new AdminError(`للمعلم محتوى مدفوع معروض للبيع، وبهذه النسبة ${effect}. إن كانت مقصودة فأشّر خانة التأكيد ثم احفظ.`, { revenueShare: "أكد النسبة" });
+  }
   await sql`
     update teachers set slug = ${slug}, display_name = ${input.displayName}, headline = ${input.headline}, bio = ${input.bio},
       is_published = ${input.isPublished}, can_upload = ${input.canUpload}, revenue_share_bps = ${input.revenueShareBps},
@@ -155,6 +177,7 @@ export async function updateTeacher(id: string, input: TeacherInput, ownerId: st
   await writeSubjects(id, input.subjectIds);
   const changes: Record<string, unknown> = {};
   if (current.revenue_share_bps !== input.revenueShareBps) changes.revenueShareBps = { from: current.revenue_share_bps, to: input.revenueShareBps };
+  if (needsConfirm) changes.confirmedExtremeShare = true;
   if (current.can_upload !== input.canUpload) changes.canUpload = input.canUpload;
   if (current.is_published !== input.isPublished) changes.isPublished = input.isPublished;
   if (current.display_name !== input.displayName) changes.displayName = { from: current.display_name, to: input.displayName };

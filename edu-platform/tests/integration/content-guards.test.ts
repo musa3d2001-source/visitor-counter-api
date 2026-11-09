@@ -377,7 +377,7 @@ describe("C2 المعاينة لا تغطي الملف", () => {
 
 // ---------------------------------------------------------------------------- C3
 describe("C3 لا نشر بسعر صفر أو بتوزيع خاطئ", () => {
-  const approveInput = { compareAtPriceFils: null, accessMode: "unlimited" as const, accessUntil: null, accessDays: null };
+  const approveInput = { submittedAt: null, compareAtPriceFils: null, accessMode: "unlimited" as const, accessUntil: null, accessDays: null };
   const withTeacher = async (shareBps: number | null, opts: Parameters<typeof createProduct>[0] = {}) => {
     const t = await createTeacher({ shareBps });
     const p = await createProduct({ status: "draft", ...opts });

@@ -29,6 +29,9 @@ import {
 import { requireStaff } from "@/server/auth/permissions";
 import { bundleCandidates, catalogOptions, getAdminProduct, getBundleItemsAdmin, getLessonsAdmin, getProductFiles, isExtremeShare, productTeacherShares, publishBlockers, teacherOptions } from "@/server/admin/products";
 import { FILE_PROBLEM_LABELS, isFlagged, type FlaggedStatus } from "@/server/access/file-check";
+import { saleStopReason } from "@/server/commerce/cart";
+import { videoHostingBlocked } from "@/server/video/policy";
+import { recheckFileAction } from "../../content-health/actions";
 import { hasCurrentAgreement, latestRightsAttestation } from "@/server/admin/teacher-agreement";
 import { activeVideoProvider } from "@/server/video/service";
 import { bunnyConfigured } from "@/server/video/bunny";
@@ -52,7 +55,7 @@ import { W, ar, count, duration, gradeClass, gradeVars, subjectVars, toneClass, 
 import { ACCESS_MODE_LABELS, PROCESSING_STATUS_LABELS, PRODUCT_TYPE_LABELS, isContainerType, isPdfType, isVideoType } from "@/lib/labels";
 import { cn, formatDate, formatDateTime } from "@/lib/utils";
 import { RIGHTS_ATTESTATION_TEXT } from "@/lib/teacher-agreement";
-import { PREVIEW_ISSUE_LABELS, PREVIEW_POLICY, PREVIEW_RULE_TEXT, maxPreviewPages, previewIssue } from "@/lib/preview-policy";
+import { PREVIEW_ISSUE_FIX, PREVIEW_ISSUE_LABELS, PREVIEW_POLICY, PREVIEW_RULE_TEXT, maxPreviewPages, previewIssue } from "@/lib/preview-policy";
 import { CatalogBand } from "../../_components/catalog/band";
 import { AdminThumb } from "../../_components/catalog/thumb";
 import { PosterPreview } from "../../_components/catalog/poster";
@@ -131,6 +134,9 @@ export default async function EditProductPage({
   const editable = owner || product.status === "draft";
   const canUpload = editable && (owner || (actor.kind === "teacher" && actor.canUpload));
   const provider = activeVideoProvider();
+  // على منصة المذكرات فقط: المعلم لا يرفع درسًا لن يُنشر أبدًا. المالك يرى السبب في موانع النشر
+  const hostingClosed = videoHostingBlocked();
+  const saleStop = product.status === "published" ? await saleStopReason(id) : null;
 
   const reviewing = owner && product.status === "in_review";
   const [files, blockers, options, bundleItems, candidates, lessons, teachers, shares, attestation, agreementOk] = await Promise.all([
@@ -296,6 +302,24 @@ export default async function EditProductPage({
         <Alert tone="info">هذا المحتوى معتمد. لأي تعديل عليه تواصل مع إدارة المنصة.</Alert>
       ) : null}
 
+      {saleStop ? (
+        <Alert tone="warning" title="منشور لكن بيعه متوقف" data-testid="sale-stopped-alert">
+          {saleStop === "video_closed" ? (
+            "بيع دروس الفيديو غير متاح حاليًا على المنصة، ولا يستطيع الطلاب شراء هذا المحتوى."
+          ) : owner ? (
+            <>
+              لا يستطيع الطلاب شراء هذا المنتج الآن. السبب وطريقة حله في{" "}
+              <Link href="/admin/content-health" className="font-bold underline">
+                سلامة المحتوى
+              </Link>
+              .
+            </>
+          ) : (
+            "لا يستطيع الطلاب شراء هذا المحتوى الآن. تواصل مع إدارة المنصة لمعرفة السبب."
+          )}
+        </Alert>
+      ) : null}
+
       {owner && product.status === "in_review" ? (
         <section
           className="relative isolate overflow-hidden rounded-[1.75rem] border-2 border-[#FFE08A] bg-[linear-gradient(160deg,#FFFBEA,#FFF0C7)] p-4 shadow-[0_5px_0_#F5D27A,0_24px_40px_-28px_#C98500] sm:p-6"
@@ -357,6 +381,7 @@ export default async function EditProductPage({
           ) : null}
           <ActionForm action={approveAndPublishAction} className="grid gap-4 rounded-[1.4rem] bg-white/80 p-4 sm:grid-cols-2 lg:grid-cols-4">
             <input type="hidden" name="id" value={id} />
+            <input type="hidden" name="submittedAt" value={product.submitted_at?.toISOString() ?? ""} />
             {/* لا يُملأ السعر من اقتراح المعلم ولا بصفر: الاعتماد دون قراءة يتوقف عند هذا الحقل */}
             <Field
               label="السعر المعتمد (د.ك)"
@@ -715,7 +740,12 @@ export default async function EditProductPage({
               ) : (
                 <EmptyInline icon={<PlayCircle />}>لا توجد دروس بعد.</EmptyInline>
               )}
-              {canUpload ? (
+              {canUpload && hostingClosed && !owner ? (
+                <Alert tone="warning" data-testid="lesson-upload-closed">
+                  استضافة الفيديو غير مفعّلة على المنصة بعد، فلا يمكن رفع الدروس الآن ولن يُنشر هذا النوع من المحتوى حتى تفعيلها. يمكنك إضافة مذكرات PDF.
+                </Alert>
+              ) : null}
+              {canUpload && (owner || !hostingClosed) ? (
                 <div className="space-y-4">
                   <div className="relative overflow-hidden rounded-[1.4rem] border-2 border-dashed border-brand-200 bg-[linear-gradient(160deg,var(--color-brand-50),#fff_70%)] p-4 sm:p-5">
                     <h3 className="mb-4 flex items-center gap-2.5 font-display text-[1.1rem] font-black text-ink">
@@ -814,6 +844,11 @@ export default async function EditProductPage({
                             {FILE_PROBLEM_LABELS[f.check_status as FlaggedStatus]}. احذفه وارفع نسخة سليمة.
                           </p>
                         ) : null}
+                        {isFlagged(f.check_status) && owner ? (
+                          <div className="mt-1">
+                            <QuickAction action={recheckFileAction} hidden={{ fileId: f.id, productId: id }} icon={<RefreshCw aria-hidden />} label="إعادة فحص الملف" />
+                          </div>
+                        ) : null}
                         <p className="mt-1.5 flex flex-wrap gap-1.5 text-xs text-muted">
                           <span className="chip min-h-6 bg-mist px-2 text-[0.72rem] text-ink-soft">{f.page_count ? count(f.page_count, W.page) : "عدد الصفحات غير معروف"}</span>
                           <span className="chip min-h-6 bg-mist px-2 text-[0.72rem] text-ink-soft">
@@ -885,7 +920,7 @@ export default async function EditProductPage({
             <Section icon={<Eye />} tone="gold" title="المعاينة المجانية" description={`تُولَّد تلقائيًا من الصفحات الأولى في الملف الأول، أو ارفع ملف معاينة مخصص. ${PREVIEW_RULE_TEXT}`}>
               {previewProblem ? (
                 <Alert tone="warning" className="mb-4" title="هذه المعاينة لا تظهر للطلاب">
-                  {PREVIEW_ISSUE_LABELS[previewProblem]}. اضغط «توليد تلقائي» لإصلاحها.
+                  {PREVIEW_ISSUE_LABELS[previewProblem]}. {PREVIEW_ISSUE_FIX[previewProblem]}.
                 </Alert>
               ) : null}
               {mainFiles.length && previewAllowance === 0 ? <Alert tone="info" className="mb-4">الملف الأول أقل من {ar(PREVIEW_POLICY.pagesPerFreePage)} صفحات، فلا تتاح له معاينة حتى لا تكشف الملف كله.</Alert> : null}
@@ -1000,6 +1035,11 @@ export default async function EditProductPage({
                       </label>
                     ))}
                   </div>
+                  {product.status === "published" && !product.is_free ? (
+                    <div className="mt-3">
+                      <Checkbox name="confirmShare" label="إن كانت نسبة معلم ما أضيفه ٠٪ أو ١٠٠٪، أؤكد أنها النسبة المتفق عليها" />
+                    </div>
+                  ) : null}
                   <SubmitButton size="sm" variant="secondary" className="mt-3">
                     إضافة المحدد
                   </SubmitButton>
@@ -1014,6 +1054,7 @@ export default async function EditProductPage({
               role={actor.kind}
               readOnly={!editable}
               headingLevel={3}
+              videoHostingClosed={hostingClosed}
               action={updateProductAction.bind(null, id)}
               grades={options.grades}
               subjects={options.subjects}

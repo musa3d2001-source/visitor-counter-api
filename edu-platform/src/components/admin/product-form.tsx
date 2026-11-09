@@ -71,6 +71,7 @@ export function ProductForm({
   mode,
   role,
   readOnly,
+  videoHostingClosed = false,
   headingLevel = 2,
 }: {
   action: ServerAction;
@@ -93,6 +94,8 @@ export function ProductForm({
   mode: "create" | "edit";
   role: "owner" | "teacher";
   readOnly?: boolean;
+  /** لا يوجد مزود فيديو آمن على هذا النشر: محتوى الفيديو لا يصل إلى النشر */
+  videoHostingClosed?: boolean;
   /** مستوى عناوين الخطوات: 2 في صفحة الإضافة، 3 داخل لوح «بيانات المحتوى» في صفحة التعديل */
   headingLevel?: 2 | 3;
 }) {
@@ -168,7 +171,7 @@ export function ProductForm({
                 {typeLocked ? <input type="hidden" name="type" value={type} /> : null}
                 <Select id="type" name={typeLocked ? undefined : "type"} value={type} onChange={(e) => setType(e.target.value as ProductType)} disabled={typeLocked}>
                   {TYPE_GROUPS.map((g) => (
-                    <optgroup key={g.label} label={g.label}>
+                    <optgroup key={g.label} label={videoHostingClosed && g.label === "فيديو" ? "فيديو (لا يمكن نشره حاليًا)" : g.label}>
                       {g.types
                         .filter((t) => PRODUCT_TYPES.includes(t))
                         .filter((t) => (mode === "edit" && defaults.type !== "bundle" ? t !== "bundle" : true))
@@ -181,6 +184,11 @@ export function ProductForm({
                   ))}
                 </Select>
               </Field>
+              {videoHostingClosed && isVideo ? (
+                <Alert tone="warning" className="sm:col-span-3" data-testid="video-hosting-closed">
+                  استضافة الفيديو غير مفعّلة على المنصة بعد، فلا يمكن نشر هذا النوع من المحتوى ولا رفع دروسه الآن. اختر نوعًا من مذكرات PDF.
+                </Alert>
+              ) : null}
               {owner && teachers ? (
                 <Field label="المعلم" htmlFor="teacherId" error={fe.teacherId} hint="اتركه «محتوى المنصة» إن لم يكن لمعلم محدد" className="sm:col-span-3">
                   <Select id="teacherId" name="teacherId" defaultValue={v.teacherId}>

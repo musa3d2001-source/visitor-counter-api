@@ -9,7 +9,7 @@ import type { AdminTone } from "./tones";
 import type { ActionState } from "@/lib/action-state";
 import { SubjectIcon } from "@/components/art";
 import { Alert } from "@/components/ui/alert";
-import { Field, Input, Textarea } from "@/components/ui/form";
+import { Checkbox, Field, Input, Textarea } from "@/components/ui/form";
 import { SubmitButton } from "@/components/ui/submit-button";
 import { gradeVars, subjectVars } from "@/lib/design";
 import { cn } from "@/lib/utils";
@@ -122,6 +122,9 @@ export function TeacherForm({
           </Field>
           <Field label="حصة المعلم (%)" htmlFor="revenueShare" error={fe.revenueShare} hint="من صافي المبيعات. اتركها فارغة إن لم يُفعّل نظام الأرباح لهذا المعلم">
             <Input id="revenueShare" name="revenueShare" defaultValue={val("revenueShare")} inputMode="decimal" dir="ltr" className="num text-start" placeholder="40" />
+            <div className="mt-2">
+              <Checkbox name="confirmExtremeShare" label="إن كانت النسبة ٠٪ أو ١٠٠٪ لمعلم له محتوى مدفوع معروض، أؤكد أنها مقصودة" />
+            </div>
           </Field>
           <Field label="ترتيب العرض" htmlFor="sortOrder" error={fe.sortOrder} hint="الأصغر يظهر أولًا">
             <Input id="sortOrder" name="sortOrder" type="number" defaultValue={val("sortOrder")} className="num" />

@@ -192,6 +192,60 @@ describe("الرفض", () => {
   });
 });
 
+describe("الصورة المعتمدة لا تُحذف بطلب مصنوع", () => {
+  const withLivePhoto = async () => {
+    const t = await newTeacher();
+    const key = await putPhoto(t);
+    await setTeacherPhoto(t.id, key, owner.id);
+    return { t, key };
+  };
+
+  it("a completion that names the live photo is no change at all", async () => {
+    const { t, key } = await withLivePhoto();
+    await completeUpload({ target: "teacher_photo", key, teacherId: t.id }, actorOf(t));
+    expect((await teacherProfileState(t.id)).pending).toBeNull();
+    expect((await liveOf(t.id)).photo_key).toBe(key);
+    expect(await exists(key)).toBe(true);
+  });
+
+  it("naming the live photo drops a pending new photo but never deletes the live one", async () => {
+    const { t, key } = await withLivePhoto();
+    const next = await putPhoto(t);
+    await proposeTeacherPhoto(actorOf(t), next);
+    await expect(proposeTeacherPhoto(actorOf(t), key)).resolves.toBe("none");
+    expect((await teacherProfileState(t.id)).pending).toBeNull();
+    expect(await exists(next)).toBe(false);
+    expect(await exists(key)).toBe(true);
+  });
+
+  it("rejecting a change that carries the live key leaves the file", async () => {
+    const { t, key } = await withLivePhoto();
+    await sql`insert into teacher_profile_changes (teacher_id, photo_action, photo_key, submitted_by) values (${t.id}, 'replace', ${key}, ${t.user!.id})`;
+    await rejectProfileChange(await pendingId(t.id), "لا", owner.id);
+    expect(await exists(key)).toBe(true);
+    expect((await liveOf(t.id)).photo_key).toBe(key);
+  });
+
+  it("a refused completion cannot delete the live photo either", async () => {
+    const { t, key } = await withLivePhoto();
+    await expect(completeUpload({ target: "teacher_photo", key, teacherId: t.id, size: 1 }, actorOf(t))).rejects.toThrow(/لم يصل الملف كاملًا/);
+    expect(await exists(key)).toBe(true);
+  });
+
+  it("a refused completion still removes a file nothing uses", async () => {
+    const t = await newTeacher();
+    const key = await putPhoto(t);
+    await expect(completeUpload({ target: "teacher_photo", key, teacherId: t.id, size: 1 }, actorOf(t))).rejects.toThrow(/لم يصل الملف كاملًا/);
+    expect(await exists(key)).toBe(false);
+  });
+
+  it("removing the live photo is still a request the owner reviews", async () => {
+    const { t } = await withLivePhoto();
+    await expect(proposeTeacherPhoto(actorOf(t), null)).resolves.toBe("remove");
+    expect((await teacherProfileState(t.id)).pending).toMatchObject({ photo_action: "remove" });
+  });
+});
+
 describe("مرة واحدة وتعديل معلق واحد", () => {
   it("approving twice applies once; approve after reject is refused", async () => {
     const t = await newTeacher();

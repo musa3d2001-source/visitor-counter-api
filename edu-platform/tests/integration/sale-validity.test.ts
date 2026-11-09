@@ -280,7 +280,7 @@ describe("the owner's screens", () => {
   it("refuses a past date when approving a teacher's product", async () => {
     const teacher = await createTeacher({ mode: "self_managed", shareBps: 4000 });
     const product = await createVideoProduct({ teacherId: teacher.id, status: "in_review" });
-    const input = { priceFils: 4000, compareAtPriceFils: null, accessMode: "until_date" as const, accessDays: null };
+    const input = { submittedAt: null, priceFils: 4000, compareAtPriceFils: null, accessMode: "until_date" as const, accessDays: null };
     await expect(approveAndPublish(product.id, { ...input, accessUntil: past() }, owner)).rejects.toMatchObject({ message: PAST_DATE });
     expect((await getAdminProduct(product.id))!.status).toBe("in_review");
     await expect(approveAndPublish(product.id, { ...input, accessUntil: future() }, owner)).resolves.toBeUndefined();
@@ -290,7 +290,7 @@ describe("the owner's screens", () => {
   it("approving with a new date replaces an old one that had passed", async () => {
     const teacher = await createTeacher({ mode: "self_managed", shareBps: 4000 });
     const product = await createVideoProduct({ teacherId: teacher.id, status: "in_review", accessMode: "until_date", accessUntil: past() });
-    await expect(approveAndPublish(product.id, { priceFils: 4000, compareAtPriceFils: null, accessMode: "unlimited", accessUntil: null, accessDays: null }, owner)).resolves.toBeUndefined();
+    await expect(approveAndPublish(product.id, { submittedAt: null, priceFils: 4000, compareAtPriceFils: null, accessMode: "unlimited", accessUntil: null, accessDays: null }, owner)).resolves.toBeUndefined();
   });
 
   it("a teacher sending a draft to review is not stopped by a date only the owner can change", async () => {

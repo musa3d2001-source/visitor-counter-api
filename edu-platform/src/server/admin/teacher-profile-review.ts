@@ -77,9 +77,11 @@ export async function proposeTeacherPhoto(actor: TeacherActor, key: string | nul
   const result = await sql.begin(async (tx) => {
     const live = await lockTeacher(tx, actor.teacherId);
     const pending = await pendingOf(tx, actor.teacherId);
-    if (pending?.photo_key && pending.photo_key !== key) orphan = pending.photo_key;
-    const photo_action: PhotoAction = key ? "replace" : live.photo_key ? "remove" : "none";
-    await storeProposal(tx, actor, pending, { headline: pending?.headline ?? null, bio: pending?.bio ?? null, photo_action, photo_key: key }, "photo");
+    // مفتاح الصورة المعتمدة نفسها ليس صورة جديدة: لا تعديل، ولا حذف لها عند رفض أو استبدال لاحق
+    const nextKey = key === live.photo_key ? null : key;
+    if (pending?.photo_key && pending.photo_key !== nextKey && pending.photo_key !== live.photo_key) orphan = pending.photo_key;
+    const photo_action: PhotoAction = nextKey ? "replace" : key === null && live.photo_key ? "remove" : "none";
+    await storeProposal(tx, actor, pending, { headline: pending?.headline ?? null, bio: pending?.bio ?? null, photo_action, photo_key: nextKey }, "photo");
     return photo_action;
   });
   if (orphan) await storage().remove("public", orphan).catch(() => {});
@@ -122,11 +124,11 @@ export async function rejectProfileChange(id: string, note: string, ownerId: str
   const teacherId = await teacherIdOf(id);
   if (!teacherId) throw new AdminError(ALREADY_HANDLED);
   const unused = await sql.begin(async (tx) => {
-    await lockTeacher(tx, teacherId);
+    const live = await lockTeacher(tx, teacherId);
     const [c] = await tx<ProfileChange[]>`update teacher_profile_changes set status = 'rejected', review_note = ${reason}, reviewed_by = ${ownerId}, reviewed_at = now() where id = ${id} and status = 'pending' returning *`;
     if (!c) throw new AdminError(ALREADY_HANDLED);
     await audit({ actorId: ownerId, action: "teacher.profile_reject", entityType: "teacher", entityId: teacherId, reason, metadata: { changeId: id }, ip }, tx);
-    return c.photo_key;
+    return c.photo_key === live.photo_key ? null : c.photo_key;
   });
   if (unused) await storage().remove("public", unused).catch(() => {});
   return teacherId;

@@ -1,5 +1,6 @@
 import { catalogOptions, teacherOptions } from "@/server/admin/products";
 import { requireStaff } from "@/server/auth/permissions";
+import { videoHostingBlocked } from "@/server/video/policy";
 import { teacherSubjectIds } from "@/server/admin/teachers";
 import { getSettings } from "@/server/platform/settings";
 import { AdminPageHeader } from "@/components/admin/page-header";
@@ -40,7 +41,8 @@ export default async function NewProductPage({
     }
   }
 
-  const defaultType: ProductType = "unit";
+  const hostingClosed = videoHostingBlocked();
+  const defaultType: ProductType = hostingClosed ? "final_notes" : "unit";
   const type = (PRODUCT_TYPES.includes(sp.type as ProductType) ? sp.type : defaultType) as ProductType;
   const gradeId = gradeList.find((g) => g.id === sp.grade)?.id ?? "";
   const subjectId = subjects.find((s) => s.id === sp.subject && s.grade_id === gradeId)?.id ?? "";
@@ -104,6 +106,7 @@ export default async function NewProductPage({
           subjects={subjects}
           teachers={owner ? teachers : undefined}
           submitLabel="حفظ كمسودة ومتابعة الرفع"
+          videoHostingClosed={hostingClosed}
           defaults={{
             type,
             title: "",
