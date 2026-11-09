@@ -22,7 +22,10 @@ import { createCoupon, createProduct, createUser, TEST_PASSWORD } from "../helpe
 import { SIM_API_KEY, SIM_PORT, TEST_ENV, WEBHOOK_SECRET } from "../test-env";
 import { startPayment } from "../helpers/payment-flow";
 
-const ctx = vi.hoisted(() => ({ user: null as unknown, cart: [] as string[] }));
+const ctx = vi.hoisted(() => ({ user: null as unknown, cart: [] as string[], revalidated: [] as string[] }));
+vi.mock("next/cache", async (original) => ({ ...(await original<typeof import("next/cache")>()), revalidatePath: (path: string) => void ctx.revalidated.push(path) }));
+vi.mock("@/server/http", async (original) => ({ ...(await original<typeof import("@/server/http")>()), clientIp: async () => "192.0.2.80" }));
+vi.mock("@/server/auth/session", async (original) => ({ ...(await original<typeof import("@/server/auth/session")>()), getCurrentUser: async () => ctx.user }));
 vi.mock("@/server/auth/guards", async (original) => ({ ...(await original<typeof import("@/server/auth/guards")>()), requireUser: async () => ctx.user, assertUser: async () => ctx.user }));
 vi.mock("@/server/commerce/cart", async (original) => ({
   ...(await original<typeof import("@/server/commerce/cart")>()),
@@ -43,6 +46,7 @@ const { default: CheckoutPage } = await import("@/app/(site)/checkout/page");
 const { default: VerifyEmailPage } = await import("@/app/(site)/(auth)/verify-email/page");
 const { default: ConfirmEmailPage } = await import("@/app/(site)/(auth)/verify-email/confirm/page");
 const { placeOrderAction, retryPaymentAction } = await import("@/app/(site)/checkout/actions");
+const { correctEmailAction, resendVerificationAction } = await import("@/app/(site)/(auth)/verify-email/actions");
 
 let sink: SmtpSink;
 let sim: Simulator;
@@ -323,6 +327,23 @@ describe("the link", () => {
     expect(await confirmEmailToken("one-more-guess-xxxxxxxxxxxxxxxx", IP)).toEqual({ ok: false, error: "محاولات كثيرة. حاول بعد قليل." });
   });
 
+  it("a whole class confirming from one school network is never blocked", async () => {
+    const ip = "192.0.2.82";
+    for (let i = 0; i < 40; i++) {
+      const u = await createUser();
+      await sendEmailVerificationLink(u.id, u.email);
+      expect(await confirmEmailToken(tokenSentTo(u.email), ip), `student ${i}`).toEqual({ ok: true });
+    }
+  });
+
+  it("a valid link still works from an address that has been guessing", async () => {
+    const ip = "192.0.2.83";
+    const u = await createUser();
+    await sendEmailVerificationLink(u.id, u.email);
+    for (let i = 0; i < 31; i++) await confirmEmailToken(`guess-${i}-${"y".repeat(30)}`, ip);
+    expect(await confirmEmailToken(tokenSentTo(u.email), ip)).toEqual({ ok: true });
+  });
+
   it("does nothing for a suspended account", async () => {
     const u = await createUser();
     await sendEmailVerificationLink(u.id, u.email);
@@ -378,6 +399,25 @@ describe("resend", () => {
     await sql`update users set email_verified_at = now() where id = ${u.id}`;
     expect((await resendEmailVerification(u.id, IP)).ok).toBe(false);
     expect(mailsTo(u.email)).toHaveLength(0);
+  });
+
+  it("a failed send leaves no cooldown, so the student can try again at once", async () => {
+    const u = await createUser();
+    sink.rejectNext();
+    expect(await resendEmailVerification(u.id, IP)).toEqual({ ok: false, error: "تعذر إرسال الرسالة الآن. حاول بعد قليل." });
+    expect(await resendEmailVerification(u.id, IP)).toMatchObject({ ok: true });
+    expect(mailsTo(u.email)).toHaveLength(1);
+  });
+
+  it("the action redraws the page only after a link really went out", async () => {
+    const u = await createUser();
+    ctx.user = u;
+    ctx.revalidated.length = 0;
+    sink.rejectNext();
+    expect(await resendVerificationAction()).toMatchObject({ error: expect.any(String) });
+    expect(ctx.revalidated).toEqual([]);
+    expect(await resendVerificationAction()).toMatchObject({ ok: true });
+    expect(ctx.revalidated).toEqual(["/verify-email"]);
   });
 });
 
@@ -469,6 +509,69 @@ describe("correcting a mistyped address", () => {
     await sql`update users set email_verified_at = now() where id = ${u.id}`;
     expect((await requestEmailCorrection(u.id, "elsewhere@farqad.test", TEST_PASSWORD, IP)).ok).toBe(false);
     expect(mailsTo("elsewhere@farqad.test")).toHaveLength(0);
+  });
+
+  it("an unverified account with a real paid order goes through the owner", async () => {
+    const u = await createUser();
+    await addOrder(u.id, { status: "paid", totalFils: 1000, isTest: false });
+    expect(await requestEmailCorrection(u.id, "buyer-new@farqad.test", TEST_PASSWORD, IP)).toEqual({ ok: false, error: "لا يمكن تغيير بريد هذا الحساب من هنا. تواصل مع إدارة المنصة." });
+    expect(mailsTo("buyer-new@farqad.test")).toHaveLength(0);
+    expect(await sql`select 1 from email_verification_tokens where user_id = ${u.id}`).toHaveLength(0);
+  });
+
+  it("the old address is told, without the new one or the student's name", async () => {
+    const u = await createUser({ fullName: "اسم يجب ألا يظهر" });
+    await requestEmailCorrection(u.id, "moved-away@farqad.test", TEST_PASSWORD, IP);
+    expect(mailsTo(u.email)).toHaveLength(0);
+    expect(await confirmEmailToken(tokenSentTo("moved-away@farqad.test"), IP)).toEqual({ ok: true });
+    const [notice] = mailsTo(u.email);
+    expect(notice!.subject).toContain("تغيّر البريد");
+    expect(notice!.text).not.toContain("moved-away@farqad.test");
+    expect(notice!.text).not.toContain("اسم يجب ألا يظهر");
+  });
+
+  it("confirming the account's own address sends no change notice", async () => {
+    const u = await createUser();
+    await sendEmailVerificationLink(u.id, u.email);
+    await confirmEmailToken(tokenSentTo(u.email), IP);
+    expect(mailsTo(u.email)).toHaveLength(1);
+  });
+
+  it("a notice that cannot be delivered does not undo the confirmation", async () => {
+    const u = await createUser();
+    await requestEmailCorrection(u.id, "still-moved@farqad.test", TEST_PASSWORD, IP);
+    sink.rejectNext();
+    expect(await confirmEmailToken(tokenSentTo("still-moved@farqad.test"), IP)).toEqual({ ok: true });
+    const [row] = await sql<{ email: string }[]>`select email from users where id = ${u.id}`;
+    expect(row.email).toBe("still-moved@farqad.test");
+  });
+
+  it("a failed send is reported for a free address and a taken address alike", async () => {
+    const FAILED = { ok: false, error: "تعذر إرسال الرسالة الآن. حاول بعد قليل." };
+    const [u, holder] = await Promise.all([createUser(), createUser()]);
+    sink.rejectNext();
+    expect(await requestEmailCorrection(u.id, "free-address@farqad.test", TEST_PASSWORD, IP)).toEqual(FAILED);
+    sink.rejectNext();
+    expect(await requestEmailCorrection(u.id, holder.email.toLowerCase(), TEST_PASSWORD, IP)).toEqual(FAILED);
+  });
+
+  it("going back to the account's address reports a failed send too", async () => {
+    const u = await createUser();
+    await requestEmailCorrection(u.id, "third-typo@farqad.test", TEST_PASSWORD, IP);
+    sink.rejectNext();
+    expect(await requestEmailCorrection(u.id, u.email.toLowerCase(), TEST_PASSWORD, IP)).toEqual({ ok: false, error: "تعذر إرسال الرسالة الآن. حاول بعد قليل." });
+    expect((await verificationState(u.id)).pendingEmail).toBe("third-typo@farqad.test");
+  });
+
+  it("the correction action redraws the page after a link went out", async () => {
+    const u = await createUser();
+    ctx.user = u;
+    ctx.revalidated.length = 0;
+    const f = new FormData();
+    f.set("email", "drawn-again@farqad.test");
+    f.set("currentPassword", TEST_PASSWORD);
+    expect(await correctEmailAction(null, f)).toMatchObject({ ok: true });
+    expect(ctx.revalidated).toEqual(["/verify-email"]);
   });
 
   it("the same address is pointed at resend", async () => {

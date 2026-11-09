@@ -1,5 +1,6 @@
 "use server";
 
+import { revalidatePath } from "next/cache";
 import { emailSchema } from "@/lib/validation";
 import { formValues, type ActionState } from "@/lib/action-state";
 import { clientIp } from "@/server/http";
@@ -12,7 +13,10 @@ export async function resendVerificationAction(): Promise<ActionState> {
   const user = await getCurrentUser();
   if (!user) return { error: SESSION_OVER };
   const res = await resendEmailVerification(user.id, await clientIp());
-  return res.ok ? { ok: true, message: res.message } : { error: res.error };
+  if (!res.ok) return { error: res.error };
+  // الصفحة تعرض العنوان الذي خرج إليه الرابط: تُرسم من جديد حتى لا يبقى العنوان السابق على الشاشة
+  revalidatePath("/verify-email");
+  return { ok: true, message: res.message };
 }
 
 export async function correctEmailAction(_prev: ActionState, fd: FormData): Promise<ActionState> {
@@ -23,6 +27,7 @@ export async function correctEmailAction(_prev: ActionState, fd: FormData): Prom
   if (!parsed.success) return { fieldErrors: { email: parsed.error.issues[0].message }, values };
   const res = await requestEmailCorrection(user.id, parsed.data, String(fd.get("currentPassword") ?? ""), await clientIp());
   if (!res.ok) return res.field ? { fieldErrors: { [res.field]: res.error }, values } : { error: res.error, values };
+  revalidatePath("/verify-email");
   return { ok: true, message: res.message };
 }
 

@@ -3,10 +3,10 @@ import { sql, type Db } from "../db";
 import { env } from "../env";
 import { burnPasswordTime, verifyPassword } from "./password";
 import { generateToken, hashToken } from "./session";
-import { hitRateLimit } from "./rate-limit";
+import { clearRateLimit, hitRateLimit } from "./rate-limit";
 import { constantTimeEqual } from "./two-factor-core";
 import { audit } from "../platform/audit";
-import { mailIsReal, sendMail } from "../platform/mailer";
+import { mailIsReal, redactSecrets, sendMail } from "../platform/mailer";
 import { getSettings } from "../platform/settings";
 
 /**
@@ -114,18 +114,23 @@ export async function sendRegistrationVerification(userId: string): Promise<void
 export type VerifyResult = { ok: true; message: string } | { ok: false; error: string };
 
 const RESEND = { cooldownSec: 60, perUser: 6, perIp: 30, windowSec: 60 * 60 };
+const SEND_FAILED = "تعذر إرسال الرسالة الآن. حاول بعد قليل.";
 
 export async function resendEmailVerification(userId: string, ip: string): Promise<VerifyResult> {
   if (!mailIsReal()) return { ok: false, error: "إرسال البريد غير مفعّل حاليًا." };
   const state = await verificationState(userId);
   if (!state.required) return { ok: false, error: "بريدك مؤكد، ولا يلزم إرسال رابط." };
-  const cooldown = await hitRateLimit(`verify:cooldown:${userId}`, 1, RESEND.cooldownSec);
+  const cooldownKey = `verify:cooldown:${userId}`;
+  const cooldown = await hitRateLimit(cooldownKey, 1, RESEND.cooldownSec);
   if (!cooldown.allowed) return { ok: false, error: `أرسلنا رابطًا قبل قليل. يمكنك طلب غيره بعد ${cooldown.retryAfterSeconds < 60 ? "أقل من دقيقة" : "دقيقة"}.` };
   const [perUser, perIp] = await Promise.all([hitRateLimit(`verify:user:${userId}`, RESEND.perUser, RESEND.windowSec), hitRateLimit(`verify:ip:${ip}`, RESEND.perIp, RESEND.windowSec)]);
   if (!perUser.allowed || !perIp.allowed) return { ok: false, error: "طلبت روابط كثيرة. حاول بعد ساعة." };
   // عنوان الحساب فقط: الإرسال إلى عنوان آخر لا يكون إلا بكلمة المرور، عبر نموذج التصحيح
   const sent = await sendEmailVerificationLink(userId, state.email);
-  return sent ? { ok: true, message: "أرسلنا رابطًا جديدًا. افتح أحدث رسالة، فالروابط السابقة لم تعد تعمل." } : { ok: false, error: "تعذر إرسال الرسالة الآن. حاول بعد قليل." };
+  if (sent) return { ok: true, message: "أرسلنا رابطًا جديدًا. افتح أحدث رسالة، فالروابط السابقة لم تعد تعمل." };
+  // لم يخرج شيء، فلا نقل له لاحقًا «أرسلنا رابطًا قبل قليل»
+  await clearRateLimit(cooldownKey);
+  return { ok: false, error: SEND_FAILED };
 }
 
 const CORRECTION = { perUser: 5, perIp: 20, perTarget: 3, windowSec: 60 * 60 };
@@ -149,12 +154,13 @@ export async function requestEmailCorrection(userId: string, email: string, curr
     return { ok: false, error: "انتهت الجلسة، سجّل الدخول مرة أخرى" };
   }
   if (!(await verifyPassword(currentPassword, u.password_hash))) return { ok: false, error: "كلمة المرور غير صحيحة.", field: "currentPassword" };
-  if (u.email_verified_at) return { ok: false, error: "بريدك مؤكد. لتغييره تواصل مع إدارة المنصة." };
+  // بريد مؤكد، أو حساب له طلب مدفوع حقيقي: إيصالاته وصلت إلى هذا العنوان، فالتغيير بيد المالك
+  if (!(await emailVerificationRequired(userId))) return { ok: false, error: "لا يمكن تغيير بريد هذا الحساب من هنا. تواصل مع إدارة المنصة." };
   if (u.email.toLowerCase() === email) {
     // الرجوع عن تصحيح سابق: رابط جديد لعنوان الحساب يبطل الرابط المرسل إلى العنوان الآخر
     if (!(await verificationState(userId)).pendingEmail) return { ok: false, error: "هذا هو بريدك الحالي. استخدم «إرسال رابط جديد».", field: "email" };
-    await sendEmailVerificationLink(userId, email, { verifiedPasswordHash: u.password_hash });
-    return { ok: true, message: CORRECTION_ACCEPTED };
+    const sent = await sendEmailVerificationLink(userId, email, { verifiedPasswordHash: u.password_hash });
+    return sent ? { ok: true, message: CORRECTION_ACCEPTED } : { ok: false, error: SEND_FAILED };
   }
 
   const perTarget = await hitRateLimit(`verify:correct:target:${email}`, CORRECTION.perTarget, CORRECTION.windowSec);
@@ -163,27 +169,27 @@ export async function requestEmailCorrection(userId: string, email: string, curr
   const taken = await sql`select 1 from users where email = ${email}`;
   if (taken.length) {
     const settings = await getSettings();
-    await sendMail({
+    // فشل الإرسال هنا وفي الفرع التالي يعطي الرد نفسه، فلا يكشف أن العنوان محجوز
+    const noticed = await sendMail({
       to: email,
       template: "email_in_use_notice",
       subject: `محاولة استخدام بريدك، ${settings.site_name}`,
       text: `حاول شخص ربط هذا البريد بحساب آخر في ${settings.site_name}، لكن لك حسابًا مسجلًا به فلم يتغير شيء.\n\nلا حاجة لأي إجراء.\n\n${settings.site_name}`,
     });
-    return { ok: true, message: CORRECTION_ACCEPTED };
+    return noticed ? { ok: true, message: CORRECTION_ACCEPTED } : { ok: false, error: SEND_FAILED };
   }
-  await sendEmailVerificationLink(userId, email, { verifiedPasswordHash: u.password_hash });
-  return { ok: true, message: CORRECTION_ACCEPTED };
+  const sent = await sendEmailVerificationLink(userId, email, { verifiedPasswordHash: u.password_hash });
+  return sent ? { ok: true, message: CORRECTION_ACCEPTED } : { ok: false, error: SEND_FAILED };
 }
 
 const CONFIRM_FAILED = "انتهت صلاحية الرابط أو سبق استخدامه. اطلب رابطًا جديدًا من صفحة تأكيد البريد.";
 
 export async function confirmEmailToken(token: string, ip: string): Promise<{ ok: true } | { ok: false; error: string }> {
   if (!token || token.length > 100) return { ok: false, error: CONFIRM_FAILED };
-  const limit = await hitRateLimit(`verify:confirm:ip:${ip}`, 30, 60 * 60);
-  if (!limit.allowed) return { ok: false, error: "محاولات كثيرة. حاول بعد قليل." };
   const id = hashToken(token);
+  let outcome: { ok: true; previousEmail: string | null } | { ok: false; error: string };
   try {
-    return await sql.begin(async (tx) => {
+    outcome = await sql.begin(async (tx) => {
       const [row] = await tx<{ user_id: string; email: string; current_email: string; expires_at: Date; used_at: Date | null; is_active: boolean; password_fingerprint: string | null; password_hash: string }[]>`
         select t.user_id, t.email, u.email as current_email, t.expires_at, t.used_at, u.is_active, t.password_fingerprint, u.password_hash
         from email_verification_tokens t join users u on u.id = t.user_id
@@ -200,11 +206,33 @@ export async function confirmEmailToken(token: string, ip: string): Promise<{ ok
         await tx`update password_reset_tokens set used_at = now() where user_id = ${row.user_id} and used_at is null`;
         await audit({ actorId: row.user_id, action: "user.email_corrected_by_student", entityType: "user", entityId: row.user_id, metadata: { from: row.current_email, to: row.email }, ip }, tx);
       }
-      return { ok: true as const };
+      return { ok: true as const, previousEmail: changesAddress ? row.current_email : null };
     });
   } catch (err) {
     // العنوان حُجز بين إصدار الرابط وفتحه
-    if ((err as { code?: string }).code === "23505") return { ok: false, error: CONFIRM_FAILED };
-    throw err;
+    if ((err as { code?: string }).code !== "23505") throw err;
+    outcome = { ok: false, error: CONFIRM_FAILED };
+  }
+  if (!outcome.ok) {
+    // لا يُحتسب إلا الفشل، فرابط صحيح يعمل دائمًا مهما كان عدد من يؤكدون من شبكة المدرسة
+    const limit = await hitRateLimit(`verify:confirm:ip:${ip}`, 30, 60 * 60);
+    return limit.allowed ? outcome : { ok: false, error: "محاولات كثيرة. حاول بعد قليل." };
+  }
+  if (outcome.previousEmail) await tellOldAddress(outcome.previousEmail);
+  return { ok: true };
+}
+
+/** العنوان السابق يعرف أن الحساب غادره، ولو كان التغيير بكلمة مرور مسروقة. لا يذكر العنوان الجديد ولا الاسم. وفشله لا يلغي تأكيدًا تم */
+async function tellOldAddress(previous: string) {
+  try {
+    const settings = await getSettings();
+    await sendMail({
+      to: previous,
+      template: "email_changed_notice",
+      subject: `تغيّر البريد المرتبط بحسابك، ${settings.site_name}`,
+      text: `تغيّر البريد المرتبط بحساب كان يستخدم هذا العنوان، فلن تصل إليه رسائل الحساب بعد الآن.\n\nإذا لم تطلب ذلك فتواصل معنا.\n\n${settings.site_name}`,
+    });
+  } catch (err) {
+    console.error("[auth] old address notice failed", redactSecrets(err instanceof Error ? err.message : String(err)));
   }
 }

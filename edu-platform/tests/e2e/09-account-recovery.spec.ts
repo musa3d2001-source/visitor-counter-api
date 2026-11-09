@@ -180,6 +180,7 @@ test.describe("تأكيد البريد قبل أول دفع، والبريد ح�
     await expect(page.getByText("لن يتغير بريد حسابك قبل فتح الرابط")).toBeVisible();
     await expect.poll(async () => (await db()<{ n: number }[]>`select count(*)::int as n from users where email = ${typo}`)[0].n).toBe(1);
 
+    await expect(page.getByTestId("verify-target")).toHaveText(right);
     const link = await waitForMailLink(right, /https?:\/\/\S+\/verify-email\/confirm\?token=\S+/);
     await page.goto(pathOf(link));
     await page.getByRole("button", { name: "تأكيد البريد" }).click();
