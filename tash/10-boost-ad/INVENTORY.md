@@ -14,10 +14,20 @@
 >   (`09-pitch-mor/src/`, conformed footage, keyed logo layers). Mind the known AI flaws in its SCRIPT.md (the sign's "O"; the
 >   softened micro-Arabic on the cups).
 > - (Superseded: "MOR content stays OUT of the paid ad … only with MOR's written approval.")
-> - **sdosecafe (real café) also consents** (owner, same day). The repo holds **no assets** for it, and we will not generate any.
->   Requested from the owner: logo (PNG/SVG), colours, 4–8 of their own photos, exact handle/Arabic name, written consent.
->   Until they arrive, the edit keeps a **swappable slot** for a second real-brand beat; same labelling rule as MOR
->   (true wording such as «سوّيناه لـ…», never "client").
+> - **specialty dose (@sdosecafe, Al Jahra) also consents** (owner, same day). Its spec story ad already exists:
+>   `tash/10-spec-dose/` (`DOSE-spec-story-9x16.mp4`, 18 s, v3; idea «ناقصك دوز.» with a mood battery 15 % → 100 %; footage
+>   `footage/ai/d1_grinders, d2d_carafe, d3_iced, d4_cake, d5b_terrace`; keyed mark; read its `SCRIPT.md` for clean ranges and
+>   known flaws). Same labelling rule as MOR: true wording such as «سوّيناه لسبيشلتي دوز» + `@sdosecafe`, never "client".
+>   The owner is asked to keep both consents in writing.
+>
+> **Hard project rules that bind this ad** (`tash/HANDOFF.md`, owner decisions):
+> - **Contact is DM only**: no WhatsApp, no phone number, no contact buttons. CTA = «اطلب إعلانك بالخاص» / «دزّ لنا بالخاص».
+> - Handles: Instagram **@tash.creative.kw**, TikTok **@tash.creative**. Use «على» with platforms («تابعونا على الإنستقرام»), never «بال…».
+> - **Owner-approved prices (7 Nov):** a product ad image KWD 10 (one revision); a vertical reel/story up to 15 s **starts at KWD 40**
+>   (idea, editing, suitable audio, two revisions); final video price confirmed after scope. Any price on screen must say «يبدأ من».
+>   No rush fees or turnaround promises.
+> - Owner's working rule: act as a real director; decide craft yourself; ask the owner only about money or facts.
+> - Claude never logs into or posts to the owner's accounts.
 > - **Borrow MOR's method, not its content:** the brand mark IS the story; the film opens and closes on the same shape (in through the
 >   keyhole, out through the keyhole). For TASH, our own mark and its three dots (•••) can carry that role.
 > - **The concept ads (LAYL / STAKK / HABBA) may appear as fast proof-of-craft flashes**, labelled as concept work on screen. For a new
