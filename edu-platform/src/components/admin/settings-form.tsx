@@ -183,7 +183,16 @@ export function SettingsForm({ action, values }: { action: ServerAction; values:
           </Field>
           <div className="flex flex-col justify-center gap-3">
             <Checkbox name="watermark_enabled" defaultChecked={values.watermark_enabled} label="ختم علامة مائية بهوية المشتري على ملفات PDF" />
-            <Checkbox name="videos_enabled" defaultChecked={values.videos_enabled} label="تفعيل قسم دروس الفيديو للطلاب" />
+            <Checkbox
+              name="videos_enabled"
+              defaultChecked={values.videos_enabled}
+              label={
+                <>
+                  تفعيل قسم دروس الفيديو للطلاب
+                  <span className="block text-xs leading-6 text-muted">عند الإيقاف لا يُباع الفيديو ولا تظهر معايناته، ومن اشتراه سابقًا يكمل المشاهدة.</span>
+                </>
+              }
+            />
           </div>
         </div>
       </Card>

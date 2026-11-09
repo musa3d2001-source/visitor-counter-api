@@ -17,6 +17,7 @@ export function LessonTimeline({
   productId,
   isOwned,
   watchedIds,
+  freeOpen = true,
   linkable = true,
   testIds = true,
 }: {
@@ -24,6 +25,8 @@ export function LessonTimeline({
   productId: string;
   isOwned: boolean;
   watchedIds?: Set<string>;
+  /** false حين يكون الفيديو مغلقًا: الدرس المجاني يُعرض مقفلًا لأن معاينته لا تعمل */
+  freeOpen?: boolean;
   /** روابط المشاهدة (صفحة الفيديو) */
   linkable?: boolean;
   /** معرّفات الاختبار lesson-item/lesson-locked (صفحة الفيديو فقط) */
@@ -54,9 +57,10 @@ export function LessonTimeline({
           <ol className={s.timeline}>
             {g.lessons.map((l) => {
               n += 1;
-              const open = isOwned || l.isFreePreview;
+              const isFree = freeOpen && l.isFreePreview;
+              const open = isOwned || isFree;
               const watched = watchedIds?.has(l.id) ?? false;
-              const free = l.isFreePreview && !isOwned;
+              const free = isFree && !isOwned;
               const d = duration(l.durationSeconds);
               const inner = (
                 <>

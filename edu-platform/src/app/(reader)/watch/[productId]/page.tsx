@@ -8,6 +8,7 @@ import { checkLessonAccess, playbackFor } from "@/server/access/lessons";
 import { getPlaylist, getProductBySlug, getProductFilesInfo, type LessonInfo } from "@/server/catalog/queries";
 import { getSettings } from "@/server/platform/settings";
 import { sql } from "@/server/db";
+import { closedVideoProductIds } from "@/server/video/policy";
 import { LessonPlayer } from "@/components/reader/lesson-player";
 import { LessonsPanel } from "@/components/reader/lessons-panel";
 import { TeacherAvatar } from "@/components/site/teacher-avatar";
@@ -46,7 +47,9 @@ export default async function WatchPage({ params, searchParams }: { params: Prom
   const detail = await getProductBySlug(product.slug, { includeUnpublished: true });
   const files = ownsRoot || staff ? (await getProductFilesInfo(product.id)).filter((f) => f.kind === "main") : [];
 
-  const freeOpen = (l: LessonInfo) => l.isFreePreview;
+  // الإغلاق يوقف البيع والمعاينات فقط: من يملك درسًا يكمله، والمالك والمعلم يراجعان المحتوى
+  const videoClosed = !staff && (await closedVideoProductIds(sql, [product.id], settings)).has(product.id);
+  const freeOpen = (l: LessonInfo) => l.isFreePreview && !videoClosed;
   const canOpen = (l: LessonInfo) => staff || owned.has(l.productId) || freeOpen(l);
 
   const progress = user && lessons.length
@@ -70,7 +73,7 @@ export default async function WatchPage({ params, searchParams }: { params: Prom
   const startAt = selected && progressBy.get(selected.id) && !progressBy.get(selected.id)!.completed ? progressBy.get(selected.id)!.position_seconds : 0;
   const playback = access?.ok ? playbackFor(access.lesson, { startAt }) : null;
   const doneCount = lessons.filter((l) => progressBy.get(l.id)?.completed).length;
-  const videosOff = !settings.videos_enabled && !staff;
+  const videosOff = videoClosed && !lessons.some((l) => owned.has(l.productId));
   const backHref = ownsRoot ? "/library" : `/products/${product.slug}`;
 
   // ───── عرض فقط ─────
@@ -95,7 +98,7 @@ export default async function WatchPage({ params, searchParams }: { params: Prom
   // أرخص خطوة للتحويل من شاشة القفل: الدرس المجاني في الوحدة نفسها أولًا، ثم أول درس مجاني في المحتوى
   const freeAlt = (() => {
     if (!selected || access?.ok || lockedReason === "not_ready") return null;
-    const isFree = (l: LessonInfo) => l.isFreePreview && l.id !== selected.id;
+    const isFree = (l: LessonInfo) => freeOpen(l) && l.id !== selected.id;
     const sameGroup = playlist.find((g) => g.lessons.some((l) => l.id === selected.id));
     const l = sameGroup?.lessons.find(isFree) ?? lessons.find(isFree);
     return l ? { href: watchHref(l.id), title: l.title } : null;
@@ -108,7 +111,7 @@ export default async function WatchPage({ params, searchParams }: { params: Prom
       open: canOpen(l),
       done: Boolean(p?.completed),
       partial: p && p.position_seconds > 0 ? partial : 0,
-      free: l.isFreePreview && !owned.has(l.productId) && !staff,
+      free: freeOpen(l) && !owned.has(l.productId) && !staff,
     };
   };
 
@@ -162,7 +165,17 @@ export default async function WatchPage({ params, searchParams }: { params: Prom
 
           <section className="on-dark col-start-1 row-start-1 min-w-0 pt-5 pb-9 text-white sm:pt-7 lg:pt-8 lg:pb-12" aria-label="الدرس الحالي">
             {videosOff ? (
-              <StageNotice title="دروس الفيديو غير مفعلة حاليًا." />
+              <StageNotice title="دروس الفيديو غير متاحة حاليًا." testId="videos-closed-stage">
+                {user ? null : (
+                  <>
+                    إذا اشتريت هذا المحتوى سابقًا،{" "}
+                    <Link href={loginHref} className="font-bold text-[#ffd25e] underline decoration-2 underline-offset-4">
+                      سجّل الدخول
+                    </Link>{" "}
+                    لمتابعته.
+                  </>
+                )}
+              </StageNotice>
             ) : !selected ? (
               <StageNotice title="لا توجد دروس منشورة بعد." />
             ) : (
@@ -189,6 +202,7 @@ export default async function WatchPage({ params, searchParams }: { params: Prom
                     compareAtFils={detail?.compareAtPriceFils ?? null}
                     subjectSlug={subjectSlug}
                     freeLesson={freeAlt}
+                    salesClosed={videoClosed}
                   />
                 )}
               </StageFrame>

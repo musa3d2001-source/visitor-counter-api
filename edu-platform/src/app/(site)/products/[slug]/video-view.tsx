@@ -10,7 +10,7 @@ import { count, duration, gradeClass, gradeLevelFromSlug, toneClass, W } from "@
 import { formatDate } from "@/lib/utils";
 import { GlassChip, HeroStat, HeroStats, ProductHero } from "./_components/hero";
 import { BundleFanArt, VideoPosterArt } from "./_components/hero-art";
-import { MobileBuyBar, PurchasePanel, SaleEndedNotice, type TrustItem } from "./_components/purchase";
+import { MobileBuyBar, PurchasePanel, SaleEndedNotice, VideoClosedNotice, type TrustItem } from "./_components/purchase";
 import { FileList, LearnList, SectionPanel, WideHead } from "./_components/sections";
 import { LessonTimeline } from "./_components/lesson-timeline";
 import { aboutTitle, includesLabel, shortTermLabel } from "./_components/labels";
@@ -46,6 +46,7 @@ export function VideoProductView({
   resumeLessonId,
   watchedIds,
   canBuy,
+  videoClosed,
   breadcrumbs,
 }: {
   product: ProductDetail;
@@ -61,6 +62,8 @@ export function VideoProductView({
   resumeLessonId: string | null;
   watchedIds: Set<string>;
   canBuy: boolean;
+  /** الفيديو مغلق: لا بيع ولا معاينات، ومن اشترى يكمل المشاهدة */
+  videoClosed: boolean;
   breadcrumbs: { label: string; href?: string }[];
 }) {
   const lessons = playlist.flatMap((g) => g.lessons);
@@ -69,7 +72,7 @@ export function VideoProductView({
   const contents = product.contents.split("\n").map((l) => l.trim()).filter(Boolean);
   const mainFiles = files.filter((f) => f.kind === "main");
   const watchHref = `/watch/${product.id}${resumeLessonId ?? firstLesson ? `?lesson=${resumeLessonId ?? firstLesson}` : ""}`;
-  const previewHref = product.previewLessonId ? `/watch/${product.id}?lesson=${product.previewLessonId}` : null;
+  const previewHref = product.previewLessonId && !videoClosed ? `/watch/${product.id}?lesson=${product.previewLessonId}` : null;
   const isBundle = product.type === "bundle";
   const level = gradeLevelFromSlug(product.gradeSlug);
   const tone = isBundle ? gradeClass(level) : toneClass(product.subjectSlug);
@@ -163,10 +166,10 @@ export function VideoProductView({
               compareAtPriceFils={product.compareAtPriceFils}
               bundleSaving={included.length && itemsValue > product.priceFils ? { fils: itemsValue - product.priceFils, label: "مقارنة بالشراء المنفرد" } : null}
               owned={isOwned ? { until: ownedUntil, href: watchHref, label: watchLabel, icon: <Play className="fill-current" aria-hidden /> } : null}
-              buy={canBuy ? <AddToCart productId={product.id} /> : product.saleEnded ? <SaleEndedNotice /> : null}
+              buy={canBuy ? <AddToCart productId={product.id} /> : product.saleEnded ? <SaleEndedNotice /> : videoClosed ? <VideoClosedNotice /> : null}
               preview={!isOwned && previewHref ? { href: previewHref, label: "شاهد المعاينة المجانية", icon: <Play className="fill-current" aria-hidden /> } : null}
               accessText={accessPeriodText(product)}
-              trust={VIDEO_TRUST}
+              trust={videoClosed ? [] : VIDEO_TRUST}
             />
           </div>
         </aside>
@@ -204,6 +207,7 @@ export function VideoProductView({
               <LessonTimeline
                 productId={product.id}
                 isOwned={isOwned}
+                freeOpen={!videoClosed}
                 watchedIds={watchedIds}
                 groups={playlist.map((g) => ({
                   key: g.key,

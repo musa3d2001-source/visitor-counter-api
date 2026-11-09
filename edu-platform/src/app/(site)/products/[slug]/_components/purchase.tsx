@@ -23,6 +23,18 @@ export function SaleEndedNotice() {
   );
 }
 
+/**
+ * يحل محل أزرار الشراء حين يكون الفيديو مغلقًا على المنصة. لا يَعد بموعد، لأن فتحه قرار لم يُتخذ بعد.
+ * data-testid="video-closed-notice"
+ */
+export function VideoClosedNotice() {
+  return (
+    <div data-testid="video-closed-notice">
+      <Alert tone="info">شراء دروس الفيديو غير متاح حاليًا.</Alert>
+    </div>
+  );
+}
+
 export function PurchasePanel({
   toneClass,
   typeIcon,
@@ -107,16 +119,18 @@ export function PurchasePanel({
           </dl>
         </div>
 
-        <ul className={cn(s.trust, "mt-5")}>
-          {trust.map((t, i) => (
-            <li key={i}>
-              <span className={s.trustIcon} style={{ background: t.bg, color: t.fg }}>
-                {t.icon}
-              </span>
-              <span className="pt-0.5">{t.text}</span>
-            </li>
-          ))}
-        </ul>
+        {trust.length ? (
+          <ul className={cn(s.trust, "mt-5")}>
+            {trust.map((t, i) => (
+              <li key={i}>
+                <span className={s.trustIcon} style={{ background: t.bg, color: t.fg }}>
+                  {t.icon}
+                </span>
+                <span className="pt-0.5">{t.text}</span>
+              </li>
+            ))}
+          </ul>
+        ) : null}
       </div>
     </div>
   );

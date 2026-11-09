@@ -33,6 +33,7 @@ export function LockedStage({
   compareAtFils,
   subjectSlug,
   freeLesson = null,
+  salesClosed = false,
 }: {
   reason: LockedReason;
   loginHref: string;
@@ -42,6 +43,8 @@ export function LockedStage({
   subjectSlug: string | null;
   /** درس معاينة مجاني في المحتوى نفسه (غير الدرس الحالي) */
   freeLesson?: { href: string; title: string } | null;
+  /** الفيديو مغلق: لا زر شراء ولا سعر لما لا يُباع الآن */
+  salesClosed?: boolean;
 }) {
   const processing = reason === "not_ready";
   return (
@@ -94,17 +97,24 @@ export function LockedStage({
               <Link href={loginHref} className="btn btn-3d btn-light btn-md">
                 <LogIn aria-hidden /> تسجيل الدخول
               </Link>
-              <Link href={productHref} className="btn btn-3d btn-accent btn-md">
-                <ShoppingCart aria-hidden /> اشترِ للوصول لكل الدروس
-              </Link>
+              {salesClosed ? null : (
+                <Link href={productHref} className="btn btn-3d btn-accent btn-md">
+                  <ShoppingCart aria-hidden /> اشترِ للوصول لكل الدروس
+                </Link>
+              )}
             </div>
-            {priceFils !== null ? <LockedPrice fils={priceFils} compareAt={compareAtFils} /> : null}
+            {priceFils !== null && !salesClosed ? <LockedPrice fils={priceFils} compareAt={compareAtFils} /> : null}
             {freeLesson ? (
               <p className="mt-4 flex flex-wrap items-center justify-center gap-x-2.5 gap-y-1.5 text-[0.92rem] text-white/80">
                 <span className="font-display font-bold">جرّب قبل الشراء</span>
                 <FreeLessonButton lesson={freeLesson} variant="glass" />
               </p>
             ) : null}
+          </>
+        ) : salesClosed ? (
+          <>
+            <p className="mt-5 font-display text-[clamp(1.45rem,1.1rem+1.4vw,2rem)] leading-tight font-black">هذا الدرس ليس ضمن ما اشتريته</p>
+            <p className="mt-2 text-[0.98rem] text-white/80">شراء دروس الفيديو غير متاح حاليًا، وما اشتريته يبقى متاحًا لك.</p>
           </>
         ) : (
           <>
@@ -157,9 +167,9 @@ function LockedPrice({ fils, compareAt }: { fils: number; compareAt: number | nu
 }
 
 /** ملاحظة مسرح عامة (الفيديو متوقف/لا دروس) على السطح الداكن */
-export function StageNotice({ title, children }: { title: string; children?: React.ReactNode }) {
+export function StageNotice({ title, children, testId }: { title: string; children?: React.ReactNode; testId?: string }) {
   return (
-    <div className="on-dark grid min-h-[15rem] place-items-center rounded-[1.25rem] bg-white/[0.06] px-6 py-10 text-center text-white ring-1 ring-white/10 sm:aspect-video sm:min-h-0 sm:rounded-[1.5rem]" role="status">
+    <div className="on-dark grid min-h-[15rem] place-items-center rounded-[1.25rem] bg-white/[0.06] px-6 py-10 text-center text-white ring-1 ring-white/10 sm:aspect-video sm:min-h-0 sm:rounded-[1.5rem]" role="status" data-testid={testId}>
       <div>
         <span className="mx-auto grid size-14 place-items-center rounded-2xl bg-white/12 text-[#ffd25e]" aria-hidden>
           <Sparkles className="size-7" />

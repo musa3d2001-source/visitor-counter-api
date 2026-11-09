@@ -6,6 +6,7 @@ import { getSettings } from "@/server/platform/settings";
 import { paymentsConfig } from "@/server/payments/service";
 import { webhookDeliveryStatus } from "@/server/payments/monitoring";
 import { bunnyConfigured } from "@/server/video/bunny";
+import { videoHostingBlocked } from "@/server/video/policy";
 import { count } from "@/lib/design";
 import { WEBHOOK_REJECTION_LABELS } from "@/lib/labels";
 import { filsToKwdString } from "@/lib/money";
@@ -137,6 +138,7 @@ export default async function SettingsPage() {
           <Section title="مزود الفيديو" description="يُضبط من متغيرات البيئة، لا تُعرض المفاتيح هنا." icon={<Video />} tone="sky">
             <ul className="divide-y divide-line">
               <Row label="مزود الرفع (VIDEO_PROVIDER)" ok text={e.VIDEO_PROVIDER === "bunny" ? "Bunny Stream" : "تخزين المنصة الخاص"} />
+              <Row label="نشر وبيع الفيديو" ok={!videoHostingBlocked()} text={videoHostingBlocked() ? "متوقف: ملفات خام بلا ALLOW_FILE_VIDEO" : e.VIDEO_PROVIDER === "file" ? "متاح كملف خام يمكن تنزيله" : "متاح"} />
               <Row label="Bunny Stream مضبوط" ok={bunnyConfigured()} text={bunnyConfigured() ? "نعم" : "لا"} />
               <Row label="مفتاح توقيع Webhook" ok={Boolean(e.BUNNY_STREAM_READONLY_API_KEY)} text={e.BUNNY_STREAM_READONLY_API_KEY ? "مضبوط" : "غير مضبوط"} />
               <Row label="نطاق صور المعاينة (CDN)" ok={Boolean(e.BUNNY_STREAM_CDN_HOSTNAME)} text={e.BUNNY_STREAM_CDN_HOSTNAME ? "مضبوط" : "غير مضبوط"} />

@@ -1,11 +1,9 @@
 import type { Metadata } from "next";
-import Link from "next/link";
 import { notFound } from "next/navigation";
-import { BookOpen, BookOpenText, CalendarDays, Download, Eye, FileText, GraduationCap, Layers, Library, ListChecks, ListVideo, Lock, Play, ShieldCheck, Sparkles, Shapes, Files } from "lucide-react";
+import { BookOpen, BookOpenText, CalendarDays, Download, Eye, FileText, GraduationCap, Layers, Library, ListChecks, Lock, ShieldCheck, Sparkles, Shapes, Files } from "lucide-react";
 import {
   getBundleItems,
   getBundlesContaining,
-  getLessons,
   getPlaylist,
   getProductBySlug,
   getProductFilesInfo,
@@ -16,6 +14,7 @@ import { accessExpiry, accessibleProductIds, isTeacherOfProduct } from "@/server
 import { sql } from "@/server/db";
 import { VideoProductView, accessPeriodText } from "./video-view";
 import { getSettings } from "@/server/platform/settings";
+import { closedVideoProductIds } from "@/server/video/policy";
 import { env } from "@/server/env";
 import { Alert } from "@/components/ui/alert";
 import { ProductGrid } from "@/components/site/product-card";
@@ -26,9 +25,8 @@ import { filsToKwdString } from "@/lib/money";
 import { academicYearLabel, count, gradeClass, gradeLevelFromSlug, toneClass, W } from "@/lib/design";
 import { GlassChip, HeroStat, HeroStats, ProductHero } from "./_components/hero";
 import { BundleFanArt, NotePaperArt } from "./_components/hero-art";
-import { MobileBuyBar, PurchasePanel, SaleEndedNotice, type TrustItem } from "./_components/purchase";
+import { MobileBuyBar, PurchasePanel, SaleEndedNotice, VideoClosedNotice, type TrustItem } from "./_components/purchase";
 import { FactGrid, FileList, LearnList, SectionPanel, WideHead } from "./_components/sections";
-import { LessonTimeline } from "./_components/lesson-timeline";
 import { aboutTitle, includesLabel, previewLabel, shortTermLabel } from "./_components/labels";
 
 type Params = { slug: string };
@@ -65,6 +63,8 @@ export default async function ProductPage({ params }: { params: Promise<Params> 
     ...(product.subjectName && product.subjectSlug ? [{ label: product.subjectName, href: `/grades/${product.gradeSlug}/${product.subjectSlug}` }] : []),
     { label: product.title },
   ];
+  // فحص واحد لكل أنواع الفيديو والباقات التي تضم فيديو، وهو نفسه ما يمنع السلة والدفع
+  const videoClosed = (await closedVideoProductIds(sql, [product.id], await getSettings())).has(product.id);
 
   if (product.isVideo) {
     const [playlist, included, bundlesV, filesV, ownedV] = await Promise.all([
@@ -114,19 +114,18 @@ export default async function ProductPage({ params }: { params: Promise<Params> 
           ownedUntil={ownedUntil}
           resumeLessonId={resumeLessonId}
           watchedIds={watchedIds}
-          canBuy={product.status === "published" && !product.saleEnded}
+          canBuy={product.status === "published" && !product.saleEnded && !videoClosed}
+          videoClosed={videoClosed}
           breadcrumbs={breadcrumbs}
         />
       </div>
     );
   }
 
-  const [files, bundleItems, bundles, lessons, settings] = await Promise.all([
+  const [files, bundleItems, bundles] = await Promise.all([
     getProductFilesInfo(product.id),
     product.type === "bundle" ? getBundleItems(product.id) : Promise.resolve([]),
     product.type !== "bundle" ? getBundlesContaining(product.id) : Promise.resolve([]),
-    product.type === "video_course" ? getLessons(product.id) : Promise.resolve([]),
-    getSettings(),
   ]);
   const [owned, bundleItemsById] = await Promise.all([user ? accessibleProductIds(user.id) : Promise.resolve(new Set<string>()), itemsOf(bundles)]);
   const isOwned = owned.has(product.id);
@@ -135,8 +134,6 @@ export default async function ProductPage({ params }: { params: Promise<Params> 
   const totalPages = mainFiles.reduce((s, f) => s + (f.pageCount ?? 0), 0) || product.pageCount;
   const itemsValue = bundleItems.reduce((s, i) => s + i.priceFils, 0);
   const contents = product.contents.split("\n").map((l) => l.trim()).filter(Boolean);
-  const freeLesson = lessons.find((l) => l.isFreePreview);
-  const videosOff = product.type === "video_course" && !settings.videos_enabled;
 
   const isBundle = product.type === "bundle";
   const level = gradeLevelFromSlug(product.gradeSlug);
@@ -144,7 +141,7 @@ export default async function ProductPage({ params }: { params: Promise<Params> 
   const typeLabel = PRODUCT_TYPE_LABELS[product.type];
   const term = shortTermLabel(product.term);
   const subjectsCount = new Set(bundleItems.map((i) => i.subjectSlug ?? i.subjectName ?? i.id)).size;
-  const readOnly = !product.isDownloadable && !isBundle && product.type !== "video_course";
+  const readOnly = !product.isDownloadable && !isBundle;
   const readingText = product.isDownloadable ? "قابلة للتنزيل والطباعة بعد الشراء" : readOnly ? "تُقرأ داخل المنصة، ولا تُنزّل" : null;
   const accessText = accessPeriodText(product);
 
@@ -165,7 +162,7 @@ export default async function ProductPage({ params }: { params: Promise<Params> 
       "@type": "Offer",
       priceCurrency: "KWD",
       price: filsToKwdString(product.priceFils),
-      availability: product.saleEnded ? "https://schema.org/Discontinued" : "https://schema.org/InStock",
+      availability: product.saleEnded ? "https://schema.org/Discontinued" : videoClosed ? "https://schema.org/OutOfStock" : "https://schema.org/InStock",
       url: new URL(`/products/${product.slug}`, env().APP_URL).toString(),
     },
   };
@@ -229,7 +226,6 @@ export default async function ProductPage({ params }: { params: Promise<Params> 
           {mainFiles.length > 1 ? <HeroStat icon={<Files aria-hidden />}>{count(mainFiles.length, { one: "ملف", two: "ملفان", plural: "ملفات", acc: "ملفًا" })}</HeroStat> : null}
           {isBundle && bundleItems.length ? <HeroStat icon={<Layers aria-hidden />}>{includesLabel(bundleItems.length)}</HeroStat> : null}
           {isBundle && subjectsCount > 1 ? <HeroStat icon={<Shapes aria-hidden />}>{count(subjectsCount, W.subject)}</HeroStat> : null}
-          {lessons.length ? <HeroStat icon={<ListVideo aria-hidden />}>{count(lessons.length, W.lesson)}</HeroStat> : null}
           {readingText ? <HeroStat icon={product.isDownloadable ? <Download aria-hidden /> : <Lock aria-hidden />}>{product.isDownloadable ? "تنزيل وطباعة" : "قراءة داخل المنصة"}</HeroStat> : null}
         </HeroStats>
       </ProductHero>
@@ -246,10 +242,10 @@ export default async function ProductPage({ params }: { params: Promise<Params> 
               compareAtPriceFils={product.compareAtPriceFils}
               bundleSaving={isBundle && itemsValue > product.priceFils ? { fils: itemsValue - product.priceFils, label: "مقارنة بشراء المذكرات منفردة" } : null}
               owned={isOwned ? { until: null, href: "/library", label: "افتح في مكتبتي", icon: <BookOpen aria-hidden /> } : null}
-              buy={videosOff ? <Alert tone="info">دروس الفيديو ستتوفر قريبًا.</Alert> : product.saleEnded ? <SaleEndedNotice /> : product.status === "published" ? <AddToCart productId={product.id} /> : null}
+              buy={product.saleEnded ? <SaleEndedNotice /> : videoClosed ? <VideoClosedNotice /> : product.status === "published" ? <AddToCart productId={product.id} /> : null}
               preview={preview && !isOwned ? { href: `/preview/${preview.id}`, label: previewLabel(preview.pageCount), icon: <Eye aria-hidden />, testId: "free-preview" } : null}
               accessText={accessText}
-              trust={trust}
+              trust={videoClosed ? [] : trust}
             />
           </div>
         </aside>
@@ -277,16 +273,6 @@ export default async function ProductPage({ params }: { params: Promise<Params> 
             </SectionPanel>
           ) : null}
 
-          {lessons.length ? (
-            <SectionPanel id="lessons" title="الدروس" icon={<ListVideo aria-hidden />}>
-              <LessonTimeline productId={product.id} isOwned={isOwned} linkable={false} testIds={false} groups={[{ key: "all", title: null, lessons }]} />
-              {freeLesson && settings.videos_enabled ? (
-                <Link href={`/watch/${product.id}?lesson=${freeLesson.id}`} className="btn btn-3d btn-accent btn-md mt-5">
-                  <Play className="fill-current" aria-hidden /> شاهد الدرس المجاني
-                </Link>
-              ) : null}
-            </SectionPanel>
-          ) : null}
         </div>
       </div>
 
@@ -319,7 +305,7 @@ export default async function ProductPage({ params }: { params: Promise<Params> 
       ) : null}
 
       {/* شريط شراء ثابت على الجوال */}
-      {!isOwned && product.status === "published" && !videosOff && !product.saleEnded ? (
+      {!isOwned && product.status === "published" && !videoClosed && !product.saleEnded ? (
         <MobileBuyBar productId={product.id} priceFils={product.priceFils} compareAtPriceFils={product.compareAtPriceFils} accessText={accessText} />
       ) : null}
     </div>
