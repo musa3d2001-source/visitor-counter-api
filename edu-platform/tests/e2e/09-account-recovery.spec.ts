@@ -124,6 +124,25 @@ test.describe("الاستعادة بيد المالك والبريد غير مف
   });
 });
 
+test.describe("تأكيد البريد بيد المالك", () => {
+  test.beforeEach(({}, info) => test.skip(info.project.name === "ipad", "الرحلة نفسها مغطاة على الكمبيوتر والآيفون"));
+
+  test("المالك يؤكد البريد بسبب مكتوب، ويختفي النموذج", async ({ page, browser }) => {
+    const email = await registerStudent(page);
+    const owner = await ownerPage(browser);
+    await owner.page.goto(`/admin/students/${await studentId(email)}`);
+    const card = owner.page.getByTestId("student-mark-verified");
+    await expect(card).toBeVisible();
+    await expect(owner.page.getByTestId("student-account-state")).toContainText("البريد غير مؤكد");
+    await expectNoHorizontalOverflow(owner.page);
+    await owner.page.fill("#verify-reason", "لم تصل الرسالة، وتحققت من ولي الأمر بالهاتف");
+    await card.getByRole("button", { name: "تأكيد البريد" }).click();
+    await expect(owner.page.getByTestId("student-account-state")).toContainText("البريد مؤكد");
+    await expect(card).toHaveCount(0);
+    await owner.ctx.close();
+  });
+});
+
 test.describe("تأكيد البريد قبل أول دفع، والبريد حقيقي", () => {
   test.use({ baseURL: E2E_MAIL_BASE_URL });
   test.beforeEach(({}, info) => test.skip(info.project.name === "ipad", "الرحلة نفسها مغطاة على الكمبيوتر والآيفون"));

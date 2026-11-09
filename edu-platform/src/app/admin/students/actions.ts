@@ -8,7 +8,7 @@ import { invalidateAllUserSessions } from "@/server/auth/session";
 import { audit } from "@/server/platform/audit";
 import { mailIsReal } from "@/server/platform/mailer";
 import { AdminError, adminAction, isUuid, str } from "@/server/admin/common";
-import { correctStudentEmail, resetStudentPassword } from "@/server/admin/student-accounts";
+import { correctStudentEmail, markStudentEmailVerified, resetStudentPassword } from "@/server/admin/student-accounts";
 import { anonymizeStudent } from "@/server/admin/student-anonymize";
 
 const ANONYMIZED_ACCOUNT_ERROR = "حُذفت بيانات هذا الحساب، فلا يمكن تعديله.";
@@ -67,10 +67,34 @@ export async function correctStudentEmailAction(_p: ActionState, fd: FormData): 
     const userId = str(fd, "userId");
     if (!isUuid(userId)) throw new AdminError("طلب غير صالح");
     const reason = requireReason(fd);
-    await correctStudentEmail({ studentId: userId, newEmail: str(fd, "email"), adminId, reason, ip });
+    const outcome = await correctStudentEmail({ studentId: userId, newEmail: str(fd, "email"), adminId, reason, ip });
     revalidatePath(`/admin/students/${userId}`);
     revalidatePath("/admin/students");
-    return { ok: true, message: mailIsReal() ? "تم تصحيح البريد وإرسال رابط تأكيد إلى العنوان الجديد وتنبيه إلى القديم." : "تم تصحيح البريد. سيبقى غير مؤكد إلى أن يُفعَّل إرسال البريد." };
+    return emailCorrectionResult(outcome);
+  });
+}
+
+/** المالك يبلغ ولي الأمر بما يُقال هنا، فلا نذكر رسالة رفضها خادم البريد */
+function emailCorrectionResult({ linkSent, oldNotified }: { linkSent: boolean; oldNotified: boolean }): ActionState {
+  if (!mailIsReal()) return { ok: true, message: "تم تصحيح البريد. سيبقى غير مؤكد إلى أن يُفعَّل إرسال البريد." };
+  if (linkSent && oldNotified) return { ok: true, message: "تم تصحيح البريد وإرسال رابط تأكيد إلى العنوان الجديد وتنبيه إلى القديم." };
+  if (linkSent) return { ok: true, partial: true, message: "تم تصحيح البريد وإرسال رابط تأكيد إلى العنوان الجديد، لكن تعذر إرسال التنبيه إلى العنوان القديم." };
+  return {
+    ok: true,
+    partial: true,
+    message: `تم تصحيح البريد، لكن تعذر إرسال رابط التأكيد إلى العنوان الجديد${oldNotified ? "" : " والتنبيه إلى القديم"}. يستطيع الطالب طلب رابط جديد من صفحة تأكيد البريد، أو أكّد بريده من هذه الصفحة بعد التحقق منه.`,
+  };
+}
+
+export async function markStudentEmailVerifiedAction(_p: ActionState, fd: FormData): Promise<ActionState> {
+  return adminAction(async ({ adminId, ip }) => {
+    const userId = str(fd, "userId");
+    if (!isUuid(userId)) throw new AdminError("طلب غير صالح");
+    const reason = requireReason(fd);
+    await markStudentEmailVerified({ studentId: userId, adminId, reason, ip });
+    revalidatePath(`/admin/students/${userId}`);
+    revalidatePath("/admin/students");
+    return { ok: true, message: "تم تأكيد البريد. يستطيع الطالب إكمال الدفع الآن." };
   });
 }
 

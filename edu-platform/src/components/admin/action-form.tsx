@@ -54,7 +54,7 @@ export function ActionForm({
             {state.message}
           </p>
         ) : (
-          <Alert tone="success" className="mt-4">
+          <Alert tone={state.partial ? "warning" : "success"} className="mt-4">
             {state.message}
           </Alert>
         )

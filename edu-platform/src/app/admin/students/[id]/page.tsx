@@ -41,7 +41,7 @@ import { CONSENT_KIND_LABELS } from "@/lib/consent";
 import { ar, gradeVars } from "@/lib/design";
 import { formatDate, formatDateTime } from "@/lib/utils";
 import { grantAction, revokeAction, setActiveAction } from "../actions";
-import { StudentEmailCorrection, StudentPasswordReset } from "../_components/recovery";
+import { StudentEmailCorrection, StudentEmailMarkVerified, StudentPasswordReset } from "../_components/recovery";
 import { StudentAnonymize } from "../_components/anonymize";
 import { BandChip, ProfileHero } from "../../_components/people/band";
 import { StudentsArt } from "../../_components/people/art";
@@ -153,6 +153,7 @@ export default async function StudentPage({ params }: { params: Promise<{ id: st
           <div className="grid items-start gap-4 lg:grid-cols-2">
             <StudentPasswordReset userId={user.id} />
             <StudentEmailCorrection userId={user.id} currentEmail={user.email} />
+            {user.email_verified_at ? null : <StudentEmailMarkVerified userId={user.id} currentEmail={user.email} />}
           </div>
         </Section>
       ) : null}

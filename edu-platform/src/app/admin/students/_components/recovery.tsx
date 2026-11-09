@@ -2,8 +2,8 @@
 
 import { useRouter } from "next/navigation";
 import { useState } from "react";
-import { Check, Copy, EyeOff, KeyRound, Mail } from "lucide-react";
-import { correctStudentEmailAction, resetStudentPasswordAction } from "../actions";
+import { Check, Copy, EyeOff, KeyRound, Mail, MailCheck } from "lucide-react";
+import { correctStudentEmailAction, markStudentEmailVerifiedAction, resetStudentPasswordAction } from "../actions";
 import type { ActionState } from "@/lib/action-state";
 import { ActionForm } from "@/components/admin/action-form";
 import { ToneIcon } from "@/components/admin/icon-tile";
@@ -102,6 +102,31 @@ export function StudentPasswordReset({ userId }: { userId: string }) {
         </Alert>
       ) : null}
     </form>
+  );
+}
+
+/** يظهر للطالب غير المؤكد فقط: عند النجاح تعيد الصفحة رسم نفسها بلا هذا النموذج */
+export function StudentEmailMarkVerified({ userId, currentEmail }: { userId: string; currentEmail: string }) {
+  return (
+    <ActionForm action={markStudentEmailVerifiedAction} className="min-w-0 rounded-[1.5rem] border border-line bg-surface p-4 shadow-xs sm:p-5">
+      <div className="grid gap-3" data-testid="student-mark-verified">
+        <input type="hidden" name="userId" value={userId} />
+        <div>
+          <CardTitle icon={<MailCheck />}>تأكيد البريد يدويًا</CardTitle>
+          <p className="text-[0.9rem] leading-7 text-ink-soft">
+            لطالب لا تصله رسالة التأكيد فلا يستطيع الدفع. أكّد <bdi dir="ltr" className="font-bold break-all">{currentEmail}</bdi> فقط بعد التحقق منه أو من ولي أمره بوسيلة أخرى، كالهاتف.
+          </p>
+        </div>
+        <Field label="السبب (إلزامي)" htmlFor="verify-reason" required hint="مثال: لم تصل الرسالة، وتحققت من ولي الأمر بالهاتف">
+          <Textarea id="verify-reason" name="reason" rows={2} minLength={3} maxLength={500} required />
+        </Field>
+        <div>
+          <SubmitButton size="md" variant="outline" pendingText="جارٍ التأكيد…">
+            تأكيد البريد
+          </SubmitButton>
+        </div>
+      </div>
+    </ActionForm>
   );
 }
 

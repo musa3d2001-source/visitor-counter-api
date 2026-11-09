@@ -178,6 +178,18 @@ describe("what the owner sees", () => {
     expect(await lastMailSentAt()).not.toBeNull();
   });
 
+  it("counts verification links that failed in the last day, and only those", async () => {
+    realMail();
+    sink.rejectNext(2);
+    await sendMail({ to: "v1@farqad.test", subject: "s", text: "x", template: "email_verification" });
+    await sendMail({ to: "other@farqad.test", subject: "s", text: "x", template: "order_confirmation" });
+    await sendMail({ to: "v-ok@farqad.test", subject: "s", text: "x", template: "email_verification" });
+    await sql`insert into email_log (to_email, subject, template, status, error, created_at) values ('yesterday@farqad.test', 's', 'email_verification', 'failed', 'boom', now() - interval '25 hours')`;
+    const health = await mailHealth();
+    expect(health.verificationFailedToday).toBe(1);
+    expect(health.failedRecently).toBe(3);
+  });
+
   it("the failures page shows who and why, without a message body", async () => {
     realMail();
     sink.rejectNext();

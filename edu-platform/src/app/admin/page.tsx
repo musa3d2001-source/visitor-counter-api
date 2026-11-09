@@ -42,7 +42,7 @@ import { ar, count, W } from "@/lib/design";
 import { PRODUCT_TYPE_LABELS, type ProductType } from "@/lib/labels";
 import { formatDateTime } from "@/lib/utils";
 import { DashHero, HeroChip } from "./_components/overview/bands";
-import { ALERT, EXTRA_PAYMENT, Kwd, CONTENT, MAIL_MESSAGE, REFUND, SALE, todayLabel } from "./_components/overview/money";
+import { ALERT, EXTRA_PAYMENT, Kwd, CONTENT, MAIL_MESSAGE, REFUND, SALE, todayLabel, VERIFICATION_LINK } from "./_components/overview/money";
 import { QuickTiles } from "./_components/overview/quick-tiles";
 
 export const metadata = { title: "الرئيسية" };
@@ -117,6 +117,12 @@ export default async function AdminDashboard({ searchParams }: { searchParams: P
       {mail.logOnlyInProduction ? (
         <AdminNotice href="/admin/mail" icon={<MailWarning />} tone="coral" action="التفاصيل">
           البريد غير مفعّل: لا تصل أي رسالة إلى الطلاب، ولا تعمل استعادة كلمة المرور عبر البريد
+        </AdminNotice>
+      ) : null}
+
+      {mail.verificationFailedToday > 0 ? (
+        <AdminNotice href="/admin/mail" icon={<MailWarning />} tone="coral" action="عرض القائمة">
+          تعذر إرسال {count(mail.verificationFailedToday, VERIFICATION_LINK)} خلال آخر ٢٤ ساعة، ولا يستطيع الطالب الدفع قبل تأكيد بريده. يمكنك تأكيده من صفحة الطالب بعد التحقق منه
         </AdminNotice>
       ) : null}
 

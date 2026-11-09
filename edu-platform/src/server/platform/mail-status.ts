@@ -16,15 +16,19 @@ export type MailHealth = {
   logOnlyInProduction: boolean;
   failedRecently: number;
   recentDays: number;
+  /** روابط تأكيد رفضها خادم البريد خلال آخر ٢٤ ساعة: أصحابها لا يستطيعون أول دفع */
+  verificationFailedToday: number;
 };
 
 export async function mailHealth(): Promise<MailHealth> {
   const e = env();
-  const [row] = await sql<{ failed: number }[]>`
-    select count(*)::int as failed from email_log
+  const [row] = await sql<{ failed: number; verification: number }[]>`
+    select count(*)::int as failed,
+      count(*) filter (where template = 'email_verification' and created_at > now() - interval '24 hours')::int as verification
+    from email_log
     where status = 'failed' and created_at > now() - make_interval(days => ${RECENT_DAYS})
   `;
-  return { driver: e.MAIL_DRIVER, logOnlyInProduction: e.NODE_ENV === "production" && e.MAIL_DRIVER === "log", failedRecently: row.failed, recentDays: RECENT_DAYS };
+  return { driver: e.MAIL_DRIVER, logOnlyInProduction: e.NODE_ENV === "production" && e.MAIL_DRIVER === "log", failedRecently: row.failed, recentDays: RECENT_DAYS, verificationFailedToday: row.verification };
 }
 
 export async function listMailFailures(limit = 100): Promise<MailFailure[]> {

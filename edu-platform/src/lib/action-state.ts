@@ -2,6 +2,8 @@
 export type ActionState = {
   ok?: boolean;
   message?: string;
+  /** تم الإجراء الأساسي وتعذر جزء منه: تظهر الرسالة تنبيهًا لا تأكيدًا */
+  partial?: boolean;
   error?: string;
   fieldErrors?: Record<string, string>;
   /** قيم الحقول لإعادة تعبئة النموذج عند الخطأ */

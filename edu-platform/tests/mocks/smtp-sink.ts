@@ -12,6 +12,8 @@ export type SmtpSink = {
   messages: SinkMessage[];
   /** المستلمون التالون يُرفضون برد 550، كما يفعل خادم بريد حقيقي */
   rejectNext(count?: number): void;
+  /** هذا العنوان وحده يُرفض حتى clear، لاختبار فشل رسالة واحدة بين عدة رسائل */
+  rejectAddress(address: string): void;
   clear(): void;
   close(): Promise<void>;
 };
@@ -57,6 +59,7 @@ export async function startSmtpSink(port = 0): Promise<SmtpSink> {
   const messages: SinkMessage[] = [];
   const sockets = new Set<Socket>();
   let reject = 0;
+  const rejectedAddresses = new Set<string>();
 
   const server = createServer((socket) => {
     sockets.add(socket);
@@ -95,7 +98,9 @@ export async function startSmtpSink(port = 0): Promise<SmtpSink> {
           envelope = { from: address(line), to: [] };
           reply("250 2.1.0 ok");
         } else if (verb === "RCPT") {
-          if (reject > 0) {
+          if (rejectedAddresses.has(address(line))) {
+            reply("550 5.1.1 recipient rejected");
+          } else if (reject > 0) {
             reject -= 1;
             reply("550 5.1.1 recipient rejected");
           } else {
@@ -128,9 +133,13 @@ export async function startSmtpSink(port = 0): Promise<SmtpSink> {
     rejectNext: (count = 1) => {
       reject = count;
     },
+    rejectAddress: (address: string) => {
+      rejectedAddresses.add(address);
+    },
     clear: () => {
       messages.length = 0;
       reject = 0;
+      rejectedAddresses.clear();
     },
     close: () =>
       new Promise((resolve) => {

@@ -43,12 +43,16 @@ function requireLiveStudent(user: { role: string; anonymized_at: Date | null } |
   if (user.anonymized_at) throw new AdminError("حُذفت بيانات هذا الحساب، فلا يمكن تعديله.");
 }
 
-async function safeNotify(send: () => Promise<unknown>, label: string) {
-  // فشل التنبيه لا يضيّع على المالك ما صدر بالفعل
+/**
+ * فشل التنبيه لا يضيّع على المالك ما صدر بالفعل. النتيجة تقول هل قبل خادم البريد الرسالة:
+ * sendMail يعيد false عند الرفض ولا يرمي، فالرفض والاستثناء عندنا سواء، والمالك يبلغ ولي الأمر بما نقوله له.
+ */
+async function safeNotify(send: () => Promise<boolean>, label: string): Promise<boolean> {
   try {
-    await send();
+    return await send();
   } catch (err) {
     console.error(`[student-account] ${label} failed`, redactSecrets(err instanceof Error ? err.message : String(err)));
+    return false;
   }
 }
 
@@ -84,7 +88,7 @@ export async function resetStudentPassword(input: { studentId: string; adminId: 
   if (mailIsReal()) {
     await safeNotify(async () => {
       const settings = await getSettings();
-      await sendMail({
+      return sendMail({
         to: student.email,
         template: "password_reset_notice",
         subject: `تم إعادة تعيين كلمة مرور حسابك، ${settings.site_name}`,
@@ -97,7 +101,7 @@ export async function resetStudentPassword(input: { studentId: string; adminId: 
 }
 
 /** تصحيح بريد الطالب بيد المالك: البريد الجديد غير مؤكد، والقديم يُنبَّه دون أن يعرف الجديد */
-export async function correctStudentEmail(input: { studentId: string; newEmail: string; adminId: string; reason: string; ip?: string }): Promise<{ email: string }> {
+export async function correctStudentEmail(input: { studentId: string; newEmail: string; adminId: string; reason: string; ip?: string }): Promise<{ email: string; oldNotified: boolean; linkSent: boolean }> {
   const parsed = emailSchema.safeParse(input.newEmail);
   if (!parsed.success) throw new AdminError(parsed.error.issues[0].message, { email: parsed.error.issues[0].message });
   await enforceOwnerLimits("owner-email", input.adminId, input.studentId);
@@ -121,18 +125,37 @@ export async function correctStudentEmail(input: { studentId: string; newEmail: 
     throw err;
   }
 
+  let oldNotified = false;
+  let linkSent = false;
   if (mailIsReal()) {
-    await safeNotify(async () => {
+    oldNotified = await safeNotify(async () => {
       const settings = await getSettings();
-      await sendMail({
+      return sendMail({
         to: previous,
         template: "email_changed_notice",
         subject: `تغيّر البريد المرتبط بحسابك، ${settings.site_name}`,
         text: `صحّحت إدارة المنصة البريد المرتبط بحساب كان يستخدم هذا العنوان، فلن تصل إليه رسائل الحساب بعد الآن.\n\nإذا لم تطلب ذلك فتواصل معنا.\n\n${settings.site_name}`,
       });
     }, "old address notice");
-    await safeNotify(() => sendEmailVerificationLink(input.studentId, email), "verification link");
+    linkSent = await safeNotify(() => sendEmailVerificationLink(input.studentId, email), "verification link");
   }
 
-  return { email };
+  return { email, oldNotified, linkSent };
+}
+
+/**
+ * تأكيد البريد بيد المالك، للطالب الذي لا تصله رسالة التأكيد فيتوقف عند أول دفع.
+ * المالك يشهد هنا أنه تحقق من صاحب العنوان بوسيلة أخرى، فالسبب إلزامي ويبقى العنوان في سجل التدقيق.
+ * أي رابط تصحيح معلق يبطل: الذي تأكد هو هذا العنوان بالذات.
+ */
+export async function markStudentEmailVerified(input: { studentId: string; adminId: string; reason: string; ip?: string }): Promise<void> {
+  await enforceOwnerLimits("owner-verify", input.adminId, input.studentId);
+  await sql.begin(async (tx) => {
+    const [u] = await tx<{ email: string; role: string; anonymized_at: Date | null; email_verified_at: Date | null }[]>`select email, role, anonymized_at, email_verified_at from users where id = ${input.studentId} for update`;
+    requireLiveStudent(u);
+    if (u!.email_verified_at) throw new AdminError("بريد هذا الطالب مؤكد بالفعل.");
+    await tx`update users set email_verified_at = now() where id = ${input.studentId}`;
+    await revokeEmailLinks(tx, input.studentId);
+    await audit({ actorId: input.adminId, action: "student.email_marked_verified", entityType: "user", entityId: input.studentId, reason: input.reason, metadata: { email: u!.email }, ip: input.ip }, tx);
+  });
 }
