@@ -4,6 +4,7 @@ import { AuthCard } from "@/components/site/auth-card";
 import { Alert } from "@/components/ui/alert";
 import { ContactLinks, realContactLinks } from "@/components/site/payment-unavailable-notice";
 import { requireUser } from "@/server/auth/guards";
+import { authPagePerks } from "@/server/platform/site-facts";
 import { verificationState } from "@/server/auth/email-verification";
 import { getSettings } from "@/server/platform/settings";
 import { safeNextPath } from "@/lib/utils";
@@ -12,6 +13,7 @@ import { CorrectEmailForm, ResendForm } from "./verify-forms";
 export const metadata: Metadata = { title: "تأكيد البريد الإلكتروني", robots: { index: false } };
 
 export default async function VerifyEmailPage({ searchParams }: { searchParams: Promise<{ next?: string }> }) {
+  const perks = await authPagePerks();
   const sp = await searchParams;
   const next = safeNextPath(sp.next, "/checkout");
   const user = await requireUser(`/verify-email?next=${encodeURIComponent(next)}`);
@@ -22,7 +24,7 @@ export default async function VerifyEmailPage({ searchParams }: { searchParams: 
   const target = state.pendingEmail ?? state.email;
 
   return (
-    <AuthCard title="أكّد بريدك قبل الدفع" subtitle="إيصالاتك وروابط استعادة حسابك تصل إلى هذا البريد، فنتأكد أولًا أنه يصلك">
+    <AuthCard perks={perks} title="أكّد بريدك قبل الدفع" subtitle="إيصالاتك وروابط استعادة حسابك تصل إلى هذا البريد، فنتأكد أولًا أنه يصلك">
       <div className="flex flex-col gap-5" data-testid="verify-email-page">
         <Alert tone="info" title={state.linkSent ? "افتح رسالة التأكيد" : "لم يصلك رابط بعد"}>
           <p>

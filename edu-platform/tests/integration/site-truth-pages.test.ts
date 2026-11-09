@@ -11,7 +11,7 @@ import { SIM_API_KEY, SIM_PORT, TEST_ENV, WEBHOOK_SECRET } from "../test-env";
 
 /** الصفحات الحقيقية كاملة: ما يقرؤه الزائر في كل حال من أحوال الدفع والمحتوى */
 const ctx = vi.hoisted(() => ({ user: null as unknown, cart: [] as string[] }));
-vi.mock("@/server/auth/session", async (original) => ({ ...(await original<typeof import("@/server/auth/session")>()), getCurrentUser: async () => ctx.user }));
+vi.mock("@/server/auth/session", async (original) => ({ ...(await original<typeof import("@/server/auth/session")>()), getCurrentUser: async () => ctx.user, getCurrentSession: async () => null }));
 vi.mock("@/server/auth/guards", () => ({ requireUser: async () => ctx.user, assertUser: async () => ctx.user }));
 vi.mock("@/server/commerce/cart", async (original) => ({ ...(await original<typeof import("@/server/commerce/cart")>()), getCartIds: async () => ctx.cart }));
 vi.mock("next/cache", () => ({ revalidatePath: () => {} }));
@@ -37,6 +37,9 @@ const { SiteFooter } = await import("@/components/site/footer");
 const { AuthCard } = await import("@/components/site/auth-card");
 const { MobilePerks } = await import("@/app/(site)/(auth)/_components/mobile-perks");
 const { SandboxBanner } = await import("@/components/site/sandbox-banner");
+const { default: LoginPage } = await import("@/app/(site)/(auth)/login/page");
+const { default: RegisterPage } = await import("@/app/(site)/(auth)/register/page");
+const { authPagePerks } = await import("@/server/platform/site-facts");
 const { generateMetadata } = await import("@/app/layout");
 
 let sim: Simulator;
@@ -92,8 +95,8 @@ async function pages() {
   return {
     home: await home(),
     footer: html(await SiteFooter()),
-    login: html(await AuthCard({ title: "دخول", children: null })),
-    perks: html(await MobilePerks({})),
+    login: html(AuthCard({ title: "دخول", perks: await authPagePerks(), children: null })),
+    perks: html(MobilePerks({ perks: await authPagePerks() })),
     note: html(await ProductPage({ params: Promise.resolve({ slug: note.slug }) })),
     video: html(await ProductPage({ params: Promise.resolve({ slug: video.slug }) })),
     cart: html(await CartPage()),
@@ -139,7 +142,21 @@ describe("payment claims on every public surface", () => {
     payments("off");
     await createProduct({ withFile: true });
     expect(await home()).not.toContain("تأكيد الدفع");
-    expect(html(await AuthCard({ title: "دخول", children: null }))).not.toContain("تأكيد الدفع");
+    expect(html(AuthCard({ title: "دخول", perks: await authPagePerks(), children: null }))).not.toContain("تأكيد الدفع");
+  });
+});
+
+describe("the sign-in pages hand their card the real perks", () => {
+  it.each(["off", "sandbox", "live"] as const)("payment %s", async (state) => {
+    payments(state);
+    ctx.user = null;
+    await createProduct({ withFile: true });
+    const perks = await authPagePerks();
+    for (const markup of [html(await LoginPage({ searchParams: Promise.resolve({}) })), html(await RegisterPage({ searchParams: Promise.resolve({}) }))]) {
+      const text = textOf(markup);
+      for (const { text: perk } of perks) expect(text).toContain(perk);
+      if (state !== "live") expect(text).not.toMatch(/دفع آمن|تأكيد الدفع/);
+    }
   });
 });
 

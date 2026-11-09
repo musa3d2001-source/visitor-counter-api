@@ -1,8 +1,7 @@
 import { LibraryBig, MonitorSmartphone, ShieldCheck } from "lucide-react";
 import { LogoMark, Sparkle, SubjectArt } from "@/components/art";
 import { subjectVars } from "@/lib/design";
-import { authPerks, type AuthPerkKey } from "@/lib/site-truth";
-import { siteFacts } from "@/server/platform/site-facts";
+import type { authPerks, AuthPerkKey } from "@/lib/site-truth";
 
 export const PERK_ICONS: Record<AuthPerkKey, typeof LibraryBig> = { library: LibraryBig, resume: MonitorSmartphone, pay: ShieldCheck };
 
@@ -10,8 +9,7 @@ export const PERK_ICONS: Record<AuthPerkKey, typeof LibraryBig> = { library: Lib
  * غلاف صفحات الدخول: خلفية مشمسة، لوح أبيض للنموذج، وعلى الحاسوب جانب فيروزي مرسوم
  * (مروحة أغلفة مواد + مزايا حقيقية للمنصة).
  */
-export async function AuthCard({ title, subtitle, children }: { title: string; subtitle?: string; children: React.ReactNode }) {
-  const perks = authPerks(await siteFacts());
+export function AuthCard({ title, subtitle, perks, children }: { title: string; subtitle?: string; perks: ReturnType<typeof authPerks>; children: React.ReactNode }) {
   return (
     <div className="bg-sunny bg-dots relative">
       <span className="absolute inset-x-0 bottom-0 -z-10 h-28 bg-linear-to-b from-transparent to-canvas" aria-hidden />

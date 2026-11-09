@@ -3,6 +3,7 @@ import { redirect } from "next/navigation";
 import { LogOut } from "lucide-react";
 import { AuthCard } from "@/components/site/auth-card";
 import { getCurrentSession } from "@/server/auth/session";
+import { authPagePerks } from "@/server/platform/site-facts";
 import { STAFF_PASSWORD_MIN, STUDENT_PASSWORD_MIN } from "@/lib/password-policy";
 import { logoutAction } from "../actions";
 import { ChangePasswordForm } from "./change-password-form";
@@ -11,11 +12,13 @@ export const metadata: Metadata = { title: "اختر كلمة مرور جديد�
 
 /** المحطة الوحيدة لجلسة كلمة المرور المؤقتة: لا صفحة أخرى تفتح قبل تعيين كلمة خاصة */
 export default async function ChangePasswordPage() {
+  const perks = await authPagePerks();
   const session = await getCurrentSession();
   if (!session) redirect("/login");
   if (!session.mustChangePassword) redirect("/account");
   return (
     <AuthCard
+      perks={perks}
       title="اختر كلمة مرور جديدة"
       subtitle={session.user.role === "student" ? "دخلت بكلمة مرور مؤقتة، ولن يفتح حسابك قبل أن تختار كلمتك الخاصة" : "لن يفتح حسابك قبل أن تختار كلمة مرور جديدة بشروط حسابات الإدارة والمعلمين"}
     >

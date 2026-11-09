@@ -3,6 +3,7 @@ import { redirect } from "next/navigation";
 import { AuthCard } from "@/components/site/auth-card";
 import { Alert } from "@/components/ui/alert";
 import { getCurrentSession, getCurrentUser } from "@/server/auth/session";
+import { authPagePerks } from "@/server/platform/site-facts";
 import { safeNextPath } from "@/lib/utils";
 import { TWO_FACTOR_SETUP_PATH } from "@/lib/two-factor";
 import { LoginForm } from "./login-form";
@@ -11,6 +12,7 @@ import { MobilePerks } from "../_components/mobile-perks";
 export const metadata: Metadata = { title: "تسجيل الدخول", robots: { index: false } };
 
 export default async function LoginPage({ searchParams }: { searchParams: Promise<{ next?: string; reset?: string; twoFactor?: string }> }) {
+  const perks = await authPagePerks();
   const sp = await searchParams;
   const next = safeNextPath(sp.next, "/library");
   const session = await getCurrentSession();
@@ -18,7 +20,7 @@ export default async function LoginPage({ searchParams }: { searchParams: Promis
   if (session?.needsTwoFactorEnrolment) redirect(TWO_FACTOR_SETUP_PATH);
   if (await getCurrentUser()) redirect(next);
   return (
-    <AuthCard title="مرحبًا بعودتك" subtitle="سجّل دخولك للوصول إلى مكتبتك ومشترياتك">
+    <AuthCard perks={perks} title="مرحبًا بعودتك" subtitle="سجّل دخولك للوصول إلى مكتبتك ومشترياتك">
       {sp.reset ? (
         <Alert tone="success" className="mb-4">
           تم تغيير كلمة المرور بنجاح. سجّل دخولك بكلمة المرور الجديدة.
@@ -35,7 +37,7 @@ export default async function LoginPage({ searchParams }: { searchParams: Promis
         </Alert>
       ) : null}
       <LoginForm next={next} />
-      <MobilePerks />
+      <MobilePerks perks={perks} />
     </AuthCard>
   );
 }
