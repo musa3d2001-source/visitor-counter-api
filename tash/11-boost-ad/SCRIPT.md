@@ -63,6 +63,12 @@ The body winds up 1.00→1.06 over f594–f599, and f0 starts at 1.06.
 
 ## 4. What changed from TREATMENT.md (and why)
 
+**This file supersedes TREATMENT.md on copy and the boost route:**
+- §6 replaces TREATMENT §7's caption and TikTok text, §11's "the 14 s cut's lines move to its caption" note, and the price wording in §13 item 6.
+  The price line is `07-ops/04-pricing.md` line 4, verbatim.
+- §7 replaces TREATMENT §7's "Use existing post" route: all three arms are new ads with identical primary text.
+- Consents and voice releases come in writing by Instagram DM (the DM-only rule), not by WhatsApp as TREATMENT §9 and §13 say.
+
 1. **The 3D is rendered live in the same page** (WebGL/SwiftShader, deterministic) rather than pre-rendered to 238 PNGs.
    - The page and the studio share one camera model (`rig.js`), so the dots stay pixel-locked to the word.
    - The 5.00 and 9.00 cuts land on the exact hero pose (the front face maps 1:1 onto the flat word).
@@ -77,24 +83,32 @@ The body winds up 1.00→1.06 over f594–f599, and f0 starts at 1.06.
 4. **The studio.**
    - Darker and moodier than the treatment's QC numbers (pixels above sRGB 48: 13–31% over 5.0–8.4 s vs ≥30%). An evenly lit sweep looked like a flat grey slab.
    - After 9.0 the talk zone sits at sRGB ≈ 90–125 (target ≤40), but measured white-on-zone contrast is ≥ 6:1, so the 4.5:1 rule holds.
-   - The cove is pushed back (it starts 15 units behind the word, radius 6). The floor behind the word falls to the wall level, so there is no lit seam.
+   - The cove is pushed back (it starts 15 units behind the word, radius 6).
+   - The floor behind the word is darkened by a decal and falls to the wall level.
+   - The sweep is matte (Lambert, no specular).
+   - The floor's albedo dips around the word's base, so the key's hot spot, which the long lens squeezes into 1–2 px, is a soft table edge (luma ≈ 80–95) rather than a glowing line.
+   - The key's cone is tighter (0.34 rad).
    - A soft contact-shadow decal grounds the word.
 5. **Extrusion:** depth 0.14 units (0.10 em), the plan's value. The bevel is 0.04 units (0.029 em) against 0.02 em, because the rims need a visible bevel to catch the lamps.
 6. **The falls.**
    - The dots grow toward the camera early (Ø28→Ø160 on an ease-out), so they're big while still in Zone A/B.
    - They accelerate down out of the bottom edge on the same frames as before (f40 / f42 / f44).
 7. **The hush (1.50–2.40)** never freezes:
-   - the dim word keeps sinking (≈24 px) and shrinks 1.00→0.97 about A;
-   - the first dot re-enters at f72 (was f76), left of the right rail, and passes clear of the question line (solved path).
+   - the dim word sinks ≈28 px and shrinks 1.00→0.97 about its own centre;
+   - there is no lime from f45 to f71: this is the "nobody's talking" beat, held while «محد يسولف عنه؟» is read;
+   - the first dot re-enters at f72 (was f76). The arcs are solved per format to stay clear of the IG/TikTok right rail
+     (x ≤ 965 over y 1100–1750) and of the question line's end (≥ 12 px clear).
 8. **The crowd:**
    - births end at f360;
-   - each triplet folds into one dot, which flies to one home dot on a tall arc;
-   - it is hidden where it passes the lit word's face, so there are no "barcodes" and no streaks across the letters.
+   - each triplet folds into one dot, which rises like a fountain past the word and drops onto one home dot;
+   - the dots are hidden in the whole word band (dot-row bottom to floor line), so nothing shows between or over the letters;
+   - each smear is capped at 2×Ø and fades over the last 45% of its flight.
 9. **The fall-away (12.62)** shrinks in the camera, not by CSS, so the frame edge never shows; CSS only blurs, with 3% overscan.
 10. **Sound.**
     - The voices and real claps aren't recorded yet, so this cut runs the treatment's fallback (no voices, synthesised claps).
-    - Hook A fills its voice slot with dotted-8th echoes of the typing triplet, as hook B does under its word swaps. A and B therefore carry comparable sound density, though not a voice.
-    - **Record voice 1 before the A/B if at all possible** (§8): without it, the A/B tests hook A's weaker audio, not just its copy.
+    - Hook A fills its voice slot with dotted-8th echoes of the typing triplet and a tock under «حلو…» (0.50 s). Hook B keeps its word-swap tocks (0.50 / 1.00 s) and has no echoes.
+    - The two are closer in density, but A still has no voice.
+    - **Record voice 1 before the A/B if at all possible** (§8): without it, the A/B partly tests hook A's audio, not just its copy.
 11. **Mastering is loop-aware and done in `audio.py`.**
     - The 2 s tail is folded onto the head.
     - Compression and limiting are primed on a 3× tile, so frame 0 has its full transient and the seam is continuous.
@@ -104,9 +118,18 @@ The body winds up 1.00→1.06 over f594–f599, and f0 starts at 1.06.
 12. **The mix moved toward phone speakers.**
     - 808 −6 dB, plus a saturated 250–1500 Hz copy so the note reads on phones.
     - The thumps are short, with a felt knock and click; the hush pad is an octave up and starts at the crack; the room air sits at 0.9–4 kHz.
-    - Measured: <150 Hz is 60% of the energy (was 80%) and 500 Hz–6 kHz 16–18% (was 7%). The three hero hits are the loudest momentary peaks.
+    - Measured on the final WAVs: <150 Hz is 59–60% of the energy (was 80%), and 500 Hz–6 kHz is 16–17% (was 7%).
+    - Momentary loudness (400 ms), full band: HERO 1 / 2 / 3 at −10.4 / −9.1 / −10.5 LUFS, against the exit thumps at −13.2 and the hush at −14.1.
+    - On a 250 Hz high-passed "phone" version: heroes −12.3 / −13.4 / −12.5, thumps −13.9.
+    - Some groove bars in the studio and the crowd's applause swell peak as high as the heroes; they are part of the build to them.
+    - The f0 slam has a mid-band body.
+    - LRA is 8.1 LU (the CTA dip is now −5 dB, was −8).
+    - Nothing new starts after the end, so only tails fold into the head.
 13. **The CTA lines** resolve word by word (f468 / f472 / f476) in every branch.
 14. **The 14 s cut** holds «طشّ» to 9.77 s (was 9.40); the CTA is built by 10.50 and held 3.50 s.
+    - The calm typing ticks start at 11.00, after the dots settle.
+    - It has no tagline or talk line on screen. Its primary text is the same as the other arms (§6), so the A-20 vs A-14 test also compares a
+      shorter story, not only a shorter film. Read it that way.
 15. **The cover is designed** (§2), not the bare 9.30 frame. In the 3:4 grid tile it says who and what.
 16. **Not built (P3 in the treatment):** the proof arm and the 6 s bumper.
 
@@ -139,11 +162,18 @@ not a result.
 اطلب إعلانك بالخاص •••
 
 إنستقرام: @tash.creative.kw
-تيك توك: @tash.creative
+تيك توك: tash.creative
 
 #TASHcreative #اعلانات_الكويت #مشاريع_كويتية #kuwait #adproduction #ريلز #موشن_جرافيك #q8
 ```
-- **Line 3 only once the «شغلنا» highlight is live** (§8). Until then it reads «تبي تشوف نماذج من شغلنا؟ اسألنا بالخاص».
+- **Line 3 only if the «شغلنا» highlight is live before launch** (§8.4). If it isn't, launch without line 3: line 4 already asks for
+  the DM.
+  - Decide this once before launch.
+  - **Never edit the primary text while the A/B runs.** Editing resets learning and splits the arms.
+- **The other platform's handle is written without the @** («تيك توك: tash.creative» on Instagram, «إنستقرام: tash.creative.kw» on
+  TikTok).
+  - On Instagram an @ auto-links, and IG's @tash.creative is not TASH's account. On TikTok, @tash.creative.kw may be someone else.
+  - Keep the @ only if the owner confirms owning both names on both platforms.
 - **Optional line, not yet approved:** «إعلان مثل هذا الفيديو سعره حسب المطلوب، نعطيك السعر بالخاص.» It avoids «عرض».
   Use it only with the owner's written OK.
 - No café or brand name and no tagged handle other than ours.
@@ -154,7 +184,7 @@ not a result.
 ```text
 مشروعك حلو… بس محد يسولف عنه؟ دزّ لنا بالخاص •••
 
-إنستقرام: @tash.creative.kw
+إنستقرام: tash.creative.kw
 تيك توك: @tash.creative
 
 #TASHcreative #اعلانات_الكويت #مشاريع_كويتية #kuwait #موشن_جرافيك
@@ -162,6 +192,8 @@ not a result.
 
 **DM welcome** (saved reply): «هلا والله! شنو اسم مشروعكم؟ •••»
 - Quick replies: «أبي إعلان حق مشروعي» · «شنو تحتاجون مني؟» · «كم الأسعار؟» · «أبي أشوف شغلكم».
+- «أبي أشوف شغلكم», **before the highlight is live:** send 2–3 concept films directly in the DM. Each keeps its burned-in tag, with
+  this text: «هذي نماذج من شغلنا: إعلانات تجريبية لعلامات خيالية، وبعضها فيه لقطات مسوّاة بالذكاء الاصطناعي. تبون نسوي لمشروعكم شي مثلها؟ •••».
 
 ## 7. Boost setup (the owner does this in Ads Manager; Claude never logs in)
 
@@ -205,14 +237,16 @@ not a result.
 3. **Owner confirms in writing:**
    - the captions in §6;
    - the launch gate in TREATMENT §13 item 12 (licence and bio disclosures).
-4. **The destinations are ready** (the paid ad sends people there). Until they are, line 3 uses the fallback in §6.
+4. **The destinations are ready** (the paid ad sends people there). This is a **soft** gate: without the highlight, launch
+   without caption line 3 (§6) and answer «أبي أشوف شغلكم» in the DM. With it:
    - The «شغلنا» highlight is live.
    - The cover reads «نماذج من شغلنا».
    - Every story carries its burned-in tag from TREATMENT §13. STAKK and HABBA use AI footage: «إعلان تجريبي · علامة خيالية · لقطات بالذكاء الاصطناعي».
 5. **The `/price` saved reply** (`07-ops/01-welcome-and-quick-replies.md`) is rewritten for use inside a DM before spend:
    - drop «دزّوا لنا بالخاص»;
    - end with «تبون نبدأ؟ قولوا لنا شنو مشروعكم •••»;
-   - add the AI-use sentence from TREATMENT §13 item 6.
+   - add the AI-use sentence in the plural, like the rest of the DM: «نبني الإعلان بالكود والموشن والثري دي، وبعض الإعلانات نستخدم فيها
+     لقطات بالذكاء الاصطناعي: نقول لكم قبل، وإذا استخدمناها لازم تحطّون علامة الذكاء الاصطناعي على الإنستقرام وتيك توك.»
    Also take the 30% rush fee out of `/time` until the owner confirms it. These are 07-ops files, flagged here, not edited by this build.
 6. **Preview the safe zones:** Meta's Reels overlay and TikTok's RTL template, on one phone set to Arabic and one to English.
 7. **Photosensitivity:** run the A, B and 14 s files through the free Trace Center PEAT tool. Not run by Claude.

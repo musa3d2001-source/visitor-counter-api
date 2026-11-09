@@ -156,7 +156,8 @@ if os.path.isdir(_rec):
     for fn in sorted(os.listdir(_rec)):
         if fn.startswith('clap_') and fn.endswith('.wav'):
             c = mono(_read(os.path.join(_rec, fn))); c = hp(c, 120)
-            CLAPS.append(stereo(c * db(-24 - lufs(stereo(c))), 0, width=0.6))
+            on = int(np.argmax(np.abs(c) > 0.1 * np.abs(c).max())); c = fade(c[max(0, on - n_(0.002)):], 0.001, 0.05)   # onset on the grid
+            CLAPS.append(stereo(c * db(-29 - lufs(stereo(c))), 0, width=0.6))
 
 
 D2, A1, C2, Eb2, G1 = nf('D2'), nf('A1'), nf('C2'), nf('Eb2'), nf('G1')
@@ -171,12 +172,16 @@ last_bar = int((DUR - 1.0) // 2)                        # bars 1..last_bar start
 m.add(room_tone(DUR + 0.1), 0.0, gain=0.5)
 
 # --- 0.00–1.00 HOOK: onset slam + typing ticks (+ voice 1 on hook A)
-m.add(thump(0.6), 0.0, bus='sfx'); m.add(wood_tock(330, 0.5), 0.0, bus='sfx')
+m.add(thump(0.6), 0.0, bus='sfx'); m.add(wood_tock(330, 0.85), 0.0, bus='sfx')
+m.add(stereo(bp(noise(0.06), 300, 3000) * env_exp(0.06, 0.012) * 0.55, 0, width=0.5), 0.0, bus='sfx')   # the slam's body, in the phone band
 m.add(stereo(hp(noise(0.25, 'pink'), 2500) * env_exp(0.25, 0.05) * 0.18, 0, width=0.8), 0.0, bus='sfx')
-for i in range(3): m.add(wtick(NOTES[i]), tickT(0.0, i), gain=0.5, pan=[0.25, 0, -0.25][i], bus='sfx')
-for k, (dly, gn) in enumerate([(0.375, 0.2), (0.75, 0.1)]):       # dotted-8th echoes of the typing (fills 0.4–1.0 s)
-    for i in range(3): m.add(lp(wtick(NOTES[i]), 3200), tickT(0.0, i) + dly, gain=gn, pan=[-0.4, 0.4][k % 2], bus='sfx')
 v1 = load_stem('voice1.wav')
+vdk = db(-6) if (v1 is not None and args.hook == 'A') else 1.0      # ticks duck under a recorded voice 1
+for i in range(3): m.add(wtick(NOTES[i]), tickT(0.0, i), gain=0.5 * vdk, pan=[0.25, 0, -0.25][i], bus='sfx')
+if args.hook == 'A':                                                 # the voice-1 slot: typing echoes + a tock under «حلو…»
+    for k, (dly, gn) in enumerate([(0.375, 0.2), (0.75, 0.1)]):
+        for i in range(3): m.add(lp(wtick(NOTES[i]), 3200), tickT(0.0, i) + dly, gain=gn * vdk, pan=[-0.4, 0.4][k % 2], bus='sfx')
+    m.add(wood_tock(560, 0.45 * vdk), fr(15), bus='sfx')
 if v1 is not None and args.hook == 'A': m.add(v1, 0.0, gain=0.9, bus='voice')
 if args.hook == 'B':                                      # a soft wooden tock under each word swap; heavy on «مشروعك»
     m.add(wood_tock(560, 0.45), fr(15), bus='sfx')
@@ -185,10 +190,10 @@ m.add(pad([nf(n) for n in ['D3', 'A3']], 1.1, cutoff=700, attack=0.3, release=0.
 
 # --- 1.00 the talk breaks: broken tick, three falls toward the camera, three heavy thumps
 m.add(broken_tick(), fr(BR['crack']), gain=0.7, pan=0.25, bus='sfx')
-m.add(reverb(hp(broken_tick(), 400), decay=1.3, mix=1.0, tone=3500), fr(BR['crack']), gain=0.35, bus='sfx')   # the crack rings out
+m.add(reverb(hp(broken_tick(), 400), decay=1.3, mix=1.0, tone=3500), fr(BR['crack']), gain=0.24, bus='sfx')   # the crack rings out
 for i, (fs, fe) in enumerate(zip(BR['fall'], BR['exit'])):
     m.add(air_fall(fr(fe - fs) + 0.02, 0.42, [0.3, 0.05, -0.25][i]), fr(fs), bus='sfx')
-    m.add(thump(db(-1.5 * i)), fr(fe), gain=0.44, pan=[0.2, 0, -0.2][i], bus='sfx')
+    m.add(thump(db(-1.5 * i)), fr(fe), gain=0.34, pan=[0.2, 0, -0.2][i], bus='sfx')
 
 # --- 1.50–2.40: room tone + a low D pad (−30 dB). Nobody's talking.
 m.add(sat(pad([nf('D4'), nf('A4'), nf('D5')], 1.5, cutoff=2200, attack=0.35, release=0.5) * 1.6, 1.4), fr(BR['crack']), gain=0.11, bus='music')   # audible on phones
@@ -209,6 +214,10 @@ for i in range(3): m.add(wtick(NOTES[i], 0.8), tickT(4.0, i), gain=0.32, pan=[0.
 def groove_bar(b, level=1.0, claps=True, bass=True, chord='D', shaker_=True):
     t0 = g.t(b)
     if t0 >= DUR: return
+    add = m.add
+    def gadd(x, at, **kw):                                           # no onset at or after the end: only tails fold into the head
+        if at < DUR - 0.005: add(x, at, **kw)
+    m.add = gadd
     sw = 0.06 * B
     for beat, kind, v in [(0, 'dum', 1.0), (0.75, 'tak', 0.55), (1.5, 'tak', 0.7), (2, 'dum', 0.85), (2.5, 'dum', 0.6), (3, 'tak', 0.7), (3.5, 'tak', 0.5), (3.75, 'tak', 0.35)]:
         at = t0 + beat * B + (sw if (beat * 2) % 2 == 1 else 0)
@@ -226,6 +235,7 @@ def groove_bar(b, level=1.0, claps=True, bass=True, chord='D', shaker_=True):
     up = [nf(n) * 2 for n in CHORDS[chord][1:]]                      # rootless voicing, one octave up
     for beat, d, v in [(0, 1.0, 0.75), (1.5, 0.35, 0.5), (2.5, 0.6, 0.62), (3.5, 0.3, 0.45)]:
         for k, f in enumerate(up): m.add(epiano(f, d, v), t0 + beat * B + 0.008 * k, gain=0.2 * level, pan=[-0.3, 0, 0.3][k], bus='music')
+    m.add = add
 
 
 lt = fr(S['lightsOn'])
@@ -250,16 +260,17 @@ for i, (fs, fe) in enumerate(S['fly']):
     m.add(lamp_clack(), fr(fe), gain=0.75, pan=[0.55, 0.1, -0.55][i], bus='sfx')
 first_lamp = min(fe for _, fe in S['fly'])
 m.add(hum_bed(lt - fr(first_lamp) + 0.3, 1.0), fr(first_lamp), gain=0.55, bus='sfx')
-m.add(riser(1.0, 250, 7000), lt - 1.0, gain=0.42, bus='sfx')
+m.add(riser(1.0, 250, 7000), lt - 1.0, gain=0.26, bus='sfx')
 for k in range(3):
     m.add(whoosh(0.4, 700, 3800, pan_from=[0.6, 0.15, -0.6][k], pan_to=0.0, peak=0.7), fr(S['detach']), gain=0.18, bus='sfx')
     m.add(wood_tock(470 + 40 * k, 0.55), fr(S['homeRow']) + (k - 1) * 2 / FPS, pan=[0.2, 0, -0.2][k], bus='sfx')
 
 # --- HERO 2 (lights on): a deep lamp thunk + low dum + one group clap
 m.add(hp(impact(1.6, sub_f=50, bright=0.5, space=0.25), 60), lt - 0.004, gain=0.6, bus='sfx')
-m.add(lamp_clack(1.2), lt, gain=0.8, bus='sfx')
+m.add(lamp_clack(1.2), lt, gain=0.95, bus='sfx')
+m.add(wood_tock(300, 0.7), lt, bus='sfx')                           # HERO 2's body in the phone band
 m.add(mirwas_dum(), lt, gain=0.9, bus='sfx')
-m.add(group_clap(91, 10, 0.4), lt, gain=0.7, bus='sfx')
+m.add(group_clap(91, 10, 0.4), lt, gain=0.95, bus='sfx')
 m.add(hum_bed(fr(S['fallAway'][0]) - lt, 0.6), lt, gain=0.4, bus='sfx')
 v2 = load_stem('voice2.wav')
 if v2 is not None and S.get('talk'): m.add(v2, 9.4, gain=0.9, bus='voice')
@@ -270,7 +281,8 @@ for sec in range(int(lt), int(fr(S['fallAway'][0])) + 1):
     for i in range(3):
         at = tickT(sec, i)
         if at < lt + 0.45 or at >= fr(S['fallAway'][0]) or at >= H3['t0'] + 0.1: continue
-        m.add(wtick(NOTES[i]), at, gain=0.2 if at < crowd0 else 0.3, pan=[0.25, 0, -0.25][i], bus='sfx')
+        dk = db(-6) if (v2 is not None and S.get('talk') and 9.4 <= at < 10.7) else 1.0
+        m.add(wtick(NOTES[i]), at, gain=(0.2 if at < crowd0 else 0.3) * dk, pan=[0.25, 0, -0.25][i], bus='sfx')
 
 # --- the crowd: group claps on the triplets + an applause swell as the 18 triplets bloom
 if S.get('crowd'):
@@ -327,7 +339,7 @@ mus = [(0, 0), (2.95, 0), (3.3, -3), (3.45, -6), (4.9, -6), (5.0, 0)]
 if S.get('talk'): mus += [(9.3, 0), (9.45, -6), (11.4, -6), (11.5, 0)]
 mus += [(H3['t0'] + 0.82 - 0.02, 0), (snap - 0.3, -14), (snap - 0.004, -14), (snap + 0.02, 0)]
 if H3.get('tag'): mus += [(fr(H3['tag'][0]) - 0.1, 0), (fr(H3['tag'][0]) + 0.1, -5), (fr(H3['tagOut']), -5)]
-mus += [(fr(CT['swap'][0]), -2), (fr(CT['words'][0]), -8), (fr(CT['words'][0]) + 1.0, -8), (DUR - 0.6, -6), (DUR, -10)]
+mus += [(fr(CT['swap'][0]), -2), (fr(CT['words'][0]), -5), (fr(CT['words'][0]) + 1.0, -5), (DUR - 0.6, -4), (DUR, -8)]
 mus.sort()
 duck = [(0, 0)]
 if v1 is not None and args.hook == 'A': duck += [(0.0, -6), (0.95, -6), (1.05, 0)]

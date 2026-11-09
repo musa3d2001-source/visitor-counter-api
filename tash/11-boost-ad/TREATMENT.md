@@ -1,5 +1,8 @@
 # «نقاط مشروعك» / The Dots on Your Project: locked treatment for TASH's paid boost ad
 
+> **After the build (9 Nov): `SCRIPT.md` supersedes this file** on copy (captions, TikTok text, price wording), the boost route and what was
+> actually built. See SCRIPT §4 for every deviation and why.
+>
 > **Status: LOCKED, 9 Nov 2026 (rev. 2, after the red team).** Spine: concept 1 «نقاط مشروعك» (panel total 233/300, ranked 1st).
 > Every fatal and major red-team attack is fixed below or rejected with a reason. The ledger is §17.
 > **Text widths and glyph facts were measured this session with HarfBuzz/fontTools** on `/home/user/visitor-counter-api/tash/_system/fonts/`

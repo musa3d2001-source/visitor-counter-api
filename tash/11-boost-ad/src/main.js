@@ -159,7 +159,8 @@ if (!Q.has('no3d')) {
 const P0 = C.dot.pitch, R0 = C.dot.d / 2, PM = C.dot.pitchMark, RM = C.dot.dMark / 2;
 const ZEND = 1.03 * 1.10;                               // the studio's final zoom (creep × punch)
 const rowX = (i, pitch) => A.x + (1 - i) * pitch;
-const RET_CX = 1110, RET_CY = A.y - 100;                      // control point of the return arcs (solved: clears the question line by ≥ 6 px)
+const RET = FMT === '45' ? C.ret.path45 : C.ret.path916;     // solved per format: clear of the right rail (y 1100–1750) and the question line
+const RET_CX = RET.cx, RET_CY = A.y + RET.cy;                 // control point of the return arcs (solved in tools: rail + line clearance)
 function ctaAmp(t) {
   const t0 = CT.swap[0] / FPS;
   if (t < t0) return 0;
@@ -177,7 +178,6 @@ function group(t) {
     if (HOOK === 'B' && f >= 15) { k = lerp(1.025, 1, ef(f, 15, 17)); }
   } else if (f < 90) {
     if (HOOK === 'B' && f < 33) k = lerp(1.035, 1, ef(f, 30, 32));
-    k *= lerp(1, 0.97, fp(f, C.break.question, 90));           // the abandoned word keeps drifting away (never a still frame)
     for (const e of C.break.exit) if (f >= e && f < e + 4) dy += 6 * (1 - fp(f, e, e + 4)) ** 2;
   } else if (f < S.cut) {
     k = lerp(1.12, 1, ef(f, 90, 96)) * lerp(1, 1.02, fp(f, 90, S.cut)); sh(3, 4);
@@ -217,7 +217,7 @@ function dotsAt(t) {
       const o = order.indexOf(i);
       const end = { x: rowX(i, P0), y: A.y - 60 };
       const p = E.outCubic(fp(f, fe, C.ret.row));
-      const p0 = { x: 880 + 22 * o, y: H + 70 }, p1 = { x: RET_CX, y: RET_CY };    // left of the right rail; right of the question's end (x 864)
+      const p0 = { x: RET.sx + 18 * o, y: H + 70 }, p1 = { x: RET_CX, y: RET_CY };    // left of the right rail; right of the question's end (x 864)
       let x = (1 - p) ** 2 * p0.x + 2 * p * (1 - p) * p1.x + p * p * end.x;
       let y = (1 - p) ** 2 * p0.y + 2 * p * (1 - p) * p1.y + p * p * end.y;
       let r = lerp(54, R0, E.outCubic(fp(f, fe, C.ret.row))), sq = 0;
@@ -278,10 +278,10 @@ function crowdAt(t) {
       const h = -typing(t + c.ph, i, { period: 0.5, phase: 1 / 12, amp: c.d * 0.9 }) * (1 - merge);
       const x0 = c.x + (1 - i) * pitch, y0 = c.y - h;
       const k = c.seed % 3, tx = rowX(k, P0 * ZEND), ty = A.y;       // each lands on one of the three home dots
-      const cx = lerp(x0, tx, 0.35), cy = A.y - 150;                   // a tall arc that drops onto the row from above
+      const cx = lerp(x0, tx, 0.5), cy = A.y - 260 - 0.35 * (y0 - A.y);   // a fountain: up past the word, then down onto the row
       const x = (1 - go) ** 2 * x0 + 2 * go * (1 - go) * cx + go * go * tx;
       const y = (1 - go) ** 2 * y0 + 2 * go * (1 - go) * cy + go * go * ty;
-      out.push({ x, y, r: rr * (1 - 0.45 * go), sq: 0, a: 1 - Math.max(0, (go - 0.82) / 0.18) });
+      out.push({ x, y, r: rr * (1 - 0.45 * go), sq: 0, a: 1 - E.inQuad(clamp((go - 0.55) / 0.45)), crowd: true });
     }
   }
   return out;
@@ -291,8 +291,9 @@ function crowdAt(t) {
 function smear(ctx, p, q) {
   if (!p && !q) return;
   if (!p || !q) { const d = p || q; disc(ctx, d); return; }
-  const dx = q.x - p.x, dy = q.y - p.y, L = Math.hypot(dx, dy);
+  let dx = q.x - p.x, dy = q.y - p.y, L = Math.hypot(dx, dy);
   if (L < 0.75) { disc(ctx, { ...q, x: (p.x + q.x) / 2, y: (p.y + q.y) / 2 }); return; }
+  if (q.crowd && L > 4 * q.r) { const k = 4 * q.r / L; p = { ...p, x: q.x - dx * k, y: q.y - dy * k }; dx *= k; dy *= k; L *= k; }   // ≤ 2×Ø
   const r0 = Math.max(0.2, p.r), r1 = Math.max(0.2, q.r), nx = -dy / L, ny = dx / L;
   ctx.globalAlpha = (q.a ?? 1) * clamp(1.08 - 0.05 * L / (r0 + r1), 0.72, 1);
   const P = [[p.x + nx * r0, p.y + ny * r0], [q.x + nx * r1, q.y + ny * r1], [q.x - nx * r1, q.y - ny * r1], [p.x - nx * r0, p.y - ny * r0]];
@@ -333,10 +334,9 @@ function drawDots(t) {
     cx2.clearRect(0, 0, W, H); cx2.fillStyle = COL.lime;
     for (let i = 0; i < Math.max(c0.length, c1.length); i++) smear(cx2, c0[i], c1[i]);
     cx2.globalAlpha = 1;
-    const z = rig.camera(t * FPS).scale / 100, b = BODY.mashrou3ak;
-    cx2.save(); cx2.globalCompositeOperation = 'destination-out';
-    cx2.translate(A.x, A.y); cx2.scale(z, z); cx2.translate(-A.x, -A.y); cx2.translate(b.ox, BL); cx2.fill(b.path);
-    cx2.restore();
+    // hidden in the whole word band (dot-row bottom → floor line), so nothing shows between or over the letters
+    const z = rig.camera(t * FPS).scale / 100, b = BODY.mashrou3ak, top = A.y + 22, bot = A.y + (BL + b.ink[3] + 8 - A.y) * z;
+    cx2.save(); cx2.globalCompositeOperation = 'destination-out'; cx2.fillRect(0, top, W, bot - top); cx2.restore();
     fx.drawImage(crowdLayer, 0, 0);
   }
   fx.fillStyle = COL.lime;
@@ -371,8 +371,10 @@ function seek(t) {
     const dim = ef(f, C.break.dim[0], C.break.dim[1], E.inOutCubic);
     const color = mix(COL.paper, COL.smoke, dim);
     const alpha = lerp(1, 0.85, ef(f, C.break.dim[1], 72, E.outCubic));
-    const sink = 6 * E.outQuad(fp(f, C.break.dim[0], C.break.question)) + 18 * fp(f, C.break.question, 90);   // steady sink through the hold
+    const sink = 6 * E.outQuad(fp(f, C.break.dim[0], C.break.question)) + 22 * fp(f, C.break.question, 90);   // steady sink through the hold (≈28 px)
     withGroup(c2, G, () => {
+      const zc = lerp(1, 0.97, fp(f, C.break.question, 90)), b = BODY[key], wc = { x: b.ox + (b.ink[0] + b.ink[2]) / 2, y: BL + (b.ink[1] + b.ink[3]) / 2 };
+      c2.translate(wc.x, wc.y); c2.scale(zc, zc); c2.translate(-wc.x, -wc.y);   // the abandoned word drifts away about its own centre
       drawBody(c2, key, { color, alpha, dy: sink });
       if (f < 30) contactShadows(c2, key, d0.map(d => ({ x: A.x + (d.x - A.x - G.dx) / G.k, r: d.r / G.k, h: d.h })));
     });

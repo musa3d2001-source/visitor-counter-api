@@ -78,16 +78,19 @@ function extrudeWord(shapes, depth, bevel) {
 function sweepGeometry(yFloor, zCove, R, floorLevel, wallLevel = 0, xHalf = 90, zFront = 140, wallTop = 60) {
   const lerpN = (a, b, k) => a + (b - a) * k;
   const prof = [];
-  for (let k = 0; k <= 90; k++) { const z = zFront + (zCove - zFront) * (1 - Math.pow(1 - k / 90, 2.2)); prof.push([z, yFloor, 0, 1, floorLevel(z)]); }
+  for (let k = 0; k <= 160; k++) { const z = zFront + (zCove - zFront) * (1 - Math.pow(1 - k / 160, 3.0)); prof.push([z, yFloor, 0, 1, floorLevel(z)]); }
   for (let k = 1; k <= 28; k++) { const a = (k / 28) * Math.PI / 2; prof.push([zCove - R * Math.sin(a), yFloor + R - R * Math.cos(a), Math.sin(a), Math.cos(a), lerpN(floorLevel(zCove), wallLevel, k / 28)]); }
   prof.push([zCove - R, yFloor + wallTop, 1, 0, wallLevel]);
-  const pos = [], nor = [], uv = [], idx = [];
-  prof.forEach(([z, y, nz, ny, e]) => { for (const x of [-xHalf, xHalf]) { pos.push(x, y, z); nor.push(0, ny, nz); uv.push(x > 0 ? 1 : 0, e); } });
+  const pos = [], nor = [], uv = [], col = [], idx = [];
+  // albedo: darker right around the word's base (ambient-occlusion-like), so the key's hot spot there can't read as a glowing line
+  const ao = z => 1 - 0.62 * Math.exp(-(((z - 0.6) / 2.2) ** 2));
+  prof.forEach(([z, y, nz, ny, e]) => { const a = ny > 0.99 ? ao(z) : 1; for (const x of [-xHalf, xHalf]) { pos.push(x, y, z); nor.push(0, ny, nz); uv.push(x > 0 ? 1 : 0, e); col.push(a, a, a); } });
   for (let j = 0; j < prof.length - 1; j++) { const a = j * 2; idx.push(a, a + 1, a + 2, a + 1, a + 3, a + 2); }
   const g = new THREE.BufferGeometry();
   g.setAttribute('position', new THREE.Float32BufferAttribute(pos, 3));
   g.setAttribute('normal', new THREE.Float32BufferAttribute(nor, 3));
   g.setAttribute('uv', new THREE.Float32BufferAttribute(uv, 2));
+  g.setAttribute('color', new THREE.Float32BufferAttribute(col, 3));
   g.setIndex(idx);
   return g;
 }
@@ -116,11 +119,12 @@ export async function createStudio(canvas, { W, H, A, word, baseline, rig, tune 
   const smooth = (a, b, x) => { const k = Math.min(1, Math.max(0, (x - a) / (b - a))); return k * k * (3 - 2 * k); };
   // emissive level along the floor (z = depth toward the camera); the long lens maps z 40–62 onto most of the lower frame
   // the floor is brightest just in front of the word; behind it, it falls to the wall level so there is no lit seam
-  const floorLevel = z => (z < 0.6 ? lerpS(TU.wallE, 1.0, smooth(-6, 0.6, z)) : 0.45 + 0.55 * (1 - smooth(2, 45, z)));
+  const floorLevel = z => (z < 0.6 ? lerpS(TU.wallE, 0.62, smooth(-6, 0.6, z)) : 0.62 + 0.18 * smooth(0.6, 12, z) - 0.35 * smooth(12, 50, z));
   const lerpS = (a, b, k) => a + (b - a) * k;
   const ramp = new THREE.DataTexture(new Uint8Array([...Array(256)].flatMap((_, k) => [k, k, k, 255])), 1, 256);
   ramp.needsUpdate = true; ramp.magFilter = ramp.minFilter = THREE.LinearFilter; ramp.colorSpace = THREE.NoColorSpace;
-  const sweepMat = new THREE.MeshStandardMaterial({ color: SWEEP, roughness: 0.93, metalness: 0, dithering: true, emissive: 0xE8E0D0, emissiveMap: ramp, emissiveIntensity: TU.floorE });
+  // matte paper: Lambert has no specular term, so the near-level camera sees no grazing Fresnel sheen on the floor
+  const sweepMat = new THREE.MeshLambertMaterial({ color: SWEEP, vertexColors: true, dithering: true, emissive: 0xE8E0D0, emissiveMap: ramp, emissiveIntensity: TU.floorE });
   const sweep = new THREE.Mesh(sweepGeometry(yFloor, -15.0, 6.0, floorLevel, TU.wallE), sweepMat); sweep.receiveShadow = true;
   scene.add(sweep);
   // contact shadow: a soft dark decal on the floor under the word's footprint (grounds it; no levitation)
@@ -134,6 +138,12 @@ export async function createStudio(canvas, { W, H, A, word, baseline, rig, tune 
     decal.rotation.x = -Math.PI / 2;
     decal.position.set((ox + (word.ink[0] + word.ink[2]) / 2 - W / 2) / 100, yFloor + 0.003, -0.12);
     scene.add(decal);
+    const c2 = document.createElement('canvas'); c2.width = 4; c2.height = 256; const g2 = c2.getContext('2d');
+    const lin = g2.createLinearGradient(0, 0, 0, 256); lin.addColorStop(0, 'rgba(0,0,0,0.88)'); lin.addColorStop(0.97, 'rgba(0,0,0,0.88)'); lin.addColorStop(1, 'rgba(0,0,0,0)');
+    g2.fillStyle = lin; g2.fillRect(0, 0, 4, 256);
+    const back = new THREE.Mesh(new THREE.PlaneGeometry(180, 15), new THREE.MeshBasicMaterial({ map: new THREE.CanvasTexture(c2), transparent: true, depthWrite: false, color: 0x000000, polygonOffset: true, polygonOffsetFactor: -2 }));
+    back.rotation.x = -Math.PI / 2; back.position.set(0, yFloor + 0.002, -0.05 - 7.5);   // covers z −15.05 … −0.05, fading in over the last 0.45
+    scene.add(back);
   }
 
   const [ax, ay] = rig.world(A.x, A.y);
@@ -148,8 +158,8 @@ export async function createStudio(canvas, { W, H, A, word, baseline, rig, tune 
   // three lamps (the dots' stations): point lights, decay 2
   const lamps = [0, 1, 2].map(() => { const l = new THREE.PointLight(LAMP, 0, TU.lampRange, 2); scene.add(l); return l; });   // range-capped: rims, no wash on the floor seam or the wall
   // key: a softbox front-right, 45° high; fill front-left; three tiny local lights on the ش tops
-  const key = new THREE.SpotLight(0xfffaf0, 0, 0, 0.5, 0.95, 2);
-  key.position.set(ax + 7.5, ay + 7.5, 9.5); key.target.position.set(cx, yFloor + 0.9, 0);
+  const key = new THREE.SpotLight(0xfffaf0, 0, 0, 0.34, 0.9, 2);
+  key.position.set(ax + 7.5, ay + 7.5, 9.5); key.target.position.set(cx, yFloor + 1.0, 0.2);
   key.castShadow = true; key.shadow.mapSize.set(2048, 2048); key.shadow.bias = -0.0004; key.shadow.normalBias = 0.01; key.shadow.radius = 6;
   key.shadow.camera.near = 4; key.shadow.camera.far = 40;
   scene.add(key, key.target);
