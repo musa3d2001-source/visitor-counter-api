@@ -38,6 +38,8 @@ export const E2E_SERVER_ENV: Record<string, string> = {
   // الخادم هنا NODE_ENV=production مع بوابة محاكاة: السماح صريح ومقصود
   ALLOW_SANDBOX_ON_PRODUCTION: "true",
   TRUST_PROXY: "true",
+  // حساب المدير في بقية الرحلات بلا تحقق بخطوتين. المسار الإلزامي يغطيه 10-admin-two-factor على خادم مستقل
+  ADMIN_2FA_REQUIRED: "false",
   // الفيديو عبر محاكي Bunny Stream (بديل اختبار مطابق للعقد الموثق)
   VIDEO_PROVIDER: "bunny",
   BUNNY_STREAM_LIBRARY_ID: E2E_BUNNY.library,
@@ -48,6 +50,14 @@ export const E2E_SERVER_ENV: Record<string, string> = {
   BUNNY_STREAM_TUS_ENDPOINT: `${E2E_BUNNY.base}/tusupload`,
   BUNNY_STREAM_EMBED_BASE: E2E_BUNNY.base,
 };
+
+export const E2E_TWO_FACTOR_PORT = Number(process.env.E2E_TWO_FACTOR_PORT ?? 3102);
+export const E2E_TWO_FACTOR_BASE_URL = `http://localhost:${E2E_TWO_FACTOR_PORT}`;
+
+/** خادم إنتاج ثالث بالافتراضي الحقيقي: المتغير غير مضبوط، فالتحقق بخطوتين إلزامي */
+export const E2E_TWO_FACTOR_SERVER_ENV: Record<string, string> = Object.fromEntries(
+  Object.entries({ ...E2E_SERVER_ENV, PORT: String(E2E_TWO_FACTOR_PORT), APP_URL: E2E_TWO_FACTOR_BASE_URL }).filter(([key]) => key !== "ADMIN_2FA_REQUIRED"),
+);
 
 /** خادم ثانٍ من البناء نفسها وقاعدة البيانات نفسها، ببريد SMTP حقيقي إلى خادم اختبار محلي */
 export const E2E_MAIL_SERVER_ENV: Record<string, string> = {
