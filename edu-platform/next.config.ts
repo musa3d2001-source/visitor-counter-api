@@ -1,4 +1,6 @@
 import type { NextConfig } from "next";
+import { PHASE_PRODUCTION_BUILD } from "next/constants";
+import { bunnyConfigProblem } from "./src/lib/bunny-keys";
 
 /**
  * إعدادات Next.js
@@ -63,4 +65,11 @@ const nextConfig: NextConfig = {
   },
 };
 
-export default nextConfig;
+/** على Vercel لا توجد خطوة بدء: نشر ناقص يجب أن يفشل عند البناء فتبقى النسخة السابقة تعمل. بدء الخادم يفحصه instrumentation */
+export default function config(phase: string): NextConfig {
+  if (phase === PHASE_PRODUCTION_BUILD) {
+    const problem = bunnyConfigProblem(process.env);
+    if (problem) throw new Error(problem);
+  }
+  return nextConfig;
+}

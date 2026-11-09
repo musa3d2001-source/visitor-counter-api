@@ -207,8 +207,10 @@ describe("Bunny Webhook — التوقيع ومنع التكرار", () => {
     expect(await handleBunnyWebhook(junk, new Headers({ "x-bunnystream-signature": junkSig }))).toEqual({ status: 400, result: "invalid json" });
   });
 
-  it("without a signing key: accepted as a hint outside production, rejected in production", async () => {
+  it("without a signing key on a file-provider deployment: accepted as a hint outside production, rejected in production", async () => {
+    // مع VIDEO_PROVIDER=bunny لا يبدأ الخادم بدون المفتاح (انظر tests/unit/bunny-startup)، فهذا المسار يبقى لنشر مزوده file وله دروس Bunny قديمة
     delete process.env.BUNNY_STREAM_READONLY_API_KEY;
+    process.env.VIDEO_PROVIDER = "file";
     resetEnvCache();
     try {
       const v = await createVideo("hint");
@@ -221,6 +223,7 @@ describe("Bunny Webhook — التوقيع ومنع التكرار", () => {
       expect(await handleBunnyWebhook(body + " ", new Headers())).toEqual({ status: 401, result: "webhook signing key not configured" });
     } finally {
       (process.env as Record<string, string>).NODE_ENV = "test";
+      process.env.VIDEO_PROVIDER = "bunny";
       process.env.BUNNY_STREAM_READONLY_API_KEY = sim.readOnlyKey;
       resetEnvCache();
     }

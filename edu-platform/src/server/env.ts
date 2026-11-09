@@ -1,5 +1,6 @@
 import "server-only";
 import { z } from "zod";
+import { bunnyConfigProblem } from "@/lib/bunny-keys";
 
 /** عناوين الأمثلة لا تستلم ردودًا ولا تجتاز SPF، فوجودها دليل على أن المتغير لم يُضبط */
 const PLACEHOLDER_MAIL_DOMAINS = new Set(["example.com", "example.org", "example.net", "your-domain.com"]);
@@ -74,6 +75,11 @@ const schema = z.object({
 
   /** مزود الفيديو للرفع الجديد: file (التخزين الخاص للمنصة) أو bunny (Bunny Stream — موصى به للإنتاج) */
   VIDEO_PROVIDER: z.enum(["file", "bunny"]).default("file"),
+  /** يسمح بنشر وبيع فيديو ملف خام (رابط MP4 يمكن تنزيله) على نشر NODE_ENV=production. الافتراضي الإطلاق بالمذكرات فقط */
+  ALLOW_FILE_VIDEO: z
+    .enum(["true", "false"])
+    .default("false")
+    .transform((v) => v === "true"),
   BUNNY_STREAM_LIBRARY_ID: z.string().optional(),
   /** مفتاح API للمكتبة (AccessKey) — سري، على الخادم فقط */
   BUNNY_STREAM_API_KEY: z.string().optional(),
@@ -117,9 +123,9 @@ export function env(): Env {
     throw new Error(`إعدادات البيئة غير صحيحة:\n${issues}`);
   }
   const e = parsed.data;
-  if (e.VIDEO_PROVIDER === "bunny" && (!e.BUNNY_STREAM_LIBRARY_ID || !e.BUNNY_STREAM_API_KEY || !e.BUNNY_STREAM_TOKEN_KEY)) {
-    throw new Error("VIDEO_PROVIDER=bunny يتطلب BUNNY_STREAM_LIBRARY_ID و BUNNY_STREAM_API_KEY و BUNNY_STREAM_TOKEN_KEY");
-  }
+  // بدون مفتاح القراءة فقط لا يمكن التحقق من Webhook، فتبقى الدروس عالقة قيد المعالجة ويفشل الطالب عند التشغيل بدل فشل واضح عند البدء
+  const bunnyProblem = bunnyConfigProblem(process.env);
+  if (bunnyProblem) throw new Error(bunnyProblem);
   if (e.STORAGE_DRIVER === "supabase" && (!e.SUPABASE_URL || !e.SUPABASE_SERVICE_ROLE_KEY)) {
     throw new Error("STORAGE_DRIVER=supabase يتطلب SUPABASE_URL و SUPABASE_SERVICE_ROLE_KEY");
   }
