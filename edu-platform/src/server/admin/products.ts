@@ -2,7 +2,8 @@ import "server-only";
 import { randomUUID } from "node:crypto";
 import { sql, type Db } from "../db";
 import { storage } from "../storage";
-import { extractPreview } from "../access/pdf";
+import { extractPreview, PdfUnusableError } from "../access/pdf";
+import { ensureProductFilesChecked, FILE_PROBLEM_LABELS, FLAGGED_STATUSES, recordFileCheck, statusForProblem, type FileCheckStatus, type FlaggedStatus } from "../access/file-check";
 import { audit } from "../platform/audit";
 import { assertProductAccess, PermissionError, type Actor } from "../auth/permissions";
 import { deleteVideo } from "../video/bunny";
@@ -105,6 +106,7 @@ export type AdminProduct = {
   academic_year: string;
   term: number | null;
   price_fils: number;
+  is_free: boolean;
   compare_at_price_fils: number | null;
   proposed_price_fils: number | null;
   cover_key: string | null;
@@ -155,13 +157,15 @@ export type AdminFile = {
   is_auto_preview: boolean;
   sort_order: number;
   created_at: Date;
+  check_status: FileCheckStatus;
+  source_file_id: string | null;
 };
 
 export async function getProductFiles(productId: string, db: Db = sql): Promise<AdminFile[]> {
   const rows = await db<(Omit<AdminFile, "size_bytes"> & { size_bytes: string | number })[]>`
-    select id, kind, title, storage_key, original_name, size_bytes, page_count, is_auto_preview, sort_order, created_at
+    select id, kind, title, storage_key, original_name, size_bytes, page_count, is_auto_preview, sort_order, created_at, check_status, source_file_id
     from product_files where product_id = ${productId}
-    order by kind, sort_order, created_at
+    order by kind, sort_order, created_at, id
   `;
   return rows.map((r) => ({ ...r, size_bytes: Number(r.size_bytes) }));
 }
@@ -195,6 +199,8 @@ export type ProductContentInput = {
 /** حقول يحددها المالك فقط */
 export type ProductOwnerInput = {
   priceFils: number;
+  /** مجاني بقرار صريح من المالك: السعر صفر وحده لا يكفي للنشر */
+  isFree: boolean;
   compareAtPriceFils: number | null;
   isDownloadable: boolean;
   isFeatured: boolean;
@@ -229,6 +235,8 @@ const kuwaitDay = (d: Date) => new Date(new Date(d).getTime() + 3 * 3600_000).to
 const accessDatePassed = (d: Date | null) => Boolean(d && new Date(d).getTime() <= Date.now());
 
 function assertOwnerFields(o: ProductOwnerInput, existing?: { status: ProductStatus; accessUntil: Date | null }) {
+  if (o.isFree && o.priceFils !== 0) throw new AdminError("المنتج المجاني سعره صفر", { price: "اترك السعر صفرًا أو ألغِ خيار مجاني" });
+  if (o.isFree && o.compareAtPriceFils !== null) throw new AdminError("المنتج المجاني لا يحمل سعرًا سابقًا", { compareAtPrice: "اتركه فارغًا" });
   if (o.compareAtPriceFils !== null && o.compareAtPriceFils <= o.priceFils) {
     throw new AdminError("السعر السابق يجب أن يكون أكبر من السعر الحالي", { compareAtPrice: "اتركه فارغًا إن لم يكن هناك عرض حقيقي" });
   }
@@ -255,6 +263,7 @@ export async function createProduct(input: ProductInput, actor: Actor): Promise<
   const owner: ProductOwnerInput = isOwner
     ? {
         priceFils: input.priceFils ?? 0,
+        isFree: input.isFree ?? false,
         compareAtPriceFils: input.compareAtPriceFils ?? null,
         isDownloadable: input.isDownloadable ?? false,
         isFeatured: input.isFeatured ?? false,
@@ -267,6 +276,7 @@ export async function createProduct(input: ProductInput, actor: Actor): Promise<
       }
     : {
         priceFils: 0,
+        isFree: false,
         compareAtPriceFils: null,
         isDownloadable: false,
         isFeatured: false,
@@ -282,10 +292,10 @@ export async function createProduct(input: ProductInput, actor: Actor): Promise<
   const slug = owner.slug || (await generateProductSlug(input.gradeId, input.subjectId, input.type));
   const [row] = await sql<{ id: string }[]>`
     insert into products (slug, type, title, summary, description, contents, grade_id, subject_id, academic_year, term,
-      price_fils, compare_at_price_fils, proposed_price_fils, status, is_downloadable, is_featured, preview_pages, sort_order, created_by,
+      price_fils, is_free, compare_at_price_fils, proposed_price_fils, status, is_downloadable, is_featured, preview_pages, sort_order, created_by,
       teacher_id, access_mode, access_until, access_days)
     values (${slug}, ${input.type}, ${input.title}, ${input.summary}, ${input.description}, ${input.contents},
-      ${input.gradeId}, ${input.subjectId}, ${input.academicYear}, ${input.term}, ${owner.priceFils}, ${owner.compareAtPriceFils},
+      ${input.gradeId}, ${input.subjectId}, ${input.academicYear}, ${input.term}, ${owner.priceFils}, ${owner.isFree}, ${owner.compareAtPriceFils},
       ${input.proposedPriceFils}, 'draft', ${owner.isDownloadable}, ${owner.isFeatured}, ${input.previewPages}, ${owner.sortOrder}, ${actor.userId},
       ${owner.teacherId}, ${owner.accessMode}, ${owner.accessMode === "until_date" ? owner.accessUntil : null}, ${owner.accessMode === "days" ? owner.accessDays : null})
     returning id
@@ -295,9 +305,21 @@ export async function createProduct(input: ProductInput, actor: Actor): Promise<
     action: "product.create",
     entityType: "product",
     entityId: row.id,
-    metadata: { title: input.title, priceFils: owner.priceFils, proposedPriceFils: input.proposedPriceFils, type: input.type, teacherId: owner.teacherId, by: actor.kind },
+    metadata: { title: input.title, priceFils: owner.priceFils, isFree: owner.isFree, proposedPriceFils: input.proposedPriceFils, type: input.type, teacherId: owner.teacherId, by: actor.kind },
   });
   return row.id;
+}
+
+/** منتج منشور يبقى قابلًا للبيع بتوزيع صحيح: لا يصير سعره صفرًا خطأ، ولا ينتقل إلى معلم بلا نسبة أو بنسبة تحتاج تأكيدًا */
+async function assertPublishedStaysSafe(o: ProductOwnerInput, currentTeacherId: string | null) {
+  if (o.isFree) return;
+  if (o.priceFils <= 0) throw new AdminError("منتج منشور لا يكون سعره صفرًا. حدد سعرًا أو علّمه مجانيًا صراحة", { price: "السعر مطلوب" });
+  if (!o.teacherId) return;
+  const [t] = await sql<{ display_name: string; revenue_share_bps: number | null }[]>`select display_name, revenue_share_bps from teachers where id = ${o.teacherId}`;
+  if (t && t.revenue_share_bps === null) throw new AdminError(`لم تُحدَّد نسبة ${t.display_name}. حددها في صفحة المعلم أولًا`, { teacherId: "المعلم بلا نسبة" });
+  if (t && o.teacherId !== currentTeacherId && isExtremeShare(t.revenue_share_bps)) {
+    throw new AdminError(`نسبة ${t.display_name} ${(t.revenue_share_bps as number) / 100}٪. أخفِ المنتج ثم انشره من جديد لتأكيد النسبة`, { teacherId: "النسبة تحتاج تأكيدًا" });
+  }
 }
 
 export async function updateProduct(id: string, input: ProductInput, actor: Actor) {
@@ -330,6 +352,7 @@ export async function updateProduct(id: string, input: ProductInput, actor: Acto
 
   const o: ProductOwnerInput = {
     priceFils: input.priceFils ?? current.price_fils,
+    isFree: input.isFree ?? current.is_free,
     compareAtPriceFils: input.compareAtPriceFils === undefined ? current.compare_at_price_fils : input.compareAtPriceFils,
     isDownloadable: input.isDownloadable ?? current.is_downloadable,
     isFeatured: input.isFeatured ?? current.is_featured,
@@ -342,11 +365,12 @@ export async function updateProduct(id: string, input: ProductInput, actor: Acto
   };
   assertOwnerFields(o, { status: current.status, accessUntil: current.access_until });
   await assertTeacherExists(o.teacherId);
+  if (current.status === "published") await assertPublishedStaysSafe(o, current.teacher_id);
   await sql`
     update products set
       slug = ${o.slug!}, type = ${input.type}, title = ${input.title}, summary = ${input.summary}, description = ${input.description},
       contents = ${input.contents}, grade_id = ${input.gradeId}, subject_id = ${input.subjectId}, academic_year = ${input.academicYear},
-      term = ${input.term}, price_fils = ${o.priceFils}, compare_at_price_fils = ${o.compareAtPriceFils},
+      term = ${input.term}, price_fils = ${o.priceFils}, is_free = ${o.isFree}, compare_at_price_fils = ${o.compareAtPriceFils},
       proposed_price_fils = ${input.proposedPriceFils ?? current.proposed_price_fils},
       is_downloadable = ${o.isDownloadable}, is_featured = ${o.isFeatured}, preview_pages = ${input.previewPages},
       sort_order = ${o.sortOrder}, teacher_id = ${o.teacherId},
@@ -356,6 +380,7 @@ export async function updateProduct(id: string, input: ProductInput, actor: Acto
   `;
   const changes: Record<string, unknown> = {};
   if (current.price_fils !== o.priceFils) changes.price = { from: current.price_fils, to: o.priceFils };
+  if (current.is_free !== o.isFree) changes.isFree = { from: current.is_free, to: o.isFree };
   if (current.compare_at_price_fils !== o.compareAtPriceFils) changes.compareAt = { from: current.compare_at_price_fils, to: o.compareAtPriceFils };
   if (current.title !== input.title) changes.title = { from: current.title, to: input.title };
   if (current.is_downloadable !== o.isDownloadable) changes.downloadable = o.isDownloadable;
@@ -380,15 +405,20 @@ export async function updateProduct(id: string, input: ProductInput, actor: Acto
  *  - منتجات الفيديو: درس منشور أو منتج مضمّن، وكل الدروس المنشورة مكتملة المعالجة
  *  - الحاويات: عنصر واحد على الأقل (للباقة)
  */
-export async function publishBlockers(productId: string, opts: { ignorePrice?: boolean; ignoreAccessDate?: boolean } = {}): Promise<string[]> {
+export async function publishBlockers(productId: string, opts: PublishCheckOptions = {}): Promise<string[]> {
   const p = await getAdminProduct(productId);
   if (!p) return ["المنتج غير موجود"];
   const issues: string[] = [];
   if (!p.title.trim()) issues.push("العنوان مطلوب");
+  if (!opts.ignorePrice && !p.is_free && p.price_fils <= 0) issues.push("حدد سعرًا أكبر من صفر، أو علّم المنتج مجانيًا صراحة");
   if (!opts.ignoreAccessDate && p.access_mode === "until_date" && accessDatePassed(p.access_until)) issues.push("تاريخ نهاية الإتاحة مضى، فاختر تاريخًا قادمًا قبل النشر");
   if (PDF_PRODUCT_TYPES.includes(p.type)) {
     const [{ n }] = await sql<{ n: number }[]>`select count(*)::int as n from product_files where product_id = ${productId} and kind = 'main'`;
     if (n === 0) issues.push("ارفع ملف PDF واحدًا على الأقل قبل النشر");
+    const flagged = await sql<{ title: string; check_status: FlaggedStatus }[]>`
+      select title, check_status from product_files where product_id = ${productId} and kind = 'main' and check_status = any(${FLAGGED_STATUSES}::text[]) order by sort_order, created_at
+    `;
+    for (const f of flagged) issues.push(`«${f.title}»: ${FILE_PROBLEM_LABELS[f.check_status]}، احذفه وارفع نسخة سليمة`);
   }
   const [{ items }] = await sql<{ items: number }[]>`select count(*)::int as items from bundle_items where bundle_id = ${productId}`;
   if (p.type === "bundle" && items === 0) issues.push("أضف منتجًا واحدًا على الأقل إلى الباقة قبل النشر");
@@ -403,18 +433,61 @@ export async function publishBlockers(productId: string, opts: { ignorePrice?: b
     if (l.failed > 0) issues.push("يوجد درس فشلت معالجته، احذفه أو ارفعه من جديد");
     else if (l.not_ready > 0) issues.push("لا يمكن النشر قبل اكتمال معالجة الفيديو");
   }
-  void opts;
+  if (!opts.ignoreShare && !p.is_free) {
+    const missing = (await productTeacherShares(productId)).filter((t) => t.share_bps === null);
+    if (missing.length) issues.push(`لم تُحدَّد نسبة ${missing.map((t) => t.display_name).join("، ")}. حددها في صفحة المعلم قبل النشر، فبدونها يُباع المنتج دون أن يُسجَّل للمعلم حقه`);
+  }
   return issues;
 }
 
+export type PublishCheckOptions = { ignorePrice?: boolean; ignoreAccessDate?: boolean; ignoreShare?: boolean };
+
+/** معلمو المنتج وما بداخله من محتوى بأي عمق، فالباقة تحمل حصص معلمي محتوياتها */
+export async function productTeacherShares(productId: string): Promise<{ teacher_id: string; display_name: string; share_bps: number | null }[]> {
+  return sql<{ teacher_id: string; display_name: string; share_bps: number | null }[]>`
+    with recursive c(id) as (
+      select ${productId}::uuid
+      union
+      select bi.product_id from c join bundle_items bi on bi.bundle_id = c.id
+    )
+    select distinct t.id as teacher_id, t.display_name, t.revenue_share_bps as share_bps
+    from c join products p on p.id = c.id join teachers t on t.id = p.teacher_id
+    order by t.display_name
+  `;
+}
+
+/** 0٪ أو 100٪: قد تكون مقصودة، لكنها لا تُنشر إلا بتأكيد صريح */
+export const isExtremeShare = (bps: number | null) => bps === 0 || bps === 10000;
+
+async function extremeShareTeachers(productId: string) {
+  return (await productTeacherShares(productId)).filter((t) => isExtremeShare(t.share_bps));
+}
+
+const shareConfirmText = (ts: { display_name: string; share_bps: number | null }[]) =>
+  `نسبة ${ts.map((t) => `${t.display_name} ${(t.share_bps as number) / 100}٪`).join("، ")}. أكد النسبة قبل النشر`;
+
+/** ملف قديم لم يُفحص يُفحص قبل نشره. خطأ التخزين يوقف النشر ولا يصف الملف بأنه معيب */
+async function ensureFilesCheckedForPublish(id: string) {
+  try {
+    await ensureProductFilesChecked(id);
+  } catch (err) {
+    console.error("[publish] file check failed", err);
+    throw new AdminError("تعذر فحص ملفات المنتج الآن. حاول مرة أخرى بعد قليل");
+  }
+}
+
 /** تغيير الحالة — للمالك فقط (المعلم يرسل للمراجعة عبر submitForReview) */
-export async function setProductStatus(id: string, status: ProductStatus, actor: Actor, ip?: string) {
+export async function setProductStatus(id: string, status: ProductStatus, actor: Actor, ip?: string, opts: { confirmShare?: boolean } = {}) {
   if (actor.kind !== "owner") throw new PermissionError("تغيير حالة النشر متاح لإدارة المنصة فقط");
   const current = await getAdminProduct(id);
   if (!current) throw new AdminError("المنتج غير موجود");
+  let confirmedShares: { display_name: string; share_bps: number | null }[] = [];
   if (status === "published") {
+    await ensureFilesCheckedForPublish(id);
     const issues = await publishBlockers(id);
     if (issues.length) throw new AdminError(issues.join("، "));
+    confirmedShares = current.is_free ? [] : await extremeShareTeachers(id);
+    if (confirmedShares.length && !opts.confirmShare) throw new AdminError(shareConfirmText(confirmedShares));
   }
   await sql`
     update products set status = ${status},
@@ -423,7 +496,14 @@ export async function setProductStatus(id: string, status: ProductStatus, actor:
       reviewed_by = case when ${status} = 'published' and status = 'in_review' then ${actor.userId}::uuid else reviewed_by end
     where id = ${id}
   `;
-  await audit({ actorId: actor.userId, action: "product.status", entityType: "product", entityId: id, metadata: { from: current.status, to: status }, ip });
+  await audit({
+    actorId: actor.userId,
+    action: "product.status",
+    entityType: "product",
+    entityId: id,
+    metadata: { from: current.status, to: status, ...(status === "published" ? { priceFils: current.price_fils, isFree: current.is_free, confirmedShares } : {}) },
+    ip,
+  });
 }
 
 /** المعلم يرسل مسودته للمراجعة (بعد اكتمال المحتوى) */
@@ -431,7 +511,8 @@ export async function submitForReview(id: string, actor: Actor, ip?: string) {
   const p = await assertProductAccess(actor, id, actor.kind === "teacher" ? "edit" : "view");
   if (p.status !== "draft") throw new AdminError("يمكن إرسال المسودات فقط للمراجعة");
   // فترة الإتاحة يحددها المالك عند الاعتماد، فلا يوقف تاريخها إرسال المعلم للمراجعة
-  const issues = await publishBlockers(id, { ignorePrice: true, ignoreAccessDate: true });
+  // السعر ونسبة المعلم قرار المالك عند الاعتماد، فلا يوقفان إرسال المعلم للمراجعة
+  const issues = await publishBlockers(id, { ignorePrice: true, ignoreAccessDate: true, ignoreShare: true });
   if (issues.length) throw new AdminError(issues.join("، "));
   await sql`update products set status = 'in_review', submitted_at = now() where id = ${id} and status = 'draft'`;
   await audit({ actorId: actor.userId, action: "product.submit_review", entityType: "product", entityId: id, ip });
@@ -440,7 +521,7 @@ export async function submitForReview(id: string, actor: Actor, ip?: string) {
 /** المالك يعتمد المحتوى: يحدد السعر وفترة الإتاحة ثم ينشر */
 export async function approveAndPublish(
   id: string,
-  input: { priceFils: number; compareAtPriceFils: number | null; accessMode: "unlimited" | "until_date" | "days"; accessUntil: Date | null; accessDays: number | null },
+  input: { priceFils: number; isFree?: boolean; confirmShare?: boolean; compareAtPriceFils: number | null; accessMode: "unlimited" | "until_date" | "days"; accessUntil: Date | null; accessDays: number | null },
   actor: Actor,
   ip?: string,
 ) {
@@ -448,13 +529,19 @@ export async function approveAndPublish(
   const current = await getAdminProduct(id);
   if (!current) throw new AdminError("المنتج غير موجود");
   if (current.status !== "in_review" && current.status !== "draft") throw new AdminError("المنتج ليس بانتظار المراجعة");
-  assertOwnerFields({ ...input, isDownloadable: false, isFeatured: false, sortOrder: 0, teacherId: null });
+  const isFree = input.isFree === true;
+  assertOwnerFields({ ...input, isFree, isDownloadable: false, isFeatured: false, sortOrder: 0, teacherId: null });
+  if (!isFree && input.priceFils <= 0) throw new AdminError("حدد سعرًا أكبر من صفر، أو اختر «مجاني» صراحة", { price: "السعر مطلوب" });
+  await ensureFilesCheckedForPublish(id);
   // assertOwnerFields فحصت التاريخ الجديد الذي سيُحفظ، والتاريخ المحفوظ حاليًا سيُستبدل
-  const issues = await publishBlockers(id, { ignoreAccessDate: true });
+  // السعر فحصناه من المدخلات لا من السعر المحفوظ، ونسبة المعلم لا تلزم إن كان القرار مجانيًا
+  const issues = await publishBlockers(id, { ignoreAccessDate: true, ignorePrice: true, ignoreShare: isFree });
   if (issues.length) throw new AdminError(issues.join("، "));
+  const confirmedShares = isFree ? [] : await extremeShareTeachers(id);
+  if (confirmedShares.length && !input.confirmShare) throw new AdminError(shareConfirmText(confirmedShares));
   await sql.begin(async (tx) => {
     await tx`
-      update products set price_fils = ${input.priceFils}, compare_at_price_fils = ${input.compareAtPriceFils},
+      update products set price_fils = ${input.priceFils}, is_free = ${isFree}, compare_at_price_fils = ${input.compareAtPriceFils},
         access_mode = ${input.accessMode}, access_until = ${input.accessMode === "until_date" ? input.accessUntil : null},
         access_days = ${input.accessMode === "days" ? input.accessDays : null},
         status = 'published', published_at = coalesce(published_at, now()), reviewed_at = now(), reviewed_by = ${actor.userId},
@@ -469,6 +556,8 @@ export async function approveAndPublish(
         entityId: id,
         metadata: {
           priceFils: input.priceFils,
+          isFree,
+          confirmedShares,
           previousPriceFils: current.price_fils,
           proposedPriceFils: current.proposed_price_fils,
           access: { mode: input.accessMode, until: input.accessUntil, days: input.accessDays },
@@ -574,37 +663,72 @@ export async function deleteOrArchiveProduct(id: string, actor: Actor, ip?: stri
 }
 
 /** تحديث مجموع صفحات الملفات الرئيسية */
-export async function refreshPageCount(productId: string) {
-  await sql`
+export async function refreshPageCount(productId: string, db: Db = sql) {
+  await db`
     update products set page_count = (
       select nullif(sum(coalesce(page_count, 0)), 0)::int from product_files where product_id = ${productId} and kind = 'main'
     ) where id = ${productId}
   `;
 }
 
+export async function firstMainFile(productId: string): Promise<{ id: string; storage_key: string; page_count: number | null } | null> {
+  const [f] = await sql<{ id: string; storage_key: string; page_count: number | null }[]>`
+    select id, storage_key, page_count from product_files where product_id = ${productId} and kind = 'main'
+    order by sort_order, created_at, id limit 1
+  `;
+  return f ?? null;
+}
+
+export type PreviewResult = "custom" | "generated" | "none" | "too_short" | "unreadable";
+
 /**
- * توليد المعاينة المجانية تلقائيًا من أول ملف رئيسي (عدد الصفحات = preview_pages)
- * لا يلمس المعاينة المرفوعة يدويًا.
+ * توليد المعاينة المجانية تلقائيًا من أول ملف رئيسي، ضمن قاعدة المعاينة الواحدة.
+ * لا يلمس المعاينة المرفوعة يدويًا إلا بطلب replaceCustom.
+ * المعاينة الجديدة تُصنع أولًا، ثم تُستبدل بالقديمة في معاملة واحدة، فلا يضيع الموجود عند تعثر التوليد.
  */
-export async function regenerateAutoPreview(productId: string): Promise<"custom" | "generated" | "none"> {
+export async function regenerateAutoPreview(productId: string, opts: { replaceCustom?: boolean } = {}): Promise<PreviewResult> {
   const files = await getProductFiles(productId);
-  if (files.some((f) => f.kind === "preview" && !f.is_auto_preview)) return "custom";
-  const autos = files.filter((f) => f.kind === "preview" && f.is_auto_preview);
-  for (const a of autos) {
-    await sql`delete from product_files where id = ${a.id}`;
-    await storage().remove("private", a.storage_key).catch(() => {});
-  }
+  if (!opts.replaceCustom && files.some((f) => f.kind === "preview" && !f.is_auto_preview)) return "custom";
   const [p] = await sql<{ preview_pages: number }[]>`select preview_pages from products where id = ${productId}`;
   const firstMain = files.find((f) => f.kind === "main");
-  if (!p || p.preview_pages <= 0 || !firstMain) return "none";
-  const bytes = await storage().read("private", firstMain.storage_key);
-  const preview = await extractPreview(bytes, p.preview_pages);
+
+  const swapPreviews = async (next: { key: string; bytes: number; pages: number; sourceId: string } | null) => {
+    const old = await sql.begin(async (tx) => {
+      await tx`select 1 from products where id = ${productId} for update`;
+      const removed = await tx<{ storage_key: string }[]>`
+        delete from product_files where product_id = ${productId} and kind = 'preview' and (is_auto_preview or ${opts.replaceCustom === true}) returning storage_key
+      `;
+      if (next) {
+        await tx`
+          insert into product_files (product_id, kind, title, storage_key, original_name, mime_type, size_bytes, page_count, is_auto_preview, check_status, checked_at, source_file_id)
+          values (${productId}, 'preview', 'معاينة مجانية', ${next.key}, 'preview.pdf', 'application/pdf', ${next.bytes}, ${next.pages}, true, 'ok', now(), ${next.sourceId})
+        `;
+      }
+      return removed;
+    });
+    for (const o of old) await storage().remove("private", o.storage_key).catch(() => {});
+  };
+
+  if (!p || p.preview_pages <= 0 || !firstMain) {
+    await swapPreviews(null);
+    return "none";
+  }
+  let preview: Awaited<ReturnType<typeof extractPreview>>;
+  try {
+    preview = await extractPreview(await storage().read("private", firstMain.storage_key), p.preview_pages);
+  } catch (err) {
+    if (!(err instanceof PdfUnusableError)) throw err;
+    await recordFileCheck(firstMain.id, statusForProblem(err.problem));
+    await swapPreviews(null);
+    return "unreadable";
+  }
+  if (!preview) {
+    await swapPreviews(null);
+    return "too_short";
+  }
   const key = `previews/${productId}/${randomUUID()}.pdf`;
   await storage().put("private", key, preview.bytes, "application/pdf");
-  await sql`
-    insert into product_files (product_id, kind, title, storage_key, original_name, mime_type, size_bytes, page_count, is_auto_preview)
-    values (${productId}, 'preview', 'معاينة مجانية', ${key}, 'preview.pdf', 'application/pdf', ${preview.bytes.length}, ${preview.pageCount}, true)
-  `;
+  await swapPreviews({ key, bytes: preview.bytes.length, pages: preview.pageCount, sourceId: firstMain.id });
   return "generated";
 }
 

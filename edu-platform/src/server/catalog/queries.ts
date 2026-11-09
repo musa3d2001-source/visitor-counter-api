@@ -1,4 +1,5 @@
 import "server-only";
+import { servablePreviewSql } from "../access/preview-rule";
 import { cache } from "react";
 import { sql } from "../db";
 import { storage } from "../storage";
@@ -145,7 +146,7 @@ const cardColumns = () => sql`
   p.id, p.slug, p.type, p.title, p.summary, p.price_fils, p.compare_at_price_fils, p.cover_key,
   g.name as grade_name, g.slug as grade_slug, s.name as subject_name, s.slug as subject_slug,
   p.term, p.academic_year, p.is_featured, p.page_count,
-  exists (select 1 from product_files pf where pf.product_id = p.id and pf.kind = 'preview') as has_preview,
+  exists (select 1 from product_files pf where pf.product_id = p.id and ${servablePreviewSql("pf")}) as has_preview,
   (select t.display_name from teachers t where t.id = p.teacher_id) as teacher_name,
   (select t.slug from teachers t where t.id = p.teacher_id and t.is_published) as teacher_slug,
   (select t.photo_key from teachers t where t.id = p.teacher_id) as teacher_photo_key,
@@ -401,7 +402,9 @@ export type PublicFileInfo = { id: string; title: string; pageCount: number | nu
 
 export async function getProductFilesInfo(productId: string): Promise<PublicFileInfo[]> {
   const rows = await sql<{ id: string; title: string; page_count: number | null; kind: "main" | "preview" }[]>`
-    select id, title, page_count, kind from product_files where product_id = ${productId} order by kind, sort_order, created_at
+    select pf.id, pf.title, pf.page_count, pf.kind from product_files pf
+    where pf.product_id = ${productId} and (pf.kind = 'main' or ${servablePreviewSql("pf")})
+    order by pf.kind, pf.sort_order, pf.created_at
   `;
   return rows.map((r) => ({ id: r.id, title: r.title, pageCount: r.page_count, kind: r.kind }));
 }

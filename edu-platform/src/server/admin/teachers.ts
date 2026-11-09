@@ -140,6 +140,10 @@ export async function updateTeacher(id: string, input: TeacherInput, ownerId: st
     if (exists) throw new AdminError("الرابط مستخدم لمعلم آخر", { slug: "اختر رابطًا آخر" });
     slug = input.slug;
   }
+  if (input.revenueShareBps === null && current.revenue_share_bps !== null) {
+    const [{ n }] = await sql<{ n: number }[]>`select count(*)::int as n from products where teacher_id = ${id} and status = 'published' and not is_free`;
+    if (n > 0) throw new AdminError("للمعلم منتجات منشورة مدفوعة، ولا تُحذف نسبته حتى لا تُسجَّل مبيعاتها دون حقه. أخفِ منتجاته أولًا أو أبقِ النسبة", { revenueShare: "النسبة مطلوبة" });
+  }
   await sql`
     update teachers set slug = ${slug}, display_name = ${input.displayName}, headline = ${input.headline}, bio = ${input.bio},
       is_published = ${input.isPublished}, can_upload = ${input.canUpload}, revenue_share_bps = ${input.revenueShareBps},

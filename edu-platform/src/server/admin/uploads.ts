@@ -1,17 +1,20 @@
 import "server-only";
+import { ar } from "@/lib/design";
 import { z } from "zod";
 import { sql } from "../db";
-import { storage, newStorageKey, sniffMime, UPLOAD_RULES, type UploadKind } from "../storage";
-import { getPdfPageCount } from "../access/pdf";
+import { storage, newStorageKey, sniffMime, storageFileCap, toMb, uploadLimitBytes, UPLOAD_RULES, type UploadKind } from "../storage";
+import { inspectPdf } from "../access/pdf";
+import { UPLOAD_REJECTION } from "../access/file-check";
 import { audit } from "../platform/audit";
 import { getSettings, saveSettings } from "../platform/settings";
 import { assertProductAccess, PermissionError, type Actor } from "../auth/permissions";
 import { createVideo, tusUploadCredentials } from "../video/bunny";
 import { activeVideoProvider, probeStoredMp4Duration, syncLessonStatus } from "../video/service";
 import { AdminError, UUID_RE } from "./common";
-import { nextLessonOrder, refreshPageCount, regenerateAutoPreview } from "./products";
+import { firstMainFile, nextLessonOrder, refreshPageCount, regenerateAutoPreview, type PreviewResult } from "./products";
 import { setTeacherPhoto } from "./teachers";
 import { isVideoType, PDF_PRODUCT_TYPES, type ProductType } from "@/lib/labels";
+import { maxPreviewPages, PREVIEW_POLICY } from "@/lib/preview-policy";
 
 /**
  * رفع الملفات على خطوتين (يعمل على Vercel لأن الملف لا يمر عبر الدوال):
@@ -54,6 +57,18 @@ function prefixFor(target: UploadTarget, ref: string | null): string {
 }
 
 const KIND_LABEL: Record<UploadKind, string> = { pdf: "PDF", image: "صورة (JPG أو PNG أو WEBP)", video: "فيديو MP4" };
+
+/** رسالة تجاوز الحجم: التفاصيل والحل للمالك فقط، والمعلم يعرف الحد وما يفعله */
+function tooLargeMessage(kind: UploadKind, actor: Actor): string {
+  const limit = uploadLimitBytes(kind);
+  const mb = toMb(limit);
+  const capped = limit < UPLOAD_RULES[kind].maxBytes;
+  if (capped && actor.kind === "owner") {
+    const why = storageFileCap().source === "free_plan" ? "حد الملف الواحد في خطة التخزين المجانية" : "حد الملف الواحد المضبوط للتخزين";
+    return `حجم الملف أكبر من ${mb} ميجابايت، وهو ${why}. طريقة رفع الحد موضحة في الإعدادات، قسم التخزين.`;
+  }
+  return capped ? `حجم الملف أكبر من الحد المتاح حاليًا (${mb} ميجابايت). قسّم الملف أو تواصل مع إدارة المنصة.` : `حجم الملف أكبر من المسموح (${mb} ميجابايت)`;
+}
 
 /** حد حجم الفيديو المرفوع مباشرة إلى Bunny */
 const BUNNY_MAX_BYTES = 8 * 1024 * 1024 * 1024;
@@ -139,9 +154,11 @@ export async function initUpload(input: z.infer<typeof initSchema>, actor: Actor
 
   const rules = UPLOAD_RULES[kind];
   if (!(rules.mime as readonly string[]).includes(mime)) throw new AdminError(`نوع الملف غير مسموح. المطلوب: ${KIND_LABEL[kind]}`);
-  if (input.size > rules.maxBytes) throw new AdminError(`حجم الملف أكبر من المسموح (${Math.round(rules.maxBytes / 1024 / 1024)} ميجابايت)`);
+  const limit = uploadLimitBytes(kind);
+  // الرفض هنا قبل بدء الرفع، لا بعد أن يقضي المعلم دقائق يرفع ملفًا سترفضه خطة التخزين
+  if (input.size > limit) throw new AdminError(tooLargeMessage(kind, actor));
   const key = newStorageKey(kind, mime, prefixFor(input.target, ref));
-  const target = await storage().createUploadTarget(rules.bucket, key, mime, rules.maxBytes, actor.userId);
+  const target = await storage().createUploadTarget(rules.bucket, key, mime, limit, actor.userId);
   return { key, kind, ...target };
 }
 
@@ -156,8 +173,16 @@ export const completeSchema = z.object({
   unitTitle: z.string().trim().max(120).optional(),
   description: z.string().trim().max(2000).optional(),
   isFreePreview: z.boolean().optional(),
+  /** حجم الملف عند المتصفح: للتأكد من وصوله كاملًا */
+  size: z.number().int().positive().optional(),
 });
 
+const PREVIEW_RESULT_NOTE: Partial<Record<PreviewResult, string>> = {
+  too_short: `. الملف أقل من ${ar(PREVIEW_POLICY.pagesPerFreePage)} صفحات فلا تتاح له معاينة`,
+  unreadable: ". تعذر توليد المعاينة، ولّدها من قسم المعاينة",
+};
+
+/** التأكيد قد يصل مرتين إذا ضاع رد الخادم على الشبكة: النتيجة نفسها في المرتين */
 export async function completeUpload(input: z.infer<typeof completeSchema>, actor: Actor) {
   const { ref } = await authorizeTarget(actor, input.target, input);
   const productId = input.productId ?? null;
@@ -170,7 +195,13 @@ export async function completeUpload(input: z.infer<typeof completeSchema>, acto
       returning id, title
     `;
     const lesson = rows[0];
-    if (!lesson) throw new AdminError("الدرس غير موجود أو اكتمل رفعه مسبقًا");
+    if (!lesson) {
+      const [already] = await sql<{ id: string; title: string }[]>`
+        select id, title from lessons where provider = 'bunny' and video_ref = ${input.key} and product_id = ${productId}
+      `;
+      if (!already) throw new AdminError("الدرس غير موجود");
+      return { id: already.id, message: `تم رفع «${already.title}»، جارٍ معالجة الفيديو، ولن يظهر للطلاب قبل اكتمالها` };
+    }
     try {
       await syncLessonStatus(lesson.id);
     } catch (err) {
@@ -196,7 +227,8 @@ export async function completeUpload(input: z.infer<typeof completeSchema>, acto
   const stat = await storage().stat(bucket, input.key);
   if (!stat) throw new AdminError("لم يكتمل رفع الملف. حاول مرة أخرى.");
   if (stat.size <= 0) await reject("الملف فارغ");
-  if (stat.size > rules.maxBytes) await reject("حجم الملف أكبر من المسموح");
+  if (stat.size > uploadLimitBytes(kind)) await reject(tooLargeMessage(kind, actor));
+  if (input.size !== undefined && stat.size !== input.size) await reject("لم يصل الملف كاملًا. ارفعه مرة أخرى.");
   const head = await storage().readHead(bucket, input.key, 16);
   const mime = sniffMime(head);
   if (!mime || !(rules.mime as readonly string[]).includes(mime)) await reject(`محتوى الملف لا يطابق النوع المطلوب (${KIND_LABEL[kind]})`);
@@ -204,38 +236,68 @@ export async function completeUpload(input: z.infer<typeof completeSchema>, acto
   const originalName = (input.originalName ?? "").slice(0, 255);
 
   if (input.target === "main" || input.target === "preview") {
-    const [exists] = await sql`select 1 from product_files where storage_key = ${input.key}`;
-    if (exists) throw new AdminError("تم تسجيل هذا الملف مسبقًا");
-    let pageCount: number;
+    const [already] = await sql<{ id: string; title: string; page_count: number | null }[]>`
+      select id, title, page_count from product_files where storage_key = ${input.key} and product_id = ${productId} and kind = ${input.target}
+    `;
+    if (already) return { id: already.id, message: `تم رفع «${already.title}» (${already.page_count ?? 0} صفحة)` };
+
+    let bytes: Uint8Array;
     try {
-      const bytes = await storage().read(bucket, input.key);
-      pageCount = await getPdfPageCount(bytes);
-    } catch {
-      return reject("تعذر قراءة ملف PDF، قد يكون تالفًا أو محميًا بكلمة مرور");
+      bytes = await storage().read(bucket, input.key);
+    } catch (err) {
+      // تعطل التخزين ليس عيبًا في الملف: لا نحذفه، ويمكن إعادة التأكيد
+      console.error("[upload-complete] read failed", err);
+      throw new AdminError("تعذر قراءة الملف من التخزين الآن. حاول مرة أخرى.");
     }
-    const title = input.title || stripExt(originalName) || (input.target === "main" ? "ملف المذكرة" : "معاينة مجانية");
+    const inspection = await inspectPdf(bytes);
+    if (!inspection.ok) return reject(UPLOAD_REJECTION[inspection.problem]);
+    const pageCount = inspection.pageCount;
+
+    // معاينة مخصصة: تُربط بأول ملف رئيسي وتُقاس عليه، والفحص يسبق حذف المعاينة السابقة
+    let sourceFileId: string | null = null;
     if (input.target === "preview") {
-      // معاينة مخصصة تحل محل المعاينة التلقائية والسابقة
-      const old = await sql<{ id: string; storage_key: string }[]>`select id, storage_key from product_files where product_id = ${productId} and kind = 'preview'`;
-      for (const o of old) {
-        await sql`delete from product_files where id = ${o.id}`;
-        await storage().remove("private", o.storage_key).catch(() => {});
+      const first = await firstMainFile(productId!);
+      if (!first) return reject("ارفع ملف المذكرة أولًا، فالمعاينة تُقاس على عدد صفحاته.");
+      const total = first.page_count;
+      const allowed = maxPreviewPages(total);
+      if (allowed === 0) return reject(`الملف الرئيسي أقل من ${ar(PREVIEW_POLICY.pagesPerFreePage)} صفحات، فلا تتاح له معاينة حتى لا تكشف الملف كله.`);
+      if (pageCount > allowed) return reject(`المعاينة ${ar(pageCount)} صفحة، والحد لملف من ${ar(total ?? 0)} صفحة هو ${ar(allowed)}. قلّل صفحات المعاينة ثم ارفعها.`);
+      sourceFileId = first.id;
+    }
+
+    const title = input.title || stripExt(originalName) || (input.target === "main" ? "ملف المذكرة" : "معاينة مجانية");
+    const { id: fileId, replacedKeys } = await sql.begin(async (tx) => {
+      // قفل المنتج يمنع معاينتين معًا عند رفعين متزامنين
+      await tx`select 1 from products where id = ${productId} for update`;
+      let replaced: { storage_key: string }[] = [];
+      if (input.target === "preview") {
+        // معاينة مخصصة تحل محل المعاينة التلقائية والسابقة
+        replaced = await tx<{ storage_key: string }[]>`delete from product_files where product_id = ${productId} and kind = 'preview' returning storage_key`;
       }
-    }
-    const [{ next }] = await sql<{ next: number }[]>`
-      select coalesce(max(sort_order), -1)::int + 1 as next from product_files where product_id = ${productId} and kind = ${input.target}
-    `;
-    const [row] = await sql<{ id: string }[]>`
-      insert into product_files (product_id, kind, title, storage_key, original_name, mime_type, size_bytes, page_count, is_auto_preview, sort_order)
-      values (${productId}, ${input.target}, ${title}, ${input.key}, ${originalName}, 'application/pdf', ${stat.size}, ${pageCount}, false, ${next})
-      returning id
-    `;
+      const [{ next }] = await tx<{ next: number }[]>`
+        select coalesce(max(sort_order), -1)::int + 1 as next from product_files where product_id = ${productId} and kind = ${input.target}
+      `;
+      const [row] = await tx<{ id: string }[]>`
+        insert into product_files (product_id, kind, title, storage_key, original_name, mime_type, size_bytes, page_count, is_auto_preview, sort_order, check_status, checked_at, source_file_id)
+        values (${productId}, ${input.target}, ${title}, ${input.key}, ${originalName}, 'application/pdf', ${stat.size}, ${pageCount}, false, ${next}, 'ok', now(), ${sourceFileId})
+        returning id
+      `;
+      if (input.target === "main") await refreshPageCount(productId!, tx);
+      return { id: row.id, replacedKeys: replaced.map((r) => r.storage_key) };
+    });
+    for (const k of replacedKeys) await storage().remove("private", k).catch(() => {});
+
+    let previewNote = "";
     if (input.target === "main") {
-      await refreshPageCount(productId!);
-      await regenerateAutoPreview(productId!);
+      // الملف الرئيسي نجح رفعه وتسجيله. تعثر المعاينة لا يُفشل الرفع، ويقال للرافع
+      const result = await regenerateAutoPreview(productId!).catch((err): PreviewResult => {
+        console.error("[upload-complete] preview generation failed", err);
+        return "unreadable";
+      });
+      previewNote = PREVIEW_RESULT_NOTE[result] ?? "";
     }
-    await audit({ actorId: actor.userId, action: `product.file_upload`, entityType: "product", entityId: productId, metadata: { fileId: row.id, kind: input.target, title, pages: pageCount, size: stat.size } });
-    return { id: row.id, message: `تم رفع «${title}» (${pageCount} صفحة)` };
+    await audit({ actorId: actor.userId, action: `product.file_upload`, entityType: "product", entityId: productId, metadata: { fileId, kind: input.target, title, pages: pageCount, size: stat.size } });
+    return { id: fileId, message: `تم رفع «${title}» (${pageCount} صفحة)${previewNote}` };
   }
 
   if (input.target === "cover") {
@@ -272,8 +334,8 @@ export async function completeUpload(input: z.infer<typeof completeSchema>, acto
   // lesson (file provider): يصبح جاهزًا بعد التحقق من الملف وقراءة مدته
   const title = input.title || stripExt(originalName);
   if (!title || title.length < 2) return reject("عنوان الدرس مطلوب");
-  const [dup] = await sql`select 1 from lessons where provider = 'file' and video_ref = ${input.key}`;
-  if (dup) throw new AdminError("تم تسجيل هذا الملف مسبقًا");
+  const [dup] = await sql<{ id: string; title: string }[]>`select id, title from lessons where provider = 'file' and video_ref = ${input.key} and product_id = ${productId}`;
+  if (dup) return { id: dup.id, message: `تمت إضافة الدرس «${dup.title}»` };
   const duration = await probeStoredMp4Duration(input.key, stat.size);
   const order = await nextLessonOrder(productId!);
   const [lesson] = await sql<{ id: string }[]>`

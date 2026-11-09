@@ -1,5 +1,6 @@
 "use server";
 
+import { ar } from "@/lib/design";
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { z } from "zod";
@@ -12,6 +13,7 @@ import { storage } from "@/server/storage";
 import { assertProductAccess, PermissionError, type Actor } from "@/server/auth/permissions";
 import { syncLessonStatus } from "@/server/video/service";
 import { AdminError, bool, int, isUuid, staffAction, str } from "@/server/admin/common";
+import { PREVIEW_POLICY } from "@/lib/preview-policy";
 import {
   addBundleItem,
   approveAndPublish,
@@ -68,7 +70,7 @@ const contentSchema = z.object({
   subjectId: z.string().uuid().nullable(),
   academicYear: academicYearSchema,
   term: z.union([z.literal(1), z.literal(2)]).nullable(),
-  previewPages: z.number().int().min(0, "عدد صفحات المعاينة غير صحيح").max(30, "الحد الأقصى 30 صفحة"),
+  previewPages: z.number().int().min(0, "عدد صفحات المعاينة غير صحيح").max(PREVIEW_POLICY.maxPages, `الحد الأقصى ${ar(PREVIEW_POLICY.maxPages)} صفحات`),
   proposedPrice: optionalPriceSchema,
 });
 
@@ -144,9 +146,11 @@ function parseContent(fd: FormData): ProductContentInput {
 
 function parseOwner(fd: FormData): ProductOwnerInput {
   const daysRaw = str(fd, "accessDays");
+  const isFree = bool(fd, "isFree");
   const parsed = ownerSchema.safeParse({
-    price: str(fd, "price"),
-    compareAtPrice: str(fd, "compareAtPrice") || undefined,
+    // «مجاني» قرار صريح يسقط السعر المكتوب، فلا يبقى سعر قديم مع منتج مجاني
+    price: isFree ? "0" : str(fd, "price"),
+    compareAtPrice: isFree ? undefined : str(fd, "compareAtPrice") || undefined,
     sortOrder: int(fd, "sortOrder", 0),
     slug: str(fd, "slug") || undefined,
     teacherId: str(fd, "teacherId") || null,
@@ -158,6 +162,7 @@ function parseOwner(fd: FormData): ProductOwnerInput {
   const d = parsed.data;
   return {
     priceFils: d.price,
+    isFree,
     compareAtPriceFils: d.compareAtPrice,
     isDownloadable: bool(fd, "isDownloadable"),
     isFeatured: bool(fd, "isFeatured"),
@@ -215,7 +220,7 @@ export async function setStatusAction(_prev: ActionState, fd: FormData): Promise
     const id = str(fd, "id");
     const status = productStatusSchema.safeParse(str(fd, "status"));
     if (!isUuid(id) || !status.success) throw new AdminError("طلب غير صالح");
-    await setProductStatus(id, status.data, actor, ip);
+    await setProductStatus(id, status.data, actor, ip, { confirmShare: str(fd, "confirmShare") === "1" });
     revalidateProduct(id);
     revalidatePath("/admin/bundles");
     revalidatePath("/", "layout");
@@ -258,9 +263,10 @@ export async function approveAndPublishAction(_prev: ActionState, fd: FormData):
     if (actor.kind !== "owner") throw new PermissionError("اعتماد المحتوى متاح لإدارة المنصة فقط");
     const id = str(fd, "id");
     if (!isUuid(id)) throw new AdminError("طلب غير صالح");
-    const price = priceSchema.safeParse(str(fd, "price"));
+    const isFree = bool(fd, "isFree");
+    const price = priceSchema.safeParse(isFree ? "0" : str(fd, "price"));
     if (!price.success) throw new AdminError("حدد سعرًا صحيحًا، مثال: 2.500", { price: price.error.issues[0].message });
-    const compare = optionalPriceSchema.safeParse(str(fd, "compareAtPrice") || undefined);
+    const compare = optionalPriceSchema.safeParse(isFree ? undefined : str(fd, "compareAtPrice") || undefined);
     if (!compare.success) throw new AdminError("السعر السابق غير صحيح", { compareAtPrice: "غير صحيح" });
     const daysRaw = str(fd, "accessDays");
     const access = accessSchema.safeParse({
@@ -271,7 +277,7 @@ export async function approveAndPublishAction(_prev: ActionState, fd: FormData):
     if (!access.success) throw new AdminError("راجع فترة الإتاحة", fieldErrors(access.error));
     await approveAndPublish(
       id,
-      { priceFils: price.data, compareAtPriceFils: compare.data, accessMode: access.data.accessMode, accessUntil: access.data.accessUntil, accessDays: access.data.accessDays },
+      { priceFils: price.data, isFree, confirmShare: bool(fd, "confirmShare"), compareAtPriceFils: compare.data, accessMode: access.data.accessMode, accessUntil: access.data.accessUntil, accessDays: access.data.accessDays },
       actor,
       ip,
     );
@@ -369,21 +375,21 @@ export async function regeneratePreviewAction(_prev: ActionState, fd: FormData):
     const productId = str(fd, "productId");
     if (!isUuid(productId)) throw new AdminError("طلب غير صالح");
     await assertProductAccess(actor, productId, "edit");
-    if (str(fd, "dropCustom") === "1") {
-      const custom = await sql<{ id: string; storage_key: string }[]>`
-        select id, storage_key from product_files where product_id = ${productId} and kind = 'preview' and not is_auto_preview
-      `;
-      for (const c of custom) {
-        await sql`delete from product_files where id = ${c.id}`;
-        await storage().remove("private", c.storage_key).catch(() => {});
-      }
-    }
-    const r = await regenerateAutoPreview(productId);
+    const r = await regenerateAutoPreview(productId, { replaceCustom: str(fd, "dropCustom") === "1" });
     await audit({ actorId: actor.userId, action: "product.preview_regenerate", entityType: "product", entityId: productId, metadata: { result: r } });
     revalidatePath(`/admin/products/${productId}`);
     return {
       ok: true,
-      message: r === "generated" ? "تم توليد المعاينة المجانية" : r === "custom" ? "توجد معاينة مخصصة مرفوعة يدويًا" : "لا توجد معاينة (عدد الصفحات صفر أو لا يوجد ملف)",
+      message:
+        r === "generated"
+          ? "تم توليد المعاينة المجانية"
+          : r === "custom"
+            ? "توجد معاينة مخصصة مرفوعة يدويًا"
+            : r === "too_short"
+              ? `الملف أقل من ${ar(PREVIEW_POLICY.pagesPerFreePage)} صفحات فلا تتاح له معاينة`
+              : r === "unreadable"
+                ? "تعذر قراءة الملف الرئيسي، راجع سلامة المحتوى"
+                : "لا توجد معاينة (عدد الصفحات صفر أو لا يوجد ملف)",
     };
   });
 }

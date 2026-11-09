@@ -1,5 +1,6 @@
 import "server-only";
 import { sql, type Db } from "../db";
+import { servablePreviewSql } from "./preview-rule";
 import { audit } from "../platform/audit";
 
 /**
@@ -326,9 +327,11 @@ export async function checkFileAccess(fileId: string, user: { id: string; role: 
       p_title: string;
       is_downloadable: boolean;
       status: string;
+      preview_ok: boolean;
     }[]
   >`
-    select f.id, f.product_id, f.storage_key, f.title, f.kind, f.size_bytes, p.title as p_title, p.is_downloadable, p.status
+    select f.id, f.product_id, f.storage_key, f.title, f.kind, f.size_bytes, p.title as p_title, p.is_downloadable, p.status,
+      ${servablePreviewSql("f")} as preview_ok
     from product_files f join products p on p.id = f.product_id
     where f.id = ${fileId}
   `;
@@ -339,7 +342,8 @@ export async function checkFileAccess(fileId: string, user: { id: string; role: 
     product: { id: row.product_id, title: row.p_title, isDownloadable: row.is_downloadable, status: row.status },
   };
   if (row.kind === "preview") {
-    if (row.status === "published" || user?.role === "admin") return result;
+    // الجمهور يرى معاينة مطابقة للقاعدة فقط. المالك والمعلم صاحب المنتج يفتحانها للمراجعة
+    if ((row.status === "published" && row.preview_ok) || user?.role === "admin") return result;
     if (user?.role === "teacher" && (await isTeacherOfProduct(user.id, row.product_id))) return result;
     return { ok: false, reason: "not_found" };
   }

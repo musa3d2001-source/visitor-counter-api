@@ -4,6 +4,7 @@ import { sql } from "../db";
 import { env } from "../env";
 import { getPublishedProductsByIds, type ProductCard } from "../catalog/queries";
 import { accessibleProductIds } from "../access/entitlements";
+import { FLAGGED_STATUSES } from "../access/file-check";
 import { isContainerType } from "@/lib/labels";
 
 /**
@@ -68,11 +69,37 @@ export async function containerCoverage(containerIds: string[]): Promise<Map<str
 }
 
 /**
+ * منتجات منشورة لا يصح بيعها الآن، بما فيها ما نُشر قبل هذه الضوابط:
+ * ملف معيب فيها أو في محتوياتها، أو سعر صفر لم يُعلَّم مجانيًا، أو معلم بلا نسبة متفق عليها.
+ */
+export async function unsellableProductIds(ids: string[]): Promise<Set<string>> {
+  if (ids.length === 0) return new Set();
+  const rows = await sql<{ root: string }[]>`
+    with recursive c(root, id) as (
+      select r, r from unnest(${ids}::uuid[]) as r
+      union
+      select c.root, bi.product_id from c join bundle_items bi on bi.bundle_id = c.id
+    )
+    select distinct c.root
+    from c
+    join products item on item.id = c.id
+    join products root on root.id = c.root
+    left join teachers t on t.id = item.teacher_id
+    where (root.price_fils = 0 and not root.is_free)
+      or (t.id is not null and t.revenue_share_bps is null and not item.is_free and not root.is_free)
+      or exists (select 1 from product_files f where f.product_id = c.id and f.kind = 'main' and f.check_status = any(${FLAGGED_STATUSES}::text[]))
+  `;
+  return new Set(rows.map((r) => r.root));
+}
+
+/**
  * حساب السلة: يستبعد المنتجات غير المنشورة، والمنتجات التي يملكها الطالب،
  * والمنتجات التي انتهى تاريخ إتاحتها، والمنتجات المضمنة في باقة موجودة في نفس السلة (منع الدفع المكرر).
  */
 export async function computeCart(ids: string[], userId: string | null): Promise<CartView> {
-  const products = await getPublishedProductsByIds(ids);
+  const blocked = await unsellableProductIds(ids);
+  // الممنوع من البيع يأخذ مسار انتهاء البيع نفسه في السلة والدفع
+  const products = (await getPublishedProductsByIds(ids)).map((p) => (blocked.has(p.id) ? { ...p, saleEnded: true } : p));
   const owned = userId ? await accessibleProductIds(userId) : new Set<string>();
   // باقة انتهى بيعها لا تُحتسب، فلا تغطي ما بداخلها
   const coverage = await containerCoverage(products.filter((p) => isContainerType(p.type) && !p.saleEnded).map((p) => p.id));
@@ -84,7 +111,8 @@ export async function computeCart(ids: string[], userId: string | null): Promise
   }));
   if (products.length < ids.length) notices.push("تمت إزالة منتج لم يعد متاحًا من سلتك.");
   for (const l of lines) {
-    if (l.saleEnded && !l.owned) notices.push(`انتهى بيع «${l.title}» ولن يُحتسب.`);
+    if (blocked.has(l.id) && !l.owned) notices.push(`«${l.title}» غير متاح للبيع حاليًا ولن يُحتسب.`);
+    else if (l.saleEnded && !l.owned) notices.push(`انتهى بيع «${l.title}» ولن يُحتسب.`);
     else if (l.owned) notices.push(`«${l.title}» موجود في مكتبتك مسبقًا ولن يُحتسب.`);
     else if (l.coveredByBundleId) notices.push(`«${l.title}» مضمّن في الباقة الموجودة في سلتك ولن يُحتسب مرتين.`);
   }
