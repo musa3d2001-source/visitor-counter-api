@@ -16,6 +16,7 @@
     "db:seed": "tsx scripts/seed.ts",
     "db:seed:demo": "tsx scripts/seed.ts --demo",
     "admin:create": "tsx scripts/create-admin.ts",
+    "admin:reset-2fa": "tsx scripts/reset-admin-2fa.ts",
     "payments:purge-test-orders": "tsx scripts/purge-test-orders.ts",
     "test": "vitest run",
     "test:unit": "vitest run tests/unit",
