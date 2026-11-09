@@ -2,6 +2,7 @@ import "server-only";
 import { sql } from "../db";
 import { closeOrder } from "../commerce/orders";
 import { INVOICE_TTL_MINUTES, ORDER_LIFETIME_HOURS } from "./limits";
+import { reportError } from "../platform/report-error";
 import { paymentsConfig, recheckExtraPayment, recheckOrderRefund, verifyAndApplyPayment } from "./service";
 
 /**
@@ -21,7 +22,9 @@ const TIME_BUDGET_MS = 45_000;
 const CALL_TIMEOUT_MS = 8_000;
 const STOP_AFTER_FAILURES = 3;
 const CLOSE_BATCH_SIZE = 50;
+const CLOSE_TIME_BUDGET_MS = 45_000;
 const ABANDONED_CLAIM_MINUTES = 60;
+const ABANDONED_CLAIM_BATCH = 200;
 /** فاتورة طلب أُغلق تُتابَع حتى هذه المدة بعد انتهاء رابطها، لالتقاط دفعة تأخر تأكيدها */
 const LINK_STILL_PAYABLE_HOURS = 3;
 /** استرداد قبلته البوابة ولم يُحسم بعد هذه المدة نسأل عنه، ثم مرة كل هذه المدة: نتيجته لا يصح أن تعتمد على Webhook واحد */
@@ -105,7 +108,7 @@ export async function runPaymentReconciliation(): Promise<ReconcileReport> {
       } catch (err) {
         report.errors++;
         consecutiveFailures++;
-        console.error("[reconcile] invoice check failed", row.id, err instanceof Error ? err.message : String(err));
+        await reportError("reconcile:invoice", err);
       }
     }
 
@@ -125,7 +128,7 @@ export async function runPaymentReconciliation(): Promise<ReconcileReport> {
         } catch (err) {
           report.refundErrors++;
           consecutiveFailures++;
-          console.error("[reconcile] refund check failed", id, err instanceof Error ? err.message : String(err));
+          await reportError("reconcile:refund", err);
         }
       }
     };
@@ -171,33 +174,68 @@ export async function runPaymentReconciliation(): Promise<ReconcileReport> {
     }
   }
 
-  // الإغلاق لا يعتمد على هذه الجولة: يكفي أن كل فاتورة ردت عنها البوابة بعد انقضاء عمر الطلب، فلا يمكن أن يخفي دفعة.
-  // عند إيقاف الدفع لا نستطيع السؤال، فلا يُغلق إلا طلب لم يصل البوابة أصلًا. وفواتير sandbox لا تعيق الإغلاق في وضع live لأنها لن تُفحص أبدًا.
+  const closing = await closeExpiredOrders();
+  report.closed = closing.closed;
+  report.abandonedClaims = closing.abandonedClaims;
+  return report;
+}
+
+export type CloseReport = { closed: number; abandonedClaims: number; finished: boolean };
+
+/**
+ * إغلاق الطلبات التي انقضى عمرها، ومحاولات إنشاء رابط الدفع التي لم تكتمل. محدود بعدد الجولات وبالوقت، وما تبقى يُغلق في الجولة التالية.
+ * لا يعتمد على جولة التسوية: يكفي أن كل فاتورة ردت عنها البوابة بعد انقضاء عمر الطلب، فلا يمكن أن يخفي دفعة.
+ * عند إيقاف الدفع لا نستطيع السؤال، فلا يُغلق إلا طلب لم يصل البوابة أصلًا. وفواتير sandbox لا تعيق الإغلاق في وضع live لأنها لن تُفحص أبدًا.
+ */
+export async function closeExpiredOrders(opts: { rounds?: number } = {}): Promise<CloseReport> {
+  const cfg = paymentsConfig();
   const environment = cfg.enabled ? cfg.environment : "none";
-  const closable = await sql<{ id: string }[]>`
-    select o.id from orders o
-    where o.status in ('pending', 'failed')
-      and o.created_at <= now() - make_interval(hours => ${ORDER_LIFETIME_HOURS})
-      and not exists (
-        select 1 from payments p
-        where p.order_id = o.id and p.provider = 'myfatoorah' and p.gateway_invoice_id is not null
-          and not (${environment} = 'live' and p.environment = 'sandbox')
-          and (${environment} = 'none' or p.last_checked_at is null or p.last_checked_at < o.created_at + make_interval(hours => ${ORDER_LIFETIME_HOURS}))
-      )
-    order by o.created_at asc
-    limit ${CLOSE_BATCH_SIZE}
-  `;
-  for (const { id } of closable) {
-    const done = await sql.begin((db) => closeOrder(db, { orderId: id, reason: "expired", actorId: null }));
-    if (done) report.closed++;
+  const rounds = opts.rounds ?? 1;
+  const started = Date.now();
+  let closed = 0;
+  let finished = true;
+
+  for (let round = 0; round < rounds; round++) {
+    if (Date.now() - started > CLOSE_TIME_BUDGET_MS) {
+      finished = false;
+      break;
+    }
+    const closable = await sql<{ id: string }[]>`
+      select o.id from orders o
+      where o.status in ('pending', 'failed')
+        and o.created_at <= now() - make_interval(hours => ${ORDER_LIFETIME_HOURS})
+        and not exists (
+          select 1 from payments p
+          where p.order_id = o.id and p.provider = 'myfatoorah' and p.gateway_invoice_id is not null
+            and not (${environment} = 'live' and p.environment = 'sandbox')
+            and (${environment} = 'none' or p.last_checked_at is null or p.last_checked_at < o.created_at + make_interval(hours => ${ORDER_LIFETIME_HOURS}))
+        )
+      order by o.created_at asc
+      limit ${CLOSE_BATCH_SIZE}
+    `;
+    let closedThisRound = 0;
+    for (const { id } of closable) {
+      const done = await sql.begin((db) => closeOrder(db, { orderId: id, reason: "expired", actorId: null }));
+      if (done) closedThisRound++;
+    }
+    closed += closedThisRound;
+    if (closable.length < CLOSE_BATCH_SIZE) break;
+    // دفعة كاملة ولم يُغلق منها شيء: نسخة متزامنة تعمل عليها، فلا نكرر السؤال نفسه
+    if (closedThisRound === 0 || round === rounds - 1) finished = false;
+    if (closedThisRound === 0) break;
   }
 
   const abandoned = await sql`
     update payments set status = 'failed', error_message = 'لم تكتمل محاولة إنشاء رابط الدفع'
-    where provider = 'myfatoorah' and status = 'initiated' and gateway_invoice_id is null
-      and created_at < now() - make_interval(mins => ${ABANDONED_CLAIM_MINUTES})
+    where id in (
+      select id from payments
+      where provider = 'myfatoorah' and status = 'initiated' and gateway_invoice_id is null
+        and created_at < now() - make_interval(mins => ${ABANDONED_CLAIM_MINUTES})
+      order by created_at asc
+      limit ${ABANDONED_CLAIM_BATCH}
+      for update skip locked
+    )
     returning id
   `;
-  report.abandonedClaims = abandoned.length;
-  return report;
+  return { closed, abandonedClaims: abandoned.length, finished };
 }

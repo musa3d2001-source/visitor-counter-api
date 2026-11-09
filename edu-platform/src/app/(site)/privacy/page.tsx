@@ -4,6 +4,7 @@ import { Baby, Clock3, Database, Hand, Network, Workflow } from "lucide-react";
 import { VERIFICATION_LINK_HOURS } from "@/server/auth/email-verification";
 import { SESSION_DAYS } from "@/server/auth/session";
 import { ORDER_LIFETIME_HOURS } from "@/server/payments/limits";
+import { ACCESS_LOG_RETENTION_DAYS } from "@/server/platform/maintenance";
 import { CONSENT_VERSIONS } from "@/lib/consent";
 import { count, W } from "@/lib/design";
 import { sellerIdentity } from "@/lib/site-truth";
@@ -19,7 +20,7 @@ export default async function PrivacyPage() {
     <LegalDoc
       page="privacy"
       version={CONSENT_VERSIONS.privacy}
-      updated="2026-11-09"
+      updated="2026-11-10"
       seller={sellerIdentity(s)}
       sub="بياناتك أمانة عندنا: هذه الصفحة توضح ما نجمعه، ولماذا نحتاجه، ومن يعالجه معنا، وكم يبقى، وما حقوقك عليه."
       intro={<p>نحترم خصوصيتك في {s.site_name}، ونجمع أقل قدر ممكن من البيانات اللازمة لتقديم الخدمة.</p>}
@@ -77,7 +78,8 @@ export default async function PrivacyPage() {
               <li>رابط استعادة كلمة المرور صالح ساعة واحدة، ورابط تأكيد البريد {count(VERIFICATION_LINK_HOURS, W.hour)}.</li>
               <li>الطلب غير المدفوع يُغلق بعد {count(ORDER_LIFETIME_HOURS, W.hour)}، ويبقى في السجل.</li>
               <li>الطلبات والمدفوعات وسجل الموافقات ليس لها حذف تلقائي، لأنها إثبات للعمليات المالية والموافقات. لم تُحدد بعد مدة الاحتفاظ النهائية بها.</li>
-              <li>سجلات الوصول إلى الملفات وسجل الرسائل المرسلة وتقدّمك في الدروس ليس لها حذف تلقائي بعد مدة محددة حتى الآن، وتُحذف عند حذف بياناتك.</li>
+              <li>سجلات الوصول إلى الملفات تبقى {count(ACCESS_LOG_RETENTION_DAYS, W.day)} على الأقل، ويحذف النظام الأقدم منها عند تشغيل مهمة التنظيف الدورية، وتُحذف كلها عند حذف بياناتك.</li>
+              <li>سجل الرسائل المرسلة وتقدّمك في الدروس ليس لها حذف تلقائي بعد مدة محددة حتى الآن، وتُحذف عند حذف بياناتك.</li>
             </ul>
           ),
         },

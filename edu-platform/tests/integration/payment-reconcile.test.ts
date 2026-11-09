@@ -112,21 +112,25 @@ describe("the runbook", () => {
     expect(subscribeStep).toContain(`**${event}**`);
   });
 
-  it("gives the plan decision and the schedule that works on Hobby", () => {
-    expect(readme).toContain("قرار قبل الدمج");
+  it("gives the schedule that works on Hobby and the one edit needed before live payments", () => {
     expect(readme).toContain("`0 0 * * *`");
+    expect(readme).toContain("`*/15 * * * *`");
+    expect(readme).toContain("قبل الدفع الحقيقي");
   });
 });
 
 describe("vercel.json", () => {
   const config = JSON.parse(readFileSync(resolve(__dirname, "../../vercel.json"), "utf8")) as { crons: { path: string; schedule: string }[] };
 
-  it("declares the job on a schedule Vercel Pro accepts", () => {
-    expect(config.crons).toEqual([{ path: "/api/cron/reconcile-payments", schedule: "*/15 * * * *" }]);
+  // كان */15 ويحتاج Pro. تغيّر عمدًا إلى يومي حتى ينجح النشر على Hobby، والتعديل إلى */15 سطر واحد موثق في README
+  const reconcile = config.crons.find((cron) => cron.path === "/api/cron/reconcile-payments");
+
+  it("declares the job daily for Hobby, or the one documented schedule after Pro", () => {
+    expect(["0 0 * * *", "*/15 * * * *"]).toContain(reconcile?.schedule);
   });
 
   it("points at a route that exists", () => {
-    expect(existsSync(resolve(__dirname, `../../src/app${config.crons[0].path}/route.ts`))).toBe(true);
+    expect(existsSync(resolve(__dirname, `../../src/app${reconcile!.path}/route.ts`))).toBe(true);
   });
 });
 

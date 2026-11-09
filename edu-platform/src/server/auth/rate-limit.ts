@@ -79,6 +79,12 @@ export async function reserveFailureSlot(key: string, policy: FailurePolicy): Pr
   return { allowed: false, retryAfterSeconds: wait?.seconds ?? first };
 }
 
-export async function pruneRateLimits() {
-  await sql`delete from rate_limits where reset_at < now() - interval '1 day'`;
+/** يحذف دفعة محدودة من الحدود المنتهية منذ يوم على الأقل، ويعيد عدد ما حذف */
+export async function pruneRateLimits(batchSize: number): Promise<number> {
+  const { count } = await sql`
+    delete from rate_limits where key in (
+      select key from rate_limits where reset_at < now() - interval '1 day' limit ${batchSize} for update skip locked
+    )
+  `;
+  return count;
 }
