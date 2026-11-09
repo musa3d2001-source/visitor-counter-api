@@ -69,7 +69,7 @@ export async function syncPendingLessons(productId?: string, limit = 50) {
 export async function handleBunnyWebhook(rawBody: string, headers: Headers): Promise<{ status: number; result: string }> {
   const secret = env().BUNNY_STREAM_READONLY_API_KEY;
   if (secret) {
-    const ok = verifyBunnyWebhookSignature(rawBody, headers.get("x-bunnystream-signature"), headers.get("x-bunnystream-signature-version"), secret);
+    const ok = verifyBunnyWebhookSignature(rawBody, headers.get("x-bunnystream-signature"), headers.get("x-bunnystream-signature-version"), secret, headers.get("x-bunnystream-signature-algorithm"));
     if (!ok) return { status: 401, result: "invalid signature" };
   } else if (env().NODE_ENV === "production") {
     // في الإنتاج التوقيع إلزامي

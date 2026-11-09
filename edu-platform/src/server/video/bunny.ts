@@ -153,10 +153,11 @@ export function mapBunnyStatus(v: Pick<BunnyVideo, "status">): "uploading" | "pr
   }
 }
 
-/** التحقق من توقيع Webhook (v1): HMAC-SHA256 للجسم الخام بمفتاح القراءة فقط، بترميز hex صغير */
-export function verifyBunnyWebhookSignature(rawBody: string, signature: string | null, version: string | null, secret: string): boolean {
+/** التحقق من توقيع Webhook (v1): HMAC-SHA256 للجسم الخام بمفتاح القراءة فقط، بترميز hex صغير. الوثائق تطلب التأكد من الإصدار والخوارزمية */
+export function verifyBunnyWebhookSignature(rawBody: string, signature: string | null, version: string | null, secret: string, algorithm: string | null = null): boolean {
   if (!signature || !secret) return false;
   if (version && version.toLowerCase() !== "v1") return false;
+  if (algorithm && algorithm.toLowerCase() !== "hmac-sha256") return false;
   const expected = createHmac("sha256", secret).update(rawBody, "utf8").digest("hex");
   const a = Buffer.from(expected);
   const b = Buffer.from(signature.trim().toLowerCase());

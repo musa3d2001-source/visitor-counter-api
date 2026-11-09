@@ -14,8 +14,10 @@
  *           و AuthorizationExpire (ثوانٍ، يُتحقق منه في كل طلب POST/HEAD/PATCH) و VideoId و LibraryId
  *   - تضمين: /embed/{libraryId}/{videoId}?token=SHA256_HEX(tokenKey + videoId + expires)&expires=…
  *           (403 إن كان الرمز خاطئًا أو منتهيًا) — والمشغل يستجيب لبروتوكول player.js
- *   - Webhook: POST {VideoLibraryId, VideoGuid, Status} — Status 3 = Finished (حسب جدول حالات الـ webhook)
- *           X-BunnyStream-Signature = HEX(HMAC-SHA256(rawBody, readOnlyKey)) + X-BunnyStream-Signature-Version: v1
+ *   - Webhook (bunny.net/docs/stream-webhook): POST {IsLiveStreamWebhook:false, VideoLibraryId, VideoGuid, Status, EventId, Timestamp}
+ *           Status 3 = Finished، و EventId ثابت عند إعادة الإرسال
+ *           X-BunnyStream-Signature = HEX(HMAC-SHA256(rawBody, readOnlyKey))
+ *           + X-BunnyStream-Signature-Version: v1 + X-BunnyStream-Signature-Algorithm: hmac-sha256
  *
  * التطبيق يُوجَّه إليه فقط في الاختبارات عبر BUNNY_STREAM_API_BASE / BUNNY_STREAM_TUS_ENDPOINT /
  * BUNNY_STREAM_EMBED_BASE. قبل الإطلاق يجب اختبار التكامل مقابل مكتبة Bunny Stream حقيقية.
@@ -178,8 +180,14 @@ export async function startBunnySimulator(opts: BunnySimOptions = {}): Promise<B
     return rest;
   };
 
+  /** الحدث الواحد يحتفظ بمعرفه ووقته عند إعادة الإرسال، كما في الوثائق */
+  const webhookEvents = new Map<string, { eventId: string; timestamp: string }>();
+
   const buildWebhook = (guid: string, status: number, secret = readOnlyKey) => {
-    const body = JSON.stringify({ VideoLibraryId: Number(libraryId), VideoGuid: guid, Status: status });
+    const key = `${guid}:${status}`;
+    const event = webhookEvents.get(key) ?? { eventId: randomUUID(), timestamp: new Date().toISOString() };
+    webhookEvents.set(key, event);
+    const body = JSON.stringify({ IsLiveStreamWebhook: false, VideoLibraryId: Number(libraryId), VideoGuid: guid, Status: status, EventId: event.eventId, Timestamp: event.timestamp });
     const signature = createHmac("sha256", secret).update(body, "utf8").digest("hex");
     return { body, signature };
   };
@@ -193,7 +201,7 @@ export async function startBunnySimulator(opts: BunnySimOptions = {}): Promise<B
       try {
         const res = await fetch(opts.webhookUrl, {
           method: "POST",
-          headers: { "content-type": "application/json", "X-BunnyStream-Signature": signature, "X-BunnyStream-Signature-Version": "v1" },
+          headers: { "content-type": "application/json", "X-BunnyStream-Signature": signature, "X-BunnyStream-Signature-Version": "v1", "X-BunnyStream-Signature-Algorithm": "hmac-sha256" },
           body,
         });
         last = res.status;
