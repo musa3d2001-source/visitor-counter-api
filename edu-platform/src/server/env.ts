@@ -61,6 +61,8 @@ const schema = z.object({
   VERCEL_ENV: z.string().optional(),
   /** سر وظائف Cron: يرسله Vercel في Authorization: Bearer. غيابه يعني رفض كل استدعاء */
   CRON_SECRET: z.string().optional(),
+  /** بريد المالك لرسائل التنبيه. غيابه أو خطؤه لا يوقف الخادم: يظهر تحذير في «صحة المنصة» ولا تُرسل رسائل */
+  OPS_ALERT_EMAIL: z.string().optional(),
 
   MAIL_DRIVER: z.enum(["log", "smtp"]).default("log"),
   SMTP_HOST: z.string().optional(),
@@ -139,6 +141,13 @@ export function env(): Env {
   }
   cached = e;
   return e;
+}
+
+/** عنوان تنبيهات المالك إن كان صالحًا، وإلا null. لا يرمي أبدًا: متغير تشغيلي ناقص لا يوقف موقعًا سليمًا */
+export function opsAlertEmail(): string | null {
+  const value = env().OPS_ALERT_EMAIL?.trim();
+  if (!value || !z.email().safeParse(value).success) return null;
+  return PLACEHOLDER_MAIL_DOMAINS.has(value.split("@")[1].toLowerCase()) ? null : value;
 }
 
 /** هل التحقق بخطوتين إلزامي على حسابات الإدارة في هذا النشر؟ */
