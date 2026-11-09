@@ -19,6 +19,31 @@ export const UPLOAD_RULES = {
 } as const;
 export type UploadKind = keyof typeof UPLOAD_RULES;
 
+/** حد الملف الواحد في خطة Supabase المجانية حسب وثائق Supabase */
+export const SUPABASE_FREE_MAX_BYTES = 50 * 1024 * 1024;
+
+/** سقف التخزين الفعلي للملف الواحد، null: لا سقف غير قواعد الرفع */
+export function storageFileCap(): { capBytes: number | null; source: "override" | "free_plan" | "none" } {
+  const e = env();
+  if (e.STORAGE_MAX_FILE_MB) return { capBytes: e.STORAGE_MAX_FILE_MB * 1024 * 1024, source: "override" };
+  if (e.STORAGE_DRIVER === "supabase" && e.STORAGE_PLAN === "free") return { capBytes: SUPABASE_FREE_MAX_BYTES, source: "free_plan" };
+  return { capBytes: null, source: "none" };
+}
+
+/** أكبر حجم مقبول فعلًا لنوع الملف: قاعدة الرفع أو سقف التخزين، أيهما أصغر */
+export function uploadLimitBytes(kind: UploadKind): number {
+  const { capBytes } = storageFileCap();
+  return capBytes === null ? UPLOAD_RULES[kind].maxBytes : Math.min(UPLOAD_RULES[kind].maxBytes, capBytes);
+}
+
+export const toMb = (bytes: number) => Math.round(bytes / 1024 / 1024);
+
+/** نص الحد كما يظهر في حقول الرفع */
+export function uploadLimitLabel(kind: UploadKind): string {
+  const mb = toMb(uploadLimitBytes(kind));
+  return mb >= 1024 && mb % 1024 === 0 ? `${mb / 1024} جيجابايت` : `${mb} ميجابايت`;
+}
+
 const IMAGE_EXT: Record<string, string> = { "image/jpeg": "jpg", "image/png": "png", "image/webp": "webp" };
 
 /** توليد مفتاح تخزين غير قابل للتخمين */

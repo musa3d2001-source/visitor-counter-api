@@ -247,6 +247,7 @@ ADMIN_PASSWORD='كلمة-مرور-قوية-جدا' npm run admin:create -- --ema
 4. **التخزين:** افتح *SQL Editor* وشغّل `supabase/storage-buckets.sql` لإنشاء:
    - `private-content` (خاصة) لملفات PDF والفيديو.
    - `public-media` (عامة) للأغلفة والشعار.
+   > يرفض التطبيق الملف الأكبر من حد خطتك قبل بدء رفعه: `STORAGE_PLAN=free` (الافتراضي) يعني 50MB، و`STORAGE_PLAN=paid` يعيد حدود المنصة، و`STORAGE_MAX_FILE_MB` يتقدم عليهما. الحد الفعلي ظاهر للمالك في *الإعدادات ← التخزين*.
    > في الخطة المجانية الحد الأقصى لحجم الملف 50MB — ارفعه من *Storage ← Settings* في الخطط المدفوعة إن احتجت ملفات أكبر.
 5. من *Project Settings ← API* انسخ `Project URL` و`service_role key` إلى `SUPABASE_URL` و`SUPABASE_SERVICE_ROLE_KEY`، واضبط `STORAGE_DRIVER=supabase`.
 6. لا تستخدم مفتاح `anon` في أي مكان — غير مطلوب.
@@ -361,7 +362,7 @@ MYFATOORAH_LIVE_CONFIRMED=true
 
 **حدود Vercel المأخوذة بالحسبان:**
 - رفع الملفات لا يمر عبر دوال Vercel (حد 4.5MB): المتصفح يرفع مباشرة إلى Supabase برابط رفع موقّع يصدره الخادم بعد التحقق من المدير، ثم يتحقق الخادم من نوع الملف الفعلي (Magic Bytes) وحجمه.
-- تسليم ملفات PDF يتم كاستجابة متدفقة (Streaming) لتجاوز حد حجم الاستجابة، مع ختم العلامة المائية.
+- تسليم ملفات PDF يتم كاستجابة متدفقة (Streaming) لتجاوز حد حجم الاستجابة، مع ختم العلامة المائية. القياسات والمهل في `docs/PDF_STAMPING.md`.
 - الفيديو مع Supabase يُسلَّم برابط موقّع قصير الصلاحية (30 دقيقة) بعد التحقق من الصلاحية.
 
 **بديل Vercel:** يعمل التطبيق على أي خادم Node (`npm run build && npm start`) مع `STORAGE_DRIVER=local` ومجلد تخزين دائم خارج مجلد المشروع.

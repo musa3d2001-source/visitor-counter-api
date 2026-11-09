@@ -36,6 +36,10 @@ const schema = z.object({
   SUPABASE_SERVICE_ROLE_KEY: z.string().optional(),
   SUPABASE_PRIVATE_BUCKET: z.string().default("private-content"),
   SUPABASE_PUBLIC_BUCKET: z.string().default("public-media"),
+  /** خطة Supabase: free حدها 50 ميجابايت للملف الواحد. الافتراضي الأضيق حتى لا يُرفض الملف بعد اكتمال رفعه */
+  STORAGE_PLAN: z.enum(["free", "paid"]).default("free"),
+  /** حد صريح للملف الواحد بالميجابايت، يطابق «Global file size limit» في إعدادات Storage. يتقدم على الخطة */
+  STORAGE_MAX_FILE_MB: z.preprocess((v) => (v === "" ? undefined : v), z.coerce.number().int().min(1).max(8192).optional()),
 
   /** disabled: لا دفع إلكتروني | sandbox: بيئة اختبار MyFatoorah | live: إنتاج */
   PAYMENTS_MODE: z.enum(["disabled", "sandbox", "live"]).default("disabled"),

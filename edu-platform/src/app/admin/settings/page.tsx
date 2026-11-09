@@ -1,4 +1,5 @@
 import { requireOwnerPage } from "@/server/auth/permissions";
+import { storageFileCap, uploadLimitLabel } from "@/server/storage";
 import Image from "next/image";
 import { CircleCheck, CreditCard, Database, Image as ImageIcon, TriangleAlert, Video } from "lucide-react";
 import { getSettings } from "@/server/platform/settings";
@@ -49,6 +50,7 @@ export default async function SettingsPage() {
   await requireOwnerPage();
   const s = await getSettings();
   const e = env();
+  const storageCap = storageFileCap();
   const cfg = paymentsConfig();
   const delivery = await webhookDeliveryStatus();
   const logoUrl = s.logo_key ? storage().publicUrl(s.logo_key) : null;
@@ -145,8 +147,19 @@ export default async function SettingsPage() {
           </Section>
 
           <Section title="التخزين" icon={<Database />} tone="violet">
+            <p className="mb-2 text-[0.85rem] leading-7 text-ink-soft" data-testid="storage-plan-note">
+              {storageCap.source === "free_plan"
+                ? "خطة Supabase المجانية لا تقبل ملفًا فوق 50 ميجابايت، فيُرفض الملف الأكبر قبل بدء رفعه. بعد الترقية ارفع «Global file size limit» من إعدادات Storage، ثم اضبط STORAGE_PLAN=paid في بيئة النشر."
+                : storageCap.source === "override"
+                  ? "الحد مضبوط يدويًا عبر STORAGE_MAX_FILE_MB، ويجب أن يطابق «Global file size limit» في إعدادات Storage."
+                  : e.STORAGE_DRIVER === "supabase"
+                    ? "الخطة مدفوعة حسب STORAGE_PLAN. تأكد أن «Global file size limit» في إعدادات Storage لا يقل عن هذه الحدود، وإلا رفض التخزين الملف بعد رفعه."
+                    : "التخزين محلي، والحدود هي قواعد الرفع في المنصة."}
+            </p>
             <ul className="divide-y divide-line">
               <Row label="مزود التخزين" ok text={e.STORAGE_DRIVER === "supabase" ? "Supabase Storage" : "تخزين محلي"} />
+              <Row label="حد ملف PDF" ok={storageCap.source !== "free_plan"} text={uploadLimitLabel("pdf")} />
+              <Row label="حد ملف الفيديو المخزن" ok={storageCap.source !== "free_plan"} text={uploadLimitLabel("video")} />
               <Row label="البريد" ok={e.MAIL_DRIVER === "smtp"} text={e.MAIL_DRIVER === "smtp" ? "SMTP" : "سجل داخلي، لا يصل لأحد"} />
             </ul>
           </Section>
