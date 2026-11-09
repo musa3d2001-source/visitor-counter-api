@@ -1,10 +1,11 @@
 import { requireOwnerPage } from "@/server/auth/permissions";
 import Link from "next/link";
-import { CalendarDays, Phone, Receipt, UserX, Users } from "lucide-react";
+import { CalendarDays, MapPin, Phone, Receipt, UserX, Users } from "lucide-react";
 import { listStudents } from "@/server/admin/records";
 import { AdminPageHeader } from "@/components/admin/page-header";
 import { FilterBar, FilterSearch, FilterSubmit, ResultCount, Toolbar } from "@/components/admin/filter-bar";
 import { StatusPill } from "@/components/admin/status-badge";
+import { Button } from "@/components/ui/button";
 import { STRETCHED_FOCUS, toneStyle } from "@/components/admin/tones";
 import { EmptyState } from "@/components/ui/empty-state";
 import { displayPhone } from "@/lib/phone";
@@ -50,7 +51,18 @@ export default async function StudentsPage({ searchParams }: { searchParams: Pro
           ) : null
         }
       >
-        <AdminPageHeader className="mb-0" title="الطلاب" description="حسابات الطلاب ومشترياتهم وصلاحياتهم" />
+        <AdminPageHeader
+          className="mb-0"
+          title="الطلاب"
+          description="حسابات الطلاب ومشترياتهم وصلاحياتهم"
+          actions={
+            <Button asChild variant="outline" size="md">
+              <Link href="/admin/students/shared-access">
+                <MapPin aria-hidden /> مؤشر تعدد العناوين
+              </Link>
+            </Button>
+          }
+        />
       </PeopleBand>
 
       <div>
