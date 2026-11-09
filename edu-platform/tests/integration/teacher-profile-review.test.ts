@@ -234,6 +234,38 @@ describe("مرة واحدة وتعديل معلق واحد", () => {
     expect(await exists(second)).toBe(true);
   });
 
+  it("an approval opened on an earlier edit is refused, so the owner never publishes text they did not see", async () => {
+    const t = await newTeacher();
+    await proposeTeacherText(actorOf(t), { headline: "ما رآه المالك", bio: "نبذة معتمدة" });
+    const seen = await pendingId(t.id);
+    await proposeTeacherText(actorOf(t), { headline: "نص بُدّل بعد فتح الصفحة", bio: "نبذة معتمدة" });
+
+    await expect(approveProfileChange(seen, owner.id)).rejects.toThrow(/حدّث الصفحة/);
+    await expect(rejectProfileChange(seen, "لا", owner.id)).rejects.toThrow(/حدّث الصفحة/);
+    expect((await liveOf(t.id)).headline).toBe("عنوان معتمد");
+    expect(await audits(t.id, "teacher.profile_approve")).toHaveLength(0);
+    expect(await audits(t.id, "teacher.profile_reject")).toHaveLength(0);
+    expect((await teacherProfileState(t.id)).pending).toMatchObject({ headline: "نص بُدّل بعد فتح الصفحة", status: "pending" });
+
+    // بعد تحديث الصفحة يراجع المالك النص الجديد بمعرّفه
+    await approveProfileChange(await pendingId(t.id), owner.id);
+    expect((await liveOf(t.id)).headline).toBe("نص بُدّل بعد فتح الصفحة");
+  });
+
+  it("a photo swapped after the owner opened the page cannot be approved unseen", async () => {
+    const t = await newTeacher();
+    const first = await putPhoto(t);
+    const second = await putPhoto(t);
+    await proposeTeacherPhoto(actorOf(t), first);
+    const seen = await pendingId(t.id);
+    await proposeTeacherPhoto(actorOf(t), second);
+
+    await expect(approveProfileChange(seen, owner.id)).rejects.toThrow(/حدّث الصفحة/);
+    expect((await liveOf(t.id)).photo_key).toBeNull();
+    expect((await teacherProfileState(t.id)).pending).toMatchObject({ photo_action: "replace", photo_key: second });
+    expect(await exists(second)).toBe(true);
+  });
+
   it("the database refuses a second pending row", async () => {
     const t = await newTeacher();
     await sql`insert into teacher_profile_changes (teacher_id, headline) values (${t.id}, 'أ')`;

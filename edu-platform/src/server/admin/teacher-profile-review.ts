@@ -36,25 +36,17 @@ async function lockTeacher(tx: Db, teacherId: string): Promise<Live> {
 
 const pendingOf = async (tx: Db, teacherId: string) => (await tx<ProfileChange[]>`select * from teacher_profile_changes where teacher_id = ${teacherId} and status = 'pending'`)[0] ?? null;
 
-/** يكتب التعديل المعلق أو يحذفه إن لم يبق فيه فرق عن المعتمد. true تعني أن هناك ما ينتظر الموافقة */
+/**
+ * يستبدل التعديل المعلق، ولا يكتب شيئًا إن لم يبق فرق عن المعتمد. true تعني أن هناك ما ينتظر الموافقة.
+ * كل إرسال صف جديد بمعرّف جديد: موافقة فُتحت على نص سابق تُرفض، فلا ينشر المالك ما لم يره.
+ */
 async function storeProposal(tx: Db, actor: TeacherActor, pending: ProfileChange | null, next: Next, what: string): Promise<boolean> {
-  const empty = next.headline === null && next.bio === null && next.photo_action === "none";
-  if (empty) {
-    if (pending) await tx`delete from teacher_profile_changes where id = ${pending.id}`;
-    return false;
-  }
-  if (pending) {
-    await tx`
-      update teacher_profile_changes
-      set headline = ${next.headline}, bio = ${next.bio}, photo_action = ${next.photo_action}, photo_key = ${next.photo_key}, submitted_by = ${actor.userId}, submitted_at = now()
-      where id = ${pending.id}
-    `;
-  } else {
-    await tx`
-      insert into teacher_profile_changes (teacher_id, headline, bio, photo_action, photo_key, submitted_by)
-      values (${actor.teacherId}, ${next.headline}, ${next.bio}, ${next.photo_action}, ${next.photo_key}, ${actor.userId})
-    `;
-  }
+  if (pending) await tx`delete from teacher_profile_changes where id = ${pending.id}`;
+  if (next.headline === null && next.bio === null && next.photo_action === "none") return false;
+  await tx`
+    insert into teacher_profile_changes (teacher_id, headline, bio, photo_action, photo_key, submitted_by)
+    values (${actor.teacherId}, ${next.headline}, ${next.bio}, ${next.photo_action}, ${next.photo_key}, ${actor.userId})
+  `;
   await audit({ actorId: actor.userId, action: "teacher.profile_propose", entityType: "teacher", entityId: actor.teacherId, metadata: { what } }, tx);
   return true;
 }
@@ -95,7 +87,7 @@ export async function proposeTeacherPhoto(actor: TeacherActor, key: string | nul
 }
 
 const teacherIdOf = async (id: string) => (await sql<{ teacher_id: string }[]>`select teacher_id from teacher_profile_changes where id = ${id}`)[0]?.teacher_id ?? null;
-const ALREADY_HANDLED = "عولج هذا التعديل مسبقًا";
+const ALREADY_HANDLED = "تغيّر هذا التعديل أو عولج مسبقًا. حدّث الصفحة وراجعه من جديد";
 
 /** الموافقة: يطبَّق التعديل مرة واحدة، والملف القديم يُحذف بعد نجاح المعاملة */
 export async function approveProfileChange(id: string, ownerId: string, ip?: string): Promise<string> {
