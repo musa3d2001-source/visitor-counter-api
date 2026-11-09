@@ -3,7 +3,7 @@
 > **Latest approved prices, 7 Nov 2026:** Product advertising image KWD 10 with one revision. Vertical reel/story up to 15 seconds starts at KWD 40 with idea, editing, suitable audio and two revisions. Confirm final video price after reviewing scope and materials. Instagram price post: https://www.instagram.com/p/Dfc9_f0jBXd/. These prices supersede KWD 90/190/390 and old rate cards. Do not quote old prices, rush fees, or turnaround promises without owner confirmation. Highlight creation is pending because planned Kit stories are not visible in the desktop archive picker. TikTok refund support ticket 4543451 was submitted; refund not yet approved or received.
 
 > **Read this before resuming any TASH work. Update it after every stage and before the session ends.**
-> Last updated: 2026-11-09 (boost ad build, see §7). Before that: 2026-11-07 ~17:45 UTC.
+> Last updated: 2026-11-09 (boost ad v4 redesign in progress, see §7). Before that: 2026-11-07 ~17:45 UTC.
 > - The DOSE v3 story ad was **delivered** to the owner (sent as `DOSE-spec-story-v2.mp4`; it is the same file as `tash/10-spec-dose/DOSE-spec-story-9x16.mp4`) and committed in `8e0bd40`.
 > - It is **not approved and not published**.
 > - DOSE Higgsfield total: **214.25** credits (253.75 → 39.50).
@@ -141,7 +141,18 @@ The old split zips (`split/TASH-1..6-of-6`) and `TASH-Instagram-Kit.zip` were **
 4. If the iPhone download fails: shrink the reels further, or split into 2 zips of about 30 MB each.
 
 ## 7. Next step
-**Boost ad «نقاط مشروعك» (`tash/11-boost-ad/`), 9 Nov.**
+**Boost ad v4 redesign (`tash/11-boost-ad/v4/`), 9 Nov, IN PROGRESS. Read this first.**
+- **Owner's verdict on v3 (verbatim):** «حاطلك ultra code … وتطلع باعلان فاشل وعادي مثل هذا🤣». v3 is rejected. Do not polish it.
+- **Direction the owner chose:** «نفس الفكرة بس انفجار بصري»: bright lime, huge moving type, a cut every half second on the beat, the word turning into business styles (coffee, perfume, burger). Then: «استخدم نموذج قوي».
+- **So v4 is a hybrid:** photoreal AI product worlds (Higgsfield) with the three dots and all Arabic type drawn by code on top. The idea «نقاط مشروعك», the three voice stems and the copy stay.
+- **Budget:** hard cap «لين ٢٠٠ كريدت» for the whole job, retakes included. The owner bought 500 credits (balance 539.5 on 9 Nov, nothing spent on v4 yet).
+- **System quotes (asked with `get_cost`, nothing generated):** Nano Banana Pro 2K 9:16 still = 2 credits; Kling 3.0 Pro, sound off, 9:16 = 1.75 credits per second (3 s = 5.25); Seedance 2.5 1080p = 16 credits per second, so it is dropped.
+- **Promise to the owner (keep it):** a storyboard with stills goes to him first; no video is generated before he approves it; tell him the cost before any generation.
+- **Design:** a multi-agent design round (3 hybrid treatments → 3 judges → synthesis → red team → revise) writes `v4/BUILD-SPEC.md`, `v4/STORYBOARD.md` and `v4/shots.json`. If those files are missing, the round did not finish: check before relying on them. Inputs from the earlier code-only round are in the session scratchpad only (not in git).
+- **Not done yet:** storyboard stills, owner approval, Kling shots, the v4 build, renders, QC. Nothing of v4 is delivered, approved or published.
+- **Carry over from v3:** AI label ON; caption line becomes «الصور والأصوات بالإعلان مولّدة بالذكاء الاصطناعي.»; DM only; no prices or claims on screen; hook B is «شاليه؟» only; the muted 10-phone test and the owner's OK on the caption price wording are still open.
+
+**Boost ad «نقاط مشروعك» v3 (`tash/11-boost-ad/`), 9 Nov. Rejected by the owner, kept for reference.**
 - **Status:** final v3. Built after two independent review rounds; see SCRIPT §4 and §9.
 - **Delivered to the owner** (they asked to be sent it): the v2 master at ~16:00 UTC, and the final set at ~17:30 UTC. Not CD-reviewed, not approved, not published.
 - **Owner decisions today:**
