@@ -1,11 +1,15 @@
 import "server-only";
-import { randomBytes } from "node:crypto";
-import { sql } from "../db";
+import { sql, type Db } from "../db";
 import { storage } from "../storage";
 import { audit } from "../platform/audit";
 import { hashPassword } from "../auth/password";
+import { revokeEmailLinks } from "../auth/email-verification";
+import { loginFailurePrefix } from "../auth/service";
 import { teacherBalance, teacherSalesSummary } from "../commerce/earnings";
+import { mailIsReal, redactSecrets, sendMail } from "../platform/mailer";
+import { getSettings } from "../platform/settings";
 import { AdminError } from "./common";
+import { enforceOwnerLimits, generateTemporaryPassword } from "./student-accounts";
 import { randomSuffix } from "@/lib/utils";
 
 /**
@@ -159,61 +163,111 @@ export async function updateTeacher(id: string, input: TeacherInput, ownerId: st
   });
 }
 
+/** مدة الكلمة المؤقتة، كما في استعادة الطالب بيد المالك */
+const TEMP_PASSWORD_HOURS = 24;
+
+/** كل ما كان صالحًا قبل الكلمة المؤقتة يسقط معها: الجلسات والروابط ومحاولات الدخول المحتسبة */
+async function closeOldAccess(tx: Db, userId: string, email: string) {
+  await tx`update password_reset_tokens set used_at = now() where user_id = ${userId} and used_at is null`;
+  await revokeEmailLinks(tx, userId);
+  await tx`delete from sessions where user_id = ${userId}`;
+  await tx`delete from rate_limits where starts_with(key, ${loginFailurePrefix(email)})`;
+}
+
+const LINK_EXISTING_REFUSED = "هذا البريد مسجل لحساب موجود، فلن تتم ترقيته دون موافقتك. إن كان هذا حساب المعلم فعلًا، ضع علامة على خانة الموافقة ثم أعد المحاولة.";
+
+export type EnabledTeacherAccount = { email: string; password: string; linkedExisting: boolean; noticeSent: boolean };
+
 /**
- * تفعيل حساب دخول للمعلم (managed → self_managed):
- *  - بريد جديد: إنشاء حساب بدور teacher وكلمة مرور قوية تُعرض مرة واحدة
- *  - بريد موجود (طالب): ترقيته لدور teacher وإلغاء جلساته؛ حساب المالك لا يُستخدم
+ * تفعيل حساب دخول للمعلم (managed → self_managed). قرار D17: كلمة مؤقتة تُعرض للمالك مرة واحدة،
+ * تعمل ٢٤ ساعة ومرة واحدة، ولا تفتح إلا صفحة اختيار كلمة جديدة.
+ *  - بريد جديد: إنشاء حساب بدور teacher.
+ *  - بريد موجود (طالب): لا يُرقّى إلا بموافقة صريحة من المالك. تُستبدل كلمة مروره، فمن كان يعرفها أو
+ *    كان هو من سجّل هذا البريد لا يدخل لوحة المعلم بها، وتُغلق جلساته، ويصله إشعار بالبريد.
+ *    حساب موقوف يبقى موقوفًا: الإيقاف قرار منفصل.
+ *  - حساب المالك والحساب المحذوف لا يُستخدمان.
  */
 export async function enableTeacherAccount(
   teacherId: string,
-  input: { email: string; fullName: string },
+  input: { email: string; fullName: string; confirmLinkExisting?: boolean },
   ownerId: string,
   ip?: string,
-): Promise<{ email: string; password: string | null; linkedExisting: boolean }> {
+): Promise<EnabledTeacherAccount> {
   const t = await getTeacherAdmin(teacherId);
   if (!t) throw new AdminError("المعلم غير موجود");
   if (t.mode === "self_managed" && t.user_id) throw new AdminError("الحساب مفعّل مسبقًا");
   const email = input.email.trim().toLowerCase();
-  return sql.begin(async (tx) => {
-    const [existing] = await tx<{ id: string; role: string }[]>`select id, role from users where email = ${email} for update`;
+  await enforceOwnerLimits("owner-teacher-enable", ownerId, email);
+  const password = generateTemporaryPassword();
+  const hash = await hashPassword(password);
+
+  const result = await sql.begin(async (tx) => {
+    const [existing] = await tx<{ id: string; role: string; anonymized_at: Date | null }[]>`select id, role, anonymized_at from users where email = ${email} for update`;
     let userId: string;
-    let password: string | null = null;
-    let linkedExisting = false;
     if (existing) {
       if (existing.role === "admin") throw new AdminError("لا يمكن ربط حساب المالك بملف معلم", { email: "استخدم بريدًا آخر" });
+      if (existing.anonymized_at) throw new AdminError("حُذفت بيانات هذا الحساب، فلا يمكن استخدامه.", { email: "استخدم بريدًا آخر" });
       const [other] = await tx`select 1 from teachers where user_id = ${existing.id} and id <> ${teacherId}`;
       if (other) throw new AdminError("هذا البريد مرتبط بمعلم آخر", { email: "استخدم بريدًا آخر" });
-      await tx`update users set role = 'teacher', is_active = true where id = ${existing.id}`;
-      await tx`delete from sessions where user_id = ${existing.id}`;
+      if (!input.confirmLinkExisting) throw new AdminError(LINK_EXISTING_REFUSED, { email: "هذا البريد مسجل لحساب موجود" });
+      await tx`
+        update users set role = 'teacher', password_hash = ${hash}, must_change_password = true,
+          temp_password_expires_at = now() + make_interval(hours => ${TEMP_PASSWORD_HOURS})
+        where id = ${existing.id}
+      `;
+      await closeOldAccess(tx, existing.id, email);
       userId = existing.id;
-      linkedExisting = true;
     } else {
-      password = randomBytes(12).toString("base64url");
-      const hash = await hashPassword(password);
       const [u] = await tx<{ id: string }[]>`
-        insert into users (email, password_hash, full_name, role, email_verified_at)
-        values (${email}, ${hash}, ${input.fullName.trim() || t.display_name}, 'teacher', now())
+        insert into users (email, password_hash, full_name, role, email_verified_at, must_change_password, temp_password_expires_at)
+        values (${email}, ${hash}, ${input.fullName.trim() || t.display_name}, 'teacher', now(), true, now() + make_interval(hours => ${TEMP_PASSWORD_HOURS}))
         returning id
       `;
       userId = u.id;
     }
     await tx`update teachers set mode = 'self_managed', user_id = ${userId} where id = ${teacherId}`;
-    await audit(
-      { actorId: ownerId, action: "teacher.mode_self_managed", entityType: "teacher", entityId: teacherId, metadata: { userId, email, linkedExisting }, ip },
-      tx,
-    );
-    return { email, password, linkedExisting };
+    await audit({ actorId: ownerId, action: "teacher.mode_self_managed", entityType: "teacher", entityId: teacherId, metadata: { userId, linkedExisting: Boolean(existing), validHours: TEMP_PASSWORD_HOURS }, ip }, tx);
+    return { linkedExisting: Boolean(existing) };
   });
+
+  const noticeSent = result.linkedExisting ? await tellUpgradedAccount(email) : false;
+  return { email, password, linkedExisting: result.linkedExisting, noticeSent };
 }
 
-/** إعادة تعيين كلمة مرور حساب المعلم (تُعرض مرة واحدة) */
+/** لا كلمة مرور في هذه الرسالة، ولا ينتظرها شيء: المالك يعرف من النتيجة إن لم تخرج */
+async function tellUpgradedAccount(email: string): Promise<boolean> {
+  if (!mailIsReal()) return false;
+  try {
+    const settings = await getSettings();
+    return await sendMail({
+      to: email,
+      template: "teacher_upgrade_notice",
+      subject: `أصبح حسابك حساب معلم، ${settings.site_name}`,
+      text: `حوّلت إدارة المنصة هذا الحساب إلى حساب معلم، واستبدلت كلمة مروره بكلمة مؤقتة، وتم تسجيل خروجك من كل الأجهزة.\n\nستعطيك الإدارة الكلمة المؤقتة، وعند أول دخول تختار كلمة مرور جديدة.\n\nإذا لم تتوقع ذلك فتواصل معنا.\n\n${settings.site_name}`,
+    });
+  } catch (err) {
+    console.error("[teachers] upgrade notice failed", redactSecrets(err instanceof Error ? err.message : String(err)));
+    return false;
+  }
+}
+
+/** إعادة تعيين كلمة مرور حساب المعلم: كلمة مؤقتة تُعرض مرة واحدة ويلزم تغييرها عند أول دخول */
 export async function resetTeacherPassword(teacherId: string, ownerId: string, ip?: string): Promise<string> {
   const t = await getTeacherAdmin(teacherId);
   if (!t?.user_id) throw new AdminError("لا يوجد حساب دخول لهذا المعلم");
-  const password = randomBytes(12).toString("base64url");
-  await sql`update users set password_hash = ${await hashPassword(password)} where id = ${t.user_id} and role = 'teacher'`;
-  await sql`delete from sessions where user_id = ${t.user_id}`;
-  await audit({ actorId: ownerId, action: "teacher.password_reset", entityType: "teacher", entityId: teacherId, ip });
+  await enforceOwnerLimits("owner-teacher-reset", ownerId, t.user_id);
+  const password = generateTemporaryPassword();
+  const hash = await hashPassword(password);
+  await sql.begin(async (tx) => {
+    const [u] = await tx<{ email: string }[]>`
+      update users set password_hash = ${hash}, must_change_password = true, temp_password_expires_at = now() + make_interval(hours => ${TEMP_PASSWORD_HOURS})
+      where id = ${t.user_id} and role = 'teacher' and anonymized_at is null
+      returning email
+    `;
+    if (!u) throw new AdminError("لا يوجد حساب دخول لهذا المعلم");
+    await closeOldAccess(tx, t.user_id!, u.email);
+    await audit({ actorId: ownerId, action: "teacher.password_reset", entityType: "teacher", entityId: teacherId, metadata: { userId: t.user_id, validHours: TEMP_PASSWORD_HOURS }, ip }, tx);
+  });
   return password;
 }
 

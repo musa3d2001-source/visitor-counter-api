@@ -8,13 +8,13 @@ import { Alert } from "@/components/ui/alert";
 import { SubmitButton } from "@/components/ui/submit-button";
 import { PasswordInput } from "../_components/auth-fields";
 
-export function ChangePasswordForm() {
+export function ChangePasswordForm({ minLength, hint }: { minLength: number; hint: string }) {
   const [state, action] = useActionState(changeTemporaryPasswordAction, null);
   return (
     <form action={action} className="flex flex-col gap-5" noValidate data-testid="change-password-form">
       {state?.error ? <Alert tone="danger">{state.error}</Alert> : null}
-      <Field label="كلمة المرور الجديدة" htmlFor="password" error={state?.fieldErrors?.password} hint="٨ أحرف على الأقل">
-        <PasswordInput id="password" name="password" icon={<KeyRound />} autoComplete="new-password" dir="ltr" required minLength={8} />
+      <Field label="كلمة المرور الجديدة" htmlFor="password" error={state?.fieldErrors?.password} hint={hint}>
+        <PasswordInput id="password" name="password" icon={<KeyRound />} autoComplete="new-password" dir="ltr" required minLength={minLength} />
       </Field>
       <Field label="تأكيد كلمة المرور" htmlFor="passwordConfirm" error={state?.fieldErrors?.passwordConfirm}>
         <PasswordInput id="passwordConfirm" name="passwordConfirm" icon={<LockKeyhole />} tone="teal" autoComplete="new-password" dir="ltr" required />

@@ -97,5 +97,5 @@ export async function changeTemporaryPasswordAction(_prev: ActionState, fd: Form
   const res = await completeForcedPasswordChange(session.user.id, parsed.data, { ip: await clientIp(), userAgent: await userAgent() });
   if (!res.ok) return res.field ? { fieldErrors: { [res.field]: res.error } } : { error: res.error };
   await setSessionCookie(res.token, res.expiresAt);
-  redirect("/library");
+  redirect(session.user.role === "student" ? "/library" : "/admin");
 }

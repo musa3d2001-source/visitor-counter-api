@@ -3,6 +3,7 @@ import { redirect } from "next/navigation";
 import { LogOut } from "lucide-react";
 import { AuthCard } from "@/components/site/auth-card";
 import { getCurrentSession } from "@/server/auth/session";
+import { STAFF_PASSWORD_MIN, STUDENT_PASSWORD_MIN } from "@/lib/password-policy";
 import { logoutAction } from "../actions";
 import { ChangePasswordForm } from "./change-password-form";
 
@@ -15,7 +16,7 @@ export default async function ChangePasswordPage() {
   if (!session.mustChangePassword) redirect("/account");
   return (
     <AuthCard title="اختر كلمة مرور جديدة" subtitle="دخلت بكلمة مرور مؤقتة، ولن يفتح حسابك قبل أن تختار كلمتك الخاصة">
-      <ChangePasswordForm />
+      {session.user.role === "student" ? <ChangePasswordForm minLength={STUDENT_PASSWORD_MIN} hint="٨ أحرف على الأقل" /> : <ChangePasswordForm minLength={STAFF_PASSWORD_MIN} hint="١٢ حرفًا على الأقل" />}
       <form action={logoutAction} className="mt-3">
         <button type="submit" className="btn btn-ghost btn-md w-full">
           <LogOut aria-hidden />

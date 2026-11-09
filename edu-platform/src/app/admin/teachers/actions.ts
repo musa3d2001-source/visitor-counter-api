@@ -103,14 +103,12 @@ export async function enableAccountAction(_prev: ActionState, fd: FormData): Pro
     if (!isUuid(id)) throw new AdminError("طلب غير صالح");
     const parsed = accountSchema.safeParse({ email: str(fd, "email"), fullName: str(fd, "fullName") });
     if (!parsed.success) throw new AdminError("راجع البيانات", fieldErrors(parsed.error));
-    const res = await enableTeacherAccount(id, parsed.data, adminId, ip);
+    const res = await enableTeacherAccount(id, { ...parsed.data, confirmLinkExisting: bool(fd, "confirmLinkExisting") }, adminId, ip);
     // لا نعيد تحميل الصفحة هنا حتى تبقى كلمة المرور ظاهرة للمالك (يحدّثها زر «تم»)
-    return {
-      ok: true,
-      message: res.password
-        ? `تم إنشاء حساب المعلم (${res.email}). كلمة المرور المؤقتة، انسخها الآن ولن تظهر مرة أخرى: ${res.password}`
-        : `تم ربط الحساب الموجود (${res.email}) بملف المعلم. يدخل المعلم بكلمة مرور حسابه الحالية.`,
-    };
+    const opening = res.linkedExisting
+      ? `تمت ترقية الحساب الموجود (${res.email}) إلى حساب معلم، واستُبدلت كلمة مروره. ${res.noticeSent ? "أرسلنا إشعارًا إلى بريده." : "لم يخرج إشعار بالبريد، فأخبره بنفسك."}`
+      : `تم إنشاء حساب المعلم (${res.email}).`;
+    return { ok: true, message: `${opening} يعمل الدخول بها مرة واحدة خلال ٢٤ ساعة، ثم يختار المعلم كلمته الخاصة. كلمة المرور المؤقتة، انسخها الآن ولن تظهر مرة أخرى: ${res.password}` };
   });
 }
 
@@ -119,7 +117,7 @@ export async function resetPasswordAction(_prev: ActionState, fd: FormData): Pro
     const id = str(fd, "teacherId");
     if (!isUuid(id)) throw new AdminError("طلب غير صالح");
     const password = await resetTeacherPassword(id, adminId, ip);
-    return { ok: true, message: `كلمة المرور الجديدة، انسخها الآن ولن تظهر مرة أخرى: ${password}` };
+    return { ok: true, message: `تعمل مرة واحدة خلال ٢٤ ساعة، ثم يختار المعلم كلمته الخاصة. كلمة المرور المؤقتة، انسخها الآن ولن تظهر مرة أخرى: ${password}` };
   });
 }
 

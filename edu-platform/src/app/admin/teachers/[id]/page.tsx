@@ -41,7 +41,7 @@ import { SubjectIcon } from "@/components/art";
 import { Alert } from "@/components/ui/alert";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Field, Input } from "@/components/ui/form";
+import { Checkbox, Field, Input } from "@/components/ui/form";
 import { SubmitButton } from "@/components/ui/submit-button";
 import { Table, TD, TH, THead, TR } from "@/components/ui/table";
 import { filsToKwdString } from "@/lib/money";
@@ -232,7 +232,7 @@ export default async function TeacherAdminPage({ params, searchParams }: { param
                 <div className="space-y-3">
                   <div className="rounded-[1.3rem] bg-accent-100/60 p-3.5 ring-1 ring-accent-200 ring-inset">
                     <Badge tone="neutral">يديره المالك، بدون حساب دخول</Badge>
-                    <p className="mt-2 text-xs leading-6 text-ink-soft">لتفعيل حساب يرفع منه المعلم مسوداته بنفسه، أدخل بريده. إن كان البريد مسجلًا كطالب سيُرقّى حسابه.</p>
+                    <p className="mt-2 text-xs leading-6 text-ink-soft">لتفعيل حساب يرفع منه المعلم مسوداته بنفسه، أدخل بريده. ستظهر لك كلمة مؤقتة مرة واحدة، ويختار المعلم كلمته الخاصة عند أول دخول.</p>
                   </div>
                   <OneTimeSecretForm action={enableAccountAction} className="space-y-3">
                     <input type="hidden" name="teacherId" value={teacher.id} />
@@ -242,6 +242,12 @@ export default async function TeacherAdminPage({ params, searchParams }: { param
                     <Field label="الاسم الكامل" htmlFor="acc-name">
                       <Input id="acc-name" name="fullName" defaultValue={teacher.display_name} required />
                     </Field>
+                    <Checkbox
+                      name="confirmLinkExisting"
+                      data-testid="confirm-link-existing"
+                      className="items-start text-[0.85rem] leading-6"
+                      label="إن كان هذا البريد لحساب طالب موجود، أوافق على ترقيته: تُستبدل كلمة مروره، ويُسجَّل خروجه، ويصله إشعار بالبريد."
+                    />
                     <SubmitButton size="md" className="w-full">
                       <KeyRound aria-hidden /> تفعيل حساب المعلم
                     </SubmitButton>

@@ -77,7 +77,17 @@ test.describe("دورة المعلم الكاملة", () => {
     const teacherCtx = await browser.newContext();
     const tp = await teacherCtx.newPage();
     // ملاحظة: لا نضيف ترويسة x-forwarded-for هنا لأنها تُرسل أيضًا مع رفع TUS المباشر إلى Bunny (طلب CORS)
-    await login(tp, teacherEmail, password, "/admin");
+    // الكلمة المؤقتة لا تفتح إلا صفحة اختيار كلمة جديدة (D17)، وللمعلم حد ١٢ حرفًا
+    await tp.goto(`/login?next=${encodeURIComponent("/admin")}`);
+    await tp.fill("#email", teacherEmail);
+    await tp.fill("#password", password);
+    await tp.getByRole("button", { name: "تسجيل الدخول" }).click();
+    await tp.waitForURL(/\/change-password/);
+    await expect(tp.getByText("١٢ حرفًا على الأقل")).toBeVisible();
+    await tp.fill("#password", "Teacher-Chosen-Pass-2026");
+    await tp.fill("#passwordConfirm", "Teacher-Chosen-Pass-2026");
+    await tp.getByRole("button", { name: "حفظ كلمة المرور" }).click();
+    await tp.waitForURL(/\/admin(\/|$)/);
     // المعلم لا يصل لصفحات المالك
     expect((await tp.goto("/admin/settings"))?.status()).toBe(404);
     expect((await tp.goto("/admin/teachers"))?.status()).toBe(404);
