@@ -97,6 +97,7 @@ test.describe("دورة المعلم الكاملة", () => {
     // المعلم لا يصل لصفحات المالك
     expect((await tp.goto("/admin/settings"))?.status()).toBe(404);
     expect((await tp.goto("/admin/teachers"))?.status()).toBe(404);
+    expect((await tp.goto("/admin/launch"))?.status()).toBe(404);
     await tp.goto("/admin/products/new");
     await tp.selectOption("#gradeId", subject.grade_id);
     await tp.selectOption("#subjectId", subject.subject_id);

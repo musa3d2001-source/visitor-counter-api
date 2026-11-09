@@ -34,6 +34,7 @@ const ENTITY_TYPES = [
   ["user", "المستخدمون"],
   ["coupon", "الكوبونات"],
   ["settings", "الإعدادات"],
+  ["launch_check", "خطوات الإطلاق"],
   ["stage", "المراحل"],
   ["grade", "الصفوف"],
   ["subject", "المواد"],

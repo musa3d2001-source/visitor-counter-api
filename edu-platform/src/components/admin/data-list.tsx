@@ -92,6 +92,7 @@ export function DataRow({
   leading,
   footer,
   className,
+  id,
 }: {
   title: React.ReactNode;
   href?: string;
@@ -103,10 +104,14 @@ export function DataRow({
   /** تفاصيل إضافية بعرض البطاقة كاملًا تحت الصف (مثل أرقام صغيرة بعمودين) */
   footer?: React.ReactNode;
   className?: string;
+  /** مرساة للانتقال إلى الصف من رابط في الصفحة نفسها (#id) */
+  id?: string;
 }) {
   return (
     <li
+      id={id}
       className={cn(
+        id && "scroll-mt-24",
         "relative flex min-w-0 flex-wrap items-center gap-x-3 gap-y-2 rounded-[1.25rem] border border-[rgb(23_32_38/0.06)] bg-surface p-3.5 shadow-xs transition-shadow",
         !footer && "sm:flex-nowrap",
         href && "hover:shadow-card",

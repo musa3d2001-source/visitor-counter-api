@@ -19,6 +19,7 @@ import {
   Menu,
   Package,
   Receipt,
+  Rocket,
   Settings,
   ShieldCheck,
   Ticket,
@@ -70,6 +71,7 @@ const OWNER_GROUPS: NavGroup[] = [
   {
     title: "المنصة",
     items: [
+      { href: "/admin/launch", label: "خطوات الإطلاق", Icon: Rocket, tone: "green" },
       { href: "/admin/settings", label: "إعدادات المنصة", Icon: Settings, tone: "slate" },
       { href: "/admin/mail", label: "البريد الصادر", Icon: Mail, tone: "sky" },
       { href: "/admin/ops", label: "صحة المنصة", Icon: Activity, tone: "coral" },
