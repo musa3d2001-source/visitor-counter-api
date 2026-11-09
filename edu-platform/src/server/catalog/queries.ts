@@ -223,6 +223,7 @@ export const listStages = cache(async (): Promise<(Stage & { grades: Grade[] })[
 
 /** الصفوف المنشورة التي تحتوي منتجًا منشورًا واحدًا على الأقل */
 export const listGrades = cache(async (): Promise<Grade[]> => {
+  const closed = await currentCloseFlags();
   const rows = await sql<
     { id: string; slug: string; name: string; level: number; current_term: number; stage_id: string; stage_slug: string; stage_name: string }[]
   >`
@@ -230,8 +231,9 @@ export const listGrades = cache(async (): Promise<Grade[]> => {
     from grades g join stages st on st.id = g.stage_id
     where g.is_published and st.is_published
       and exists (
-        select 1 from products p left join subjects s on s.id = p.subject_id
+        select 1 from products p ${videoStats()} left join subjects s on s.id = p.subject_id
         where p.grade_id = g.id and p.status = 'published' and (p.subject_id is null or s.is_published)
+          ${hideClosedVideo(closed)}
       )
     order by st.sort_order, g.sort_order, g.level
   `;
@@ -259,9 +261,10 @@ export const getGradeBySlug = cache(async (slug: string): Promise<Grade | null> 
 
 /** مواد الصف المنشورة التي فيها منتجات منشورة فقط (لا نعرض أقسامًا فارغة) */
 export const listSubjects = cache(async (gradeId: string): Promise<Subject[]> => {
+  const closed = await currentCloseFlags();
   const rows = await sql<{ id: string; slug: string; name: string; icon: string; grade_id: string; product_count: number }[]>`
     select s.id, s.slug, s.name, s.icon, s.grade_id,
-      (select count(*)::int from products p where p.subject_id = s.id and p.status = 'published') as product_count
+      (select count(*)::int from products p ${videoStats()} where p.subject_id = s.id and p.status = 'published' ${hideClosedVideo(closed)}) as product_count
     from subjects s
     where s.grade_id = ${gradeId} and s.is_published
     order by s.sort_order, s.name
@@ -596,7 +599,7 @@ type TeacherRowDb = {
   total_duration: number;
 };
 
-async function hydrateTeachers(rows: TeacherRowDb[]): Promise<TeacherCard[]> {
+async function hydrateTeachers(rows: TeacherRowDb[], closed: VideoCloseFlags): Promise<TeacherCard[]> {
   if (!rows.length) return [];
   const ids = rows.map((r) => r.id);
   // مواد المعلم: المحددة في ملفه + المواد التي له فيها محتوى منشور
@@ -605,7 +608,7 @@ async function hydrateTeachers(rows: TeacherRowDb[]): Promise<TeacherCard[]> {
     from (
       select ts.teacher_id, ts.subject_id from teacher_subjects ts where ts.teacher_id = any(${ids}::uuid[])
       union
-      select p.teacher_id, p.subject_id from products p where p.teacher_id = any(${ids}::uuid[]) and p.status = 'published' and p.subject_id is not null
+      select p.teacher_id, p.subject_id from products p ${videoStats()} where p.teacher_id = any(${ids}::uuid[]) and p.status = 'published' and p.subject_id is not null ${hideClosedVideo(closed)}
     ) x
     join subjects s on s.id = x.subject_id and s.is_published
     join grades g on g.id = s.grade_id and g.is_published
@@ -628,19 +631,20 @@ async function hydrateTeachers(rows: TeacherRowDb[]): Promise<TeacherCard[]> {
   }));
 }
 
-/** بطاقة المعلم لا تعلن فيديو أُغلق: القاعدة نفسها التي تخفيه من القوائم */
-const openLessonsOnly = ({ allClosed, rawClosed }: VideoCloseFlags) => sql`
-  and not ${allClosed}::boolean
-  and not (${rawClosed}::boolean and exists (select 1 from lessons fl where fl.product_id = p.id and fl.is_published and fl.provider = 'file'))
+/** بطاقة المعلم لا تعلن فيديو أُغلق: تُحسب دروس المنتجات التي تعرضها القوائم فقط، بالقاعدة نفسها حتى للمحتويات المتداخلة */
+const openLessons = (closed: VideoCloseFlags) => sql`
+  from products p
+  ${videoStats()}
+  join lessons l on l.product_id = p.id and l.is_published and l.processing_status = 'ready'
+  where p.teacher_id = t.id and p.status in ('published', 'hidden')
+    ${hideClosedVideo(closed)}
 `;
 
 const teacherColumns = (closed: VideoCloseFlags) => sql`
   t.id, t.slug, t.display_name, t.headline, t.bio, t.photo_key,
   (select count(*)::int from products p ${videoStats()} where p.teacher_id = t.id and p.status = 'published' ${hideClosedVideo(closed)}) as product_count,
-  (select count(*)::int from lessons l join products p on p.id = l.product_id
-     where p.teacher_id = t.id and p.status in ('published', 'hidden') and l.is_published and l.processing_status = 'ready' ${openLessonsOnly(closed)}) as video_count,
-  (select coalesce(sum(l.duration_seconds), 0)::int from lessons l join products p on p.id = l.product_id
-     where p.teacher_id = t.id and p.status in ('published', 'hidden') and l.is_published and l.processing_status = 'ready' ${openLessonsOnly(closed)}) as total_duration
+  (select count(*)::int ${openLessons(closed)}) as video_count,
+  (select coalesce(sum(l.duration_seconds), 0)::int ${openLessons(closed)}) as total_duration
 `;
 
 /** المعلمون المنشورون (مع تصفية اختيارية بالصف أو المادة) */
@@ -653,19 +657,19 @@ export async function listTeachers(opts: { gradeId?: string; subjectId?: string;
       ${
         opts.subjectId
           ? sql`and (exists (select 1 from teacher_subjects ts where ts.teacher_id = t.id and ts.subject_id = ${opts.subjectId})
-                 or exists (select 1 from products p where p.teacher_id = t.id and p.status = 'published' and p.subject_id = ${opts.subjectId}))`
+                 or exists (select 1 from products p ${videoStats()} where p.teacher_id = t.id and p.status = 'published' and p.subject_id = ${opts.subjectId} ${hideClosedVideo(closed)}))`
           : sql``
       }
       ${
         opts.gradeId
           ? sql`and (exists (select 1 from teacher_subjects ts join subjects s on s.id = ts.subject_id where ts.teacher_id = t.id and s.grade_id = ${opts.gradeId})
-                 or exists (select 1 from products p where p.teacher_id = t.id and p.status = 'published' and p.grade_id = ${opts.gradeId}))`
+                 or exists (select 1 from products p ${videoStats()} where p.teacher_id = t.id and p.status = 'published' and p.grade_id = ${opts.gradeId} ${hideClosedVideo(closed)}))`
           : sql``
       }
     order by t.sort_order, t.display_name
     limit ${opts.limit ?? 200}
   `;
-  return hydrateTeachers(rows);
+  return hydrateTeachers(rows, closed);
 }
 
 export const getTeacherBySlug = cache(async (slug: string, opts: { includeUnpublished?: boolean } = {}): Promise<(TeacherCard & { isPublished: boolean }) | null> => {
@@ -675,7 +679,7 @@ export const getTeacherBySlug = cache(async (slug: string, opts: { includeUnpubl
   `;
   const r = rows[0];
   if (!r || (!r.is_published && !opts.includeUnpublished)) return null;
-  const [card] = await hydrateTeachers([r]);
+  const [card] = await hydrateTeachers([r], closed);
   return { ...card, isPublished: r.is_published };
 });
 
@@ -745,7 +749,7 @@ export async function sitemapEntries() {
   const subjects = await sql<{ grade_slug: string; slug: string }[]>`
     select g.slug as grade_slug, s.slug from subjects s join grades g on g.id = s.grade_id
     where s.is_published and g.is_published
-      and exists (select 1 from products p where p.subject_id = s.id and p.status = 'published')
+      and exists (select 1 from products p ${videoStats()} where p.subject_id = s.id and p.status = 'published' ${hideClosedVideo(closed)})
   `;
   const stages = await listStages();
   const teachers = await sql<{ slug: string; updated_at: Date }[]>`select slug, updated_at from teachers where is_published`;
@@ -754,12 +758,14 @@ export async function sitemapEntries() {
 
 /** إحصاءات حقيقية لكل صف (عدد المواد والمنتجات المنشورة) */
 export const gradeStats = cache(async (): Promise<Map<string, { subjects: number; products: number }>> => {
+  const closed = await currentCloseFlags();
   const rows = await sql<{ grade_id: string; subjects: number; products: number }[]>`
     select p.grade_id,
       count(distinct p.subject_id) filter (where s.is_published)::int as subjects,
       count(*)::int as products
-    from products p left join subjects s on s.id = p.subject_id
+    from products p ${videoStats()} left join subjects s on s.id = p.subject_id
     where p.status = 'published' and (p.subject_id is null or s.is_published)
+      ${hideClosedVideo(closed)}
     group by p.grade_id
   `;
   return new Map(rows.map((r) => [r.grade_id, { subjects: r.subjects, products: r.products }]));
