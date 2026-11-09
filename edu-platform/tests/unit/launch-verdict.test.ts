@@ -256,6 +256,21 @@ describe("what the page may say", () => {
     expect(text).not.toMatch(/hunter2|token=abc|owner:/);
   });
 
+  it("names why an APP_URL is not the real domain", () => {
+    const problem = (url: string) => appUrlCheck(url).problem;
+    expect(problem("not a url")).toBe("invalid");
+    expect(problem("http://127.0.0.1:3000")).toBe("local");
+    expect(problem("http://127.1:3000")).toBe("local");
+    expect(problem("http://[::1]:3000")).toBe("local");
+    expect(problem("http://app.localhost")).toBe("local");
+    expect(problem("https://203.0.113.7")).toBe("ip");
+    expect(problem("https://[2001:db8::1]")).toBe("ip");
+    expect(problem("https://intranet")).toBe("test_domain");
+    expect(problem("https://farqad.example")).toBe("test_domain");
+    expect(problem("https://127.farqad-edu.com")).toBeNull();
+    expect(problem("https://www.farqad-edu.com")).toBeNull();
+  });
+
   it("accepts only known manual keys", () => {
     for (const key of MANUAL_KEYS) expect(isManualKey(key)).toBe(true);
     for (const key of ["", "migrations", "__proto__", "constructor", "toString", "vercel_pro "]) expect(isManualKey(key), key).toBe(false);

@@ -184,7 +184,7 @@ export function appUrlCheck(appUrl: string): { host: string; problem: AppUrlProb
     return { host: "", problem: "invalid" };
   }
   const host = url.hostname.toLowerCase();
-  if (host === "localhost" || host.endsWith(".localhost") || host.startsWith("127.") || host === "[::1]" || host === "0.0.0.0") return { host: url.host, problem: "local" };
+  if (host === "localhost" || host.endsWith(".localhost") || /^127(\.\d{1,3}){3}$/.test(host) || host === "[::1]" || host === "0.0.0.0") return { host: url.host, problem: "local" };
   if (/^\d{1,3}(\.\d{1,3}){3}$/.test(host) || host.startsWith("[")) return { host: url.host, problem: "ip" };
   if (host === "vercel.app" || host.endsWith(".vercel.app")) return { host: url.host, problem: "vercel" };
   if (!host.includes(".") || /\.(test|example|invalid|local|internal)$/.test(host)) return { host: url.host, problem: "test_domain" };
@@ -304,7 +304,7 @@ function hostingSteps(f: LaunchFacts, ticks: LaunchTicks): Built[] {
     steps.push({
       ...twoFactorBase,
       state: f.twoFactorRequired && all ? "done" : "open",
-      facts: [`مفعّل في ${ar(f.admins.enrolled)} من ${ar(f.admins.total)} حسابات الإدارة.`, f.twoFactorRequired ? "التحقق بخطوتين إلزامي على هذا النشر." : "التحقق بخطوتين غير إلزامي على هذا النشر لأن ADMIN_2FA_REQUIRED=false."],
+      facts: [`حسابات الإدارة التي فعّلت التحقق بخطوتين: ${ar(f.admins.enrolled)} من ${ar(f.admins.total)}`,f.twoFactorRequired ? "التحقق بخطوتين إلزامي على هذا النشر." : "التحقق بخطوتين غير إلزامي على هذا النشر لأن ADMIN_2FA_REQUIRED=false."],
     });
   }
 
@@ -356,7 +356,7 @@ function hostingSteps(f: LaunchFacts, ticks: LaunchTicks): Built[] {
     key: "jobs",
     title: "الوظائف المجدولة الثلاث",
     blocking: true,
-    todo: "تعمل الوظائف مرة يوميًا على نشر Production فقط، فانتظر يومًا بعد ضبط CRON_SECRET وإعادة النشر، ثم تأكد أن الثلاث نجحت.",
+    todo: "تعمل الوظائف على نشر Production فقط، وبعضها مرة في اليوم، فانتظر يومًا بعد ضبط CRON_SECRET وإعادة النشر، ثم تأكد أن الثلاث نجحت.",
     where: { label: "صحة المنصة، وسجلها في Vercel ← Schedules ← Cron Jobs", href: "/admin/ops" },
   };
   if (!f.jobs) steps.push(unknownStep(jobsBase));
