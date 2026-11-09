@@ -37,7 +37,8 @@ export function generateToken(): string {
 }
 
 type SessionMeta = { ip?: string; userAgent?: string };
-type SessionOptions = { ttlMs?: number; twoFactorVerified?: boolean };
+export type SecondFactorMethod = "totp" | "recovery";
+type SessionOptions = { ttlMs?: number; twoFactorVerified?: boolean; twoFactorMethod?: SecondFactorMethod | null };
 
 /**
  * إنشاء جلسة داخل معاملة قائمة. قفل صف المستخدم يجعل دخول الحساب الواحد تسلسليًا:
@@ -64,8 +65,8 @@ export async function createSessionIn(db: Db, userId: string, meta: SessionMeta 
     `;
   }
   await db`
-    insert into sessions (id, user_id, expires_at, ip, user_agent, two_factor_at, created_at)
-    values (${id}, ${userId}, ${expiresAt}, ${meta.ip ?? null}, ${meta.userAgent ?? null}, ${options.twoFactorVerified ? new Date() : null}, clock_timestamp())
+    insert into sessions (id, user_id, expires_at, ip, user_agent, two_factor_at, two_factor_method, created_at)
+    values (${id}, ${userId}, ${expiresAt}, ${meta.ip ?? null}, ${meta.userAgent ?? null}, ${options.twoFactorVerified ? new Date() : null}, ${options.twoFactorMethod ?? null}, clock_timestamp())
   `;
   await db`update users set last_login_at = now() where id = ${userId}`;
   return { token, expiresAt };

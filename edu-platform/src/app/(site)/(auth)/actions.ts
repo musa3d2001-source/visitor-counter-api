@@ -97,7 +97,7 @@ export async function changeTemporaryPasswordAction(_prev: ActionState, fd: Form
   const parsed = passwordSchema.safeParse(fd.get("password"));
   if (!parsed.success) return { fieldErrors: { password: parsed.error.issues[0].message } };
   if (fd.get("password") !== fd.get("passwordConfirm")) return { fieldErrors: { passwordConfirm: "كلمتا المرور غير متطابقتين" } };
-  const res = await completeForcedPasswordChange(session.user.id, parsed.data, { ip: await clientIp(), userAgent: await userAgent() });
+  const res = await completeForcedPasswordChange(session.user.id, parsed.data, { ip: await clientIp(), userAgent: await userAgent(), sessionId: session.sessionId });
   if (!res.ok) return res.field ? { fieldErrors: { [res.field]: res.error } } : { error: res.error };
   await setSessionCookie(res.token, res.expiresAt);
   redirect(session.user.role === "student" ? "/library" : "/admin");

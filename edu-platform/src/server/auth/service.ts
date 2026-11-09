@@ -3,7 +3,7 @@ import { sql } from "../db";
 import { adminTwoFactorRequired, env } from "../env";
 import { hashPassword, verifyPassword, burnPasswordTime } from "./password";
 import { loginFailurePrefix } from "./password-core";
-import { createSession, createSessionIn, generateToken, hashToken } from "./session";
+import { createSession, createSessionIn, generateToken, hashToken, type SecondFactorMethod } from "./session";
 import { hitRateLimit, clearRateLimit, peekRateLimit, reserveFailureSlot, type FailurePolicy } from "./rate-limit";
 import { completeLoginChallenge, startLoginChallenge, twoFactorIsActive, type CompleteChallengeResult } from "./two-factor";
 import { revokeEmailLinks } from "./email-verification";
@@ -248,8 +248,10 @@ export type ForcedChangeResult = { ok: true; token: string; expiresAt: Date } | 
 /**
  * إنهاء كلمة المرور المؤقتة: تعيين كلمة الطالب الخاصة، إلغاء كل الجلسات والروابط، ثم جلسة كاملة جديدة.
  * من يصل هنا أثبت نفسه بالكلمة المؤقتة خلال الساعة الماضية، فلا نطلبها مرة أخرى.
+ * الجلسة الجديدة ترث ختم العامل الثاني من الجلسة التي غيّرت الكلمة: حساب فعّل التحقق لا تعمل له جلسة بلا ختم،
+ * فبدون ذلك يعود صاحبه إلى الدخول مباشرة بعد أن اختار كلمته.
  */
-export async function completeForcedPasswordChange(userId: string, next: string, meta: { ip: string; userAgent: string }): Promise<ForcedChangeResult> {
+export async function completeForcedPasswordChange(userId: string, next: string, meta: { ip: string; userAgent: string; sessionId?: string }): Promise<ForcedChangeResult> {
   const limit = await hitRateLimit(`pwforced:user:${userId}`, 20, 15 * 60);
   if (!limit.allowed) return { ok: false, error: "محاولات كثيرة. حاول مرة أخرى بعد قليل." };
   const [u] = await sql<{ password_hash: string; role: PasswordRole; email: string; must_change_password: boolean }[]>`
@@ -260,19 +262,21 @@ export async function completeForcedPasswordChange(userId: string, next: string,
   if (problem) return { ok: false, error: problem, field: "password" };
   if (await verifyPassword(next, u.password_hash)) return { ok: false, error: "اختر كلمة مرور غير الكلمة المؤقتة.", field: "password" };
   const hash = await hashPassword(next);
-  const changed = await sql.begin(async (tx) => {
+  const session = await sql.begin(async (tx) => {
     const updated = await tx`
       update users set password_hash = ${hash}, must_change_password = false, temp_password_expires_at = null
       where id = ${userId} and must_change_password returning id
     `;
-    if (updated.length === 0) return false;
+    if (updated.length === 0) return null;
+    const [current] = await tx<{ two_factor_at: Date | null; two_factor_method: SecondFactorMethod | null }[]>`
+      select two_factor_at, two_factor_method from sessions where id = ${meta.sessionId ?? ""} and user_id = ${userId}
+    `;
     await tx`update password_reset_tokens set used_at = now() where user_id = ${userId} and used_at is null`;
     await revokeEmailLinks(tx, userId);
     await tx`delete from sessions where user_id = ${userId}`;
     await audit({ actorId: userId, action: "user.temporary_password_replaced", entityType: "user", entityId: userId, ip: meta.ip }, tx);
-    return true;
+    return createSessionIn(tx, userId, { ip: meta.ip, userAgent: meta.userAgent }, { twoFactorVerified: Boolean(current?.two_factor_at), twoFactorMethod: current?.two_factor_method ?? null });
   });
-  if (!changed) return { ok: false, error: "لا يلزم تغيير كلمة المرور لهذا الحساب." };
-  const s = await createSession(userId, meta);
-  return { ok: true, token: s.token, expiresAt: s.expiresAt };
+  if (!session) return { ok: false, error: "لا يلزم تغيير كلمة المرور لهذا الحساب." };
+  return { ok: true, token: session.token, expiresAt: session.expiresAt };
 }

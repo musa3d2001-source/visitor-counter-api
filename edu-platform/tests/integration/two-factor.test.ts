@@ -1,15 +1,17 @@
 import { afterAll, afterEach, beforeAll, beforeEach, describe, expect, it, vi } from "vitest";
 import { renderToStaticMarkup } from "react-dom/server";
 import { adminTwoFactorRequired, resetEnvCache } from "@/server/env";
-import { changePassword, completeTwoFactorLogin, loginWithPassword } from "@/server/auth/service";
+import { changePassword, completeForcedPasswordChange, completeTwoFactorLogin, loginWithPassword } from "@/server/auth/service";
 import { ADMIN_SESSION_MS, createSession, hashToken, SESSION_COOKIE, validateSessionToken } from "@/server/auth/session";
 import {
   beginTwoFactorEnrolment,
   confirmTwoFactorEnrolment,
   disableTwoFactor,
   getTwoFactorStatus,
+  isStrandedOnLastCode,
   loginChallengeIsLive,
   regenerateRecoveryCodes,
+  restartTwoFactorAfterLastCode,
   startLoginChallenge,
   verifyStepUpCode,
 } from "@/server/auth/two-factor";
@@ -18,6 +20,9 @@ import { closeDb, resetDb, sql } from "../helpers/db";
 import { createUser, TEST_PASSWORD } from "../helpers/factories";
 import { codeAt, currentStep, enrolAdmin, freshCode, wrongCode } from "../helpers/two-factor";
 import { TEST_ENV } from "../test-env";
+import { getDb } from "@/server/db";
+import { LOW_RECOVERY_CODES, recoveryCodesAreLow } from "@/lib/two-factor";
+import { resetAdminTwoFactor } from "../../scripts/reset-admin-2fa";
 
 /** كوكيات حقيقية عبر الجرة: هذه الاختبارات تفحص البوابة نفسها، فلا نستبدل getCurrentUser */
 const ctx = vi.hoisted(() => ({ jar: new Map<string, string>(), options: new Map<string, Record<string, unknown>>() }));
@@ -42,6 +47,7 @@ vi.mock("next/navigation", async (original) => ({
     throw new Error("NEXT_NOT_FOUND");
   },
   useRouter: () => ({ refresh() {} }),
+  usePathname: () => "/admin/security",
 }));
 vi.mock("next/cache", () => ({ revalidatePath: () => {} }));
 
@@ -50,7 +56,9 @@ const { requireUser } = await import("@/server/auth/guards");
 const { requireStaff } = await import("@/server/auth/permissions");
 const { loginAction } = await import("@/app/(site)/(auth)/actions");
 const { confirmTwoFactorSetupAction, verifyLoginCodeAction } = await import("@/app/(site)/(auth)/two-factor/actions");
-const { disableTwoFactorAction, regenerateRecoveryCodesAction } = await import("@/app/admin/security/actions");
+const { disableTwoFactorAction, regenerateRecoveryCodesAction, restartTwoFactorAction } = await import("@/app/admin/security/actions");
+const { default: AdminSecurityPage } = await import("@/app/admin/security/page");
+const { changeTemporaryPasswordAction } = await import("@/app/(site)/(auth)/actions");
 const { default: TwoFactorSetupPage } = await import("@/app/(site)/(auth)/two-factor/setup/page");
 const { default: TwoFactorLoginPage } = await import("@/app/(site)/(auth)/login/two-factor/page");
 
@@ -768,5 +776,235 @@ describe("admin session lifetime", () => {
     await sql`update sessions set created_at = now() - interval '20 days', expires_at = now() + interval '10 days' where user_id = ${student.id}`;
     const out = await validateSessionToken(token);
     expect(out!.expiresAt.getTime()).toBeGreaterThan(Date.now() + 29 * 86400_000);
+  });
+});
+
+const methodOf = async (token: string) => (await sql<{ two_factor_method: string | null; two_factor_at: Date | null }[]>`select two_factor_method, two_factor_at from sessions where id = ${hashToken(token)}`)[0]!;
+
+describe("signing in with a recovery code", () => {
+  it("each session records how it passed the second step", async () => {
+    const user = await admin();
+    const { secret, recoveryCodes, session } = await enrolAdmin(user);
+    expect((await methodOf(session.token)).two_factor_method).toBe("totp");
+
+    const first = await completeTwoFactorLogin((await challengeFor(user)).token, await freshCode(user.id, secret), meta);
+    expect(first).toMatchObject({ ok: true, method: "totp" });
+    expect((await methodOf(first.ok ? first.token : "")).two_factor_method).toBe("totp");
+
+    const second = await completeTwoFactorLogin((await challengeFor(user)).token, recoveryCodes[0], meta);
+    expect(second).toMatchObject({ ok: true, method: "recovery" });
+    expect((await methodOf(second.ok ? second.token : "")).two_factor_method).toBe("recovery");
+  });
+
+  it("goes to the security page instead of the requested page, and the app code does not", async () => {
+    const user = await admin();
+    const { secret, recoveryCodes } = await enrolAdmin(user);
+    ctx.jar.set(CHALLENGE_COOKIE, (await challengeFor(user)).token);
+    await expect(verifyLoginCodeAction(null, form({ code: recoveryCodes[0], next: "/admin/orders" }))).rejects.toThrow("NEXT_REDIRECT /admin/security?recovered=1");
+    ctx.jar.set(CHALLENGE_COOKIE, (await challengeFor(user)).token);
+    await expect(verifyLoginCodeAction(null, form({ code: await freshCode(user.id, secret), next: "/admin/orders" }))).rejects.toThrow("NEXT_REDIRECT /admin/orders");
+  });
+
+  it("the security page then says how many codes are left", async () => {
+    const user = await admin();
+    const { recoveryCodes } = await enrolAdmin(user);
+    const r = await completeTwoFactorLogin((await challengeFor(user)).token, recoveryCodes[0], meta);
+    ctx.jar.set(SESSION_COOKIE, r.ok ? r.token : "");
+    const html = renderToStaticMarkup(await AdminSecurityPage({ searchParams: Promise.resolve({ recovered: "1" }) }));
+    expect(html).toContain("دخلت برمز استرداد");
+    expect(html).toContain("بقي لديك ٩ رموز");
+    expect(renderToStaticMarkup(await AdminSecurityPage({ searchParams: Promise.resolve({}) }))).not.toContain("دخلت برمز استرداد");
+  });
+
+  it("a wrong recovery code is not answered as if it were a code from the app", async () => {
+    const user = await admin();
+    const { secret, recoveryCodes } = await enrolAdmin(user);
+    await completeTwoFactorLogin((await challengeFor(user)).token, recoveryCodes[0], meta);
+    const { token } = await challengeFor(user);
+    const reused = await completeTwoFactorLogin(token, recoveryCodes[0], meta);
+    expect(reused).toMatchObject({ ok: false, error: expect.stringContaining("رمز الاسترداد غير صحيح") });
+    expect(!reused.ok && reused.error).not.toContain("التطبيق");
+    const stepUp = await verifyStepUpCode({ userId: user.id, code: recoveryCodes[0], ip });
+    expect(stepUp).toMatchObject({ ok: false, error: expect.stringContaining("رمز الاسترداد غير صحيح") });
+    expect(await completeTwoFactorLogin(token, wrongCode(secret), meta)).toMatchObject({ ok: false, error: expect.stringContaining("انتظر الرمز التالي") });
+  });
+
+  it("warns at three codes or fewer, and only when two-factor is on", () => {
+    expect(LOW_RECOVERY_CODES).toBe(3);
+    expect(recoveryCodesAreLow({ enabled: true, recoveryRemaining: 4 })).toBe(false);
+    expect(recoveryCodesAreLow({ enabled: true, recoveryRemaining: 3 })).toBe(true);
+    expect(recoveryCodesAreLow({ enabled: true, recoveryRemaining: 0 })).toBe(true);
+    expect(recoveryCodesAreLow({ enabled: false, recoveryRemaining: 0 })).toBe(false);
+  });
+});
+
+describe("the last recovery code", () => {
+  /** مدير دخل بآخر رمز له، وجلسة قديمة مفتوحة على جهاز آخر */
+  async function stranded() {
+    const user = await admin();
+    const { recoveryCodes, secret, sessionId: otherSessionId } = await enrolAdmin(user);
+    await sql`update user_recovery_codes set used_at = now() where user_id = ${user.id} and code_hash <> ${hashRecoveryCode(parseSecondFactorCode(recoveryCodes[9])!.code, TEST_ENV.APP_SECRET!, user.id)}`;
+    const r = await completeTwoFactorLogin((await challengeFor(user)).token, recoveryCodes[9], meta);
+    if (!r.ok) throw new Error(`last code refused: ${r.error}`);
+    return { user, secret, otherSessionId, token: r.token, sessionId: hashToken(r.token) };
+  }
+  const restart = (s: { user: { id: string }; sessionId: string }, password: unknown = TEST_PASSWORD) => restartTwoFactorAfterLastCode({ userId: s.user.id, sessionId: s.sessionId, password, ip });
+  const factors = async (userId: string) => (await sql<{ n: number }[]>`select (select count(*)::int from user_totp where user_id = ${userId}) as n`)[0]!.n;
+
+  it("with the right password the session starts over: factors gone, other sessions ended, and audited", async () => {
+    const s = await stranded();
+    expect(await isStrandedOnLastCode(s.user.id, s.sessionId)).toBe(true);
+    expect(await restart(s)).toEqual({ ok: true });
+    expect(await factors(s.user.id)).toBe(0);
+    expect(await sql`select 1 from user_recovery_codes where user_id = ${s.user.id}`).toHaveLength(0);
+    expect(await sql`select 1 from sessions where id = ${s.otherSessionId}`).toHaveLength(0);
+    expect(await sql`select 1 from sessions where id = ${s.sessionId}`).toHaveLength(1);
+    const [log] = await sql<{ actor_id: string; ip: string }[]>`select actor_id, ip from audit_logs where entity_id = ${s.user.id} and action = 'two_factor.restarted_after_last_code'`;
+    expect(log).toEqual({ actor_id: s.user.id, ip });
+  });
+
+  it("then a new phone can enrol on that same session", async () => {
+    const s = await stranded();
+    await restart(s);
+    const details = await beginTwoFactorEnrolment({ userId: s.user.id, sessionId: s.sessionId, account: s.user.email, issuer: "فرقد" });
+    const fresh = base32Decode(details!.manualKey.replace(/\s/g, ""));
+    expect(await confirmTwoFactorEnrolment({ userId: s.user.id, sessionId: s.sessionId, code: codeAt(fresh, currentStep()), ip })).toMatchObject({ ok: true });
+    expect((await methodOf(s.token)).two_factor_method).toBe("totp");
+  });
+
+  it("a wrong password changes nothing", async () => {
+    const s = await stranded();
+    expect(await restart(s, "not-the-password")).toEqual({ ok: false, error: "كلمة المرور غير صحيحة." });
+    expect(await restart(s, 42)).toEqual({ ok: false, error: "كلمة المرور غير صحيحة." });
+    expect(await restart(s, "x".repeat(129))).toEqual({ ok: false, error: "كلمة المرور غير صحيحة." });
+    expect(await factors(s.user.id)).toBe(1);
+    expect(await sql`select 1 from sessions where id = ${s.otherSessionId}`).toHaveLength(1);
+  });
+
+  it("repeated wrong passwords are slowed like wrong codes, and a success clears the count", async () => {
+    const s = await stranded();
+    for (let i = 0; i < 5; i++) await restart(s, "not-the-password");
+    expect(await restart(s, TEST_PASSWORD)).toMatchObject({ ok: false, retryAfter: expect.any(Number) });
+    expect(await factors(s.user.id)).toBe(1);
+    await sql`delete from rate_limits where key = ${`2fa:fail:${s.user.id}`}`;
+    await restart(s, "not-the-password");
+    expect(await restart(s)).toEqual({ ok: true });
+    expect(await sql`select 1 from rate_limits where key = ${`2fa:fail:${s.user.id}`}`).toHaveLength(0);
+  });
+
+  it("a session opened from the app cannot use it, even with no codes left", async () => {
+    const user = await admin();
+    const { secret } = await enrolAdmin(user);
+    const r = await completeTwoFactorLogin((await challengeFor(user)).token, await freshCode(user.id, secret), meta);
+    await sql`update user_recovery_codes set used_at = now() where user_id = ${user.id}`;
+    const sessionId = hashToken(r.ok ? r.token : "");
+    expect(await isStrandedOnLastCode(user.id, sessionId)).toBe(false);
+    expect((await restart({ user, sessionId })).ok).toBe(false);
+    expect(await factors(user.id)).toBe(1);
+  });
+
+  it("is not available while a recovery code remains", async () => {
+    const user = await admin();
+    const { recoveryCodes } = await enrolAdmin(user);
+    const r = await completeTwoFactorLogin((await challengeFor(user)).token, recoveryCodes[0], meta);
+    const sessionId = hashToken(r.ok ? r.token : "");
+    expect(await isStrandedOnLastCode(user.id, sessionId)).toBe(false);
+    expect((await restart({ user, sessionId })).ok).toBe(false);
+    expect(await factors(user.id)).toBe(1);
+  });
+
+  it("another account's stranded session is no use", async () => {
+    const s = await stranded();
+    const other = await admin();
+    await enrolAdmin(other);
+    expect((await restart({ user: other, sessionId: s.sessionId })).ok).toBe(false);
+    expect(await factors(other.id)).toBe(1);
+    expect(await factors(s.user.id)).toBe(1);
+  });
+
+  it("the page offers it only in that state", async () => {
+    const s = await stranded();
+    ctx.jar.set(SESSION_COOKIE, s.token);
+    expect(renderToStaticMarkup(await AdminSecurityPage({ searchParams: Promise.resolve({}) }))).toContain('data-testid="restart-two-factor-form"');
+    const calm = await admin();
+    const { session } = await enrolAdmin(calm);
+    ctx.jar.set(SESSION_COOKIE, session.token);
+    expect(renderToStaticMarkup(await AdminSecurityPage({ searchParams: Promise.resolve({}) }))).not.toContain('data-testid="restart-two-factor-form"');
+  });
+
+  it("the action uses the cookie's own session, and goes to enrolment when two-factor is required", async () => {
+    process.env.ADMIN_2FA_REQUIRED = "true";
+    resetEnvCache();
+    const s = await stranded();
+    ctx.jar.set(SESSION_COOKIE, s.token);
+    await expect(restartTwoFactorAction(null, form({ currentPassword: TEST_PASSWORD }))).rejects.toThrow("NEXT_REDIRECT /two-factor/setup");
+    expect(await factors(s.user.id)).toBe(0);
+  });
+});
+
+describe("after APP_SECRET changes", () => {
+  it("old codes are refused, no session opens, and the reset command restores access", async () => {
+    const user = await admin();
+    const { secret, recoveryCodes } = await enrolAdmin(user);
+    await sql`delete from sessions where user_id = ${user.id}`;
+    const errors = vi.spyOn(console, "error").mockImplementation(() => {});
+    process.env.APP_SECRET = `${TEST_ENV.APP_SECRET}-rotated`;
+    resetEnvCache();
+
+    const { token } = await challengeFor(user);
+    expect(await completeTwoFactorLogin(token, await freshCode(user.id, secret), meta)).toMatchObject({ ok: false });
+    expect(await completeTwoFactorLogin(token, recoveryCodes[0], meta)).toMatchObject({ ok: false });
+    expect(await sessionsOf(user.id)).toHaveLength(0);
+    expect(JSON.stringify(errors.mock.calls)).not.toContain(secret.toString("hex"));
+
+    await resetAdminTwoFactor(getDb(), { email: user.email, apply: true, reason: "تغير APP_SECRET" });
+    await sql`delete from rate_limits`;
+    const again = await enrolAdmin(user);
+    const r = await completeTwoFactorLogin((await challengeFor(user)).token, await freshCode(user.id, again.secret), meta);
+    expect(r).toMatchObject({ ok: true });
+  });
+});
+
+describe("a temporary password on an account with two-factor", () => {
+  const NEW_PASSWORD = "Fresh-Owner-Pass-2026";
+  async function tempAdmin() {
+    const user = await admin();
+    const enrolled = await enrolAdmin(user);
+    await sql`delete from sessions where user_id = ${user.id}`;
+    await sql`update users set must_change_password = true, temp_password_expires_at = now() + interval '1 hour' where id = ${user.id}`;
+    return { user, ...enrolled };
+  }
+
+  it("the code leads to the change page first, then the panel opens on a whole session", async () => {
+    const { user, secret } = await tempAdmin();
+    ctx.jar.set(CHALLENGE_COOKIE, (await challengeFor(user)).token);
+    await expect(verifyLoginCodeAction(null, form({ code: await freshCode(user.id, secret), next: "/admin/orders" }))).rejects.toThrow("NEXT_REDIRECT /change-password");
+    expect((await validateSessionToken(ctx.jar.get(SESSION_COOKIE)!))!.mustChangePassword).toBe(true);
+
+    await expect(changeTemporaryPasswordAction(null, form({ password: NEW_PASSWORD, passwordConfirm: NEW_PASSWORD }))).rejects.toThrow("NEXT_REDIRECT /admin");
+    const token = ctx.jar.get(SESSION_COOKIE)!;
+    const after = await validateSessionToken(token);
+    expect(after).not.toBeNull();
+    expect(after!.mustChangePassword).toBe(false);
+    expect(after!.needsTwoFactorEnrolment).toBe(false);
+    expect(await methodOf(token)).toMatchObject({ two_factor_method: "totp", two_factor_at: expect.any(Date) });
+    await expect(requireStaff()).resolves.toMatchObject({ userId: user.id });
+  });
+
+  it("a session that never passed the second step gains nothing from changing the password", async () => {
+    const { user } = await tempAdmin();
+    const unstamped = await createSession(user.id, meta);
+    const out = await completeForcedPasswordChange(user.id, NEW_PASSWORD, { ...meta, sessionId: hashToken(unstamped.token) });
+    expect(out.ok).toBe(true);
+    expect((await methodOf(out.ok ? out.token : "")).two_factor_at).toBeNull();
+    expect(await validateSessionToken(out.ok ? out.token : "")).toBeNull();
+  });
+
+  it("a session id from another account carries nothing over", async () => {
+    const { user } = await tempAdmin();
+    const other = await admin();
+    const { sessionId: foreign } = await enrolAdmin(other);
+    const out = await completeForcedPasswordChange(user.id, NEW_PASSWORD, { ...meta, sessionId: foreign });
+    expect(await validateSessionToken(out.ok ? out.token : "")).toBeNull();
   });
 });

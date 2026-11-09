@@ -1,7 +1,8 @@
 import Link from "next/link";
 import { CircleCheck, Clock3, KeyRound, ShieldCheck, ShieldOff, TriangleAlert } from "lucide-react";
 import { requireOwnerPage } from "@/server/auth/permissions";
-import { getTwoFactorStatus } from "@/server/auth/two-factor";
+import { getCurrentSession } from "@/server/auth/session";
+import { getTwoFactorStatus, isStrandedOnLastCode } from "@/server/auth/two-factor";
 import { RECOVERY_CODE_COUNT } from "@/server/auth/two-factor-core";
 import { AdminPageHeader, Section } from "@/components/admin/page-header";
 import { ConfirmButton } from "@/components/admin/confirm-button";
@@ -9,19 +10,19 @@ import { StatusPill } from "@/components/admin/status-badge";
 import { Alert } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
 import { ar, count, W } from "@/lib/design";
-import { STEP_UP_CONFIRM_FIELD, TWO_FACTOR_SETUP_PATH } from "@/lib/two-factor";
+import { LOW_RECOVERY_CODES, RECOVERY_CODE_WORD, STEP_UP_CONFIRM_FIELD, TWO_FACTOR_SETUP_PATH } from "@/lib/two-factor";
 import { formatDateTime } from "@/lib/utils";
 import { PageBand } from "../_components/overview/bands";
 import { disableTwoFactorAction } from "./actions";
 import { RecoveryCodesForm } from "./_components/recovery-codes-form";
+import { RestartTwoFactorForm } from "./_components/restart-two-factor-form";
 
 export const metadata = { title: "أمان الحساب" };
 
-const LOW_RECOVERY_CODES = 3;
-
-export default async function AdminSecurityPage() {
+export default async function AdminSecurityPage({ searchParams }: { searchParams: Promise<{ recovered?: string }> }) {
   const owner = await requireOwnerPage();
-  const status = await getTwoFactorStatus(owner.userId);
+  const [status, session, sp] = await Promise.all([getTwoFactorStatus(owner.userId), getCurrentSession(), searchParams]);
+  const stranded = session ? await isStrandedOnLastCode(owner.userId, session.sessionId) : false;
 
   return (
     <div className="space-y-6">
@@ -32,6 +33,14 @@ export default async function AdminSecurityPage() {
           className="mb-0"
         />
       </PageBand>
+
+      {sp.recovered && status.enabled ? (
+        <div data-testid="recovered-notice">
+          <Alert tone="warning" title="دخلت برمز استرداد">
+            {status.recoveryRemaining === 0 ? "لم يبق لديك أي رمز." : `بقي لديك ${count(status.recoveryRemaining, RECOVERY_CODE_WORD)}.`} إن ضاع جوالك فسجّل التحقق من جديد بجوال آخر من هذه الصفحة، واحفظ الرموز الجديدة.
+          </Alert>
+        </div>
+      ) : null}
 
       <Section
         title="التحقق بخطوتين"
@@ -98,6 +107,14 @@ export default async function AdminSecurityPage() {
             </Alert>
           ) : null}
           <RecoveryCodesForm />
+          {stranded ? (
+            <>
+              <Alert tone="danger" title="استخدمت آخر رمز استرداد" className="mt-5">
+                إن كان جوالك معك فأصدر رموزًا جديدة بالرمز من التطبيق. وإن لم يكن معك فأكّد كلمة مرورك أدناه لتسجيل التحقق بجوال جديد، فبعد انتهاء هذه الجلسة لن تتمكن من الدخول إلا بأمر من الخادم. تنتهي كل جلساتك الأخرى.
+              </Alert>
+              <RestartTwoFactorForm />
+            </>
+          ) : null}
         </Section>
       ) : null}
 

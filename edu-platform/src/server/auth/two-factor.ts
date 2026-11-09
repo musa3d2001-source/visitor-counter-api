@@ -4,7 +4,8 @@ import { adminTwoFactorRequired, env } from "../env";
 import { audit } from "../platform/audit";
 import { count, W } from "@/lib/design";
 import { clearRateLimit, hitRateLimit, reserveFailureSlot, type FailurePolicy } from "./rate-limit";
-import { createSessionIn, generateToken, hashToken } from "./session";
+import { verifyPassword } from "./password";
+import { createSessionIn, generateToken, hashToken, type SecondFactorMethod } from "./session";
 import {
   base32Encode,
   constantTimeEqual,
@@ -43,8 +44,12 @@ const STEP_TWO_BAD_TOKEN_IP = { limit: 60, windowSec: 15 * 60 };
 const PENDING_MINUTES = 30;
 
 const INVALID_CODE = "الرمز غير صحيح أو سبق استخدامه. انتظر الرمز التالي في التطبيق ثم حاول مرة أخرى.";
+/** من يكتب رمز استرداد ليس معه التطبيق غالبًا، فلا معنى لانتظار الرمز التالي */
+const INVALID_RECOVERY_CODE = "رمز الاسترداد غير صحيح أو سبق استخدامه. كل رمز يعمل مرة واحدة، فجرّب رمزًا آخر من قائمتك.";
+const invalidCode = (input: SecondFactorInput) => (input.kind === "recovery" ? INVALID_RECOVERY_CODE : INVALID_CODE);
 const MALFORMED_CODE = "أدخل الرمز المكوّن من ٦ أرقام من تطبيق المصادقة، أو أحد رموز الاسترداد.";
 const CHALLENGE_EXPIRED = "انتهت مهلة هذه الخطوة. سجّل دخولك من جديد.";
+const NOT_STRANDED = "لا يلزم هذا الإجراء لهذه الجلسة. استخدم رمزًا من التطبيق أو أحد رموز الاسترداد.";
 
 type CodeContext = { ip?: string | null; purpose: "login" | "step_up" | "manage" };
 type Refused = { ok: false; error: string; retryAfter?: number };
@@ -79,7 +84,7 @@ export async function twoFactorIsActive(userId: string): Promise<boolean> {
  *  - TOTP: يقبل خطوة أكبر من آخر خطوة مقبولة فقط. طلبان بالرمز نفسه: تحديث واحد ينجح.
  *  - رمز الاسترداد: المقارنة على كل الرموز المتبقية بزمن ثابت، ثم تحديث مشروط بأنه لم يُستخدم.
  */
-async function consumeSecondFactor(tx: Db, userId: string, input: SecondFactorInput, ctx: CodeContext): Promise<"totp" | "recovery" | null> {
+async function consumeSecondFactor(tx: Db, userId: string, input: SecondFactorInput, ctx: CodeContext): Promise<SecondFactorMethod | null> {
   if (input.kind === "totp") {
     const [row] = await tx<{ secret_ciphertext: string }[]>`select secret_ciphertext from user_totp where user_id = ${userId} and enabled_at is not null`;
     if (!row) return null;
@@ -113,7 +118,7 @@ async function consumeSecondFactor(tx: Db, userId: string, input: SecondFactorIn
 }
 
 /** يفحص الرمز تحت العدّاد، ثم ينفذ العمل في معاملة الاستهلاك نفسها: فشل العمل لا يحرق الرمز */
-async function withVerifiedCode<T>(userId: string, rawCode: unknown, ctx: CodeContext, work: (tx: Db, method: "totp" | "recovery") => Promise<T>): Promise<{ ok: true; method: "totp" | "recovery"; value: T } | Refused> {
+async function withVerifiedCode<T>(userId: string, rawCode: unknown, ctx: CodeContext, work: (tx: Db, method: SecondFactorMethod) => Promise<T>): Promise<{ ok: true; method: SecondFactorMethod; value: T } | Refused> {
   const parsed = parseSecondFactorCode(rawCode);
   if (!parsed) return { ok: false, error: MALFORMED_CODE };
   const key = failureKey(userId);
@@ -124,7 +129,7 @@ async function withVerifiedCode<T>(userId: string, rawCode: unknown, ctx: CodeCo
     if (!method) return null;
     return { method, value: await work(tx, method) };
   });
-  if (!outcome) return { ok: false, error: INVALID_CODE };
+  if (!outcome) return { ok: false, error: invalidCode(parsed) };
   await clearRateLimit(key);
   return { ok: true, method: outcome.method, value: outcome.value };
 }
@@ -202,7 +207,7 @@ export async function confirmTwoFactorEnrolment(input: { userId: string; session
     await tx`update user_totp set enabled_at = now(), last_used_step = ${step}, pending_session_id = null where user_id = ${input.userId}`;
     await storeRecoveryCodes(tx, input.userId, recoveryCodes);
     await tx`delete from sessions where user_id = ${input.userId} and id <> ${input.sessionId}`;
-    await tx`update sessions set two_factor_at = now() where id = ${input.sessionId}`;
+    await tx`update sessions set two_factor_at = now(), two_factor_method = 'totp' where id = ${input.sessionId}`;
     await tx`delete from login_challenges where user_id = ${input.userId}`;
     await audit({ actorId: input.userId, action: "two_factor.enabled", entityType: "user", entityId: input.userId, ip: input.ip ?? null }, tx);
     return "ok";
@@ -237,6 +242,51 @@ export async function disableTwoFactor(input: { userId: string; sessionId: strin
   return out.ok ? { ok: true } : out;
 }
 
+async function strandedOnLastCode(db: Db, userId: string, sessionId: string): Promise<boolean> {
+  const [row] = await db<{ stranded: boolean }[]>`
+    select (
+      s.two_factor_method = 'recovery'
+      and exists (select 1 from user_totp t where t.user_id = s.user_id and t.enabled_at is not null)
+      and not exists (select 1 from user_recovery_codes r where r.user_id = s.user_id and r.used_at is null)
+    ) as stranded
+    from sessions s where s.id = ${sessionId} and s.user_id = ${userId}
+  `;
+  return row?.stranded ?? false;
+}
+
+/** جلسة فتحها رمز استرداد ولم يبق بعده أي رمز: لا شيء يمكن طلبه منها غير كلمة المرور */
+export async function isStrandedOnLastCode(userId: string, sessionId: string): Promise<boolean> {
+  return strandedOnLastCode(sql, userId, sessionId);
+}
+
+/**
+ * مخرج من دخل بآخر رمز استرداد وجواله ضائع: كل طريق آخر يطلب رمزًا لم يعد عنده، فيبقى أمر الخادم وحده.
+ * ليس أضعف مما قبله: disableTwoFactor يقبل رمز استرداد واحدًا، وهذه الجلسة فتحها رمز استرداد.
+ * كلمة المرور فوق ذلك حتى لا تكفي جلسة مسروقة، وتمر بعدّاد الرموز نفسه.
+ */
+export async function restartTwoFactorAfterLastCode(input: { userId: string; sessionId: string; password: unknown; ip?: string | null }): Promise<{ ok: true } | Refused> {
+  if (!(await isStrandedOnLastCode(input.userId, input.sessionId))) return { ok: false, error: NOT_STRANDED };
+  const key = failureKey(input.userId);
+  const slot = await reserveFailureSlot(key, CODE_FAILURES);
+  if (!slot.allowed) return { ok: false, error: waitMessage(slot.retryAfterSeconds), retryAfter: slot.retryAfterSeconds };
+  const [user] = await sql<{ password_hash: string }[]>`select password_hash from users where id = ${input.userId}`;
+  if (!user || typeof input.password !== "string" || input.password.length > 128 || !(await verifyPassword(input.password, user.password_hash))) return { ok: false, error: "كلمة المرور غير صحيحة." };
+
+  const done = await sql.begin(async (tx) => {
+    await tx`select 1 from user_totp where user_id = ${input.userId} for update`;
+    if (!(await strandedOnLastCode(tx, input.userId, input.sessionId))) return false;
+    await tx`delete from user_totp where user_id = ${input.userId}`;
+    await tx`delete from user_recovery_codes where user_id = ${input.userId}`;
+    await tx`delete from login_challenges where user_id = ${input.userId}`;
+    await tx`delete from sessions where user_id = ${input.userId} and id <> ${input.sessionId}`;
+    await audit({ actorId: input.userId, action: "two_factor.restarted_after_last_code", entityType: "user", entityId: input.userId, ip: input.ip ?? null }, tx);
+    return true;
+  });
+  if (!done) return { ok: false, error: NOT_STRANDED };
+  await clearRateLimit(key);
+  return { ok: true };
+}
+
 /** رمز جديد لأمر حساس: الرمز نفسه لا يصلح مرتين، ولو سبق استخدامه للدخول قبل ثوانٍ */
 export async function verifyStepUpCode(input: { userId: string; code: unknown; ip?: string | null }): Promise<{ ok: true; method: "totp" | "recovery" } | Refused> {
   const out = await withVerifiedCode(input.userId, input.code, { ip: input.ip, purpose: "step_up" }, async () => undefined);
@@ -267,7 +317,7 @@ export async function loginChallengeIsLive(token: string | undefined): Promise<b
   return Boolean(row);
 }
 
-export type CompleteChallengeResult = { ok: true; token: string; expiresAt: Date; mustChangePassword: boolean } | (Refused & { expired?: boolean });
+export type CompleteChallengeResult = { ok: true; token: string; expiresAt: Date; mustChangePassword: boolean; method: SecondFactorMethod } | (Refused & { expired?: boolean });
 
 /**
  * إكمال الدخول. قفل صف التحدي يجعل طلبين متزامنين بالتحدي نفسه تسلسليين:
@@ -312,12 +362,12 @@ export async function completeLoginChallenge(input: { token: string | undefined;
       return { state: "invalid" as const };
     }
     await tx`delete from login_challenges where id = ${id}`;
-    const session = await createSessionIn(tx, row.user_id, { ip: input.ip, userAgent: input.userAgent }, { twoFactorVerified: true, ttlMs: row.must_change_password ? input.mustChangeTtlMs : undefined });
-    return { state: "ok" as const, session, mustChangePassword: row.must_change_password };
+    const session = await createSessionIn(tx, row.user_id, { ip: input.ip, userAgent: input.userAgent }, { twoFactorVerified: true, twoFactorMethod: method, ttlMs: row.must_change_password ? input.mustChangeTtlMs : undefined });
+    return { state: "ok" as const, session, mustChangePassword: row.must_change_password, method };
   });
 
   if (outcome.state === "expired") return { ok: false, error: CHALLENGE_EXPIRED, expired: true };
-  if (outcome.state === "invalid") return { ok: false, error: INVALID_CODE };
+  if (outcome.state === "invalid") return { ok: false, error: invalidCode(parsed) };
   await clearRateLimit(key);
-  return { ok: true, token: outcome.session.token, expiresAt: outcome.session.expiresAt, mustChangePassword: outcome.mustChangePassword };
+  return { ok: true, token: outcome.session.token, expiresAt: outcome.session.expiresAt, mustChangePassword: outcome.mustChangePassword, method: outcome.method };
 }

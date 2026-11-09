@@ -84,6 +84,9 @@ alter table login_challenges enable row level security;
 --    جلسة مدير بلا هذا الختم لا تعمل على حساب فعّل التحقق بخطوتين.
 -- ---------------------------------------------------------------------
 alter table sessions add column two_factor_at timestamptz;
+-- كيف اجتازت الجلسة العامل الثاني: جلسة فتحها رمز استرداد ولم يبق بعده رمز هي وحدها التي تبدأ التسجيل من جديد بكلمة المرور
+alter table sessions add column two_factor_method text;
+alter table sessions add constraint sessions_two_factor_method_known check (two_factor_method is null or two_factor_method in ('totp', 'recovery')) not valid;
 
 -- ---------------------------------------------------------------------
 -- 6) مسح روابط الاستعادة التي خُزّنت كاملة في وضع log قبل هذا الترحيل

@@ -7,7 +7,7 @@ import { STEP_UP_FIELD, TWO_FACTOR_SETUP_PATH } from "@/lib/two-factor";
 import { AdminError, adminAction } from "@/server/admin/common";
 import { adminTwoFactorRequired } from "@/server/env";
 import { getCurrentSession } from "@/server/auth/session";
-import { disableTwoFactor, regenerateRecoveryCodes } from "@/server/auth/two-factor";
+import { disableTwoFactor, regenerateRecoveryCodes, restartTwoFactorAfterLastCode } from "@/server/auth/two-factor";
 
 /** رموز استرداد جديدة بعد رمز صحيح. تعاد في حالة النموذج فقط، وإعادة رسم الصفحة قبل قراءتها تضيعها */
 export async function regenerateRecoveryCodesAction(_prev: ActionState, fd: FormData): Promise<ActionState> {
@@ -15,6 +15,19 @@ export async function regenerateRecoveryCodesAction(_prev: ActionState, fd: Form
     const res = await regenerateRecoveryCodes({ userId: adminId, code: fd.get(STEP_UP_FIELD), ip });
     if (!res.ok) throw new AdminError(res.error);
     return { ok: true, message: "صدرت رموز جديدة وبطلت القديمة كلها", secrets: { recoveryCodes: res.recoveryCodes.join("\n") } };
+  });
+}
+
+/** بدء التسجيل من جديد بكلمة المرور، للجلسة التي فتحها آخر رمز استرداد */
+export async function restartTwoFactorAction(_prev: ActionState, fd: FormData): Promise<ActionState> {
+  return adminAction(async ({ adminId, ip }) => {
+    const session = await getCurrentSession();
+    if (!session) throw new AdminError("انتهت الجلسة، سجّل الدخول مرة أخرى");
+    const res = await restartTwoFactorAfterLastCode({ userId: adminId, sessionId: session.sessionId, password: fd.get("currentPassword"), ip });
+    if (!res.ok) throw new AdminError(res.error);
+    if (adminTwoFactorRequired()) redirect(TWO_FACTOR_SETUP_PATH);
+    revalidatePath("/admin/security");
+    return { ok: true, message: "أُوقف التحقق بخطوتين. فعّله من جديد بجوالك الجديد." };
   });
 }
 

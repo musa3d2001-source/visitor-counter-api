@@ -151,7 +151,8 @@ test.describe("التحقق بخطوتين الإلزامي للمالك", () =>
     await third.page.getByTestId("two-factor-toggle-recovery").click();
     await third.page.getByTestId("two-factor-code").fill(recovery[0]);
     await third.page.getByTestId("two-factor-submit").click();
-    await third.page.waitForURL("**/admin");
+    await third.page.waitForURL("**/admin/security?recovered=1");
+    await expect(third.page.getByTestId("recovered-notice")).toContainText("٩ رموز");
     await third.ctx.close();
 
     const fourth = await freshContext(browser);
@@ -159,7 +160,7 @@ test.describe("التحقق بخطوتين الإلزامي للمالك", () =>
     await fourth.page.waitForURL(/\/login\/two-factor/);
     await fourth.page.getByTestId("two-factor-code").fill(recovery[0]);
     await fourth.page.getByTestId("two-factor-submit").click();
-    await expect(fourth.page.getByText("الرمز غير صحيح")).toBeVisible();
+    await expect(fourth.page.getByText("رمز الاسترداد غير صحيح")).toBeVisible();
     await fourth.ctx.close();
 
     // أمر الاسترداد يحتاج رمزًا، والرمز الخاطئ لا يصل إلى البوابة
@@ -215,5 +216,71 @@ test.describe("التحقق بخطوتين الإلزامي للمالك", () =>
     const setup = await page.goto("/two-factor/setup");
     expect(setup?.status()).toBe(404);
     await ctx.close();
+  });
+});
+
+test.describe("الخطوة الثانية على الجوال", () => {
+  test.beforeEach(({}, info) => test.skip(info.project.name !== "iphone", "الرحلة الكاملة على الكمبيوتر، وهنا ما يفعله المالك من جواله"));
+
+  test("الدخول بالرمز، ثم برمز استرداد، حتى آخر رمز", async ({ page, context }) => {
+    const owner = await createAdmin();
+    await asDistinctClient(page);
+
+    await fillPassword(page, owner.email);
+    await page.waitForURL("**/two-factor/setup");
+    const secret = base32Decode((await page.getByTestId("totp-manual-key").textContent())!.replace(/\s/g, ""));
+    await expectNoHorizontalOverflow(page);
+    await page.getByTestId("two-factor-code").fill(hotp(secret, timeStep(Date.now())));
+    await page.getByTestId("two-factor-submit").click();
+    const codes = page.getByTestId("recovery-codes").locator("li");
+    await expect(codes).toHaveCount(10);
+    const recovery = (await codes.allTextContents()).map((c) => c.trim());
+    await expectNoHorizontalOverflow(page);
+    await page.getByTestId("recovery-codes-done").click();
+    await page.waitForURL("**/admin");
+
+    // بالرمز من التطبيق
+    await context.clearCookies();
+    await fillPassword(page, owner.email, "/admin/orders");
+    await page.waitForURL(/\/login\/two-factor/);
+    await expect(page.getByTestId("two-factor-login-form")).toBeVisible();
+    await expectNoHorizontalOverflow(page);
+    await page.getByTestId("two-factor-code").fill(await nextCode(owner.id, secret));
+    await page.getByTestId("two-factor-submit").click();
+    await page.waitForURL("**/admin/orders");
+
+    // برمز استرداد: يعرف ما بقي له، وعند ضياع الرموز كلها يعرف أين يذهب
+    await context.clearCookies();
+    await fillPassword(page, owner.email, "/admin/orders");
+    await page.waitForURL(/\/login\/two-factor/);
+    await page.getByTestId("two-factor-toggle-recovery").click();
+    await expect(page.getByTestId("two-factor-lost-help")).toContainText("README");
+    await expectNoHorizontalOverflow(page);
+    await page.getByTestId("two-factor-code").fill(recovery[0]);
+    await page.getByTestId("two-factor-submit").click();
+    await page.waitForURL("**/admin/security?recovered=1");
+    await expect(page.getByTestId("recovered-notice")).toContainText("٩ رموز");
+    await expect(page.getByTestId("restart-two-factor-form")).toHaveCount(0);
+    await expectNoHorizontalOverflow(page);
+
+    // بقي رمزان: التنبيه في الصفحة التي يفتحها كل يوم
+    await db()`update user_recovery_codes set used_at = now() where id in (select id from user_recovery_codes where user_id = ${owner.id} and used_at is null limit 7)`;
+    await page.goto("/admin");
+    await expect(page.getByText("بقي لديك رمزان فقط من رموز الاسترداد")).toBeVisible();
+    await expectNoHorizontalOverflow(page);
+
+    // لم يبق شيء: هذه الجلسة تبدأ التسجيل من جديد بكلمة المرور، دون سطر أوامر
+    await db()`update user_recovery_codes set used_at = now() where user_id = ${owner.id} and used_at is null`;
+    await page.goto("/admin/security");
+    await expect(page.getByTestId("restart-two-factor-form")).toBeVisible();
+    await expectNoHorizontalOverflow(page);
+    await page.getByTestId("restart-password").fill("Not-The-Password-2026");
+    await page.getByTestId("restart-submit").click();
+    await expect(page.getByText("كلمة المرور غير صحيحة")).toBeVisible();
+    expect(await db()`select 1 from user_totp where user_id = ${owner.id}`).toHaveLength(1);
+    await page.getByTestId("restart-password").fill(PASSWORD);
+    await page.getByTestId("restart-submit").click();
+    await page.waitForURL("**/two-factor/setup");
+    await expect(page.getByTestId("totp-manual-key")).toBeVisible();
   });
 });

@@ -2,6 +2,7 @@
 
 import { redirect } from "next/navigation";
 import type { ActionState } from "@/lib/action-state";
+import { TWO_FACTOR_RECOVERED_PATH } from "@/lib/two-factor";
 import { safeNextPath } from "@/lib/utils";
 import { clientIp, userAgent } from "@/server/http";
 import { getCurrentSession, setSessionCookie } from "@/server/auth/session";
@@ -20,7 +21,7 @@ export async function verifyLoginCodeAction(_prev: ActionState, fd: FormData): P
   await clearLoginChallengeCookie();
   await setSessionCookie(res.token, res.expiresAt);
   if (res.mustChangePassword) redirect("/change-password");
-  redirect(next);
+  redirect(res.method === "recovery" ? TWO_FACTOR_RECOVERED_PATH : next);
 }
 
 /**

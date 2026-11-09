@@ -11,6 +11,7 @@ import {
   GraduationCap,
   MailWarning,
   Plus,
+  KeyRound,
   Receipt,
   RotateCcw,
   Settings,
@@ -29,6 +30,8 @@ import { openPaymentAlertCount } from "@/server/payments/monitoring";
 import { extraPaymentsNeedingOwnerCount } from "@/server/payments/extras";
 import { refundsNeedingOwnerCount } from "@/server/payments/refunds";
 import { mailHealth } from "@/server/platform/mail-status";
+import { getTwoFactorStatus } from "@/server/auth/two-factor";
+import { RECOVERY_CODE_WORD, recoveryCodesAreLow } from "@/lib/two-factor";
 import { Button } from "@/components/ui/button";
 import { Eyebrow } from "@/components/ui/section-head";
 import { AdminNotice, MiniStat, MoreLink, Section, StatGrid, StatTile } from "@/components/admin/page-header";
@@ -53,7 +56,7 @@ export default async function AdminDashboard({ searchParams }: { searchParams: P
   const sp = await searchParams;
   const days = [7, 30, 90].includes(Number(sp.days)) ? Number(sp.days) : 30;
   const includeTest = sp.test === "1";
-  const [totals, latest, top, series, pending, teachersTop, paymentAlerts, extraPayments, refundsWaiting, mail] = await Promise.all([
+  const [totals, latest, top, series, pending, teachersTop, paymentAlerts, extraPayments, refundsWaiting, mail, twoFactor] = await Promise.all([
     dashboardTotals(includeTest),
     latestOrders(8, includeTest),
     topProducts(6, includeTest),
@@ -64,6 +67,7 @@ export default async function AdminDashboard({ searchParams }: { searchParams: P
     extraPaymentsNeedingOwnerCount(),
     refundsNeedingOwnerCount(),
     mailHealth(),
+    getTwoFactorStatus(actor.userId),
   ]);
   const qs = (patch: Record<string, string | undefined>) => {
     const p = new URLSearchParams({ ...(sp.days ? { days: sp.days } : {}), ...(includeTest ? { test: "1" } : {}) });
@@ -113,6 +117,12 @@ export default async function AdminDashboard({ searchParams }: { searchParams: P
           </>
         }
       />
+
+      {recoveryCodesAreLow(twoFactor) ? (
+        <AdminNotice href="/admin/security" icon={<KeyRound />} tone="coral" action="إصدار رموز">
+          {twoFactor.recoveryRemaining === 0 ? "لم يبق لديك أي رمز استرداد" : `بقي لديك ${count(twoFactor.recoveryRemaining, RECOVERY_CODE_WORD)} فقط من رموز الاسترداد`}. أصدر رموزًا جديدة قبل أن تحتاجها
+        </AdminNotice>
+      ) : null}
 
       {mail.logOnlyInProduction ? (
         <AdminNotice href="/admin/mail" icon={<MailWarning />} tone="coral" action="التفاصيل">
