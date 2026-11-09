@@ -2,6 +2,7 @@ import "server-only";
 import { sql } from "../db";
 import { env } from "../env";
 import { isAnonymizedEmail } from "@/lib/anonymize";
+import { redactSecrets } from "@/lib/redact";
 
 /**
  * إرسال البريد:
@@ -13,14 +14,7 @@ import { isAnonymizedEmail } from "@/lib/anonymize";
  */
 export type MailMessage = { to: string; subject: string; text: string; html?: string; template: string };
 
-const REDACTED = "[REDACTED]";
-const SECRET_PARAM = /([?&#;](?:token|code|key|secret|password|pass|otp)=)[^\s&#"'<>]+/gi;
-/** أي سلسلة طويلة بلا فواصل تشبه رمزًا (رموزنا ٤٣ حرفًا، ومعرّف UUID ٣٦ فلا يتأثر) */
-const OPAQUE_RUN = /[A-Za-z0-9_-]{40,}/g;
-
-export function redactSecrets(text: string): string {
-  return text.replace(SECRET_PARAM, `$1${REDACTED}`).replace(OPAQUE_RUN, REDACTED);
-}
+export { redactSecrets };
 
 /** هل تخرج الرسائل فعلًا إلى صناديق البريد؟ */
 export function mailIsReal(): boolean {
