@@ -1,5 +1,4 @@
 import { randomUUID } from "node:crypto";
-import { readFileSync } from "node:fs";
 import { afterAll, beforeAll, beforeEach, describe, expect, it, vi } from "vitest";
 import { renderToStaticMarkup } from "react-dom/server";
 import { ar } from "@/lib/design";
@@ -80,8 +79,9 @@ describe("الرصيد المستحق يستبعد فترة الاسترداد",
     expect(await teacherBalance(t.id)).toMatchObject({ heldFils: 0, balanceFils: 500 });
   });
 
-  it("the hold is the one the refund policy promises", () => {
-    const page = readFileSync("src/app/(site)/refund-policy/page.tsx", "utf8");
+  it("the hold is the one the refund policy promises", async () => {
+    const { default: RefundPolicyPage } = await import("@/app/(site)/refund-policy/page");
+    const page = renderToStaticMarkup(await RefundPolicyPage()).replace(/<[^>]+>/g, " ").replace(/\s+/g, " ");
     expect(page).toContain(`خلال ${ar(REFUND_HOLD_DAYS)} أيام من الشراء`);
   });
 

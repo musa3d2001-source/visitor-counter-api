@@ -3,6 +3,7 @@ import { renderToStaticMarkup } from "react-dom/server";
 import { completeFreeOrder, createOrder, type OrderRow } from "@/server/commerce/orders";
 import { handleMyFatoorahWebhook, requestOrderRefund, resetPaymentMethodsCache, verifyAndApplyPayment } from "@/server/payments/service";
 import { paymentMethodLabel } from "@/lib/labels";
+import { ORDER_PAYMENT_FALLBACK } from "@/lib/site-truth";
 import { resetEnvCache } from "@/server/env";
 import { startSimulator, type Simulator } from "../mocks/myfatoorah-simulator";
 import { closeDb, resetDb, sql } from "../helpers/db";
@@ -112,7 +113,7 @@ describe("the receipt on the order page", () => {
     const { order } = await paidOrder();
     await sql`update payments set payment_method = '1' where order_id = ${order.id}`;
     const html = await page(order);
-    expect(shown(html, "receipt-method")).toBe("MyFatoorah");
+    expect(shown(html, "receipt-method")).toBe(ORDER_PAYMENT_FALLBACK);
   });
 
   it("shows no gateway rows for a free order", async () => {
