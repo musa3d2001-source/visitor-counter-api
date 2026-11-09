@@ -1,6 +1,6 @@
 import { expect, type Page, type Browser } from "@playwright/test";
 import postgres from "postgres";
-import { E2E_ADMIN, E2E_DATABASE_URL } from "./e2e-env";
+import { E2E_ADMIN, E2E_DATABASE_URL, E2E_SINK_URL } from "./e2e-env";
 
 let _sql: postgres.Sql | null = null;
 export function db() {
@@ -61,6 +61,29 @@ export async function checkoutAndPay(page: Page, outcome: "success" | "fail") {
   await page.getByTestId(outcome === "success" ? "sim-pay-success" : "sim-pay-fail").click();
   await page.waitForURL(/\/orders\//);
   return page.url().split("/orders/")[1].split("?")[0];
+}
+
+/** ينتظر رسالة وصلت فعلًا إلى خادم SMTP المحلي، ويعيد أول رابط يطابق النمط في أحدث رسالة */
+export async function waitForMailLink(address: string, pattern: RegExp): Promise<string> {
+  let link = "";
+  await expect
+    .poll(
+      async () => {
+        const res = await fetch(`${E2E_SINK_URL}/__sink/messages?to=${encodeURIComponent(address)}`);
+        const messages = (await res.json()) as { text: string }[];
+        for (const m of messages.reverse()) {
+          const hit = pattern.exec(m.text);
+          if (hit) {
+            link = hit[0];
+            return true;
+          }
+        }
+        return false;
+      },
+      { timeout: 15_000, message: `لم تصل رسالة إلى ${address}` },
+    )
+    .toBe(true);
+  return link;
 }
 
 export async function expectNoHorizontalOverflow(page: Page) {

@@ -1,5 +1,5 @@
 import { defineConfig, devices } from "@playwright/test";
-import { E2E_BASE_URL, E2E_BUNNY, E2E_BUNNY_PORT, E2E_SERVER_ENV, E2E_SIM_KEY, E2E_SIM_PORT, E2E_WEBHOOK_SECRET } from "./tests/e2e/e2e-env";
+import { E2E_BASE_URL, E2E_BUNNY, E2E_BUNNY_PORT, E2E_MAIL_BASE_URL, E2E_MAIL_SERVER_ENV, E2E_SERVER_ENV, E2E_SIM_KEY, E2E_SIM_PORT, E2E_SINK_URL, E2E_SMTP_PORT, E2E_WEBHOOK_SECRET } from "./tests/e2e/e2e-env";
 
 /**
  * اختبارات E2E (Playwright) — تعمل على Chromium المثبت مسبقًا بقياسات iPhone و iPad والكمبيوتر.
@@ -54,6 +54,20 @@ export default defineConfig({
       command: `npx next start -p ${E2E_SERVER_ENV.PORT}`,
       url: `${baseURL}/robots.txt`,
       env: E2E_SERVER_ENV,
+      reuseExistingServer: false,
+      timeout: 120_000,
+    },
+    {
+      // خادم SMTP محلي (بديل اختبار): يستقبل ما يرسله nodemailer فعليًا ولا يوصله لأحد
+      command: `npx tsx tests/mocks/run-smtp-sink.ts --port ${E2E_SMTP_PORT} --http ${new URL(E2E_SINK_URL).port}`,
+      url: `${E2E_SINK_URL}/__sink/health`,
+      reuseExistingServer: false,
+      timeout: 30_000,
+    },
+    {
+      command: `npx next start -p ${E2E_MAIL_SERVER_ENV.PORT}`,
+      url: `${E2E_MAIL_BASE_URL}/robots.txt`,
+      env: E2E_MAIL_SERVER_ENV,
       reuseExistingServer: false,
       timeout: 120_000,
     },

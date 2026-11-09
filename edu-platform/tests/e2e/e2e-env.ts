@@ -17,6 +17,10 @@ export const E2E_BUNNY = {
   base: `http://127.0.0.1:${Number(process.env.E2E_BUNNY_PORT ?? 4020)}`,
 };
 export const E2E_WEBHOOK_SECRET = "e2e-webhook-secret";
+export const E2E_SMTP_PORT = Number(process.env.E2E_SMTP_PORT ?? 4026);
+export const E2E_SINK_URL = `http://127.0.0.1:${Number(process.env.E2E_SINK_HTTP_PORT ?? 4027)}`;
+export const E2E_MAIL_PORT = Number(process.env.E2E_MAIL_PORT ?? 3101);
+export const E2E_MAIL_BASE_URL = `http://localhost:${E2E_MAIL_PORT}`;
 
 export const E2E_SERVER_ENV: Record<string, string> = {
   NODE_ENV: "production",
@@ -43,4 +47,16 @@ export const E2E_SERVER_ENV: Record<string, string> = {
   BUNNY_STREAM_API_BASE: E2E_BUNNY.base,
   BUNNY_STREAM_TUS_ENDPOINT: `${E2E_BUNNY.base}/tusupload`,
   BUNNY_STREAM_EMBED_BASE: E2E_BUNNY.base,
+};
+
+/** خادم ثانٍ من البناء نفسها وقاعدة البيانات نفسها، ببريد SMTP حقيقي إلى خادم اختبار محلي */
+export const E2E_MAIL_SERVER_ENV: Record<string, string> = {
+  ...E2E_SERVER_ENV,
+  PORT: String(E2E_MAIL_PORT),
+  APP_URL: E2E_MAIL_BASE_URL,
+  MAIL_DRIVER: "smtp",
+  SMTP_HOST: "127.0.0.1",
+  SMTP_PORT: String(E2E_SMTP_PORT),
+  SMTP_SECURE: "false",
+  MAIL_FROM: "منصة فرقد <no-reply@farqad.test>",
 };
