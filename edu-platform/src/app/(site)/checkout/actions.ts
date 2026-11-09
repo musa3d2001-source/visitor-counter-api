@@ -6,6 +6,7 @@ import { assertUser } from "@/server/auth/guards";
 import { closeOrder, createOrder, completeFreeOrder, getUserOrder, OpenOrderExistsError, OrderError } from "@/server/commerce/orders";
 import {
   OrderClosedError,
+  InvoiceNeedsReviewError,
   OrderSettledError,
   PaymentInProgressError,
   PaymentModeMismatchError,
@@ -94,7 +95,7 @@ export async function retryPaymentAction(fd: FormData) {
     url = (await startPayment(found.order, null)).url;
   } catch (err) {
     if (err instanceof OrderSettledError) redirect(`/orders/${found.order.id}`);
-    const code = err instanceof PaymentModeMismatchError ? "mode" : err instanceof OrderClosedError ? "closed" : err instanceof PaymentInProgressError ? "inprogress" : "payment";
+    const code = err instanceof PaymentModeMismatchError ? "mode" : err instanceof InvoiceNeedsReviewError ? "review" : err instanceof OrderClosedError ? "closed" : err instanceof PaymentInProgressError ? "inprogress" : "payment";
     redirect(`/orders/${found.order.id}?error=${code}`);
   }
   redirect(url);
@@ -111,7 +112,8 @@ export async function refreshOrderStatusAction(fd: FormData) {
     const walk = await checkOrderInvoices(found.order.id);
     if (!walk.allChecked) {
       console.error("[refresh-order] incomplete", walk.error);
-      redirect(`/orders/${found.order.id}?error=check`);
+      // انتظار البوابة ينفع فقط إن كانت هي التي لم ترد
+      redirect(`/orders/${found.order.id}?error=${walk.unreachable ? "check" : walk.otherMode ? "mode" : "review"}`);
     }
   }
   redirect(`/orders/${found.order.id}`);
@@ -120,6 +122,7 @@ export async function refreshOrderStatusAction(fd: FormData) {
 /**
  * إلغاء الطالب لطلبه غير المدفوع، حتى يستطيع البدء من جديد دون انتظار انتهاء عمر الطلب.
  * لا يُلغى قبل التأكد من كل فواتيره لدى البوابة، وعند التعذر أو وجود محاولة لم تُحسم خلال عمر رابطها ومهلته يبقى الطلب كما هو.
+ * فاتورة من وضع دفع آخر أو لا تطابق الطلب لا يحلها الانتظار، فلا تمنع الإلغاء: أي دفعة عليها تُسجل للمالك ولا تضيع.
  */
 export async function cancelOrderAction(fd: FormData) {
   const user = await assertUser();
@@ -130,7 +133,7 @@ export async function cancelOrderAction(fd: FormData) {
   const limit = await hitRateLimit(`cancel-order:${user.id}`, 10, 60 * 10);
   if (!limit.allowed) redirect(`${orderUrl}?error=rate`);
   const walk = await checkOrderInvoices(found.order.id);
-  if (!walk.allChecked) redirect(`${orderUrl}?error=check`);
+  if (walk.unreachable) redirect(`${orderUrl}?error=check`);
   if (await attemptBlocksClosing(found.order.id, walk.inProgressInvoiceIds)) redirect(`${orderUrl}?error=inprogress`);
   await sql.begin((db) => closeOrder(db, { orderId: found.order.id, reason: "student_cancelled", actorId: user.id }));
   redirect(orderUrl);

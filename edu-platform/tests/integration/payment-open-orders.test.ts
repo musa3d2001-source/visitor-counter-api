@@ -25,7 +25,7 @@ vi.mock("next/navigation", () => ({
   },
 }));
 
-const { cancelOrderAction, placeOrderAction } = await import("@/app/(site)/checkout/actions");
+const { cancelOrderAction, placeOrderAction, refreshOrderStatusAction, retryPaymentAction } = await import("@/app/(site)/checkout/actions");
 
 let sim: Simulator;
 
@@ -42,6 +42,7 @@ beforeEach(() => {
 });
 afterEach(() => {
   sim.clearFaults();
+  sim.setAmountTamper(null);
   for (const [k, v] of Object.entries(TEST_ENV)) process.env[k] = v;
   resetEnvCache();
   resetPaymentMethodsCache();
@@ -270,6 +271,59 @@ describe("a student cancelling their own order", () => {
     await sql`update payments set expires_at = now() - interval '5 minutes' where order_id = ${order.id}`;
     expect(await cancel(order.id)).toBe(`/orders/${order.id}?error=inprogress`);
     expect((await orderRow(order.id)).status).toBe("pending");
+  });
+
+  describe("an invoice that waiting will not resolve", () => {
+    const act = async (action: (f: FormData) => Promise<unknown>, orderId: string) => {
+      await expect(action(fd({ orderId }))).rejects.toThrow(/NEXT_REDIRECT/);
+      return ctx.redirected.at(-1)!;
+    };
+    async function otherMode() {
+      const made = await openOrder();
+      await sql`update payments set environment = 'live' where order_id = ${made.order.id}`;
+      return made;
+    }
+    async function mismatched() {
+      const made = await openOrder();
+      sim.setAmountTamper(500);
+      return made;
+    }
+
+    it("from another payment mode: Refresh says so instead of asking the student to wait", async () => {
+      const { order } = await otherMode();
+      expect(await act(refreshOrderStatusAction, order.id)).toBe(`/orders/${order.id}?error=mode`);
+    });
+
+    it("from another payment mode: Retry says so too", async () => {
+      const { order } = await otherMode();
+      expect(await act(retryPaymentAction, order.id)).toBe(`/orders/${order.id}?error=mode`);
+    });
+
+    it("from another payment mode: the student can still cancel", async () => {
+      const { order } = await otherMode();
+      expect(await act(cancelOrderAction, order.id)).toBe(`/orders/${order.id}`);
+      expect((await orderRow(order.id)).status).toBe("cancelled");
+    });
+
+    it("that does not match the order: Refresh and Retry both say it needs review", async () => {
+      const { order } = await mismatched();
+      expect(await act(refreshOrderStatusAction, order.id)).toBe(`/orders/${order.id}?error=review`);
+      expect(await act(retryPaymentAction, order.id)).toBe(`/orders/${order.id}?error=review`);
+    });
+
+    it("that does not match the order: the student can still cancel", async () => {
+      const { order } = await mismatched();
+      expect(await act(cancelOrderAction, order.id)).toBe(`/orders/${order.id}`);
+      expect((await orderRow(order.id)).status).toBe("cancelled");
+    });
+
+    it("a gateway that does not answer is still reported as try again, and blocks the cancel", async () => {
+      const { order } = await openOrder();
+      sim.setFault("/v2/GetPaymentStatus", "error");
+      expect(await act(refreshOrderStatusAction, order.id)).toBe(`/orders/${order.id}?error=check`);
+      expect(await act(cancelOrderAction, order.id)).toBe(`/orders/${order.id}?error=check`);
+      expect((await orderRow(order.id)).status).toBe("pending");
+    });
   });
 
   it("an attempt abandoned past the grace period no longer traps the order", async () => {

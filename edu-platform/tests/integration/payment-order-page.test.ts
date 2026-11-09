@@ -7,6 +7,8 @@ import { canSayNothingWasCharged } from "@/server/payments/extras";
 import { startSimulator, type Simulator } from "../mocks/myfatoorah-simulator";
 import { closeDb, resetDb, sql } from "../helpers/db";
 import { expireLocally, invoiceIdOf, newOrder, orderRow } from "../helpers/payment-flow";
+
+const WAIT = "توجد محاولة دفع لم تُحسم بعد";
 import { SIM_API_KEY, SIM_PORT, TEST_ENV, WEBHOOK_SECRET } from "../test-env";
 
 /** الصفحة الحقيقية تُعرض كاملة: ما يقرأه الطالب عن طلبه */
@@ -64,8 +66,10 @@ describe("the pending page", () => {
     const { user, order } = await newOrder();
     ctx.user = user;
     const html = await page(order);
-    expect(html.indexOf("تحديث الحالة")).toBeGreaterThan(-1);
-    expect(html.indexOf("إكمال الدفع")).toBeGreaterThan(html.indexOf("تحديث الحالة"));
+    const refresh = html.indexOf('data-testid="order-refresh"');
+    const retry = html.indexOf('data-testid="order-retry"');
+    expect(refresh).toBeGreaterThan(-1);
+    expect(retry).toBeGreaterThan(refresh);
   });
 
   it("offers a way out of an order the student no longer wants", async () => {
@@ -137,7 +141,42 @@ describe("saying nothing was charged", () => {
     await sql`insert into payment_extras (payment_id, order_id, kind, amount_fils) values (${id}, ${order.id}, 'amount_mismatch', 100)`;
     const html = await page(order);
     expect(html).not.toContain(NOTHING_CHARGED);
-    expect(html).toContain("وصلتنا دفعة أخرى على هذا الطلب");
+    expect(html).toContain("وصلتنا دفعة لا يطابق مبلغها هذا الطلب");
+    expect(html).not.toContain("وصلتنا دفعة أخرى");
+  });
+
+  describe("while an attempt on an open link has not finished", () => {
+    async function withAttempt() {
+      const { order, invoices } = await failedWithInvoices(1);
+      await sql`update payments set expires_at = now() + interval '30 minutes' where order_id = ${order.id}`;
+      sim.startTransaction(invoices[0]);
+      await checkAll(invoices);
+      return { order, invoices };
+    }
+
+    it("does not appear on a failed order, and asks the student to wait", async () => {
+      const { order } = await withAttempt();
+      const html = await page(order);
+      expect(html).not.toContain(NOTHING_CHARGED);
+      expect(html).not.toContain("يمكنك المحاولة مرة أخرى");
+      expect(html).toContain(WAIT);
+    });
+
+    it("does not appear on a closed order, and asks the student to wait", async () => {
+      const { order } = await withAttempt();
+      await sql.begin((tx) => closeOrder(tx, { orderId: order.id, reason: "expired", actorId: null }));
+      const html = await page(await orderRow(order.id));
+      expect(html).not.toContain(NOTHING_CHARGED);
+      expect(html).toContain(WAIT);
+    });
+
+    it("once the link and its grace have passed nobody is asked to wait, but the sentence stays withheld", async () => {
+      const { order } = await withAttempt();
+      await sql`update payments set expires_at = now() - interval '20 minutes' where order_id = ${order.id}`;
+      const html = await page(order);
+      expect(html).not.toContain(WAIT);
+      expect(html).not.toContain(NOTHING_CHARGED);
+    });
   });
 
   it("with payment off and unchecked invoices it points to contact, not to a button that is not there", async () => {
@@ -165,10 +204,27 @@ describe("what the student is told", () => {
     ["check", "تعذر التأكد من حالة الدفع الآن"],
     ["rate", "محاولات كثيرة"],
     ["payment", "تعذر بدء الدفع حاليًا"],
+    ["review", "لا يمكن تأكيد هذا الطلب تلقائيًا"],
   ])("error=%s explains itself", async (error, text) => {
     const { user, order } = await newOrder();
     ctx.user = user;
     expect(await page(order, { error })).toContain(text);
+  });
+
+  it("does not call a refund done while the gateway has only accepted it", async () => {
+    const { user, order } = await newOrder();
+    ctx.user = user;
+    await sql`update orders set status = 'refunded' where id = ${order.id}`;
+    await sql`insert into refunds (order_id, amount_fils, reason, status, gateway_refund_id) values (${order.id}, ${order.total_fils}, 'سبب الاختبار', 'requested', 'r-1')`;
+    const accepted = await page(await orderRow(order.id));
+    expect(accepted).toContain("طلب الاسترداد قيد التنفيذ");
+    expect(accepted).not.toContain("تم استرداد هذا الطلب");
+    expect(accepted).toMatch(/data-testid="order-status"[^>]*>قيد الاسترداد</);
+
+    await sql`update refunds set status = 'completed' where order_id = ${order.id}`;
+    const done = await page(await orderRow(order.id));
+    expect(done).toContain("تم استرداد هذا الطلب");
+    expect(done).toMatch(/data-testid="order-status"[^>]*>مسترد</);
   });
 
   it("arriving from checkout at an open order says why", async () => {
@@ -181,6 +237,8 @@ describe("what the student is told", () => {
     ["expired", "انتهت مدة هذا الطلب", 'href="/cart"'],
     ["student_cancelled", "ألغيت هذا الطلب", 'href="/cart"'],
     ["already_owned", "هذا المنتج في مكتبتك", 'href="/library"'],
+    ["coupon_unavailable", "نفد كود الخصم قبل إكمال الطلب", 'href="/cart"'],
+    ["product_ended", "انتهى بيع أحد منتجات هذا الطلب", 'href="/cart"'],
   ] as const)("a closed order (%s) says what happened and where to go", async (reason, title, link) => {
     const { user, order } = await newOrder();
     ctx.user = user;
@@ -189,6 +247,68 @@ describe("what the student is told", () => {
     expect(html).toContain(title);
     expect(html).toContain(link);
     expect(html).not.toContain('name="orderId"');
+  });
+
+  describe("when money arrived that did not complete the order", () => {
+    const setContacts = async (values: Record<string, string>) => {
+      for (const [key, value] of Object.entries(values)) {
+        await sql`insert into settings (key, value) values (${key}, to_jsonb(${value}::text)) on conflict (key) do update set value = excluded.value`;
+      }
+    };
+    async function closedWithExtra(reason: "expired" | "product_ended" | "already_owned", kind: string, state = "open") {
+      const { user, order } = await newOrder();
+      ctx.user = user;
+      const { url } = await startPayment(order, null);
+      await sql.begin((tx) => closeOrder(tx, { orderId: order.id, reason, actorId: null }));
+      const [{ id }] = await sql<{ id: string }[]>`select id from payments where order_id = ${order.id}`;
+      await sql`insert into payment_extras (payment_id, order_id, kind, amount_fils, state) values (${id}, ${order.id}, ${kind}, ${order.total_fils}, ${state})`;
+      return { order: await orderRow(order.id), invoice: invoiceIdOf(url) };
+    }
+
+    it.each([
+      ["late_review", "وصلتنا دفعتك ولم يكتمل هذا الطلب"],
+      ["amount_mismatch", "وصلتنا دفعة لا يطابق مبلغها هذا الطلب"],
+      ["after_refund", "وصلتنا دفعة بعد استرداد هذا الطلب"],
+      ["duplicate", "وصلتنا دفعة أخرى على هذا الطلب"],
+    ])("%s has its own true heading", async (kind, title) => {
+      const { order } = await closedWithExtra("expired", kind);
+      expect(await page(order)).toContain(title);
+    });
+
+    it.each([
+      ["expired", "دون تأكيد دفع"],
+      ["product_ended", "حتى لا تدفع مقابل منتج انتهى"],
+      ["already_owned", "حتى لا تدفع مرتين"],
+    ] as const)("the closed heading for %s stops saying no payment was made", async (reason, untrue) => {
+      const { order } = await closedWithExtra(reason, "late_review");
+      const html = await page(order);
+      expect(html).not.toContain(untrue);
+      expect(html).toContain("لم نضف منتجات الطلب إلى مكتبتك");
+      expect(html).toContain("لإعادتها إليك");
+    });
+
+    it("stays withdrawn after the money has been returned", async () => {
+      const { order } = await closedWithExtra("expired", "late_review", "refunded");
+      const html = await page(order);
+      expect(html).not.toContain("دون تأكيد دفع");
+      expect(html).not.toContain("وصلتنا دفعتك");
+    });
+
+    it("says the refund is under way once it has been sent", async () => {
+      const { order } = await closedWithExtra("expired", "late_review", "refund_requested");
+      expect(await page(order)).toContain("طلبنا إعادتها من بوابة الدفع");
+    });
+
+    it("shows the real ways to reach us, and none that are not set", async () => {
+      await setContacts({ whatsapp_number: "96599887766", contact_email: "", contact_phone: "" });
+      const { order } = await closedWithExtra("expired", "late_review");
+      const html = await page(order);
+      expect(html).toContain('data-testid="extra-payment-contacts"');
+      expect(html).toContain('href="https://wa.me/96599887766"');
+      expect(html).not.toContain("mailto:");
+      await setContacts({ whatsapp_number: "" });
+      expect(await page(order)).not.toContain('data-testid="extra-payment-contacts"');
+    });
   });
 
   it("an order cancelled with no reason keeps the plain description", async () => {

@@ -8,9 +8,9 @@ import { getUserOrder } from "@/server/commerce/orders";
 import { sql } from "@/server/db";
 import { getSettings } from "@/server/platform/settings";
 import { paymentsConfig } from "@/server/payments/service";
-import { canSayNothingWasCharged } from "@/server/payments/extras";
+import { canSayNothingWasCharged, hasUnresolvedAttempt, type ExtraPaymentKind } from "@/server/payments/extras";
 import { cancelOrderAction, retryPaymentAction, refreshOrderStatusAction } from "../../checkout/actions";
-import { PaymentUnavailableNotice, realContactLinks } from "@/components/site/payment-unavailable-notice";
+import { ContactLinks, PaymentUnavailableNotice, realContactLinks } from "@/components/site/payment-unavailable-notice";
 import { Alert } from "@/components/ui/alert";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -41,6 +41,14 @@ const CLOSED_COPY = {
   coupon_unavailable: { title: "نفد كود الخصم قبل إكمال الطلب", body: "نفدت مرات استخدام كود الخصم، فأغلقنا الطلب. يمكنك إنشاء طلب جديد من السلة." },
   product_ended: { title: "انتهى بيع أحد منتجات هذا الطلب", body: "مضى تاريخ إتاحة أحد منتجات هذا الطلب، فأغلقناه حتى لا تدفع مقابل منتج انتهى." },
 } as const;
+
+/** مال وصلنا ولم يكمل طلبًا، كما يراه الطالب. الوصف يختلف لأن الجملة نفسها تكذب في غير موضعها */
+const EXTRA_COPY: Record<ExtraPaymentKind, { title: string; body: string }> = {
+  duplicate: { title: "وصلتنا دفعة أخرى على هذا الطلب", body: "طلبك مكتمل، وهذه الدفعة زائدة عليه." },
+  after_refund: { title: "وصلتنا دفعة بعد استرداد هذا الطلب", body: "لم يعد بهذه الدفعة وصولك إلى منتجات الطلب." },
+  late_review: { title: "وصلتنا دفعتك ولم يكتمل هذا الطلب", body: "لم نضف منتجات الطلب إلى مكتبتك بهذه الدفعة." },
+  amount_mismatch: { title: "وصلتنا دفعة لا يطابق مبلغها هذا الطلب", body: "لم يكتمل الطلب بهذه الدفعة، ولم نضف منتجاته إلى مكتبتك." },
+};
 
 function itemLook(type: string) {
   if (isContainerType(type as ProductType)) return { icon: <Package />, tone: "tone-default" };
@@ -82,8 +90,16 @@ export default async function OrderPage({ params, searchParams }: { params: Prom
   const showHelp = unpaid && hasContact;
   // هذه الجملة لا تُقال إلا بعد فحص كل الفواتير لدى البوابة
   const nothingCharged = await canSayNothingWasCharged(order.id);
-  const [extraPayment] = await sql`select 1 from payment_extras where order_id = ${order.id} and state not in ('refunded', 'dismissed') limit 1`;
+  const unresolvedAttempt = (unpaid || order.status === "cancelled") && (await hasUnresolvedAttempt(order.id));
+  // الدفعة التي ما زالت تنتظر قرارًا تتقدم، ووجود أي دفعة يكفي لسحب جملة «لا دفع» من الترويسة
+  const [latestExtra] = await sql<{ kind: ExtraPaymentKind; state: string; open: boolean }[]>`
+    select kind, state, state not in ('refunded', 'dismissed') as open from payment_extras where order_id = ${order.id}
+    order by (state not in ('refunded', 'dismissed')) desc, created_at desc limit 1
+  `;
+  const extraPayment = latestExtra?.open ? latestExtra : null;
+  const extraCopy = extraPayment ? EXTRA_COPY[extraPayment.kind] : null;
   const closedCopy = order.status === "cancelled" && order.closed_reason ? CLOSED_COPY[order.closed_reason] : null;
+  const refundInProcess = refund?.status === "requested";
 
   return (
     <div className="bg-sunny">
@@ -128,13 +144,13 @@ export default async function OrderPage({ params, searchParams }: { params: Prom
                   <h1 className="font-display text-[clamp(1.9rem,1.3rem+2.4vw,3rem)] leading-tight font-black">بانتظار تأكيد الدفع</h1>
                   <p className="mt-2 max-w-2xl text-[1.05rem] leading-8 font-semibold text-accent-900/90">إذا أتممت الدفع، اضغط «تحديث الحالة». لن تُضاف مشترياتك إلى مكتبتك قبل تأكيد بوابة الدفع.</p>
                   <div className="mt-6 flex flex-wrap justify-center gap-3 sm:justify-start">
-                    <form action={refreshOrderStatusAction}>
+                    <form action={refreshOrderStatusAction} data-testid="order-refresh">
                       <input type="hidden" name="orderId" value={order.id} />
                       <SubmitButton size="lg">
                         <RotateCcw aria-hidden /> تحديث الحالة
                       </SubmitButton>
                     </form>
-                    <form action={retryPaymentAction}>
+                    <form action={retryPaymentAction} data-testid="order-retry">
                       <input type="hidden" name="orderId" value={order.id} />
                       <SubmitButton variant="outline" size="lg">
                         إكمال الدفع
@@ -175,10 +191,10 @@ export default async function OrderPage({ params, searchParams }: { params: Prom
               ) : order.status === "refunded" ? (
                 <>
                   <h1 className="font-display text-[clamp(1.9rem,1.3rem+2.4vw,3rem)] leading-tight font-black" data-testid="order-refunded">
-                    تم استرداد هذا الطلب
+                    {refundInProcess ? "طلب الاسترداد قيد التنفيذ" : "تم استرداد هذا الطلب"}
                   </h1>
                   <p className="mt-2 max-w-2xl text-[1.05rem] leading-8 text-white/90">
-                    {refund?.status === "completed" ? "نفذت بوابة الدفع الاسترداد. " : refund?.status === "requested" ? "الاسترداد قيد التنفيذ لدى بوابة الدفع. " : ""}
+                    {refund?.status === "completed" ? "نفذت بوابة الدفع الاسترداد. " : refundInProcess ? "قبلت بوابة الدفع طلب الاسترداد. عند تنفيذه " : ""}
                     يعود المبلغ إلى وسيلة الدفع الأصلية، ويعتمد وقت ظهوره في حسابك على البوابة والبنك. توقف الوصول إلى منتجات هذا الطلب.
                   </p>
                 </>
@@ -188,7 +204,7 @@ export default async function OrderPage({ params, searchParams }: { params: Prom
                     {closedCopy.title}
                   </h1>
                   <p className="mt-2 max-w-2xl text-[1.05rem] leading-8 text-white/90">
-                    {closedCopy.body}
+                    {latestExtra ? "أُغلق هذا الطلب ولم يكتمل. تجد تفاصيل الدفعة التي وصلتنا في الأسفل." : closedCopy.body}
                     {nothingCharged ? " لم يتم خصم أي مبلغ مقابل هذا الطلب." : ""}
                   </p>
                   <div className="mt-6 flex flex-wrap justify-center gap-3 sm:justify-start">
@@ -221,15 +237,32 @@ export default async function OrderPage({ params, searchParams }: { params: Prom
           </Alert>
         ) : null}
 
-        {extraPayment ? (
-          <Alert tone="warning" className="mt-6 no-print" title="وصلتنا دفعة أخرى على هذا الطلب">
-            سجّلناها وسيراجعها فريقنا. إن كان لديك سؤال عنها، تواصل معنا واذكر رقم الطلب <span className="num font-bold">{order.number}</span>.
+        {unresolvedAttempt ? (
+          <Alert tone="warning" className="mt-6 no-print" title="توجد محاولة دفع لم تُحسم بعد">
+            إن كنت أتممت الدفع في صفحة البنك، انتظر نتيجتها قبل أي محاولة جديدة حتى لا يُخصم المبلغ مرتين.
+          </Alert>
+        ) : null}
+
+        {extraPayment && extraCopy ? (
+          <Alert tone="warning" className="mt-6 no-print" title={extraCopy.title}>
+            <p>
+              {extraCopy.body}{" "}
+              {extraPayment.state === "refund_requested"
+                ? "طلبنا إعادتها من بوابة الدفع، ويعتمد وقت ظهور المبلغ في حسابك على البوابة والبنك."
+                : "سجّلناها وسيراجعها فريقنا لإعادتها إليك."}{" "}
+              إن كان لديك سؤال عنها، تواصل معنا واذكر رقم الطلب <span className="num font-bold">{order.number}</span>.
+            </p>
+            <ContactLinks settings={settings} testId="extra-payment-contacts" />
           </Alert>
         ) : null}
 
         {sp.error === "mode" ? (
           <Alert tone="danger" className="mt-6 no-print" title="لا يمكن إكمال دفع هذا الطلب">
-            أُنشئ هذا الطلب في وضع دفع مختلف عن الوضع الحالي. يمكنك إنشاء طلب جديد من <Link href="/cart">السلة</Link>.
+            أُنشئ هذا الطلب في وضع دفع مختلف عن الوضع الحالي، ولن يتغير ذلك بالتحديث. يمكنك إلغاء هذا الطلب ثم إنشاء طلب جديد من <Link href="/cart">السلة</Link>.
+          </Alert>
+        ) : sp.error === "review" ? (
+          <Alert tone="warning" className="mt-6 no-print" title="لا يمكن تأكيد هذا الطلب تلقائيًا">
+            إحدى فواتير هذا الطلب لا تطابق بياناته، فلن تتغير حالته بالتحديث. إن خُصم منك مبلغ، تواصل معنا واذكر رقم الطلب <span className="num font-bold">{order.number}</span>. ويمكنك إلغاء هذا الطلب والبدء من جديد.
           </Alert>
         ) : sp.error === "inprogress" ? (
           <Alert tone="warning" className="mt-6 no-print" title="توجد عملية دفع لم تكتمل بعد">
@@ -271,7 +304,7 @@ export default async function OrderPage({ params, searchParams }: { params: Prom
                   </Badge>
                 ) : null}
                 <Badge tone={statusTone} size="lg" data-testid="order-status">
-                  {ORDER_STATUS_LABELS[order.status]}
+                  {refundInProcess ? "قيد الاسترداد" : ORDER_STATUS_LABELS[order.status]}
                 </Badge>
               </div>
             </div>

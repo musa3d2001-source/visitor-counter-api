@@ -3,7 +3,7 @@ import { sql, type Db } from "../db";
 import { filsToKwdString, kwdNumberToFils } from "@/lib/money";
 import { audit } from "../platform/audit";
 import { applyRefundToOrder, undoRefundOnOrder, type OrderRow } from "../commerce/orders";
-import { sendRefundCancelledEmail, sendRefundEmail } from "../commerce/order-mail";
+import { sendRefundCancelledEmail, sendRefundCompletedEmail, sendRefundEmail } from "../commerce/order-mail";
 import { isDefiniteGatewayRefusal, type MfRefundStatus, type MyFatoorahClient } from "./myfatoorah";
 import { applyExtraRefundEvent } from "./extras";
 import { raiseRefundAlert, type RefundAlertReason } from "./monitoring";
@@ -176,7 +176,7 @@ async function claimRefund(environment: Environment, input: { orderId: string; a
 }
 
 type GatewayFact = { kind: "accepted" | "refunded" | "cancelled"; refundId: string; reference?: string | null };
-type Transition = { state: RefundOutcome["state"]; mail: "refund" | "refund_cancelled" | null; orderId: string; error?: string };
+type Transition = { state: RefundOutcome["state"]; mail: "refund" | "refund_completed" | "refund_cancelled" | null; orderId: string; error?: string };
 
 const CANCELLED_TEXT = "ألغت البوابة طلب الاسترداد ولم يخرج المال.";
 
@@ -221,7 +221,8 @@ async function applyFact(db: Db, order: OrderRow, row: RefundRow, fact: GatewayF
     `;
     const applied = await applyToOrder();
     await auditFact("order.refund_completed");
-    return { ...base, state: "completed", mail: applied ? "refund" : null };
+    // يعرف الطالب بالتنفيذ من أُخبر بالقبول، ومن طُبق استرداده الآن مباشرة
+    return { ...base, state: "completed", mail: applied || (row.status === "requested" && row.accepted_at) ? "refund_completed" : null };
   }
 
   // الإلغاء
@@ -246,6 +247,7 @@ async function applyFact(db: Db, order: OrderRow, row: RefundRow, fact: GatewayF
 /** البريد بعد الالتزام فقط، ولا يغيّر نتيجة العملية أبدًا (الدوال نفسها لا ترمي) */
 async function deliver(t: Transition): Promise<RefundOutcome> {
   if (t.mail === "refund") await sendRefundEmail(t.orderId);
+  if (t.mail === "refund_completed") await sendRefundCompletedEmail(t.orderId);
   if (t.mail === "refund_cancelled") await sendRefundCancelledEmail(t.orderId);
   return t.error ? { state: t.state, error: t.error } : { state: t.state };
 }
@@ -468,7 +470,7 @@ export async function applyRefundEvent(gateway: RefundGateway, environment: Envi
       refundId = created.id;
     }
     await applyRefundToOrder(db, { order, paymentId: payment.id, refundId, amountFils: order.total_fils, reason, actorId: null, gatewayRefundId: ev.refundId });
-    return { state: "completed", mail: "refund", orderId: order.id };
+    return { state: "completed", mail: "refund_completed", orderId: order.id };
   });
   if (t) await deliver(t);
 }

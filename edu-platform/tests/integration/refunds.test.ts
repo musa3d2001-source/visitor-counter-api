@@ -71,6 +71,7 @@ const staleClaim = (orderId: string) => sql`update refunds set claimed_at = now(
 const realClient = () => new MyFatoorahClient({ baseUrl: `http://127.0.0.1:${SIM_PORT}`, apiKey: SIM_API_KEY });
 const refundsOnGateway = (invoice: number) => sim.state.invoices.get(invoice)!.Refunds;
 const refundMails = (email: string) => sql`select id from email_log where to_email = ${email} and template = 'order_refund'`;
+const completedMails = (email: string) => sql`select id from email_log where to_email = ${email} and template = 'order_refund_completed'`;
 
 async function paidOrder(priceFils = 3000) {
   const made = await newOrder(priceFils);
@@ -525,6 +526,7 @@ describe("refund webhooks for a refund we know", () => {
     expect((await refundOf(order.id)).completed_at).toEqual(refund.completed_at);
     expect(await auditCount("order.refund", order.id)).toBe(1);
     expect(await refundMails(user.email)).toHaveLength(1);
+    expect(await completedMails(user.email)).toHaveLength(1);
   });
 
   it("CANCELED after acceptance gives everything back and allows a new attempt", async () => {
@@ -621,7 +623,9 @@ describe("refund webhooks for a refund we know", () => {
     await expect(requestRefund(gateway, "sandbox", { orderId: order.id, adminId: admin.id, reason: "طلب الطالب" })).resolves.toEqual({ state: "completed" });
     expect(await refundOf(order.id)).toMatchObject({ status: "completed", source: "owner" });
     expect(await auditCount("order.refund", order.id)).toBe(1);
-    expect(await refundMails(user.email)).toHaveLength(1);
+    // نُفذ قبل أن يصلنا القبول، فلا معنى لرسالة «قيد التنفيذ»: رسالة واحدة تقول ما حدث
+    expect(await refundMails(user.email)).toHaveLength(0);
+    expect(await completedMails(user.email)).toHaveLength(1);
     expect(await alertsOf(order.id)).toHaveLength(0);
   });
 
@@ -690,7 +694,8 @@ describe("refund webhooks with an id we do not know (portal refunds)", () => {
     expect((await orderRow(order.id)).status).toBe("refunded");
     expect(await activeEntitlements(user.id)).toEqual([]);
     expect(await earningStates(order.id)).toEqual(["reversed"]);
-    expect(await refundMails(user.email)).toHaveLength(1);
+    expect(await refundMails(user.email)).toHaveLength(0);
+    expect(await completedMails(user.email)).toHaveLength(1);
     expect(await alertsOf(order.id)).toHaveLength(0);
   });
 

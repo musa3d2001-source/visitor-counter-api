@@ -203,15 +203,74 @@ describe("the order confirmation email", () => {
   });
 });
 
+describe("the email about money that did not complete an order", () => {
+  const extraMails = (email: string) => mails(email, "order_extra_payment");
+
+  it("is sent once, when the charge is first recorded", async () => {
+    const { user, order } = await newOrder();
+    const { url } = await startPayment(order, null);
+    const invoice = invoiceIdOf(url);
+    await sim.pay(invoice, "success");
+    await verifyAndApplyPayment({ invoiceId: String(invoice) });
+    expect(await extraMails(user.email)).toHaveLength(0);
+    await sim.pay(invoice, "success");
+    await verifyAndApplyPayment({ invoiceId: String(invoice) });
+    await verifyAndApplyPayment({ invoiceId: String(invoice) });
+    const sent = await extraMails(user.email);
+    expect(sent).toHaveLength(1);
+    expect(sent[0].body).toContain("3.000");
+    expect(sent[0].body).toContain("زائدة");
+  });
+
+  it("is sent when the amount did not match, and says the order was not completed", async () => {
+    const { user, order } = await newOrder();
+    const { url } = await startPayment(order, null);
+    sim.setAmountTamper(500);
+    await sim.pay(invoiceIdOf(url), "success");
+    await verifyAndApplyPayment({ invoiceId: String(invoiceIdOf(url)) });
+    await verifyAndApplyPayment({ invoiceId: String(invoiceIdOf(url)) });
+    sim.setAmountTamper(null);
+    const sent = await extraMails(user.email);
+    expect(sent).toHaveLength(1);
+    expect(sent[0].body).toContain("لا يطابق");
+  });
+
+  it("a mail failure does not disturb the record", async () => {
+    const { user, order } = await newOrder();
+    const { url } = await startPayment(order, null);
+    const invoice = invoiceIdOf(url);
+    await sim.pay(invoice, "success");
+    await verifyAndApplyPayment({ invoiceId: String(invoice) });
+    await sim.pay(invoice, "success");
+    ctx.mail = "throw";
+    await expect(verifyAndApplyPayment({ invoiceId: String(invoice) })).resolves.toMatchObject({ state: "flagged" });
+    expect(await sql`select 1 from payment_extras where order_id = ${order.id}`).toHaveLength(1);
+    expect(await extraMails(user.email)).toHaveLength(0);
+  });
+});
+
 describe("the refund emails", () => {
-  it("one email when the gateway accepts, and no second one when it completes", async () => {
-    const { user, order, invoice } = await paidOrder();
+  it("on acceptance says it is being processed, never that it is done", async () => {
+    const { user, order } = await paidOrder();
     await refund(order);
-    await refundEvent(invoice);
     const sent = await mails(user.email, "order_refund");
     expect(sent).toHaveLength(1);
     expect(sent[0].body).toContain("3.000");
+    expect(sent[0].body).toContain("قيد التنفيذ");
     expect(sent[0].body).toContain("وسيلة الدفع الأصلية");
+    expect(sent[0].body).not.toContain("تم استرداد");
+    expect(await mails(user.email, "order_refund_completed")).toHaveLength(0);
+  });
+
+  it("a second, different email when the gateway completes it, and only one", async () => {
+    const { user, order, invoice } = await paidOrder();
+    await refund(order);
+    await refundEvent(invoice);
+    await refundEvent(invoice);
+    expect(await mails(user.email, "order_refund")).toHaveLength(1);
+    const done = await mails(user.email, "order_refund_completed");
+    expect(done).toHaveLength(1);
+    expect(done[0].body).toContain("نفذت بوابة الدفع");
   });
 
   it("no email when the gateway refuses", async () => {

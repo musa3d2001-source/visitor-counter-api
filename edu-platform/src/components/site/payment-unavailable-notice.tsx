@@ -12,27 +12,35 @@ export function realContactLinks(s: ContactSettings) {
   return links;
 }
 
+/** قائمة وسائل التواصل الحقيقية. لا تعرض شيئًا إن لم يُضبط أي منها */
+export function ContactLinks({ settings, testId }: { settings: ContactSettings; testId: string }) {
+  const links = realContactLinks(settings);
+  if (!links.length) return null;
+  return (
+    <ul className="mt-1 flex flex-wrap gap-x-5" data-testid={testId}>
+      {links.map(({ key, label, href, external, Icon }) => (
+        <li key={key}>
+          <a href={href} className="inline-flex min-h-11 items-center gap-1.5" {...(external ? { target: "_blank", rel: "noopener noreferrer" } : {})}>
+            <Icon className="size-4 shrink-0" aria-hidden />
+            {label}
+          </a>
+        </li>
+      ))}
+    </ul>
+  );
+}
+
 /**
  * تنبيه للطالب عندما يكون الدفع الإلكتروني متوقفًا: صادق ولا يَعِد بشيء لا يحدث،
  * ويعرض وسائل التواصل الحقيقية إن وُجدت. سبب التوقف التقني للمالك فقط (صفحة الإعدادات).
  */
 export function PaymentUnavailableNotice({ settings, className }: { settings: ContactSettings; className?: string }) {
-  const links = realContactLinks(settings);
   return (
     <Alert tone="warning" title="الدفع الإلكتروني غير متاح حاليًا" className={className}>
-      {links.length ? (
+      {realContactLinks(settings).length ? (
         <>
           <p>للاستفسار عن شراء هذا المحتوى تواصل معنا:</p>
-          <ul className="mt-1 flex flex-wrap gap-x-5" data-testid="payment-unavailable-contacts">
-            {links.map(({ key, label, href, external, Icon }) => (
-              <li key={key}>
-                <a href={href} className="inline-flex min-h-11 items-center gap-1.5" {...(external ? { target: "_blank", rel: "noopener noreferrer" } : {})}>
-                  <Icon className="size-4 shrink-0" aria-hidden />
-                  {label}
-                </a>
-              </li>
-            ))}
-          </ul>
+          <ContactLinks settings={settings} testId="payment-unavailable-contacts" />
         </>
       ) : (
         <p>لا يمكن إتمام الشراء الآن. تبقى المنتجات في سلتك لتعود إليها لاحقًا.</p>

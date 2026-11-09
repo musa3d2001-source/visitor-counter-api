@@ -29,7 +29,7 @@ import { WEBHOOK_STALE_CLAIM_MINUTES, raiseDisputeAlert, recordWebhookRejection,
 import { applyExtraRefundEvent, recordExtraPayment, type ExtraPaymentKind, type ExtraPaymentState } from "./extras";
 import { CLAIM_STALE_SECONDS, INVOICE_REUSE_MARGIN_MINUTES, INVOICE_TTL_MINUTES, IN_PROGRESS_GRACE_MINUTES, ORDER_LIFETIME_HOURS, REFUND_SENDING_STALE_MINUTES } from "./limits";
 import { RefundError, applyRefundEvent, recheckRefund, requestRefund, type RefundOutcome } from "./refunds";
-import { sendOrderConfirmationEmail } from "../commerce/order-mail";
+import { sendExtraPaymentEmail, sendOrderConfirmationEmail } from "../commerce/order-mail";
 
 /**
  * خدمة الدفع — قواعد حاسمة:
@@ -157,6 +157,14 @@ export class PaymentInProgressError extends MyFatoorahError {
 }
 
 /** أُغلق الطلب بدل إنشاء فاتورة له: انتهت مدته أو أصبح منتجه مملوكًا */
+/** على الطلب فاتورة لا تطابق بياناته: لن يحلها الانتظار، ويراجعها المالك */
+export class InvoiceNeedsReviewError extends MyFatoorahError {
+  constructor(message: string) {
+    super(message);
+    this.name = "InvoiceNeedsReviewError";
+  }
+}
+
 export class OrderClosedError extends MyFatoorahError {
   constructor(public readonly reason: OrderClosedReason) {
     super("أُغلق هذا الطلب");
@@ -169,6 +177,10 @@ export type InvoiceWalk = {
   checked: number;
   /** لم يتعذر أي فحص: كل فاتورة غير مؤكدة ردت عنها البوابة */
   allChecked: boolean;
+  /** لماذا لم يُفحص ما لم يُفحص. تعذر الوصول قد يزول بالانتظار، أما الآخران فلا يزولان ويجب ألا يُطلب من الطالب أن ينتظر */
+  unreachable: number;
+  otherMode: number;
+  invalid: number;
   anyPaid: boolean;
   anyFlagged: boolean;
   /** فواتير عليها عملية لم تُحسم عند البنك */
@@ -187,17 +199,19 @@ export async function checkOrderInvoices(orderId: string, opts: { stopOnError?: 
     where order_id = ${orderId} and provider = 'myfatoorah' and gateway_invoice_id is not null and status not in ('paid', 'refunded')
     order by created_at asc
   `;
-  const walk: InvoiceWalk = { total: rows.length, checked: 0, allChecked: true, anyPaid: false, anyFlagged: false, inProgressInvoiceIds: [], error: null };
+  const walk: InvoiceWalk = { total: rows.length, checked: 0, allChecked: true, unreachable: 0, otherMode: 0, invalid: 0, anyPaid: false, anyFlagged: false, inProgressInvoiceIds: [], error: null };
   const note = (message: string) => {
     walk.allChecked = false;
     walk.error ??= message;
   };
   if (!cfg.enabled) {
     if (rows.length) note(cfg.reason);
+    walk.unreachable = rows.length;
     return walk;
   }
   for (const row of rows) {
     if (row.environment !== cfg.environment) {
+      walk.otherMode++;
       note("فاتورة من وضع دفع مختلف");
       if (opts.stopOnError) break;
       continue;
@@ -205,6 +219,7 @@ export async function checkOrderInvoices(orderId: string, opts: { stopOnError?: 
     try {
       const result = await verifyAndApplyPayment({ invoiceId: row.gateway_invoice_id }, { timeoutMs: opts.timeoutMs });
       if (result.state === "invalid") {
+        walk.invalid++;
         note(result.error);
         if (opts.stopOnError) break;
         continue;
@@ -214,6 +229,7 @@ export async function checkOrderInvoices(orderId: string, opts: { stopOnError?: 
       if (result.state === "flagged") walk.anyFlagged = true;
       if (result.state === "pending" && result.inProgress) walk.inProgressInvoiceIds.push(row.gateway_invoice_id);
     } catch (err) {
+      walk.unreachable++;
       note(err instanceof Error ? err.message : String(err));
       if (opts.stopOnError) break;
     }
@@ -359,6 +375,8 @@ export async function startPayment(order: OrderRow, paymentMethodId: number | nu
   if (order.is_test !== (cfg.environment === "sandbox")) throw new PaymentModeMismatchError();
 
   const walk = await checkOrderInvoices(order.id, { stopOnError: true });
+  if (walk.otherMode && !walk.unreachable) throw new PaymentModeMismatchError();
+  if (walk.invalid && !walk.unreachable) throw new InvoiceNeedsReviewError(`فاتورة لا تطابق الطلب: ${walk.error}`);
   if (!walk.allChecked) throw new MyFatoorahError(`تعذر التحقق من فواتير الطلب: ${walk.error}`);
   if (walk.anyPaid) throw new OrderSettledError(order.id);
 
@@ -594,7 +612,7 @@ export async function verifyAndApplyPayment(key: { paymentId?: string; invoiceId
   const result = interpretPaymentStatus(status, key.paymentId);
   const invoiceFils = kwdNumberToFils(Number(status.InvoiceValue));
   if (invoiceFils !== order.total_fils || invoiceFils !== payment.amount_fils || !isKuwaitiDinarDisplay(status.InvoiceDisplayValue)) {
-    await sql.begin(async (db) => {
+    const newExtra = await sql.begin(async (db) => {
       await db`select id from orders where id = ${order.id} for update`;
       const [row] = await db<{ gateway_payment_id: string | null }[]>`
         update payments set error_message = 'amount/currency mismatch', last_gateway_status = ${db.json(status as never)}, last_checked_at = now(),
@@ -603,25 +621,27 @@ export async function verifyAndApplyPayment(key: { paymentId?: string; invoiceId
         returning gateway_payment_id
       `;
       // خُصم مبلغ لا يطابق الطلب: لا يكمل الطلب ولا يضيع، ويراجعه المالك
-      if (result.state === "paid") {
-        const amountFils = Number.isInteger(invoiceFils) && invoiceFils > 0 ? invoiceFils : payment.amount_fils;
-        await recordExtraPayment(db, {
-          paymentId: payment.id,
-          orderId: order.id,
-          kind: "amount_mismatch",
-          amountFils,
-          details: { gatewayAmountFils: Number.isInteger(invoiceFils) ? invoiceFils : null, gatewayDisplayValue: status.InvoiceDisplayValue ?? null },
-        });
-        await recordOtherSuccesses(db, { paymentId: payment.id, orderId: order.id, settlingId: row.gateway_payment_id, amountFils, status, kind: "amount_mismatch" });
-      }
+      if (result.state !== "paid") return false;
+      const amountFils = Number.isInteger(invoiceFils) && invoiceFils > 0 ? invoiceFils : payment.amount_fils;
+      const recorded = await recordExtraPayment(db, {
+        paymentId: payment.id,
+        orderId: order.id,
+        kind: "amount_mismatch",
+        amountFils,
+        details: { gatewayAmountFils: Number.isInteger(invoiceFils) ? invoiceFils : null, gatewayDisplayValue: status.InvoiceDisplayValue ?? null },
+      });
+      const others = await recordOtherSuccesses(db, { paymentId: payment.id, orderId: order.id, settlingId: row.gateway_payment_id, amountFils, status, kind: "amount_mismatch" });
+      return recorded || others.recorded;
     });
+    if (newExtra) await sendExtraPaymentEmail(order.id);
     return { state: "invalid", error: "المبلغ لا يطابق الطلب" };
   }
 
   if (result.state === "paid") {
-    const { result: applied } = await sql.begin((db) => applyConfirmedPayment(db, { orderId: order.id, paymentId: payment.id, invoiceFils, status, transaction: result.transaction }));
+    const { result: applied, newExtra } = await sql.begin((db) => applyConfirmedPayment(db, { orderId: order.id, paymentId: payment.id, invoiceFils, status, transaction: result.transaction }));
     // بعد الالتزام، ولا يرمي: تعذر البريد لا يؤثر على الدفع
     if (applied.state === "paid" && applied.changed) await sendOrderConfirmationEmail(order.id);
+    if (newExtra) await sendExtraPaymentEmail(order.id);
     return applied;
   }
 

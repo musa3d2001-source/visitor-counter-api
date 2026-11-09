@@ -1,7 +1,7 @@
 import "server-only";
 import { sql, type Db } from "../db";
 import { audit } from "../platform/audit";
-import { CHARGE_CHECK_FRESH_MINUTES, REFUND_STUCK_HOURS } from "./limits";
+import { CHARGE_CHECK_FRESH_MINUTES, IN_PROGRESS_GRACE_MINUTES, INVOICE_TTL_MINUTES, REFUND_STUCK_HOURS } from "./limits";
 
 /**
  * الدفعات الزائدة: مال حقيقي أكدته البوابة ولا يكمل طلبًا.
@@ -153,7 +153,7 @@ export async function applyExtraRefundEvent(db: Db, input: { invoiceId: string; 
 
 /**
  * هل يحق لنا أن نقول للطالب «لم يتم خصم أي مبلغ»؟ فقط إن لم تُؤكد أي دفعة ولم تُسجل دفعة زائدة،
- * وكل فاتورة أُنشئت على الطلب ردت عنها البوابة بعد إنشاء آخر فاتورة، وخلال نصف الساعة الأخيرة.
+ * ولا توجد محاولة لم تُحسم، وكل فاتورة أُنشئت على الطلب ردت عنها البوابة بعد إنشاء آخر فاتورة، وخلال نصف الساعة الأخيرة.
  * طلب بلا أي فاتورة لم يصل أصلًا إلى البوابة، فالجملة صحيحة.
  */
 export async function canSayNothingWasCharged(orderId: string, db: Db = sql): Promise<boolean> {
@@ -161,6 +161,7 @@ export async function canSayNothingWasCharged(orderId: string, db: Db = sql): Pr
     select
       not exists (select 1 from payments where order_id = ${orderId} and status in ('paid', 'refunded'))
       and not exists (select 1 from payment_extras where order_id = ${orderId})
+      and not exists (select 1 from payments p where p.order_id = ${orderId} and p.last_gateway_status @? '$.InvoiceTransactions[*] ? (@.TransactionStatus == "InProgress" || @.TransactionStatus == "Authorize")')
       and coalesce((
         select bool_and(p.last_checked_at is not null)
           and min(p.last_checked_at) >= max(p.created_at)
@@ -169,4 +170,20 @@ export async function canSayNothingWasCharged(orderId: string, db: Db = sql): Pr
       ), true) as ok
   `;
   return row.ok;
+}
+
+/**
+ * هل على الطلب محاولة لم تُحسم خلال عمر رابطها ومهلته؟ حينها ندعو الطالب إلى الانتظار بدل محاولة جديدة قد تخصم مرتين.
+ * بعد المهلة تُعد صفحة بنك تُركت، فلا نطلب منه الانتظار، ويبقى منع جملة «لم يتم خصم أي مبلغ» قائمًا.
+ */
+export async function hasUnresolvedAttempt(orderId: string, db: Db = sql): Promise<boolean> {
+  const [row] = await db<{ open: boolean }[]>`
+    select exists (
+      select 1 from payments p
+      where p.order_id = ${orderId} and p.status not in ('paid', 'refunded')
+        and p.last_gateway_status @? '$.InvoiceTransactions[*] ? (@.TransactionStatus == "InProgress" || @.TransactionStatus == "Authorize")'
+        and coalesce(p.expires_at, p.created_at + make_interval(mins => ${INVOICE_TTL_MINUTES})) + make_interval(mins => ${IN_PROGRESS_GRACE_MINUTES}) > now()
+    ) as open
+  `;
+  return row.open;
 }
