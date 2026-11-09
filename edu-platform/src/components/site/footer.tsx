@@ -4,7 +4,7 @@ import { Sparkle } from "@/components/art";
 import { ar } from "@/lib/design";
 import { getSettings } from "@/server/platform/settings";
 import { siteFacts } from "@/server/platform/site-facts";
-import { paymentClaims, publicTagline } from "@/lib/site-truth";
+import { paymentClaims, publicTagline, sellerIdentity } from "@/lib/site-truth";
 import { listGrades } from "@/server/catalog/queries";
 import { storage } from "@/server/storage";
 import { Logo } from "./logo";
@@ -14,6 +14,7 @@ export async function SiteFooter() {
   const [settings, grades, facts] = await Promise.all([getSettings(), listGrades(), siteFacts()]);
   const tagline = publicTagline(settings.tagline, facts);
   const paymentLine = paymentClaims(facts.payment).footer;
+  const seller = sellerIdentity(settings);
   const logoUrl = settings.logo_key ? storage().publicUrl(settings.logo_key) : null;
   const year = new Date().getFullYear();
   const contact = [
@@ -66,9 +67,21 @@ export async function SiteFooter() {
         />
       </div>
       <div className="mx-auto max-w-7xl px-4 sm:px-6">
-        <p className="border-t border-white/10 py-6 text-[0.86rem] leading-7 text-white/68">
-          © <span className="num">{ar(year)}</span> {settings.site_name}. {settings.footer_note}
-        </p>
+        <div className="border-t border-white/10 py-6 text-[0.86rem] leading-7 text-white/68">
+          {seller.length ? (
+            <dl className="mb-2 flex flex-wrap gap-x-6 gap-y-1" data-testid="footer-seller">
+              {seller.map((x) => (
+                <div key={x.key} className="flex min-w-0 flex-wrap gap-x-1.5">
+                  <dt className="font-bold text-white/80">{x.label}:</dt>
+                  <dd className="min-w-0 break-words">{x.value}</dd>
+                </div>
+              ))}
+            </dl>
+          ) : null}
+          <p>
+            © <span className="num">{ar(year)}</span> {settings.site_name}. {settings.footer_note}
+          </p>
+        </div>
       </div>
     </footer>
   );

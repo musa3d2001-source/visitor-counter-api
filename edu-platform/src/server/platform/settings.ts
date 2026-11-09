@@ -32,6 +32,12 @@ export const settingsSchema = z.object({
   fee_fixed_fils: z.number().int().min(0).max(10000),
   /** متى اعتمد المالك الرسوم صراحة. وجود القيم لا يكفي، فالصفر قيمة افتراضية وقد يكون قرارًا. قبله لا يُباع محتوى أي معلم */
   fee_rules_confirmed_at: z.string().nullable(),
+  /** هوية البائع: تظهر في التذييل والصفحات القانونية متى أدخلها المالك */
+  seller_legal_name: z.string().max(120),
+  seller_license_number: z.string().max(60),
+  seller_address: z.string().max(240),
+  /** اسم شركة إرسال البريد كما يُذكر في سياسة الخصوصية */
+  mail_provider_name: z.string().max(60),
 });
 
 export type PlatformSettings = z.infer<typeof settingsSchema>;
@@ -56,6 +62,10 @@ export const DEFAULT_SETTINGS: PlatformSettings = {
   fee_percent_bps: 0,
   fee_fixed_fils: 0,
   fee_rules_confirmed_at: null,
+  seller_legal_name: "",
+  seller_license_number: "",
+  seller_address: "",
+  mail_provider_name: "",
 };
 
 /**

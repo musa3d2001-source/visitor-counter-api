@@ -337,5 +337,7 @@ export function sellerIdentity(s: SellerSettings): { key: string; label: string;
     { key: "name", label: "البائع", value: s.seller_legal_name },
     { key: "license", label: "رقم الرخصة التجارية", value: s.seller_license_number },
     { key: "address", label: "العنوان", value: s.seller_address },
-  ].filter((x) => x.value);
+  ]
+    .map((x) => ({ ...x, value: x.value.trim() }))
+    .filter((x) => x.value);
 }

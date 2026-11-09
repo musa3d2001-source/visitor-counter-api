@@ -25,6 +25,10 @@ const FIELD_LABELS: Record<string, string> = {
   footer_note: "نص التذييل",
   fee_percent_bps: "نسبة الرسوم",
   fee_fixed_fils: "الرسوم الثابتة",
+  seller_legal_name: "الاسم النظامي للبائع",
+  seller_license_number: "رقم الرخصة التجارية",
+  seller_address: "عنوان البائع",
+  mail_provider_name: "اسم مزود البريد",
 };
 
 export async function saveSettingsAction(_p: ActionState, fd: FormData): Promise<ActionState> {
@@ -61,6 +65,10 @@ export async function saveSettingsAction(_p: ActionState, fd: FormData): Promise
       footer_note: str(fd, "footer_note"),
       fee_percent_bps: Math.round(feePct * 100),
       fee_fixed_fils: feeFixed,
+      seller_legal_name: str(fd, "seller_legal_name"),
+      seller_license_number: str(fd, "seller_license_number"),
+      seller_address: str(fd, "seller_address"),
+      mail_provider_name: str(fd, "mail_provider_name"),
     };
     // الاعتماد مرة واحدة بخانة صريحة، ولا يتغير تاريخه بحفظ لاحق
     const confirmsFeeRules = bool(fd, "fee_rules_confirm") && before.fee_rules_confirmed_at === null;

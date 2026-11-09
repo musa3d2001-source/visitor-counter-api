@@ -2,7 +2,7 @@
 
 import { usePreservingAction } from "./use-preserving-action";
 import { useState } from "react";
-import { ArrowDown, ArrowUp, BookOpen, CheckCircle2, CircleHelp, Palette, Percent, Phone, Plus, Save, Sparkles, Trash2, Type } from "lucide-react";
+import { ArrowDown, ArrowUp, BookOpen, Building2, CheckCircle2, CircleHelp, Palette, Percent, Phone, Plus, Save, Sparkles, Trash2, Type } from "lucide-react";
 import { ToneIcon } from "./icon-tile";
 import type { AdminTone } from "./tones";
 import type { ActionState } from "@/lib/action-state";
@@ -35,6 +35,10 @@ export type SettingsValues = {
   /** تاريخ اعتماد الرسوم معروضًا، أو null إن لم تُعتمد */
   fee_rules_confirmed_on: string | null;
   footer_note: string;
+  seller_legal_name: string;
+  seller_license_number: string;
+  seller_address: string;
+  mail_provider_name: string;
 };
 
 const PREVIEW_VARS = (primary: string, accent: string) =>
@@ -88,7 +92,7 @@ export function SettingsForm({ action, values }: { action: ServerAction; values:
 
   return (
     <form ref={formRef} action={formAction} className="space-y-6">
-      <Card title="الهوية والنصوص" icon={<Type />} tone="teal" description="اسم المنصة وعبارات الصفحة الرئيسية والتذييل.">
+      <Card title="الهوية والنصوص" icon={<Type />} tone="teal" description="اسم المنصة وعبارات الصفحة الرئيسية والتذييل. النص الذي يذكر الفيديو أو الدفع الآمن أو المذكرات لا يظهر للزائر ما دام ذلك غير متاح.">
         <div className="grid gap-4 sm:grid-cols-2">
           <Field label="اسم المنصة" htmlFor="site_name" error={fe.site_name} required>
             <Input id="site_name" name="site_name" defaultValue={values.site_name} maxLength={60} />
@@ -225,7 +229,24 @@ export function SettingsForm({ action, values }: { action: ServerAction; values:
         )}
       </Card>
 
-      <Card title="الأسئلة الشائعة" icon={<CircleHelp />} tone="violet" description="تظهر في الصفحة الرئيسية بالترتيب نفسه.">
+      <Card title="هوية البائع" icon={<Building2 />} tone="sky" description="تظهر في التذييل والصفحات القانونية متى أدخلتها، ولا يظهر الحقل الفارغ.">
+        <div className="grid gap-4 sm:grid-cols-2">
+          <Field label="الاسم النظامي للبائع" htmlFor="seller_legal_name" error={fe.seller_legal_name}>
+            <Input id="seller_legal_name" name="seller_legal_name" defaultValue={values.seller_legal_name} maxLength={120} />
+          </Field>
+          <Field label="رقم الرخصة التجارية" htmlFor="seller_license_number" error={fe.seller_license_number}>
+            <Input id="seller_license_number" name="seller_license_number" defaultValue={values.seller_license_number} maxLength={60} />
+          </Field>
+          <Field label="العنوان" htmlFor="seller_address" error={fe.seller_address} className="sm:col-span-2">
+            <Input id="seller_address" name="seller_address" defaultValue={values.seller_address} maxLength={240} />
+          </Field>
+          <Field label="اسم مزود البريد الإلكتروني (يُذكر في سياسة الخصوصية)" htmlFor="mail_provider_name" error={fe.mail_provider_name} className="sm:col-span-2">
+            <Input id="mail_provider_name" name="mail_provider_name" defaultValue={values.mail_provider_name} maxLength={60} />
+          </Field>
+        </div>
+      </Card>
+
+      <Card title="الأسئلة الشائعة" icon={<CircleHelp />} tone="violet" description="تظهر في الصفحة الرئيسية بالترتيب نفسه. السؤال الذي يذكر ما ليس متاحًا الآن لا يظهر للزائر.">
         <input type="hidden" name="faq" value={JSON.stringify(faq.filter((f) => f.q.trim() || f.a.trim()))} />
         <ol className="space-y-3">
           {faq.map((f, i) => (
