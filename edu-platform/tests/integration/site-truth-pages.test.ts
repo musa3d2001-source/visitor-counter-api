@@ -218,6 +218,23 @@ describe("the home page when video is on sale", () => {
   });
 });
 
+describe("the contact email in the footer", () => {
+  it("appears as a working link when set", async () => {
+    await set("contact_email", "help@farqad.example");
+    const footer = html(await SiteFooter());
+    expect(footer).toContain('href="mailto:help@farqad.example"');
+    expect(footer).toContain('dir="ltr"');
+    expect(footer).toContain("help@farqad.example");
+  });
+
+  it("leaves nothing behind when empty", async () => {
+    await set("contact_email", "");
+    const footer = html(await SiteFooter());
+    expect(footer).not.toContain("mailto:");
+    expect(footer).not.toContain('dir="ltr"');
+  });
+});
+
 describe("/teachers counts real teachers", () => {
   const teachers = async (search: Record<string, string> = {}) => html(await TeachersPage({ searchParams: Promise.resolve(search) }));
 

@@ -18,9 +18,10 @@ export async function SiteFooter() {
   const year = new Date().getFullYear();
   const contact = [
     settings.whatsapp_number && { href: `https://wa.me/${settings.whatsapp_number.replace(/\D/g, "")}`, label: "واتساب" },
+    settings.contact_email && { href: `mailto:${settings.contact_email}`, label: settings.contact_email, ltr: true },
     settings.contact_phone && { href: `tel:${settings.contact_phone.replace(/\s/g, "")}`, label: settings.contact_phone },
     settings.instagram_url && { href: settings.instagram_url, label: "إنستغرام" },
-  ].filter(Boolean) as { href: string; label: string }[];
+  ].filter(Boolean) as FooterLink[];
   return (
     <footer
       className="on-dark relative isolate mt-20 overflow-hidden text-white/80 no-print"
@@ -73,7 +74,9 @@ export async function SiteFooter() {
   );
 }
 
-function FooterCol({ title, links }: { title: string; links: { href: string; label: string }[] }) {
+type FooterLink = { href: string; label: string; ltr?: boolean };
+
+function FooterCol({ title, links }: { title: string; links: FooterLink[] }) {
   return (
     <div>
       <p className="mb-2 font-display text-[1.05rem] font-extrabold text-white">{title}</p>
@@ -85,7 +88,13 @@ function FooterCol({ title, links }: { title: string; links: { href: string; lab
               className="inline-flex min-h-11 items-center text-white/78 transition-colors hover:text-[#FFD25E]"
               {...(l.href.startsWith("http") ? { target: "_blank", rel: "noopener noreferrer" } : {})}
             >
-              {l.label}
+              {l.ltr ? (
+                <bdi dir="ltr" className="break-all">
+                  {l.label}
+                </bdi>
+              ) : (
+                l.label
+              )}
             </Link>
           </li>
         ))}
