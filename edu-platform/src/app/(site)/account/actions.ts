@@ -19,11 +19,14 @@ export async function updateProfileAction(_prev: ActionState, fd: FormData): Pro
   const user = await assertUser();
   const parsed = profileSchema.safeParse({ fullName: fd.get("fullName"), phone: fd.get("phone") || undefined, gradeId: fd.get("gradeId") || undefined });
   if (!parsed.success) return { fieldErrors: fieldErrors(parsed.error) };
-  await sql`
+  // طلب حفظ وصل قبل حذف بيانات الطالب مباشرة لا يعيد اسمه وهاتفه بعد الحذف
+  const saved = await sql`
     update users set full_name = ${parsed.data.fullName}, phone = ${parsed.data.phone},
       grade_id = (select id from grades where id = ${parsed.data.gradeId ?? null} and is_published)
-    where id = ${user.id}
+    where id = ${user.id} and anonymized_at is null
+    returning id
   `;
+  if (saved.length === 0) return { error: "انتهت الجلسة، سجّل الدخول مرة أخرى" };
   revalidatePath("/account");
   return { ok: true, message: "تم حفظ بياناتك" };
 }

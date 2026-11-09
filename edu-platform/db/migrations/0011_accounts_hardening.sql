@@ -100,7 +100,7 @@ where body like '%token=%';
 -- ---------------------------------------------------------------------
 alter table users add column anonymized_at timestamptz;
 alter table users add constraint users_anonymized_stays_closed
-  check (anonymized_at is null or (not is_active and phone is null and password_hash = '!anonymized' and email::text like 'deleted-%@anonymized.invalid'))
+  check (anonymized_at is null or (not is_active and phone is null and grade_id is null and full_name = 'طالب محذوف ' || left(id::text, 8) and password_hash = '!anonymized' and email::text like 'deleted-%@anonymized.invalid'))
   not valid;
 
 -- ---------------------------------------------------------------------

@@ -463,7 +463,7 @@ describe("the record cannot be rewritten", () => {
 
   it("the one permitted change is removing the address and device together, once the account is anonymised", async () => {
     const { user, id } = await row();
-    await sql`update users set email = ${`deleted-${user.id}@anonymized.invalid`}, phone = null, password_hash = '!anonymized', is_active = false, anonymized_at = now() where id = ${user.id}`;
+    await sql`update users set email = ${`deleted-${user.id}@anonymized.invalid`}, full_name = ${`طالب محذوف ${user.id.slice(0, 8)}`}, phone = null, grade_id = null, password_hash = '!anonymized', is_active = false, anonymized_at = now() where id = ${user.id}`;
     await sql`update consent_records set ip = null, user_agent = null where id = ${id}`;
     const [after] = await sql<ConsentRow[]>`select * from consent_records where id = ${id}`;
     expect(after).toMatchObject({ kind: "terms", document_version: "v1", ip: null, user_agent: null });
@@ -476,7 +476,7 @@ describe("the record cannot be rewritten", () => {
     const [order, other] = [await orderWithoutDeclaration(user), await orderWithoutDeclaration(user)];
     const stranger = await createUser();
     const [c] = await sql<{ id: string }[]>`insert into consent_records (user_id, kind, document_version, order_id, ip, user_agent) values (${user.id}, 'terms', 'v1', ${order.id}, '192.0.2.1', 'ua') returning id`;
-    await sql`update users set email = ${`deleted-${user.id}@anonymized.invalid`}, phone = null, password_hash = '!anonymized', is_active = false, anonymized_at = now() where id = ${user.id}`;
+    await sql`update users set email = ${`deleted-${user.id}@anonymized.invalid`}, full_name = ${`طالب محذوف ${user.id.slice(0, 8)}`}, phone = null, grade_id = null, password_hash = '!anonymized', is_active = false, anonymized_at = now() where id = ${user.id}`;
     const changes = [
       sql`ip = '192.0.2.9', user_agent = null`,
       sql`ip = null, user_agent = 'other'`,
@@ -539,7 +539,7 @@ describe("a declaration never reaches an account that was deleted", () => {
   it("createOrder refuses once the account is anonymised, whatever the session still says", async () => {
     const user = await createUser();
     const product = await createProduct({ priceFils: 1000 });
-    await sql`update users set email = ${`deleted-${user.id}@anonymized.invalid`}, phone = null, password_hash = '!anonymized', is_active = false, anonymized_at = now() where id = ${user.id}`;
+    await sql`update users set email = ${`deleted-${user.id}@anonymized.invalid`}, full_name = ${`طالب محذوف ${user.id.slice(0, 8)}`}, phone = null, grade_id = null, password_hash = '!anonymized', is_active = false, anonymized_at = now() where id = ${user.id}`;
     await expect(createOrder({ user, productIds: [product.id], isTest: true, consent: { guardianDeclared: true, termsAccepted: true, meta: { ip: null, userAgent: null } } })).rejects.toBeInstanceOf(OrderError);
     expect(await orderCount(user.id)).toBe(0);
   });

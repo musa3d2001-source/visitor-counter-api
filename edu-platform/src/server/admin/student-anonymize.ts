@@ -142,6 +142,7 @@ export async function anonymizeStudent(input: { studentId: string; adminId: stri
       (entity_type = 'user' and entity_id = ${id}) or actor_id = ${id}
       or (entity_type = 'order' and entity_id = any(${orderIds}::text[]))
       or (entity_type = 'payment_extra' and entity_id = any(${extraIds}::text[]))
+      or (entity_type = 'teacher' and (metadata->>'userId' = ${id} or metadata->>'previousUserId' = ${id}))
     )`;
     await tx`update audit_logs set ip = null where actor_id = ${id} and ip is not null`;
     for (const email of jsonSafeEmails) {
@@ -154,9 +155,18 @@ export async function anonymizeStudent(input: { studentId: string; adminId: stri
         update entitlements set grant_reason = replace(grant_reason, ${from}, ${to}), revoke_reason = replace(revoke_reason, ${from}, ${to})
         where user_id = ${id} and (position(${from} in grant_reason) > 0 or position(${from} in revoke_reason) > 0)
       `;
-      await tx`update refunds set reason = replace(reason, ${from}, ${to}) where order_id = any(${orderIds}::uuid[]) and position(${from} in reason) > 0`;
-      await tx`update payment_extras set refund_reason = replace(refund_reason, ${from}, ${to}) where order_id = any(${orderIds}::uuid[]) and position(${from} in refund_reason) > 0`;
       await tx`update teacher_earnings set reversal_reason = replace(reversal_reason, ${from}, ${to}) where order_id = any(${orderIds}::uuid[]) and position(${from} in reversal_reason) > 0`;
+    }
+
+    // العمودان محدودان بـ ٥٠٠ حرف، والبديل قد يكون أطول من الأصل. الاستبدال كله أولًا ثم قص واحد بعدد الحروف، فلا يبقى جزء من اسم أو بريد
+    const fitted = (text: string) => [...scrub(text)].slice(0, 500).join("");
+    for (const r of await tx<{ id: string; reason: string }[]>`select id, reason from refunds where order_id = any(${orderIds}::uuid[])`) {
+      const clean = fitted(r.reason);
+      if (clean !== r.reason) await tx`update refunds set reason = ${clean} where id = ${r.id}`;
+    }
+    for (const e of await tx<{ id: string; refund_reason: string }[]>`select id, refund_reason from payment_extras where order_id = any(${orderIds}::uuid[]) and refund_reason is not null`) {
+      const clean = fitted(e.refund_reason);
+      if (clean !== e.refund_reason) await tx`update payment_extras set refund_reason = ${clean} where id = ${e.id}`;
     }
 
     await tx`

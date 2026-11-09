@@ -25,6 +25,7 @@ vi.mock("next/headers", () => ({
 vi.mock("next/cache", () => ({ revalidatePath: () => {} }));
 
 const { anonymizeStudentAction, grantAction, setActiveAction } = await import("@/app/admin/students/actions");
+const { updateProfileAction } = await import("@/app/(site)/account/actions");
 
 const EMAIL = "real.person@farqad.test";
 const PHONE = "+96599112233";
@@ -455,6 +456,8 @@ describe("an anonymised account stays closed", () => {
     ["a real password", sql`password_hash = 'scrypt$x$y$z$a$b'`],
     ["a real email", sql`email = 'back@farqad.test'`],
     ["a phone", sql`phone = '+96599000000'`],
+    ["a real name", sql`full_name = 'سارة أحمد'`],
+    ["a grade", sql`grade_id = (select id from grades limit 1)`],
   ])("the database itself refuses %s", async (_label, change) => {
     const { u } = await closed();
     await expect(sql`update users set ${change} where id = ${u.id}`).rejects.toThrow(/users_anonymized_stays_closed/);
@@ -467,6 +470,62 @@ describe("an anonymised account stays closed", () => {
     expect((await sql<{ n: number }[]>`select count(*)::int as n from email_log`)[0].n).toBe(before);
   });
 
+});
+
+describe("records with limits and records under another name", () => {
+  it("a refund reason already at its 500 character limit does not stop the deletion, and leaves no fragment", async () => {
+    const [u, a] = [await student({ email: "long.reason@farqad.test", fullName: "سارة الكندري الطويل" }), await admin()];
+    const { order: o } = await paidOrder(u);
+    const [p] = await sql<{ id: string }[]>`insert into payments (order_id, provider, environment, status, amount_fils, gateway_invoice_id) values (${o.id}, 'myfatoorah', 'sandbox', 'paid', 3000, ${`inv-long-${n++}`}) returning id`;
+    const tail = ` ${u.email} ${u.fullName}`;
+    const full = "س".repeat(500 - [...tail].length) + tail;
+    expect([...full]).toHaveLength(500);
+    await sql`insert into refunds (order_id, amount_fils, reason, status, attempt, created_by) values (${o.id}, 3000, ${full}, 'dismissed', 1, ${a.id})`;
+    await sql`insert into payment_extras (payment_id, order_id, kind, amount_fils, state, refund_reason) values (${p.id}, ${o.id}, 'duplicate', 3000, 'dismissed', ${full})`;
+    await expect(run(u.id, a.id, u.email)).resolves.toEqual({ alreadyAnonymized: false });
+    const [r] = await sql<{ reason: string }[]>`select reason from refunds where order_id = ${o.id}`;
+    const [e] = await sql<{ refund_reason: string }[]>`select refund_reason from payment_extras where order_id = ${o.id}`;
+    for (const text of [r.reason, e.refund_reason]) {
+      expect([...text].length).toBeLessThanOrEqual(500);
+      expect(text).not.toContain("long.reason");
+      expect(text).not.toContain("الكندري");
+    }
+  });
+
+  it("an emoji at the cut does not push the reason past its limit", async () => {
+    const [u, a] = [await student({ email: "emoji.reason@farqad.test", fullName: "نورة العبدالله" }), await admin()];
+    const { order: o } = await paidOrder(u);
+    const tail = `${u.fullName}`;
+    const full = "😀".repeat(500 - [...tail].length) + tail;
+    await sql`insert into refunds (order_id, amount_fils, reason, status, attempt, created_by) values (${o.id}, 3000, ${full}, 'dismissed', 1, ${a.id})`;
+    await expect(run(u.id, a.id, u.email)).resolves.toEqual({ alreadyAnonymized: false });
+  });
+
+  it("a reason that mentions nobody is left exactly as written", async () => {
+    const [u, a] = [await student(), await admin()];
+    const { order: o } = await paidOrder(u);
+    await sql`insert into refunds (order_id, amount_fils, reason, status, attempt, created_by) values (${o.id}, 3000, 'خصم مكرر من البوابة', 'dismissed', 1, ${a.id})`;
+    await run(u.id, a.id, u.email);
+    const [r] = await sql<{ reason: string }[]>`select reason from refunds where order_id = ${o.id}`;
+    expect(r.reason).toBe("خصم مكرر من البوابة");
+  });
+
+  it("a former teacher's address leaves the teacher audit trail, and another teacher's stays", async () => {
+    const [u, a, t, other] = [await student({ email: "was.teacher@farqad.test" }), await admin(), await createTeacher(), await createTeacher()];
+    await sql`
+      insert into audit_logs (actor_id, action, entity_type, entity_id, metadata) values
+        (${a.id}, 'teacher.mode_self_managed', 'teacher', ${t.id}, ${sql.json({ userId: u.id, email: u.email, linkedExisting: true })}),
+        (${a.id}, 'teacher.mode_managed', 'teacher', ${t.id}, ${sql.json({ previousUserId: u.id, note: u.email })}),
+        (${a.id}, 'teacher.mode_self_managed', 'teacher', ${other.id}, ${sql.json({ userId: a.id, email: "someone.else@farqad.test" })})
+    `;
+    await run(u.id, a.id, u.email);
+    const mine = await sql<{ metadata: unknown }[]>`select metadata from audit_logs where entity_id = ${t.id}`;
+    expect(mine).toHaveLength(2);
+    expect(JSON.stringify(mine)).not.toContain("was.teacher@farqad.test");
+    expect(JSON.stringify(mine)).toContain(anonymizedEmail(u.id));
+    const [kept] = await sql<{ metadata: { email: string } }[]>`select metadata from audit_logs where entity_id = ${other.id}`;
+    expect(kept.metadata.email).toBe("someone.else@farqad.test");
+  });
 });
 
 describe("all or nothing", () => {
@@ -527,10 +586,30 @@ describe("two owners at once", () => {
         await tx`select id from users where id = ${u.id} for no key update`;
         placing = createOrder({ user: u, productIds: [product.id], isTest: true, consent: { guardianDeclared: true, termsAccepted: true, meta: { ip: null, userAgent: null } } }).catch((e: unknown) => e);
         await new Promise((r) => setTimeout(r, 150));
-        await tx`update users set email = ${anonymizedEmail(u.id)}, phone = null, password_hash = '!anonymized', is_active = false, anonymized_at = now() where id = ${u.id}`;
+        await tx`update users set email = ${anonymizedEmail(u.id)}, full_name = ${anonymizedName(u.id)}, phone = null, grade_id = null, password_hash = '!anonymized', is_active = false, anonymized_at = now() where id = ${u.id}`;
       });
       expect(await placing).toBeInstanceOf(Error);
       expect(await sql`select 1 from orders where user_id = ${u.id}`).toHaveLength(0);
+    } finally {
+      await other.end();
+    }
+  });
+
+  it("a profile save already waiting on the student cannot write the name back", async () => {
+    const u = await student();
+    ctx.cookie = (await createSession(u.id, meta)).token;
+    const other = postgres(TEST_DATABASE_URL, { max: 1, onnotice: () => {} });
+    try {
+      let saving: Promise<unknown> = Promise.resolve();
+      await other.begin(async (tx) => {
+        await tx`select id from users where id = ${u.id} for no key update`;
+        saving = updateProfileAction(null, form({ fullName: "الاسم الحقيقي القديم", phone: "" })).catch((e: unknown) => e);
+        await new Promise((r) => setTimeout(r, 300));
+        await tx`update users set email = ${anonymizedEmail(u.id)}, full_name = ${anonymizedName(u.id)}, phone = null, grade_id = null, password_hash = '!anonymized', is_active = false, anonymized_at = now() where id = ${u.id}`;
+      });
+      expect(await saving).toEqual({ error: "انتهت الجلسة، سجّل الدخول مرة أخرى" });
+      const [row] = await sql<{ full_name: string }[]>`select full_name from users where id = ${u.id}`;
+      expect(row.full_name).toBe(anonymizedName(u.id));
     } finally {
       await other.end();
     }
