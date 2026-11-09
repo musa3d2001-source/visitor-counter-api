@@ -13,12 +13,19 @@ const supabaseHost = (() => {
   }
 })();
 
+const PDF_READER_ENGINE = ["./node_modules/pdfjs-dist/legacy/build/pdf.mjs", "./node_modules/pdfjs-dist/legacy/build/pdf.worker.mjs"];
+
 const nextConfig: NextConfig = {
   poweredByHeader: false,
   turbopack: { root: __dirname },
   outputFileTracingRoot: __dirname,
   reactStrictMode: true,
   serverExternalPackages: ["pdf-lib", "nodemailer"],
+  // فحص PDF يشغّل محرك القارئ في خيط منفصل (server/access/pdf-reader-engine.ts)، فلا يراه تتبع الملفات تلقائيًا
+  outputFileTracingIncludes: {
+    "/api/admin/uploads/complete": PDF_READER_ENGINE,
+    "/admin/**": PDF_READER_ENGINE,
+  },
   experimental: {
     serverActions: {
       // رفع الملفات لا يمر عبر Server Actions (يتم بروابط رفع مباشرة)، لذلك نُبقي الحد صغيرًا

@@ -2,6 +2,8 @@ import { NextResponse, type NextRequest } from "next/server";
 import { getCurrentUser } from "@/server/auth/session";
 import { checkFileAccess } from "@/server/access/entitlements";
 import { bytesToStream, loadDeliverablePdf } from "@/server/access/delivery";
+import { PdfUnusableError } from "@/server/access/pdf";
+import { recordFileCheck, statusForProblem } from "@/server/access/file-check";
 import { logAccess } from "@/server/platform/audit";
 import { hitRateLimit } from "@/server/auth/rate-limit";
 import { ipFromHeaders } from "@/server/http";
@@ -19,6 +21,13 @@ const NO_STORE = {
   "x-content-type-options": "nosniff",
   "referrer-policy": "no-referrer",
 };
+
+/**
+ * مهلة التسليم: قراءة الملف + ختمه + بث النسخة إلى هاتف بطيء، والبث جزء من مدة الدالة.
+ * 300 ثانية هي أقصى مهلة تسمح بها خطة Hobby في Vercel (Fluid Compute)، وتكفي الخطط الأعلى.
+ * القياسات وحدود الملفات في docs/PDF_STAMPING.md
+ */
+export const maxDuration = 300;
 
 function json(status: number, message: string) {
   return NextResponse.json({ error: message }, { status, headers: NO_STORE });
@@ -60,6 +69,11 @@ export async function GET(req: NextRequest, ctx: { params: Promise<{ fileId: str
     bytes = await loadDeliverablePdf({ storageKey: access.file.storageKey, kind: access.file.kind, user, productId: access.product.id });
   } catch (err) {
     console.error("[files] delivery failed", err);
+    if (err instanceof PdfUnusableError) {
+      // ملف قديم لم يُفحص: يظهر للمالك فورًا في «سلامة المحتوى» بدل أن يفشل عند الطالب بصمت
+      await recordFileCheck(access.file.id, statusForProblem(err.problem)).catch((e) => console.error("[files] flag failed", e));
+      return json(503, "هذا الملف يحتاج إلى إصلاح من إدارة المنصة، وقد سُجلت المشكلة لديهم. وصولك إليه محفوظ.");
+    }
     return json(500, "تعذر تحميل الملف حاليًا");
   }
 

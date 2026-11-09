@@ -6,7 +6,7 @@ import { AdminError } from "@/server/admin/common";
 import { completeSchema, completeUpload } from "@/server/admin/uploads";
 
 export const dynamic = "force-dynamic";
-export const maxDuration = 60;
+export const maxDuration = 120;
 
 export async function POST(req: Request) {
   if (!isSameOriginRequest(req)) return NextResponse.json({ error: "طلب غير مسموح" }, { status: 403 });
