@@ -2,17 +2,21 @@ import "server-only";
 import { createHash, randomBytes } from "node:crypto";
 import { cookies } from "next/headers";
 import { cache } from "react";
-import { sql } from "../db";
-import { env } from "../env";
+import { sql, type Db } from "../db";
+import { adminTwoFactorRequired, env } from "../env";
 
 /**
  * جلسات مخزنة في قاعدة البيانات:
  * - الرمز العشوائي (256 بت) في كوكي httpOnly، وقاعدة البيانات تحفظ SHA-256 له فقط.
  * - مدة الجلسة 30 يومًا مع تجديد تلقائي عند الاستخدام بعد مرور 15 يومًا.
+ * - جلسة المدير ١٢ ساعة من لحظة الدخول، بلا تجديد.
+ * - الطالب ٣ جلسات فعالة على الأكثر، والدخول الجديد يُخرج الأقدم.
  */
 export const SESSION_COOKIE = "session";
 const SESSION_DAYS = 30;
 const RENEW_AFTER_DAYS = 15;
+export const ADMIN_SESSION_MS = 12 * 60 * 60 * 1000;
+export const STUDENT_ACTIVE_SESSIONS = 3;
 
 export type SessionUser = {
   id: string;
@@ -32,16 +36,42 @@ export function generateToken(): string {
   return randomBytes(32).toString("base64url");
 }
 
-export async function createSession(userId: string, meta: { ip?: string; userAgent?: string } = {}, options: { ttlMs?: number } = {}) {
+type SessionMeta = { ip?: string; userAgent?: string };
+type SessionOptions = { ttlMs?: number; twoFactorVerified?: boolean };
+
+/**
+ * إنشاء جلسة داخل معاملة قائمة. قفل صف المستخدم يجعل دخول الحساب الواحد تسلسليًا:
+ * حذف الأقدم وإضافة الجديدة يظهران معًا، فلا يتجاوز الطالب الحد مهما تزامنت الطلبات.
+ * no key update لا يعطل المفاتيح الخارجية (إدراج طلب أو سجل وصول للمستخدم نفسه).
+ * وقت الإنشاء من clock_timestamp لا now: ترتيب «الأقدم» هو ترتيب الحصول على القفل، فلا تُطرد آخر جلسة دخلت.
+ */
+export async function createSessionIn(db: Db, userId: string, meta: SessionMeta = {}, options: SessionOptions = {}) {
+  const [user] = await db<{ role: SessionUser["role"] }[]>`select role from users where id = ${userId} for no key update`;
+  if (!user) throw new Error("createSession: unknown user");
   const token = generateToken();
   const id = hashToken(token);
-  const expiresAt = new Date(Date.now() + (options.ttlMs ?? SESSION_DAYS * 86400_000));
-  await sql`
-    insert into sessions (id, user_id, expires_at, ip, user_agent)
-    values (${id}, ${userId}, ${expiresAt}, ${meta.ip ?? null}, ${meta.userAgent ?? null})
+  const requestedMs = options.ttlMs ?? SESSION_DAYS * 86400_000;
+  const expiresAt = new Date(Date.now() + (user.role === "admin" ? Math.min(requestedMs, ADMIN_SESSION_MS) : requestedMs));
+  if (user.role === "student") {
+    // الفعالة أولًا ثم الأحدث: المنتهية تقع في الذيل فتُحذف قبل أي جلسة تعمل
+    await db`
+      delete from sessions where id in (
+        select id from sessions where user_id = ${userId}
+        order by (expires_at > now()) desc, created_at desc, id desc
+        offset ${STUDENT_ACTIVE_SESSIONS - 1}
+      )
+    `;
+  }
+  await db`
+    insert into sessions (id, user_id, expires_at, ip, user_agent, two_factor_at, created_at)
+    values (${id}, ${userId}, ${expiresAt}, ${meta.ip ?? null}, ${meta.userAgent ?? null}, ${options.twoFactorVerified ? new Date() : null}, clock_timestamp())
   `;
-  await sql`update users set last_login_at = now() where id = ${userId}`;
+  await db`update users set last_login_at = now() where id = ${userId}`;
   return { token, expiresAt };
+}
+
+export async function createSession(userId: string, meta: SessionMeta = {}, options: SessionOptions = {}) {
+  return sql.begin((tx) => createSessionIn(tx, userId, meta, options));
 }
 
 export async function setSessionCookie(token: string, expiresAt: Date) {
@@ -61,13 +91,16 @@ export async function clearSessionCookie() {
 }
 
 /** التحقق من رمز الجلسة وإرجاع المستخدم (أو null) */
-export async function validateSessionToken(token: string): Promise<{ user: SessionUser; sessionId: string; expiresAt: Date; mustChangePassword: boolean } | null> {
+export async function validateSessionToken(token: string): Promise<{ user: SessionUser; sessionId: string; expiresAt: Date; mustChangePassword: boolean; needsTwoFactorEnrolment: boolean } | null> {
   if (!token || token.length > 100) return null;
   const id = hashToken(token);
   const rows = await sql<
     {
       session_id: string;
       expires_at: Date;
+      session_created_at: Date;
+      two_factor_at: Date | null;
+      two_factor_enabled: boolean;
       id: string;
       email: string;
       full_name: string;
@@ -78,19 +111,25 @@ export async function validateSessionToken(token: string): Promise<{ user: Sessi
       must_change_password: boolean;
     }[]
   >`
-    select s.id as session_id, s.expires_at, u.id, u.email, u.full_name, u.phone, u.role, u.grade_id, u.is_active, u.must_change_password
+    select s.id as session_id, s.expires_at, s.created_at as session_created_at, s.two_factor_at,
+      exists (select 1 from user_totp t where t.user_id = u.id and t.enabled_at is not null) as two_factor_enabled,
+      u.id, u.email, u.full_name, u.phone, u.role, u.grade_id, u.is_active, u.must_change_password
     from sessions s join users u on u.id = s.user_id
     where s.id = ${id}
   `;
   const row = rows[0];
   if (!row) return null;
-  if (new Date(row.expires_at).getTime() <= Date.now() || !row.is_active) {
+  const isAdmin = row.role === "admin";
+  // الحد يُحسب من وقت الدخول أيضًا: جلسات المدير الأقدم من هذا الإصدار كتبت انتهاءً بعد ٣٠ يومًا
+  let expiresAt = new Date(isAdmin ? Math.min(new Date(row.expires_at).getTime(), new Date(row.session_created_at).getTime() + ADMIN_SESSION_MS) : new Date(row.expires_at).getTime());
+  // جلسة مدير لم تمر بالعامل الثاني لا تعمل على حساب فعّله، مهما كان الطريق الذي فتحها
+  const missingSecondFactor = isAdmin && row.two_factor_enabled && !row.two_factor_at;
+  if (expiresAt.getTime() <= Date.now() || !row.is_active || missingSecondFactor) {
     await sql`delete from sessions where id = ${id}`;
     return null;
   }
-  let expiresAt = new Date(row.expires_at);
-  // جلسة كلمة المرور المؤقتة قصيرة عن قصد ولا تُجدَّد
-  if (!row.must_change_password && expiresAt.getTime() - Date.now() < (SESSION_DAYS - RENEW_AFTER_DAYS) * 86400_000) {
+  // جلسة كلمة المرور المؤقتة قصيرة عن قصد ولا تُجدَّد، ولا جلسة المدير
+  if (!isAdmin && !row.must_change_password && expiresAt.getTime() - Date.now() < (SESSION_DAYS - RENEW_AFTER_DAYS) * 86400_000) {
     expiresAt = new Date(Date.now() + SESSION_DAYS * 86400_000);
     await sql`update sessions set expires_at = ${expiresAt} where id = ${id}`;
   }
@@ -98,6 +137,7 @@ export async function validateSessionToken(token: string): Promise<{ user: Sessi
     sessionId: id,
     expiresAt,
     mustChangePassword: row.must_change_password,
+    needsTwoFactorEnrolment: isAdmin && !row.two_factor_enabled && adminTwoFactorRequired(),
     user: {
       id: row.id,
       email: row.email,
@@ -133,9 +173,10 @@ export const getCurrentSession = cache(async () => {
 /**
  * المستخدم الحالي. جلسة كلمة المرور المؤقتة لا تُعد دخولًا: كل صفحة وإجراء وواجهة API يراها زائرًا،
  * ولا يفتحها إلا مسار /change-password الذي يقرأ getCurrentSession مباشرة.
+ * وكذلك جلسة مدير لم يسجّل التحقق بخطوتين وهو إلزامي: لا يفتحها إلا مسار التسجيل.
  */
 export async function getCurrentUser(): Promise<SessionUser | null> {
   const s = await getCurrentSession();
-  if (!s || s.mustChangePassword) return null;
+  if (!s || s.mustChangePassword || s.needsTwoFactorEnrolment) return null;
   return s.user;
 }
