@@ -36,6 +36,49 @@ export async function clearRateLimit(key: string) {
   await sql`delete from rate_limits where key = ${key}`;
 }
 
+export type FailurePolicy = {
+  /** عدد الإخفاقات المسموحة بلا تأخير */
+  freeFailures: number;
+  /** الانتظار بعد آخر إخفاق مسموح، ويتضاعف مع كل إخفاق تالٍ */
+  firstDelaySeconds: number;
+  maxDelaySeconds: number;
+  /** تُنسى الإخفاقات بعد هذه المدة بلا محاولات */
+  forgetAfterSeconds: number;
+};
+
+export type FailureSlot = { allowed: true; failures: number } | { allowed: false; retryAfterSeconds: number };
+
+/**
+ * يحجز محاولة قبل فحص السر، بتأخير متصاعد. عند نجاح الفحص يُمسح المفتاح بـ clearRateLimit، فالنجاح لا يُحتسب.
+ * الحجز ذري: طلبات متوازية لا تتجاوز الحد، والمحاولة المرفوضة لا تطيل الانتظار.
+ * وقت آخر محاولة = reset_at - forgetAfterSeconds، فلا حاجة لعمود جديد.
+ */
+export async function reserveFailureSlot(key: string, policy: FailurePolicy): Promise<FailureSlot> {
+  const { freeFailures: free, firstDelaySeconds: first, maxDelaySeconds: max, forgetAfterSeconds: forget } = policy;
+  const [row] = await sql<{ count: number }[]>`
+    insert into rate_limits as r (key, count, reset_at)
+    values (${key}, 1, now() + make_interval(secs => ${forget}))
+    on conflict (key) do update set
+      count = case when r.reset_at <= now() then 1 else r.count + 1 end,
+      reset_at = now() + make_interval(secs => ${forget})
+    where r.reset_at <= now()
+      or r.count < ${free}::int
+      or now() >= r.reset_at - make_interval(secs => ${forget})
+        + make_interval(secs => least(${first}::double precision * power(2::double precision, least(r.count - ${free}::int, 20)), ${max}::double precision))
+    returning count
+  `;
+  if (row) return { allowed: true, failures: row.count };
+  const [wait] = await sql<{ seconds: number }[]>`
+    select greatest(1, ceil(extract(epoch from (
+      r.reset_at - make_interval(secs => ${forget})
+        + make_interval(secs => least(${first}::double precision * power(2::double precision, least(r.count - ${free}::int, 20)), ${max}::double precision))
+        - now()
+    ))))::int as seconds
+    from rate_limits r where r.key = ${key}
+  `;
+  return { allowed: false, retryAfterSeconds: wait?.seconds ?? first };
+}
+
 export async function pruneRateLimits() {
   await sql`delete from rate_limits where reset_at < now() - interval '1 day'`;
 }

@@ -7,7 +7,7 @@ import { emailSchema, fieldErrors, loginSchema, passwordSchema, registerSchema }
 import { formValues, type ActionState } from "@/lib/action-state";
 import { safeNextPath } from "@/lib/utils";
 import { clientIp, userAgent } from "@/server/http";
-import { loginWithPassword, registerStudent, requestPasswordReset, resetPassword } from "@/server/auth/service";
+import { completeForcedPasswordChange, loginWithPassword, registerStudent, requestPasswordReset, resetPassword } from "@/server/auth/service";
 import { clearSessionCookie, getCurrentSession, invalidateSession, setSessionCookie } from "@/server/auth/session";
 import { mailIsReal, redactSecrets } from "@/server/platform/mailer";
 
@@ -18,6 +18,7 @@ export async function loginAction(_prev: ActionState, fd: FormData): Promise<Act
   const res = await loginWithPassword(parsed.data.email, parsed.data.password, { ip: await clientIp(), userAgent: await userAgent() });
   if (!res.ok) return { error: res.error, values };
   await setSessionCookie(res.token, res.expiresAt);
+  if (res.mustChangePassword) redirect("/change-password");
   redirect(safeNextPath(fd.get("next") as string | null, "/library"));
 }
 
@@ -70,6 +71,19 @@ export async function resetPasswordAction(_prev: ActionState, fd: FormData): Pro
   }
   if (fd.get("password") !== fd.get("passwordConfirm")) return { fieldErrors: { passwordConfirm: "كلمتا المرور غير متطابقتين" } };
   const res = await resetPassword(parsed.data.token, parsed.data.password);
-  if (!res.ok) return { error: res.error };
+  if (!res.ok) return res.field ? { fieldErrors: { [res.field]: res.error } } : { error: res.error };
   redirect("/login?reset=1");
+}
+
+export async function changeTemporaryPasswordAction(_prev: ActionState, fd: FormData): Promise<ActionState> {
+  const session = await getCurrentSession();
+  if (!session) redirect("/login");
+  if (!session.mustChangePassword) redirect("/account");
+  const parsed = passwordSchema.safeParse(fd.get("password"));
+  if (!parsed.success) return { fieldErrors: { password: parsed.error.issues[0].message } };
+  if (fd.get("password") !== fd.get("passwordConfirm")) return { fieldErrors: { passwordConfirm: "كلمتا المرور غير متطابقتين" } };
+  const res = await completeForcedPasswordChange(session.user.id, parsed.data, { ip: await clientIp(), userAgent: await userAgent() });
+  if (!res.ok) return res.field ? { fieldErrors: { [res.field]: res.error } } : { error: res.error };
+  await setSessionCookie(res.token, res.expiresAt);
+  redirect("/library");
 }

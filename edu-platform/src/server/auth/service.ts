@@ -2,51 +2,86 @@ import "server-only";
 import { sql } from "../db";
 import { env } from "../env";
 import { hashPassword, verifyPassword, burnPasswordTime } from "./password";
-import { createSession, generateToken, hashToken, invalidateAllUserSessions } from "./session";
-import { hitRateLimit, clearRateLimit, peekRateLimit } from "./rate-limit";
-import { sendMail } from "../platform/mailer";
+import { createSession, generateToken, hashToken } from "./session";
+import { hitRateLimit, clearRateLimit, peekRateLimit, reserveFailureSlot, type FailurePolicy } from "./rate-limit";
+import { mailIsReal, sendMail } from "../platform/mailer";
 import { getSettings } from "../platform/settings";
+import { audit } from "../platform/audit";
+import { passwordPolicyError, type PasswordRole } from "@/lib/password-policy";
+import { count, W } from "@/lib/design";
 
 /** منطق المصادقة (بدون اعتماد على سياق الطلب لسهولة الاختبار) */
 
-export type AuthResult = { ok: true; userId: string; token: string; expiresAt: Date } | { ok: false; error: string; retryAfter?: number };
+export type AuthResult = { ok: true; userId: string; token: string; expiresAt: Date; mustChangePassword?: boolean } | { ok: false; error: string; retryAfter?: number };
 
 /**
- * حدود الدخول:
- *  - لكل حساب: 5 محاولات خلال 15 دقيقة (تُصفّر عند النجاح)
- *  - لكل IP: 50 محاولة **فاشلة** خلال 15 دقيقة — الدخول الناجح لا يُحتسب،
- *    حتى لا يُقفل فصل دراسي كامل يدخل من شبكة مدرسة واحدة (NAT)
+ * حدود الدخول: تُحتسب الإخفاقات فقط، والدخول الناجح لا يُحتسب أبدًا.
+ *
+ *  - لكل زوج (حساب + IP): ٥ محاولات خاطئة بلا تأخير، ثم انتظار ٣٠ ثانية يتضاعف حتى ١٥ دقيقة.
+ *    تُنسى بعد ساعة بلا محاولات، وتُمسح عند أول كلمة مرور صحيحة.
+ *    المفتاح يجمع الاثنين عن قصد: زميل في شبكة المدرسة نفسها لا يقفل حسابك،
+ *    ومهاجم يعرف بريدك لا يستطيع قفله من شبكة أخرى.
+ *  - لكل IP: ١٠٠ حساب مختلف فشل الدخول إليها خلال ١٥ دقيقة. يوقف تجربة كلمة واحدة على قائمة حسابات،
+ *    ويُحتسب الحساب مرة واحدة، فأخطاء طلاب فصل كامل في كلماتهم لا تكاد تقترب منه.
+ *
+ *  الحجز يسبق فحص كلمة المرور حتى لا تتجاوز طلبات متوازية الحد، ثم يُمسح إن كانت الكلمة صحيحة.
  */
-const LOGIN_LIMIT = { perAccount: 5, failedPerIp: 50, windowSec: 15 * 60 };
+const LOGIN_FAILURES: FailurePolicy = { freeFailures: 5, firstDelaySeconds: 30, maxDelaySeconds: 15 * 60, forgetAfterSeconds: 60 * 60 };
+const LOGIN_IP = { failingAccounts: 100, windowSec: 15 * 60 };
+
+/** جلسة تغيير كلمة المرور المؤقتة قصيرة، ولا تفتح أي صفحة أخرى */
+const MUST_CHANGE_SESSION_MS = 60 * 60 * 1000;
+
+export function loginFailurePrefix(email: string) {
+  return `login:fail:${email.toLowerCase()}|`;
+}
+
+function lockoutMessage(retryAfterSeconds: number) {
+  const remaining = retryAfterSeconds < 60 ? "أقل من دقيقة" : count(Math.ceil(retryAfterSeconds / 60), W.minute);
+  return `تم إيقاف تسجيل الدخول مؤقتًا بسبب محاولات خاطئة متكررة. المدة المتبقية: ${remaining}.${mailIsReal() ? " ويمكنك استعادة كلمة المرور إن نسيتها." : ""}`;
+}
 
 export async function loginWithPassword(email: string, password: string, meta: { ip: string; userAgent: string }): Promise<AuthResult> {
-  const accountKey = `login:acct:${email.toLowerCase()}`;
+  const failureKey = `${loginFailurePrefix(email)}${meta.ip}`;
   const ipKey = `login:ipfail:${meta.ip}`;
-  const ipState = await peekRateLimit(ipKey, LOGIN_LIMIT.failedPerIp);
+  const ipState = await peekRateLimit(ipKey, LOGIN_IP.failingAccounts);
   if (ipState.blocked) return { ok: false, error: "محاولات كثيرة. حاول مرة أخرى بعد قليل.", retryAfter: ipState.retryAfterSeconds };
-  const failIp = () => hitRateLimit(ipKey, LOGIN_LIMIT.failedPerIp, LOGIN_LIMIT.windowSec);
 
-  const [user] = await sql<{ id: string; password_hash: string; is_active: boolean }[]>`
-    select id, password_hash, is_active from users where email = ${email}
+  // السلوك واحد لبريد مسجل وغير مسجل: لا تأخير ولا رسالة تكشف وجود الحساب
+  const slot = await reserveFailureSlot(failureKey, LOGIN_FAILURES);
+  if (!slot.allowed) return { ok: false, error: lockoutMessage(slot.retryAfterSeconds), retryAfter: slot.retryAfterSeconds };
+
+  const failed = async (): Promise<AuthResult> => {
+    if (slot.failures === 1) await hitRateLimit(ipKey, LOGIN_IP.failingAccounts, LOGIN_IP.windowSec);
+    return { ok: false, error: "البريد الإلكتروني أو كلمة المرور غير صحيحة." };
+  };
+
+  const [user] = await sql<{ id: string; password_hash: string; is_active: boolean; must_change_password: boolean; temp_password_expires_at: Date | null }[]>`
+    select id, password_hash, is_active, must_change_password, temp_password_expires_at from users where email = ${email}
   `;
-  // نتحقق من حد الحساب قبل فحص كلمة المرور لمنع التخمين
-  const acct = await hitRateLimit(accountKey, LOGIN_LIMIT.perAccount, LOGIN_LIMIT.windowSec);
-  if (!acct.allowed) {
-    await failIp();
-    return { ok: false, error: "تم إيقاف تسجيل الدخول مؤقتًا بسبب محاولات خاطئة متكررة. حاول بعد ١٥ دقيقة أو استعد كلمة المرور.", retryAfter: acct.retryAfterSeconds };
-  }
   if (!user) {
     await burnPasswordTime(password);
-    await failIp();
-    return { ok: false, error: "البريد الإلكتروني أو كلمة المرور غير صحيحة." };
+    return failed();
   }
-  const valid = await verifyPassword(password, user.password_hash);
-  if (!valid) {
-    await failIp();
-    return { ok: false, error: "البريد الإلكتروني أو كلمة المرور غير صحيحة." };
-  }
+  if (!(await verifyPassword(password, user.password_hash))) return failed();
+
+  // كلمة صحيحة: ليست إخفاقًا مهما كانت حالة الحساب بعدها
+  await clearRateLimit(failureKey);
   if (!user.is_active) return { ok: false, error: "هذا الحساب موقوف. تواصل مع الدعم." };
-  await clearRateLimit(accountKey);
+
+  if (user.must_change_password && user.temp_password_expires_at) {
+    // تحديث ذري: كلمة المرور المؤقتة تفتح جلسة واحدة فقط مهما تزامنت الطلبات
+    const claimed = await sql`
+      update users set temp_password_expires_at = now()
+      where id = ${user.id} and must_change_password and temp_password_expires_at > now()
+      returning id
+    `;
+    if (claimed.length === 0) return { ok: false, error: "انتهت صلاحية كلمة المرور المؤقتة أو سبق استخدامها. تواصل مع إدارة المنصة لتصدر لك واحدة جديدة." };
+  }
+  if (user.must_change_password) {
+    const s = await createSession(user.id, meta, { ttlMs: MUST_CHANGE_SESSION_MS });
+    return { ok: true, userId: user.id, token: s.token, expiresAt: s.expiresAt, mustChangePassword: true };
+  }
   const s = await createSession(user.id, meta);
   return { ok: true, userId: user.id, token: s.token, expiresAt: s.expiresAt };
 }
@@ -79,22 +114,34 @@ export async function registerStudent(
   }
 }
 
-/** طلب استعادة كلمة المرور — الرد موحد دائمًا (لا نكشف وجود الحساب) */
+/**
+ * طلب استعادة كلمة المرور — الرد موحد دائمًا (لا نكشف وجود الحساب).
+ * حساب المدير لا يستعيد عبر البريد (انظر سياسة password-policy): يصله تنبيه بلا رابط.
+ */
 export async function requestPasswordReset(email: string, ip: string): Promise<void> {
   const ipLimit = await hitRateLimit(`reset:ip:${ip}`, 10, 60 * 60);
   const acctLimit = await hitRateLimit(`reset:acct:${email}`, 3, 60 * 60);
   if (!ipLimit.allowed || !acctLimit.allowed) return;
-  const [user] = await sql<{ id: string; full_name: string; is_active: boolean }[]>`
-    select id, full_name, is_active from users where email = ${email}
+  const [user] = await sql<{ id: string; full_name: string; is_active: boolean; role: PasswordRole }[]>`
+    select id, full_name, is_active, role from users where email = ${email}
   `;
   if (!user || !user.is_active) return;
+  const settings = await getSettings();
+  if (user.role === "admin") {
+    await sendMail({
+      to: email,
+      template: "password_reset_refused",
+      subject: `طلب استعادة كلمة المرور، ${settings.site_name}`,
+      text: `وصلنا طلب لاستعادة كلمة مرور هذا الحساب الإداري. حسابات الإدارة لا تُستعاد عبر البريد، فلم يتغير شيء.\n\nإذا لم تطلب ذلك فقد يكون أحدهم يحاول الوصول إلى الحساب.\n\n${settings.site_name}`,
+    });
+    return;
+  }
   const token = generateToken();
   await sql`update password_reset_tokens set used_at = now() where user_id = ${user.id} and used_at is null`;
   await sql`
     insert into password_reset_tokens (id, user_id, expires_at)
     values (${hashToken(token)}, ${user.id}, now() + interval '1 hour')
   `;
-  const settings = await getSettings();
   const link = `${env().APP_URL.replace(/\/$/, "")}/reset-password?token=${encodeURIComponent(token)}`;
   await sendMail({
     to: email,
@@ -104,29 +151,82 @@ export async function requestPasswordReset(email: string, ip: string): Promise<v
   });
 }
 
-export async function resetPassword(token: string, newPassword: string): Promise<{ ok: true } | { ok: false; error: string }> {
+export async function resetPassword(token: string, newPassword: string): Promise<{ ok: true } | { ok: false; error: string; field?: "password" }> {
   if (!token || token.length > 100) return { ok: false, error: "الرابط غير صالح." };
   const id = hashToken(token);
   return sql.begin(async (tx) => {
-    const [row] = await tx<{ user_id: string; expires_at: Date; used_at: Date | null }[]>`
-      select user_id, expires_at, used_at from password_reset_tokens where id = ${id} for update
+    const [row] = await tx<{ user_id: string; expires_at: Date; used_at: Date | null; role: PasswordRole; email: string }[]>`
+      select t.user_id, t.expires_at, t.used_at, u.role, u.email
+      from password_reset_tokens t join users u on u.id = t.user_id
+      where t.id = ${id} for update of t
     `;
-    if (!row || row.used_at || new Date(row.expires_at).getTime() < Date.now()) {
+    if (!row || row.used_at || new Date(row.expires_at).getTime() < Date.now() || row.role === "admin") {
       return { ok: false as const, error: "انتهت صلاحية الرابط أو سبق استخدامه. اطلب رابطًا جديدًا." };
     }
+    // الرفض قبل استهلاك الرمز: الطالب يصحح كلمته بالرابط نفسه
+    const problem = passwordPolicyError(row.role, newPassword, row.email);
+    if (problem) return { ok: false as const, error: problem, field: "password" as const };
     const hash = await hashPassword(newPassword);
-    await tx`update users set password_hash = ${hash} where id = ${row.user_id}`;
-    await tx`update password_reset_tokens set used_at = now() where id = ${id}`;
+    await tx`update users set password_hash = ${hash}, must_change_password = false, temp_password_expires_at = null where id = ${row.user_id}`;
+    await tx`update password_reset_tokens set used_at = now() where user_id = ${row.user_id} and used_at is null`;
     await tx`delete from sessions where user_id = ${row.user_id}`;
-    await tx`delete from rate_limits where key like ${"login:acct:%"} and key = (select 'login:acct:' || lower(email::text) from users where id = ${row.user_id})`;
+    await tx`delete from rate_limits where starts_with(key, ${loginFailurePrefix(row.email)})`;
     return { ok: true as const };
   });
 }
 
-export async function changePassword(userId: string, current: string, next: string, keepSessionId: string) {
-  const [u] = await sql<{ password_hash: string }[]>`select password_hash from users where id = ${userId}`;
-  if (!u || !(await verifyPassword(current, u.password_hash))) return { ok: false as const, error: "كلمة المرور الحالية غير صحيحة." };
-  await sql`update users set password_hash = ${await hashPassword(next)} where id = ${userId}`;
-  await invalidateAllUserSessions(userId, keepSessionId);
-  return { ok: true as const };
+/** محاولات كلمة المرور الحالية من جلسة مفتوحة: من سرق جلسة لا يخمّنها */
+const CHANGE_PASSWORD_FAILURES: FailurePolicy = { freeFailures: 5, firstDelaySeconds: 60, maxDelaySeconds: 15 * 60, forgetAfterSeconds: 60 * 60 };
+
+export type ChangePasswordResult = { ok: true } | { ok: false; error: string; field: "currentPassword" | "newPassword" };
+
+export async function changePassword(userId: string, current: string, next: string, keepSessionId: string): Promise<ChangePasswordResult> {
+  const key = `pwchange:fail:${userId}`;
+  const slot = await reserveFailureSlot(key, CHANGE_PASSWORD_FAILURES);
+  if (!slot.allowed) return { ok: false, error: "محاولات كثيرة. حاول مرة أخرى بعد قليل.", field: "currentPassword" };
+  const [u] = await sql<{ password_hash: string; role: PasswordRole; email: string }[]>`select password_hash, role, email from users where id = ${userId}`;
+  if (!u || !(await verifyPassword(current, u.password_hash))) return { ok: false, error: "كلمة المرور الحالية غير صحيحة.", field: "currentPassword" };
+  await clearRateLimit(key);
+  const problem = passwordPolicyError(u.role, next, u.email);
+  if (problem) return { ok: false, error: problem, field: "newPassword" };
+  const hash = await hashPassword(next);
+  await sql.begin(async (tx) => {
+    await tx`update users set password_hash = ${hash} where id = ${userId}`;
+    await tx`update password_reset_tokens set used_at = now() where user_id = ${userId} and used_at is null`;
+    await tx`delete from sessions where user_id = ${userId} and id <> ${keepSessionId}`;
+  });
+  return { ok: true };
+}
+
+export type ForcedChangeResult = { ok: true; token: string; expiresAt: Date } | { ok: false; error: string; field?: "password" };
+
+/**
+ * إنهاء كلمة المرور المؤقتة: تعيين كلمة الطالب الخاصة، إلغاء كل الجلسات والروابط، ثم جلسة كاملة جديدة.
+ * من يصل هنا أثبت نفسه بالكلمة المؤقتة خلال الساعة الماضية، فلا نطلبها مرة أخرى.
+ */
+export async function completeForcedPasswordChange(userId: string, next: string, meta: { ip: string; userAgent: string }): Promise<ForcedChangeResult> {
+  const limit = await hitRateLimit(`pwforced:user:${userId}`, 20, 15 * 60);
+  if (!limit.allowed) return { ok: false, error: "محاولات كثيرة. حاول مرة أخرى بعد قليل." };
+  const [u] = await sql<{ password_hash: string; role: PasswordRole; email: string; must_change_password: boolean }[]>`
+    select password_hash, role, email, must_change_password from users where id = ${userId}
+  `;
+  if (!u?.must_change_password) return { ok: false, error: "لا يلزم تغيير كلمة المرور لهذا الحساب." };
+  const problem = passwordPolicyError(u.role, next, u.email);
+  if (problem) return { ok: false, error: problem, field: "password" };
+  if (await verifyPassword(next, u.password_hash)) return { ok: false, error: "اختر كلمة مرور غير الكلمة المؤقتة.", field: "password" };
+  const hash = await hashPassword(next);
+  const changed = await sql.begin(async (tx) => {
+    const updated = await tx`
+      update users set password_hash = ${hash}, must_change_password = false, temp_password_expires_at = null
+      where id = ${userId} and must_change_password returning id
+    `;
+    if (updated.length === 0) return false;
+    await tx`update password_reset_tokens set used_at = now() where user_id = ${userId} and used_at is null`;
+    await tx`delete from sessions where user_id = ${userId}`;
+    await audit({ actorId: userId, action: "user.temporary_password_replaced", entityType: "user", entityId: userId, ip: meta.ip }, tx);
+    return true;
+  });
+  if (!changed) return { ok: false, error: "لا يلزم تغيير كلمة المرور لهذا الحساب." };
+  const s = await createSession(userId, meta);
+  return { ok: true, token: s.token, expiresAt: s.expiresAt };
 }

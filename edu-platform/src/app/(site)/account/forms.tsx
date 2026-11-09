@@ -42,7 +42,7 @@ export function ProfileForm({ user, grades }: { user: { fullName: string; phone:
   );
 }
 
-export function PasswordForm() {
+export function PasswordForm({ staff = false }: { staff?: boolean }) {
   const [state, action] = useActionState(changePasswordAction, null);
   const fe = state?.fieldErrors ?? {};
   return (
@@ -52,8 +52,8 @@ export function PasswordForm() {
       <Field label="كلمة المرور الحالية" htmlFor="currentPassword" error={fe.currentPassword}>
         <Input id="currentPassword" name="currentPassword" type="password" dir="ltr" autoComplete="current-password" required />
       </Field>
-      <Field label="كلمة المرور الجديدة" htmlFor="newPassword" error={fe.newPassword}>
-        <Input id="newPassword" name="newPassword" type="password" dir="ltr" autoComplete="new-password" required minLength={8} />
+      <Field label="كلمة المرور الجديدة" htmlFor="newPassword" error={fe.newPassword} hint={staff ? "١٢ حرفًا على الأقل، ولا تعتمد على كلمة شائعة" : "٨ أحرف على الأقل"}>
+        <Input id="newPassword" name="newPassword" type="password" dir="ltr" autoComplete="new-password" required minLength={staff ? 12 : 8} />
       </Field>
       <Field label="تأكيد كلمة المرور الجديدة" htmlFor="confirmPassword" error={fe.confirmPassword}>
         <Input id="confirmPassword" name="confirmPassword" type="password" dir="ltr" autoComplete="new-password" required />

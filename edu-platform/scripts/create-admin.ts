@@ -8,6 +8,7 @@ import { randomBytes } from "node:crypto";
 import postgres from "postgres";
 import { loadEnvFile } from "./_env";
 import { hashPassword } from "../src/server/auth/password-core";
+import { passwordPolicyError } from "../src/lib/password-policy";
 
 loadEnvFile();
 
@@ -24,8 +25,9 @@ async function main() {
     process.exit(1);
   }
   const provided = process.env.ADMIN_PASSWORD;
-  if (provided && provided.length < 12) {
-    console.error("ADMIN_PASSWORD يجب أن تكون 12 حرفًا على الأقل");
+  const problem = provided ? passwordPolicyError("admin", provided, email) : null;
+  if (problem) {
+    console.error(`ADMIN_PASSWORD مرفوضة: ${problem}`);
     process.exit(1);
   }
   const password = provided ?? randomBytes(15).toString("base64url");

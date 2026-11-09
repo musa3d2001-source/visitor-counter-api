@@ -6,6 +6,8 @@ export type ActionState = {
   fieldErrors?: Record<string, string>;
   /** قيم الحقول لإعادة تعبئة النموذج عند الخطأ */
   values?: Record<string, string>;
+  /** أسرار تُعرض مرة واحدة للمالك: تعيش في حالة React فقط */
+  secrets?: Record<string, string>;
 } | null;
 
 export function formValues(fd: FormData, keys: string[]): Record<string, string> {

@@ -1,12 +1,13 @@
 import "server-only";
 import { redirect, notFound } from "next/navigation";
 import { headers } from "next/headers";
-import { getCurrentUser, type SessionUser } from "./session";
+import { getCurrentSession, getCurrentUser, type SessionUser } from "./session";
 
 /** يتطلب تسجيل الدخول — وإلا تحويل لصفحة الدخول مع العودة لنفس الصفحة */
 export async function requireUser(nextPath?: string): Promise<SessionUser> {
   const user = await getCurrentUser();
   if (!user) {
+    if ((await getCurrentSession())?.mustChangePassword) redirect("/change-password");
     const h = await headers();
     const path = nextPath ?? h.get("x-pathname") ?? "/";
     redirect(`/login?next=${encodeURIComponent(path)}`);

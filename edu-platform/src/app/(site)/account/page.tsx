@@ -200,7 +200,7 @@ export default async function AccountPage({ searchParams }: { searchParams: Prom
                 تغيير كلمة المرور
               </h2>
             </div>
-            <PasswordForm />
+            <PasswordForm staff={user.role !== "student"} />
           </section>
         </div>
       </div>

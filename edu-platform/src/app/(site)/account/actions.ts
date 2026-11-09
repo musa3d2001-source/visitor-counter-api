@@ -30,11 +30,12 @@ export async function updateProfileAction(_prev: ActionState, fd: FormData): Pro
 
 export async function changePasswordAction(_prev: ActionState, fd: FormData): Promise<ActionState> {
   const session = await getCurrentSession();
-  if (!session) return { error: "انتهت الجلسة، سجّل الدخول مرة أخرى" };
+  // جلسة كلمة المرور المؤقتة تكمل من /change-password فقط
+  if (!session || session.mustChangePassword) return { error: "انتهت الجلسة، سجّل الدخول مرة أخرى" };
   const next = passwordSchema.safeParse(fd.get("newPassword"));
   if (!next.success) return { fieldErrors: { newPassword: next.error.issues[0].message } };
   if (fd.get("newPassword") !== fd.get("confirmPassword")) return { fieldErrors: { confirmPassword: "كلمتا المرور غير متطابقتين" } };
   const res = await changePassword(session.user.id, String(fd.get("currentPassword") ?? ""), next.data, session.sessionId);
-  if (!res.ok) return { fieldErrors: { currentPassword: res.error } };
+  if (!res.ok) return { fieldErrors: { [res.field]: res.error } };
   return { ok: true, message: "تم تغيير كلمة المرور وتسجيل الخروج من الأجهزة الأخرى" };
 }

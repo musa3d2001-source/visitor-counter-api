@@ -32,10 +32,10 @@ export function generateToken(): string {
   return randomBytes(32).toString("base64url");
 }
 
-export async function createSession(userId: string, meta: { ip?: string; userAgent?: string } = {}) {
+export async function createSession(userId: string, meta: { ip?: string; userAgent?: string } = {}, options: { ttlMs?: number } = {}) {
   const token = generateToken();
   const id = hashToken(token);
-  const expiresAt = new Date(Date.now() + SESSION_DAYS * 86400_000);
+  const expiresAt = new Date(Date.now() + (options.ttlMs ?? SESSION_DAYS * 86400_000));
   await sql`
     insert into sessions (id, user_id, expires_at, ip, user_agent)
     values (${id}, ${userId}, ${expiresAt}, ${meta.ip ?? null}, ${meta.userAgent ?? null})
@@ -61,7 +61,7 @@ export async function clearSessionCookie() {
 }
 
 /** التحقق من رمز الجلسة وإرجاع المستخدم (أو null) */
-export async function validateSessionToken(token: string): Promise<{ user: SessionUser; sessionId: string; expiresAt: Date } | null> {
+export async function validateSessionToken(token: string): Promise<{ user: SessionUser; sessionId: string; expiresAt: Date; mustChangePassword: boolean } | null> {
   if (!token || token.length > 100) return null;
   const id = hashToken(token);
   const rows = await sql<
@@ -75,9 +75,10 @@ export async function validateSessionToken(token: string): Promise<{ user: Sessi
       role: "student" | "admin" | "teacher";
       grade_id: string | null;
       is_active: boolean;
+      must_change_password: boolean;
     }[]
   >`
-    select s.id as session_id, s.expires_at, u.id, u.email, u.full_name, u.phone, u.role, u.grade_id, u.is_active
+    select s.id as session_id, s.expires_at, u.id, u.email, u.full_name, u.phone, u.role, u.grade_id, u.is_active, u.must_change_password
     from sessions s join users u on u.id = s.user_id
     where s.id = ${id}
   `;
@@ -88,13 +89,15 @@ export async function validateSessionToken(token: string): Promise<{ user: Sessi
     return null;
   }
   let expiresAt = new Date(row.expires_at);
-  if (expiresAt.getTime() - Date.now() < (SESSION_DAYS - RENEW_AFTER_DAYS) * 86400_000) {
+  // جلسة كلمة المرور المؤقتة قصيرة عن قصد ولا تُجدَّد
+  if (!row.must_change_password && expiresAt.getTime() - Date.now() < (SESSION_DAYS - RENEW_AFTER_DAYS) * 86400_000) {
     expiresAt = new Date(Date.now() + SESSION_DAYS * 86400_000);
     await sql`update sessions set expires_at = ${expiresAt} where id = ${id}`;
   }
   return {
     sessionId: id,
     expiresAt,
+    mustChangePassword: row.must_change_password,
     user: {
       id: row.id,
       email: row.email,
@@ -127,7 +130,12 @@ export const getCurrentSession = cache(async () => {
   return validateSessionToken(token);
 });
 
+/**
+ * المستخدم الحالي. جلسة كلمة المرور المؤقتة لا تُعد دخولًا: كل صفحة وإجراء وواجهة API يراها زائرًا،
+ * ولا يفتحها إلا مسار /change-password الذي يقرأ getCurrentSession مباشرة.
+ */
 export async function getCurrentUser(): Promise<SessionUser | null> {
   const s = await getCurrentSession();
-  return s?.user ?? null;
+  if (!s || s.mustChangePassword) return null;
+  return s.user;
 }

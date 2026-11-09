@@ -121,8 +121,8 @@ describe("login limits per IP (school networks behind one NAT)", () => {
       const r = await loginWithPassword(u.email, TEST_PASSWORD, { ip, userAgent: "t" });
       expect(r.ok, `login ${i}`).toBe(true);
     }
-    // 50 محاولة فاشلة (حسابات مختلفة) تقفل الـ IP
-    for (let i = 0; i < 50; i++) await loginWithPassword(`nobody-${i}@example.com`, "wrong-password", { ip, userAgent: "t" });
+    // ١٠٠ حساب مختلف فشل الدخول إليها تقفل الـ IP
+    for (let i = 0; i < 100; i++) await loginWithPassword(`nobody-${i}@example.com`, "wrong-password", { ip, userAgent: "t" });
     const blocked = await loginWithPassword(users[0].email, TEST_PASSWORD, { ip, userAgent: "t" });
     expect(blocked.ok).toBe(false);
     // شبكة أخرى لا تتأثر

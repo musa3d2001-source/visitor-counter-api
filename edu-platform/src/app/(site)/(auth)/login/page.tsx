@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 import { redirect } from "next/navigation";
 import { AuthCard } from "@/components/site/auth-card";
 import { Alert } from "@/components/ui/alert";
-import { getCurrentUser } from "@/server/auth/session";
+import { getCurrentSession, getCurrentUser } from "@/server/auth/session";
 import { safeNextPath } from "@/lib/utils";
 import { LoginForm } from "./login-form";
 import { MobilePerks } from "../_components/auth-bits";
@@ -12,6 +12,7 @@ export const metadata: Metadata = { title: "تسجيل الدخول", robots: { 
 export default async function LoginPage({ searchParams }: { searchParams: Promise<{ next?: string; reset?: string }> }) {
   const sp = await searchParams;
   const next = safeNextPath(sp.next, "/library");
+  if ((await getCurrentSession())?.mustChangePassword) redirect("/change-password");
   if (await getCurrentUser()) redirect(next);
   return (
     <AuthCard title="مرحبًا بعودتك" subtitle="سجّل دخولك للوصول إلى مكتبتك ومشترياتك">
