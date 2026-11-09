@@ -4,29 +4,42 @@ import { checkLessonAccess } from "@/server/access/lessons";
 import { storage } from "@/server/storage";
 import { logAccess } from "@/server/platform/audit";
 import { ipFromHeaders } from "@/server/http";
+import { hitDeniedStreamLimit, hitStreamLimit } from "@/server/video/stream-limit";
 
 /**
  * بث فيديو الدرس (المزود file):
  * - مع Supabase: تحويل إلى رابط موقّع قصير الصلاحية بعد التحقق من الصلاحية
  * - مع التخزين المحلي: بث مع دعم Range
+ * الحدود بعد فحص الصلاحية: انظر video/stream-limit
  */
+function tooManyRequests(retryAfterSeconds: number) {
+  return new NextResponse(null, { status: 429, headers: { "retry-after": String(Math.max(1, retryAfterSeconds)), "cache-control": "private, no-store", "x-robots-tag": "noindex" } });
+}
+
 export async function GET(req: NextRequest, ctx: { params: Promise<{ lessonId: string }> }) {
   const { lessonId } = await ctx.params;
   const user = await getCurrentUser();
   const access = await checkLessonAccess(lessonId, user);
+  const ip = ipFromHeaders(req.headers);
   if (!access.ok) {
+    // قبل السجل: طلبات مرفوضة متكررة لا تملأ سجل الوصول
+    const denied = await hitDeniedStreamLimit(user?.id ?? null, ip);
+    if (!denied.allowed) return tooManyRequests(denied.retryAfterSeconds);
     const status = { unauthenticated: 401, forbidden: 403, not_ready: 409, not_found: 404 }[access.reason];
     if (access.reason === "forbidden") {
-      await logAccess({ userId: user?.id ?? null, lessonId: /^[0-9a-f-]{36}$/i.test(lessonId) ? lessonId : null, action: "denied", ip: ipFromHeaders(req.headers), userAgent: req.headers.get("user-agent") });
+      await logAccess({ userId: user?.id ?? null, lessonId: /^[0-9a-f-]{36}$/i.test(lessonId) ? lessonId : null, action: "denied", ip, userAgent: req.headers.get("user-agent") });
     }
     return new NextResponse(null, { status, headers: { "cache-control": "private, no-store", "x-robots-tag": "noindex" } });
   }
+  // قبل السجل والرابط الموقّع: الطلب الزائد لا يُسجَّل ولا يُصدر له رابط
+  const allowed = await hitStreamLimit(user?.id ?? null, ip);
+  if (!allowed.allowed) return tooManyRequests(allowed.retryAfterSeconds);
   const l = access.lesson;
   if (l.provider !== "file") return new NextResponse(null, { status: 404 });
 
   const range = req.headers.get("range");
   if (!range || range.startsWith("bytes=0-")) {
-    await logAccess({ userId: user?.id ?? null, productId: l.product_id, lessonId: l.id, action: "video", ip: ipFromHeaders(req.headers), userAgent: req.headers.get("user-agent") });
+    await logAccess({ userId: user?.id ?? null, productId: l.product_id, lessonId: l.id, action: "video", ip, userAgent: req.headers.get("user-agent") });
   }
   const store = storage();
   const signed = await store.signedUrl("private", l.video_ref, 60 * 30);
