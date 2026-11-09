@@ -382,7 +382,7 @@ describe("resend", () => {
 
   it("is capped per IP across accounts", async () => {
     const ip = "192.0.2.81";
-    for (let i = 0; i < 30; i++) await sql`insert into rate_limits (key, count, reset_at) values (${`verify:ip:${ip}`}, 30, now() + interval '1 hour') on conflict (key) do nothing`;
+    await sql`insert into rate_limits (key, count, reset_at) values (${`verify:ip:${ip}`}, 200, now() + interval '1 hour')`;
     const u = await createUser();
     expect(await resendEmailVerification(u.id, ip)).toMatchObject({ ok: false });
     expect(mailsTo(u.email)).toHaveLength(0);

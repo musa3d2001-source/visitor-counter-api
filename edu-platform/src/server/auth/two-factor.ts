@@ -34,8 +34,10 @@ const CHALLENGE_MINUTES = 5;
 const CHALLENGE_MAX_ATTEMPTS = 5;
 /** بداية خطوة كلمة المرور الناجحة، بكلمة صحيحة فقط، وتحد من ملء الجدول */
 const CHALLENGE_STARTS = { limit: 20, windowSec: 15 * 60 };
-/** كل طلب لخطوة الرمز، بأي رمز جلسة، صالحًا كان أو لا */
+/** طلبات خطوة الرمز على تحدٍّ حي، أي بعد كلمة مرور صحيحة */
 const STEP_TWO_IP = { limit: 60, windowSec: 15 * 60 };
+/** تحديات غير موجودة أو منتهية. عداد منفصل، فلا يوقف عابث من شبكة المدرسة مديرًا عرف كلمته */
+const STEP_TWO_BAD_TOKEN_IP = { limit: 60, windowSec: 15 * 60 };
 /** السر الذي لم يؤكَّد لا يبقى طويلًا */
 const PENDING_MINUTES = 30;
 
@@ -275,12 +277,16 @@ export type CompleteChallengeResult = { ok: true; token: string; expiresAt: Date
  * الثاني لا يجد تحديًا، فلا يستهلك رمزًا ولا يفتح جلسة ثانية.
  */
 export async function completeLoginChallenge(input: { token: string | undefined; code: unknown; ip: string; userAgent: string; mustChangeTtlMs: number }): Promise<CompleteChallengeResult> {
-  const limit = await hitRateLimit(`2fa:ip:${input.ip}`, STEP_TWO_IP.limit, STEP_TWO_IP.windowSec);
-  if (!limit.allowed) return { ok: false, error: waitMessage(limit.retryAfterSeconds), retryAfter: limit.retryAfterSeconds };
-  if (!input.token || input.token.length > 100) return { ok: false, error: CHALLENGE_EXPIRED, expired: true };
+  const badToken = async (): Promise<CompleteChallengeResult> => {
+    const limit = await hitRateLimit(`2fa:badtoken:${input.ip}`, STEP_TWO_BAD_TOKEN_IP.limit, STEP_TWO_BAD_TOKEN_IP.windowSec);
+    return limit.allowed ? { ok: false, error: CHALLENGE_EXPIRED, expired: true } : { ok: false, error: waitMessage(limit.retryAfterSeconds), retryAfter: limit.retryAfterSeconds };
+  };
+  if (!input.token || input.token.length > 100) return badToken();
   const id = hashToken(input.token);
   const [pending] = await sql<{ user_id: string }[]>`select user_id from login_challenges where id = ${id} and expires_at > now()`;
-  if (!pending) return { ok: false, error: CHALLENGE_EXPIRED, expired: true };
+  if (!pending) return badToken();
+  const limit = await hitRateLimit(`2fa:ip:${input.ip}`, STEP_TWO_IP.limit, STEP_TWO_IP.windowSec);
+  if (!limit.allowed) return { ok: false, error: waitMessage(limit.retryAfterSeconds), retryAfter: limit.retryAfterSeconds };
   const parsed = parseSecondFactorCode(input.code);
   if (!parsed) return { ok: false, error: MALFORMED_CODE };
 

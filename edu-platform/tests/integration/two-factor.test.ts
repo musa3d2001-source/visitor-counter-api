@@ -539,12 +539,32 @@ describe("signing in", () => {
     expect(await sessionsOf(user.id)).toHaveLength(1);
   });
 
-  it("limits requests from one address, valid challenge or not", async () => {
+  it("limits bad challenge tokens from one address", async () => {
     const ipMeta = { ip: "198.51.100.200", userAgent: "vitest" };
     for (let i = 0; i < 60; i++) await completeTwoFactorLogin("nope", "123456", ipMeta);
     const res = await completeTwoFactorLogin("nope", "123456", ipMeta);
     expect(res).toMatchObject({ ok: false, retryAfter: expect.any(Number) });
     expect(res).not.toHaveProperty("expired");
+  });
+
+  it("bad tokens from a shared network do not stop an owner who holds a live challenge", async () => {
+    const ipMeta = { ip: "198.51.100.201", userAgent: "vitest" };
+    for (let i = 0; i < 61; i++) await completeTwoFactorLogin("nope", "123456", ipMeta);
+    const user = await admin();
+    const { secret } = await enrolAdmin(user);
+    const challenge = await startLoginChallenge(user.id);
+    if (!challenge.ok) throw new Error("challenge");
+    await expect(completeTwoFactorLogin(challenge.token, await freshCode(user.id, secret), ipMeta)).resolves.toMatchObject({ ok: true });
+  });
+
+  it("requests on a live challenge are limited by address too", async () => {
+    const ipMeta = { ip: "198.51.100.202", userAgent: "vitest" };
+    await sql`insert into rate_limits (key, count, reset_at) values (${`2fa:ip:${ipMeta.ip}`}, 60, now() + interval '15 minutes')`;
+    const user = await admin();
+    const { secret } = await enrolAdmin(user);
+    const challenge = await startLoginChallenge(user.id);
+    if (!challenge.ok) throw new Error("challenge");
+    await expect(completeTwoFactorLogin(challenge.token, await freshCode(user.id, secret), ipMeta)).resolves.toMatchObject({ ok: false, retryAfter: expect.any(Number) });
   });
 
   it("limits how often the password step can open a challenge", async () => {

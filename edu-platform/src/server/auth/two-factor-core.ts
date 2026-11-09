@@ -23,7 +23,7 @@ const RECOVERY_LENGTH = 16;
 const HKDF_SALT = "farqad:two-factor:v1";
 const KEY_LABEL = { totpSecret: "totp-secret-encryption", recoveryHash: "recovery-code-hash" } as const;
 
-function deriveKey(appSecret: string, label: string): Buffer {
+export function deriveKey(appSecret: string, label: string): Buffer {
   return Buffer.from(hkdfSync("sha256", appSecret, HKDF_SALT, label, 32));
 }
 

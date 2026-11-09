@@ -113,7 +113,7 @@ export async function sendRegistrationVerification(userId: string): Promise<void
 
 export type VerifyResult = { ok: true; message: string } | { ok: false; error: string };
 
-const RESEND = { cooldownSec: 60, perUser: 6, perIp: 30, windowSec: 60 * 60 };
+const RESEND = { cooldownSec: 60, perUser: 6, perIp: 200, windowSec: 60 * 60 };
 const SEND_FAILED = "تعذر إرسال الرسالة الآن. حاول بعد قليل.";
 
 export async function resendEmailVerification(userId: string, ip: string): Promise<VerifyResult> {

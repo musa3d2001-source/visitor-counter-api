@@ -6,6 +6,7 @@ import { createSession, createSessionIn, generateToken, hashToken } from "./sess
 import { hitRateLimit, clearRateLimit, peekRateLimit, reserveFailureSlot, type FailurePolicy } from "./rate-limit";
 import { completeLoginChallenge, startLoginChallenge, twoFactorIsActive, type CompleteChallengeResult } from "./two-factor";
 import { revokeEmailLinks } from "./email-verification";
+import { issueDeviceProof, verifyDeviceProof } from "./device-proof";
 import { mailIsReal, sendMail } from "../platform/mailer";
 import { getSettings } from "../platform/settings";
 import { audit } from "../platform/audit";
@@ -17,9 +18,9 @@ import { count, W } from "@/lib/design";
 /** منطق المصادقة (بدون اعتماد على سياق الطلب لسهولة الاختبار) */
 
 export type AuthResult =
-  | { ok: true; userId: string; token: string; expiresAt: Date; mustChangePassword?: boolean; needsTwoFactorEnrolment?: boolean }
+  | { ok: true; userId: string; token: string; expiresAt: Date; mustChangePassword?: boolean; needsTwoFactorEnrolment?: boolean; deviceProof?: string }
   /** challenge: كلمة المرور صحيحة لكن الدخول لم يكتمل. لا جلسة بعد، فتجاهله يعني فشل الدخول */
-  | { ok: false; error: string; retryAfter?: number; challenge?: { token: string; expiresAt: Date } };
+  | { ok: false; error: string; retryAfter?: number; challenge?: { token: string; expiresAt: Date }; deviceProof?: string };
 
 /**
  * حدود الدخول: تُحتسب الإخفاقات فقط، والدخول الناجح لا يُحتسب أبدًا.
@@ -30,6 +31,7 @@ export type AuthResult =
  *    ومهاجم يعرف بريدك لا يستطيع قفله من شبكة أخرى.
  *  - لكل IP: ١٠٠ حساب مختلف فشل الدخول إليها خلال ١٥ دقيقة. يوقف تجربة كلمة واحدة على قائمة حسابات،
  *    ويُحتسب الحساب مرة واحدة، فأخطاء طلاب فصل كامل في كلماتهم لا تكاد تقترب منه.
+ *    متصفح سبق أن أثبت كلمة مرور هذا الحساب لا يقف عند هذا الحظر (device-proof.ts). الكلمة الصحيحة وحدها لا تتجاوزه.
  *
  *  الحجز يسبق فحص كلمة المرور حتى لا تتجاوز طلبات متوازية الحد، ثم يُمسح إن كانت الكلمة صحيحة.
  *  يعتمد هذا على عنوان IP لا يزوّره العميل: انظر TRUST_PROXY و clientIp، وعلى Vercel تضبطه المنصة نفسها.
@@ -49,11 +51,13 @@ function lockoutMessage(retryAfterSeconds: number) {
   return `تم إيقاف تسجيل الدخول مؤقتًا بسبب محاولات خاطئة متكررة. المدة المتبقية: ${remaining}.${mailIsReal() ? " ويمكنك استعادة كلمة المرور إن نسيتها." : ""}`;
 }
 
-export async function loginWithPassword(email: string, password: string, meta: { ip: string; userAgent: string }): Promise<AuthResult> {
+export async function loginWithPassword(email: string, password: string, meta: { ip: string; userAgent: string; deviceProof?: string }): Promise<AuthResult> {
   const failureKey = `${loginFailurePrefix(email)}${meta.ip}`;
   const ipKey = `login:ipfail:${meta.ip}`;
-  const ipState = await peekRateLimit(ipKey, LOGIN_IP.failingAccounts);
-  if (ipState.blocked) return { ok: false, error: "محاولات كثيرة. حاول مرة أخرى بعد قليل.", retryAfter: ipState.retryAfterSeconds };
+  if (!verifyDeviceProof(meta.deviceProof, email, env().APP_SECRET)) {
+    const ipState = await peekRateLimit(ipKey, LOGIN_IP.failingAccounts);
+    if (ipState.blocked) return { ok: false, error: "محاولات كثيرة. حاول مرة أخرى بعد قليل.", retryAfter: ipState.retryAfterSeconds };
+  }
 
   // السلوك واحد لبريد مسجل وغير مسجل: لا تأخير ولا رسالة تكشف وجود الحساب
   const slot = await reserveFailureSlot(failureKey, LOGIN_FAILURES);
@@ -76,12 +80,13 @@ export async function loginWithPassword(email: string, password: string, meta: {
   // كلمة صحيحة: ليست إخفاقًا مهما كانت حالة الحساب بعدها
   await clearRateLimit(failureKey);
   if (!user.is_active) return { ok: false, error: "هذا الحساب موقوف. تواصل مع الدعم." };
+  const deviceProof = issueDeviceProof(email, env().APP_SECRET);
 
   // مدير فعّل التحقق بخطوتين: لا جلسة من كلمة المرور وحدها
   if (user.role === "admin" && (await twoFactorIsActive(user.id))) {
     const challenge = await startLoginChallenge(user.id);
     if (!challenge.ok) return challenge;
-    return { ok: false, error: "أدخل رمز التحقق لإكمال الدخول.", challenge: { token: challenge.token, expiresAt: challenge.expiresAt } };
+    return { ok: false, error: "أدخل رمز التحقق لإكمال الدخول.", challenge: { token: challenge.token, expiresAt: challenge.expiresAt }, deviceProof };
   }
 
   if (user.must_change_password && user.temp_password_expires_at) {
@@ -95,11 +100,11 @@ export async function loginWithPassword(email: string, password: string, meta: {
   }
   if (user.must_change_password) {
     const s = await createSession(user.id, meta, { ttlMs: MUST_CHANGE_SESSION_MS });
-    return { ok: true, userId: user.id, token: s.token, expiresAt: s.expiresAt, mustChangePassword: true };
+    return { ok: true, userId: user.id, token: s.token, expiresAt: s.expiresAt, mustChangePassword: true, deviceProof };
   }
   const s = await createSession(user.id, meta);
   // إلزامي وغير مسجَّل: الجلسة لا تفتح إلا صفحة التسجيل (انظر getCurrentUser)
-  return { ok: true, userId: user.id, token: s.token, expiresAt: s.expiresAt, needsTwoFactorEnrolment: user.role === "admin" && adminTwoFactorRequired() };
+  return { ok: true, userId: user.id, token: s.token, expiresAt: s.expiresAt, needsTwoFactorEnrolment: user.role === "admin" && adminTwoFactorRequired(), deviceProof };
 }
 
 /** الخطوة الثانية لدخول المدير. جلسة كلمة المرور المؤقتة تُحترم بعد الرمز كما قبله */
@@ -112,8 +117,9 @@ export async function registerStudent(
   meta: { ip: string; userAgent: string },
 ): Promise<AuthResult> {
   if (!input.acceptedDocuments) return { ok: false, error: "يجب الموافقة على الشروط والأحكام وسياسة الخصوصية." };
-  const limit = await hitRateLimit(`register:ip:${meta.ip}`, 30, 60 * 60);
-  if (!limit.allowed) return { ok: false, error: "محاولات تسجيل كثيرة من هذا الجهاز. حاول لاحقًا." };
+  // عنوان واحد قد يكون مدرسة كاملة: الحد يوقف الإغراق ولا يوقف صفًا يسجّل معًا
+  const limit = await hitRateLimit(`register:ip:${meta.ip}`, 200, 60 * 60);
+  if (!limit.allowed) return { ok: false, error: "محاولات تسجيل كثيرة من هذه الشبكة. حاول لاحقًا." };
   const exists = await sql`select 1 from users where email = ${input.email}`;
   if (exists.length) return { ok: false, error: "هذا البريد مسجل مسبقًا. جرّب تسجيل الدخول أو استعادة كلمة المرور." };
   const hash = await hashPassword(input.password);
@@ -132,7 +138,7 @@ export async function registerStudent(
       `;
       for (const kind of ACCOUNT_CONSENT_KINDS) await recordConsent(tx, { userId: user.id, kind, meta: consentMeta(meta) });
       const s = await createSessionIn(tx, user.id, meta);
-      return { ok: true, userId: user.id, token: s.token, expiresAt: s.expiresAt };
+      return { ok: true, userId: user.id, token: s.token, expiresAt: s.expiresAt, deviceProof: issueDeviceProof(input.email, env().APP_SECRET) };
     });
   } catch (err) {
     if (String((err as { code?: string }).code) === "23505") return { ok: false, error: "هذا البريد مسجل مسبقًا." };
@@ -140,14 +146,22 @@ export async function registerStudent(
   }
 }
 
+/** الأضيق أولًا بعد الشبكة: ٣ لكل زوج (حساب + IP)، فلا يستطيع من يعرف بريدك استهلاك حد حسابك من عنوان واحد */
+const RESET_LIMITS = { perIp: 100, perPair: 3, perAccount: 20, windowSec: 60 * 60 };
+
 /**
  * طلب استعادة كلمة المرور — الرد موحد دائمًا (لا نكشف وجود الحساب).
  * حساب المدير لا يستعيد عبر البريد (انظر سياسة password-policy): يصله تنبيه بلا رابط.
+ * الطلب الجديد لا يبطل الروابط السابقة: طلبات الغرباء لا تبطل رابطًا وصل إلى الطالب، واستخدام أي رابط يبطلها كلها.
  */
 export async function requestPasswordReset(email: string, ip: string): Promise<void> {
-  const ipLimit = await hitRateLimit(`reset:ip:${ip}`, 10, 60 * 60);
-  const acctLimit = await hitRateLimit(`reset:acct:${email}`, 3, 60 * 60);
-  if (!ipLimit.allowed || !acctLimit.allowed) return;
+  // ما تجاوز حد الشبكة لا يُحتسب على الحساب، فلا يستهلك مهاجم من عنوان محجوب حد ضحيته
+  const ipLimit = await hitRateLimit(`reset:ip:${ip}`, RESET_LIMITS.perIp, RESET_LIMITS.windowSec);
+  if (!ipLimit.allowed) return;
+  const pairLimit = await hitRateLimit(`reset:acct:${email}|${ip}`, RESET_LIMITS.perPair, RESET_LIMITS.windowSec);
+  if (!pairLimit.allowed) return;
+  const acctLimit = await hitRateLimit(`reset:acct:${email}`, RESET_LIMITS.perAccount, RESET_LIMITS.windowSec);
+  if (!acctLimit.allowed) return;
   const [user] = await sql<{ id: string; full_name: string; is_active: boolean; role: PasswordRole }[]>`
     select id, full_name, is_active, role from users where email = ${email}
   `;
@@ -163,18 +177,20 @@ export async function requestPasswordReset(email: string, ip: string): Promise<v
     return;
   }
   const token = generateToken();
-  await sql`update password_reset_tokens set used_at = now() where user_id = ${user.id} and used_at is null`;
+  const tokenId = hashToken(token);
   await sql`
     insert into password_reset_tokens (id, user_id, expires_at)
-    values (${hashToken(token)}, ${user.id}, now() + interval '1 hour')
+    values (${tokenId}, ${user.id}, now() + interval '1 hour')
   `;
   const link = `${env().APP_URL.replace(/\/$/, "")}/reset-password?token=${encodeURIComponent(token)}`;
-  await sendMail({
+  const sent = await sendMail({
     to: email,
     template: "password_reset",
     subject: `استعادة كلمة المرور، ${settings.site_name}`,
     text: `مرحبًا ${user.full_name}،\n\nوصلنا طلب لاستعادة كلمة المرور لحسابك. افتح الرابط التالي خلال ساعة لتعيين كلمة مرور جديدة:\n${link}\n\nإذا لم تطلب ذلك، تجاهل هذه الرسالة وسيبقى حسابك آمنًا.\n\n${settings.site_name}`,
   });
+  // رابط لم يخرج لا يبقى صالحًا في قاعدة البيانات
+  if (!sent) await sql`delete from password_reset_tokens where id = ${tokenId}`;
 }
 
 export async function resetPassword(token: string, newPassword: string): Promise<{ ok: true } | { ok: false; error: string; field?: "password" }> {

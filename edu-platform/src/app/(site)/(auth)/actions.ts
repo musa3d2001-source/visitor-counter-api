@@ -10,6 +10,7 @@ import { clientIp, userAgent } from "@/server/http";
 import { completeForcedPasswordChange, loginWithPassword, registerStudent, requestPasswordReset, resetPassword } from "@/server/auth/service";
 import { clearSessionCookie, getCurrentSession, invalidateSession, setSessionCookie } from "@/server/auth/session";
 import { setLoginChallengeCookie } from "@/server/auth/challenge-cookie";
+import { readLoginDeviceCookie, setLoginDeviceCookie } from "@/server/auth/device-cookie";
 import { TWO_FACTOR_LOGIN_PATH, TWO_FACTOR_SETUP_PATH } from "@/lib/two-factor";
 import { sendRegistrationVerification } from "@/server/auth/email-verification";
 import { mailIsReal, redactSecrets } from "@/server/platform/mailer";
@@ -18,7 +19,8 @@ export async function loginAction(_prev: ActionState, fd: FormData): Promise<Act
   const parsed = loginSchema.safeParse({ email: fd.get("email"), password: fd.get("password") });
   const values = formValues(fd, ["email"]);
   if (!parsed.success) return { fieldErrors: fieldErrors(parsed.error), values };
-  const res = await loginWithPassword(parsed.data.email, parsed.data.password, { ip: await clientIp(), userAgent: await userAgent() });
+  const res = await loginWithPassword(parsed.data.email, parsed.data.password, { ip: await clientIp(), userAgent: await userAgent(), deviceProof: await readLoginDeviceCookie() });
+  if (res.deviceProof) await setLoginDeviceCookie(res.deviceProof);
   if (!res.ok) {
     if (!res.challenge) return { error: res.error, values };
     await setLoginChallengeCookie(res.challenge.token, res.challenge.expiresAt);
@@ -48,6 +50,7 @@ export async function registerAction(_prev: ActionState, fd: FormData): Promise<
   const res = await registerStudent({ ...parsed.data, acceptedDocuments: true }, { ip: await clientIp(), userAgent: await userAgent() });
   if (!res.ok) return { error: res.error, values };
   await setSessionCookie(res.token, res.expiresAt);
+  if (res.deviceProof) await setLoginDeviceCookie(res.deviceProof);
   // التسجيل فوري: الرابط يخرج بعد الرد، وفشله لا يعطل الحساب ويمكن إعادة طلبه
   const newUserId = res.userId;
   if (mailIsReal()) after(() => sendRegistrationVerification(newUserId).catch((err) => console.error("[auth] verification mail failed", redactSecrets(err instanceof Error ? err.message : String(err)))));
