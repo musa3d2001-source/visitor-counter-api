@@ -302,7 +302,7 @@ describe("short invoices, 72 hour orders", () => {
     expect(invoicesCreated(sim)).toBe(0);
   });
 
-  it("a bank transaction in progress blocks a new invoice until the grace period ends", async () => {
+  it("an unfinished attempt on an ended link blocks a new invoice until the grace period ends", async () => {
     const { order } = await newOrder();
     const { url } = await startPayment(order, null);
     sim.startTransaction(invoiceIdOf(url));
@@ -313,6 +313,131 @@ describe("short invoices, 72 hour orders", () => {
 
     await sql`update payments set expires_at = now() - interval '20 minutes' where order_id = ${order.id}`;
     await expect(startPayment(await orderRow(order.id), null)).resolves.toMatchObject({ reused: false });
+  });
+
+  it("a bank page abandoned on a still-open method link does not trap the student", async () => {
+    const { order } = await newOrder();
+    const { url } = await startPayment(order, 1);
+    sim.startTransaction(invoiceIdOf(url));
+    sim.state.requests.length = 0;
+    const retry = await startPayment(await orderRow(order.id), null);
+    expect(retry.reused).toBe(false);
+    expect(retry.url).not.toBe(url);
+    expect(sim.state.requests.filter((r) => r.path === "/v2/SendPayment")).toHaveLength(1);
+  });
+
+  it("a method link nobody has opened is reused like any other", async () => {
+    const { order } = await newOrder();
+    const { url } = await startPayment(order, 1);
+    await expect(startPayment(await orderRow(order.id), null)).resolves.toEqual({ url, reused: true });
+    expect(invoicesCreated(sim)).toBe(1);
+  });
+
+  it("an unfinished attempt on an open all-methods link keeps that link", async () => {
+    const { order } = await newOrder();
+    const { url } = await startPayment(order, null);
+    sim.startTransaction(invoiceIdOf(url));
+    await expect(startPayment(await orderRow(order.id), null)).resolves.toEqual({ url, reused: true });
+    expect(invoicesCreated(sim)).toBe(1);
+  });
+});
+
+describe("a declined attempt on an all-methods link", () => {
+  async function declined() {
+    const { user, order, product } = await newOrder();
+    const first = await startPayment(order, null);
+    const invoice = invoiceIdOf(first.url);
+    const { paymentId } = await sim.pay(invoice, "fail");
+    await expect(verifyAndApplyPayment({ paymentId })).resolves.toMatchObject({ state: "failed" });
+    expect((await orderRow(order.id)).status).toBe("failed");
+    return { user, order, product, url: first.url, invoice, paymentId };
+  }
+
+  it("a retry gets the same link back, with no second invoice", async () => {
+    const { order, url } = await declined();
+    sim.state.requests.length = 0;
+    await expect(startPayment(await orderRow(order.id), null)).resolves.toEqual({ url, reused: true });
+    expect(invoicesCreated(sim)).toBe(0);
+    expect((await orderRow(order.id)).status).toBe("pending");
+    expect((await paymentRows(order.id)).map((p) => p.status)).toEqual(["pending"]);
+  });
+
+  it("reading the old decline again leaves the retried order pending", async () => {
+    const { order, invoice, paymentId } = await declined();
+    await startPayment(await orderRow(order.id), null);
+
+    await expect(verifyAndApplyPayment({ paymentId })).resolves.toEqual({ state: "pending", orderId: order.id });
+    await expect(verifyAndApplyPayment({ invoiceId: String(invoice) })).resolves.toEqual({ state: "pending", orderId: order.id });
+    await expect(checkOrderInvoices(order.id)).resolves.toMatchObject({ allChecked: true });
+    expect((await orderRow(order.id)).status).toBe("pending");
+    expect((await paymentRows(order.id))[0].status).toBe("pending");
+  });
+
+  it("a new decline on the same link fails the order again", async () => {
+    const { order, invoice } = await declined();
+    await startPayment(await orderRow(order.id), null);
+    const second = await sim.pay(invoice, "fail");
+    await expect(verifyAndApplyPayment({ paymentId: second.paymentId })).resolves.toMatchObject({ state: "failed" });
+    expect((await orderRow(order.id)).status).toBe("failed");
+  });
+
+  it("the older of two declines is history and changes nothing", async () => {
+    const { order, invoice, paymentId } = await declined();
+    await startPayment(await orderRow(order.id), null);
+    await sim.pay(invoice, "fail");
+    const row = (await paymentRows(order.id))[0];
+    await expect(verifyAndApplyPayment({ paymentId })).resolves.toEqual({ state: "pending", orderId: order.id });
+    expect((await paymentRows(order.id))[0].status).toBe(row.status);
+    expect((await orderRow(order.id)).status).toBe("pending");
+  });
+
+  it("the retried link can still be paid", async () => {
+    const { user, order, product, invoice } = await declined();
+    await startPayment(await orderRow(order.id), null);
+    const paid = await sim.pay(invoice, "success");
+    await expect(verifyAndApplyPayment({ paymentId: paid.paymentId })).resolves.toEqual({ state: "paid", orderId: order.id, changed: true });
+    expect(await sql`select product_id from entitlements where user_id = ${user.id}`).toEqual([{ product_id: product.id }]);
+  });
+
+  it("a method link that was declined is not offered again", async () => {
+    const { order } = await newOrder();
+    const first = await startPayment(order, 1);
+    const { paymentId } = await sim.pay(invoiceIdOf(first.url), "fail");
+    await verifyAndApplyPayment({ paymentId });
+    const retry = await startPayment(await orderRow(order.id), null);
+    expect(retry.reused).toBe(false);
+    expect(retry.url).not.toBe(first.url);
+  });
+
+  it("does not fail an order that has another open invoice", async () => {
+    const { order } = await newOrder();
+    const first = await startPayment(order, 1);
+    sim.startTransaction(invoiceIdOf(first.url));
+    const second = await startPayment(await orderRow(order.id), null);
+    expect(second.reused).toBe(false);
+    const { paymentId } = await sim.pay(invoiceIdOf(first.url), "fail");
+    await expect(verifyAndApplyPayment({ paymentId })).resolves.toMatchObject({ state: "failed" });
+    expect((await orderRow(order.id)).status).toBe("pending");
+    expect((await paymentRows(order.id)).map((p) => p.status)).toEqual(["failed", "pending"]);
+  });
+
+  it("takes the order lock before the payment row, like every other payment path", async () => {
+    const { order } = await newOrder();
+    const { url } = await startPayment(order, null);
+    const { paymentId } = await sim.pay(invoiceIdOf(url), "fail");
+    const { verifying, rowFree } = await asOtherServer(async (tx) => {
+      await tx`select id from orders where id = ${order.id} for update`;
+      const verifying = verifyAndApplyPayment({ paymentId });
+      await pause();
+      // المعالج ينتظر قفل الطلب، فلا يجوز أن يكون ممسكًا بصف الدفع: الترتيب المعاكس هو سبب الجمود المتبادل
+      const rowFree = await sql`select id from payments where order_id = ${order.id} for update nowait`.then(
+        () => true,
+        () => false,
+      );
+      return { verifying, rowFree };
+    });
+    expect(rowFree).toBe(true);
+    await expect(verifying).resolves.toMatchObject({ state: "failed" });
   });
 });
 
@@ -355,12 +480,12 @@ describe("reading an invoice's state", () => {
     await expireLocally(invoiceIdOf(first.url));
     const second = await startPayment(await orderRow(order.id), null);
     sim.setStatusFault(invoiceIdOf(first.url), true);
+    sim.state.requests.length = 0;
     const walk = await checkOrderInvoices(order.id);
     expect(walk).toMatchObject({ total: 2, checked: 1, allChecked: false, anyPaid: false });
     const stopped = await checkOrderInvoices(order.id, { stopOnError: true });
     expect(stopped).toMatchObject({ total: 2, checked: 0, allChecked: false });
-    sim.setStatusFault(invoiceIdOf(first.url), false);
-    expect(invoiceIdOf(second.url)).not.toBe(invoiceIdOf(first.url));
+    expect(sim.state.requests.filter((r) => r.path === "/v2/GetPaymentStatus").map((r) => (r.body as { Key: string }).Key)).toEqual([String(invoiceIdOf(first.url)), String(invoiceIdOf(second.url)), String(invoiceIdOf(first.url))]);
   });
 
   it("the walk refuses to claim success for an invoice from another payment mode", async () => {

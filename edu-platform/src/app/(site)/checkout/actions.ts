@@ -9,6 +9,7 @@ import {
   OrderSettledError,
   PaymentInProgressError,
   PaymentModeMismatchError,
+  attemptBlocksClosing,
   checkOrderInvoices,
   paymentsConfig,
   resolveOpenOrderForCheckout,
@@ -118,7 +119,7 @@ export async function refreshOrderStatusAction(fd: FormData) {
 
 /**
  * إلغاء الطالب لطلبه غير المدفوع، حتى يستطيع البدء من جديد دون انتظار انتهاء عمر الطلب.
- * لا يُلغى قبل التأكد من كل فواتيره لدى البوابة، وعند التعذر أو وجود عملية جارية يبقى الطلب كما هو.
+ * لا يُلغى قبل التأكد من كل فواتيره لدى البوابة، وعند التعذر أو وجود محاولة لم تُحسم خلال عمر رابطها ومهلته يبقى الطلب كما هو.
  */
 export async function cancelOrderAction(fd: FormData) {
   const user = await assertUser();
@@ -130,7 +131,7 @@ export async function cancelOrderAction(fd: FormData) {
   if (!limit.allowed) redirect(`${orderUrl}?error=rate`);
   const walk = await checkOrderInvoices(found.order.id);
   if (!walk.allChecked) redirect(`${orderUrl}?error=check`);
-  if (walk.inProgressInvoiceIds.length) redirect(`${orderUrl}?error=inprogress`);
+  if (await attemptBlocksClosing(found.order.id, walk.inProgressInvoiceIds)) redirect(`${orderUrl}?error=inprogress`);
   await sql.begin((db) => closeOrder(db, { orderId: found.order.id, reason: "student_cancelled", actorId: user.id }));
   redirect(orderUrl);
 }

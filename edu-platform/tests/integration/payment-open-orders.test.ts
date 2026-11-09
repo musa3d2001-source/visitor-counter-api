@@ -262,11 +262,22 @@ describe("a student cancelling their own order", () => {
     expect((await orderRow(order.id)).status).toBe("pending");
   });
 
-  it("leaves the order alone while a bank transaction is in progress", async () => {
+  it("leaves the order alone while an unfinished attempt is inside its link's life and grace", async () => {
     const { order, invoice } = await openOrder();
     sim.startTransaction(invoice);
     expect(await cancel(order.id)).toBe(`/orders/${order.id}?error=inprogress`);
     expect((await orderRow(order.id)).status).toBe("pending");
+    await sql`update payments set expires_at = now() - interval '5 minutes' where order_id = ${order.id}`;
+    expect(await cancel(order.id)).toBe(`/orders/${order.id}?error=inprogress`);
+    expect((await orderRow(order.id)).status).toBe("pending");
+  });
+
+  it("an attempt abandoned past the grace period no longer traps the order", async () => {
+    const { order, invoice } = await openOrder();
+    sim.startTransaction(invoice);
+    await sql`update payments set expires_at = now() - interval '20 minutes' where order_id = ${order.id}`;
+    expect(await cancel(order.id)).toBe(`/orders/${order.id}`);
+    expect(await orderRow(order.id)).toMatchObject({ status: "cancelled", closed_reason: "student_cancelled" });
   });
 
   it("cannot cancel someone else's order", async () => {

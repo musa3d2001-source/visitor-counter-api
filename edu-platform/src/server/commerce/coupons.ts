@@ -1,7 +1,7 @@
 import "server-only";
 import { computeDiscount } from "@/lib/money";
 import { sql, type Db } from "../db";
-import { ORDER_LIFETIME_HOURS } from "../payments/limits";
+import { INVOICE_TTL_MINUTES, ORDER_LIFETIME_HOURS } from "../payments/limits";
 
 export type CouponRow = {
   id: string;
@@ -24,16 +24,23 @@ type CouponUsage = { redeemed: number; held: number; user_redeemed: number; user
 
 /**
  * استهلاك الكود: الاستخدامات المكتملة، والطلبات المفتوحة التي تحجزه ولم تُستخدم بعد.
- * الحجز فقط لطلب pending خلال عمره: الطلب الذي فشل دفعه أو انتهت مدته أو أُغلق يحرر الكود.
+ * الحجز لطلب pending خلال عمره، ولطلب فشل دفعه ما دام عليه رابط يمكن دفعه: الرفض لا يُنهي الفاتورة، ودفعة عليها تستهلك الكود.
+ * الطلب الذي انتهت مدته أو أُغلق يحرر الكود. excludeOrderId يستثني حجز الطلب نفسه عند إعادة حساب حجزه.
  */
-async function couponUsage(db: Db, couponId: string, userId: string | null): Promise<CouponUsage> {
+async function couponUsage(db: Db, couponId: string, userId: string | null, excludeOrderId: string | null = null): Promise<CouponUsage> {
   const [usage] = await db<CouponUsage[]>`
     with used as (
       select user_id from coupon_redemptions where coupon_id = ${couponId}
     ), holds as (
       select o.user_id from orders o
-      where o.coupon_id = ${couponId} and o.status = 'pending'
+      where o.coupon_id = ${couponId}
         and o.created_at > now() - make_interval(hours => ${ORDER_LIFETIME_HOURS})
+        and (${excludeOrderId}::uuid is null or o.id <> ${excludeOrderId}::uuid)
+        and (o.status = 'pending' or (o.status = 'failed' and exists (
+          select 1 from payments p
+          where p.order_id = o.id and p.gateway_invoice_id is not null and p.status in ('pending', 'failed')
+            and coalesce(p.expires_at, p.created_at + make_interval(mins => ${INVOICE_TTL_MINUTES})) > now()
+        )))
     )
     select
       (select count(*)::int from used) as redeemed,
@@ -45,13 +52,13 @@ async function couponUsage(db: Db, couponId: string, userId: string | null): Pro
 }
 
 /**
- * طلب فشل دفعه حرر كوده، فقبل أي محاولة دفع جديدة يعيد حجزه تحت قفل الكود.
+ * طلب فشل دفعه يعيد حجز كوده تحت قفل الكود قبل أي محاولة دفع جديدة، ولا يُحسب حجزه هو عليه.
  * قفل FOR NO KEY UPDATE لا يتعارض مع إدراج coupon_redemptions (مفتاح أجنبي)، فلا يوقف تأكيد دفعة جارية.
  */
-export async function reacquireCouponHold(db: Db, input: { couponId: string; userId: string }): Promise<boolean> {
+export async function reacquireCouponHold(db: Db, input: { couponId: string; userId: string; orderId: string }): Promise<boolean> {
   const [coupon] = await db<CouponRow[]>`select * from coupons where id = ${input.couponId} for no key update`;
   if (!coupon) return false;
-  const usage = await couponUsage(db, coupon.id, input.userId);
+  const usage = await couponUsage(db, coupon.id, input.userId, input.orderId);
   if (coupon.max_redemptions !== null && usage.redeemed + usage.held >= coupon.max_redemptions) return false;
   return usage.user_redeemed + usage.user_held < coupon.max_per_user;
 }

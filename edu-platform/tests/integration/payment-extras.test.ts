@@ -477,20 +477,19 @@ describe("the gateway's refund events", () => {
   });
 
   it("a partial refund made from the portal does not close a full extra payment", async () => {
-    const { order, second, extra } = await flaggedOrder();
-    const inv = sim.state.invoices.get(second)!;
-    inv.Refunds.push({ RefundId: 777_001, AmountFils: 1000, Comment: "portal", ExternalIdentifier: null, Status: "Refunded" });
-    const { body, headers } = sim.buildRefundWebhook(second, 777_001, "REFUNDED");
+    const { order, second } = await flaggedOrder();
+    const portal = sim.portalRefund(second, 1000);
+    const { body, headers } = sim.buildRefundWebhook(second, portal.RefundId, "REFUNDED");
     await handleMyFatoorahWebhook(body, headers);
-    expect((await extraOf(order.id)).state).toBe("open");
-    expect(extra.state).toBe("open");
+    expect(await extraOf(order.id)).toMatchObject({ state: "open", gateway_refund_id: null });
+    expect((await sql`select status from payments where gateway_invoice_id = ${String(second)}`)[0].status).not.toBe("refunded");
+    expect((await sql<{ details: { reason: string } }[]>`select details from payment_alerts where order_id = ${order.id}`).map((a) => a.details.reason)).toEqual(["extra_mismatch"]);
   });
 
   it("a full refund made from the portal closes it", async () => {
     const { order, second } = await flaggedOrder();
-    const inv = sim.state.invoices.get(second)!;
-    inv.Refunds.push({ RefundId: 777_002, AmountFils: order.total_fils, Comment: "portal", ExternalIdentifier: null, Status: "Refunded" });
-    const { body, headers } = sim.buildRefundWebhook(second, 777_002, "REFUNDED");
+    const portal = sim.portalRefund(second, order.total_fils);
+    const { body, headers } = sim.buildRefundWebhook(second, portal.RefundId, "REFUNDED");
     await handleMyFatoorahWebhook(body, headers);
     expect((await extraOf(order.id)).state).toBe("refunded");
   });

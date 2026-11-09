@@ -260,19 +260,27 @@ async function decidePayment(orderId: string, environment: "sandbox" | "live", w
       return { kind: "closed", reason: "product_ended" };
     }
     // الطلب الذي فشل دفعه حرر كوده، فيعيد حجزه تحت قفل الكود قبل أي فاتورة
-    if (order.status === "failed" && order.coupon_id && !(await reacquireCouponHold(db, { couponId: order.coupon_id, userId: order.user_id }))) {
+    if (order.status === "failed" && order.coupon_id && !(await reacquireCouponHold(db, { couponId: order.coupon_id, userId: order.user_id, orderId }))) {
       await closeOrder(db, { orderId, reason: "coupon_unavailable", actorId: null });
       return { kind: "closed", reason: "coupon_unavailable" };
     }
-    const [open] = await db<{ payment_url: string }[]>`
-      select payment_url from payments
-      where order_id = ${orderId} and provider = 'myfatoorah' and environment = ${environment} and status = 'pending'
+    // الرفض لا يُنهي فاتورة الرابط العام: تبقى Pending لدى البوابة ويمكن إعادة المحاولة عليها، فنعيدها بدل فاتورة ثانية قابلة للدفع.
+    // رابط وسيلة محددة (ExecutePayment) جلسة بنك لمرة واحدة: يُعاد فقط إن لم تبدأ عليه أي محاولة
+    const [open] = await db<{ id: string; status: string; payment_url: string; last_attempt: string | null }[]>`
+      select id, status, payment_url, last_gateway_status->'InvoiceTransactions'->-1->>'PaymentId' as last_attempt from payments
+      where order_id = ${orderId} and provider = 'myfatoorah' and environment = ${environment}
         and gateway_invoice_id is not null and payment_url is not null
         and coalesce(expires_at, created_at + make_interval(mins => ${INVOICE_TTL_MINUTES})) > now() + make_interval(mins => ${INVOICE_REUSE_MARGIN_MINUTES})
+        and (
+          (status = 'pending' and (payment_method = 'all' or last_gateway_status->'InvoiceTransactions'->0 is null))
+          or (status = 'failed' and payment_method = 'all' and last_gateway_status->>'InvoiceStatus' = 'Pending')
+        )
       order by created_at desc limit 1
     `;
     if (open) {
       if (order.status === "failed") await db`update orders set status = 'pending' where id = ${orderId}`;
+      // الطالب تجاوز هذا الرفض بإعادة المحاولة، فقراءته مرة أخرى (Webhook مكرر أو فحص) لا تعيد الطلب إلى فاشل
+      if (open.status === "failed") await db`update payments set status = 'pending', error_message = null, acknowledged_failure_id = ${open.last_attempt} where id = ${open.id}`;
       return { kind: "reuse", url: open.payment_url };
     }
     const [claim] = await db<{ id: string }[]>`
@@ -286,10 +294,12 @@ async function decidePayment(orderId: string, environment: "sandbox" | "live", w
       where order_id = ${orderId} and status = 'initiated' and gateway_invoice_id is null
     `;
     if (walk.inProgressInvoiceIds.length) {
-      // عملية عند البنك على فاتورة انتهى رابطها: ننتظر حسمها، لكن بمهلة محدودة حتى لا يعلق الطالب بسبب عملية تُركت بلا نهاية
+      // محاولة لم تُحسم على فاتورة انتهى رابطها: ننتظر بمهلة محدودة. رابط ما زال مفتوحًا لا يمنع فاتورة جديدة:
+      // InProgress حسب الوثائق لا يعني خصمًا، وصفحة بنك تركها الطالب يجب ألا تحبسه ساعة كاملة
       const [blocking] = await db`
         select 1 from payments
         where order_id = ${orderId} and gateway_invoice_id = any(${walk.inProgressInvoiceIds}::text[])
+          and coalesce(expires_at, created_at + make_interval(mins => ${INVOICE_TTL_MINUTES})) <= now() + make_interval(mins => ${INVOICE_REUSE_MARGIN_MINUTES})
           and coalesce(expires_at, created_at + make_interval(mins => ${INVOICE_TTL_MINUTES})) + make_interval(mins => ${IN_PROGRESS_GRACE_MINUTES}) > now()
         limit 1
       `;
@@ -303,6 +313,21 @@ async function decidePayment(orderId: string, environment: "sandbox" | "live", w
     `;
     return { kind: "create", order, claimId: created.id, expiresAt: created.expires_at };
   });
+}
+
+/**
+ * هل تمنع محاولة لم تُحسم إغلاق الطلب؟ فقط خلال عمر رابطها ومهلة بعده، حتى لا يعلق الطالب بصفحة بنك تركها.
+ * بعدها تتابع وظيفة التسوية الفاتورة، ودفعة متأخرة عليها تُعالج ولا تضيع.
+ */
+export async function attemptBlocksClosing(orderId: string, invoiceIds: string[]): Promise<boolean> {
+  if (invoiceIds.length === 0) return false;
+  const [row] = await sql`
+    select 1 from payments
+    where order_id = ${orderId} and gateway_invoice_id = any(${invoiceIds}::text[])
+      and coalesce(expires_at, created_at + make_interval(mins => ${INVOICE_TTL_MINUTES})) + make_interval(mins => ${IN_PROGRESS_GRACE_MINUTES}) > now()
+    limit 1
+  `;
+  return Boolean(row);
 }
 
 const CLAIM_WAIT_ATTEMPTS = 40;
@@ -561,14 +586,35 @@ export async function verifyAndApplyPayment(key: { paymentId?: string; invoiceId
   }
 
   if (result.state === "failed") {
-    await sql.begin(async (db) => {
+    const declined = result.transaction?.PaymentId ?? null;
+    const newest = (status.InvoiceTransactions ?? []).at(-1)?.PaymentId ?? null;
+    const isCurrent = await sql.begin(async (db) => {
+      // الترتيب نفسه في كل مسارات الدفع: الطلب ثم صف الدفع
+      await db`select id from orders where id = ${order.id} for update`;
+      const [row] = await db<{ status: string; acknowledged_failure_id: string | null }[]>`select status, acknowledged_failure_id from payments where id = ${payment.id} for update`;
+      // رفض قديم: تجاوزه الطالب بإعادة المحاولة، أو جاءت بعده محاولة أحدث. إعادة قراءته لا تغيّر شيئًا
+      if (declined !== null && (declined === row.acknowledged_failure_id || declined !== newest)) {
+        await db`update payments set last_gateway_status = ${db.json(status as never)}, last_checked_at = now() where id = ${payment.id}`;
+        return false;
+      }
       await db`
         update payments set status = case when status in ('paid', 'refunded') then status else 'failed' end,
           error_message = ${result.error}, last_gateway_status = ${db.json(status as never)}, last_checked_at = now()
         where id = ${payment.id}
       `;
-      await db`update orders set status = 'failed' where id = ${order.id} and status = 'pending'`;
+      if (row.status !== "pending") return true;
+      // رفض على فاتورة واحدة لا يُفشل طلبًا عليه رابط آخر يمكن دفعه، أو فاتورة تُنشأ الآن من تبويب آخر
+      const [live] = await db`
+        select 1 from payments p
+        where p.order_id = ${order.id} and p.id <> ${payment.id}
+          and ((p.status = 'pending' and p.gateway_invoice_id is not null and coalesce(p.expires_at, p.created_at + make_interval(mins => ${INVOICE_TTL_MINUTES})) > now())
+            or (p.status = 'initiated' and p.gateway_invoice_id is null and p.created_at > now() - make_interval(secs => ${CLAIM_STALE_SECONDS})))
+        limit 1
+      `;
+      if (!live) await db`update orders set status = 'failed' where id = ${order.id} and status = 'pending'`;
+      return true;
     });
+    if (!isCurrent) return { state: "pending", orderId: order.id };
     return { state: "failed", orderId: order.id, error: result.error ?? "فشل الدفع" };
   }
 

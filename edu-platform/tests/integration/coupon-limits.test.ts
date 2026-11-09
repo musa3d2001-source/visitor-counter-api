@@ -1,11 +1,11 @@
 import { afterAll, afterEach, beforeAll, describe, expect, it } from "vitest";
 import { OrderError, closeOrder, completeFreeOrder, createOrder, type OrderRow } from "@/server/commerce/orders";
 import { evaluateCoupon } from "@/server/commerce/coupons";
-import { OrderClosedError, resetPaymentMethodsCache, startPayment } from "@/server/payments/service";
+import { OrderClosedError, resetPaymentMethodsCache, startPayment, verifyAndApplyPayment } from "@/server/payments/service";
 import { resetEnvCache } from "@/server/env";
 import { startSimulator, type Simulator } from "../mocks/myfatoorah-simulator";
 import { closeDb, resetDb, sql } from "../helpers/db";
-import { asOtherServer, confirmPaid, invoicesCreated, makeStale, orderRow, pause } from "../helpers/payment-flow";
+import { asOtherServer, confirmPaid, invoiceIdOf, invoicesCreated, makeStale, orderRow, pause } from "../helpers/payment-flow";
 import { activeEntitlements, createCoupon, createProduct, createUser } from "../helpers/factories";
 import { SIM_API_KEY, SIM_PORT, TEST_ENV, WEBHOOK_SECRET } from "../test-env";
 
@@ -223,6 +223,39 @@ describe("retrying a failed order that carries a code", () => {
     const { coupon, student, order } = await failedOrder({ maxPerUser: 1 });
     await buy(student, (await createProduct()).id, coupon.code);
     await expect(startPayment(order, null)).rejects.toMatchObject({ reason: "coupon_unavailable" });
+  });
+
+  describe("after a decline, while the same link can still be paid", () => {
+    async function declined() {
+      const coupon = await createCoupon({ kind: "percent", value: 10, maxRedemptions: 1, maxPerUser: 1 });
+      const product = await createProduct({ priceFils: 3000 });
+      const student = await createUser();
+      const order = await buy(student, product.id, coupon.code);
+      const { url } = await startPayment(order, null);
+      const { paymentId } = await sim.pay(invoiceIdOf(url), "fail");
+      await verifyAndApplyPayment({ paymentId });
+      expect((await orderRow(order.id)).status).toBe("failed");
+      return { coupon, product, student, order: await orderRow(order.id), url };
+    }
+
+    it("keeps the code held, because a payment on that link would consume it", async () => {
+      const { coupon, product } = await declined();
+      const [other] = await users(1);
+      await refusedWith(buy(other, product.id, coupon.code), HELD);
+    });
+
+    it("the student's own retry is not refused by its own hold", async () => {
+      const { order, url } = await declined();
+      await expect(startPayment(order, null)).resolves.toEqual({ url, reused: true });
+      expect((await orderRow(order.id)).status).toBe("pending");
+    });
+
+    it("releases the code once the link has ended", async () => {
+      const { coupon, product, order } = await declined();
+      await sql`update payments set expires_at = now() - interval '1 minute' where order_id = ${order.id}`;
+      const [other] = await users(1);
+      await expect(buy(other, product.id, coupon.code)).resolves.toMatchObject({ coupon_id: coupon.id });
+    });
   });
 
   it("an order without a code retries as before", async () => {
