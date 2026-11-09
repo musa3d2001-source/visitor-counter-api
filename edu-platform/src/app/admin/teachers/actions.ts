@@ -212,7 +212,7 @@ function payoutError(err: unknown) {
   if (err.reason === "over_balance") {
     return new AdminError(`المبلغ أكبر من الرصيد المستحق الآن (${filsToKwdString(Math.max(err.payableFils, 0))} د.ك). راجع المبلغ، أو أشّر خانة التأكيد لتسجيله دفعة زائدة.`);
   }
-  if (err.reason === "bank_details") return new AdminError("لا تكتب الآيبان أو بيانات الحساب البنكي هنا. اكتب رقم عملية التحويل فقط.");
+  if (err.reason === "bank_details") return new AdminError("لا تكتب الآيبان أو بيانات الحساب البنكي هنا، فالمنصة لا تحفظها.");
   if (err.reason === "void_reason") return new AdminError("اكتب سبب الإلغاء");
   return new AdminError("هذه التسوية ملغاة مسبقًا أو غير موجودة");
 }

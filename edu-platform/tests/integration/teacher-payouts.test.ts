@@ -291,6 +291,16 @@ describe("بيانات الحساب البنكي لا تُحفظ", () => {
     expect(await listPayouts(t.id)).toHaveLength(0);
   });
 
+  it("a void reason cannot carry them either, and the payout stays as it was", async () => {
+    const t = await createTeacher({ shareBps: 5000 });
+    await sale(t, 2000, 8);
+    const id = await pay(t.id, 100);
+    expect((await refusal(voidPayout({ payoutId: id, reason: "حوّلها إلى KW81CBKU0000000000001234560101", ownerId: owner.id }))).reason).toBe("bank_details");
+    const [row] = await listPayouts(t.id);
+    expect(row).toMatchObject({ id, voided_at: null, void_reason: null });
+    expect(await payoutAudit(t.id, "teacher.payout_void")).toHaveLength(0);
+  });
+
   it("ordinary transfer references still pass", () => {
     for (const ref of ["TRX-1", "FT23123ABCDE", "FT12345678901234", "123456789012", "تسوية نوفمبر", ""]) expect(looksLikeBankDetails(ref)).toBe(false);
     for (const iban of ["KW81CBKU0000000000001234560101", "SA0380000000608010167519", "ae07 0331 2345 6789 0123 456", "KW٨١CBKU0000000000001234560101"]) expect(looksLikeBankDetails(iban)).toBe(true);

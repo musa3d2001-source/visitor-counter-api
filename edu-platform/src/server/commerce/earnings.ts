@@ -404,6 +404,7 @@ export async function recordPayout(input: {
 export async function voidPayout(input: { payoutId: string; reason: string; ownerId: string; ip?: string }) {
   const reason = input.reason.trim().slice(0, 500);
   if (!reason) throw new PayoutRefused("void_reason");
+  if (looksLikeBankDetails(reason)) throw new PayoutRefused("bank_details");
   return sql.begin(async (tx) => {
     const [row] = await tx<{ id: string; teacher_id: string; amount_fils: number; method: string; reference: string }[]>`
       update teacher_payouts set voided_at = now(), voided_by = ${input.ownerId}, void_reason = ${reason}
