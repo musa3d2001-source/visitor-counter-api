@@ -26,8 +26,42 @@ describe("تصنيف رد التخزين", () => {
     expect(classifyPutResponse(status, "{}", 2).kind).toBe("fatal");
   });
 
-  it("shows the storage refusal message", () => {
-    expect(classifyPutResponse(413, JSON.stringify({ error: "الملف كبير" }), 1)).toEqual({ kind: "fatal", message: "الملف كبير (413)" });
+  it("never shows the storage provider's own text, and adds no status number", () => {
+    for (const body of ['{"error":"Payload too large","message":"The object exceeded the maximum allowed size"}', '{"error":"الملف كبير"}', "<html>nginx</html>"]) {
+      const out = classifyPutResponse(413, body, 1);
+      expect(out).toMatchObject({ kind: "fatal" });
+      expect((out as { message: string }).message).not.toMatch(/[a-z]|413/i);
+    }
+  });
+
+  // الأبدان كما تعيدها Supabase Storage: الرمز الحقيقي داخل بدن HTTP 400
+  const supabase = (statusCode: string, error: string, message: string) => JSON.stringify({ statusCode, error, message });
+
+  it.each([
+    ["429", "too_many_requests", "Too many requests"],
+    ["500", "Internal", "Internal Server Error"],
+    ["503", "DatabaseTimeout", "Timed out"],
+    ["504", "DatabaseTimeout", "Gateway timeout"],
+    ["408", "Timeout", "Request timeout"],
+  ])("a refusal wrapped in HTTP 400 with code %s is retried", (code, error, message) => {
+    expect(classifyPutResponse(400, supabase(code, error, message), 1).kind).toBe("retry");
+  });
+
+  it("a real too-large answer wrapped in 400 becomes an Arabic reason and is not retried", () => {
+    const out = classifyPutResponse(400, supabase("413", "Payload too large", "The object exceeded the maximum allowed size"), 1);
+    expect(out).toMatchObject({ kind: "fatal" });
+    expect((out as { message: string }).message).toContain("حجم الملف");
+    expect((out as { message: string }).message).not.toMatch(/[a-z]/i);
+  });
+
+  it("an expired upload link offers a fresh attempt", () => {
+    expect(classifyPutResponse(400, supabase("400", "InvalidJWT", '"exp" claim timestamp check failed'), 1)).toMatchObject({ kind: "fatal", canRetry: true });
+    expect(classifyPutResponse(400, supabase("403", "Unauthorized", "new row violates row-level security policy"), 1)).toMatchObject({ kind: "fatal", canRetry: true });
+  });
+
+  it("a wrong type gets its own Arabic reason", () => {
+    const out = classifyPutResponse(400, supabase("415", "invalid_mime_type", "mime type application/x is not supported"), 1);
+    expect((out as { message: string }).message).toContain("صيغة");
   });
 
   it("a duplicate on a retry means the earlier attempt landed and only its response was lost", () => {
@@ -39,6 +73,10 @@ describe("تصنيف رد التخزين", () => {
   it("a duplicate on the first attempt is a real refusal, keys are single use", () => {
     expect(classifyPutResponse(409, "{}", 1).kind).toBe("fatal");
     expect(classifyPutResponse(400, "Asset Already Exists", 1).kind).toBe("fatal");
+  });
+
+  it("a retry outcome carries no status number or provider text either", () => {
+    expect(classifyPutResponse(503, "upstream connect error", 1)).toEqual({ kind: "retry", message: "تعذر الوصول إلى التخزين مؤقتًا" });
   });
 
   it("a plain 400 on a retry stays a refusal", () => {

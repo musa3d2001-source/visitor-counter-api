@@ -1,14 +1,15 @@
 import "server-only";
 import { ar } from "@/lib/design";
 import { z } from "zod";
-import { sql } from "../db";
+import { sql, type Db } from "../db";
 import { storage, newStorageKey, sniffMime, storageFileCap, toMb, uploadLimitBytes, UPLOAD_RULES, type UploadKind } from "../storage";
-import { inspectPdf } from "../access/pdf";
+import { inspectPdf, PreviewNotIsolatedError, rebuildCustomPreview } from "../access/pdf";
 import { UPLOAD_REJECTION } from "../access/file-check";
 import { audit } from "../platform/audit";
 import { getSettings, saveSettings } from "../platform/settings";
 import { assertProductAccess, PermissionError, type Actor } from "../auth/permissions";
-import { createVideo, tusUploadCredentials } from "../video/bunny";
+import { createVideo, deleteVideo, tusUploadCredentials } from "../video/bunny";
+import { videoHostingBlocked } from "../video/policy";
 import { activeVideoProvider, probeStoredMp4Duration, syncLessonStatus } from "../video/service";
 import { AdminError, UUID_RE } from "./common";
 import { firstMainFile, nextLessonOrder, refreshPageCount, regenerateAutoPreview, type PreviewResult } from "./products";
@@ -24,6 +25,43 @@ import { maxPreviewPages, PREVIEW_POLICY } from "@/lib/preview-policy";
  * 2) complete: التحقق الفعلي من الملف في التخزين (الحجم + التوقيع الثنائي) ثم ربطه بالمنتج
  * المعلم يرفع لمسوداته فقط وبشرط تفعيل صلاحية الرفع.
  */
+
+/** عطل في التخزين وليس عيبًا في الملف: الملف باقٍ ويكفي إعادة التأكيد */
+export class UploadStorageError extends AdminError {}
+/** قال التخزين صراحة إن الملف غير موجود: إعادة التأكيد لا تفيد، ويلزم رفعه من جديد */
+export class UploadMissingError extends AdminError {}
+
+async function fromStorage<T>(work: () => Promise<T>): Promise<T> {
+  try {
+    return await work();
+  } catch (err) {
+    console.error("[upload-complete] storage", err);
+    throw new UploadStorageError("تعذر قراءة الملف من التخزين الآن. حاول مرة أخرى.");
+  }
+}
+
+/** النسخة المعزولة من معاينة مرفوعة. مفتاحها مشتق من الأصل، فتأكيد مكرر يصل إلى السجل نفسه */
+const isolatedPreviewKey = (key: string) => key.replace(/\.pdf$/i, ".isolated.pdf");
+
+/** المفتاح مربوط الآن بملف أو غلاف أو صورة أو درس، فلا يحذفه رفض رفع */
+async function storageKeyInUse(key: string): Promise<boolean> {
+  const [{ used }] = await sql<{ used: boolean }[]>`
+    select exists (select 1 from product_files where storage_key = ${key})
+      or exists (select 1 from products where cover_key = ${key})
+      or exists (select 1 from teachers where photo_key = ${key})
+      or exists (select 1 from teacher_profile_changes where photo_key = ${key} and status = 'pending')
+      or exists (select 1 from lessons where thumbnail_key = ${key} or (provider = 'file' and video_ref = ${key}))
+      as used
+  `;
+  return used;
+}
+
+/** على منصة المذكرات فقط لا يصل فيديو المعلم إلى النشر أبدًا، فلا يضيع وقته في رفعه */
+const VIDEO_UPLOAD_CLOSED = "استضافة الفيديو غير مفعّلة على المنصة بعد، فلا يمكن رفع الدروس الآن. يمكنك رفع مذكرات PDF.";
+
+function assertLessonUploadOpen(target: UploadTarget, actor: Actor) {
+  if (target === "lesson" && actor.kind === "teacher" && videoHostingBlocked()) throw new AdminError(VIDEO_UPLOAD_CLOSED);
+}
 
 export const UPLOAD_TARGETS = ["main", "preview", "cover", "lesson", "logo", "teacher_photo", "lesson_thumb"] as const;
 export type UploadTarget = (typeof UPLOAD_TARGETS)[number];
@@ -88,6 +126,8 @@ export const initSchema = z.object({
   unitTitle: z.string().trim().max(120).optional(),
   description: z.string().trim().max(2000).optional(),
   isFreePreview: z.boolean().optional(),
+  /** محاولة سابقة لم تكتمل لهذا الدرس، حتى لا يُنشأ درس آخر عند إعادة الرفع */
+  resumeVideoId: z.string().regex(UUID_RE).optional(),
 });
 
 function stripExt(name: string) {
@@ -131,6 +171,7 @@ export async function initUpload(input: z.infer<typeof initSchema>, actor: Actor
   const kind = TARGET_KIND[input.target];
   if (input.kind && input.kind !== kind) throw new AdminError("نوع الملف لا يناسب هذا الحقل");
   const { ref } = await authorizeTarget(actor, input.target, input);
+  assertLessonUploadOpen(input.target, actor);
   const mime = input.mime === "image/jpg" ? "image/jpeg" : input.mime;
 
   // فيديو عبر Bunny Stream: رفع TUS مباشر من المتصفح
@@ -139,6 +180,27 @@ export async function initUpload(input: z.infer<typeof initSchema>, actor: Actor
     if (input.size > BUNNY_MAX_BYTES) throw new AdminError("حجم الفيديو أكبر من 8 جيجابايت");
     const title = input.title || stripExt(input.fileName);
     if (!title || title.length < 2) throw new AdminError("عنوان الدرس مطلوب");
+    const tusStart = (videoId: string) => {
+      const creds = tusUploadCredentials(videoId);
+      return { method: "TUS" as const, key: videoId, kind, videoId, endpoint: creds.endpoint, headers: creds.headers, metadata: { filetype: mime, title } };
+    };
+    if (input.resumeVideoId) {
+      const [unfinished] = await sql<{ id: string; size_bytes: string | number | null }[]>`
+        select id, size_bytes from lessons where provider = 'bunny' and video_ref = ${input.resumeVideoId} and product_id = ${ref} and processing_status = 'uploading'
+      `;
+      if (unfinished && Number(unfinished.size_bytes) === input.size) {
+        await sql`
+          update lessons set title = ${title}, unit_title = ${input.unitTitle ?? ""}, description = ${input.description ?? ""}, is_free_preview = ${input.isFreePreview ?? false}, mime_type = ${mime}
+          where id = ${unfinished.id}
+        `;
+        return tusStart(input.resumeVideoId);
+      }
+      // ملف آخر غير الذي انقطع: لا يبقى الدرس غير المكتمل معلقًا بجانب الجديد
+      if (unfinished) {
+        await sql`delete from lessons where id = ${unfinished.id}`;
+        await deleteVideo(input.resumeVideoId).catch((err) => console.error("[upload-init] unfinished video cleanup", err));
+      }
+    }
     const video = await createVideo(title);
     const order = await nextLessonOrder(ref!);
     // سجل الدرس يُنشأ فورًا بحالة «قيد الرفع» — إن لم يكتمل الرفع يظهر للفريق ويمكن حذفه
@@ -148,9 +210,8 @@ export async function initUpload(input: z.infer<typeof initSchema>, actor: Actor
       values (${ref}, ${input.unitTitle ?? ""}, ${title}, ${input.description ?? ""}, 'bunny', ${video.guid}, ${mime}, ${input.size},
         ${input.isFreePreview ?? false}, ${order}, 'uploading', ${actor.userId})
     `;
-    const creds = tusUploadCredentials(video.guid);
     await audit({ actorId: actor.userId, action: "lesson.upload_start", entityType: "product", entityId: ref, metadata: { provider: "bunny", videoId: video.guid, title } });
-    return { method: "TUS" as const, key: video.guid, kind, videoId: video.guid, endpoint: creds.endpoint, headers: creds.headers, metadata: { filetype: mime, title } };
+    return tusStart(video.guid);
   }
 
   const rules = UPLOAD_RULES[kind];
@@ -181,11 +242,13 @@ export const completeSchema = z.object({
 const PREVIEW_RESULT_NOTE: Partial<Record<PreviewResult, string>> = {
   too_short: `. الملف أقل من ${ar(PREVIEW_POLICY.pagesPerFreePage)} صفحات فلا تتاح له معاينة`,
   unreadable: ". تعذر توليد المعاينة، ولّدها من قسم المعاينة",
+  not_isolated: ". تعذر تجهيز معاينة آمنة من هذا الملف، فلن تظهر له معاينة",
 };
 
 /** التأكيد قد يصل مرتين إذا ضاع رد الخادم على الشبكة: النتيجة نفسها في المرتين */
 export async function completeUpload(input: z.infer<typeof completeSchema>, actor: Actor) {
   const { ref } = await authorizeTarget(actor, input.target, input);
+  assertLessonUploadOpen(input.target, actor);
   const productId = input.productId ?? null;
 
   // فيديو Bunny: الملف عند Bunny — نحدّث الحالة ونستعلم عن المعالجة
@@ -220,36 +283,40 @@ export async function completeUpload(input: z.infer<typeof completeSchema>, acto
     throw new AdminError("مرجع الملف غير صالح");
   }
   const bucket = rules.bucket;
+  const isPdfTarget = input.target === "main" || input.target === "preview";
+  const storedKey = input.target === "preview" ? isolatedPreviewKey(input.key) : input.key;
+  const findRegistered = (db: Db = sql) =>
+    db<{ id: string; title: string; page_count: number | null }[]>`
+      select id, title, page_count from product_files where storage_key in (${input.key}, ${storedKey}) and product_id = ${productId} and kind = ${input.target}
+    `;
+  const registeredReply = (row: { id: string; title: string; page_count: number | null }) => ({ id: row.id, message: `تم رفع «${row.title}» (${row.page_count ?? 0} صفحة)` });
+
+  // تأكيد مكرر (ضاع رد الخادم على الشبكة): جوابه من السجل قبل أي سؤال للتخزين
+  if (isPdfTarget) {
+    const [already] = await findRegistered();
+    if (already) return registeredReply(already);
+  }
+
   const reject = async (msg: string): Promise<never> => {
-    await storage().remove(bucket, input.key).catch(() => {});
+    // تأكيد متزامن سجّل الملف أثناء فحصنا، أو تأكيد مصنوع بمفتاح ملف قائم: لا يُحذف ملف مستخدم
+    if (!(await storageKeyInUse(input.key))) await storage().remove(bucket, input.key).catch(() => {});
     throw new AdminError(msg);
   };
 
-  const stat = await storage().stat(bucket, input.key);
-  if (!stat) throw new AdminError("لم يكتمل رفع الملف. حاول مرة أخرى.");
+  const stat = await fromStorage(() => storage().stat(bucket, input.key));
+  if (!stat) throw new UploadMissingError("لم يكتمل رفع الملف. حاول مرة أخرى.");
   if (stat.size <= 0) await reject("الملف فارغ");
   if (stat.size > uploadLimitBytes(kind)) await reject(tooLargeMessage(kind, actor));
   if (input.size !== undefined && stat.size !== input.size) await reject("لم يصل الملف كاملًا. ارفعه مرة أخرى.");
-  const head = await storage().readHead(bucket, input.key, 16);
+  const head = await fromStorage(() => storage().readHead(bucket, input.key, 16));
   const mime = sniffMime(head);
   if (!mime || !(rules.mime as readonly string[]).includes(mime)) await reject(`محتوى الملف لا يطابق النوع المطلوب (${KIND_LABEL[kind]})`);
 
   const originalName = (input.originalName ?? "").slice(0, 255);
 
-  if (input.target === "main" || input.target === "preview") {
-    const [already] = await sql<{ id: string; title: string; page_count: number | null }[]>`
-      select id, title, page_count from product_files where storage_key = ${input.key} and product_id = ${productId} and kind = ${input.target}
-    `;
-    if (already) return { id: already.id, message: `تم رفع «${already.title}» (${already.page_count ?? 0} صفحة)` };
-
-    let bytes: Uint8Array;
-    try {
-      bytes = await storage().read(bucket, input.key);
-    } catch (err) {
-      // تعطل التخزين ليس عيبًا في الملف: لا نحذفه، ويمكن إعادة التأكيد
-      console.error("[upload-complete] read failed", err);
-      throw new AdminError("تعذر قراءة الملف من التخزين الآن. حاول مرة أخرى.");
-    }
+  if (isPdfTarget) {
+    // تعطل التخزين ليس عيبًا في الملف: لا نحذفه، ويمكن إعادة التأكيد
+    const bytes = await fromStorage(() => storage().read(bucket, input.key));
     const inspection = await inspectPdf(bytes);
     if (!inspection.ok) return reject(UPLOAD_REJECTION[inspection.problem]);
     const pageCount = inspection.pageCount;
@@ -266,10 +333,31 @@ export async function completeUpload(input: z.infer<typeof completeSchema>, acto
       sourceFileId = first.id;
     }
 
+    // المعاينة ملف عام: تُحفظ نسختها المبنية من جديد، لا ما رُفع كما هو
+    let isolated: Uint8Array | null = null;
+    if (input.target === "preview") {
+      try {
+        isolated = (await rebuildCustomPreview(bytes)).bytes;
+      } catch (err) {
+        if (!(err instanceof PreviewNotIsolatedError)) throw err;
+        console.error("[upload-complete] custom preview not isolated", productId, err.message);
+        return reject("تعذر تجهيز هذه المعاينة للعرض العام. صدّرها بصيغة PDF من جديد ثم ارفعها، أو استخدم التوليد التلقائي.");
+      }
+    }
+
     const title = input.title || stripExt(originalName) || (input.target === "main" ? "ملف المذكرة" : "معاينة مجانية");
-    const { id: fileId, replacedKeys } = await sql.begin(async (tx) => {
+    const saved = await sql.begin(async (tx) => {
       // قفل المنتج يمنع معاينتين معًا عند رفعين متزامنين
       await tx`select 1 from products where id = ${productId} for update`;
+      // تأكيدان معًا على هاتف بطيء: الثاني ينتظر القفل ثم يجد ما سجله الأول
+      const [registered] = await findRegistered(tx);
+      if (registered) return { registered };
+      if (isolated) {
+        // بقايا محاولة سابقة لم تُسجَّل. التخزين لا يكتب فوق مفتاح موجود
+        const clean = isolated;
+        await storage().remove(bucket, storedKey).catch(() => {});
+        await fromStorage(() => storage().put(bucket, storedKey, clean, "application/pdf"));
+      }
       let replaced: { storage_key: string }[] = [];
       if (input.target === "preview") {
         // معاينة مخصصة تحل محل المعاينة التلقائية والسابقة
@@ -279,14 +367,17 @@ export async function completeUpload(input: z.infer<typeof completeSchema>, acto
         select coalesce(max(sort_order), -1)::int + 1 as next from product_files where product_id = ${productId} and kind = ${input.target}
       `;
       const [row] = await tx<{ id: string }[]>`
-        insert into product_files (product_id, kind, title, storage_key, original_name, mime_type, size_bytes, page_count, is_auto_preview, sort_order, check_status, checked_at, source_file_id)
-        values (${productId}, ${input.target}, ${title}, ${input.key}, ${originalName}, 'application/pdf', ${stat.size}, ${pageCount}, false, ${next}, 'ok', now(), ${sourceFileId})
+        insert into product_files (product_id, kind, title, storage_key, original_name, mime_type, size_bytes, page_count, is_auto_preview, sort_order, check_status, checked_at, source_file_id, pages_isolated)
+        values (${productId}, ${input.target}, ${title}, ${storedKey}, ${originalName}, 'application/pdf', ${isolated ? isolated.length : stat.size}, ${pageCount}, false, ${next}, 'ok', now(), ${sourceFileId}, ${isolated !== null})
         returning id
       `;
       if (input.target === "main") await refreshPageCount(productId!, tx);
       return { id: row.id, replacedKeys: replaced.map((r) => r.storage_key) };
     });
+    if (saved.registered) return registeredReply(saved.registered);
+    const { id: fileId, replacedKeys } = saved;
     for (const k of replacedKeys) await storage().remove("private", k).catch(() => {});
+    if (isolated) await storage().remove(bucket, input.key).catch(() => {});
 
     let previewNote = "";
     if (input.target === "main") {
@@ -339,17 +430,26 @@ export async function completeUpload(input: z.infer<typeof completeSchema>, acto
   // lesson (file provider): يصبح جاهزًا بعد التحقق من الملف وقراءة مدته
   const title = input.title || stripExt(originalName);
   if (!title || title.length < 2) return reject("عنوان الدرس مطلوب");
-  const [dup] = await sql<{ id: string; title: string }[]>`select id, title from lessons where provider = 'file' and video_ref = ${input.key} and product_id = ${productId}`;
+  const findLesson = (db: Db = sql) => db<{ id: string; title: string }[]>`select id, title from lessons where provider = 'file' and video_ref = ${input.key} and product_id = ${productId}`;
+  const [dup] = await findLesson();
   if (dup) return { id: dup.id, message: `تمت إضافة الدرس «${dup.title}»` };
   const duration = await probeStoredMp4Duration(input.key, stat.size);
-  const order = await nextLessonOrder(productId!);
-  const [lesson] = await sql<{ id: string }[]>`
-    insert into lessons (product_id, unit_title, title, description, provider, video_ref, mime_type, size_bytes, duration_seconds,
-      is_free_preview, sort_order, processing_status, uploaded_by)
-    values (${productId}, ${input.unitTitle ?? ""}, ${title}, ${input.description ?? ""}, 'file', ${input.key}, ${mime}, ${stat.size},
-            ${duration}, ${input.isFreePreview ?? false}, ${order}, 'ready', ${actor.userId})
-    returning id
-  `;
+  const created = await sql.begin(async (tx) => {
+    await tx`select 1 from products where id = ${productId} for update`;
+    const [existing] = await findLesson(tx);
+    if (existing) return { existing };
+    const order = await nextLessonOrder(productId!, tx);
+    const [row] = await tx<{ id: string }[]>`
+      insert into lessons (product_id, unit_title, title, description, provider, video_ref, mime_type, size_bytes, duration_seconds,
+        is_free_preview, sort_order, processing_status, uploaded_by)
+      values (${productId}, ${input.unitTitle ?? ""}, ${title}, ${input.description ?? ""}, 'file', ${input.key}, ${mime}, ${stat.size},
+              ${duration}, ${input.isFreePreview ?? false}, ${order}, 'ready', ${actor.userId})
+      returning id
+    `;
+    return { lesson: row };
+  });
+  if (created.existing) return { id: created.existing.id, message: `تمت إضافة الدرس «${created.existing.title}»` };
+  const { lesson } = created;
   await audit({ actorId: actor.userId, action: "lesson.create", entityType: "product", entityId: productId, metadata: { lessonId: lesson.id, title, provider: "file", duration } });
   return { id: lesson.id, message: `تمت إضافة الدرس «${title}»` };
 }

@@ -7,6 +7,9 @@ import { resetEnvCache } from "@/server/env";
 import { createVideo, getVideo, signedEmbedUrl, tusUploadCredentials, BunnyError } from "@/server/video/bunny";
 import { activeVideoProvider, handleBunnyWebhook, probeStoredMp4Duration, syncLessonStatus, syncPendingLessons } from "@/server/video/service";
 import { checkLessonAccess, playbackFor } from "@/server/access/lessons";
+import { initUpload } from "@/server/admin/uploads";
+import type { Actor } from "@/server/auth/permissions";
+import { runTusUpload, TUS_FAILED_MESSAGE } from "@/lib/tus-upload";
 import { startBunnySimulator, type BunnySimulator } from "../mocks/bunny-simulator";
 import { closeDb, resetDb, sql } from "../helpers/db";
 import { createUser, createVideoProduct, writePrivateVideo } from "../helpers/factories";
@@ -166,6 +169,132 @@ describe("Bunny Stream: الإنشاء والرفع المباشر (TUS) وال�
       process.env.BUNNY_STREAM_API_KEY = sim.apiKey;
       resetEnvCache();
     }
+  });
+});
+
+describe("رفع فيديو انقطع قبل اكتماله", () => {
+  /** يحفظ بصمة الرفع كما يحفظها المتصفح. Node لا يملك مخزنًا افتراضيًا */
+  function memoryUrlStorage() {
+    const rows = new Map<string, unknown>();
+    return {
+      findAllUploads: async () => [...rows.values()],
+      findUploadsByFingerprint: async (fingerprint: string) => [...rows.entries()].filter(([k]) => k.startsWith(`${fingerprint}::`)).map(([k, v]) => ({ ...(v as object), urlStorageKey: k })),
+      removeUpload: async (key: string) => void rows.delete(key),
+      addUpload: async (fingerprint: string, upload: unknown) => {
+        const key = `${fingerprint}::${rows.size}`;
+        rows.set(key, upload);
+        return key;
+      },
+    } as unknown as tus.UrlStorage;
+  }
+
+  /** يعد الطلبات، ويقطع طلب PATCH رقم failOn كما تنقطع شبكة الجوال */
+  function flakyStack(failOn: number | null) {
+    const real = new tus.DefaultHttpStack({});
+    const seen = { POST: 0, HEAD: 0, PATCH: 0 } as Record<string, number>;
+    const stack = {
+      getName: () => "flaky",
+      createRequest(method: string, url: string) {
+        seen[method] = (seen[method] ?? 0) + 1;
+        const request = real.createRequest(method, url);
+        if (method === "PATCH" && seen.PATCH === failOn) request.send = () => Promise.reject(new Error("connection lost"));
+        return request;
+      },
+    } as unknown as tus.HttpStack;
+    return { stack, seen };
+  }
+
+  const CHUNK = 32 * 1024;
+  const body = () => Buffer.from(new Uint8Array(CHUNK * 4).map((_, i) => i % 251));
+  const startFor = (guid: string) => {
+    const creds = tusUploadCredentials(guid);
+    return { videoId: guid, endpoint: creds.endpoint, headers: creds.headers, metadata: { filetype: "video/mp4", title: "درس" } };
+  };
+  const options = (urlStorage: tus.UrlStorage, stack: tus.HttpStack) => ({ urlStorage, httpStack: stack, chunkSize: CHUNK, retryDelays: [] as number[] });
+  const uploadedBytes = (guid: string) => [...sim.state.uploads.values()].find((u) => u.guid === guid)?.offset ?? null;
+
+  it("the retry continues the same upload from where it stopped, even with fresh credentials", async () => {
+    const v = await createVideo("درس منقطع");
+    const urlStorage = memoryUrlStorage();
+
+    const first = flakyStack(3);
+    const failed = await runTusUpload(body(), startFor(v.guid), () => {}, options(urlStorage, first.stack));
+    expect(failed).toEqual({ ok: false, error: TUS_FAILED_MESSAGE });
+    expect(failed).toMatchObject({ error: expect.not.stringMatching(/[A-Za-z]/) });
+    expect(uploadedBytes(v.guid)).toBe(CHUNK * 2);
+
+    const second = flakyStack(null);
+    await expect(runTusUpload(body(), startFor(v.guid), () => {}, options(urlStorage, second.stack))).resolves.toEqual({ ok: true });
+    expect(second.seen).toMatchObject({ POST: 0, HEAD: 1, PATCH: 2 });
+  });
+
+  it("another video never continues someone else's upload", async () => {
+    const a = await createVideo("درس أ");
+    const b = await createVideo("درس ب");
+    const urlStorage = memoryUrlStorage();
+    await runTusUpload(body(), startFor(a.guid), () => {}, options(urlStorage, flakyStack(2).stack));
+
+    const other = flakyStack(null);
+    await expect(runTusUpload(body(), startFor(b.guid), () => {}, options(urlStorage, other.stack))).resolves.toEqual({ ok: true });
+    expect(other.seen.POST).toBe(1);
+    expect(other.seen.HEAD ?? 0).toBe(0);
+  });
+
+  describe("تجهيز إعادة المحاولة على الخادم", () => {
+    const owner = async (): Promise<Actor> => {
+      const u = await createUser({ role: "admin" });
+      return { kind: "owner", userId: u.id, name: u.fullName, email: u.email, teacherId: null, canUpload: true };
+    };
+    const input = (productId: string, size: number, resumeVideoId?: string) => ({ target: "lesson" as const, productId, fileName: "درس.mp4", size, mime: "video/mp4", title: "درس", ...(resumeVideoId ? { resumeVideoId } : {}) });
+    const lessonsOf = (productId: string) => sql<{ video_ref: string; size_bytes: string; processing_status: string }[]>`select video_ref, size_bytes, processing_status from lessons where product_id = ${productId}`;
+    const started = async (actor: Actor, productId: string, size: number) => {
+      const res = await initUpload(input(productId, size), actor);
+      return (res as { videoId: string }).videoId;
+    };
+
+    it("the same file keeps its lesson and creates no second video", async () => {
+      const actor = await owner();
+      const p = await createVideoProduct({ status: "draft", lessons: 0 });
+      const videoId = await started(actor, p.id, 5000);
+      const videos = sim.state.videos.size;
+
+      await expect(initUpload(input(p.id, 5000, videoId), actor)).resolves.toMatchObject({ videoId, method: "TUS" });
+      expect(sim.state.videos.size).toBe(videos);
+      expect(await lessonsOf(p.id)).toHaveLength(1);
+    });
+
+    it("choosing a different file removes the unfinished lesson, leaving no ghost beside the new one", async () => {
+      const actor = await owner();
+      const p = await createVideoProduct({ status: "draft", lessons: 0 });
+      const videoId = await started(actor, p.id, 5000);
+
+      const res = (await initUpload(input(p.id, 9000, videoId), actor)) as { videoId: string };
+      expect(res.videoId).not.toBe(videoId);
+      expect((await lessonsOf(p.id)).map((l) => l.video_ref)).toEqual([res.videoId]);
+      expect(sim.state.videos.has(videoId)).toBe(false);
+    });
+
+    it("a video id from another product is ignored, and that product's lesson is left alone", async () => {
+      const actor = await owner();
+      const theirs = await createVideoProduct({ status: "draft", lessons: 0 });
+      const mine = await createVideoProduct({ status: "draft", lessons: 0 });
+      const videoId = await started(actor, theirs.id, 5000);
+
+      const res = (await initUpload(input(mine.id, 5000, videoId), actor)) as { videoId: string };
+      expect(res.videoId).not.toBe(videoId);
+      expect((await lessonsOf(theirs.id)).map((l) => l.video_ref)).toEqual([videoId]);
+    });
+
+    it("a lesson that finished uploading is not reopened", async () => {
+      const actor = await owner();
+      const p = await createVideoProduct({ status: "draft", lessons: 0 });
+      const videoId = await started(actor, p.id, 5000);
+      await sql`update lessons set processing_status = 'processing' where video_ref = ${videoId}`;
+
+      const res = (await initUpload(input(p.id, 5000, videoId), actor)) as { videoId: string };
+      expect(res.videoId).not.toBe(videoId);
+      expect(await lessonsOf(p.id)).toHaveLength(2);
+    });
   });
 });
 

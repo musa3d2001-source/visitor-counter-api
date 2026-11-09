@@ -2,8 +2,8 @@
 
 import { useRef, useState } from "react";
 import { useRouter } from "next/navigation";
-import { FileVideo, LoaderCircle, Upload } from "lucide-react";
-import { fmtSize, uploadFile, type UploadPhase } from "./file-uploader";
+import { FileVideo, LoaderCircle, RefreshCw, Upload } from "lucide-react";
+import { fmtSize, uploadFile, type UploadPhase, type UploadResume } from "./file-uploader";
 import { ar } from "@/lib/design";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
@@ -25,33 +25,22 @@ export function LessonUploader({ productId, provider = "file", maxLabel = "2 ج�
   const [phase, setPhase] = useState<UploadPhase | null>(null);
   const [retry, setRetry] = useState<{ attempt: number; of: number } | undefined>();
   const [result, setResult] = useState<{ ok: boolean; text: string } | null>(null);
+  /** محاولة فشلت ويمكن إكمالها: الملف نفسه، وما كُتب عنه، وأين توقف */
+  const [failed, setFailed] = useState<{ file: File; extra: Record<string, unknown>; resume?: UploadResume } | null>(null);
 
-  async function onSubmit(e: React.FormEvent<HTMLFormElement>) {
-    e.preventDefault();
-    const fd = new FormData(e.currentTarget);
-    const file = fd.get("file");
-    const title = String(fd.get("title") ?? "").trim();
-    if (!(file instanceof File) || file.size === 0) return setResult({ ok: false, text: "اختر ملف الفيديو" });
-    if (title.length < 2) return setResult({ ok: false, text: "عنوان الدرس مطلوب" });
+  async function send(file: File, extra: Record<string, unknown>, resume?: UploadResume) {
     setResult(null);
+    setFailed(null);
     setPct(0);
     const res = await uploadFile(
       file,
-      {
-        target: "lesson",
-        productId,
-        extra: {
-          title,
-          unitTitle: String(fd.get("unitTitle") ?? ""),
-          description: String(fd.get("description") ?? ""),
-          isFreePreview: fd.get("isFreePreview") === "on",
-        },
-      },
+      { target: "lesson", productId, extra },
       (p, ph, r) => {
         setPct(p);
         setPhase(ph);
         setRetry(r);
       },
+      resume,
     );
     setPct(null);
     setPhase(null);
@@ -60,7 +49,27 @@ export function LessonUploader({ productId, provider = "file", maxLabel = "2 ج�
       formRef.current?.reset();
       setPicked(null);
       router.refresh();
-    } else setResult({ ok: false, text: res.error });
+      return;
+    }
+    setResult({ ok: false, text: res.error });
+    if (res.canRetry) setFailed({ file, extra, resume: res.resume });
+  }
+
+  async function onSubmit(e: React.FormEvent<HTMLFormElement>) {
+    e.preventDefault();
+    const fd = new FormData(e.currentTarget);
+    const file = fd.get("file");
+    const title = String(fd.get("title") ?? "").trim();
+    if (!(file instanceof File) || file.size === 0) return setResult({ ok: false, text: "اختر ملف الفيديو" });
+    if (title.length < 2) return setResult({ ok: false, text: "عنوان الدرس مطلوب" });
+    const extra = {
+      title,
+      unitTitle: String(fd.get("unitTitle") ?? ""),
+      description: String(fd.get("description") ?? ""),
+      isFreePreview: fd.get("isFreePreview") === "on",
+    };
+    // إرسال جديد بعد انقطاع: الخادم يكمل الدرس غير المنتهي نفسه أو يحذفه إن اختير ملف آخر
+    await send(file, extra, failed?.resume?.videoId ? { videoId: failed.resume.videoId } : undefined);
   }
 
   const busy = pct !== null;
@@ -181,6 +190,11 @@ export function LessonUploader({ productId, provider = "file", maxLabel = "2 ج�
       {result ? (
         <Alert tone={result.ok ? "success" : "danger"} className="sm:col-span-2">
           {result.text}
+          {failed ? (
+            <button type="button" className="btn btn-3d btn-soft btn-sm mt-2 min-h-11" disabled={busy} onClick={() => void send(failed.file, failed.extra, failed.resume)} data-testid="lesson-upload-retry">
+              <RefreshCw className="size-4" aria-hidden /> إعادة المحاولة
+            </button>
+          ) : null}
         </Alert>
       ) : null}
       <div className="sm:col-span-2">

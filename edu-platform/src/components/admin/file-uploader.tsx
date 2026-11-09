@@ -4,6 +4,7 @@ import { useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { CircleCheck, ImageUp, LoaderCircle, RefreshCw, TriangleAlert, Upload, WifiOff } from "lucide-react";
 import { ar } from "@/lib/design";
+import { runTusUpload } from "@/lib/tus-upload";
 import { classifyPutResponse, isTransientServerStatus, networkFailure, putWithRetry, retryDelayMs, UPLOAD_RETRY, type PutOutcome, type RetryNotice } from "@/lib/upload-retry";
 import { cn } from "@/lib/utils";
 
@@ -27,34 +28,16 @@ type InitResponse =
       error?: string;
     };
 
-/** رفع TUS مباشر إلى Bunny Stream (قابل للاستئناف عند انقطاع الاتصال) */
-async function tusUpload(file: File, init: Extract<InitResponse, { method: "TUS" }>, onProgress: (pct: number) => void): Promise<{ ok: boolean; error?: string }> {
-  const { Upload } = await import("tus-js-client");
-  return new Promise((resolve) => {
-    const upload = new Upload(file, {
-      endpoint: init.endpoint,
-      retryDelays: [0, 3000, 5000, 10000, 20000],
-      chunkSize: 50 * 1024 * 1024,
-      headers: init.headers,
-      metadata: {
-        ...init.metadata,
-        filetype: file.type || init.metadata.filetype || "video/mp4",
-      },
-      onProgress: (sent, total) => onProgress(total ? Math.round((sent / total) * 100) : 0),
-      onError: (err) =>
-        resolve({
-          ok: false,
-          error: `فشل رفع الفيديو: ${String((err as Error)?.message ?? err).slice(0, 120)}`,
-        }),
-      onSuccess: () => resolve({ ok: true }),
-    });
-    upload.start();
-  });
-}
-
 export type UploadPhase = "uploading" | "processing" | "retrying" | "offline";
 export type UploadProgress = (pct: number, phase: UploadPhase, retry?: { attempt: number; of: number }) => void;
-export type UploadResult = { ok: true; message: string } | { ok: false; error: string; canRetry?: boolean };
+/** ما يلزم لإكمال محاولة فشلت بدل البدء من الصفر */
+export type UploadResume = {
+  /** الملف وصل التخزين، والمتبقي تأكيده فقط */
+  confirm?: { key: string; method: "PUT" | "TUS" };
+  /** درس Bunny لم يكتمل رفعه، فلا يُنشأ درس آخر */
+  videoId?: string;
+};
+export type UploadResult = { ok: true; message: string } | { ok: false; error: string; canRetry?: boolean; resume?: UploadResume };
 
 const sleep = (ms: number) => new Promise<void>((r) => setTimeout(r, ms));
 
@@ -125,6 +108,7 @@ export async function uploadFile(
     extra?: Record<string, unknown>;
   },
   onProgress: UploadProgress,
+  resume?: UploadResume,
 ): Promise<UploadResult> {
   const lower = file.name.toLowerCase();
   const mime = file.type || (lower.endsWith(".pdf") ? "application/pdf" : lower.endsWith(".mp4") ? "video/mp4" : "");
@@ -133,48 +117,62 @@ export async function uploadFile(
     teacherId: opts.teacherId ?? null,
     lessonId: opts.lessonId ?? null,
   };
-  // تجهيز الدرس قد يُنشئ سجلًا عند مزود الفيديو، فلا يُعاد تلقائيًا
-  const initTries = opts.target === "lesson" ? 1 : 3;
-  const started = await postJson<InitResponse>(
-    "/api/admin/uploads/init",
-    { target: opts.target, ...ids, fileName: file.name, size: file.size, mime, ...(opts.extra ?? {}) },
-    initTries,
-    (attempt, of) => onProgress(0, "retrying", { attempt, of }),
-  );
-  if (!started) return { ok: false, error: "تعذر الاتصال بالخادم. تحقق من الشبكة ثم أعد المحاولة.", canRetry: true };
-  if (!started.res.ok) return { ok: false, error: started.data.error ?? "تعذر تجهيز الرفع", canRetry: isTransientServerStatus(started.res.status) };
-  const init = started.data;
+  let confirm = resume?.confirm;
+  if (!confirm) {
+    // تجهيز الدرس قد يُنشئ سجلًا عند مزود الفيديو، فلا يُعاد تلقائيًا
+    const initTries = opts.target === "lesson" ? 1 : 3;
+    const started = await postJson<InitResponse>(
+      "/api/admin/uploads/init",
+      { target: opts.target, ...ids, fileName: file.name, size: file.size, mime, ...(opts.extra ?? {}), ...(resume?.videoId ? { resumeVideoId: resume.videoId } : {}) },
+      initTries,
+      (attempt, of) => onProgress(0, "retrying", { attempt, of }),
+    );
+    if (!started) return { ok: false, error: "تعذر الاتصال بالخادم. تحقق من الشبكة ثم أعد المحاولة.", canRetry: true, resume };
+    if (!started.res.ok) return { ok: false, error: started.data.error ?? "تعذر تجهيز الرفع", canRetry: isTransientServerStatus(started.res.status), resume };
+    const init = started.data;
 
-  let lastPct = 0;
-  const putOk =
-    init.method === "TUS"
-      ? await tusUpload(file, init, (pct) => onProgress(pct, "uploading"))
-      : await putWithRetry(
-          (attempt) => {
-            onProgress(attempt === 1 ? 0 : lastPct, "uploading");
-            return putOnce(file, init, attempt, (pct) => {
-              lastPct = pct;
-              onProgress(pct, "uploading");
-            });
-          },
-          {
-            sleep,
-            isOffline: () => navigator.onLine === false,
-            waitForOnline,
-            onNotice: (n: RetryNotice) => (n.reason === "offline" ? onProgress(lastPct, "offline") : onProgress(lastPct, "retrying", { attempt: n.attempt, of: n.of })),
-          },
-        );
-  if (!putOk.ok) return { ok: false, error: putOk.error ?? "فشل رفع الملف", canRetry: (putOk as { canRetry?: boolean }).canRetry === true };
+    let lastPct = 0;
+    const putOk =
+      init.method === "TUS"
+        ? await runTusUpload(file, init, (pct) => onProgress(pct, "uploading"))
+        : await putWithRetry(
+            (attempt) => {
+              onProgress(attempt === 1 ? 0 : lastPct, "uploading");
+              return putOnce(file, init, attempt, (pct) => {
+                lastPct = pct;
+                onProgress(pct, "uploading");
+              });
+            },
+            {
+              sleep,
+              isOffline: () => navigator.onLine === false,
+              waitForOnline,
+              onNotice: (n: RetryNotice) => (n.reason === "offline" ? onProgress(lastPct, "offline") : onProgress(lastPct, "retrying", { attempt: n.attempt, of: n.of })),
+            },
+          );
+    if (!putOk.ok) {
+      if (init.method === "TUS") return { ok: false, error: putOk.error, canRetry: true, resume: { videoId: init.videoId } };
+      return { ok: false, error: putOk.error ?? "فشل رفع الملف", canRetry: (putOk as { canRetry?: boolean }).canRetry === true };
+    }
+    confirm = { key: init.key, method: init.method };
+  }
 
   onProgress(100, "processing");
   const finished = await postJson<{ ok?: boolean; message?: string; error?: string }>(
     "/api/admin/uploads/complete",
-    { target: opts.target, key: init.key, ...ids, originalName: file.name, size: init.method === "PUT" ? file.size : undefined, ...opts.extra },
+    { target: opts.target, key: confirm.key, ...ids, originalName: file.name, size: confirm.method === "PUT" ? file.size : undefined, ...opts.extra },
     3,
     (attempt, of) => onProgress(100, "retrying", { attempt, of }),
   );
-  if (!finished) return { ok: false, error: "وصل الملف لكن تعذر تأكيده. تحقق من الشبكة ثم أعد المحاولة.", canRetry: true };
-  if (!finished.res.ok || !finished.data.ok) return { ok: false, error: finished.data.error ?? "تعذر التحقق من الملف", canRetry: isTransientServerStatus(finished.res.status) };
+  // الملف وصل التخزين: إعادة المحاولة تؤكده نفسه ولا ترفع نسخة ثانية بمفتاح جديد
+  if (!finished) return { ok: false, error: "وصل الملف لكن تعذر تأكيده. تحقق من الشبكة ثم أعد المحاولة.", canRetry: true, resume: { confirm } };
+  if (!finished.res.ok || !finished.data.ok) {
+    const status = finished.res.status;
+    const error = finished.data.error ?? "تعذر التحقق من الملف";
+    if (status >= 500) return { ok: false, error, canRetry: true, resume: { confirm } };
+    // 409: قال التخزين إن الملف لم يصل، فيلزم رفعه من جديد
+    return { ok: false, error, canRetry: status === 409 };
+  }
   return { ok: true, message: finished.data.message ?? "تم الرفع" };
 }
 
@@ -187,6 +185,7 @@ type Item = {
   retry?: { attempt: number; of: number };
   /** الملف نفسه محفوظ هنا لتكون إعادة المحاولة بضغطة واحدة */
   file?: File;
+  resume?: UploadResume;
 };
 
 export function fmtSize(n: number) {
@@ -221,19 +220,19 @@ export function FileUploader({
   const [busy, setBusy] = useState(false);
   const [drag, setDrag] = useState(false);
 
-  async function runItem(idx: number, file: File): Promise<boolean> {
+  async function runItem(idx: number, file: File, resume?: UploadResume): Promise<boolean> {
     const update = (patch: Partial<Item>) => setItems((prev) => prev.map((it, j) => (j === idx ? { ...it, ...patch } : it)));
-    update({ phase: "uploading", pct: 0, message: undefined, file: undefined });
-    const res = await uploadFile(file, { target, productId, teacherId, lessonId }, (pct, phase, retry) => update({ pct, phase, retry }));
+    update({ phase: "uploading", pct: 0, message: undefined, file: undefined, resume: undefined });
+    const res = await uploadFile(file, { target, productId, teacherId, lessonId }, (pct, phase, retry) => update({ pct, phase, retry }), resume);
     if (res.ok) update({ phase: "done", pct: 100, message: res.message });
-    else update({ phase: "error", message: res.error, file: res.canRetry ? file : undefined });
+    else update({ phase: "error", message: res.error, file: res.canRetry ? file : undefined, resume: res.canRetry ? res.resume : undefined });
     return res.ok;
   }
 
-  async function retryItem(idx: number, file: File) {
+  async function retryItem(idx: number, file: File, resume?: UploadResume) {
     if (busy) return;
     setBusy(true);
-    const ok = await runItem(idx, file);
+    const ok = await runItem(idx, file, resume);
     setBusy(false);
     if (ok) router.refresh();
   }
@@ -372,7 +371,7 @@ export function FileUploader({
                     {it.message}
                   </p>
                   {it.phase === "error" && it.file ? (
-                    <button type="button" className="btn btn-3d btn-soft btn-sm min-h-11" disabled={busy} onClick={() => void retryItem(i, it.file as File)} data-testid="upload-retry">
+                    <button type="button" className="btn btn-3d btn-soft btn-sm min-h-11" disabled={busy} onClick={() => void retryItem(i, it.file as File, it.resume)} data-testid="upload-retry">
                       <RefreshCw className="size-4" aria-hidden /> إعادة المحاولة
                     </button>
                   ) : null}

@@ -19,27 +19,36 @@ export type PutOutcome =
   | { kind: "already_stored" }
   /** عطل عابر: الشبكة أو الخادم */
   | { kind: "retry"; message: string }
-  /** لن تفيد الإعادة: رفض صريح من التخزين */
-  | { kind: "fatal"; message: string };
+  /** لن تفيد إعادة الطلب نفسه: رفض صريح من التخزين. canRetry يعني أن رفعًا جديدًا برابط جديد قد ينجح */
+  | { kind: "fatal"; message: string; canRetry?: boolean };
 
 const NETWORK_MESSAGE = "انقطع الاتصال أثناء الرفع";
 
 export const networkFailure = (): PutOutcome => ({ kind: "retry", message: NETWORK_MESSAGE });
 
-/** رد التخزين: 408 و425 و429 و5xx عوارض. غيرها رفض نهائي */
+/** Supabase يلف أغلب أخطائه في HTTP 400 والرقم الحقيقي في حقل statusCode داخل البدن */
+function storageStatus(status: number, body: string): number {
+  if (status !== 400) return status;
+  try {
+    const code = Number((JSON.parse(body) as { statusCode?: unknown }).statusCode);
+    return Number.isInteger(code) && code >= 100 && code < 600 ? code : status;
+  } catch {
+    return status;
+  }
+}
+
+/** رد التخزين: 408 و425 و429 و5xx عوارض، وغيرها رفض. نص المزود الإنجليزي لا يصل إلى المعلم أبدًا */
 export function classifyPutResponse(status: number, body: string, attempt: number): PutOutcome {
   if (status >= 200 && status < 300) return { kind: "ok" };
+  const real = storageStatus(status, body);
   // Supabase يرد 400 ببدن statusCode 409 أو Duplicate عند وجود المفتاح، والتخزين المحلي 409
-  if (attempt > 1 && (status === 409 || (status === 400 && /duplicate|already exists|"statusCode"\s*:\s*"?409/i.test(body)))) return { kind: "already_stored" };
+  if (attempt > 1 && (real === 409 || (status === 400 && /duplicate|already exists/i.test(body)))) return { kind: "already_stored" };
   if (status === 0) return networkFailure();
-  if (status === 408 || status === 425 || status === 429 || status >= 500) return { kind: "retry", message: `تعذر الرفع مؤقتًا (${status})` };
-  let message = "فشل رفع الملف";
-  try {
-    message = (JSON.parse(body) as { error?: string }).error ?? message;
-  } catch {
-    /* بدن غير JSON */
-  }
-  return { kind: "fatal", message: `${message} (${status})` };
+  if (real === 408 || real === 425 || real === 429 || real >= 500) return { kind: "retry", message: "تعذر الوصول إلى التخزين مؤقتًا" };
+  if (real === 413) return { kind: "fatal", message: "حجم الملف أكبر مما يقبله التخزين حاليًا. صغّر حجمه أو قسّمه ثم ارفعه." };
+  if (real === 415) return { kind: "fatal", message: "صيغة هذا الملف غير مقبولة. ارفعه بالصيغة المطلوبة." };
+  if (real === 401 || real === 403 || /invalidjwt|exp.{0,20}claim|expired/i.test(body)) return { kind: "fatal", message: "انتهت صلاحية رابط الرفع. أعد المحاولة.", canRetry: true };
+  return { kind: "fatal", message: "رفض التخزين هذا الملف. تأكد منه ثم ارفعه من جديد، وإن تكرر ذلك فتواصل مع إدارة المنصة." };
 }
 
 export function retryDelayMs(attempt: number, random: () => number = Math.random): number {
@@ -71,7 +80,7 @@ export async function putWithRetry(send: (attempt: number) => Promise<PutOutcome
     }
     const outcome = await send(attempt);
     if (outcome.kind === "ok" || outcome.kind === "already_stored") return { ok: true };
-    if (outcome.kind === "fatal") return { ok: false, error: outcome.message, canRetry: false };
+    if (outcome.kind === "fatal") return { ok: false, error: outcome.message, canRetry: outcome.canRetry === true };
     last = outcome.message;
     if (attempt < UPLOAD_RETRY.attempts) {
       deps.onNotice({ reason: "retrying", attempt: attempt + 1, of: UPLOAD_RETRY.attempts });

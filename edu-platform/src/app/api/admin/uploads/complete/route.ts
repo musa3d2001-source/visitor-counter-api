@@ -3,7 +3,7 @@ import { revalidatePath } from "next/cache";
 import { isSameOriginRequest } from "@/server/http";
 import { getActor, PermissionError } from "@/server/auth/permissions";
 import { AdminError } from "@/server/admin/common";
-import { completeSchema, completeUpload } from "@/server/admin/uploads";
+import { completeSchema, completeUpload, UploadMissingError, UploadStorageError } from "@/server/admin/uploads";
 
 export const dynamic = "force-dynamic";
 export const maxDuration = 120;
@@ -31,6 +31,9 @@ export async function POST(req: Request) {
     if (parsed.data.target === "logo") revalidatePath("/", "layout");
     return NextResponse.json({ ok: true, ...res }, { headers: { "cache-control": "no-store" } });
   } catch (err) {
+    // عطل التخزين يستحق إعادة التأكيد نفسه، وملف لم يصل يحتاج رفعًا جديدًا، وغيرهما رفض نهائي
+    if (err instanceof UploadStorageError) return NextResponse.json({ error: err.userMessage }, { status: 503 });
+    if (err instanceof UploadMissingError) return NextResponse.json({ error: err.userMessage }, { status: 409 });
     if (err instanceof AdminError) return NextResponse.json({ error: err.userMessage }, { status: 400 });
     if (err instanceof PermissionError) return NextResponse.json({ error: err.userMessage }, { status: 403 });
     console.error("[upload-complete]", err);
