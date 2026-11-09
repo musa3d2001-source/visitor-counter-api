@@ -1,9 +1,9 @@
 import { afterAll, beforeAll, beforeEach, describe, expect, it } from "vitest";
-import { createOrder, markOrderPaid, type OrderRow } from "@/server/commerce/orders";
+import { createOrder, markOrderPaid, undoRefundOnOrder, type OrderRow } from "@/server/commerce/orders";
 import { listEarnings, recordEarnings, teacherBalance, teacherSalesSummary } from "@/server/commerce/earnings";
 import { reportByTeacher } from "@/server/admin/stats";
 import { saveSettings } from "@/server/platform/settings";
-import { applyAcceptedRefund } from "../helpers/payment-flow";
+import { applyAcceptedRefund, orderRow } from "../helpers/payment-flow";
 import { closeDb, resetDb, sql } from "../helpers/db";
 import { createBundle, createContainer, createCoupon, createProduct, createTeacher, createUser, createVideoProduct, type TestTeacher } from "../helpers/factories";
 
@@ -122,8 +122,9 @@ describe("توزيع الباقة على المعلمين", () => {
     await pay(order);
     const before = await teacherBalance(teacher.id);
     expect(before.earnedFils).toBe(375);
+    const activeRows = await rows(order.id);
 
-    await applyAcceptedRefund(order.id, owner.id, "طلب العميل");
+    const { refundId } = await applyAcceptedRefund(order.id, owner.id, "طلب العميل");
     const after = await rows(order.id);
     expect(after).toHaveLength(2);
     expect(after.every((r) => r.status === "reversed")).toBe(true);
@@ -131,6 +132,17 @@ describe("توزيع الباقة على المعلمين", () => {
     expect(reversed.earnedFils).toBe(0);
     expect(reversed.reversedFils).toBe(375);
     expect(total((await parts(order.id)).map((x) => x.gross_fils))).toBe(1501);
+
+    // تراجع البوابة عن الاسترداد: تعود الأسطر نفسها بالمبالغ نفسها، ولا تُكتب أسطر جديدة
+    const refunded = await orderRow(order.id);
+    const undone = await sql.begin((tx) => undoRefundOnOrder(tx, { order: refunded, paymentId: null, refundId, actorId: owner.id }));
+    expect(undone.restoredEarnings).toBe(2);
+    const restored = await rows(order.id);
+    const byProduct = (list: Row[]) => [...list].sort((x, y) => x.product_id.localeCompare(y.product_id));
+    expect(byProduct(restored)).toEqual(byProduct(activeRows));
+    expect(restored.every((r) => r.status === "active")).toBe(true);
+    expect(await teacherBalance(teacher.id)).toEqual(before);
+    expect((await orderRow(order.id)).status).toBe("paid");
   });
 
   it("recording twice changes nothing, and a later price or content change does not re-split a paid order", async () => {

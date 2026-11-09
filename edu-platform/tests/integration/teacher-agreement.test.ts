@@ -1,15 +1,19 @@
-import { createHash } from "node:crypto";
+import { createHash, randomUUID } from "node:crypto";
 import { afterAll, beforeAll, beforeEach, describe, expect, it, vi } from "vitest";
 import { renderToStaticMarkup } from "react-dom/server";
 import { ar } from "@/lib/design";
 import { CONSENT_VERSIONS } from "@/lib/consent";
 import { REFUND_HOLD_DAYS } from "@/lib/teacher-terms";
 import { RIGHTS_ATTESTATION_TEXT, RIGHTS_ATTESTATION_VERSION, TEACHER_AGREEMENT_DRAFT_NOTICE, TEACHER_AGREEMENT_SECTIONS } from "@/lib/teacher-agreement";
-import { getAdminProduct, submitForReview } from "@/server/admin/products";
+import { submitForReview } from "@/server/admin/products";
+import { completeUpload } from "@/server/admin/uploads";
+import { getPublishedProductsByIds } from "@/server/catalog/queries";
+import { unsellableProductIds } from "@/server/commerce/cart";
+import { storage } from "@/server/storage";
 import { acceptTeacherAgreement, hasCurrentAgreement, latestAgreementAcceptance, latestRightsAttestation } from "@/server/admin/teacher-agreement";
-import type { Actor } from "@/server/auth/permissions";
+import { assertProductAccess, type Actor } from "@/server/auth/permissions";
 import { closeDb, resetDb, sql } from "../helpers/db";
-import { acceptAgreement, ATTESTED, createTeacher, createUser, createVideoProduct, type TestTeacher } from "../helpers/factories";
+import { acceptAgreement, ATTESTED, createTeacher, createUser, createVideoProduct, makePdf, type TestTeacher } from "../helpers/factories";
 
 const ctx = vi.hoisted(() => ({ user: null as unknown }));
 vi.mock("next/cache", () => ({ revalidatePath: () => {} }));
@@ -144,15 +148,46 @@ describe("قبول الاتفاقية", () => {
     await expect(submitForReview(p.id, actorOf(t), undefined, ATTESTED)).resolves.toBeUndefined();
   });
 
-  it("a teacher who already has content keeps it without accepting anything", async () => {
+  it("a teacher with old drafts and live products keeps working, is asked only at submission, and nothing leaves sale", async () => {
     const t = await newTeacher();
-    const published = await createVideoProduct({ teacherId: t.id, status: "published" });
+    const published = await createVideoProduct({ teacherId: t.id, status: "published", priceFils: 4000 });
     const draft = await draftFor(t);
+    const onSale = async () => {
+      expect(await statusOf(published.id)).toBe("published");
+      expect((await getPublishedProductsByIds([published.id])).map((p) => p.id)).toEqual([published.id]);
+      expect((await unsellableProductIds([published.id])).size).toBe(0);
+    };
     expect(await hasCurrentAgreement(t.user!.id)).toBe(false);
-    expect(await getAdminProduct(published.id, actorOf(t))).toMatchObject({ status: "published" });
-    expect(await getAdminProduct(draft.id, actorOf(t))).toMatchObject({ status: "draft" });
-    // المنشور يبقى منشورًا، والسؤال يأتي عند الإرسال فقط
-    expect(await statusOf(published.id)).toBe("published");
+    ctx.user = sessionOf(t);
+
+    // الصفحة تعرض النص وخانة القبول
+    const page = renderToStaticMarkup(await AgreementPage());
+    expect(page).toContain('name="accept"');
+    expect(page).toContain('data-testid="agreement-draft"');
+    await onSale();
+
+    // التعديل والرفع مفتوحان قبل القبول
+    const [row] = await sql<{ title: string; grade_id: string; subject_id: string | null }[]>`select title, grade_id, subject_id from products where id = ${draft.id}`;
+    await sql`update products set title = ${row.title + " معدّل"} where id = ${draft.id}`;
+    await expect(assertProductAccess(actorOf(t), draft.id, "edit")).resolves.toMatchObject({ id: draft.id });
+    await expect(assertProductAccess(actorOf(t), draft.id, "upload")).resolves.toMatchObject({ id: draft.id });
+    const key = `products/${draft.id}/2026/11/${randomUUID()}.pdf`;
+    await storage().put("private", key, await makePdf(6), "application/pdf");
+    await expect(completeUpload({ target: "main", key, productId: draft.id, originalName: "مذكرة.pdf" }, actorOf(t))).resolves.toMatchObject({ id: expect.any(String) });
+    await onSale();
+
+    // الإرسال يُرفض ولا يترك أثرًا
+    expect((await submitForReviewAction(null, form({ id: draft.id, rightsAttested: "on" })))?.error).toContain("اتفاقية المعلم");
+    expect(await statusOf(draft.id)).toBe("draft");
+    expect(await attestations(draft.id)).toHaveLength(0);
+
+    // بعد القبول يمر الإرسال نفسه
+    expect((await acceptAgreementAction(null, form({ accept: "on" })))?.ok).toBe(true);
+    expect(await hasCurrentAgreement(t.user!.id)).toBe(true);
+    expect((await submitForReviewAction(null, form({ id: draft.id, rightsAttested: "on" })))?.ok).toBe(true);
+    expect(await statusOf(draft.id)).toBe("in_review");
+    expect(await attestations(draft.id)).toHaveLength(1);
+    await onSale();
   });
 
   it("the database only allows the known consent kinds", async () => {
