@@ -15,7 +15,10 @@ export default async function ChangePasswordPage() {
   if (!session) redirect("/login");
   if (!session.mustChangePassword) redirect("/account");
   return (
-    <AuthCard title="اختر كلمة مرور جديدة" subtitle="دخلت بكلمة مرور مؤقتة، ولن يفتح حسابك قبل أن تختار كلمتك الخاصة">
+    <AuthCard
+      title="اختر كلمة مرور جديدة"
+      subtitle={session.user.role === "student" ? "دخلت بكلمة مرور مؤقتة، ولن يفتح حسابك قبل أن تختار كلمتك الخاصة" : "لن يفتح حسابك قبل أن تختار كلمة مرور جديدة بشروط حسابات الإدارة والمعلمين"}
+    >
       {session.user.role === "student" ? <ChangePasswordForm minLength={STUDENT_PASSWORD_MIN} hint="٨ أحرف على الأقل" /> : <ChangePasswordForm minLength={STAFF_PASSWORD_MIN} hint="١٢ حرفًا على الأقل" />}
       <form action={logoutAction} className="mt-3">
         <button type="submit" className="btn btn-ghost btn-md w-full">

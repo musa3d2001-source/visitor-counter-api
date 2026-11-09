@@ -116,7 +116,9 @@ export async function resetPasswordAction(_prev: ActionState, fd: FormData): Pro
   return adminAction(async ({ adminId, ip }) => {
     const id = str(fd, "teacherId");
     if (!isUuid(id)) throw new AdminError("طلب غير صالح");
+    if (!bool(fd, "confirmReset")) throw new AdminError("أكّد إعادة التعيين أولًا، فهي تُخرج المعلم من كل أجهزته");
     const password = await resetTeacherPassword(id, adminId, ip);
+    // لا نعيد تحميل الصفحة هنا حتى تبقى كلمة المرور ظاهرة للمالك (يحدّثها زر «تم»)
     return { ok: true, message: `تعمل مرة واحدة خلال ٢٤ ساعة، ثم يختار المعلم كلمته الخاصة. كلمة المرور المؤقتة، انسخها الآن ولن تظهر مرة أخرى: ${password}` };
   });
 }

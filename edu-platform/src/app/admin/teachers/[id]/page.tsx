@@ -212,16 +212,18 @@ export default async function TeacherAdminPage({ params, searchParams }: { param
                     </p>
                   </div>
                   <div className="flex flex-col items-stretch gap-2 [&_button]:w-full [&>div]:w-full">
-                    <ConfirmButton
-                      action={resetPasswordAction}
-                      hidden={{ teacherId: teacher.id }}
-                      label="إعادة تعيين كلمة المرور"
-                      icon={<KeyRound aria-hidden />}
-                      variant="outline"
-                      title="إعادة تعيين كلمة المرور؟"
-                      description="ستُولَّد كلمة مرور جديدة وتُعرض مرة واحدة، ويُسجَّل خروج المعلم من كل الأجهزة."
-                      confirmLabel="إعادة التعيين"
-                    />
+                    <OneTimeSecretForm action={resetPasswordAction} className="space-y-2.5 rounded-[1.3rem] bg-canvas p-3">
+                      <input type="hidden" name="teacherId" value={teacher.id} />
+                      <Checkbox
+                        name="confirmReset"
+                        data-testid="confirm-teacher-reset"
+                        className="items-start text-[0.85rem] leading-6"
+                        label="أوافق على إعادة التعيين: تتوقف كلمته الحالية، ويُسجَّل خروجه من كل الأجهزة، وتظهر لي كلمة مؤقتة مرة واحدة."
+                      />
+                      <SubmitButton variant="outline" size="md" pendingText="جارٍ الإصدار…">
+                        <KeyRound aria-hidden /> إعادة تعيين كلمة المرور
+                      </SubmitButton>
+                    </OneTimeSecretForm>
                     {teacher.account_active === false ? (
                       <ConfirmButton action={setAccountActiveAction} hidden={{ teacherId: teacher.id, active: "1" }} label="تفعيل الحساب" icon={<ShieldCheck aria-hidden />} variant="outline" title="تفعيل حساب المعلم؟" requireReason confirmLabel="تفعيل" />
                     ) : (

@@ -19,11 +19,14 @@ export function OneTimeSecretForm({ action, children, className }: { action: Ser
   const router = useRouter();
   const { state, formAction, formRef } = usePreservingAction(action);
   const [copied, setCopied] = useState(false);
-  const secret = state?.ok ? (state.message?.match(/:\s*(\S+)$/)?.[1] ?? null) : null;
-  if (state?.ok) {
+  // router.refresh لا يمسح حالة React، فنخفي هذه النتيجة بعينها ويبقى إصدار جديد ممكنًا
+  const [dismissed, setDismissed] = useState<ActionState>(null);
+  const shown = state?.ok && state !== dismissed ? state : null;
+  const secret = shown ? (shown.message?.match(/:\s*(\S+)$/)?.[1] ?? null) : null;
+  if (shown) {
     return (
       <div className="space-y-3" role="status">
-        <Alert tone="success">{state.message}</Alert>
+        <Alert tone="success">{shown.message}</Alert>
         {secret ? (
           <div className="relative overflow-hidden rounded-[1.4rem] border-2 border-dashed border-[#F0C766] bg-[linear-gradient(160deg,#fffaf0,#fff1cf)] p-3.5">
             <p className="mb-2.5 flex items-center gap-2 font-display text-[0.9rem] font-black text-[#6e4700]">
@@ -62,7 +65,16 @@ export function OneTimeSecretForm({ action, children, className }: { action: Ser
             </div>
           </div>
         ) : null}
-        <Button type="button" size="md" className="w-full" onClick={() => router.refresh()}>
+        <Button
+          type="button"
+          size="md"
+          className="w-full"
+          onClick={() => {
+            setDismissed(state);
+            setCopied(false);
+            router.refresh();
+          }}
+        >
           تم، متابعة
         </Button>
       </div>

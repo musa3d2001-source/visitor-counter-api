@@ -72,6 +72,10 @@ test.describe("دورة المعلم الكاملة", () => {
       select t.mode, t.user_id, u.role from teachers t join users u on u.id = t.user_id where t.id = ${teacherId}
     `;
     expect(t).toMatchObject({ mode: "self_managed", role: "teacher" });
+    // زر «تم» يغلق اللوحة فعلًا، وتظهر أدوات الحساب المفعّل
+    await page.getByRole("button", { name: "تم، متابعة" }).click();
+    await expect(page.getByTestId("one-time-secret")).toBeHidden();
+    await expect(page.getByTestId("confirm-teacher-reset")).toBeVisible();
 
     // ---------- 2) المعلم يدخل وينشئ الوحدة ويرفع 3 فيديوهات ----------
     const teacherCtx = await browser.newContext();
@@ -204,6 +208,18 @@ test.describe("دورة المعلم الكاملة", () => {
       select o.customer_email from orders o join order_items oi on oi.order_id = o.id where oi.product_id = ${productId} limit 1
     `)[0].customer_email;
     await expect(tp.getByText(studentEmail)).toHaveCount(0);
+
+    // إعادة التعيين: كلمة تظهر مرة واحدة، و«تم» يغلقها، ويمكن الإصدار من جديد
+    await page.goto(`/admin/teachers/${teacherId}`);
+    await page.getByTestId("confirm-teacher-reset").check();
+    await page.getByRole("button", { name: "إعادة تعيين كلمة المرور" }).click();
+    const firstReset = (await page.getByTestId("one-time-secret").innerText({ timeout: 15_000 })).trim();
+    await page.getByRole("button", { name: "تم، متابعة" }).click();
+    await expect(page.getByTestId("one-time-secret")).toBeHidden();
+    await page.getByTestId("confirm-teacher-reset").check();
+    await page.getByRole("button", { name: "إعادة تعيين كلمة المرور" }).click();
+    const secondReset = (await page.getByTestId("one-time-secret").innerText({ timeout: 15_000 })).trim();
+    expect(secondReset).not.toBe(firstReset);
 
     await Promise.all([teacherCtx.close(), studentCtx.close(), otherCtx.close()]);
   });

@@ -116,3 +116,9 @@ create table if not exists teacher_profile_changes (
 create unique index if not exists teacher_profile_changes_one_pending on teacher_profile_changes (teacher_id) where status = 'pending';
 create index if not exists teacher_profile_changes_teacher_idx on teacher_profile_changes (teacher_id, submitted_at desc);
 alter table teacher_profile_changes enable row level security;
+
+-- ---------------------------------------------------------------------
+-- D17: كلمة المعلم تُفحص عند الدخول، فجلسة قديمة لطالب رُقّي بكلمته القصيرة تتجاوز الفحص.
+-- إنهاء جلسات المعلمين مرة واحدة يمررهم جميعًا عليه، ولا يمس أي حساب آخر.
+-- ---------------------------------------------------------------------
+delete from sessions where user_id in (select id from users where role = 'teacher');

@@ -88,6 +88,17 @@ export async function loginWithPassword(email: string, password: string, meta: {
     return { ok: false, error: "أدخل رمز التحقق لإكمال الدخول.", challenge: { token: challenge.token, expiresAt: challenge.expiresAt }, deviceProof };
   }
 
+  // معلم كلمته دون سياسة الطاقم، كطالب رُقّي قبل D17: كلمته صحيحة لكنها لا تفتح اللوحة قبل أن يختار كلمة تطابقها.
+  // لا تاريخ انتهاء هنا: الكلمة ليست مؤقتة، وتبقى تفتح صفحة الاختيار وحدها حتى يغيّرها
+  if (user.role === "teacher" && !user.must_change_password && passwordPolicyError("teacher", password, email)) {
+    await sql.begin(async (tx) => {
+      await tx`update users set must_change_password = true, temp_password_expires_at = null where id = ${user.id}`;
+      await audit({ actorId: user.id, action: "user.password_below_staff_policy", entityType: "user", entityId: user.id, ip: meta.ip }, tx);
+    });
+    user.must_change_password = true;
+    user.temp_password_expires_at = null;
+  }
+
   if (user.must_change_password && user.temp_password_expires_at) {
     // تحديث ذري: كلمة المرور المؤقتة تفتح جلسة واحدة فقط مهما تزامنت الطلبات
     const claimed = await sql`
