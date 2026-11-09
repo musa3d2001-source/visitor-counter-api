@@ -50,6 +50,7 @@ export function LegalDoc({
   intro,
   sections,
   updated,
+  version,
 }: {
   page: LegalKey;
   sub: string;
@@ -57,6 +58,8 @@ export function LegalDoc({
   sections: LegalSection[];
   /** تاريخ آخر تعديل على نص الصفحة (YYYY-MM-DD) */
   updated: string;
+  /** رقم النسخة التي تُسجل عند الموافقة على هذه الصفحة، إن كانت لها موافقة */
+  version?: string;
 }) {
   const meta = PAGES[page];
   const band = BAND[page];
@@ -103,6 +106,12 @@ export function LegalDoc({
                   <CalendarClock aria-hidden />
                   آخر تحديث: <time dateTime={updated}>{legalDate(updated)}</time>
                 </li>
+                {version ? (
+                  <li className={cn("chip min-h-8 px-3", band.dark ? "chip-glass" : "bg-white/70 text-[#5a3d00]")} data-testid="legal-version">
+                    <FileText aria-hidden />
+                    رقم النسخة: <bdi dir="ltr">{version}</bdi>
+                  </li>
+                ) : null}
               </ul>
             </div>
             <DocArt Icon={meta.Icon} tone={meta.tone} />

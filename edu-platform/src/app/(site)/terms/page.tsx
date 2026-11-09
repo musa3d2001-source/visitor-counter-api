@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { Ban, CreditCard, MonitorPlay, UserRound } from "lucide-react";
 import { getSettings } from "@/server/platform/settings";
+import { CONSENT_VERSIONS } from "@/lib/consent";
 import { LegalDoc } from "./_components/legal-doc";
 
 export const metadata: Metadata = { title: "الشروط والأحكام", alternates: { canonical: "/terms" } };
@@ -10,6 +11,7 @@ export default async function TermsPage() {
   return (
     <LegalDoc
       page="terms"
+      version={CONSENT_VERSIONS.terms}
       updated="2026-11-02"
       sub="القواعد التي تحفظ حقك وحق المعلمين: كيف تستخدم حسابك، وما المسموح في المحتوى الرقمي، وكيف يتم الدفع."
       intro={<p>باستخدامك {s.site_name} فإنك توافق على الشروط التالية. يرجى قراءتها بعناية.</p>}
