@@ -1,6 +1,6 @@
 import { afterAll, afterEach, beforeAll, describe, expect, it } from "vitest";
 import { passwordPolicyError, STAFF_PASSWORD_MIN, STUDENT_PASSWORD_MIN } from "@/lib/password-policy";
-import { changePassword, loginWithPassword, requestPasswordReset, resetPassword } from "@/server/auth/service";
+import { changePassword, completeForcedPasswordChange, loginWithPassword, requestPasswordReset, resetPassword } from "@/server/auth/service";
 import { createSession, hashToken, validateSessionToken } from "@/server/auth/session";
 import { closeDb, resetDb, sql } from "../helpers/db";
 import { createUser, TEST_PASSWORD } from "../helpers/factories";
@@ -78,6 +78,13 @@ describe("enforced when a password is set", () => {
     const token = await issueResetToken(u.id);
     expect(await resetPassword(token, "Short-Pass1")).toEqual({ ok: false, error: "كلمة مرور حسابات الإدارة والمعلمين يجب أن تكون ١٢ حرفًا على الأقل", field: "password" });
     expect(await resetPassword(token, STRONG)).toEqual({ ok: true });
+  });
+
+  it("forced change after a temporary password: staff rules still apply", async () => {
+    const u = await createUser({ role: "teacher" });
+    await sql`update users set must_change_password = true where id = ${u.id}`;
+    expect(await completeForcedPasswordChange(u.id, "Short-Pass1", { ip: "192.0.2.9", userAgent: "t" })).toEqual({ ok: false, error: "كلمة مرور حسابات الإدارة والمعلمين يجب أن تكون ١٢ حرفًا على الأقل", field: "password" });
+    expect((await completeForcedPasswordChange(u.id, STRONG, { ip: "192.0.2.9", userAgent: "t" })).ok).toBe(true);
   });
 
   it("reset link: a student keeps the eight character rule", async () => {

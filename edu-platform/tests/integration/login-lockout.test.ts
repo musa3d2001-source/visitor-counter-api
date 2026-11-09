@@ -1,9 +1,22 @@
-import { afterAll, beforeAll, describe, expect, it } from "vitest";
+import { afterAll, beforeAll, describe, expect, it, vi } from "vitest";
 import { loginWithPassword, resetPassword } from "@/server/auth/service";
 import { reserveFailureSlot } from "@/server/auth/rate-limit";
 import { hashToken } from "@/server/auth/session";
 import { closeDb, resetDb, sql } from "../helpers/db";
 import { createUser, TEST_PASSWORD } from "../helpers/factories";
+
+/** نتجسس على الحرق الزمني دون تغييره: قياس الزمن نفسه لا يصلح في اختبار */
+const burnt = vi.hoisted(() => ({ passwords: [] as string[] }));
+vi.mock("@/server/auth/password", async (original) => {
+  const actual = await original<typeof import("@/server/auth/password")>();
+  return {
+    ...actual,
+    burnPasswordTime: async (password: string) => {
+      burnt.passwords.push(password);
+      return actual.burnPasswordTime(password);
+    },
+  };
+});
 
 beforeAll(resetDb);
 afterAll(closeDb);
@@ -68,8 +81,11 @@ describe("login lockout counts failures only", () => {
       seen.push(blocked.retryAfterSeconds);
       expect(blocked.retryAfterSeconds).toBeLessThanOrEqual(expected);
       expect(blocked.retryAfterSeconds).toBeGreaterThan(expected - 3);
-      await ageLastAttempt(key, expected);
-      expect((await reserveFailureSlot(key, policy)).allowed).toBe(true);
+      // يبقى المنع إلى نهاية هذه المدة بعينها، لا المدة الأولى فقط
+      await ageLastAttempt(key, expected - 5);
+      expect((await reserveFailureSlot(key, policy)).allowed, `still waiting at ${expected}`).toBe(false);
+      await ageLastAttempt(key, 5);
+      expect((await reserveFailureSlot(key, policy)).allowed, `open after ${expected}`).toBe(true);
     }
     expect(seen).toHaveLength(7);
   });
@@ -149,6 +165,12 @@ describe("no account enumeration", () => {
       const unknown = await wrong("no-such-person@example.com", ip);
       expect(strip(known), `attempt ${i}`).toBe(strip(unknown));
     }
+  });
+
+  it("an unknown address still spends the time of a password check", async () => {
+    burnt.passwords.length = 0;
+    await wrong("no-such-account@example.com", "198.51.100.22", "the-guess");
+    expect(burnt.passwords).toEqual(["the-guess"]);
   });
 
   it("a suspended account reveals itself only to someone holding the right password", async () => {

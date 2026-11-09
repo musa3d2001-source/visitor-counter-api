@@ -25,6 +25,7 @@ export type AuthResult = { ok: true; userId: string; token: string; expiresAt: D
  *    ويُحتسب الحساب مرة واحدة، فأخطاء طلاب فصل كامل في كلماتهم لا تكاد تقترب منه.
  *
  *  الحجز يسبق فحص كلمة المرور حتى لا تتجاوز طلبات متوازية الحد، ثم يُمسح إن كانت الكلمة صحيحة.
+ *  يعتمد هذا على عنوان IP لا يزوّره العميل: انظر TRUST_PROXY و clientIp، وعلى Vercel تضبطه المنصة نفسها.
  */
 const LOGIN_FAILURES: FailurePolicy = { freeFailures: 5, firstDelaySeconds: 30, maxDelaySeconds: 15 * 60, forgetAfterSeconds: 60 * 60 };
 const LOGIN_IP = { failingAccounts: 100, windowSec: 15 * 60 };
