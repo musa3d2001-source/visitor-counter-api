@@ -188,6 +188,15 @@ test.describe("التحقق بخطوتين الإلزامي للمالك", () =>
     await page.goto("/admin/security");
     await expect(page.getByTestId("recovery-remaining")).toContainText("٨");
 
+    // رموز جديدة: تظهر مرة واحدة، وتختفي فعلًا عند «حفظتها»
+    await page.getByTestId("regenerate-code").fill(recovery[2]);
+    await page.getByTestId("regenerate-submit").click();
+    await expect(page.getByTestId("recovery-codes").locator("li")).toHaveCount(10);
+    await page.getByTestId("recovery-codes-done").click();
+    await expect(page.getByTestId("recovery-codes")).toHaveCount(0);
+    await expect(page.getByTestId("regenerate-recovery-form")).toBeVisible();
+    await expect(page.getByTestId("recovery-remaining")).toContainText("١٠");
+
     // مؤشر العناوين للمالك، وللقياسين
     await page.goto("/admin/students/shared-access");
     await expect(page.getByText("وليس دليلًا")).toBeVisible();
