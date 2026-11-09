@@ -88,3 +88,57 @@ alter table sessions add column two_factor_at timestamptz;
 update email_log
 set body = regexp_replace(body, '([?&]token=)[^[:space:]&]+', '\1[REDACTED]', 'g')
 where body like '%token=%';
+
+-- ---------------------------------------------------------------------
+-- 7) حذف بيانات الطالب (B8)
+--    anonymized_at فارغ لكل الصفوف الحالية: لا إعادة كتابة للجدول، والكود المنشور لا يقرؤه.
+--    القيد يضمن أن الحساب المحذوف يبقى مغلقًا مهما كان المسار الذي يلمسه. NOT VALID يتجنب فحص
+--    الجدول تحت القفل، وهو مطبق على كل تعديل قادم. القيم تطابق src/lib/anonymize.ts.
+-- ---------------------------------------------------------------------
+alter table users add column anonymized_at timestamptz;
+alter table users add constraint users_anonymized_stays_closed
+  check (anonymized_at is null or (not is_active and phone is null and password_hash = '!anonymized' and email::text like 'deleted-%@anonymized.invalid'))
+  not valid;
+
+-- ---------------------------------------------------------------------
+-- 8) سجل الموافقات (قرار D5): من وافق على ماذا، بأي نسخة، ومتى.
+--    terms و privacy يُسجلان عند التسجيل، أو عند أول شراء لحساب أقدم من هذا السجل.
+--    guardian_purchase يخص طلبًا بعينه: لا فاتورة بدونه (انظر startPayment).
+--    ملحق فقط: المشغّل يمنع الحذف والتعديل. الاستثناء الوحيد إزالة ip و user_agent معًا بعد حذف
+--    بيانات صاحب السجل، فيبقى ما يثبت الموافقة (النوع والنسخة والوقت والطلب) بلا ما يدل على الشخص.
+--    on delete restrict: سجل الموافقة لا يختفي بحذف صف آخر، والتطبيق لا يحذف طالبًا ولا طلبًا.
+-- ---------------------------------------------------------------------
+create table consent_records (
+  id uuid primary key default gen_random_uuid(),
+  user_id uuid not null references users(id) on delete restrict,
+  kind text not null check (kind in ('terms', 'privacy', 'guardian_purchase')),
+  document_version text not null check (char_length(document_version) between 1 and 40),
+  order_id uuid references orders(id) on delete restrict,
+  ip text check (ip is null or char_length(ip) <= 64),
+  user_agent text check (user_agent is null or char_length(user_agent) <= 300),
+  created_at timestamptz not null default now(),
+  check (kind <> 'guardian_purchase' or order_id is not null)
+);
+create index consent_records_user_idx on consent_records (user_id, created_at desc);
+-- إرسال النموذج مرتين لا ينشئ إقرارين للطلب نفسه. النسخة جزء من المفتاح: وثيقة تغيرت والطلب مفتوح تُقبل نسختها الجديدة
+create unique index consent_records_one_per_order on consent_records (order_id, kind, document_version) where order_id is not null;
+alter table consent_records enable row level security;
+
+create function consent_records_append_only() returns trigger
+language plpgsql as $$
+begin
+  if tg_op = 'UPDATE'
+     and new.id = old.id and new.user_id = old.user_id and new.kind = old.kind
+     and new.document_version = old.document_version
+     and new.order_id is not distinct from old.order_id
+     and new.created_at = old.created_at
+     and new.ip is null and new.user_agent is null
+     and exists (select 1 from users u where u.id = old.user_id and u.anonymized_at is not null)
+  then
+    return new;
+  end if;
+  raise exception 'consent_records is append-only';
+end;
+$$;
+create trigger consent_records_immutable before update or delete on consent_records
+  for each row execute function consent_records_append_only();
