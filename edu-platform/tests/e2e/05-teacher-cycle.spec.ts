@@ -4,6 +4,7 @@ import { join, resolve } from "node:path";
 import { checkoutAndPay, db, login, loginAdmin, registerStudent } from "./helpers";
 import { E2E_BUNNY } from "./e2e-env";
 import { hashPassword } from "../../src/server/auth/password-core";
+import { ar } from "../../src/lib/design";
 
 /**
  * الدورة الكاملة للمعلم (المتطلب 9):
@@ -306,8 +307,13 @@ test.describe("دورة المعلم الكاملة", () => {
     await expect(visitor.getByText(approved).first()).toBeVisible();
     await expect(visitor.getByText(proposed)).toHaveCount(0);
 
-    // المالك يرى القديم والجديد معًا، وبعد الاعتماد يتغير ما يراه الزائر
+    // المالك يعرف أن تعديلًا ينتظره: تنبيه في الرئيسية، وعدد الشريط الجانبي يشمل التعديلات
     await loginAdmin(page);
+    await expect(page.getByText("على ملفات المعلمين بانتظار موافقتك")).toBeVisible();
+    const [{ waiting }] = await db()<{ waiting: number }[]>`select (select count(*) from teacher_profile_changes where status = 'pending')::int + (select count(*) from products where status = 'in_review')::int as waiting`;
+    await expect(page.getByLabel(`${ar(waiting)} بانتظار المراجعة`).first()).toBeVisible();
+
+    // المالك يرى القديم والجديد معًا، وبعد الاعتماد يتغير ما يراه الزائر
     await page.goto("/admin/review");
     const card = page.getByTestId("profile-change").filter({ hasText: name });
     await expect(card).toContainText(approved);
