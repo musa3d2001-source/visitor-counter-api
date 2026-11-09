@@ -28,7 +28,7 @@ export default async function ResetPasswordPage({ searchParams }: { searchParams
   }
 
   return (
-    <AuthCard title="تعيين كلمة مرور جديدة" subtitle="رابط الاستعادة يعمل مرة واحدة خلال ساعة من إرساله">
+    <AuthCard title="تعيين كلمة مرور جديدة" subtitle="رابط الاستعادة يعمل مرة واحدة ولمدة محدودة">
       <LinkProblem
         title={problem === "missing" ? "الرابط غير مكتمل" : "الرابط غير صالح"}
         body={

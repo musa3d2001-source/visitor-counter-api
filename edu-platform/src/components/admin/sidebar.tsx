@@ -14,6 +14,7 @@ import {
   GraduationCap,
   House,
   Layers,
+  Mail,
   Menu,
   Package,
   Receipt,
@@ -64,7 +65,10 @@ const OWNER_GROUPS: NavGroup[] = [
   },
   {
     title: "المنصة",
-    items: [{ href: "/admin/settings", label: "إعدادات المنصة", Icon: Settings, tone: "slate" }],
+    items: [
+      { href: "/admin/settings", label: "إعدادات المنصة", Icon: Settings, tone: "slate" },
+      { href: "/admin/mail", label: "البريد الصادر", Icon: Mail, tone: "sky" },
+    ],
   },
 ];
 

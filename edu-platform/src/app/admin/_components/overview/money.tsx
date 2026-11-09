@@ -26,6 +26,9 @@ export const REFUND: CountWord = { one: "استرداد", two: "استردادا
 /** «إشعار واحد / إشعاران / ٣ إشعارات / ١١ إشعارًا» */
 export const DELIVERY: CountWord = { one: "إشعار", two: "إشعاران", plural: "إشعارات", acc: "إشعارًا" };
 
+/** «رسالة واحدة / رسالتان / ٣ رسائل / ١١ رسالة» */
+export const MAIL_MESSAGE: CountWord = { one: "رسالة", two: "رسالتان", plural: "رسائل", acc: "رسالة", oneSuffix: "واحدة" };
+
 /** «عملية واحدة / عمليتان / ٣ عمليات / ١١ عملية» */
 export const OP: CountWord = { one: "عملية", two: "عمليتان", plural: "عمليات", acc: "عملية", oneSuffix: "واحدة" };
 

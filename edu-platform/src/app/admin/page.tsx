@@ -9,6 +9,7 @@ import {
   FileText,
   FlaskConical,
   GraduationCap,
+  MailWarning,
   Plus,
   Receipt,
   RotateCcw,
@@ -27,6 +28,7 @@ import { teacherDashboard } from "@/server/admin/teachers";
 import { openPaymentAlertCount } from "@/server/payments/monitoring";
 import { extraPaymentsNeedingOwnerCount } from "@/server/payments/extras";
 import { refundsNeedingOwnerCount } from "@/server/payments/refunds";
+import { mailHealth } from "@/server/platform/mail-status";
 import { Button } from "@/components/ui/button";
 import { Eyebrow } from "@/components/ui/section-head";
 import { AdminNotice, MiniStat, MoreLink, Section, StatGrid, StatTile } from "@/components/admin/page-header";
@@ -40,7 +42,7 @@ import { ar, count, W } from "@/lib/design";
 import { PRODUCT_TYPE_LABELS, type ProductType } from "@/lib/labels";
 import { formatDateTime } from "@/lib/utils";
 import { DashHero, HeroChip } from "./_components/overview/bands";
-import { ALERT, EXTRA_PAYMENT, Kwd, CONTENT, REFUND, SALE, todayLabel } from "./_components/overview/money";
+import { ALERT, EXTRA_PAYMENT, Kwd, CONTENT, MAIL_MESSAGE, REFUND, SALE, todayLabel } from "./_components/overview/money";
 import { QuickTiles } from "./_components/overview/quick-tiles";
 
 export const metadata = { title: "الرئيسية" };
@@ -51,7 +53,7 @@ export default async function AdminDashboard({ searchParams }: { searchParams: P
   const sp = await searchParams;
   const days = [7, 30, 90].includes(Number(sp.days)) ? Number(sp.days) : 30;
   const includeTest = sp.test === "1";
-  const [totals, latest, top, series, pending, teachersTop, paymentAlerts, extraPayments, refundsWaiting] = await Promise.all([
+  const [totals, latest, top, series, pending, teachersTop, paymentAlerts, extraPayments, refundsWaiting, mail] = await Promise.all([
     dashboardTotals(includeTest),
     latestOrders(8, includeTest),
     topProducts(6, includeTest),
@@ -61,6 +63,7 @@ export default async function AdminDashboard({ searchParams }: { searchParams: P
     openPaymentAlertCount(),
     extraPaymentsNeedingOwnerCount(),
     refundsNeedingOwnerCount(),
+    mailHealth(),
   ]);
   const qs = (patch: Record<string, string | undefined>) => {
     const p = new URLSearchParams({ ...(sp.days ? { days: sp.days } : {}), ...(includeTest ? { test: "1" } : {}) });
@@ -110,6 +113,18 @@ export default async function AdminDashboard({ searchParams }: { searchParams: P
           </>
         }
       />
+
+      {mail.logOnlyInProduction ? (
+        <AdminNotice href="/admin/mail" icon={<MailWarning />} tone="coral" action="التفاصيل">
+          البريد غير مفعّل: لا تصل أي رسالة إلى الطلاب، ولا تعمل استعادة كلمة المرور عبر البريد
+        </AdminNotice>
+      ) : null}
+
+      {mail.failedRecently > 0 ? (
+        <AdminNotice href="/admin/mail" icon={<MailWarning />} tone="coral" action="عرض القائمة">
+          تعذر إرسال {count(mail.failedRecently, MAIL_MESSAGE)} خلال آخر {ar(mail.recentDays)} أيام
+        </AdminNotice>
+      ) : null}
 
       {paymentAlerts > 0 ? (
         <AdminNotice href="/admin/orders#payment-alerts" icon={<ShieldAlert />} tone="coral" action="عرض التنبيهات">

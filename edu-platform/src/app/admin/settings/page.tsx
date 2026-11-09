@@ -147,7 +147,7 @@ export default async function SettingsPage() {
           <Section title="التخزين" icon={<Database />} tone="violet">
             <ul className="divide-y divide-line">
               <Row label="مزود التخزين" ok text={e.STORAGE_DRIVER === "supabase" ? "Supabase Storage" : "تخزين محلي"} />
-              <Row label="البريد" ok={e.MAIL_DRIVER === "smtp"} text={e.MAIL_DRIVER === "smtp" ? "SMTP" : "سجل داخلي (تطوير)"} />
+              <Row label="البريد" ok={e.MAIL_DRIVER === "smtp"} text={e.MAIL_DRIVER === "smtp" ? "SMTP" : "سجل داخلي، لا يصل لأحد"} />
             </ul>
           </Section>
         </aside>

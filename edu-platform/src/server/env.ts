@@ -1,6 +1,18 @@
 import "server-only";
 import { z } from "zod";
 
+/** عناوين الأمثلة لا تستلم ردودًا ولا تجتاز SPF، فوجودها دليل على أن المتغير لم يُضبط */
+const PLACEHOLDER_MAIL_DOMAINS = new Set(["example.com", "example.org", "example.net", "your-domain.com"]);
+
+/** سبب رفض MAIL_FROM، أو null إن كان صالحًا. الصيغة: address@domain أو «الاسم <address@domain>» */
+export function mailFromProblem(value: string): string | null {
+  const match = /^\s*(?:[^<>\r\n]*<([^<>\s]+)>|([^<>\s]+))\s*$/.exec(value);
+  const address = match?.[1] ?? match?.[2];
+  if (!address || !z.email().safeParse(address).success) return "MAIL_FROM يجب أن يكون بريدًا صحيحًا، مثل: منصة فرقد <no-reply@your-real-domain.com>";
+  if (PLACEHOLDER_MAIL_DOMAINS.has(address.split("@")[1].toLowerCase())) return "MAIL_FROM ما زال عنوان مثال، اضبطه على بريد من نطاق المنصة الحقيقي";
+  return null;
+}
+
 /**
  * متغيرات البيئة — تُقرأ وتُتحقق منها مرة واحدة على الخادم فقط.
  * لا تضع أي مفتاح سري في متغير يبدأ بـ NEXT_PUBLIC_.
@@ -76,6 +88,11 @@ const schema = z.object({
     .enum(["true", "false"])
     .default("true")
     .transform((v) => v === "true"),
+}).superRefine((e, ctx) => {
+  if (e.MAIL_DRIVER !== "smtp") return;
+  if (!e.SMTP_HOST) ctx.addIssue({ code: "custom", path: ["SMTP_HOST"], message: "MAIL_DRIVER=smtp يتطلب SMTP_HOST" });
+  const problem = mailFromProblem(e.MAIL_FROM);
+  if (problem) ctx.addIssue({ code: "custom", path: ["MAIL_FROM"], message: problem });
 });
 
 export type Env = z.infer<typeof schema>;

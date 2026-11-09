@@ -137,6 +137,21 @@ export const ORDER_STATUS_LABELS: Record<OrderStatus, string> = {
   refunded: "مسترد",
 };
 
+/** أنواع رسائل البريد كما تظهر للمالك في قائمة الإخفاقات */
+export const EMAIL_TEMPLATE_LABELS: Record<string, string> = {
+  password_reset: "رابط استعادة كلمة المرور",
+  password_reset_refused: "تنبيه طلب استعادة حساب المالك",
+  password_reset_notice: "تنبيه إعادة تعيين كلمة المرور",
+  email_verification: "رابط تأكيد البريد",
+  email_in_use_notice: "تنبيه استخدام البريد لحساب آخر",
+  email_changed_notice: "تنبيه تغيير البريد",
+  order_confirmation: "تأكيد طلب",
+  order_refund: "استرداد قيد التنفيذ",
+  order_refund_completed: "اكتمال استرداد",
+  order_refund_cancelled: "إلغاء استرداد",
+  order_extra_payment: "دفعة زائدة",
+};
+
 /** القيم الموثقة في حدث DISPUTE_STATUS_CHANGED */
 export const DISPUTE_TYPE_LABELS: Record<string, string> = {
   CHARGEBACK: "رد مبلغ من البنك",
