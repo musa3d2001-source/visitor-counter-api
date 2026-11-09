@@ -3,10 +3,10 @@ import { createHash } from "node:crypto";
 import { sql, type Db } from "../db";
 import { env, type Env } from "../env";
 import { filsToKwdString, kwdNumberToFils } from "@/lib/money";
-import { closeOrder, endedProductsInOrder, findOpenOrdersCovering, markOrderPaid, type OrderClosedReason, type OrderRow } from "../commerce/orders";
+import { defectiveProductIds, unsellableProductIds } from "../commerce/cart";
+import { closeOrder, endedProductsInOrder, findOpenOrdersCovering, markOrderPaid, unpublishedProductsInOrder, type OrderClosedReason, type OrderRow } from "../commerce/orders";
 import { reacquireCouponHold } from "../commerce/coupons";
 import { computeCart } from "../commerce/cart";
-import { closedVideoProductIds } from "../video/policy";
 import { readSettings } from "../platform/settings";
 import { accessibleProductIds } from "../access/entitlements";
 import { audit } from "../platform/audit";
@@ -281,8 +281,8 @@ async function decidePayment(orderId: string, environment: "sandbox" | "live", w
       await closeOrder(db, { orderId, reason: "product_ended", actorId: null });
       return { kind: "closed", reason: "product_ended" };
     }
-    // أُغلق بيع الفيديو بعد إنشاء الطلب: لا فاتورة جديدة عليه. دفعة وصلت فعلًا على فاتورة سابقة لا تمر من هنا ولا تضيع
-    if ((await closedVideoProductIds(db, items.map((i) => i.product_id), await readSettings(db))).size) {
+    // أُخفي منتج أو توقف بيعه أو أُغلق الفيديو بعد إنشاء الطلب: لا فاتورة جديدة عليه. دفعة وصلت فعلًا على فاتورة سابقة لا تمر من هنا ولا تضيع
+    if ((await unpublishedProductsInOrder(db, orderId)).length || (await unsellableProductIds(items.map((i) => i.product_id), db, await readSettings(db))).size) {
       await closeOrder(db, { orderId, reason: "product_ended", actorId: null });
       return { kind: "closed", reason: "product_ended" };
     }
@@ -494,8 +494,9 @@ async function lateCompletionBlockers(db: Db, order: OrderRow): Promise<string[]
     where oi.order_id = ${order.id}
   `;
   const owned = await accessibleProductIds(order.user_id, db);
+  const defective = await defectiveProductIds(items.map((i) => i.product_id), db, await readSettings(db));
   for (const it of items) {
-    if (it.status !== "published") blockers.push(`unavailable:${it.product_id}`);
+    if (it.status !== "published" || defective.has(it.product_id)) blockers.push(`unavailable:${it.product_id}`);
     else if (it.price_fils === null || it.price_fils > it.unit_price_fils) blockers.push(`price:${it.product_id}`);
     else if (it.access_mode === "until_date" && it.access_until && new Date(it.access_until).getTime() <= Date.now()) blockers.push(`access_ended:${it.product_id}`);
     if (owned.has(it.product_id)) blockers.push(`owned:${it.product_id}`);
@@ -568,6 +569,15 @@ async function applyConfirmedPayment(db: Db, p: ConfirmedPayment): Promise<{ res
         if (alreadyOwned.length) {
           await closeOrder(db, { orderId: order.id, reason: "already_owned", actorId: null });
           return flag("late_review", { blockers: alreadyOwned.map((i) => `owned:${i.product_id}`), closedReason: "already_owned" });
+        }
+        // أُخفي منتج أو ظهر عيب يوقف بيعه بعد إصدار الفاتورة: المال وصل، والقرار عند المالك لا منح تلقائي.
+        // إغلاق الفيديو وحده لا يدخل هنا: من دفع على فاتورة صدرت قبله يشاهد ما دفع ثمنه
+        const unpublished = await unpublishedProductsInOrder(db, order.id);
+        const defective = await defectiveProductIds(items.map((i) => i.product_id), db, await readSettings(db));
+        const unavailable = [...new Set([...unpublished, ...defective])];
+        if (unavailable.length) {
+          await closeOrder(db, { orderId: order.id, reason: "product_ended", actorId: null });
+          return flag("late_review", { blockers: unavailable.map((id) => `unavailable:${id}`), closedReason: "product_ended" });
         }
         const out = await markOrderPaid(db, { orderId: order.id, paidAmountFils: p.invoiceFils, paymentRowId: p.paymentId });
         return { state: "paid", orderId: order.id, changed: out.changed };

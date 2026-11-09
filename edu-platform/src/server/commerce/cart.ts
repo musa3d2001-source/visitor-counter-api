@@ -1,6 +1,6 @@
 import "server-only";
 import { cookies } from "next/headers";
-import { sql } from "../db";
+import { sql, type Db } from "../db";
 import { env } from "../env";
 import { getPublishedProductsByIds, type ProductCard } from "../catalog/queries";
 import { accessibleProductIds } from "../access/entitlements";
@@ -74,11 +74,31 @@ export async function containerCoverage(containerIds: string[]): Promise<Map<str
  * منتجات منشورة لا يصح بيعها الآن، بما فيها ما نُشر قبل هذه الضوابط:
  * ملف معيب فيها أو في محتوياتها، أو سعر صفر لم يُعلَّم مجانيًا، أو معلم بلا نسبة متفق عليها، أو محتوى معلم قبل اعتماد الرسوم، أو فيديو مغلق.
  */
-export async function unsellableProductIds(ids: string[]): Promise<Set<string>> {
+export async function unsellableProductIds(ids: string[], db: Db = sql, settings?: SaleSettings): Promise<Set<string>> {
   if (ids.length === 0) return new Set();
+  const current = settings ?? (await getSettings());
+  const defective = await defectiveProductIds(ids, db, current);
+  const closed = await closedVideoProductIds(db, ids, current);
+  return new Set([...defective, ...closed]);
+}
+
+type SaleSettings = { fee_rules_confirmed_at: string | null; videos_enabled: boolean };
+
+/** لماذا توقف بيع منتج منشور، إن توقف: عيب فيه أو في محتوياته، أو إغلاق الفيديو على مستوى المنصة */
+export async function saleStopReason(productId: string): Promise<"defect" | "video_closed" | null> {
   const settings = await getSettings();
+  if ((await defectiveProductIds([productId], sql, settings)).has(productId)) return "defect";
+  return (await closedVideoProductIds(sql, [productId], settings)).has(productId) ? "video_closed" : null;
+}
+
+/**
+ * من ids: ما يمنع بيعه عيب فيه أو في محتوياته، دون إغلاق الفيديو على مستوى المنصة.
+ * db معامل حتى يعمل داخل معاملة الدفع على اتصالها هي.
+ */
+export async function defectiveProductIds(ids: string[], db: Db, settings: Pick<SaleSettings, "fee_rules_confirmed_at">): Promise<Set<string>> {
+  if (ids.length === 0) return new Set();
   const feeRulesConfirmed = settings.fee_rules_confirmed_at !== null;
-  const rows = await sql<{ root: string }[]>`
+  const rows = await db<{ root: string }[]>`
     with recursive c(root, id) as (
       select r, r from unnest(${ids}::uuid[]) as r
       union
@@ -93,8 +113,7 @@ export async function unsellableProductIds(ids: string[]): Promise<Set<string>> 
       or (t.id is not null and not item.is_free and not root.is_free and (t.revenue_share_bps is null or not ${feeRulesConfirmed}::boolean))
       or exists (select 1 from product_files f where f.product_id = c.id and f.kind = 'main' and f.check_status = any(${FLAGGED_STATUSES}::text[]))
   `;
-  const closed = await closedVideoProductIds(sql, ids, settings);
-  return new Set([...rows.map((r) => r.root), ...closed]);
+  return new Set(rows.map((r) => r.root));
 }
 
 /**

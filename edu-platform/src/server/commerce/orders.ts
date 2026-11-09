@@ -175,6 +175,15 @@ export async function endedProductsInOrder(db: Db, orderId: string): Promise<str
   return rows.map((r) => r.product_id);
 }
 
+/** منتجات الطلب التي لم تعد منشورة */
+export async function unpublishedProductsInOrder(db: Db, orderId: string): Promise<string[]> {
+  const rows = await db<{ product_id: string }[]>`
+    select oi.product_id from order_items oi join products p on p.id = oi.product_id
+    where oi.order_id = ${orderId} and p.status <> 'published'
+  `;
+  return rows.map((r) => r.product_id);
+}
+
 /** جلب طلب يخص المستخدم فقط (منع IDOR) */
 export async function getUserOrder(orderId: string, userId: string) {
   if (!/^[0-9a-f-]{36}$/i.test(orderId)) return null;
