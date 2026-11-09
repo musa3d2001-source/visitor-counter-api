@@ -17,7 +17,7 @@ import { Button } from "@/components/ui/button";
 import { SubmitButton } from "@/components/ui/submit-button";
 import { PrintButton } from "@/components/site/print-button";
 import { Sparkle, SpotArt } from "@/components/art";
-import { ORDER_STATUS_LABELS, PRODUCT_TYPE_LABELS, isContainerType, isVideoType, type ProductType } from "@/lib/labels";
+import { ORDER_STATUS_LABELS, PRODUCT_TYPE_LABELS, REFUND_PUBLIC_STATUS_LABELS, isContainerType, isVideoType, paymentMethodLabel, type ProductType } from "@/lib/labels";
 import { filsToKwdString } from "@/lib/money";
 import { ar } from "@/lib/design";
 import { cn, formatDateTime } from "@/lib/utils";
@@ -59,6 +59,19 @@ export default async function OrderPage({ params, searchParams }: { params: Prom
   const [payment] = await sql<{ payment_method: string | null; status: string; error_message: string | null; provider: string }[]>`
     select payment_method, status, error_message, provider from payments where order_id = ${order.id} order by created_at desc limit 1
   `;
+  // الدفعة التي أكملت الطلب، لا آخر محاولة ولا دفعة زائدة
+  const [settled] = await sql<{ gateway_payment_id: string | null; gateway_invoice_id: string | null; payment_method: string | null }[]>`
+    select p.gateway_payment_id, p.gateway_invoice_id, p.payment_method from payments p
+    where p.order_id = ${order.id} and p.provider = 'myfatoorah' and p.status in ('paid', 'refunded')
+      and not exists (select 1 from payment_extras e where e.payment_id = p.id)
+    order by coalesce(p.paid_at, p.created_at) desc limit 1
+  `;
+  // الطالب يرى الاسترداد فقط بعد أن تقبله البوابة. المحاولات غير المؤكدة لا تخصه ولا تغير طلبه
+  const [refund] = await sql<{ status: string; amount_fils: number; accepted_at: Date | null; completed_at: Date | null; created_at: Date }[]>`
+    select status, amount_fils, accepted_at, completed_at, created_at from refunds
+    where order_id = ${order.id} and status in ('recorded', 'requested', 'completed') order by created_at desc limit 1
+  `;
+  const methodName = paymentMethodLabel(settled?.payment_method ?? payment?.payment_method) ?? (settled ? "MyFatoorah" : null);
   const statusTone = order.status === "paid" ? "success" : order.status === "failed" ? "danger" : order.status === "pending" ? "warning" : "neutral";
   const heroKey = order.status === "paid" || order.status === "pending" || order.status === "failed" ? order.status : "other";
   const hero = HERO[heroKey];
@@ -158,6 +171,16 @@ export default async function OrderPage({ params, searchParams }: { params: Prom
                       </form>
                     </div>
                   ) : null}
+                </>
+              ) : order.status === "refunded" ? (
+                <>
+                  <h1 className="font-display text-[clamp(1.9rem,1.3rem+2.4vw,3rem)] leading-tight font-black" data-testid="order-refunded">
+                    تم استرداد هذا الطلب
+                  </h1>
+                  <p className="mt-2 max-w-2xl text-[1.05rem] leading-8 text-white/90">
+                    {refund?.status === "completed" ? "نفذت بوابة الدفع الاسترداد. " : refund?.status === "requested" ? "الاسترداد قيد التنفيذ لدى بوابة الدفع. " : ""}
+                    يعود المبلغ إلى وسيلة الدفع الأصلية، ويعتمد وقت ظهوره في حسابك على البوابة والبنك. توقف الوصول إلى منتجات هذا الطلب.
+                  </p>
                 </>
               ) : closedCopy ? (
                 <>
@@ -292,10 +315,45 @@ export default async function OrderPage({ params, searchParams }: { params: Prom
                   <span className="font-sans text-[0.92rem] font-semibold text-ink-soft">{formatDateTime(order.paid_at)}</span>
                 </SumRow>
               ) : null}
-              {payment?.payment_method && payment.provider === "myfatoorah" ? (
+              {methodName && (settled || payment?.provider === "myfatoorah") ? (
                 <SumRow label="وسيلة الدفع">
-                  <span className="font-sans text-[0.92rem] font-semibold text-ink-soft">{payment.payment_method === "all" ? "MyFatoorah" : payment.payment_method}</span>
+                  <span className="font-sans text-[0.92rem] font-semibold text-ink-soft" data-testid="receipt-method">
+                    {methodName}
+                  </span>
                 </SumRow>
+              ) : null}
+              {settled?.gateway_invoice_id ? (
+                <SumRow label="رقم الفاتورة">
+                  <span className="num text-[0.92rem] font-semibold text-ink-soft" data-testid="receipt-invoice">
+                    {settled.gateway_invoice_id}
+                  </span>
+                </SumRow>
+              ) : null}
+              {settled?.gateway_payment_id ? (
+                <SumRow label="رقم عملية الدفع">
+                  <span className="num text-[0.92rem] font-semibold break-all text-ink-soft" data-testid="receipt-payment-id">
+                    {settled.gateway_payment_id}
+                  </span>
+                </SumRow>
+              ) : null}
+              {refund ? (
+                <>
+                  <SumRow label="المبلغ المسترد">
+                    <span data-testid="receipt-refund-amount">
+                      <span className="num">{filsToKwdString(refund.amount_fils)}</span> د.ك
+                    </span>
+                  </SumRow>
+                  <SumRow label="تاريخ الاسترداد">
+                    <span className="font-sans text-[0.92rem] font-semibold text-ink-soft" data-testid="receipt-refund-date">
+                      {formatDateTime(refund.completed_at ?? refund.accepted_at ?? refund.created_at)}
+                    </span>
+                  </SumRow>
+                  <SumRow label="حالة الاسترداد">
+                    <span className="font-sans text-[0.92rem] font-semibold text-ink-soft" data-testid="receipt-refund-state">
+                      {REFUND_PUBLIC_STATUS_LABELS[refund.status]}
+                    </span>
+                  </SumRow>
+                </>
               ) : null}
             </dl>
             <div className="mt-7 flex flex-wrap gap-3 no-print">

@@ -28,6 +28,7 @@ import { WEBHOOK_STALE_CLAIM_MINUTES, raiseDisputeAlert, recordWebhookRejection,
 import { recordExtraPayment, type ExtraPaymentKind, type ExtraPaymentState } from "./extras";
 import { CLAIM_STALE_SECONDS, INVOICE_REUSE_MARGIN_MINUTES, INVOICE_TTL_MINUTES, IN_PROGRESS_GRACE_MINUTES, ORDER_LIFETIME_HOURS, REFUND_SENDING_STALE_MINUTES } from "./limits";
 import { RefundError, applyRefundEvent, recheckRefund, requestRefund, type RefundOutcome } from "./refunds";
+import { sendOrderConfirmationEmail } from "../commerce/order-mail";
 
 /**
  * خدمة الدفع — قواعد حاسمة:
@@ -544,7 +545,10 @@ export async function verifyAndApplyPayment(key: { paymentId?: string; invoiceId
   }
 
   if (result.state === "paid") {
-    return sql.begin((db) => applyConfirmedPayment(db, { orderId: order.id, paymentId: payment.id, invoiceFils, status, transaction: result.transaction }));
+    const applied = await sql.begin((db) => applyConfirmedPayment(db, { orderId: order.id, paymentId: payment.id, invoiceFils, status, transaction: result.transaction }));
+    // بعد الالتزام، ولا يرمي: تعذر البريد لا يؤثر على الدفع
+    if (applied.state === "paid" && applied.changed) await sendOrderConfirmationEmail(order.id);
+    return applied;
   }
 
   if (result.state === "expired") {

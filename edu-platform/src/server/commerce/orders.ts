@@ -5,6 +5,7 @@ import { evaluateCoupon } from "./coupons";
 import { grantProduct, revokeProduct } from "../access/entitlements";
 import { audit } from "../platform/audit";
 import { recordEarnings, reverseEarnings } from "./earnings";
+import { sendOrderConfirmationEmail } from "./order-mail";
 import { INVOICE_TTL_MINUTES, ORDER_LIFETIME_HOURS } from "../payments/limits";
 import type { SessionUser } from "../auth/session";
 
@@ -236,7 +237,7 @@ export async function closeOrder(db: Db, input: { orderId: string; reason: Order
 
 /** إتمام طلب مجاني (الإجمالي صفر بعد الخصم) دون المرور ببوابة الدفع */
 export async function completeFreeOrder(orderId: string, userId: string) {
-  return sql.begin(async (tx) => {
+  const out = await sql.begin(async (tx) => {
     const [order] = await tx<OrderRow[]>`select * from orders where id = ${orderId} and user_id = ${userId} for update`;
     if (!order) throw new OrderError("الطلب غير موجود");
     if (order.total_fils !== 0) throw new OrderError("هذا الطلب ليس مجانيًا");
@@ -246,6 +247,8 @@ export async function completeFreeOrder(orderId: string, userId: string) {
     `;
     return markOrderPaid(tx, { orderId: order.id, paidAmountFils: 0, paymentRowId: payment.id });
   });
+  if (out.changed) await sendOrderConfirmationEmail(orderId);
+  return out;
 }
 
 /**
