@@ -40,6 +40,16 @@ const WEBHOOKS: unknown[] = [
 ];
 
 describe("the database cleaners match the code", () => {
+  const migrationText = readFileSync(resolve(process.cwd(), "db/migrations/0011_accounts_hardening.sql"), "utf8");
+  const sqlArray = (keys: readonly string[]) => `array[${keys.map((k) => `'${k}'`).join(", ")}]`;
+
+  it("both allow-lists hold exactly the same keys", () => {
+    expect(migrationText).toContain(sqlArray(STATUS_INVOICE_KEYS));
+    expect(migrationText).toContain(sqlArray(STATUS_TRANSACTION_KEYS));
+    expect(migrationText).toContain(sqlArray(WEBHOOK_EVENT_KEYS));
+    for (const [section, keys] of Object.entries(WEBHOOK_SECTIONS)) expect(migrationText).toContain(`('${section}', ${sqlArray(keys)})`);
+  });
+
   it.each(STATUSES.map((value, i) => [i, value] as const))("gateway status %i", async (_i, value) => {
     const [row] = await sql<{ out: unknown }[]>`select redact_gateway_status(${sql.json(value as never)}::jsonb) as out`;
     expect(row.out).toEqual(redactGatewayStatus(value));

@@ -609,6 +609,25 @@ describe("what the gateway sends after the deletion", () => {
     expect(status).toContain(paymentId);
   });
 
+  it("a declined or still-open invoice is stored without the customer or the card too", async () => {
+    const declined = await newOrder();
+    const declinedUrl = (await startPayment(declined.order, null)).url;
+    const declinedId = invoiceIdOf(declinedUrl);
+    await sim.pay(declinedId, "fail");
+    expect(await verifyAndApplyPayment({ invoiceId: String(declinedId) })).toMatchObject({ state: "failed" });
+    const failedStatus = await storedStatus(declined.order.id);
+    expect(failedStatus).toContain("InvoiceTransactions");
+    expect(failedStatus).not.toMatch(PII);
+    expect(failedStatus).not.toMatch(/450875|CardNumber/);
+
+    const open = await newOrder();
+    const openId = invoiceIdOf((await startPayment(open.order, null)).url);
+    expect(await verifyAndApplyPayment({ invoiceId: String(openId) })).toMatchObject({ state: "pending" });
+    const pendingStatus = await storedStatus(open.order.id);
+    expect(pendingStatus).toContain("InvoiceStatus");
+    expect(pendingStatus).not.toMatch(PII);
+  });
+
   it("a late payment on a closed order does not bring access back: it waits for the owner to refund", async () => {
     const { user, order } = await newOrder();
     const { url } = await startPayment(order, null);
