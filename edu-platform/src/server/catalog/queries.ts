@@ -613,19 +613,26 @@ async function hydrateTeachers(rows: TeacherRowDb[]): Promise<TeacherCard[]> {
   }));
 }
 
-const teacherColumns = () => sql`
+/** بطاقة المعلم لا تعلن فيديو أُغلق: القاعدة نفسها التي تخفيه من القوائم */
+const openLessonsOnly = ({ allClosed, rawClosed }: VideoCloseFlags) => sql`
+  and not ${allClosed}::boolean
+  and not (${rawClosed}::boolean and exists (select 1 from lessons fl where fl.product_id = p.id and fl.is_published and fl.provider = 'file'))
+`;
+
+const teacherColumns = (closed: VideoCloseFlags) => sql`
   t.id, t.slug, t.display_name, t.headline, t.bio, t.photo_key,
-  (select count(*)::int from products p where p.teacher_id = t.id and p.status = 'published') as product_count,
+  (select count(*)::int from products p ${videoStats()} where p.teacher_id = t.id and p.status = 'published' ${hideClosedVideo(closed)}) as product_count,
   (select count(*)::int from lessons l join products p on p.id = l.product_id
-     where p.teacher_id = t.id and p.status in ('published', 'hidden') and l.is_published and l.processing_status = 'ready') as video_count,
+     where p.teacher_id = t.id and p.status in ('published', 'hidden') and l.is_published and l.processing_status = 'ready' ${openLessonsOnly(closed)}) as video_count,
   (select coalesce(sum(l.duration_seconds), 0)::int from lessons l join products p on p.id = l.product_id
-     where p.teacher_id = t.id and p.status in ('published', 'hidden') and l.is_published and l.processing_status = 'ready') as total_duration
+     where p.teacher_id = t.id and p.status in ('published', 'hidden') and l.is_published and l.processing_status = 'ready' ${openLessonsOnly(closed)}) as total_duration
 `;
 
 /** المعلمون المنشورون (مع تصفية اختيارية بالصف أو المادة) */
 export async function listTeachers(opts: { gradeId?: string; subjectId?: string; limit?: number } = {}): Promise<TeacherCard[]> {
+  const closed = await currentCloseFlags();
   const rows = await sql<TeacherRowDb[]>`
-    select ${teacherColumns()}
+    select ${teacherColumns(closed)}
     from teachers t
     where t.is_published
       ${
@@ -647,8 +654,9 @@ export async function listTeachers(opts: { gradeId?: string; subjectId?: string;
 }
 
 export const getTeacherBySlug = cache(async (slug: string, opts: { includeUnpublished?: boolean } = {}): Promise<(TeacherCard & { isPublished: boolean }) | null> => {
+  const closed = await currentCloseFlags();
   const rows = await sql<(TeacherRowDb & { is_published: boolean })[]>`
-    select ${teacherColumns()}, t.is_published from teachers t where t.slug = ${slug}
+    select ${teacherColumns(closed)}, t.is_published from teachers t where t.slug = ${slug}
   `;
   const r = rows[0];
   if (!r || (!r.is_published && !opts.includeUnpublished)) return null;

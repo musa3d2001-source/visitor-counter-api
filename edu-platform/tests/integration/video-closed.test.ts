@@ -1,11 +1,14 @@
 import { afterAll, afterEach, beforeAll, beforeEach, describe, expect, it, vi } from "vitest";
+import { createElement } from "react";
 import { renderToStaticMarkup } from "react-dom/server";
 import { PRODUCT_TYPES, VIDEO_PRODUCT_TYPES } from "@/lib/labels";
 import { checkLessonAccess } from "@/server/access/lessons";
 import { grantProduct } from "@/server/access/entitlements";
 import { approveAndPublish, publishBlockers, setProductStatus, submitForReview } from "@/server/admin/products";
+import { completeUpload, initUpload } from "@/server/admin/uploads";
+import { ProductForm } from "@/components/admin/product-form";
 import type { Actor } from "@/server/auth/permissions";
-import { bestSellers, getBundleItems, getBundlesContaining, getPublishedProductsByIds, latestVideoProducts, listProducts, sitemapEntries, teacherContent } from "@/server/catalog/queries";
+import { bestSellers, getBundleItems, getBundlesContaining, getPublishedProductsByIds, getTeacherBySlug, latestVideoProducts, listProducts, listTeachers, sitemapEntries, teacherContent } from "@/server/catalog/queries";
 import { computeCart, unsellableProductIds } from "@/server/commerce/cart";
 import { OrderError, createOrder } from "@/server/commerce/orders";
 import { resetEnvCache } from "@/server/env";
@@ -121,9 +124,9 @@ describe("D12:a raw video file is not published on production without explicit p
   });
 
   it("the owner's approval is blocked as well", async () => {
-    const p = await createVideoProduct({ status: "draft" });
+    const p = await createVideoProduct({ status: "in_review" });
     production();
-    await expect(approveAndPublish(p.id, { priceFils: 4000, compareAtPriceFils: null, accessMode: "unlimited", accessUntil: null, accessDays: null }, owner)).rejects.toThrow("ملف خام");
+    await expect(approveAndPublish(p.id, { submittedAt: null, priceFils: 4000, compareAtPriceFils: null, accessMode: "unlimited", accessUntil: null, accessDays: null }, owner)).rejects.toThrow("ملف خام");
   });
 
   it("a teacher can still send for review: only the owner can change hosting", async () => {
@@ -326,7 +329,16 @@ describe.each(CLOSERS)("video closed: $name", ({ close }) => {
     }
     const withVideo = await createContainer({ type: "bundle", items: [v.id, n.id] });
     const notesOnly = await createContainer({ type: "bundle", items: [n.id] });
+    const cardOf = async () => (await listTeachers({})).find((x) => x.id === teacher.id)!;
+    const beforeClosing = await cardOf();
+    expect(beforeClosing.videoCount).toBeGreaterThan(0);
+    expect(beforeClosing.totalDurationSeconds).toBeGreaterThan(0);
+    expect(beforeClosing.productCount).toBe(1);
     await close();
+    // بطاقة المعلم وصفحته لا تعلنان فيديو أُغلق
+    const closedCard = { videoCount: 0, totalDurationSeconds: 0, productCount: 0 };
+    expect(await cardOf()).toMatchObject(closedCard);
+    expect(await getTeacherBySlug(beforeClosing.slug)).toMatchObject(closedCard);
     const listed = (await listProducts({})).map((p) => p.id);
     expect(listed).not.toContain(v.id);
     expect(listed).not.toContain(withVideo.id);
@@ -408,6 +420,76 @@ describe("an order raised before videos closed", () => {
     const invoice = invoiceIdOf(url);
     await sim.pay(invoice, "success");
     await expect(verifyAndApplyPayment({ invoiceId: String(invoice) })).resolves.toMatchObject({ state: "flagged", kind: "late_review" });
+  });
+});
+
+describe("a raw lesson on a Bunny deployment", () => {
+  it("is left off the teacher's card, and a Bunny lesson stays on it", async () => {
+    const rawTeacher = await createTeacher({ shareBps: 7000 });
+    await createVideoProduct({ teacherId: rawTeacher.id });
+    const bunnyTeacher = await createTeacher({ shareBps: 7000 });
+    const b = await createVideoProduct({ teacherId: bunnyTeacher.id });
+    await sql`update lessons set provider = 'bunny' where product_id = ${b.id}`;
+    production(BUNNY_ENV);
+    const cards = await listTeachers({});
+    expect(cards.find((x) => x.id === rawTeacher.id)).toMatchObject({ videoCount: 0, totalDurationSeconds: 0, productCount: 0 });
+    expect(cards.find((x) => x.id === bunnyTeacher.id)!.videoCount).toBeGreaterThan(0);
+  });
+});
+
+describe("the notes-only launch tells a teacher before the work is done", () => {
+  async function teacherDraft(status: "draft" = "draft") {
+    const teacher = await createTeacher({ withUser: true, shareBps: 5000 });
+    const p = await createVideoProduct({ status, teacherId: teacher.id });
+    const actor: Actor = { kind: "teacher", userId: teacher.user!.id, name: teacher.displayName, email: teacher.user!.email, teacherId: teacher.id, teacherName: teacher.displayName, canUpload: true };
+    return { p, actor };
+  }
+  const lesson = (productId: string) => ({ target: "lesson" as const, productId, fileName: "درس.mp4", size: 1000, mime: "video/mp4", title: "درس" });
+
+  it("refuses to start a teacher's lesson upload, with the reason", async () => {
+    const { p, actor } = await teacherDraft();
+    production();
+    await expect(initUpload(lesson(p.id), actor)).rejects.toThrow(/استضافة الفيديو غير مفعّلة/);
+    const before = await sql`select id from lessons where product_id = ${p.id}`;
+    await expect(completeUpload({ target: "lesson", key: `lessons/${p.id}/x.mp4`, productId: p.id, originalName: "x.mp4", title: "درس" }, actor)).rejects.toThrow(/استضافة الفيديو غير مفعّلة/);
+    expect(await sql`select id from lessons where product_id = ${p.id}`).toHaveLength(before.length);
+  });
+
+  it("does not stand in the way once a safe provider exists", async () => {
+    const { p, actor } = await teacherDraft();
+    production({ ALLOW_FILE_VIDEO: "true" });
+    await expect(initUpload(lesson(p.id), actor)).resolves.toMatchObject({ method: expect.any(String) });
+  });
+
+  it("does not apply outside production", async () => {
+    const { p, actor } = await teacherDraft();
+    await expect(initUpload(lesson(p.id), actor)).resolves.toMatchObject({ method: expect.any(String) });
+  });
+
+  const formHtml = (type: string, videoHostingClosed: boolean) =>
+    renderToStaticMarkup(
+      createElement(ProductForm, {
+        mode: "create",
+        role: "teacher",
+        action: async () => null,
+        grades: [],
+        subjects: [],
+        submitLabel: "حفظ",
+        videoHostingClosed,
+        defaults: { type, title: "", summary: "", description: "", contents: "", gradeId: "", subjectId: "", academicYear: "2026-2027", term: "1", price: "0", isFree: false, compareAtPrice: "", proposedPrice: "", previewPages: "5", teacherId: "", isDownloadable: false, isFeatured: false, sortOrder: "0", accessMode: "unlimited", accessUntil: "", accessDays: "" } as never,
+      }),
+    );
+
+  it("warns on the form as soon as a video type is selected, and marks the group in the list", () => {
+    const html = formHtml("unit", true);
+    expect(html).toContain('data-testid="video-hosting-closed"');
+    expect(html).toContain("لا يمكن نشره حاليًا");
+  });
+
+  it("says nothing on a notes type, or when hosting is open", () => {
+    expect(formHtml("final_notes", true)).not.toContain('data-testid="video-hosting-closed"');
+    expect(formHtml("unit", false)).not.toContain('data-testid="video-hosting-closed"');
+    expect(formHtml("unit", false)).not.toContain("لا يمكن نشره حاليًا");
   });
 });
 

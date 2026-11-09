@@ -15,6 +15,7 @@ import { sql } from "@/server/db";
 import { VideoProductView, accessPeriodText } from "./video-view";
 import { getSettings } from "@/server/platform/settings";
 import { closedVideoProductIds } from "@/server/video/policy";
+import { unsellableProductIds } from "@/server/commerce/cart";
 import { env } from "@/server/env";
 import { Alert } from "@/components/ui/alert";
 import { ProductGrid } from "@/components/site/product-card";
@@ -25,7 +26,7 @@ import { filsToKwdString } from "@/lib/money";
 import { academicYearLabel, count, gradeClass, gradeLevelFromSlug, toneClass, W } from "@/lib/design";
 import { GlassChip, HeroStat, HeroStats, ProductHero } from "./_components/hero";
 import { BundleFanArt, NotePaperArt } from "./_components/hero-art";
-import { MobileBuyBar, PurchasePanel, SaleEndedNotice, VideoClosedNotice, type TrustItem } from "./_components/purchase";
+import { MobileBuyBar, ProductUnavailableNotice, PurchasePanel, SaleEndedNotice, VideoClosedNotice, type TrustItem } from "./_components/purchase";
 import { FactGrid, FileList, LearnList, SectionPanel, WideHead } from "./_components/sections";
 import { aboutTitle, includesLabel, previewLabel, shortTermLabel } from "./_components/labels";
 
@@ -64,7 +65,10 @@ export default async function ProductPage({ params }: { params: Promise<Params> 
     { label: product.title },
   ];
   // فحص واحد لكل أنواع الفيديو والباقات التي تضم فيديو، وهو نفسه ما يمنع السلة والدفع
-  const videoClosed = (await closedVideoProductIds(sql, [product.id], await getSettings())).has(product.id);
+  const settings = await getSettings();
+  const videoClosed = (await closedVideoProductIds(sql, [product.id], settings)).has(product.id);
+  // الفحص نفسه الذي يمنع السلة والدفع: الصفحة لا تعرض زر شراء سيرفضه الخادم
+  const unavailable = !videoClosed && !product.saleEnded && product.status === "published" && (await unsellableProductIds([product.id], sql, settings)).has(product.id);
 
   if (product.isVideo) {
     const [playlist, included, bundlesV, filesV, ownedV] = await Promise.all([
@@ -114,8 +118,9 @@ export default async function ProductPage({ params }: { params: Promise<Params> 
           ownedUntil={ownedUntil}
           resumeLessonId={resumeLessonId}
           watchedIds={watchedIds}
-          canBuy={product.status === "published" && !product.saleEnded && !videoClosed}
+          canBuy={product.status === "published" && !product.saleEnded && !videoClosed && !unavailable}
           videoClosed={videoClosed}
+          unavailable={unavailable}
           breadcrumbs={breadcrumbs}
         />
       </div>
@@ -162,7 +167,7 @@ export default async function ProductPage({ params }: { params: Promise<Params> 
       "@type": "Offer",
       priceCurrency: "KWD",
       price: filsToKwdString(product.priceFils),
-      availability: product.saleEnded ? "https://schema.org/Discontinued" : videoClosed ? "https://schema.org/OutOfStock" : "https://schema.org/InStock",
+      availability: product.saleEnded ? "https://schema.org/Discontinued" : videoClosed || unavailable ? "https://schema.org/OutOfStock" : "https://schema.org/InStock",
       url: new URL(`/products/${product.slug}`, env().APP_URL).toString(),
     },
   };
@@ -205,7 +210,7 @@ export default async function ProductPage({ params }: { params: Promise<Params> 
         }
         art={
           isBundle ? (
-            <BundleFanArt level={level} items={bundleItems} priceFils={product.priceFils} compareAtPriceFils={isOwned ? null : product.compareAtPriceFils} />
+            <BundleFanArt level={level} items={bundleItems} priceFils={product.priceFils} compareAtPriceFils={isOwned || unavailable ? null : product.compareAtPriceFils} />
           ) : (
             <NotePaperArt
               subjectSlug={product.subjectSlug}
@@ -216,7 +221,7 @@ export default async function ProductPage({ params }: { params: Promise<Params> 
               previewPages={preview?.pageCount ?? null}
               hasPreview={!!preview && !isOwned}
               priceFils={product.priceFils}
-              compareAtPriceFils={isOwned ? null : product.compareAtPriceFils}
+              compareAtPriceFils={isOwned || unavailable ? null : product.compareAtPriceFils}
             />
           )
         }
@@ -242,10 +247,11 @@ export default async function ProductPage({ params }: { params: Promise<Params> 
               compareAtPriceFils={product.compareAtPriceFils}
               bundleSaving={isBundle && itemsValue > product.priceFils ? { fils: itemsValue - product.priceFils, label: "مقارنة بشراء المذكرات منفردة" } : null}
               owned={isOwned ? { until: null, href: "/library", label: "افتح في مكتبتي", icon: <BookOpen aria-hidden /> } : null}
-              buy={product.saleEnded ? <SaleEndedNotice /> : videoClosed ? <VideoClosedNotice /> : product.status === "published" ? <AddToCart productId={product.id} /> : null}
+              buy={product.saleEnded ? <SaleEndedNotice /> : videoClosed ? <VideoClosedNotice /> : unavailable ? <ProductUnavailableNotice /> : product.status === "published" ? <AddToCart productId={product.id} /> : null}
+              hidePrice={unavailable}
               preview={preview && !isOwned ? { href: `/preview/${preview.id}`, label: previewLabel(preview.pageCount), icon: <Eye aria-hidden />, testId: "free-preview" } : null}
               accessText={accessText}
-              trust={videoClosed ? [] : trust}
+              trust={videoClosed || unavailable ? [] : trust}
             />
           </div>
         </aside>
@@ -305,7 +311,7 @@ export default async function ProductPage({ params }: { params: Promise<Params> 
       ) : null}
 
       {/* شريط شراء ثابت على الجوال */}
-      {!isOwned && product.status === "published" && !videoClosed && !product.saleEnded ? (
+      {!isOwned && product.status === "published" && !videoClosed && !product.saleEnded && !unavailable ? (
         <MobileBuyBar productId={product.id} priceFils={product.priceFils} compareAtPriceFils={product.compareAtPriceFils} accessText={accessText} />
       ) : null}
     </div>

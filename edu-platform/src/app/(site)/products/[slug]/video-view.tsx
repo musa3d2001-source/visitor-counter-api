@@ -10,7 +10,7 @@ import { count, duration, gradeClass, gradeLevelFromSlug, toneClass, W } from "@
 import { formatDate } from "@/lib/utils";
 import { GlassChip, HeroStat, HeroStats, ProductHero } from "./_components/hero";
 import { BundleFanArt, VideoPosterArt } from "./_components/hero-art";
-import { MobileBuyBar, PurchasePanel, SaleEndedNotice, VideoClosedNotice, type TrustItem } from "./_components/purchase";
+import { MobileBuyBar, ProductUnavailableNotice, PurchasePanel, SaleEndedNotice, VideoClosedNotice, type TrustItem } from "./_components/purchase";
 import { FileList, LearnList, SectionPanel, WideHead } from "./_components/sections";
 import { LessonTimeline } from "./_components/lesson-timeline";
 import { aboutTitle, includesLabel, shortTermLabel } from "./_components/labels";
@@ -47,6 +47,7 @@ export function VideoProductView({
   watchedIds,
   canBuy,
   videoClosed,
+  unavailable,
   breadcrumbs,
 }: {
   product: ProductDetail;
@@ -64,6 +65,8 @@ export function VideoProductView({
   canBuy: boolean;
   /** الفيديو مغلق: لا بيع ولا معاينات، ومن اشترى يكمل المشاهدة */
   videoClosed: boolean;
+  /** توقف بيعه لعيب تعالجه الإدارة */
+  unavailable: boolean;
   breadcrumbs: { label: string; href?: string }[];
 }) {
   const lessons = playlist.flatMap((g) => g.lessons);
@@ -166,10 +169,11 @@ export function VideoProductView({
               compareAtPriceFils={product.compareAtPriceFils}
               bundleSaving={included.length && itemsValue > product.priceFils ? { fils: itemsValue - product.priceFils, label: "مقارنة بالشراء المنفرد" } : null}
               owned={isOwned ? { until: ownedUntil, href: watchHref, label: watchLabel, icon: <Play className="fill-current" aria-hidden /> } : null}
-              buy={canBuy ? <AddToCart productId={product.id} /> : product.saleEnded ? <SaleEndedNotice /> : videoClosed ? <VideoClosedNotice /> : null}
+              buy={canBuy ? <AddToCart productId={product.id} /> : product.saleEnded ? <SaleEndedNotice /> : videoClosed ? <VideoClosedNotice /> : unavailable ? <ProductUnavailableNotice /> : null}
+              hidePrice={unavailable}
               preview={!isOwned && previewHref ? { href: previewHref, label: "شاهد المعاينة المجانية", icon: <Play className="fill-current" aria-hidden /> } : null}
               accessText={accessPeriodText(product)}
-              trust={videoClosed ? [] : VIDEO_TRUST}
+              trust={videoClosed || unavailable ? [] : VIDEO_TRUST}
             />
           </div>
         </aside>

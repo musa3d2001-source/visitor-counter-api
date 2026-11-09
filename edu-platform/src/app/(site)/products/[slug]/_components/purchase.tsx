@@ -35,6 +35,18 @@ export function VideoClosedNotice() {
   );
 }
 
+/**
+ * يحل محل أزرار الشراء حين يتوقف بيع المنتج لسبب تعالجه الإدارة (ملف معيب، سعر أو نسبة لم تُحدد).
+ * لا يذكر السبب للطالب ولا يعد بموعد. data-testid="product-unavailable-notice"
+ */
+export function ProductUnavailableNotice() {
+  return (
+    <div data-testid="product-unavailable-notice">
+      <Alert tone="info">هذا المنتج غير متاح للشراء حاليًا.</Alert>
+    </div>
+  );
+}
+
 export function PurchasePanel({
   toneClass,
   typeIcon,
@@ -48,6 +60,7 @@ export function PurchasePanel({
   preview,
   accessText,
   trust,
+  hidePrice = false,
 }: {
   toneClass: string;
   typeIcon: React.ReactNode;
@@ -63,6 +76,8 @@ export function PurchasePanel({
   preview?: { href: string; label: string; icon: React.ReactNode; testId?: string } | null;
   accessText: string;
   trust: TrustItem[];
+  /** منتج لا يمكن شراؤه: سعر معروض بلا زر يوهم بأنه متاح، وقد يكون صفرًا لم يُعتمد */
+  hidePrice?: boolean;
 }) {
   return (
     <div className={cn("panel", s.buy, toneClass)}>
@@ -90,14 +105,18 @@ export function PurchasePanel({
           </>
         ) : (
           <>
-            <p className="font-display text-sm font-extrabold text-muted">السعر</p>
-            <Price fils={priceFils} compareAt={compareAtPriceFils} size="xl" />
-            {bundleSaving ? (
+            {hidePrice ? null : (
+              <>
+                <p className="font-display text-sm font-extrabold text-muted">السعر</p>
+                <Price fils={priceFils} compareAt={compareAtPriceFils} size="xl" />
+              </>
+            )}
+            {bundleSaving && !hidePrice ? (
               <p className="mt-2 inline-flex flex-wrap items-center gap-1 rounded-full bg-brand-50 px-3 py-1 font-display text-sm font-extrabold text-brand-800">
                 توفّر <span className="num">{filsToKwdString(bundleSaving.fils)}</span> د.ك {bundleSaving.label}
               </p>
             ) : null}
-            {buy ? <div className="mt-5">{buy}</div> : null}
+            {buy ? <div className={hidePrice ? undefined : "mt-5"}>{buy}</div> : null}
           </>
         )}
         {preview ? (
