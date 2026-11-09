@@ -268,9 +268,35 @@ not a result.
 8. **A Kuwaiti ear** on the groove and the tick. Claude has checked the sound by measurement only (loudness, true peak,
    band energy), **not by listening**.
 
-## 9. QC record (measured by Claude, 9 Nov)
+## 9. QC record (measured by Claude on the final files, 9 Nov)
 
-Filled in from the final renders (see the end of this section).
+| File | Format | Loudness / true peak / LRA | Size |
+|---|---|---|---|
+| `TASH-boost-A-20s-9x16-ig.mp4` | 1080×1920, 30 fps, H.264 yuv420p (crf 18, max 10 Mbps, tune grain), AAC 320k 48 kHz, 20.000 s | −14.2 LUFS / −1.7 dBTP / 8.4 LU | 19.4 MB |
+| `TASH-boost-A-20s-9x16-tt.mp4` | same | −14.2 / −1.7 / 8.4 | 19.5 MB |
+| `TASH-boost-B-20s-9x16-ig.mp4` | same | −14.2 / −1.9 / 8.4 | 19.4 MB |
+| `TASH-boost-A-14s-9x16-ig.mp4` | same, 14.000 s | −14.0 / −2.1 / 8.0 | 14.1 MB |
+| `TASH-boost-A-20s-4x5-ig.mp4` | 1080×1350, otherwise the same | −14.2 / −1.7 / 8.4 | 14.1 MB |
+
+- **Picture:**
+  - no freeze ≥ 0.3 s (freezedetect n = 0.003) and no black ≥ 0.2 s in any file;
+  - 2 fps contact sheets in `out/contact-*.png`;
+  - cut strips checked at the seam, 5.00, 9.00 and 13.00.
+- **Audio in the MP4 = the mastered WAV:** correlation 0.9993–0.9997, 0 samples of lag. Frame 0 has its full transient; the loop seam is continuous.
+- **Mix (from the WAVs):**
+  - <150 Hz is 53–56% of the energy, 500 Hz–6 kHz 16–20%.
+  - Momentary (400 ms) peaks:
+    - hook (with voice) −11.0;
+    - HERO 1 / 2 / 3: −10.9 / −9.6 / −10.5 LUFS;
+    - exit thumps −13.8;
+    - hush −14.6;
+    - CTA −16.8.
+  - The voices sit ≥ 4–6 dB above the un-ducked mix in 300–4000 Hz.
+- **Studio** (stills 5.0 / 6.2 / 7.6 / 9.3 / 11.0 / 12.3):
+  - at 9.3 the faces are ك 198 / ش 227 / م 225 (ك is 87% of ش, against the ≥70% target);
+  - the floor edge at the word's base peaks at luma ≈ 76–96 (was 166–191);
+  - the talk zone holds ≥ 6:1 contrast.
+- **Not checked by Claude:** PEAT photosensitivity, listening by ear, and the platforms' own safe-zone previews (§8).
 
 ## 10. Provenance
 
