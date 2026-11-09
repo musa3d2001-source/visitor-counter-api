@@ -1,4 +1,4 @@
-import { Eye, FileWarning, RefreshCw, ScanSearch, ShieldCheck, Tag, UserRoundX } from "lucide-react";
+import { Eye, FileWarning, Package, RefreshCw, ScanSearch, ShieldCheck, Tag, UserRoundX } from "lucide-react";
 import { requireOwnerPage } from "@/server/auth/permissions";
 import { contentHealthCounts, contentHealthReport } from "@/server/admin/content-health";
 import { FILE_PROBLEM_LABELS } from "@/server/access/file-check";
@@ -11,7 +11,8 @@ import { Alert } from "@/components/ui/alert";
 import { SubmitButton } from "@/components/ui/submit-button";
 import { ar } from "@/lib/design";
 import { PREVIEW_ISSUE_LABELS, PREVIEW_RULE_TEXT } from "@/lib/preview-policy";
-import { regeneratePreviewsAction, scanFilesAction } from "./actions";
+import { QuickAction } from "@/components/admin/confirm-button";
+import { recheckFileAction, regeneratePreviewsAction, scanFilesAction } from "./actions";
 
 export const metadata = { title: "سلامة المحتوى" };
 
@@ -21,7 +22,7 @@ export const maxDuration = 60;
 export default async function ContentHealthPage() {
   await requireOwnerPage();
   const [counts, report] = await Promise.all([contentHealthCounts(), contentHealthReport()]);
-  const clean = counts.flagged + counts.unchecked + counts.badPreviews + counts.unpriced + counts.noShare === 0;
+  const clean = counts.flagged + counts.unchecked + counts.badPreviews + counts.unpriced + counts.noShare + counts.stoppedBundles === 0;
 
   return (
     <div className="space-y-6">
@@ -47,7 +48,7 @@ export default async function ContentHealthPage() {
       ) : null}
 
       {report.flagged.length ? (
-        <Section icon={<FileWarning />} tone="coral" title="ملفات معيبة" description="هذه الملفات تفشل عند الطالب. احذف الملف من صفحة المنتج وارفع نسخة سليمة بدون حماية.">
+        <Section icon={<FileWarning />} tone="coral" title="ملفات معيبة" description="هذه الملفات تفشل عند الطالب. احذف الملف من صفحة المنتج وارفع نسخة سليمة بدون حماية. وإن كان ظهورها هنا بعد عطل عابر في التخزين فأعد فحصها.">
           <DataList data-testid="health-flagged">
             {report.flagged.map((f) => (
               <DataRow
@@ -61,6 +62,7 @@ export default async function ContentHealthPage() {
                 title={f.title}
                 sub={`${f.product_title}، ${FILE_PROBLEM_LABELS[f.check_status]}`}
                 badges={<ProductStatusBadge status={f.product_status} />}
+                aside={<QuickAction action={recheckFileAction} hidden={{ fileId: f.id, productId: f.product_id }} icon={<RefreshCw aria-hidden />} label="إعادة الفحص" />}
               />
             ))}
           </DataList>
@@ -113,6 +115,16 @@ export default async function ContentHealthPage() {
           <DataList data-testid="health-noshare">
             {report.noShare.map((p) => (
               <DataRow key={p.id} href={`/admin/products/${p.id}`} title={p.title} sub={p.teacher_name ?? ""} badges={<ProductStatusBadge status={p.status} />} />
+            ))}
+          </DataList>
+        </Section>
+      ) : null}
+
+      {report.stoppedBundles.length ? (
+        <Section icon={<Package />} tone="coral" title="باقات توقف بيعها بسبب ما بداخلها" description="في كل باقة منتج لمعلم بلا نسبة أو ملف معيب، فلا يمكن شراؤها حتى يُحل ذلك.">
+          <DataList data-testid="health-stopped-bundles">
+            {report.stoppedBundles.map((p) => (
+              <DataRow key={p.id} href={`/admin/products/${p.id}`} title={p.title} sub={p.teacher_name ?? "محتوى المنصة"} badges={<ProductStatusBadge status={p.status} />} />
             ))}
           </DataList>
         </Section>
