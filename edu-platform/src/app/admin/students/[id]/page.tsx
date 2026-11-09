@@ -10,8 +10,10 @@ import {
   ClipboardList,
   Clock3,
   Download,
+  Eraser,
   Eye,
   FileClock,
+  FileSignature,
   KeyRound,
   Library,
   Mail,
@@ -23,6 +25,7 @@ import {
   Undo2,
 } from "lucide-react";
 import { getStudent, grantableProducts } from "@/server/admin/records";
+import { anonymizationBlockers } from "@/server/admin/student-anonymize";
 import { Section, StatGrid, StatTile } from "@/components/admin/page-header";
 import { ActionForm } from "@/components/admin/action-form";
 import { ConfirmButton } from "@/components/admin/confirm-button";
@@ -34,10 +37,12 @@ import { Field, Select, Textarea } from "@/components/ui/form";
 import { SubmitButton } from "@/components/ui/submit-button";
 import { displayPhone } from "@/lib/phone";
 import { ENTITLEMENT_SOURCE_LABELS, PRODUCT_TYPE_LABELS, type ProductType } from "@/lib/labels";
+import { CONSENT_KIND_LABELS } from "@/lib/consent";
 import { ar, gradeVars } from "@/lib/design";
 import { formatDate, formatDateTime } from "@/lib/utils";
 import { grantAction, revokeAction, setActiveAction } from "../actions";
 import { StudentEmailCorrection, StudentPasswordReset } from "../_components/recovery";
+import { StudentAnonymize } from "../_components/anonymize";
 import { BandChip, ProfileHero } from "../../_components/people/band";
 import { StudentsArt } from "../../_components/people/art";
 import { Kwd, PersonAvatar, SoftNote, Timeline, TimelineItem, TypeIcon } from "../../_components/people/bits";
@@ -60,7 +65,9 @@ export default async function StudentPage({ params }: { params: Promise<{ id: st
   if (!/^[0-9a-f-]{36}$/i.test(id)) notFound();
   const [data, products] = await Promise.all([getStudent(id), grantableProducts()]);
   if (!data) notFound();
-  const { user, orders, entitlements, access, auditTrail } = data;
+  const { user, orders, entitlements, access, auditTrail, consents } = data;
+  const anonymized = Boolean(user.anonymized_at);
+  const blockers = user.role === "student" && !anonymized ? await anonymizationBlockers(user.id) : [];
   const active = entitlements.filter((e) => !e.revoked_at);
   const revoked = entitlements.filter((e) => e.revoked_at);
   const level = gradeLevelFromName(user.grade_name);
@@ -75,7 +82,7 @@ export default async function StudentPage({ params }: { params: Promise<{ id: st
         title={user.full_name}
         chips={
           <>
-            {user.is_active ? <StatusPill tone="success">نشط</StatusPill> : <StatusPill tone="danger">موقوف</StatusPill>}
+            {anonymized ? <StatusPill tone="neutral">حُذفت بياناته</StatusPill> : user.is_active ? <StatusPill tone="success">نشط</StatusPill> : <StatusPill tone="danger">موقوف</StatusPill>}
             {user.grade_name ? (
               <span className="chip min-h-8" style={gradeVars(level)}>
                 {user.grade_name}
@@ -92,7 +99,7 @@ export default async function StudentPage({ params }: { params: Promise<{ id: st
           </>
         }
         actions={
-          user.is_active ? (
+          anonymized ? null : user.is_active ? (
             <ConfirmButton
               action={setActiveAction}
               hidden={{ userId: user.id, active: "0" }}
@@ -131,7 +138,13 @@ export default async function StudentPage({ params }: { params: Promise<{ id: st
         />
       </StatGrid>
 
-      {user.role === "student" ? (
+      {anonymized ? (
+        <SoftNote icon={<Eraser aria-hidden />} data-testid="student-anonymized-note">
+          حُذفت بيانات هذا الطالب الشخصية في {formatDateTime(user.anonymized_at)}. تبقى طلباته وموافقاته بلا هوية، ولا يمكن فتح الحساب أو تعديله.
+        </SoftNote>
+      ) : null}
+
+      {user.role === "student" && !anonymized ? (
         <Section title="استعادة الحساب" icon={<KeyRound />} tone="gold" description="للطالب الذي فقد الوصول إلى حسابه. كل إجراء يتطلب سببًا ويُسجَّل في سجل التدقيق.">
           <div className="mb-4 flex flex-wrap gap-2" data-testid="student-account-state">
             {user.email_verified_at ? <StatusPill tone="success">البريد مؤكد</StatusPill> : <StatusPill tone="warning">البريد غير مؤكد</StatusPill>}
@@ -199,37 +212,39 @@ export default async function StudentPage({ params }: { params: Promise<{ id: st
           </ul>
         )}
 
-        <div className="relative overflow-hidden rounded-[1.5rem] border-2 border-dashed border-[#F0C766] bg-[linear-gradient(160deg,#fffaf0,#fff1cf)] p-4 sm:p-5">
-          <h3 className="mb-4 flex items-center gap-2.5 font-display text-[1.1rem] font-black text-ink">
-            <ToneIcon tone="gold" size="sm">
-              <KeyRound />
-            </ToneIcon>
-            منح صلاحية يدويًا
-          </h3>
-          <ActionForm action={grantAction} resetOnSuccess className="grid gap-3 sm:grid-cols-2">
-            <input type="hidden" name="userId" value={user.id} />
-            <Field label="المنتج" htmlFor="grant-product" required>
-              <Select id="grant-product" name="productId" defaultValue="">
-                <option value="">اختر المنتج</option>
-                {products.map((p) => (
-                  <option key={p.id} value={p.id}>
-                    {p.grade_name}، {p.title}
-                    {p.type === "bundle" ? " (باقة)" : ""}
-                    {p.status !== "published" ? " [غير منشور]" : ""}
-                  </option>
-                ))}
-              </Select>
-            </Field>
-            <Field label="السبب (إلزامي)" htmlFor="grant-reason" required hint="مثال: دفع نقدي، تعويض عن مشكلة تقنية">
-              <Textarea id="grant-reason" name="reason" rows={2} minLength={3} maxLength={500} />
-            </Field>
-            <div className="sm:col-span-2">
-              <SubmitButton size="md" variant="accent">
-                منح الصلاحية
-              </SubmitButton>
-            </div>
-          </ActionForm>
-        </div>
+        {anonymized ? null : (
+          <div className="relative overflow-hidden rounded-[1.5rem] border-2 border-dashed border-[#F0C766] bg-[linear-gradient(160deg,#fffaf0,#fff1cf)] p-4 sm:p-5">
+            <h3 className="mb-4 flex items-center gap-2.5 font-display text-[1.1rem] font-black text-ink">
+              <ToneIcon tone="gold" size="sm">
+                <KeyRound />
+              </ToneIcon>
+              منح صلاحية يدويًا
+            </h3>
+            <ActionForm action={grantAction} resetOnSuccess className="grid gap-3 sm:grid-cols-2">
+              <input type="hidden" name="userId" value={user.id} />
+              <Field label="المنتج" htmlFor="grant-product" required>
+                <Select id="grant-product" name="productId" defaultValue="">
+                  <option value="">اختر المنتج</option>
+                  {products.map((p) => (
+                    <option key={p.id} value={p.id}>
+                      {p.grade_name}، {p.title}
+                      {p.type === "bundle" ? " (باقة)" : ""}
+                      {p.status !== "published" ? " [غير منشور]" : ""}
+                    </option>
+                  ))}
+                </Select>
+              </Field>
+              <Field label="السبب (إلزامي)" htmlFor="grant-reason" required hint="مثال: دفع نقدي، تعويض عن مشكلة تقنية">
+                <Textarea id="grant-reason" name="reason" rows={2} minLength={3} maxLength={500} />
+              </Field>
+              <div className="sm:col-span-2">
+                <SubmitButton size="md" variant="accent">
+                  منح الصلاحية
+                </SubmitButton>
+              </div>
+            </ActionForm>
+          </div>
+        )}
 
         {revoked.length ? (
           <details className="group mt-5 rounded-[1.3rem] bg-canvas/70 ring-1 ring-line ring-inset">
@@ -280,6 +295,42 @@ export default async function StudentPage({ params }: { params: Promise<{ id: st
         )}
       </Section>
 
+      <Section title="سجل الموافقات" description={`آخر ${ar(50)} موافقة. هذا ما أقر به المشتري، ولا يتحقق النظام من عمره أو من حضور ولي أمره.`} icon={<FileSignature />} tone="teal">
+        <div data-testid="student-consents">
+          {consents.length === 0 ? (
+            <SoftNote>لا توجد موافقات مسجلة. الحسابات الأقدم من هذا السجل تُسأل عند شرائها التالي.</SoftNote>
+          ) : (
+            <Timeline>
+              {consents.map((c, i) => (
+                <TimelineItem key={c.id} tone="teal" icon={<FileSignature />} title={CONSENT_KIND_LABELS[c.kind]} meta={formatDateTime(c.created_at)} last={i === consents.length - 1}>
+                  <span className="break-words">
+                    النسخة <bdi dir="ltr">{c.document_version}</bdi>
+                    {c.order_id ? (
+                      <>
+                        ، طلب{" "}
+                        <Link href={`/admin/orders/${c.order_id}`} className="font-bold text-brand-700 underline underline-offset-4">
+                          <bdi className="num">{c.order_number}</bdi>
+                        </Link>
+                      </>
+                    ) : null}
+                    {c.ip ? (
+                      <>
+                        ، IP <bdi dir="ltr">{c.ip}</bdi>
+                      </>
+                    ) : null}
+                  </span>
+                  {c.user_agent ? (
+                    <bdi dir="ltr" className="mt-0.5 block text-[0.78rem] break-all text-muted">
+                      {c.user_agent}
+                    </bdi>
+                  ) : null}
+                </TimelineItem>
+              ))}
+            </Timeline>
+          )}
+        </div>
+      </Section>
+
       <div className="grid items-start gap-6 lg:grid-cols-2">
         <Section title="سجل الوصول للمحتوى" description={`آخر ${ar(30)} عملية`} icon={<FileClock />} tone="sky">
           {access.length === 0 ? (
@@ -318,6 +369,12 @@ export default async function StudentPage({ params }: { params: Promise<{ id: st
           )}
         </Section>
       </div>
+
+      {user.role === "student" && !anonymized ? (
+        <Section title="حذف بيانات الطالب" icon={<Eraser />} tone="coral" description="عند طلب الطالب أو ولي أمره. يزيل ما يدل على الشخص، ويبقي السجلات المالية بلا هوية.">
+          <StudentAnonymize userId={user.id} email={user.email} blockers={blockers} />
+        </Section>
+      ) : null}
     </div>
   );
 }

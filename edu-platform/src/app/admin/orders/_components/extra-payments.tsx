@@ -27,6 +27,7 @@ function blockerText(blocker: string): string {
   if (kind === "unavailable") return "منتج لم يعد متاحًا";
   if (kind === "access_ended") return "انتهت مدة الوصول لمنتج";
   if (kind === "owned") return "الطالب يملك المنتج من طريق آخر";
+  if (kind === "account_anonymized") return "حُذفت بيانات صاحب الطلب";
   return "سبب إغلاق الطلب لا يسمح بإكماله";
 }
 

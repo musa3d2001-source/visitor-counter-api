@@ -32,6 +32,7 @@ import { RefundError, applyRefundEvent, recheckRefund, requestRefund, type Refun
 import { sendExtraPaymentEmail, sendOrderConfirmationEmail } from "../commerce/order-mail";
 import { EmailVerificationRequiredError, emailVerificationRequired } from "../auth/email-verification";
 import { assertOrderConsent } from "../platform/consent";
+import { redactGatewayStatus, redactWebhookPayload } from "@/lib/anonymize";
 
 /**
  * خدمة الدفع — قواعد حاسمة:
@@ -492,6 +493,9 @@ async function lateCompletionBlockers(db: Db, order: OrderRow): Promise<string[]
     else if (it.access_mode === "until_date" && it.access_until && new Date(it.access_until).getTime() <= Date.now()) blockers.push(`access_ended:${it.product_id}`);
     if (owned.has(it.product_id)) blockers.push(`owned:${it.product_id}`);
   }
+  // حساب حُذفت بياناته لا يعود إليه وصول: الدفعة تُسجل للمالك ليستردها
+  const [owner] = await db<{ anonymized_at: Date | null }[]>`select anonymized_at from users where id = ${order.user_id}`;
+  if (owner?.anonymized_at) blockers.push("account_anonymized");
   return blockers;
 }
 
@@ -602,15 +606,18 @@ export async function verifyAndApplyPayment(key: { paymentId?: string; invoiceId
   const keyValue = key.paymentId ?? key.invoiceId;
   if (!keyValue || !/^[0-9A-Za-z-]{1,64}$/.test(keyValue)) return { state: "invalid", error: "مرجع دفع غير صالح" };
 
-  const status = await client(cfg, opts.timeoutMs).getPaymentStatus(keyValue, key.paymentId ? "PaymentId" : "InvoiceId");
+  const fetched = await client(cfg, opts.timeoutMs).getPaymentStatus(keyValue, key.paymentId ? "PaymentId" : "InvoiceId");
   const [payment] = await sql<{ id: string; order_id: string; amount_fils: number; status: string; environment: string }[]>`
     select id, order_id, amount_fils, status, environment from payments
-    where provider = 'myfatoorah' and gateway_invoice_id = ${String(status.InvoiceId)}
+    where provider = 'myfatoorah' and gateway_invoice_id = ${String(fetched.InvoiceId)}
   `;
   if (!payment) return { state: "invalid", error: "فاتورة غير معروفة" };
   if (payment.environment !== cfg.environment) return { state: "invalid", error: "بيئة الدفع لا تطابق" };
   const [order] = await sql<OrderRow[]>`select * from orders where id = ${payment.order_id}`;
   if (!order) return { state: "invalid", error: "الطلب غير موجود" };
+  // البوابة تعيد اسم العميل وبريده وهاتفه كل مرة: إعادة الفحص بعد حذف بيانات الطالب لا تعيدها إلى سجلاتنا
+  const [buyer] = await sql<{ anonymized_at: Date | null }[]>`select anonymized_at from users where id = ${order.user_id}`;
+  const status = buyer?.anonymized_at ? (redactGatewayStatus(fetched) as unknown as typeof fetched) : fetched;
 
   if (status.CustomerReference && status.CustomerReference !== order.number) {
     return { state: "invalid", error: "الفاتورة لا تخص هذا الطلب" };
@@ -708,6 +715,17 @@ export async function verifyAndApplyPayment(key: { paymentId?: string; invoiceId
 
 const isRecord = (v: unknown): v is Record<string, unknown> => typeof v === "object" && v !== null && !Array.isArray(v);
 
+async function webhookBelongsToAnonymizedAccount(body: WebhookV2Body): Promise<boolean> {
+  const data = body.Data as { Invoice?: { Id?: string | number }; ReferencedInvoice?: { Id?: string | number } };
+  const invoiceId = data.Invoice?.Id ?? data.ReferencedInvoice?.Id;
+  if (invoiceId === undefined || invoiceId === null) return false;
+  const rows = await sql`
+    select 1 from payments p join orders o on o.id = p.order_id join users u on u.id = o.user_id
+    where p.provider = 'myfatoorah' and p.gateway_invoice_id = ${String(invoiceId)} and u.anonymized_at is not null limit 1
+  `;
+  return rows.length > 0;
+}
+
 /**
  * معالجة Webhook V2 من MyFatoorah:
  * - رفض أي طلب بتوقيع غير صحيح، مع تسجيل الرفض في حلقة ثابتة الحجم (دون جسم الطلب)
@@ -751,10 +769,12 @@ export async function handleMyFatoorahWebhook(
   }
 
   const eventKey = createHash("sha256").update(`${body.Event.Code}|${signature}|${rawBody}`).digest("hex");
+  // نزاع أو استرداد يصل بعد حذف بيانات الطالب: الحدث يحمل بيانات العميل، فلا يُخزن كاملًا
+  const stored = (await webhookBelongsToAnonymizedAccount(body)) ? redactWebhookPayload(body) : body;
   // مطالبة ذرّية: نسخة واحدة فقط تعالج الحدث، ويمكن إعادة المطالبة بحدث عالق منذ أكثر من ٥ دقائق
   const claimed = await sql<{ id: string }[]>`
     insert into payment_events (provider, event_key, event_name, payload, signature_valid, claimed_at)
-    values ('myfatoorah', ${eventKey}, ${String(body.Event.Name ?? body.Event.Code)}, ${sql.json(body as never)}, true, now())
+    values ('myfatoorah', ${eventKey}, ${String(body.Event.Name ?? body.Event.Code)}, ${sql.json(stored as never)}, true, now())
     on conflict (event_key) do update set claimed_at = now(), result = null
       where payment_events.processed_at is null
         and (payment_events.claimed_at is null or payment_events.claimed_at < now() - make_interval(mins => ${WEBHOOK_STALE_CLAIM_MINUTES}))

@@ -2,6 +2,7 @@ import { z } from "zod";
 import { normalizeKuwaitPhone } from "./phone";
 import { parseKwdToFils } from "./money";
 import { PRODUCT_TYPES, PRODUCT_STATUSES } from "./labels";
+import { isAnonymizedEmail } from "./anonymize";
 
 /** مخططات التحقق المشتركة — تُستخدم على الخادم دائمًا (والعميل اختياريًا) */
 
@@ -11,7 +12,9 @@ export const emailSchema = z
   .toLowerCase()
   .min(5, "البريد الإلكتروني غير صحيح")
   .max(254, "البريد الإلكتروني طويل جدًا")
-  .email("البريد الإلكتروني غير صحيح");
+  .email("البريد الإلكتروني غير صحيح")
+  // نطاق القيم البديلة للحسابات المحذوفة: لا يُسجَّل به أحد ولا يُحجز مسبقًا
+  .refine((v) => !isAnonymizedEmail(v), "البريد الإلكتروني غير صحيح");
 
 export const passwordSchema = z
   .string({ error: "كلمة المرور مطلوبة" })

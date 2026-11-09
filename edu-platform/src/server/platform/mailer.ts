@@ -1,6 +1,7 @@
 import "server-only";
 import { sql } from "../db";
 import { env } from "../env";
+import { isAnonymizedEmail } from "@/lib/anonymize";
 
 /**
  * إرسال البريد:
@@ -27,6 +28,8 @@ export function mailIsReal(): boolean {
 }
 
 export async function sendMail(msg: MailMessage): Promise<boolean> {
+  // حساب حُذفت بياناته: لا نرسل إلى عنوان وهمي، ولا نعيد كتابة صف في سجل البريد
+  if (isAnonymizedEmail(msg.to)) return false;
   const e = env();
   const subject = redactSecrets(msg.subject);
   if (e.MAIL_DRIVER === "log") {

@@ -9,6 +9,9 @@ import { audit } from "@/server/platform/audit";
 import { mailIsReal } from "@/server/platform/mailer";
 import { AdminError, adminAction, isUuid, str } from "@/server/admin/common";
 import { correctStudentEmail, resetStudentPassword } from "@/server/admin/student-accounts";
+import { anonymizeStudent } from "@/server/admin/student-anonymize";
+
+const ANONYMIZED_ACCOUNT_ERROR = "حُذفت بيانات هذا الحساب، فلا يمكن تعديله.";
 
 function requireReason(fd: FormData) {
   const reason = str(fd, "reason");
@@ -24,8 +27,9 @@ export async function grantAction(_p: ActionState, fd: FormData): Promise<Action
     if (!isUuid(userId)) throw new AdminError("طلب غير صالح");
     if (!isUuid(productId)) throw new AdminError("اختر المنتج");
     const reason = requireReason(fd);
-    const [u] = await sql<{ role: string }[]>`select role from users where id = ${userId}`;
+    const [u] = await sql<{ role: string; anonymized_at: Date | null }[]>`select role, anonymized_at from users where id = ${userId}`;
     if (!u) throw new AdminError("المستخدم غير موجود");
+    if (u.anonymized_at) throw new AdminError(ANONYMIZED_ACCOUNT_ERROR);
     const res = await adminGrant({ userId, productId, adminId, reason, ip });
     revalidatePath(`/admin/students/${userId}`);
     return {
@@ -70,6 +74,19 @@ export async function correctStudentEmailAction(_p: ActionState, fd: FormData): 
   });
 }
 
+/** حذف بيانات الطالب. الخطوتان في الواجهة، وكتابة البريد وباقي الشروط تُفحص في الخادم */
+export async function anonymizeStudentAction(_p: ActionState, fd: FormData): Promise<ActionState> {
+  return adminAction(async ({ adminId, ip }) => {
+    const userId = str(fd, "userId");
+    if (!isUuid(userId)) throw new AdminError("طلب غير صالح");
+    const reason = requireReason(fd);
+    const { alreadyAnonymized } = await anonymizeStudent({ studentId: userId, adminId, confirmEmail: str(fd, "confirmEmail"), reason, ip });
+    revalidatePath(`/admin/students/${userId}`);
+    revalidatePath("/admin/students");
+    return { ok: true, message: alreadyAnonymized ? "سبق حذف بيانات هذا الحساب، ولم يتغير شيء." : "حُذفت بيانات الطالب الشخصية وبقيت سجلاته المالية بلا هوية." };
+  });
+}
+
 export async function setActiveAction(_p: ActionState, fd: FormData): Promise<ActionState> {
   return adminAction(async ({ adminId, ip }) => {
     const userId = str(fd, "userId");
@@ -77,6 +94,8 @@ export async function setActiveAction(_p: ActionState, fd: FormData): Promise<Ac
     if (userId === adminId) throw new AdminError("لا يمكنك إيقاف حسابك");
     const active = str(fd, "active") === "1";
     const reason = active ? str(fd, "reason") || null : requireReason(fd);
+    const [target] = await sql<{ anonymized_at: Date | null }[]>`select anonymized_at from users where id = ${userId}`;
+    if (target?.anonymized_at) throw new AdminError(ANONYMIZED_ACCOUNT_ERROR);
     const [u] = await sql<{ role: string }[]>`update users set is_active = ${active} where id = ${userId} returning role`;
     if (!u) throw new AdminError("المستخدم غير موجود");
     if (!active) await invalidateAllUserSessions(userId);

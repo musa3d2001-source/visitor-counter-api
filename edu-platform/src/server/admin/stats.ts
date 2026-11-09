@@ -11,7 +11,7 @@ export async function dashboardTotals(includeTest: boolean) {
     select
       (select coalesce(sum(total_fils), 0)::bigint from orders where status = 'paid' and (${includeTest} or not is_test)) as sales,
       (select count(*)::int from orders where status = 'paid' and (${includeTest} or not is_test)) as paid,
-      (select count(*)::int from users where role = 'student') as students,
+      (select count(*)::int from users where role = 'student' and anonymized_at is null) as students,
       (select count(*)::int from products where status = 'published') as published,
       (select count(*)::int from orders where status = 'pending' and (${includeTest} or not is_test) and created_at > now() - interval '2 days') as pending,
       (select count(*)::int from orders where status = 'paid' and is_test) as test_paid

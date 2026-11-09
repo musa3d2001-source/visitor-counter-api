@@ -23,7 +23,8 @@ export default async function StudentsPage({ searchParams }: { searchParams: Pro
   const sp = await searchParams;
   const students = await listStudents(sp.q?.slice(0, 80));
   const active = students.filter((s) => s.is_active).length;
-  const suspended = students.length - active;
+  // الحساب المحذوف ليس موقوفًا: لا يوجد قرار يمكن التراجع عنه
+  const suspended = students.filter((s) => !s.is_active && !s.anonymized_at).length;
   const buyers = students.filter((s) => s.paid_orders > 0).length;
 
   return (
@@ -97,7 +98,11 @@ export default async function StudentsPage({ searchParams }: { searchParams: Pro
                     <div className="relative flex items-end gap-3 px-4 pt-7">
                       <PersonAvatar name={s.full_name} size={64} ring="lg" />
                       <div className="min-w-0 flex-1 pb-0.5">
-                        {s.is_active ? (
+                        {s.anonymized_at ? (
+                          <StatusPill tone="neutral" className="bg-white">
+                            حُذفت بياناته
+                          </StatusPill>
+                        ) : s.is_active ? (
                           <StatusPill tone="success" className="bg-white">
                             نشط
                           </StatusPill>

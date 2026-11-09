@@ -46,8 +46,9 @@ type SessionOptions = { ttlMs?: number; twoFactorVerified?: boolean };
  * وقت الإنشاء من clock_timestamp لا now: ترتيب «الأقدم» هو ترتيب الحصول على القفل، فلا تُطرد آخر جلسة دخلت.
  */
 export async function createSessionIn(db: Db, userId: string, meta: SessionMeta = {}, options: SessionOptions = {}) {
-  const [user] = await db<{ role: SessionUser["role"] }[]>`select role from users where id = ${userId} for no key update`;
-  if (!user) throw new Error("createSession: unknown user");
+  const [user] = await db<{ role: SessionUser["role"]; anonymized_at: Date | null }[]>`select role, anonymized_at from users where id = ${userId} for no key update`;
+  // حُذفت بيانات الحساب بين فحص كلمة المرور وهذا القفل
+  if (!user || user.anonymized_at) throw new Error("createSession: unknown user");
   const token = generateToken();
   const id = hashToken(token);
   const requestedMs = options.ttlMs ?? SESSION_DAYS * 86400_000;

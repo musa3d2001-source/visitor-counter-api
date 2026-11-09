@@ -24,7 +24,7 @@ const OWNER_SECRET_HOURS = 24;
 
 const LIMITS = { perAdmin: 30, perStudent: 5, windowSec: 60 * 60 };
 
-async function enforceOwnerLimits(kind: string, adminId: string, studentId: string) {
+export async function enforceOwnerLimits(kind: string, adminId: string, studentId: string) {
   const [admin, student] = await Promise.all([hitRateLimit(`${kind}:admin:${adminId}`, LIMITS.perAdmin, LIMITS.windowSec), hitRateLimit(`${kind}:user:${studentId}`, LIMITS.perStudent, LIMITS.windowSec)]);
   if (!admin.allowed || !student.allowed) throw new AdminError("محاولات كثيرة على هذا الحساب. حاول بعد قليل.");
 }
@@ -37,9 +37,10 @@ export function generateTemporaryPassword(): string {
   return `${chars.slice(0, 4).join("")}-${chars.slice(4, 8).join("")}-${chars.slice(8).join("")}`;
 }
 
-function requireStudentRole(role: string | undefined) {
-  if (!role) throw new AdminError("المستخدم غير موجود");
-  if (role !== "student") throw new AdminError("هذا الإجراء لحسابات الطلاب فقط");
+function requireLiveStudent(user: { role: string; anonymized_at: Date | null } | undefined) {
+  if (!user) throw new AdminError("المستخدم غير موجود");
+  if (user.role !== "student") throw new AdminError("هذا الإجراء لحسابات الطلاب فقط");
+  if (user.anonymized_at) throw new AdminError("حُذفت بيانات هذا الحساب، فلا يمكن تعديله.");
 }
 
 async function safeNotify(send: () => Promise<unknown>, label: string) {
@@ -58,8 +59,8 @@ export async function resetStudentPassword(input: { studentId: string; adminId: 
   const token = generateToken();
 
   const student = await sql.begin(async (tx) => {
-    const [u] = await tx<{ email: string; role: string }[]>`select email, role from users where id = ${input.studentId} for update`;
-    requireStudentRole(u?.role);
+    const [u] = await tx<{ email: string; role: string; anonymized_at: Date | null }[]>`select email, role, anonymized_at from users where id = ${input.studentId} for update`;
+    requireLiveStudent(u);
     await tx`
       update users set password_hash = ${hash}, must_change_password = true,
         temp_password_expires_at = now() + make_interval(hours => ${OWNER_SECRET_HOURS})
@@ -104,8 +105,8 @@ export async function correctStudentEmail(input: { studentId: string; newEmail: 
   let previous: string;
   try {
     previous = await sql.begin(async (tx) => {
-      const [u] = await tx<{ email: string; role: string }[]>`select email, role from users where id = ${input.studentId} for update`;
-      requireStudentRole(u?.role);
+      const [u] = await tx<{ email: string; role: string; anonymized_at: Date | null }[]>`select email, role, anonymized_at from users where id = ${input.studentId} for update`;
+      requireLiveStudent(u);
       if (u!.email.toLowerCase() === email) throw new AdminError("هذا هو البريد الحالي للطالب", { email: "هذا هو البريد الحالي للطالب" });
       await tx`update users set email = ${email}, email_verified_at = null where id = ${input.studentId}`;
       // رابط صدر للعنوان القديم لا يعمل بعد التصحيح
