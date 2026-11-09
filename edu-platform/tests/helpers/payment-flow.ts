@@ -1,5 +1,5 @@
 import postgres from "postgres";
-import { createOrder, markOrderPaid, type OrderRow } from "@/server/commerce/orders";
+import { applyRefundToOrder, createOrder, markOrderPaid, type OrderRow } from "@/server/commerce/orders";
 import type { SessionUser } from "@/server/auth/session";
 import type { Simulator } from "../mocks/myfatoorah-simulator";
 import { sql } from "./db";
@@ -57,6 +57,19 @@ export async function makeStale(orderId: string, hours = 73) {
 }
 
 export const confirmPaid = (order: OrderRow) => sql.begin((tx) => markOrderPaid(tx, { orderId: order.id, paidAmountFils: order.total_fils }));
+
+/** الأثر المحلي لاسترداد قبلته البوابة، لاختبارات الوصول والأرباح التي لا علاقة لها بالبوابة نفسها */
+export function applyAcceptedRefund(orderId: string, adminId: string, reason: string) {
+  return sql.begin(async (tx) => {
+    const [order] = await tx<OrderRow[]>`select * from orders where id = ${orderId} for update`;
+    const [refund] = await tx<{ id: string }[]>`
+      insert into refunds (order_id, amount_fils, reason, status, attempt, created_by, accepted_at)
+      values (${order.id}, ${order.total_fils}, ${reason}, 'requested', 1, ${adminId}, now()) returning id
+    `;
+    const applied = await applyRefundToOrder(tx, { order, paymentId: null, refundId: refund.id, amountFils: order.total_fils, reason, actorId: adminId });
+    return { refundId: refund.id, ...applied };
+  });
+}
 
 /** لقطة لكل ما يجب ألا يتغير عند معالجة دفعة زائدة: الطلب والوصول والأرباح */
 export async function moneySnapshot(orderId: string) {

@@ -85,7 +85,8 @@ export async function reportSummary(r: ReportRange) {
   const [ref] = await sql<{ refunds: string; n: number }[]>`
     select coalesce(sum(rf.amount_fils), 0)::bigint as refunds, count(*)::int as n
     from refunds rf join orders o on o.id = rf.order_id
-    where rf.created_at >= ${r.from} and rf.created_at < ${r.to} and (${r.includeTest} or not o.is_test)
+    where rf.status in ('recorded', 'requested', 'completed')
+      and coalesce(rf.accepted_at, rf.created_at) >= ${r.from} and coalesce(rf.accepted_at, rf.created_at) < ${r.to} and (${r.includeTest} or not o.is_test)
   `;
   return {
     orders: row.orders,

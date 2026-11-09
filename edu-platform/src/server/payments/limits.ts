@@ -19,3 +19,6 @@ export const CLAIM_STALE_SECONDS = 60;
 
 /** جملة «لم يتم خصم أي مبلغ» تحتاج تحققًا من البوابة أحدث من هذه المدة */
 export const CHARGE_CHECK_FRESH_MINUTES = 30;
+
+/** مطالبة استرداد أقدم من هذه المدة تعد متروكة (مهلة استدعاء البوابة ٢٠ ثانية)، وعدم ظهورها لدى البوابة بعدها يعني أنها لم تصل */
+export const REFUND_SENDING_STALE_MINUTES = 2;

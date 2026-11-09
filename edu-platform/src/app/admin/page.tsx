@@ -11,6 +11,7 @@ import {
   GraduationCap,
   Plus,
   Receipt,
+  RotateCcw,
   Settings,
   ShieldAlert,
   Ticket,
@@ -25,6 +26,7 @@ import { pendingReviewCount } from "@/server/admin/products";
 import { teacherDashboard } from "@/server/admin/teachers";
 import { openPaymentAlertCount } from "@/server/payments/monitoring";
 import { extraPaymentsNeedingOwnerCount } from "@/server/payments/extras";
+import { refundsNeedingOwnerCount } from "@/server/payments/refunds";
 import { Button } from "@/components/ui/button";
 import { Eyebrow } from "@/components/ui/section-head";
 import { AdminNotice, MiniStat, MoreLink, Section, StatGrid, StatTile } from "@/components/admin/page-header";
@@ -38,7 +40,7 @@ import { ar, count, W } from "@/lib/design";
 import { PRODUCT_TYPE_LABELS, type ProductType } from "@/lib/labels";
 import { formatDateTime } from "@/lib/utils";
 import { DashHero, HeroChip } from "./_components/overview/bands";
-import { ALERT, EXTRA_PAYMENT, Kwd, CONTENT, SALE, todayLabel } from "./_components/overview/money";
+import { ALERT, EXTRA_PAYMENT, Kwd, CONTENT, REFUND, SALE, todayLabel } from "./_components/overview/money";
 import { QuickTiles } from "./_components/overview/quick-tiles";
 
 export const metadata = { title: "الرئيسية" };
@@ -49,7 +51,7 @@ export default async function AdminDashboard({ searchParams }: { searchParams: P
   const sp = await searchParams;
   const days = [7, 30, 90].includes(Number(sp.days)) ? Number(sp.days) : 30;
   const includeTest = sp.test === "1";
-  const [totals, latest, top, series, pending, teachersTop, paymentAlerts, extraPayments] = await Promise.all([
+  const [totals, latest, top, series, pending, teachersTop, paymentAlerts, extraPayments, refundsWaiting] = await Promise.all([
     dashboardTotals(includeTest),
     latestOrders(8, includeTest),
     topProducts(6, includeTest),
@@ -58,6 +60,7 @@ export default async function AdminDashboard({ searchParams }: { searchParams: P
     topTeachers(days, includeTest),
     openPaymentAlertCount(),
     extraPaymentsNeedingOwnerCount(),
+    refundsNeedingOwnerCount(),
   ]);
   const qs = (patch: Record<string, string | undefined>) => {
     const p = new URLSearchParams({ ...(sp.days ? { days: sp.days } : {}), ...(includeTest ? { test: "1" } : {}) });
@@ -117,6 +120,12 @@ export default async function AdminDashboard({ searchParams }: { searchParams: P
       {extraPayments > 0 ? (
         <AdminNotice href="/admin/orders#extra-payments" icon={<Banknote />} tone="coral" action="عرض الدفعات">
           لديك {count(extraPayments, EXTRA_PAYMENT)} بانتظار قرارك
+        </AdminNotice>
+      ) : null}
+
+      {refundsWaiting > 0 ? (
+        <AdminNotice href="/admin/orders#refund-queue" icon={<RotateCcw />} tone="coral" action="عرض الاستردادات">
+          لديك {count(refundsWaiting, REFUND)} بانتظار قرارك
         </AdminNotice>
       ) : null}
 

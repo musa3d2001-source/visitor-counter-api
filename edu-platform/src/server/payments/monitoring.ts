@@ -1,6 +1,6 @@
 import "server-only";
 import { createHash } from "node:crypto";
-import { sql } from "../db";
+import { sql, type Db } from "../db";
 import { audit } from "../platform/audit";
 import type { WebhookV2Body } from "./myfatoorah";
 
@@ -120,16 +120,41 @@ export type DisputeDetails = {
   currency: string | null;
 };
 
-export type PaymentAlert = {
+/** لماذا لم يُطبق حدث استرداد تلقائيًا */
+export type RefundAlertReason = "unknown_invoice" | "other_environment" | "not_confirmed" | "amount_mismatch" | "order_not_paid" | "conflicting_refund" | "cancelled_after_completion" | "cancelled_unknown" | "extra_mismatch";
+
+export type RefundAlertDetails = {
+  refundId: string;
+  status: string;
+  invoiceId: string;
+  amountFils: number | null;
+  reason: RefundAlertReason;
+};
+
+type AlertBase = {
   id: string;
-  kind: string;
   order_id: string | null;
   order_number: string | null;
   order_is_test: boolean | null;
-  details: DisputeDetails;
   created_at: Date;
   updated_at: Date;
 };
+
+export type PaymentAlert = AlertBase & ({ kind: "refund_unmatched"; details: RefundAlertDetails } | { kind: "dispute"; details: DisputeDetails });
+
+/**
+ * تنبيه حدث استرداد موقّع لم نستطع تطبيقه تلقائيًا (استرداد جزئي من لوحة البوابة، أو طلب غير مدفوع...).
+ * لا يغيّر الطلب ولا الوصول: القرار للمالك. تكرار الحدث نفسه لا يعيد فتح تنبيه أُغلق.
+ */
+export async function raiseRefundAlert(db: Db, input: { orderId: string | null; paymentId: string | null; details: RefundAlertDetails }): Promise<void> {
+  const { details } = input;
+  const dedupeKey = `refund:${details.refundId}:${details.status}`.slice(0, 128);
+  await db`
+    insert into payment_alerts (kind, dedupe_key, order_id, payment_id, details)
+    values ('refund_unmatched', ${dedupeKey}, ${input.orderId}, ${input.paymentId}, ${db.json(details as never)})
+    on conflict (dedupe_key) do update set details = excluded.details, updated_at = now()
+  `;
+}
 
 /**
  * تنبيه نزاع على دفعة (الحدث 6 بعد التحقق من توقيعه).

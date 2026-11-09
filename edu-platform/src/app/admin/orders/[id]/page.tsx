@@ -16,7 +16,6 @@ import {
   Receipt,
   RefreshCw,
   RotateCcw,
-  Send,
   ShieldAlert,
   ShieldCheck,
   ShoppingBag,
@@ -28,7 +27,9 @@ import { getAdminOrder } from "@/server/admin/records";
 import { paymentsConfig } from "@/server/payments/service";
 import { openPaymentAlerts } from "@/server/payments/monitoring";
 import { orderExtraPayments } from "@/server/payments/extras";
+import { orderRefunds } from "@/server/payments/refunds";
 import { ExtraPaymentsList } from "../_components/extra-payments";
+import { RefundsList } from "../_components/refunds-list";
 import { Alert } from "@/components/ui/alert";
 import { Section } from "@/components/admin/page-header";
 import { EmptyValue, InfoList } from "@/components/admin/data-list";
@@ -39,19 +40,17 @@ import type { AdminTone } from "@/components/admin/tones";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { filsToKwdString } from "@/lib/money";
-import { DISPUTE_STATUS_LABELS, DISPUTE_TYPE_LABELS, PRODUCT_TYPE_LABELS, PAYMENT_STATUS_LABELS, type ProductType } from "@/lib/labels";
+import { DISPUTE_STATUS_LABELS, DISPUTE_TYPE_LABELS, PRODUCT_TYPE_LABELS, PAYMENT_STATUS_LABELS, REFUND_ALERT_REASON_LABELS, REFUND_STATUS_LABELS, paymentMethodLabel, type ProductType } from "@/lib/labels";
 import { displayPhone } from "@/lib/phone";
 import { count, W } from "@/lib/design";
 import { formatDateTime } from "@/lib/utils";
-import { gatewayRefundAction, refundOrderAction, reverifyPaymentAction } from "../actions";
+import { refundOrderAction, reverifyPaymentAction } from "../actions";
 import { BandChip, ProfileHero } from "../../_components/people/band";
 import { OrdersArt } from "../../_components/people/art";
 import { Kwd, PersonAvatar, SoftNote, Timeline, TimelineItem, TypeIcon } from "../../_components/people/bits";
 import { orderTone } from "../../_components/people/helpers";
 
 export const metadata = { title: "تفاصيل الطلب" };
-
-const REFUND_STATUS: Record<string, string> = { recorded: "مسجل محليًا", requested: "مُرسل للبوابة", completed: "مكتمل", failed: "فشل" };
 
 function paymentTone(status: string): AdminTone {
   return status === "paid" ? "green" : status === "pending" || status === "initiated" ? "gold" : status === "refunded" ? "violet" : status === "expired" ? "slate" : "coral";
@@ -65,11 +64,13 @@ export default async function AdminOrderPage({ params }: { params: Promise<{ id:
   if (!/^[0-9a-f-]{36}$/i.test(id)) notFound();
   const data = await getAdminOrder(id);
   if (!data) notFound();
-  const { order, items, payments, events, refunds } = data;
-  const [alerts, extras] = await Promise.all([openPaymentAlerts({ orderId: order.id }), orderExtraPayments(order.id)]);
+  const { order, items, payments, events } = data;
+  const [alerts, extras, refunds] = await Promise.all([openPaymentAlerts({ orderId: order.id }), orderExtraPayments(order.id), orderRefunds(order.id)]);
   const cfg = paymentsConfig();
   const hasInvoice = payments.some((p) => p.provider === "myfatoorah" && p.gateway_invoice_id);
   const tone = orderTone(order.status);
+  // يبدأ استرداد جديد فقط إن لم يبق سجل حي: السجلات المرفوضة تُعاد من صفها
+  const canStartRefund = !refunds.some((r) => r.status !== "dismissed") && payments.some((p) => p.provider === "myfatoorah" && p.status === "paid" && p.gateway_invoice_id);
 
   // مسار الطلب: يُبنى من التواريخ المسجلة فعلًا فقط (الإنشاء، محاولات الدفع، تأكيد الدفع، الاسترداد)
   const steps = ([
@@ -92,7 +93,7 @@ export default async function AdminOrderPage({ params }: { params: Promise<{ id:
       at: new Date(r.created_at),
       tone: "violet",
       icon: <RotateCcw />,
-      title: `استرداد: ${REFUND_STATUS[r.status] ?? r.status}`,
+      title: `استرداد: ${REFUND_STATUS_LABELS[r.status] ?? r.status}`,
       body: <Kwd fils={r.amount_fils} />,
     })),
   ] as Step[]).sort((a, b) => a.at.getTime() - b.at.getTime());
@@ -134,11 +135,17 @@ export default async function AdminOrderPage({ params }: { params: Promise<{ id:
         art={<OrdersArt className="size-full motion-safe:animate-bob" />}
       />
 
-      {alerts.map((a) => (
-        <Alert key={a.id} tone="danger" title={`نزاع مفتوح على هذا الطلب: ${DISPUTE_TYPE_LABELS[a.details.type ?? ""] ?? "نزاع على دفعة"}`}>
-          الحالة لدى البوابة: {DISPUTE_STATUS_LABELS[a.details.status ?? ""] ?? a.details.status ?? "غير معروفة"}. لم يتغير الطلب ولا وصول الطالب تلقائيًا. <Link href="/admin/orders#payment-alerts">كل تنبيهات الدفع</Link>
-        </Alert>
-      ))}
+      {alerts.map((a) =>
+        a.kind === "dispute" ? (
+          <Alert key={a.id} tone="danger" title={`نزاع مفتوح على هذا الطلب: ${DISPUTE_TYPE_LABELS[a.details.type ?? ""] ?? "نزاع على دفعة"}`}>
+            الحالة لدى البوابة: {DISPUTE_STATUS_LABELS[a.details.status ?? ""] ?? a.details.status ?? "غير معروفة"}. لم يتغير الطلب ولا وصول الطالب تلقائيًا. <Link href="/admin/orders#payment-alerts">كل تنبيهات الدفع</Link>
+          </Alert>
+        ) : (
+          <Alert key={a.id} tone="danger" title="حدث استرداد من البوابة لم يُطبق تلقائيًا">
+            السبب: {REFUND_ALERT_REASON_LABELS[a.details.reason] ?? a.details.reason}. لم يتغير الطلب ولا وصول الطالب. راجعه في لوحة MyFatoorah. <Link href="/admin/orders#payment-alerts">كل تنبيهات الدفع</Link>
+          </Alert>
+        ),
+      )}
 
       <div className="grid items-start gap-6 lg:grid-cols-[minmax(0,1.5fr)_minmax(0,1fr)]">
         <Section title="المنتجات" icon={<ShoppingBag />} tone="sky">
@@ -286,7 +293,7 @@ export default async function AdminOrderPage({ params }: { params: Promise<{ id:
                   items={[
                     { label: "رقم الفاتورة", value: p.gateway_invoice_id ? <span className="num text-[0.88rem]">{p.gateway_invoice_id}</span> : <EmptyValue className="text-[0.88rem]" /> },
                     { label: "رقم الدفع", value: p.gateway_payment_id ? <span className="num text-[0.88rem] break-all">{p.gateway_payment_id}</span> : <EmptyValue className="text-[0.88rem]" /> },
-                    { label: "الوسيلة", value: p.payment_method ? <span className="text-[0.88rem]">{p.payment_method}</span> : <EmptyValue className="text-[0.88rem]" />, wide: true },
+                    { label: "الوسيلة", value: paymentMethodLabel(p.payment_method) ? <span className="text-[0.88rem]">{paymentMethodLabel(p.payment_method)}</span> : <EmptyValue className="text-[0.88rem]" />, wide: true },
                   ]}
                 />
                 {p.error_message ? (
@@ -335,49 +342,33 @@ export default async function AdminOrderPage({ params }: { params: Promise<{ id:
         </Section>
       ) : null}
 
-      <Section title="الاسترداد" icon={<RotateCcw />} tone="violet" description="تسجيل الاسترداد يسحب صلاحيات المنتجات المرتبطة بهذا الطلب ويُحفظ في سجل التدقيق.">
+      <Section
+        title="الاسترداد"
+        icon={<RotateCcw />}
+        tone="violet"
+        description="استرداد كامل قيمة الطلب إلى وسيلة الدفع الأصلية. يذهب الطلب إلى فريق مالية MyFatoorah إلا إن كان الاسترداد التلقائي مفعلًا في حسابك، ويحتاج رصيدًا متاحًا في حساب البوابة، والمبالغ المقبوضة اليوم قد لا تدخل فيه. الاسترداد الجزئي يتم من لوحة البوابة."
+      >
         {refunds.length ? (
-          <ul className="mb-4 flex flex-col gap-2.5">
-            {refunds.map((r) => (
-              <li key={r.id} className="flex flex-wrap items-center gap-3 rounded-[1.3rem] border border-violet/15 bg-violet-50/60 p-3.5 text-sm">
-                <ToneIcon tone={r.status === "failed" ? "coral" : "violet"} size="sm">
-                  {r.status === "failed" ? <CircleX /> : <RotateCcw />}
-                </ToneIcon>
-                <Kwd fils={r.amount_fils} className="font-display text-[1.1rem] font-black text-ink" />
-                <Badge tone={r.status === "completed" ? "success" : r.status === "failed" ? "danger" : "neutral"}>{REFUND_STATUS[r.status] ?? r.status}</Badge>
-                <span className="min-w-[10rem] flex-1 text-ink-soft">{r.reason}</span>
-                <span className="text-xs text-muted">
-                  {r.admin_name ?? ""}، {formatDateTime(r.created_at)}
-                </span>
-                {cfg.enabled && r.payment_id && (r.status === "recorded" || r.status === "failed") && payments.some((p) => p.id === r.payment_id && p.provider === "myfatoorah") ? (
-                  <ConfirmButton
-                    action={gatewayRefundAction}
-                    hidden={{ refundId: r.id, orderId: order.id }}
-                    label="طلب الاسترداد من البوابة"
-                    icon={<Send aria-hidden />}
-                    variant="outline"
-                    title="إرسال طلب استرداد إلى MyFatoorah؟"
-                    description="سيتم طلب إعادة المبلغ إلى وسيلة دفع العميل عبر البوابة. هذه عملية مالية حقيقية في وضع الإنتاج."
-                    confirmLabel="إرسال"
-                  />
-                ) : null}
-              </li>
-            ))}
-          </ul>
+          <div className="mb-4">
+            <RefundsList refunds={refunds} canAct={cfg.enabled} />
+          </div>
         ) : null}
-        {order.status === "paid" ? (
+        {order.status === "paid" && cfg.enabled && canStartRefund ? (
           <ConfirmButton
             action={refundOrderAction}
             hidden={{ orderId: order.id }}
-            label="تسجيل استرداد"
+            label="استرداد كامل المبلغ"
             icon={<RotateCcw aria-hidden />}
-            title="تسجيل استرداد لهذا الطلب؟"
-            description="ستتغير حالة الطلب إلى «مسترد» وتُسحب صلاحيات الوصول المرتبطة به. يمكنك بعدها إرسال طلب الاسترداد المالي للبوابة."
+            title={`استرداد ${filsToKwdString(order.total_fils)} د.ك؟`}
+            description="يُطلب من MyFatoorah إعادة كامل قيمة الطلب إلى وسيلة الدفع الأصلية. عند قبولها فقط تتغير حالة الطلب ويُغلق وصول الطالب وتُعكس أرباح المعلم، وإن رفضت يبقى الطلب كما هو. هذه عملية مالية حقيقية في وضع الإنتاج."
             requireReason
             reasonLabel="سبب الاسترداد (إلزامي)"
-            confirmLabel="تسجيل الاسترداد"
-            fields={[{ name: "amount", label: "المبلغ بالدينار (اختياري، الافتراضي كامل المبلغ)", placeholder: filsToKwdString(order.total_fils), ltr: true }]}
+            confirmLabel="إرسال طلب الاسترداد"
           />
+        ) : order.status === "paid" && cfg.enabled && !refunds.some((r) => r.status !== "dismissed") ? (
+          <SoftNote icon={<RotateCcw aria-hidden />}>لا توجد دفعة إلكترونية على هذا الطلب، فلا يمكن استرداده عبر البوابة.</SoftNote>
+        ) : order.status === "paid" && !cfg.enabled ? (
+          <SoftNote icon={<RotateCcw aria-hidden />}>بوابة الدفع غير مفعلة: {cfg.reason}</SoftNote>
         ) : refunds.length === 0 ? (
           <SoftNote icon={<RotateCcw aria-hidden />}>الاسترداد متاح للطلبات المدفوعة فقط.</SoftNote>
         ) : null}

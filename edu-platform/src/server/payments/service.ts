@@ -25,8 +25,9 @@ import {
   type WebhookV2Body,
 } from "./myfatoorah";
 import { WEBHOOK_STALE_CLAIM_MINUTES, raiseDisputeAlert, recordWebhookRejection, type WebhookRejectionReason } from "./monitoring";
-import { applyExtraRefundEvent, recordExtraPayment, type ExtraPaymentKind, type ExtraPaymentState } from "./extras";
-import { CLAIM_STALE_SECONDS, INVOICE_REUSE_MARGIN_MINUTES, INVOICE_TTL_MINUTES, IN_PROGRESS_GRACE_MINUTES, ORDER_LIFETIME_HOURS } from "./limits";
+import { recordExtraPayment, type ExtraPaymentKind, type ExtraPaymentState } from "./extras";
+import { CLAIM_STALE_SECONDS, INVOICE_REUSE_MARGIN_MINUTES, INVOICE_TTL_MINUTES, IN_PROGRESS_GRACE_MINUTES, ORDER_LIFETIME_HOURS, REFUND_SENDING_STALE_MINUTES } from "./limits";
+import { RefundError, applyRefundEvent, recheckRefund, requestRefund, type RefundOutcome } from "./refunds";
 
 /**
  * خدمة الدفع — قواعد حاسمة:
@@ -445,7 +446,7 @@ async function lateCompletionBlockers(db: Db, order: OrderRow): Promise<string[]
 
 /**
  * تطبيق دفعة أكدتها البوابة، داخل معاملة واحدة ودون رمي استثناء: المال وصل، فلا تراجع ولا ضياع.
- * يقفل الطلب ثم صف الدفع (نفس ترتيب startPayment وrefundOrder).
+ * يقفل الطلب ثم صف الدفع (نفس ترتيب startPayment والاسترداد).
  *  - pending أو failed: تأكيد الطلب ومنح الوصول.
  *  - paid: الدفعة التي أكملته لا تتغير، وأي دفعة أخرى تُسجل duplicate.
  *  - refunded: الدفعة المستردة لا ترجع، وأي دفعة أخرى تُسجل after_refund.
@@ -654,16 +655,13 @@ export async function handleMyFatoorahWebhook(
       const data = body.Data as { Refund?: { Id?: string | number; Status?: string }; ReferencedInvoice?: { Id?: string | number }; Amount?: { ValueInBaseCurrency?: string | number } };
       const refundStatus = String(data.Refund?.Status ?? "").toUpperCase();
       if (data.ReferencedInvoice?.Id && data.Refund?.Id) {
-        await sql`
-          update refunds r set status = ${refundStatus === "REFUNDED" ? "completed" : refundStatus === "CANCELED" ? "failed" : "requested"}
-          from payments p
-          where r.payment_id = p.id and p.gateway_invoice_id = ${String(data.ReferencedInvoice.Id)}
-            and (r.gateway_refund_id = ${String(data.Refund.Id)} or r.gateway_refund_id is null)
-        `;
         const refundAmount = Number(data.Amount?.ValueInBaseCurrency);
-        const invoiceId = String(data.ReferencedInvoice.Id);
-        const refundId = String(data.Refund.Id);
-        await sql.begin((db) => applyExtraRefundEvent(db, { invoiceId, refundId, status: refundStatus, amountFils: Number.isFinite(refundAmount) ? kwdNumberToFils(refundAmount) : null }));
+        await applyRefundEvent(client(cfg), cfg.environment, {
+          invoiceId: String(data.ReferencedInvoice.Id),
+          refundId: String(data.Refund.Id),
+          status: refundStatus,
+          amountFils: Number.isFinite(refundAmount) ? kwdNumberToFils(refundAmount) : null,
+        });
       }
       result = `refund ${refundStatus}`;
     } else if (Number(body.Event.Code) === 6) {
@@ -679,22 +677,22 @@ export async function handleMyFatoorahWebhook(
   return { status: 200, result };
 }
 
-/** طلب استرداد فعلي لدى البوابة (اختياري — بعد تسجيله محليًا) */
-export async function requestGatewayRefund(input: { refundId: string; paymentRowId: string; amountFils: number; comment: string }) {
+function refundsConfig() {
   const cfg = paymentsConfig();
-  if (!cfg.enabled) throw new MyFatoorahError(cfg.reason);
-  const [p] = await sql<{ gateway_payment_id: string | null; gateway_invoice_id: string | null }[]>`
-    select gateway_payment_id, gateway_invoice_id from payments where id = ${input.paymentRowId}
-  `;
-  if (!p?.gateway_payment_id && !p?.gateway_invoice_id) throw new MyFatoorahError("لا يوجد مرجع دفع لدى البوابة");
-  const res = await client(cfg).makeRefund({
-    key: (p.gateway_payment_id ?? p.gateway_invoice_id)!,
-    keyType: p.gateway_payment_id ? "PaymentId" : "InvoiceId",
-    amountKwd: filsToKwdString(input.amountFils),
-    comment: input.comment.slice(0, 200),
-  });
-  await sql`update refunds set status = 'requested', gateway_refund_id = ${String(res.RefundId)} where id = ${input.refundId}`;
-  return res;
+  if (!cfg.enabled) throw new RefundError(`بوابة الدفع غير مفعلة: ${cfg.reason}`);
+  return cfg;
+}
+
+/** أمر استرداد الطلب من المالك: البوابة أولًا ثم الأثر المحلي. التفاصيل في refunds.ts */
+export async function requestOrderRefund(input: { orderId: string; adminId: string; reason?: string; ip?: string }): Promise<RefundOutcome> {
+  const cfg = refundsConfig();
+  return requestRefund(client(cfg), cfg.environment, input);
+}
+
+/** سؤال البوابة عن طلب استرداد نتيجته غير مؤكدة، قبل أي إعادة إرسال */
+export async function recheckOrderRefund(input: { refundId: string; adminId: string; ip?: string }): Promise<RefundOutcome> {
+  const cfg = refundsConfig();
+  return recheckRefund(client(cfg), cfg.environment, input);
 }
 
 export class ExtraPaymentRefundError extends Error {
@@ -703,8 +701,6 @@ export class ExtraPaymentRefundError extends Error {
     this.name = "ExtraPaymentRefundError";
   }
 }
-
-const REFUND_SENDING_STALE_MINUTES = 2;
 
 type ExtraRefundOutcome = { state: Extract<ExtraPaymentState, "refund_requested" | "refunded" | "refund_failed" | "refund_unknown">; error?: string };
 

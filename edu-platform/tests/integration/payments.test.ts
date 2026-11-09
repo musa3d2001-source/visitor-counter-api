@@ -3,13 +3,13 @@ import {
   getPaymentMethods,
   handleMyFatoorahWebhook,
   paymentsConfig,
-  requestGatewayRefund,
+  requestOrderRefund,
   resetPaymentMethodsCache,
   startPayment,
   verifyAndApplyPayment,
 } from "@/server/payments/service";
 import { MyFatoorahError } from "@/server/payments/myfatoorah";
-import { createOrder, refundOrder, type OrderRow } from "@/server/commerce/orders";
+import { createOrder, type OrderRow } from "@/server/commerce/orders";
 import { resetEnvCache } from "@/server/env";
 import { startSimulator, type Simulator } from "../mocks/myfatoorah-simulator";
 import { closeDb, resetDb, sql } from "../helpers/db";
@@ -398,18 +398,16 @@ describe("Webhook V2", () => {
 });
 
 describe("refund via gateway", () => {
-  it("records a refund locally then requests it from MyFatoorah", async () => {
+  it("asks MyFatoorah first and refunds the order once it accepts", async () => {
     const admin = await createUser({ role: "admin" });
     const { order, user } = await newOrder(3000);
     const { url } = await startPayment(order, 1);
     const { paymentId } = await sim.pay(invoiceIdFromUrl(url), "success");
     await verifyAndApplyPayment({ paymentId });
-    const r = await refundOrder({ orderId: order.id, adminId: admin.id, reason: "طلب العميل" });
-    expect(r.paymentId).not.toBeNull();
-    const gw = await requestGatewayRefund({ refundId: r.refundId, paymentRowId: r.paymentId!, amountFils: r.amountFils, comment: "طلب العميل" });
-    expect(gw.RefundId).toBeGreaterThan(0);
-    const [ref] = await sql<{ status: string; gateway_refund_id: string }[]>`select status, gateway_refund_id from refunds where id = ${r.refundId}`;
-    expect(ref).toEqual({ status: "requested", gateway_refund_id: String(gw.RefundId) });
+    await expect(requestOrderRefund({ orderId: order.id, adminId: admin.id, reason: "طلب العميل" })).resolves.toEqual({ state: "requested" });
+    const [ref] = await sql<{ status: string; gateway_refund_id: string }[]>`select status, gateway_refund_id from refunds where order_id = ${order.id}`;
+    expect(ref.status).toBe("requested");
+    expect(Number(ref.gateway_refund_id)).toBeGreaterThan(0);
     const req = sim.state.requests.filter((x) => x.path === "/v2/MakeRefund").pop()!;
     expect(req.body).toMatchObject({ Key: paymentId, KeyType: "PaymentId", Amount: 3 });
     // الوثائق: لا حقل عملة في الاسترداد، فالمبلغ دائمًا بالعملة الأساسية للحساب

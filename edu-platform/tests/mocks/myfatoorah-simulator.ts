@@ -120,6 +120,10 @@ export type Simulator = {
   startTransaction(invoiceId: number): string;
   /** تغيير حالة استرداد لدى البوابة */
   setRefundStatus(refundId: number, status: SimRefund["Status"]): void;
+  /** رفض صريح لكل MakeRefund برسالة من البوابة (IsSuccess=false)، مثل عدم كفاية الرصيد */
+  setRefundRefusal(message: string | null): void;
+  /** استرداد نفذه التاجر من لوحة البوابة: بلا ExternalIdentifier ولم يمر بنا */
+  portalRefund(invoiceId: number, amountFils: number, status?: SimRefund["Status"]): SimRefund;
   /** محاكاة دفع مباشرة (بدون متصفح) — تُعيد PaymentId */
   pay(invoiceId: number, outcome: "success" | "fail"): Promise<{ paymentId: string; redirectUrl: string }>;
   /** بناء Webhook V2 موقّع لفاتورة/عملية — لاستدعاء معالج Webhook مباشرة في الاختبارات */
@@ -218,6 +222,7 @@ export async function startSimulator(opts: SimulatorOptions): Promise<Simulator>
   let nextInvoiceId = 6_400_000 + randomInt(0, 50_000);
   let nextRefundId = 900_000;
   let amountTamper: number | null = null;
+  let refundRefusal: string | null = null;
   let displayCurrency: string | null = null;
   let baseUrl = "";
   const faults = new Map<string, SimFault>();
@@ -603,7 +608,9 @@ export async function startSimulator(opts: SimulatorOptions): Promise<Simulator>
         if (!inv) return validationError(res, [{ Name: "Key", Error: "Invalid key." }]);
         if (inv.InvoiceStatus !== "Paid") return envelope(res, 400, { IsSuccess: false, Message: "Invoice is not paid.", Data: null });
         const amountFils = Math.round(Number(body.Amount) * 1000);
-        const refunded = inv.Refunds.reduce((s, r) => s + r.AmountFils, 0);
+        if (refundRefusal) return envelope(res, 400, { IsSuccess: false, Message: refundRefusal, Data: null });
+        // الملغى لم يخرج مالًا، فلا يحسب من المبلغ المسترد
+        const refunded = inv.Refunds.filter((r) => r.Status !== "Canceled").reduce((s, r) => s + r.AmountFils, 0);
         if (!(amountFils > 0) || amountFils + refunded > inv.InvoiceValueFils) {
           return validationError(res, [{ Name: "Amount", Error: "Refund amount exceeds the paid amount." }]);
         }
@@ -730,6 +737,7 @@ ${isExpired(inv) ? `<p data-testid="sim-expired">انتهت صلاحية هذا 
       faults.clear();
       statusFaults.clear();
       delays.clear();
+      refundRefusal = null;
     },
     expireInvoice: (invoiceId) => {
       const inv = state.invoices.get(invoiceId);
@@ -762,6 +770,16 @@ ${isExpired(inv) ? `<p data-testid="sim-expired">انتهت صلاحية هذا 
       });
       state.paymentIndex.set(paymentId, invoiceId);
       return paymentId;
+    },
+    setRefundRefusal: (message) => {
+      refundRefusal = message;
+    },
+    portalRefund: (invoiceId, amountFils, status = "Refunded") => {
+      const inv = state.invoices.get(invoiceId);
+      if (!inv) throw new Error(`unknown invoice ${invoiceId}`);
+      const refund: SimRefund = { RefundId: nextRefundId++, AmountFils: amountFils, Comment: "portal", ExternalIdentifier: null, Status: status };
+      inv.Refunds.push(refund);
+      return refund;
     },
     setRefundStatus: (refundId, status) => {
       for (const inv of state.invoices.values()) for (const r of inv.Refunds) if (r.RefundId === refundId) r.Status = status;

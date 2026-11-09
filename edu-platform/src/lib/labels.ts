@@ -175,6 +175,70 @@ export const EXTRA_PAYMENT_STATE_LABELS: Record<string, string> = {
   dismissed: "مغلق",
 };
 
+const PAYMENT_METHOD_NAMES: Record<string, string> = {
+  knet: "كي نت",
+  "visa/master": "فيزا أو ماستركارد",
+  visa: "فيزا",
+  mastercard: "ماستركارد",
+  "apple pay": "Apple Pay",
+  applepay: "Apple Pay",
+  "google pay": "Google Pay",
+  amex: "أمريكان إكسبريس",
+  "american express": "أمريكان إكسبريس",
+};
+
+/**
+ * اسم وسيلة الدفع للعرض. قبل تأكيد الدفع نخزن رقم الوسيلة لدى البوابة، فلا نعرض رقمًا أبدًا: null يعني أن الاسم غير معروف.
+ * بعد التأكيد تُخزن قيمة PaymentGateway من البوابة، وما لا نعرف ترجمته يُعرض كما وصل.
+ */
+export function paymentMethodLabel(raw: string | null | undefined): string | null {
+  const value = raw?.trim();
+  if (!value || /^\d+$/.test(value)) return null;
+  if (value.toLowerCase() === "all") return "MyFatoorah";
+  return PAYMENT_METHOD_NAMES[value.toLowerCase()] ?? value;
+}
+
+/** حالات الاسترداد كما يراها المالك */
+export const REFUND_STATUS_LABELS: Record<string, string> = {
+  recorded: "مسجل محليًا ولم يُرسل",
+  sending: "يُرسل الآن",
+  unknown: "نتيجة غير مؤكدة",
+  not_sent: "لم يصل البوابة",
+  requested: "بانتظار تنفيذ البوابة",
+  completed: "مكتمل",
+  failed: "رفضته البوابة أو ألغته",
+  dismissed: "مغلق دون إرسال",
+};
+
+/** ما يعنيه السجل وما يجب فعله، سطر واحد تحت السجل */
+export const REFUND_STATUS_HINTS: Record<string, string> = {
+  recorded: "سجل قديم غيّر الطلب محليًا فقط. أرسله إلى البوابة إن لم يكن المبلغ قد أُعيد، أو أغلقه إن سويته خارجها.",
+  unknown: "قد يكون الطلب وصل البوابة. لم يتغير الطلب، ولا إرسال قبل إعادة التحقق.",
+  not_sent: "تأكدنا أن الطلب لم يصل البوابة، ولم يتغير الطلب.",
+  requested: "وصل الطلب وأُغلق وصول الطالب. يراجعه فريق مالية MyFatoorah إلا إن كان الاسترداد التلقائي مفعلًا، ولا يُنفذ إلا برصيد متاح.",
+  failed: "لم يتغير الطلب. إن كان السبب الرصيد فأعد المحاولة لاحقًا: المبالغ المقبوضة اليوم قد لا تدخل في الرصيد المتاح للاسترداد.",
+};
+
+/** حالة الاسترداد كما يراها الطالب في طلبه */
+export const REFUND_PUBLIC_STATUS_LABELS: Record<string, string> = {
+  recorded: "قيد المعالجة",
+  requested: "قيد التنفيذ لدى بوابة الدفع",
+  completed: "تم تنفيذه",
+};
+
+/** لماذا لم يُطبق حدث استرداد تلقائيًا */
+export const REFUND_ALERT_REASON_LABELS: Record<string, string> = {
+  unknown_invoice: "الفاتورة ليست من فواتيرنا",
+  other_environment: "الفاتورة من وضع دفع مختلف",
+  not_confirmed: "لم تؤكد البوابة تنفيذ هذا الاسترداد عند سؤالها",
+  amount_mismatch: "المبلغ لا يساوي كامل قيمة الطلب (استرداد جزئي)",
+  order_not_paid: "الطلب ليس مدفوعًا",
+  conflicting_refund: "على الطلب استرداد آخر جارٍ",
+  cancelled_after_completion: "ألغت البوابة استردادًا سجلناه مكتملًا",
+  cancelled_unknown: "إلغاء لاسترداد لا نعرفه",
+  extra_mismatch: "لا يطابق مبلغ الدفعة الزائدة",
+};
+
 export const PAYMENT_STATUS_LABELS: Record<string, string> = {
   initiated: "تم الإنشاء",
   pending: "قيد المعالجة",

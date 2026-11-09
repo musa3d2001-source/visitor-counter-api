@@ -1,11 +1,13 @@
 import { requireOwnerPage } from "@/server/auth/permissions";
 import Link from "next/link";
-import { Banknote, CircleCheck, Clock3, FlaskConical, Package, Receipt, ShieldAlert } from "lucide-react";
+import { Banknote, CircleCheck, Clock3, FlaskConical, Package, Receipt, RotateCcw, ShieldAlert } from "lucide-react";
 import { listAdminOrders } from "@/server/admin/records";
 import { openPaymentAlerts } from "@/server/payments/monitoring";
 import { openExtraPayments } from "@/server/payments/extras";
+import { openRefunds } from "@/server/payments/refunds";
 import { paymentsConfig } from "@/server/payments/service";
 import { ExtraPaymentsList } from "./_components/extra-payments";
+import { RefundsList } from "./_components/refunds-list";
 import { resolvePaymentAlertAction } from "./actions";
 import { AdminPageHeader, Section } from "@/components/admin/page-header";
 import { ConfirmButton } from "@/components/admin/confirm-button";
@@ -15,7 +17,8 @@ import { STRETCHED_FOCUS } from "@/components/admin/tones";
 import { ToneIcon } from "@/components/admin/icon-tile";
 import { EmptyState } from "@/components/ui/empty-state";
 import { Select } from "@/components/ui/form";
-import { DISPUTE_STATUS_LABELS, DISPUTE_TYPE_LABELS, ORDER_STATUSES, ORDER_STATUS_LABELS } from "@/lib/labels";
+import { DISPUTE_STATUS_LABELS, DISPUTE_TYPE_LABELS, ORDER_STATUSES, ORDER_STATUS_LABELS, REFUND_ALERT_REASON_LABELS } from "@/lib/labels";
+import { filsToKwdString } from "@/lib/money";
 import { count, W } from "@/lib/design";
 import { cn, formatDateTime } from "@/lib/utils";
 import { PeopleBand, BandChip, BandChips } from "../_components/people/band";
@@ -30,7 +33,7 @@ export default async function AdminOrdersPage({ searchParams }: { searchParams: 
   const sp = await searchParams;
   const status = ORDER_STATUSES.includes(sp.status as never) ? sp.status : undefined;
   const test = sp.test === "real" || sp.test === "test" ? sp.test : undefined;
-  const [orders, alerts, extras] = await Promise.all([listAdminOrders({ q: sp.q?.slice(0, 80), status, test }), openPaymentAlerts(), openExtraPayments()]);
+  const [orders, alerts, extras, refunds] = await Promise.all([listAdminOrders({ q: sp.q?.slice(0, 80), status, test }), openPaymentAlerts(), openExtraPayments(), openRefunds()]);
   const filtered = Boolean(sp.q || status || test);
   const paid = orders.filter((o) => o.status === "paid").length;
   const pending = orders.filter((o) => o.status === "pending").length;
@@ -74,11 +77,12 @@ export default async function AdminOrdersPage({ searchParams }: { searchParams: 
       </PeopleBand>
 
       {alerts.length ? (
-        <Section id="payment-alerts" title="تنبيهات الدفع" description="نزاعات أبلغت عنها بوابة الدفع. لا يتغير الطلب ولا وصول الطالب تلقائيًا، والقرار لك." icon={<ShieldAlert />} tone="coral">
+        <Section id="payment-alerts" title="تنبيهات الدفع" description="نزاعات واستردادات أبلغت عنها بوابة الدفع ولم تُطبق تلقائيًا. لا يتغير الطلب ولا وصول الطالب، والقرار لك." icon={<ShieldAlert />} tone="coral">
           <ul className="flex flex-col gap-3" aria-label="تنبيهات الدفع المفتوحة" data-testid="payment-alerts">
             {alerts.map((a) => {
               const status = a.details.status ?? "";
               const tone: StatusTone = status === "RESOLVED" ? "success" : status === "LOST" ? "danger" : "warning";
+              const isDispute = a.kind === "dispute";
               return (
                 <li key={a.id} className="flex min-w-0 flex-wrap items-center gap-x-4 gap-y-3 rounded-[1.4rem] border border-[rgb(23_32_38/0.06)] bg-surface p-3.5 shadow-xs sm:p-4">
                   <ToneIcon tone="coral" size="md" className="max-sm:size-11">
@@ -86,8 +90,8 @@ export default async function AdminOrdersPage({ searchParams }: { searchParams: 
                   </ToneIcon>
                   <div className="min-w-[min(100%,13rem)] flex-1">
                     <p className="flex flex-wrap items-center gap-1.5 font-display font-extrabold text-ink">
-                      {DISPUTE_TYPE_LABELS[a.details.type ?? ""] ?? "نزاع على دفعة"}
-                      <StatusPill tone={tone}>{DISPUTE_STATUS_LABELS[status] ?? (status || "غير معروفة")}</StatusPill>
+                      {isDispute ? (DISPUTE_TYPE_LABELS[a.details.type ?? ""] ?? "نزاع على دفعة") : "استرداد لم يُطبق تلقائيًا"}
+                      <StatusPill tone={isDispute ? tone : "warning"}>{isDispute ? (DISPUTE_STATUS_LABELS[status] ?? (status || "غير معروفة")) : status === "CANCELED" ? "ملغى لدى البوابة" : "منفذ لدى البوابة"}</StatusPill>
                       {a.order_is_test ? <TestBadge /> : null}
                     </p>
                     <p className="text-[0.84rem] leading-6 text-muted">
@@ -103,20 +107,27 @@ export default async function AdminOrdersPage({ searchParams }: { searchParams: 
                           {" · "}فاتورة <span className="num">{a.details.invoiceId}</span>
                         </>
                       ) : null}
-                      {a.details.amount ? (
+                      {isDispute && a.details.amount ? (
                         <>
                           {" · "}
                           <span className="num">{a.details.amount}</span> {a.details.currency === "KWD" || a.details.currency === "KD" ? "د.ك" : a.details.currency}
                         </>
                       ) : null}
+                      {!isDispute && a.details.amountFils !== null ? (
+                        <>
+                          {" · "}
+                          <span className="num">{filsToKwdString(a.details.amountFils)}</span> د.ك
+                        </>
+                      ) : null}
                       {" · "}
                       <span className="whitespace-nowrap">{formatDateTime(a.updated_at)}</span>
                     </p>
-                    {a.details.reason ? (
+                    {isDispute && a.details.reason ? (
                       <p className="text-[0.84rem] leading-6 text-ink-soft">
                         السبب حسب البوابة: <bdi dir="ltr">{a.details.reason}</bdi>
                       </p>
                     ) : null}
+                    {!isDispute ? <p className="text-[0.84rem] leading-6 text-ink-soft">السبب: {REFUND_ALERT_REASON_LABELS[a.details.reason] ?? a.details.reason}. راجعه في لوحة MyFatoorah.</p> : null}
                   </div>
                   <ConfirmButton
                     action={resolvePaymentAlertAction}
@@ -125,13 +136,25 @@ export default async function AdminOrdersPage({ searchParams }: { searchParams: 
                     icon={<CircleCheck aria-hidden />}
                     variant="outline"
                     title="إغلاق هذا التنبيه؟"
-                    description="يختفي التنبيه من القائمة ويُسجَّل الإغلاق في سجل التدقيق، ولا يتغير الطلب ولا وصول الطالب. يعود التنبيه إذا غيّرت البوابة حالة النزاع."
+                    description={isDispute ? "يختفي التنبيه من القائمة ويُسجَّل الإغلاق في سجل التدقيق، ولا يتغير الطلب ولا وصول الطالب. يعود التنبيه إذا غيّرت البوابة حالة النزاع." : "يختفي التنبيه من القائمة ويُسجَّل الإغلاق في سجل التدقيق، ولا يتغير الطلب ولا وصول الطالب."}
                     confirmLabel="إغلاق التنبيه"
                   />
                 </li>
               );
             })}
           </ul>
+        </Section>
+      ) : null}
+
+      {refunds.length ? (
+        <Section
+          id="refund-queue"
+          title="استردادات لم تكتمل"
+          description="كل استرداد لم تؤكد البوابة تنفيذه بعد. يذهب الطلب إلى فريق مالية MyFatoorah إلا إن كان الاسترداد التلقائي مفعلًا في حسابك، ويُعاد المبلغ إلى وسيلة الدفع الأصلية."
+          icon={<RotateCcw />}
+          tone="violet"
+        >
+          <RefundsList refunds={refunds} canAct={paymentsConfig().enabled} showOrder />
         </Section>
       ) : null}
 

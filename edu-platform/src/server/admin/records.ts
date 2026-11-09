@@ -84,11 +84,7 @@ export async function getAdminOrder(id: string) {
         order by received_at desc limit 50
       `
     : [];
-  const refunds = await sql<{ id: string; amount_fils: number; reason: string; status: string; gateway_refund_id: string | null; payment_id: string | null; created_at: Date; admin_name: string | null }[]>`
-    select r.id, r.amount_fils, r.reason, r.status, r.gateway_refund_id, r.payment_id, r.created_at, u.full_name as admin_name
-    from refunds r left join users u on u.id = r.created_by where r.order_id = ${id} order by r.created_at desc
-  `;
-  return { order, items, payments, events, refunds };
+  return { order, items, payments, events };
 }
 
 export type AdminStudentRow = {

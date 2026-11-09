@@ -20,6 +20,9 @@ export const ALERT: CountWord = { one: "تنبيه", two: "تنبيهان", plur
 /** «دفعة زائدة واحدة / دفعتان زائدتان / ٣ دفعات زائدة / ١١ دفعة زائدة» */
 export const EXTRA_PAYMENT: CountWord = { one: "دفعة زائدة", two: "دفعتان زائدتان", plural: "دفعات زائدة", acc: "دفعة زائدة", single: "دفعة زائدة واحدة" };
 
+/** «استرداد واحد / استردادان / ٣ استردادات / ١١ استردادًا» */
+export const REFUND: CountWord = { one: "استرداد", two: "استردادان", plural: "استردادات", acc: "استردادًا" };
+
 /** «إشعار واحد / إشعاران / ٣ إشعارات / ١١ إشعارًا» */
 export const DELIVERY: CountWord = { one: "إشعار", two: "إشعاران", plural: "إشعارات", acc: "إشعارًا" };
 

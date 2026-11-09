@@ -1,8 +1,8 @@
 import { readFileSync } from "node:fs";
 import { resolve } from "node:path";
 import { afterAll, afterEach, beforeAll, beforeEach, describe, expect, it, vi } from "vitest";
-import { closeOrder, createOrder, markOrderPaid, refundOrder, type OrderRow } from "@/server/commerce/orders";
-import { handleMyFatoorahWebhook, refundExtraPayment, resetPaymentMethodsCache, startPayment, verifyAndApplyPayment, ExtraPaymentRefundError } from "@/server/payments/service";
+import { closeOrder, createOrder, markOrderPaid, type OrderRow } from "@/server/commerce/orders";
+import { handleMyFatoorahWebhook, refundExtraPayment, requestOrderRefund, resetPaymentMethodsCache, startPayment, verifyAndApplyPayment, ExtraPaymentRefundError } from "@/server/payments/service";
 import { dismissExtraPayment, extraPaymentsNeedingOwnerCount, openExtraPayments } from "@/server/payments/extras";
 import { resetEnvCache } from "@/server/env";
 import { startSimulator, type Simulator } from "../mocks/myfatoorah-simulator";
@@ -140,8 +140,9 @@ describe("a second paid invoice on a paid order", () => {
     const { order, second } = await paidTwice();
     await verify(second);
     const [firstRow, secondRow] = await paymentRows(order.id);
-    const out = await refundOrder({ orderId: order.id, adminId: admin.id, reason: "طلب الطالب" });
-    expect(out.paymentId).toBe(firstRow.id);
+    await expect(requestOrderRefund({ orderId: order.id, adminId: admin.id, reason: "طلب الطالب" })).resolves.toEqual({ state: "requested" });
+    const [refund] = await sql<{ payment_id: string }[]>`select payment_id from refunds where order_id = ${order.id}`;
+    expect(refund.payment_id).toBe(firstRow.id);
     const rows = await paymentRows(order.id);
     expect(rows.find((r) => r.id === firstRow.id)!.status).toBe("refunded");
     expect(rows.find((r) => r.id === secondRow.id)!.status).toBe("paid");
@@ -151,7 +152,7 @@ describe("a second paid invoice on a paid order", () => {
 describe("a payment arriving on a refunded order", () => {
   it("is flagged, and the order stays refunded with no access", async () => {
     const { user, order, product, second } = await paidTwice();
-    await refundOrder({ orderId: order.id, adminId: admin.id, reason: "طلب الطالب" });
+    await requestOrderRefund({ orderId: order.id, adminId: admin.id, reason: "طلب الطالب" });
     const before = await moneySnapshot(order.id);
     await expect(verify(second)).resolves.toEqual({ state: "flagged", orderId: order.id, kind: "after_refund" });
     expect(await moneySnapshot(order.id)).toBe(before);
@@ -161,7 +162,7 @@ describe("a payment arriving on a refunded order", () => {
 
   it("the refunded payment itself stays refunded even though the gateway still reports Paid", async () => {
     const { order, first } = await paidTwice();
-    await refundOrder({ orderId: order.id, adminId: admin.id, reason: "طلب الطالب" });
+    await requestOrderRefund({ orderId: order.id, adminId: admin.id, reason: "طلب الطالب" });
     await expect(verify(first)).resolves.toEqual({ state: "refunded", orderId: order.id });
     expect((await paymentRows(order.id))[0].status).toBe("refunded");
     expect(await sql`select 1 from payment_extras where order_id = ${order.id}`).toHaveLength(0);
@@ -169,7 +170,7 @@ describe("a payment arriving on a refunded order", () => {
 
   it("the webhook answers 200, so the gateway stops retrying", async () => {
     const { order, second } = await paidTwice();
-    await refundOrder({ orderId: order.id, adminId: admin.id, reason: "طلب الطالب" });
+    await requestOrderRefund({ orderId: order.id, adminId: admin.id, reason: "طلب الطالب" });
     const paymentId = sim.state.invoices.get(second)!.Transactions[0].PaymentId;
     const { body, headers } = sim.buildWebhook(second, paymentId);
     await expect(handleMyFatoorahWebhook(body, headers)).resolves.toMatchObject({ status: 200, result: "flagged after_refund" });

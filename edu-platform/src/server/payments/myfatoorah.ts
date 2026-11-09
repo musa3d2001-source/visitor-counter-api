@@ -125,7 +125,8 @@ export class MyFatoorahClient {
     } catch {
       json = null;
     }
-    if (!json || !json.IsSuccess) throw new MyFatoorahError(extractError(json, raw), res.status);
+    // جسم غير JSON لم يأتِ من منطق البوابة (وسيط أو جدار حماية)، فلا نعده ردًا منها: يبقى بلا status وتكون نتيجته مجهولة
+    if (!json || !json.IsSuccess) throw new MyFatoorahError(extractError(json, raw), json ? res.status : undefined);
     return json.Data;
   }
 
@@ -230,9 +231,12 @@ export function gatewayExpiryDate(at: Date): string {
   return `${new Date(at.getTime() + 3 * 3600_000).toISOString().slice(0, 19)}+03:00`;
 }
 
+/** ردود لا تعني أن البوابة قررت الرفض: مهلة أو تعارض مع طلب جارٍ أو ضغط، والعملية ربما ما زالت قيد التنفيذ */
+const UNCLEAR_STATUSES = new Set([408, 409, 425, 429]);
+
 /** رفض صريح من البوابة وصلنا رده: العملية لم تُنفذ. انقطاع الاتصال أو خطأ 5xx نتيجته مجهولة */
 export function isDefiniteGatewayRefusal(err: unknown): boolean {
-  return err instanceof MyFatoorahError && err.status !== undefined && err.status < 500;
+  return err instanceof MyFatoorahError && err.status !== undefined && err.status < 500 && !UNCLEAR_STATUSES.has(err.status);
 }
 
 /**

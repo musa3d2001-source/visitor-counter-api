@@ -10,7 +10,8 @@ import {
   hasProductAccess,
   revokeProduct,
 } from "@/server/access/entitlements";
-import { createOrder, markOrderPaid, OrderError, refundOrder } from "@/server/commerce/orders";
+import { createOrder, markOrderPaid } from "@/server/commerce/orders";
+import { applyAcceptedRefund } from "../helpers/payment-flow";
 import { closeDb, resetDb, sql } from "../helpers/db";
 import { activeEntitlements, createBundle, createProduct, createUser } from "../helpers/factories";
 
@@ -113,7 +114,7 @@ describe("admin grant / revoke with audit trail", () => {
   });
 });
 
-describe("refundOrder", () => {
+describe("the local effect of an accepted refund", () => {
   it("revokes only the refunded order's entitlements and records refund + audit", async () => {
     const admin = await createUser({ role: "admin" });
     const u = await createUser();
@@ -121,15 +122,14 @@ describe("refundOrder", () => {
     const b = await createProduct({ subjectSlug: "science" });
     const o1 = await buy(u.id, [a.id]);
     await buy(u.id, [b.id]);
-    const r = await refundOrder({ orderId: o1.id, adminId: admin.id, reason: "طلب العميل" });
+    const r = await applyAcceptedRefund(o1.id, admin.id, "طلب العميل");
     expect(r.revoked).toBe(1);
     expect(await hasProductAccess(u.id, a.id)).toBe(false);
     expect(await hasProductAccess(u.id, b.id)).toBe(true);
     const [o] = await sql<{ status: string }[]>`select status from orders where id = ${o1.id}`;
     expect(o.status).toBe("refunded");
     const [ref] = await sql<{ amount_fils: number; status: string }[]>`select amount_fils, status from refunds where order_id = ${o1.id}`;
-    expect(ref).toEqual({ amount_fils: o1.total_fils, status: "recorded" });
-    await expect(refundOrder({ orderId: o1.id, adminId: admin.id, reason: "مرة ثانية" })).rejects.toBeInstanceOf(OrderError);
+    expect(ref).toEqual({ amount_fils: o1.total_fils, status: "requested" });
   });
 
   it("refunding a bundle order revokes bundle items too", async () => {
@@ -138,19 +138,8 @@ describe("refundOrder", () => {
     const p1 = await createProduct();
     const bundle = await createBundle({ items: [p1.id] });
     const o = await buy(u.id, [bundle.id]);
-    await refundOrder({ orderId: o.id, adminId: admin.id, reason: "استرداد" });
+    await applyAcceptedRefund(o.id, admin.id, "استرداد");
     expect(await activeEntitlements(u.id)).toEqual([]);
-  });
-
-  it("rejects invalid refund amounts and unpaid orders", async () => {
-    const admin = await createUser({ role: "admin" });
-    const u = await createUser();
-    const p = await createProduct({ priceFils: 2000 });
-    const o = await buy(u.id, [p.id]);
-    await expect(refundOrder({ orderId: o.id, adminId: admin.id, reason: "x", amountFils: 2001 })).rejects.toBeInstanceOf(OrderError);
-    await expect(refundOrder({ orderId: o.id, adminId: admin.id, reason: "x", amountFils: 0 })).rejects.toBeInstanceOf(OrderError);
-    const [{ status }] = await sql<{ status: string }[]>`select status from orders where id = ${o.id}`;
-    expect(status).toBe("paid");
   });
 });
 

@@ -2,63 +2,101 @@
 
 import { revalidatePath } from "next/cache";
 import type { ActionState } from "@/lib/action-state";
-import { parseKwdToFils } from "@/lib/money";
 import { sql } from "@/server/db";
-import { OrderError, refundOrder } from "@/server/commerce/orders";
-import { ExtraPaymentRefundError, checkOrderInvoices, paymentsConfig, refundExtraPayment, requestGatewayRefund } from "@/server/payments/service";
+import { ExtraPaymentRefundError, checkOrderInvoices, recheckOrderRefund, refundExtraPayment, requestOrderRefund } from "@/server/payments/service";
 import { dismissExtraPayment } from "@/server/payments/extras";
+import { RefundError, dismissRefund, type RefundOutcome } from "@/server/payments/refunds";
+import { assertRefundStepUp } from "@/server/auth/step-up";
 import { resolvePaymentAlert } from "@/server/payments/monitoring";
 import { audit } from "@/server/platform/audit";
 import { AdminError, adminAction, isUuid, str } from "@/server/admin/common";
 
+const REFUND_ACCEPTED_MESSAGE = "قبلت البوابة طلب الاسترداد، فأُغلق وصول الطالب وعُكست الأرباح. يبقى بانتظار التنفيذ: يراجعه فريق مالية MyFatoorah إلا إن كان الاسترداد التلقائي مفعلًا في حسابك، وستتحدث الحالة عند وصول إشعارها.";
+const REFUND_COMPLETED_MESSAGE = "البوابة تؤكد تنفيذ الاسترداد، وأُغلق وصول الطالب وعُكست الأرباح.";
+const REFUND_UNKNOWN_MESSAGE = "لم يصل رد واضح من البوابة، فلم يتغير الطلب. لا تعد الإرسال قبل «إعادة التحقق»، وقد يكون الطلب وصلها.";
+
+function refusalMessage(error: string | undefined): string {
+  return `رفضت البوابة طلب الاسترداد ولم يتغير الطلب. السبب: ${error ?? "غير معروف"}. إن كان السبب الرصيد: الاسترداد يحتاج رصيدًا متاحًا في حساب البوابة، والمبالغ المقبوضة اليوم قد لا تدخل فيه، فأعد المحاولة لاحقًا.`;
+}
+
+function refundActionResult(out: RefundOutcome): ActionState {
+  if (out.state === "requested") return { ok: true, message: REFUND_ACCEPTED_MESSAGE };
+  if (out.state === "completed") return { ok: true, message: REFUND_COMPLETED_MESSAGE };
+  if (out.state === "unknown") return { error: out.error === undefined || out.wait ? REFUND_UNKNOWN_MESSAGE : `${REFUND_UNKNOWN_MESSAGE} (${out.error})` };
+  if (out.state === "not_sent") return { error: `لم يُرسل طلب الاسترداد: ${out.error ?? "لم تجده البوابة"}. يمكنك إعادة الإرسال.` };
+  return { error: refusalMessage(out.error) };
+}
+
+function revalidateRefund(orderId: string | null) {
+  if (orderId) revalidatePath(`/admin/orders/${orderId}`);
+  revalidatePath("/admin/orders");
+  revalidatePath("/admin");
+}
+
+async function refundCommand(work: () => Promise<RefundOutcome>): Promise<RefundOutcome> {
+  try {
+    return await work();
+  } catch (err) {
+    if (err instanceof RefundError) throw new AdminError(err.userMessage);
+    throw err;
+  }
+}
+
+/** أمر الاسترداد الوحيد: كامل قيمة الطلب، عبر البوابة أولًا. لا حقل مبلغ: الجزئي يتم من لوحة البوابة ويصلنا تنبيهًا */
 export async function refundOrderAction(_p: ActionState, fd: FormData): Promise<ActionState> {
   return adminAction(async ({ adminId, ip }) => {
     const orderId = str(fd, "orderId");
     const reason = str(fd, "reason");
     if (!isUuid(orderId)) throw new AdminError("طلب غير صالح");
     if (reason.length < 3) throw new AdminError("اكتب سبب الاسترداد (٣ أحرف على الأقل)");
-    const amountRaw = str(fd, "amount");
-    let amountFils: number | undefined;
-    if (amountRaw) {
-      const f = parseKwdToFils(amountRaw);
-      if (f === null || f <= 0) throw new AdminError("مبلغ الاسترداد غير صحيح");
-      amountFils = f;
-    }
-    try {
-      const r = await refundOrder({ orderId, adminId, reason, amountFils, ip });
-      revalidatePath(`/admin/orders/${orderId}`);
-      revalidatePath("/admin/orders");
-      return { ok: true, message: `تم تسجيل الاسترداد وسحب ${r.revoked} صلاحية مرتبطة بالطلب` };
-    } catch (err) {
-      if (err instanceof OrderError) throw new AdminError(err.userMessage);
-      throw err;
-    }
+    await assertRefundStepUp({ adminId, fd, ip });
+    const out = await refundCommand(() => requestOrderRefund({ orderId, adminId, reason, ip }));
+    revalidateRefund(orderId);
+    return refundActionResult(out);
   });
 }
 
-export async function gatewayRefundAction(_p: ActionState, fd: FormData): Promise<ActionState> {
-  return adminAction(async ({ adminId }) => {
+/** إعادة إرسال سجل رُفض أو تأكدنا أنه لم يصل. يسأل البوابة أولًا، والخادم يرفض السجل غير المؤكد */
+export async function resendRefundAction(_p: ActionState, fd: FormData): Promise<ActionState> {
+  return adminAction(async ({ adminId, ip }) => {
+    const orderId = str(fd, "orderId");
+    if (!isUuid(orderId)) throw new AdminError("طلب غير صالح");
+    await assertRefundStepUp({ adminId, fd, ip });
+    const out = await refundCommand(() => requestOrderRefund({ orderId, adminId, ip }));
+    revalidateRefund(orderId);
+    return refundActionResult(out);
+  });
+}
+
+/** سؤال البوابة عن سجل غير مؤكد. لا يرسل شيئًا، فلا يحتاج خطوة تحقق إضافية */
+export async function recheckRefundAction(_p: ActionState, fd: FormData): Promise<ActionState> {
+  return adminAction(async ({ adminId, ip }) => {
     const refundId = str(fd, "refundId");
     const orderId = str(fd, "orderId");
-    if (!isUuid(refundId) || !isUuid(orderId)) throw new AdminError("طلب غير صالح");
-    const cfg = paymentsConfig();
-    if (!cfg.enabled) throw new AdminError(`بوابة الدفع غير مفعلة: ${cfg.reason}`);
-    const [r] = await sql<{ payment_id: string | null; amount_fils: number; reason: string; status: string; provider: string | null }[]>`
-      select r.payment_id, r.amount_fils, r.reason, r.status, p.provider
-      from refunds r left join payments p on p.id = r.payment_id where r.id = ${refundId} and r.order_id = ${orderId}
-    `;
-    if (!r || !r.payment_id) throw new AdminError("لا يوجد دفع إلكتروني مرتبط بهذا الاسترداد");
-    if (r.provider !== "myfatoorah") throw new AdminError("هذا الدفع لم يتم عبر MyFatoorah");
-    if (r.status !== "recorded" && r.status !== "failed") throw new AdminError("تم إرسال طلب الاسترداد للبوابة مسبقًا");
-    try {
-      const res = await requestGatewayRefund({ refundId, paymentRowId: r.payment_id, amountFils: r.amount_fils, comment: r.reason });
-      await audit({ actorId: adminId, action: "order.gateway_refund", entityType: "order", entityId: orderId, metadata: { refundId, gatewayRefundId: res.RefundId } });
-    } catch (err) {
-      await sql`update refunds set status = 'failed' where id = ${refundId}`;
-      throw new AdminError(`رفضت البوابة طلب الاسترداد: ${err instanceof Error ? err.message : String(err)}`);
-    }
-    revalidatePath(`/admin/orders/${orderId}`);
-    return { ok: true, message: "تم إرسال طلب الاسترداد إلى MyFatoorah. ستتحدث الحالة عند وصول إشعار البوابة." };
+    if (!isUuid(refundId)) throw new AdminError("طلب غير صالح");
+    const out = await refundCommand(() => recheckOrderRefund({ refundId, adminId, ip }));
+    revalidateRefund(isUuid(orderId) ? orderId : null);
+    if (out.state === "requested") return { ok: true, message: REFUND_ACCEPTED_MESSAGE };
+    if (out.state === "completed") return { ok: true, message: REFUND_COMPLETED_MESSAGE };
+    if (out.state === "not_sent") return { ok: true, message: "تأكدنا أن الطلب لم يصل البوابة، ولم يتغير الطلب. يمكنك إعادة الإرسال الآن." };
+    if (out.state === "failed") return { error: refusalMessage(out.error) };
+    if (out.wait) return { error: "لم تظهر العملية لدى البوابة بعد. أعد التحقق بعد دقيقتين." };
+    return { error: out.error ?? REFUND_UNKNOWN_MESSAGE };
+  });
+}
+
+/** إغلاق سجل استرداد بلا إرسال (مثل التسوية خارج البوابة). لا يغيّر الطلب */
+export async function dismissRefundAction(_p: ActionState, fd: FormData): Promise<ActionState> {
+  return adminAction(async ({ adminId, ip }) => {
+    const refundId = str(fd, "refundId");
+    const orderId = str(fd, "orderId");
+    const reason = str(fd, "reason");
+    if (!isUuid(refundId)) throw new AdminError("طلب غير صالح");
+    if (reason.length < 3) throw new AdminError("اكتب سبب الإغلاق (٣ أحرف على الأقل)");
+    const done = await dismissRefund({ refundId, adminId, reason, ip });
+    if (!done) throw new AdminError("لا يمكن إغلاق هذا السجل في حالته الحالية");
+    revalidateRefund(isUuid(orderId) ? orderId : null);
+    return { ok: true, message: "أُغلق سجل الاسترداد ولم يتغير الطلب" };
   });
 }
 
@@ -106,6 +144,7 @@ export async function refundExtraPaymentAction(_p: ActionState, fd: FormData): P
     const reason = str(fd, "reason");
     if (!isUuid(extraId)) throw new AdminError("طلب غير صالح");
     if (reason.length < 3) throw new AdminError("اكتب سبب الاسترداد (٣ أحرف على الأقل)");
+    await assertRefundStepUp({ adminId, fd, ip });
     let out;
     try {
       out = await refundExtraPayment({ extraId, adminId, reason, ip });

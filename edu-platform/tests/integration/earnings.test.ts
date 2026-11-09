@@ -1,5 +1,6 @@
 import { afterAll, beforeAll, beforeEach, describe, expect, it } from "vitest";
-import { createOrder, markOrderPaid, refundOrder, type OrderRow } from "@/server/commerce/orders";
+import { createOrder, markOrderPaid, type OrderRow } from "@/server/commerce/orders";
+import { applyAcceptedRefund } from "../helpers/payment-flow";
 import { listEarnings, recordPayout, teacherBalance, teacherSalesSummary } from "@/server/commerce/earnings";
 import { saveSettings } from "@/server/platform/settings";
 import { closeDb, resetDb, sql } from "../helpers/db";
@@ -135,7 +136,7 @@ describe("الاسترداد، التسوية اليدوية والرصيد", ()
     const [log] = await sql<{ action: string; actor_id: string }[]>`select action, actor_id from audit_logs where entity_id = ${teacher.id} and action = 'teacher.payout'`;
     expect(log).toEqual({ action: "teacher.payout", actor_id: owner.id });
 
-    await refundOrder({ orderId: order.id, adminId: owner.id, reason: "طلب العميل" });
+    await applyAcceptedRefund(order.id, owner.id, "طلب العميل");
     const [row] = await earningsOf(order.id);
     expect(row.status).toBe("reversed");
     expect(await teacherBalance(teacher.id)).toEqual({ earnedFils: 0, reversedFils: 2000, paidFils: 2000, balanceFils: -2000, salesCount: 0 });

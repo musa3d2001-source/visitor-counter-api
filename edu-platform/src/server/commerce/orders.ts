@@ -248,42 +248,69 @@ export async function completeFreeOrder(orderId: string, userId: string) {
   });
 }
 
-/** تسجيل استرداد من المدير وسحب صلاحيات الطلب */
-export async function refundOrder(input: { orderId: string; adminId: string; reason: string; amountFils?: number; ip?: string }) {
-  return sql.begin(async (tx) => {
-    const [order] = await tx<OrderRow[]>`select * from orders where id = ${input.orderId} for update`;
-    if (!order) throw new OrderError("الطلب غير موجود");
-    if (order.status !== "paid") throw new OrderError("لا يمكن استرداد طلب غير مدفوع");
-    const amount = input.amountFils ?? order.total_fils;
-    if (amount <= 0 || amount > order.total_fils) throw new OrderError("مبلغ الاسترداد غير صحيح");
-    // الدفعة الزائدة لها سجلها وأمر استردادها الخاص: استرداد الطلب يخص الدفعة التي أكملته فقط
-    const [payment] = await tx<{ id: string }[]>`
-      select p.id from payments p
-      where p.order_id = ${order.id} and p.status = 'paid'
-        and not exists (select 1 from payment_extras e where e.payment_id = p.id)
-      order by p.created_at desc limit 1
+/**
+ * أثر الاسترداد على الطلب: حالته وحالة دفعته وسحب صلاحياته وعكس أرباحه، كلها داخل معاملة المستدعي.
+ * لا تُستدعى إلا بعد قبول البوابة أو تأكيدها (انظر payments/refunds.ts)، وعلى المستدعي أن يكون قد قفل صف الطلب وتأكد أنه paid.
+ * الدفعة الزائدة لها سجلها وأمر استردادها الخاص: هذا الأثر يخص الدفعة التي أكملت الطلب فقط.
+ */
+export async function applyRefundToOrder(
+  db: Db,
+  input: { order: OrderRow; paymentId: string | null; refundId: string; amountFils: number; reason: string; actorId: string | null; ip?: string | null; gatewayRefundId?: string | null },
+): Promise<{ revoked: number; reversedEarnings: number }> {
+  const { order } = input;
+  await db`update orders set status = 'refunded' where id = ${order.id}`;
+  if (input.paymentId) await db`update payments set status = 'refunded' where id = ${input.paymentId}`;
+  const items = await db<{ product_id: string }[]>`select product_id from order_items where order_id = ${order.id}`;
+  let revoked = 0;
+  for (const it of items) {
+    // نسحب فقط الصلاحيات المرتبطة بهذا الطلب
+    const rows = await db<{ id: string }[]>`
+      select id from entitlements where user_id = ${order.user_id} and product_id = ${it.product_id} and order_id = ${order.id} and revoked_at is null
     `;
-    await tx`update orders set status = 'refunded' where id = ${order.id}`;
-    if (payment) await tx`update payments set status = 'refunded' where id = ${payment.id}`;
-    const [refund] = await tx<{ id: string }[]>`
-      insert into refunds (order_id, payment_id, amount_fils, reason, status, created_by)
-      values (${order.id}, ${payment?.id ?? null}, ${amount}, ${input.reason}, 'recorded', ${input.adminId})
-      returning id
-    `;
-    const items = await tx<{ product_id: string }[]>`select product_id from order_items where order_id = ${order.id}`;
-    let revoked = 0;
-    for (const it of items) {
-      // نسحب فقط الصلاحيات المرتبطة بهذا الطلب
-      const rows = await tx<{ id: string }[]>`
-        select id from entitlements where user_id = ${order.user_id} and product_id = ${it.product_id} and order_id = ${order.id} and revoked_at is null
-      `;
-      if (rows.length) revoked += await revokeProduct(tx, { userId: order.user_id, productId: it.product_id, revokedBy: input.adminId, reason: `استرداد: ${input.reason}` });
-    }
-    const reversedEarnings = await reverseEarnings(tx, order.id, input.reason);
-    await audit(
-      { actorId: input.adminId, action: "order.refund", entityType: "order", entityId: order.id, reason: input.reason, metadata: { amountFils: amount, revoked, refundId: refund.id, reversedEarnings }, ip: input.ip },
-      tx,
-    );
-    return { refundId: refund.id, paymentId: payment?.id ?? null, revoked, amountFils: amount };
-  });
+    if (rows.length) revoked += await revokeProduct(db, { userId: order.user_id, productId: it.product_id, revokedBy: input.actorId, reason: `استرداد: ${input.reason}` });
+  }
+  const reversedEarnings = await reverseEarnings(db, order.id, input.reason);
+  await audit(
+    {
+      actorId: input.actorId,
+      action: "order.refund",
+      entityType: "order",
+      entityId: order.id,
+      reason: input.reason,
+      metadata: { amountFils: input.amountFils, revoked, refundId: input.refundId, reversedEarnings, gatewayRefundId: input.gatewayRefundId ?? null },
+      ip: input.ip ?? null,
+    },
+    db,
+  );
+  return { revoked, reversedEarnings };
+}
+
+/**
+ * عكس applyRefundToOrder عندما تلغي البوابة استردادًا قبلته: المال لم يخرج، فيعود الطلب مدفوعًا والوصول والأرباح كما كانت.
+ * نعيد فقط ما سحبه هذا الاسترداد بالضبط: revoked_at يساوي accepted_at لأنهما كُتبا بـ now() في معاملة واحدة.
+ * صلاحية جُددت بعد السحب (شراء جديد أو منح يدوي) لا تطابق ولا تُمس.
+ */
+export async function undoRefundOnOrder(
+  db: Db,
+  input: { order: OrderRow; paymentId: string | null; refundId: string; actorId: string | null; gatewayRefundId?: string | null },
+): Promise<{ restored: number; restoredEarnings: number }> {
+  const { order } = input;
+  await db`update orders set status = 'paid' where id = ${order.id} and status = 'refunded'`;
+  if (input.paymentId) await db`update payments set status = 'paid' where id = ${input.paymentId} and status = 'refunded'`;
+  const restored = await db<{ id: string }[]>`
+    update entitlements e set revoked_at = null, revoked_by = null, revoke_reason = null
+    from refunds r
+    where r.id = ${input.refundId} and e.user_id = ${order.user_id} and e.revoked_at = r.accepted_at and e.revoke_reason = 'استرداد: ' || r.reason
+    returning e.id
+  `;
+  const earnings = await db<{ id: string }[]>`
+    update teacher_earnings set status = 'active', reversed_at = null, reversal_reason = null
+    where order_id = ${order.id} and status = 'reversed'
+    returning id
+  `;
+  await audit(
+    { actorId: input.actorId, action: "order.refund_undone", entityType: "order", entityId: order.id, metadata: { refundId: input.refundId, restored: restored.length, restoredEarnings: earnings.length, gatewayRefundId: input.gatewayRefundId ?? null } },
+    db,
+  );
+  return { restored: restored.length, restoredEarnings: earnings.length };
 }
