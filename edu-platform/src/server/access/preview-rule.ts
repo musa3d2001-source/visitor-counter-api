@@ -5,12 +5,13 @@ import { PREVIEW_POLICY } from "@/lib/preview-policy";
 /**
  * شرط عرض المعاينة للجمهور بلغة SQL، يُستخدم في الوصول للملف والكتالوج وصفحة المنتج
  * فلا تظهر معاينة في مكان ويُرفض فتحها في آخر. يفشل مغلقًا: أي قيمة ناقصة تعني عدم العرض.
- * المعاينة تُعرض فقط إذا كانت مصنوعة لأول ملف رئيسي حالي، وضمن القاعدة، وكلاهما غير معيب.
+ * المعاينة تُعرض فقط إذا كانت مصنوعة لأول ملف رئيسي حالي، وضمن القاعدة، وكلاهما غير معيب، وثبت عزل صفحاتها عن بقية الملف.
  */
 export function servablePreviewSql(alias: string) {
   const f = sql(alias);
   return sql`(
     ${f}.kind = 'preview'
+    and ${f}.pages_isolated
     and ${f}.check_status in ('ok', 'unchecked')
     and ${f}.page_count > 0
     and exists (

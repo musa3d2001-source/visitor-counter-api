@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { maxPreviewPages, PREVIEW_POLICY, previewIssue, previewWithinPolicy } from "@/lib/preview-policy";
+import { maxPreviewPages, PREVIEW_ISSUE_FIX, PREVIEW_POLICY, previewIssue, previewWithinPolicy } from "@/lib/preview-policy";
 
 describe("قاعدة المعاينة الواحدة", () => {
   it.each([
@@ -42,7 +42,7 @@ describe("قاعدة المعاينة الواحدة", () => {
 
 describe("سبب إخفاء المعاينة", () => {
   const main = { id: "m1", page_count: 10, check_status: "ok" };
-  const preview = { page_count: 2, check_status: "ok", source_file_id: "m1" };
+  const preview = { page_count: 2, check_status: "ok", source_file_id: "m1", pages_isolated: true };
 
   it("is null for a preview made for the current first file and within the rule", () => {
     expect(previewIssue(preview, main)).toBeNull();
@@ -53,6 +53,15 @@ describe("سبب إخفاء المعاينة", () => {
     expect(previewIssue({ ...preview, source_file_id: "m0" }, main)).toBe("stale");
     expect(previewIssue({ ...preview, source_file_id: null }, main)).toBe("stale");
     expect(previewIssue(preview, undefined)).toBe("stale");
+  });
+
+  it("tells the owner to replace the main file when that is the real problem", () => {
+    expect(PREVIEW_ISSUE_FIX.flagged).toContain("الملف الرئيسي");
+    expect(PREVIEW_ISSUE_FIX.flagged).not.toContain("أعد التوليد");
+  });
+
+  it("reports a preview that was never proven isolated from the rest of the file", () => {
+    expect(previewIssue({ ...preview, pages_isolated: false }, main)).toBe("not_isolated");
   });
 
   it("reports a preview that is too long or attached to a broken file", () => {

@@ -1,7 +1,10 @@
 import "server-only";
-import { PDFDocument, ParseSpeeds, StandardFonts, degrees, rgb } from "pdf-lib";
+import { PDFDocument, PDFName, ParseSpeeds, StandardFonts, degrees, rgb, type PDFPage } from "pdf-lib";
 import { maxPreviewPages } from "@/lib/preview-policy";
+import { assertIsolated, isolatePages, PreviewNotIsolatedError } from "./pdf-isolate";
 import { openInReader } from "./pdf-reader-engine";
+
+export { PreviewNotIsolatedError };
 
 /**
  * معالجة PDF على الخادم:
@@ -62,23 +65,88 @@ export async function getPdfPageCount(bytes: Uint8Array): Promise<number> {
   return (await openForEditing(bytes)).getPageCount();
 }
 
+/**
+ * الجزء الظاهر من الصفحة: تقاطع CropBox وMediaBox كما يحسبه القارئ، وقد لا يبدأ من الصفر.
+ * عند الدوران تتبادل الصفحة عرضها وارتفاعها أمام القارئ.
+ */
+function visibleBox(page: PDFPage) {
+  const corners = (b: { x: number; y: number; width: number; height: number }) => ({
+    x0: Math.min(b.x, b.x + b.width),
+    y0: Math.min(b.y, b.y + b.height),
+    x1: Math.max(b.x, b.x + b.width),
+    y1: Math.max(b.y, b.y + b.height),
+  });
+  const media = corners(page.getMediaBox());
+  const crop = corners(page.getCropBox());
+  const common = { x0: Math.max(media.x0, crop.x0), y0: Math.max(media.y0, crop.y0), x1: Math.min(media.x1, crop.x1), y1: Math.min(media.y1, crop.y1) };
+  const box = common.x1 > common.x0 && common.y1 > common.y0 ? common : media;
+  const width = box.x1 - box.x0;
+  const height = box.y1 - box.y0;
+  if (![box.x0, box.y0, width, height].every(Number.isFinite) || width <= 0 || height <= 0) throw new PdfUnusableError("corrupt");
+  const angle = ((page.getRotation().angle % 360) + 360) % 360;
+  const rotation = angle % 90 === 0 ? angle : 0;
+  const sideways = rotation === 90 || rotation === 270;
+  return { x: box.x0, y: box.y0, width, height, rotation, viewWidth: sideways ? height : width, viewHeight: sideways ? width : height };
+}
+
+type VisibleBox = ReturnType<typeof visibleBox>;
+
+/** يحول موضعًا كما يراه القارئ إلى إحداثيات الصفحة. علامة تقع خارج الجزء الظاهر لا تُكتب أصلًا: الملف يُرفض */
+function pointOnPage(box: VisibleBox, viewX: number, viewY: number) {
+  if (!(viewX >= 0 && viewY >= 0 && viewX <= box.viewWidth && viewY <= box.viewHeight)) throw new PdfUnusableError("corrupt");
+  if (box.rotation === 90) return { x: box.x + box.width - viewY, y: box.y + viewX };
+  if (box.rotation === 180) return { x: box.x + box.width - viewX, y: box.y + box.height - viewY };
+  if (box.rotation === 270) return { x: box.x + viewY, y: box.y + box.height - viewX };
+  return { x: box.x + viewX, y: box.y + viewY };
+}
+
+/** أول count صفحة، معزولة عن بقية الملف. يتحقق من النتيجة بعد حفظها، فلا يخرج ملف لم يثبت عزله */
+async function buildIsolatedPreview(src: PDFDocument, count: number, label: boolean): Promise<Uint8Array> {
+  try {
+    isolatePages(
+      src.context,
+      src.getPages().slice(0, count).map((p) => p.node),
+    );
+    const out = await PDFDocument.create();
+    const copied = await out.copyPages(src, Array.from({ length: count }, (_, i) => i));
+    for (const p of copied) out.addPage(p);
+    if (label) {
+      const font = await out.embedFont(StandardFonts.HelveticaBold);
+      for (const page of out.getPages()) {
+        const box = visibleBox(page);
+        // صفحة فارغة بلا محتوى: الرسم يُسجل غلاف q/Q ولا يربطه بها فيبقى كائنًا يتيمًا
+        if (!page.node.Contents()) page.node.set(PDFName.of("Contents"), out.context.obj([]));
+        page.drawText("FREE PREVIEW", { ...pointOnPage(box, Math.max(4, box.viewWidth - 110), Math.min(14, box.viewHeight / 2)), size: 10, font, color: rgb(0.06, 0.32, 0.34), opacity: 0.7, rotate: degrees(box.rotation) });
+        // الرسم يضيف قائمة روابط فارغة. لا روابط في المعاينة، والفحص لا يقبل وجود القائمة أصلًا
+        page.node.delete(PDFName.of("Annots"));
+      }
+    }
+    out.setTitle("Preview");
+    out.setProducer("edu-platform");
+    const saved = await out.save();
+    assertIsolated(await PDFDocument.load(saved, { updateMetadata: false }), count);
+    return saved;
+  } catch (err) {
+    if (err instanceof PreviewNotIsolatedError) throw err;
+    console.error("[pdf] preview isolation failed", err);
+    throw new PreviewNotIsolatedError("could not rebuild pages");
+  }
+}
+
 /** يطبق قاعدة المعاينة على الملف الفعلي. null: الملف أقصر من أن تكون له معاينة */
 export async function extractPreview(bytes: Uint8Array, pages: number): Promise<{ bytes: Uint8Array; pageCount: number } | null> {
   const src = await openForEditing(bytes);
   const allowed = maxPreviewPages(src.getPageCount());
   if (allowed === 0) return null;
   const count = Math.min(Math.max(1, pages), allowed);
-  const out = await PDFDocument.create();
-  const copied = await out.copyPages(src, Array.from({ length: count }, (_, i) => i));
-  for (const p of copied) out.addPage(p);
-  const font = await out.embedFont(StandardFonts.HelveticaBold);
-  for (const page of out.getPages()) {
-    const { width } = page.getSize();
-    page.drawText("FREE PREVIEW", { x: width - 110, y: 14, size: 10, font, color: rgb(0.06, 0.32, 0.34), opacity: 0.7 });
-  }
-  out.setTitle("Preview");
-  out.setProducer("edu-platform");
-  return { bytes: await out.save(), pageCount: count };
+  return { bytes: await buildIsolatedPreview(src, count, true), pageCount: count };
+}
+
+/** معاينة رفعها صاحب الملف: تُبنى من جديد بالطريقة نفسها، فقد تحمل صفحات مخفية أو روابط لبقية عمله */
+export async function rebuildCustomPreview(bytes: Uint8Array): Promise<{ bytes: Uint8Array; pageCount: number }> {
+  const src = await openForEditing(bytes);
+  const count = src.getPageCount();
+  return { bytes: await buildIsolatedPreview(src, count, false), pageCount: count };
 }
 
 /** الختم نفسه يستخدمه التسليم والفحص عند الرفع، فلا يختلف ما نجرّبه عما يصل للطالب */
@@ -88,29 +156,22 @@ async function stampDocument(doc: PDFDocument, lines: { primary: string; seconda
   const primary = safe(lines.primary);
   const secondary = safe(lines.secondary);
   for (const page of doc.getPages()) {
-    const { width, height } = page.getSize();
-    const size = Math.max(10, Math.min(width, height) / 32);
+    // المواضع تُحسب على ما يراه القارئ، فلا تقع العلامة خارج صفحة أصلها ليس الصفر أو مدوّرة
+    const box = visibleBox(page);
+    const size = Math.max(10, Math.min(box.viewWidth, box.viewHeight) / 32);
     // علامة قطرية خفيفة في منتصف الصفحة
-    page.drawText(primary, {
-      x: width * 0.12,
-      y: height * 0.3,
-      size: size * 1.3,
-      font,
-      color: rgb(0.45, 0.45, 0.45),
-      opacity: 0.12,
-      rotate: degrees(35),
-    });
-    page.drawText(primary, {
-      x: width * 0.12,
-      y: height * 0.65,
-      size: size * 1.3,
-      font,
-      color: rgb(0.45, 0.45, 0.45),
-      opacity: 0.12,
-      rotate: degrees(35),
-    });
+    for (const share of [0.3, 0.65]) {
+      page.drawText(primary, {
+        ...pointOnPage(box, box.viewWidth * 0.12, box.viewHeight * share),
+        size: size * 1.3,
+        font,
+        color: rgb(0.45, 0.45, 0.45),
+        opacity: 0.12,
+        rotate: degrees(35 + box.rotation),
+      });
+    }
     // سطر تذييل صغير
-    page.drawText(secondary, { x: 18, y: 10, size: Math.max(6, size * 0.55), font, color: rgb(0.4, 0.4, 0.4), opacity: 0.55 });
+    page.drawText(secondary, { ...pointOnPage(box, 18, 10), size: Math.max(6, size * 0.55), font, color: rgb(0.4, 0.4, 0.4), opacity: 0.55, rotate: degrees(box.rotation) });
   }
   doc.setProducer("edu-platform");
   doc.setSubject(`Licensed copy - ${secondary}`);

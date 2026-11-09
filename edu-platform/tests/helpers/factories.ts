@@ -98,8 +98,8 @@ export async function createProduct(opts: {
     const key = `previews/${p.id}/${randomUUID()}.pdf`;
     writePrivate(key, pdf);
     const [f] = await sql<{ id: string }[]>`
-      insert into product_files (product_id, kind, title, storage_key, original_name, mime_type, size_bytes, page_count, is_auto_preview, check_status, checked_at, source_file_id)
-      values (${p.id}, 'preview', 'معاينة', ${key}, 'preview.pdf', 'application/pdf', ${pdf.length}, 1, true, 'ok', now(), ${mainFileId})
+      insert into product_files (product_id, kind, title, storage_key, original_name, mime_type, size_bytes, page_count, is_auto_preview, check_status, checked_at, source_file_id, pages_isolated)
+      values (${p.id}, 'preview', 'معاينة', ${key}, 'preview.pdf', 'application/pdf', ${pdf.length}, 1, true, 'ok', now(), ${mainFileId}, true)
       returning id
     `;
     previewFileId = f.id;
@@ -114,7 +114,7 @@ export async function acceptAgreement(userId: string) {
 /** إقرار حقوق المنتج عند الإرسال للمراجعة */
 export const ATTESTED = { attested: true, meta: { ip: "192.0.2.80", userAgent: "vitest" } };
 
-export async function createBundle(opts: { items: string[]; priceFils?: number; level?: number; status?: "draft" | "published" }): Promise<TestProduct> {
+export async function createBundle(opts: { items: string[]; priceFils?: number; level?: number; status?: "draft" | "published" | "hidden" }): Promise<TestProduct> {
   const { gradeId } = await gradeAndSubject(opts.level ?? 6, "math");
   const slug = `b-${uniq()}`;
   const status = opts.status ?? "published";

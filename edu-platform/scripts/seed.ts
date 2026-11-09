@@ -162,8 +162,8 @@ export async function seedDemo(sql: postgres.Sql, opts: { publish: boolean; stor
     const prevKey = `previews/${product.id}/${randomUUID()}.pdf`;
     writePrivate(opts.storageDir, prevKey, prevBytes);
     await sql`
-      insert into product_files (product_id, kind, title, storage_key, original_name, mime_type, size_bytes, page_count, is_auto_preview, check_status, checked_at, source_file_id)
-      values (${product.id}, 'preview', 'معاينة مجانية', ${prevKey}, 'preview.pdf', 'application/pdf', ${prevBytes.length}, ${previewCount}, true, 'ok', now(), ${mainFile.id})
+      insert into product_files (product_id, kind, title, storage_key, original_name, mime_type, size_bytes, page_count, is_auto_preview, check_status, checked_at, source_file_id, pages_isolated)
+      values (${product.id}, 'preview', 'معاينة مجانية', ${prevKey}, 'preview.pdf', 'application/pdf', ${prevBytes.length}, ${previewCount}, true, 'ok', now(), ${mainFile.id}, true)
     `;
     created++;
   }

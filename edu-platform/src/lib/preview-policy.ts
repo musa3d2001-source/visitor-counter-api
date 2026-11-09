@@ -19,18 +19,19 @@ export function previewWithinPolicy(previewPages: number | null | undefined, tot
   return previewPages <= maxPreviewPages(totalPages);
 }
 
-export type PreviewIssue = "stale" | "flagged" | "too_long";
+export type PreviewIssue = "stale" | "flagged" | "too_long" | "not_isolated";
 
 const brokenCheck = (status: string) => status !== "ok" && status !== "unchecked";
 
 /** سبب عدم عرض المعاينة للجمهور، أو null إن كانت سليمة. يقابل شرط servablePreviewSql في الخادم */
 export function previewIssue(
-  preview: { page_count: number | null; check_status: string; source_file_id: string | null },
+  preview: { page_count: number | null; check_status: string; source_file_id: string | null; pages_isolated: boolean },
   firstMain: { id: string; page_count: number | null; check_status: string } | undefined,
 ): PreviewIssue | null {
   if (!firstMain || preview.source_file_id !== firstMain.id) return "stale";
   if (brokenCheck(preview.check_status) || brokenCheck(firstMain.check_status)) return "flagged";
   if (!previewWithinPolicy(preview.page_count, firstMain.page_count)) return "too_long";
+  if (!preview.pages_isolated) return "not_isolated";
   return null;
 }
 
@@ -38,6 +39,15 @@ export const PREVIEW_ISSUE_LABELS: Record<PreviewIssue, string> = {
   stale: "صُنعت لملف آخر أو تغيّر الملف الرئيسي بعدها",
   flagged: "الملف الرئيسي أو المعاينة معيب",
   too_long: "أطول من المسموح لهذا الملف",
+  not_isolated: "لم يثبت بعد أنها لا تحمل شيئًا من بقية الملف",
+};
+
+/** ما يصلح المعاينة فعلًا. إعادة التوليد لا تنفع ملفًا رئيسيًا معيبًا */
+export const PREVIEW_ISSUE_FIX: Record<PreviewIssue, string> = {
+  stale: "اضغط «توليد تلقائي» لإصلاحها",
+  flagged: "استبدل الملف الرئيسي المعيب بنسخة سليمة، أو أعد فحصه إن كان العيب بسبب عطل عابر، ثم اضغط «توليد تلقائي»",
+  too_long: "اضغط «توليد تلقائي» لإصلاحها",
+  not_isolated: "اضغط «توليد تلقائي» لإصلاحها",
 };
 
 /** نص القاعدة كما يظهر للمالك والمعلم */

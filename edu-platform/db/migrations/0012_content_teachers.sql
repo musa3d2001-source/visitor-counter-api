@@ -25,6 +25,8 @@ where pv.kind = 'preview'
   and pv.created_at >= m.created_at
   and pv.source_file_id is null;
 
+-- المعاينة ملف عام بلا ختم. لا تُعرض إلا بعد إثبات عزل صفحاتها عن بقية الملف، والموجود قبل هذا الفحص ينتظر إعادة التوليد
+alter table product_files add column if not exists pages_isolated boolean not null default false;
 create index if not exists product_files_needs_attention_idx on product_files (check_status) where check_status <> 'ok';
 create index if not exists product_files_source_idx on product_files (source_file_id) where source_file_id is not null;
 
@@ -63,6 +65,9 @@ alter table teacher_earnings add constraint teacher_earnings_one_source check ((
 -- ---------------------------------------------------------------------
 -- إلغاء التسوية: لا يُحذف السطر، ويُستبعد من الرصيد ويبقى ظاهرًا بسبب إلغائه
 -- ---------------------------------------------------------------------
+-- رقم يولَّد مرة لكل فتح لنافذة التسوية، فضغطتان أو طلب أعادته الشبكة لا يسجلان تسويتين
+alter table teacher_payouts add column if not exists request_id uuid;
+create unique index if not exists teacher_payouts_request_id_key on teacher_payouts (request_id);
 alter table teacher_payouts add column if not exists voided_at timestamptz;
 alter table teacher_payouts add column if not exists voided_by uuid references users(id) on delete set null;
 alter table teacher_payouts add column if not exists void_reason text;
