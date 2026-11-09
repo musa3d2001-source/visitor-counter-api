@@ -13,6 +13,7 @@ export interface StorageDriver {
   read(bucket: Bucket, key: string): Promise<Uint8Array>;
   /** قراءة أول n بايت للتحقق من نوع الملف */
   readHead(bucket: Bucket, key: string, bytes: number): Promise<Uint8Array>;
+  /** null فقط إن قال التخزين صراحة إن الملف غير موجود. أي عطل آخر يُرمى، حتى لا يوصف ملف سليم بأنه مفقود */
   stat(bucket: Bucket, key: string): Promise<{ size: number } | null>;
   remove(bucket: Bucket, key: string): Promise<void>;
   /** رابط رفع مباشر مؤقت (من المتصفح إلى التخزين) */

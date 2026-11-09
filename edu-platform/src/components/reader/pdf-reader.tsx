@@ -5,6 +5,7 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import { ArrowRight, BookOpenText, Download, Eye, LoaderCircle, Maximize, Minus, Plus, ShieldCheck, ShoppingCart, TriangleAlert } from "lucide-react";
 import { ar } from "@/lib/design";
 import { Price } from "@/components/ui/price";
+import { readerErrorMessage } from "@/lib/reader-error";
 import type { PDFDocumentProxy, PDFPageProxy } from "pdfjs-dist";
 
 /**
@@ -71,16 +72,7 @@ export function PdfReader({ src, title, backHref, backLabel, initialPage = 1, wa
         setRatio(vp.height / vp.width);
         setDoc(loaded);
       } catch (err) {
-        const status = (err as { status?: number })?.status;
-        setError(
-          status === 401
-            ? "انتهت جلستك، سجّل الدخول مرة أخرى."
-            : status === 403
-              ? "لا تملك صلاحية فتح هذا الملف."
-              : status === 503
-                ? "هذا الملف يحتاج إلى إصلاح من إدارة المنصة، وقد سُجلت المشكلة لديهم. وصولك إليه محفوظ."
-                : "تعذر فتح الملف. تحقق من اتصالك وحاول مرة أخرى.",
-        );
+        setError(readerErrorMessage(err));
       }
     })();
     return () => {
@@ -181,7 +173,7 @@ export function PdfReader({ src, title, backHref, backLabel, initialPage = 1, wa
           >
             <Maximize className="size-5" aria-hidden />
           </button>
-          {downloadHref ? (
+          {downloadHref && !error ? (
             <a
               href={downloadHref}
               className="grid size-11 shrink-0 place-items-center rounded-full bg-linear-to-b from-[#ffd25e] to-[#f2ae12] text-[#3d2a00] shadow-[0_3px_0_#b77800] transition-transform active:translate-y-[2px] active:shadow-none"

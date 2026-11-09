@@ -23,6 +23,14 @@ function bucketName(b: Bucket) {
   return b === "private" ? env().SUPABASE_PRIVATE_BUCKET : env().SUPABASE_PUBLIC_BUCKET;
 }
 
+/**
+ * «غير موجود» جواب صريح فقط: Supabase يرد 400 ببدن statusCode 404، أو 404 مباشرة.
+ * انقطاع الشبكة أو 5xx أو رفض الصلاحية لا يعني أن الملف غير موجود.
+ */
+export function isNotFoundError(error: { status?: unknown; statusCode?: unknown }): boolean {
+  return Number(error.status) === 404 || String(error.statusCode) === "404";
+}
+
 export const supabaseDriver: StorageDriver = {
   name: "supabase",
   async put(bucket, key, data, contentType) {
@@ -48,7 +56,11 @@ export const supabaseDriver: StorageDriver = {
   async stat(bucket, key) {
     assertSafeKey(key);
     const { data, error } = await sb().storage.from(bucketName(bucket)).info(key);
-    if (error || !data) return null;
+    if (error) {
+      if (isNotFoundError(error)) return null;
+      throw new Error(`storage stat failed: ${error.message}`);
+    }
+    if (!data) throw new Error("storage stat failed: empty response");
     return { size: Number(data.size ?? 0) };
   },
   async remove(bucket, key) {

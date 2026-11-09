@@ -74,8 +74,10 @@ export const localDriver: StorageDriver = {
     try {
       const s = await stat(pathFor(bucket, key));
       return { size: s.size };
-    } catch {
-      return null;
+    } catch (err) {
+      const code = (err as NodeJS.ErrnoException).code;
+      if (code === "ENOENT" || code === "ENOTDIR") return null;
+      throw err;
     }
   },
   async remove(bucket, key) {

@@ -2,7 +2,7 @@ import "server-only";
 import { sql } from "../db";
 import { storage } from "../storage";
 import { getSettings } from "../platform/settings";
-import { watermarkPdf } from "./pdf";
+import { getPdfPageCount, watermarkPdf } from "./pdf";
 
 /** بيانات العلامة المائية: بريد المشتري + رقم الطلب الذي منح الصلاحية (إن وجد) */
 export async function watermarkIdentity(user: { id: string; email: string }, productId: string) {
@@ -27,11 +27,16 @@ export async function loadDeliverablePdf(opts: {
   kind: "main" | "preview";
   user: { id: string; email: string; role: string } | null;
   productId: string;
+  checkStatus?: string;
 }): Promise<Uint8Array> {
   const bytes = await storage().read("private", opts.storageKey);
   if (opts.kind !== "main" || !opts.user || opts.user.role === "admin") return bytes;
   const settings = await getSettings();
-  if (!settings.watermark_enabled) return bytes;
+  if (!settings.watermark_enabled) {
+    // بلا ختم لا يمر الملف بأي فحص: ملف قديم محمي بكلمة مرور يُكتشف هنا، فيُعلَّم ويقال للطالب الصدق
+    if (opts.checkStatus === "unchecked") await getPdfPageCount(bytes);
+    return bytes;
+  }
   return watermarkPdf(bytes, await watermarkIdentity(opts.user, opts.productId));
 }
 
