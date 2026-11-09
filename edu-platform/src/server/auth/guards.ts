@@ -2,12 +2,15 @@ import "server-only";
 import { redirect, notFound } from "next/navigation";
 import { headers } from "next/headers";
 import { getCurrentSession, getCurrentUser, type SessionUser } from "./session";
+import { TWO_FACTOR_SETUP_PATH } from "@/lib/two-factor";
 
 /** يتطلب تسجيل الدخول — وإلا تحويل لصفحة الدخول مع العودة لنفس الصفحة */
 export async function requireUser(nextPath?: string): Promise<SessionUser> {
   const user = await getCurrentUser();
   if (!user) {
-    if ((await getCurrentSession())?.mustChangePassword) redirect("/change-password");
+    const session = await getCurrentSession();
+    if (session?.mustChangePassword) redirect("/change-password");
+    if (session?.needsTwoFactorEnrolment) redirect(TWO_FACTOR_SETUP_PATH);
     const h = await headers();
     const path = nextPath ?? h.get("x-pathname") ?? "/";
     redirect(`/login?next=${encodeURIComponent(path)}`);

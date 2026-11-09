@@ -31,7 +31,7 @@ export async function updateProfileAction(_prev: ActionState, fd: FormData): Pro
 export async function changePasswordAction(_prev: ActionState, fd: FormData): Promise<ActionState> {
   const session = await getCurrentSession();
   // جلسة كلمة المرور المؤقتة تكمل من /change-password فقط
-  if (!session || session.mustChangePassword) return { error: "انتهت الجلسة، سجّل الدخول مرة أخرى" };
+  if (!session || session.mustChangePassword || session.needsTwoFactorEnrolment) return { error: "انتهت الجلسة، سجّل الدخول مرة أخرى" };
   const next = passwordSchema.safeParse(fd.get("newPassword"));
   if (!next.success) return { fieldErrors: { newPassword: next.error.issues[0].message } };
   if (fd.get("newPassword") !== fd.get("confirmPassword")) return { fieldErrors: { confirmPassword: "كلمتا المرور غير متطابقتين" } };

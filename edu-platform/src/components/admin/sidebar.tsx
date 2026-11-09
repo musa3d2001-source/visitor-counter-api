@@ -19,6 +19,7 @@ import {
   Package,
   Receipt,
   Settings,
+  ShieldCheck,
   Ticket,
   UserRound,
   Users,
@@ -68,6 +69,7 @@ const OWNER_GROUPS: NavGroup[] = [
     items: [
       { href: "/admin/settings", label: "إعدادات المنصة", Icon: Settings, tone: "slate" },
       { href: "/admin/mail", label: "البريد الصادر", Icon: Mail, tone: "sky" },
+      { href: "/admin/security", label: "أمان الحساب", Icon: ShieldCheck, tone: "teal" },
     ],
   },
 ];

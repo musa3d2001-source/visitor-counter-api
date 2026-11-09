@@ -42,7 +42,7 @@ export function ConfirmButton({
   reasonLabel?: string;
   icon?: React.ReactNode;
   /** حقول إضافية داخل نافذة التأكيد (مرتبطة بالنموذج عبر سمة form) */
-  fields?: { name: string; label: string; placeholder?: string; ltr?: boolean }[];
+  fields?: { name: string; label: string; placeholder?: string; ltr?: boolean; required?: boolean; autoComplete?: string; maxLength?: number; testId?: string }[];
   /** قائمة اختيار داخل نافذة التأكيد */
   selectField?: { name: string; label: string; options: { value: string; label: string }[] };
 }) {
@@ -111,7 +111,7 @@ export function ConfirmButton({
                 <label htmlFor={`${formId}-${f.name}`} className="mb-1.5 block font-display text-sm font-bold text-ink-soft">
                   {f.label}
                 </label>
-                <Input id={`${formId}-${f.name}`} name={f.name} form={formId} placeholder={f.placeholder} dir={f.ltr ? "ltr" : undefined} className={f.ltr ? "num text-start" : undefined} />
+                <Input id={`${formId}-${f.name}`} name={f.name} form={formId} placeholder={f.placeholder} dir={f.ltr ? "ltr" : undefined} className={f.ltr ? "num text-start" : undefined} required={f.required} autoComplete={f.autoComplete} maxLength={f.maxLength} data-testid={f.testId} />
               </div>
             ))}
             {state?.error ? (

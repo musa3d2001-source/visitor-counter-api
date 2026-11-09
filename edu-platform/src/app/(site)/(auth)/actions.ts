@@ -9,6 +9,8 @@ import { safeNextPath } from "@/lib/utils";
 import { clientIp, userAgent } from "@/server/http";
 import { completeForcedPasswordChange, loginWithPassword, registerStudent, requestPasswordReset, resetPassword } from "@/server/auth/service";
 import { clearSessionCookie, getCurrentSession, invalidateSession, setSessionCookie } from "@/server/auth/session";
+import { setLoginChallengeCookie } from "@/server/auth/challenge-cookie";
+import { TWO_FACTOR_LOGIN_PATH, TWO_FACTOR_SETUP_PATH } from "@/lib/two-factor";
 import { sendRegistrationVerification } from "@/server/auth/email-verification";
 import { mailIsReal, redactSecrets } from "@/server/platform/mailer";
 
@@ -17,9 +19,14 @@ export async function loginAction(_prev: ActionState, fd: FormData): Promise<Act
   const values = formValues(fd, ["email"]);
   if (!parsed.success) return { fieldErrors: fieldErrors(parsed.error), values };
   const res = await loginWithPassword(parsed.data.email, parsed.data.password, { ip: await clientIp(), userAgent: await userAgent() });
-  if (!res.ok) return { error: res.error, values };
+  if (!res.ok) {
+    if (!res.challenge) return { error: res.error, values };
+    await setLoginChallengeCookie(res.challenge.token, res.challenge.expiresAt);
+    redirect(`${TWO_FACTOR_LOGIN_PATH}?next=${encodeURIComponent(safeNextPath(fd.get("next") as string | null, "/admin"))}`);
+  }
   await setSessionCookie(res.token, res.expiresAt);
   if (res.mustChangePassword) redirect("/change-password");
+  if (res.needsTwoFactorEnrolment) redirect(TWO_FACTOR_SETUP_PATH);
   redirect(safeNextPath(fd.get("next") as string | null, "/library"));
 }
 

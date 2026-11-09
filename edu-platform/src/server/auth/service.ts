@@ -1,9 +1,10 @@
 import "server-only";
 import { sql } from "../db";
-import { env } from "../env";
+import { adminTwoFactorRequired, env } from "../env";
 import { hashPassword, verifyPassword, burnPasswordTime } from "./password";
 import { createSession, generateToken, hashToken } from "./session";
 import { hitRateLimit, clearRateLimit, peekRateLimit, reserveFailureSlot, type FailurePolicy } from "./rate-limit";
+import { completeLoginChallenge, startLoginChallenge, twoFactorIsActive, type CompleteChallengeResult } from "./two-factor";
 import { mailIsReal, sendMail } from "../platform/mailer";
 import { getSettings } from "../platform/settings";
 import { audit } from "../platform/audit";
@@ -12,7 +13,10 @@ import { count, W } from "@/lib/design";
 
 /** منطق المصادقة (بدون اعتماد على سياق الطلب لسهولة الاختبار) */
 
-export type AuthResult = { ok: true; userId: string; token: string; expiresAt: Date; mustChangePassword?: boolean } | { ok: false; error: string; retryAfter?: number };
+export type AuthResult =
+  | { ok: true; userId: string; token: string; expiresAt: Date; mustChangePassword?: boolean; needsTwoFactorEnrolment?: boolean }
+  /** challenge: كلمة المرور صحيحة لكن الدخول لم يكتمل. لا جلسة بعد، فتجاهله يعني فشل الدخول */
+  | { ok: false; error: string; retryAfter?: number; challenge?: { token: string; expiresAt: Date } };
 
 /**
  * حدود الدخول: تُحتسب الإخفاقات فقط، والدخول الناجح لا يُحتسب أبدًا.
@@ -57,8 +61,8 @@ export async function loginWithPassword(email: string, password: string, meta: {
     return { ok: false, error: "البريد الإلكتروني أو كلمة المرور غير صحيحة." };
   };
 
-  const [user] = await sql<{ id: string; password_hash: string; is_active: boolean; must_change_password: boolean; temp_password_expires_at: Date | null }[]>`
-    select id, password_hash, is_active, must_change_password, temp_password_expires_at from users where email = ${email}
+  const [user] = await sql<{ id: string; password_hash: string; role: PasswordRole; is_active: boolean; must_change_password: boolean; temp_password_expires_at: Date | null }[]>`
+    select id, password_hash, role, is_active, must_change_password, temp_password_expires_at from users where email = ${email}
   `;
   if (!user) {
     await burnPasswordTime(password);
@@ -69,6 +73,13 @@ export async function loginWithPassword(email: string, password: string, meta: {
   // كلمة صحيحة: ليست إخفاقًا مهما كانت حالة الحساب بعدها
   await clearRateLimit(failureKey);
   if (!user.is_active) return { ok: false, error: "هذا الحساب موقوف. تواصل مع الدعم." };
+
+  // مدير فعّل التحقق بخطوتين: لا جلسة من كلمة المرور وحدها
+  if (user.role === "admin" && (await twoFactorIsActive(user.id))) {
+    const challenge = await startLoginChallenge(user.id);
+    if (!challenge.ok) return challenge;
+    return { ok: false, error: "أدخل رمز التحقق لإكمال الدخول.", challenge: { token: challenge.token, expiresAt: challenge.expiresAt } };
+  }
 
   if (user.must_change_password && user.temp_password_expires_at) {
     // تحديث ذري: كلمة المرور المؤقتة تفتح جلسة واحدة فقط مهما تزامنت الطلبات
@@ -84,7 +95,13 @@ export async function loginWithPassword(email: string, password: string, meta: {
     return { ok: true, userId: user.id, token: s.token, expiresAt: s.expiresAt, mustChangePassword: true };
   }
   const s = await createSession(user.id, meta);
-  return { ok: true, userId: user.id, token: s.token, expiresAt: s.expiresAt };
+  // إلزامي وغير مسجَّل: الجلسة لا تفتح إلا صفحة التسجيل (انظر getCurrentUser)
+  return { ok: true, userId: user.id, token: s.token, expiresAt: s.expiresAt, needsTwoFactorEnrolment: user.role === "admin" && adminTwoFactorRequired() };
+}
+
+/** الخطوة الثانية لدخول المدير. جلسة كلمة المرور المؤقتة تُحترم بعد الرمز كما قبله */
+export async function completeTwoFactorLogin(token: string | undefined, code: unknown, meta: { ip: string; userAgent: string }): Promise<CompleteChallengeResult> {
+  return completeLoginChallenge({ token, code, ip: meta.ip, userAgent: meta.userAgent, mustChangeTtlMs: MUST_CHANGE_SESSION_MS });
 }
 
 export async function registerStudent(
@@ -195,6 +212,8 @@ export async function changePassword(userId: string, current: string, next: stri
     await tx`update users set password_hash = ${hash} where id = ${userId}`;
     await tx`update password_reset_tokens set used_at = now() where user_id = ${userId} and used_at is null`;
     await tx`delete from sessions where user_id = ${userId} and id <> ${keepSessionId}`;
+    // خطوة كلمة مرور معلقة بالكلمة القديمة لا تكتمل بعد تغييرها
+    await tx`delete from login_challenges where user_id = ${userId}`;
   });
   return { ok: true };
 }
