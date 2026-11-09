@@ -70,6 +70,32 @@ describe("utils", () => {
       expect(safeNextPath(bad as string, "/"), String(bad)).toBe("/");
     }
   });
+
+  it.each([
+    ["a tab after the slash", "/\t/evil.example"],
+    ["a line feed", "/\n/evil.example"],
+    ["a carriage return", "/\r/evil.example"],
+    ["a tab between the slashes and a backslash", "/\t\\evil.example"],
+    ["a backslash later in the path", "/a\\..\\..\\evil.example"],
+    ["a null byte", "/\u0000/evil.example"],
+    ["delete", "/\u007f/evil.example"],
+    ["dot segments that end in two slashes", "/a/../..//evil.example"],
+    ["a dot then two slashes", "/.//evil.example"],
+  ])("safeNextPath refuses %s, which a browser would read as another site", (_label, bad) => {
+    expect(safeNextPath(bad, "/fallback")).toBe("/fallback");
+  });
+
+  it("safeNextPath keeps the query and hash of a local path", () => {
+    expect(safeNextPath("/checkout?coupon=SAVE10#pay", "/")).toBe("/checkout?coupon=SAVE10#pay");
+    expect(safeNextPath("/a/../library", "/")).toBe("/library");
+  });
+
+  it("whatever it returns stays on this site when the browser resolves it", () => {
+    for (const candidate of ["/library", "/%09/evil.example", "/%5Cevil.example", "/a//b", "/?u=//evil.example", "/#//evil.example"]) {
+      const out = safeNextPath(candidate, "/");
+      expect(new URL(out, "https://farqad.test").host, candidate).toBe("farqad.test");
+    }
+  });
   it("slugify produces safe latin slugs", () => {
     expect(slugify("Grade 6 Math!")).toBe("grade-6-math");
     expect(slugify("مذكرة")).toBe("");

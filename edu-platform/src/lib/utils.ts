@@ -47,6 +47,16 @@ export function randomSuffix(len = 6): string {
 /** التحقق من أن مسار إعادة التوجيه داخلي (منع Open Redirect) */
 export function safeNextPath(next: string | null | undefined, fallback = "/"): string {
   if (!next || typeof next !== "string") return fallback;
-  if (!next.startsWith("/") || next.startsWith("//") || next.startsWith("/\\")) return fallback;
-  return next;
+  // المتصفح يحذف التاب وفواصل الأسطر ويعامل \ كـ / قبل قراءة الرابط، فتصير /<tab>/evil.example رابطًا لموقع آخر
+  if (!next.startsWith("/") || /[\u0000-\u001f\u007f\\]/.test(next)) return fallback;
+  let url: URL;
+  try {
+    url = new URL(next, "http://n");
+  } catch {
+    return fallback;
+  }
+  if (url.protocol !== "http:" || url.host !== "n") return fallback;
+  const out = url.pathname + url.search + url.hash;
+  // /a/../..//evil.example تصير //evil.example بعد تطبيع المسار
+  return out.startsWith("//") ? fallback : out;
 }
