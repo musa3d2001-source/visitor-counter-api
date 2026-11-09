@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState, useSyncExternalStore } from "react";
 import { useRouter } from "next/navigation";
 import { Gauge, LoaderCircle, Maximize, Minimize, Pause, Play, RotateCcw, RotateCw, SkipBack, TriangleAlert, Volume2, VolumeX } from "lucide-react";
 import { PlayerJsBridge } from "./playerjs";
@@ -114,6 +114,16 @@ function NextOverlay({ nextHref, nextTitle, onCancel }: { nextHref: string; next
         </div>
       </div>
     </div>
+  );
+}
+
+/** هوية المشاهد فوق المشغل: نفس العلامة في المشغلين، ولا تعترض لمسات المشغل تحتها */
+function ViewerWatermark({ text }: { text?: string }) {
+  if (!text) return null;
+  return (
+    <span className="pointer-events-none absolute end-3 top-3 z-10 text-[0.7rem] font-semibold text-white/30 sm:end-4 sm:top-4" aria-hidden data-testid="viewer-watermark">
+      {text}
+    </span>
   );
 }
 
@@ -303,11 +313,7 @@ function FilePlayer({ lessonId, src, startAt, trackProgress, watermark, nextHref
         onError={() => setError(true)}
       />
 
-      {watermark ? (
-        <span className="pointer-events-none absolute end-3 top-3 z-10 text-[0.7rem] font-semibold text-white/30 sm:end-4 sm:top-4" aria-hidden>
-          {watermark}
-        </span>
-      ) : null}
+      <ViewerWatermark text={watermark} />
 
       {error ? (
         <div className="absolute inset-0 z-20 grid place-items-center overflow-y-auto bg-[rgb(4_24_28/0.9)] p-4 text-center text-white sm:p-6" role="alert">
@@ -459,12 +465,34 @@ function FilePlayer({ lessonId, src, startAt, trackProgress, watermark, nextHref
 }
 
 // ---------------------------------------------------------------------------
-// مشغل Bunny Stream: سرعة + جودات تلقائية متعددة + ملء الشاشة من المشغل نفسه
+// مشغل Bunny Stream: سرعة + جودات تلقائية متعددة
+//
+// ملء الشاشة يُطلب على الحاوية لا على الإطار، حتى تبقى علامة هوية المشاهد ظاهرة كما في مشغل الملفات:
+// لو مُنح الإطار ملء الشاشة لغطى الشاشة وحده واختفت العلامة، ولذلك لا نمنحه الإذن حيث يتوفر البديل.
+// iPhone لا يدعم ملء الشاشة لعنصر، فيبقى الإذن عند المشغل (ويخرج الفيديو فيه من الصفحة كما يخرج في مشغل الملفات).
+// الإذن يُقرأ عند تحميل الإطار، فالإطار يُرسم بعد معرفة قدرة المتصفح.
 // ---------------------------------------------------------------------------
-function BunnyPlayer({ lessonId, embedUrl, startAt, trackProgress, nextHref, nextTitle }: Props & { embedUrl: string }) {
+const subscribeNever = () => () => {};
+const supportsElementFullscreen = () => Boolean(document.fullscreenEnabled && document.documentElement.requestFullscreen);
+
+function BunnyPlayer({ lessonId, embedUrl, startAt, trackProgress, watermark, nextHref, nextTitle }: Props & { embedUrl: string }) {
+  const containerRef = useRef<HTMLDivElement>(null);
   const iframeRef = useRef<HTMLIFrameElement>(null);
   const [ended, setEnded] = useState(false);
+  const [fullscreen, setFullscreen] = useState(false);
+  const elementFullscreen = useSyncExternalStore(subscribeNever, supportsElementFullscreen, () => null);
   const save = useProgressSaver(lessonId, trackProgress);
+
+  useEffect(() => {
+    const onFs = () => setFullscreen(Boolean(containerRef.current) && document.fullscreenElement === containerRef.current);
+    document.addEventListener("fullscreenchange", onFs);
+    return () => document.removeEventListener("fullscreenchange", onFs);
+  }, []);
+
+  const toggleFullscreen = useCallback(() => {
+    if (document.fullscreenElement) void document.exitFullscreen();
+    else void containerRef.current?.requestFullscreen().catch(() => {});
+  }, []);
 
   useEffect(() => {
     const iframe = iframeRef.current;
@@ -490,20 +518,34 @@ function BunnyPlayer({ lessonId, embedUrl, startAt, trackProgress, nextHref, nex
       if (lastPos > 0) save(lastPos, lastDur, true);
       bridge.destroy();
     };
-  }, [embedUrl, startAt, save]);
+  }, [embedUrl, startAt, save, elementFullscreen]);
 
   return (
-    <div data-testid="watch-player" data-kind="bunny" className="on-dark relative aspect-video w-full overflow-hidden rounded-[1.1rem] bg-black sm:rounded-[1.5rem]">
-      <iframe
-        ref={iframeRef}
-        src={embedUrl}
-        title="مشغل الدرس"
-        className="absolute inset-0 h-full w-full border-0"
-        allow="accelerometer; gyroscope; autoplay; encrypted-media; picture-in-picture; fullscreen"
-        allowFullScreen
-        loading="eager"
-        referrerPolicy="strict-origin-when-cross-origin"
-      />
+    <div ref={containerRef} data-testid="watch-player" data-kind="bunny" className={cn("on-dark relative aspect-video w-full overflow-hidden bg-black", fullscreen ? "" : "rounded-[1.1rem] sm:rounded-[1.5rem]")}>
+      {elementFullscreen === null ? null : (
+        <iframe
+          ref={iframeRef}
+          src={embedUrl}
+          title="مشغل الدرس"
+          className="absolute inset-0 h-full w-full border-0"
+          allow={`accelerometer; gyroscope; autoplay; encrypted-media${elementFullscreen ? "" : "; fullscreen"}`}
+          allowFullScreen={!elementFullscreen}
+          loading="eager"
+          referrerPolicy="strict-origin-when-cross-origin"
+        />
+      )}
+      <ViewerWatermark text={watermark} />
+      {elementFullscreen ? (
+        <button
+          type="button"
+          className="absolute start-2 top-2 z-30 grid size-11 place-items-center rounded-xl bg-black/45 text-white transition-colors hover:bg-black/70 sm:start-3 sm:top-3"
+          onClick={toggleFullscreen}
+          aria-label={fullscreen ? "الخروج من ملء الشاشة" : "ملء الشاشة"}
+          data-testid="bunny-fullscreen"
+        >
+          {fullscreen ? <Minimize className="size-4.5" aria-hidden /> : <Maximize className="size-4.5" aria-hidden />}
+        </button>
+      ) : null}
       {ended && nextHref ? <NextOverlay nextHref={nextHref} nextTitle={nextTitle ?? null} onCancel={() => setEnded(false)} /> : null}
     </div>
   );
