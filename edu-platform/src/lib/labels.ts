@@ -237,6 +237,7 @@ export const REFUND_ALERT_REASON_LABELS: Record<string, string> = {
   cancelled_after_completion: "ألغت البوابة استردادًا سجلناه مكتملًا",
   cancelled_unknown: "إلغاء لاسترداد لا نعرفه",
   extra_mismatch: "لا يطابق مبلغ الدفعة الزائدة",
+  extra_ambiguous: "على الفاتورة دفعتان ولا نعرف أيهما استُردت",
 };
 
 export const PAYMENT_STATUS_LABELS: Record<string, string> = {

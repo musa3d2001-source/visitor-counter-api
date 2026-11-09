@@ -18,7 +18,7 @@ let sim: Simulator;
 
 /** الفواتير المفتوحة من اختبار سابق تُعد ضمن عمل الوظيفة، فنخرجها حتى يقرأ كل اختبار نتيجته فقط */
 async function retireOpenWork() {
-  await sql`update payments set status = 'paid' where status in ('initiated', 'pending', 'failed', 'expired')`;
+  await sql`update payments set status = 'paid', expires_at = now() - interval '1 day' where status in ('initiated', 'pending', 'failed', 'expired', 'paid', 'refunded')`;
   await sql`update orders set status = 'refunded' where status in ('pending', 'failed')`;
 }
 
@@ -179,6 +179,25 @@ describe("re-checking open invoices", () => {
     expect(statusCalls(sim)).toBe(0);
     await sql`update payments set reconcile_claimed_at = now() - interval '6 minutes' where order_id = ${order.id}`;
     expect(await runPaymentReconciliation()).toMatchObject({ claimed: 1 });
+  });
+
+  it("finds a second charge on a paid invoice while its link can still be used", async () => {
+    const { order, invoice } = await openInvoice();
+    await sim.pay(invoice, "success");
+    await runPaymentReconciliation();
+    expect((await orderRow(order.id)).status).toBe("paid");
+    const second = await sim.pay(invoice, "success");
+    await sql`update payments set last_checked_at = now() - interval '11 minutes', reconcile_claimed_at = null where order_id = ${order.id}`;
+    expect(await runPaymentReconciliation()).toMatchObject({ claimed: 1, flagged: 1 });
+    expect(await sql`select gateway_payment_id, kind from payment_extras where order_id = ${order.id}`).toEqual([{ gateway_payment_id: second.paymentId, kind: "duplicate" }]);
+  });
+
+  it("stops following a paid invoice once its link is well past use", async () => {
+    const { order, invoice } = await openInvoice();
+    await sim.pay(invoice, "success");
+    await runPaymentReconciliation();
+    await sql`update payments set expires_at = now() - interval '4 hours', last_checked_at = now() - interval '11 minutes', reconcile_claimed_at = null where order_id = ${order.id}`;
+    expect(await runPaymentReconciliation()).toMatchObject({ claimed: 0 });
   });
 
   it("flags a second invoice paid on an order that is already paid", async () => {

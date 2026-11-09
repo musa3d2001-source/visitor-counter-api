@@ -14,6 +14,7 @@ import {
   gatewayExpiryDate,
   hasOpenTransaction,
   interpretPaymentStatus,
+  isSuccessfulTransaction,
   isDefiniteGatewayRefusal,
   isKuwaitiDinarDisplay,
   sanitizeCustomerName,
@@ -471,17 +472,36 @@ async function lateCompletionBlockers(db: Db, order: OrderRow): Promise<string[]
 }
 
 /**
+ * عمليات نجحت على الفاتورة نفسها غير التي أكملت صف الدفع (الرابط نفسه دُفع من جهازين):
+ * كل عملية مال مستقل يُسجل برقمها مرة واحدة، ويُسترد برقمها وحدها.
+ */
+async function recordOtherSuccesses(
+  db: Db,
+  p: { paymentId: string; orderId: string; settlingId: string | null; amountFils: number; status: MfPaymentStatus; kind: ExtraPaymentKind },
+): Promise<{ found: boolean; recorded: boolean }> {
+  const others = new Set((p.status.InvoiceTransactions ?? []).filter(isSuccessfulTransaction).map((t) => t.PaymentId).filter((id) => id && id !== p.settlingId));
+  let recorded = false;
+  for (const gatewayPaymentId of others) {
+    if (await recordExtraPayment(db, { paymentId: p.paymentId, orderId: p.orderId, kind: p.kind, amountFils: p.amountFils, gatewayPaymentId, details: { source: "second_transaction" } })) recorded = true;
+  }
+  return { found: others.size > 0, recorded };
+}
+
+/**
  * تطبيق دفعة أكدتها البوابة، داخل معاملة واحدة ودون رمي استثناء: المال وصل، فلا تراجع ولا ضياع.
  * يقفل الطلب ثم صف الدفع (نفس ترتيب startPayment والاسترداد).
- *  - pending أو failed: تأكيد الطلب ومنح الوصول.
+ *  - pending أو failed: تأكيد الطلب ومنح الوصول، إلا إن انتهت إتاحة منتج أو صار مملوكًا من طلب آخر فتُسجل late_review.
  *  - paid: الدفعة التي أكملته لا تتغير، وأي دفعة أخرى تُسجل duplicate.
  *  - refunded: الدفعة المستردة لا ترجع، وأي دفعة أخرى تُسجل after_refund.
  *  - cancelled: يكتمل الطلب إن لم يوجد مانع (انظر lateCompletionBlockers)، وإلا تُسجل late_review.
+ * وفي كل الحالات تُسجل أي عملية ناجحة أخرى على الفاتورة نفسها. newExtra: هل سُجل مال زائد جديد في هذه المعاملة.
  */
-async function applyConfirmedPayment(db: Db, p: ConfirmedPayment): Promise<VerifyResult> {
+async function applyConfirmedPayment(db: Db, p: ConfirmedPayment): Promise<{ result: VerifyResult; newExtra: boolean }> {
   const [order] = await db<OrderRow[]>`select * from orders where id = ${p.orderId} for update`;
-  const [row] = await db<{ status: string; amount_fils: number }[]>`select status, amount_fils from payments where id = ${p.paymentId} for update`;
-  const [extra] = await db<{ kind: ExtraPaymentKind }[]>`select kind from payment_extras where payment_id = ${p.paymentId}`;
+  const [row] = await db<{ status: string; amount_fils: number; gateway_payment_id: string | null }[]>`select status, amount_fils, gateway_payment_id from payments where id = ${p.paymentId} for update`;
+  const [extra] = await db<{ kind: ExtraPaymentKind }[]>`select kind from payment_extras where payment_id = ${p.paymentId} and gateway_payment_id is null`;
+  // دفعتان لطلبين مختلفين للمنتج نفسه تتتابعان: الثانية ترى ما منحته الأولى، وإلا اكتمل الطلبان معًا وتكرر الخصم وأرباح المعلم
+  await db`select pg_advisory_xact_lock(hashtextextended(${`payment-owner:${order.user_id}`}, 0))`;
   await db`
     update payments set status = case when status = 'refunded' then status else 'paid' end, paid_at = coalesce(paid_at, now()),
       gateway_payment_id = coalesce(gateway_payment_id, ${p.transaction?.PaymentId ?? null}),
@@ -489,37 +509,63 @@ async function applyConfirmedPayment(db: Db, p: ConfirmedPayment): Promise<Verif
       last_gateway_status = ${db.json(p.status as never)}, error_message = null, last_checked_at = now()
     where id = ${p.paymentId}
   `;
-  if (extra) return { state: "flagged", orderId: order.id, kind: extra.kind };
 
+  let newExtra = false;
   const flag = async (kind: ExtraPaymentKind, details: Record<string, unknown> = {}): Promise<VerifyResult> => {
-    await recordExtraPayment(db, { paymentId: p.paymentId, orderId: order.id, kind, amountFils: p.invoiceFils, details });
+    if (await recordExtraPayment(db, { paymentId: p.paymentId, orderId: order.id, kind, amountFils: p.invoiceFils, details })) newExtra = true;
     return { state: "flagged", orderId: order.id, kind };
   };
 
-  switch (order.status) {
-    case "pending":
-    case "failed": {
-      // دفعة وصلت بعد انتهاء إتاحة المنتج: منحه الآن يعني وصولًا منتهيًا مقابل مال. تُسجل للمالك ليستردها
-      const ended = await endedProductsInOrder(db, order.id);
-      if (ended.length) {
-        await closeOrder(db, { orderId: order.id, reason: "product_ended", actorId: null });
-        return flag("late_review", { blockers: ended.map((id) => `access_ended:${id}`), closedReason: "product_ended" });
+  const settle = async (): Promise<VerifyResult> => {
+    switch (order.status) {
+      case "pending":
+      case "failed": {
+        // دفعة وصلت بعد انتهاء إتاحة المنتج: منحه الآن يعني وصولًا منتهيًا مقابل مال. تُسجل للمالك ليستردها
+        const ended = await endedProductsInOrder(db, order.id);
+        if (ended.length) {
+          await closeOrder(db, { orderId: order.id, reason: "product_ended", actorId: null });
+          return flag("late_review", { blockers: ended.map((id) => `access_ended:${id}`), closedReason: "product_ended" });
+        }
+        // صار المنتج مملوكًا من طلب آخر: إكمال هذا الطلب خصم مكرر وأرباح مكررة للمعلم
+        const owned = await accessibleProductIds(order.user_id, db);
+        const items = await db<{ product_id: string }[]>`select product_id from order_items where order_id = ${order.id}`;
+        const alreadyOwned = items.filter((i) => owned.has(i.product_id));
+        if (alreadyOwned.length) {
+          await closeOrder(db, { orderId: order.id, reason: "already_owned", actorId: null });
+          return flag("late_review", { blockers: alreadyOwned.map((i) => `owned:${i.product_id}`), closedReason: "already_owned" });
+        }
+        const out = await markOrderPaid(db, { orderId: order.id, paidAmountFils: p.invoiceFils, paymentRowId: p.paymentId });
+        return { state: "paid", orderId: order.id, changed: out.changed };
       }
-      const out = await markOrderPaid(db, { orderId: order.id, paidAmountFils: p.invoiceFils, paymentRowId: p.paymentId });
-      return { state: "paid", orderId: order.id, changed: out.changed };
+      case "paid":
+        return row.status === "paid" ? { state: "paid", orderId: order.id, changed: false } : flag("duplicate");
+      case "refunded":
+        return row.status === "refunded" ? { state: "refunded", orderId: order.id } : flag("after_refund");
+      case "cancelled": {
+        const blockers = await lateCompletionBlockers(db, order);
+        if (blockers.length) return flag("late_review", { blockers, closedReason: order.closed_reason });
+        const out = await markOrderPaid(db, { orderId: order.id, paidAmountFils: p.invoiceFils, paymentRowId: p.paymentId, allowClosed: true });
+        await audit({ actorId: null, action: "order.paid_after_close", entityType: "order", entityId: order.id, metadata: { paymentRowId: p.paymentId, closedReason: order.closed_reason, closedAt: order.closed_at } }, db);
+        return { state: "paid", orderId: order.id, changed: out.changed };
+      }
     }
-    case "paid":
-      return row.status === "paid" ? { state: "paid", orderId: order.id, changed: false } : flag("duplicate");
-    case "refunded":
-      return row.status === "refunded" ? { state: "refunded", orderId: order.id } : flag("after_refund");
-    case "cancelled": {
-      const blockers = await lateCompletionBlockers(db, order);
-      if (blockers.length) return flag("late_review", { blockers, closedReason: order.closed_reason });
-      const out = await markOrderPaid(db, { orderId: order.id, paidAmountFils: p.invoiceFils, paymentRowId: p.paymentId, allowClosed: true });
-      await audit({ actorId: null, action: "order.paid_after_close", entityType: "order", entityId: order.id, metadata: { paymentRowId: p.paymentId, closedReason: order.closed_reason, closedAt: order.closed_at } }, db);
-      return { state: "paid", orderId: order.id, changed: out.changed };
-    }
-  }
+  };
+
+  const main: VerifyResult = extra ? { state: "flagged", orderId: order.id, kind: extra.kind } : await settle();
+  const [after] = await db<{ status: string }[]>`select status from orders where id = ${order.id}`;
+  const otherKind: ExtraPaymentKind = after.status === "paid" ? "duplicate" : after.status === "refunded" ? "after_refund" : "late_review";
+  const others = await recordOtherSuccesses(db, {
+    paymentId: p.paymentId,
+    orderId: order.id,
+    settlingId: row.gateway_payment_id ?? p.transaction?.PaymentId ?? null,
+    amountFils: p.invoiceFils,
+    status: p.status,
+    kind: otherKind,
+  });
+  if (others.recorded) newExtra = true;
+  // اكتمال الطلب الآن يبقى هو النتيجة حتى يصل بريد التأكيد. وفيما عدا ذلك فوجود مال زائد هو ما يهم من يقرأ النتيجة
+  const flagged = others.found && main.state !== "flagged" && !(main.state === "paid" && main.changed);
+  return { result: flagged ? { state: "flagged", orderId: order.id, kind: otherKind } : main, newExtra };
 }
 
 /**
@@ -550,27 +596,30 @@ export async function verifyAndApplyPayment(key: { paymentId?: string; invoiceId
   if (invoiceFils !== order.total_fils || invoiceFils !== payment.amount_fils || !isKuwaitiDinarDisplay(status.InvoiceDisplayValue)) {
     await sql.begin(async (db) => {
       await db`select id from orders where id = ${order.id} for update`;
-      await db`
+      const [row] = await db<{ gateway_payment_id: string | null }[]>`
         update payments set error_message = 'amount/currency mismatch', last_gateway_status = ${db.json(status as never)}, last_checked_at = now(),
           gateway_payment_id = coalesce(gateway_payment_id, ${result.state === "paid" ? (result.transaction?.PaymentId ?? null) : null})
         where id = ${payment.id}
+        returning gateway_payment_id
       `;
       // خُصم مبلغ لا يطابق الطلب: لا يكمل الطلب ولا يضيع، ويراجعه المالك
       if (result.state === "paid") {
+        const amountFils = Number.isInteger(invoiceFils) && invoiceFils > 0 ? invoiceFils : payment.amount_fils;
         await recordExtraPayment(db, {
           paymentId: payment.id,
           orderId: order.id,
           kind: "amount_mismatch",
-          amountFils: Number.isInteger(invoiceFils) && invoiceFils > 0 ? invoiceFils : payment.amount_fils,
+          amountFils,
           details: { gatewayAmountFils: Number.isInteger(invoiceFils) ? invoiceFils : null, gatewayDisplayValue: status.InvoiceDisplayValue ?? null },
         });
+        await recordOtherSuccesses(db, { paymentId: payment.id, orderId: order.id, settlingId: row.gateway_payment_id, amountFils, status, kind: "amount_mismatch" });
       }
     });
     return { state: "invalid", error: "المبلغ لا يطابق الطلب" };
   }
 
   if (result.state === "paid") {
-    const applied = await sql.begin((db) => applyConfirmedPayment(db, { orderId: order.id, paymentId: payment.id, invoiceFils, status, transaction: result.transaction }));
+    const { result: applied } = await sql.begin((db) => applyConfirmedPayment(db, { orderId: order.id, paymentId: payment.id, invoiceFils, status, transaction: result.transaction }));
     // بعد الالتزام، ولا يرمي: تعذر البريد لا يؤثر على الدفع
     if (applied.state === "paid" && applied.changed) await sendOrderConfirmationEmail(order.id);
     return applied;
@@ -767,9 +816,9 @@ export async function refundExtraPayment(input: { extraId: string; adminId: stri
   if (!cfg.enabled) throw new ExtraPaymentRefundError(`بوابة الدفع غير مفعلة: ${cfg.reason}`);
   const claim = await sql.begin(async (db) => {
     const [row] = await db<
-      { id: string; order_id: string; state: ExtraPaymentState; amount_fils: number; refund_attempt: number; payment_id: string; gateway_payment_id: string | null; gateway_invoice_id: string | null; environment: string; stale_sending: boolean }[]
+      { id: string; order_id: string; state: ExtraPaymentState; amount_fils: number; refund_attempt: number; payment_id: string; gateway_payment_id: string | null; whole_invoice: boolean; gateway_invoice_id: string | null; environment: string; stale_sending: boolean }[]
     >`
-      select e.id, e.order_id, e.state, e.amount_fils, e.refund_attempt, e.payment_id, p.gateway_payment_id, p.gateway_invoice_id, p.environment,
+      select e.id, e.order_id, e.state, e.amount_fils, e.refund_attempt, e.payment_id, coalesce(e.gateway_payment_id, p.gateway_payment_id) as gateway_payment_id, e.gateway_payment_id is null as whole_invoice, p.gateway_invoice_id, p.environment,
         coalesce(e.refund_claimed_at < now() - make_interval(mins => ${REFUND_SENDING_STALE_MINUTES}), true) as stale_sending
       from payment_extras e join payments p on p.id = e.payment_id
       where e.id = ${input.extraId}
@@ -802,7 +851,7 @@ export async function refundExtraPayment(input: { extraId: string; adminId: stri
           resolved_at = case when ${state} = 'refunded' then now() else resolved_at end
         where id = ${claim.id}
       `;
-      if (state === "refunded") await db`update payments set status = 'refunded' where id = ${claim.payment_id}`;
+      if (state === "refunded" && claim.whole_invoice) await db`update payments set status = 'refunded' where id = ${claim.payment_id}`;
       await audit({ actorId: input.adminId, action: `payment_extra.${state}`, entityType: "payment_extra", entityId: claim.id, reason: input.reason, metadata: { orderId: claim.order_id, attempt: claim.attempt, gatewayRefundId: patch.refundId ?? null, error: patch.error?.slice(0, 200) ?? null }, ip: input.ip ?? null }, db);
     });
     return patch.error ? { state, error: patch.error } : { state };

@@ -121,7 +121,7 @@ export type DisputeDetails = {
 };
 
 /** لماذا لم يُطبق حدث استرداد تلقائيًا */
-export type RefundAlertReason = "unknown_invoice" | "other_environment" | "not_confirmed" | "amount_mismatch" | "order_not_paid" | "conflicting_refund" | "cancelled_after_completion" | "cancelled_unknown" | "extra_mismatch";
+export type RefundAlertReason = "unknown_invoice" | "other_environment" | "not_confirmed" | "amount_mismatch" | "order_not_paid" | "conflicting_refund" | "cancelled_after_completion" | "cancelled_unknown" | "extra_mismatch" | "extra_ambiguous";
 
 export type RefundAlertDetails = {
   refundId: string;

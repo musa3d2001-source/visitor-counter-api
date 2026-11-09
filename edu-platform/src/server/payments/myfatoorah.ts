@@ -308,13 +308,16 @@ export function verifyWebhookV2Signature(body: WebhookV2Body, signature: string 
 }
 
 /** تفسير نتيجة GetPaymentStatus بنفس منطق المكتبة الرسمية */
+/** عملية نجحت فعلًا لدى البوابة (تُكتب Succss في الوثائق) */
+export const isSuccessfulTransaction = (t: MfTransaction): boolean => t.TransactionStatus === "Succss" || t.TransactionStatus === "SUCCESS";
+
 export function interpretPaymentStatus(
   data: MfPaymentStatus,
   paymentId?: string,
 ): { state: "paid" | "failed" | "pending" | "expired"; transaction: MfTransaction | null; error: string | null } {
   const txs = data.InvoiceTransactions ?? [];
   if (data.InvoiceStatus === "Paid" || data.InvoiceStatus === "DuplicatePayment") {
-    const ok = txs.find((t) => t.TransactionStatus === "Succss" || t.TransactionStatus === "SUCCESS");
+    const ok = txs.find(isSuccessfulTransaction);
     if (ok) return { state: "paid", transaction: ok, error: null };
   }
   // Canceled هي القيمة الموثقة الوحيدة لفاتورة أُغلقت دون دفع. نعاملها كانتهاء: الطلب نفسه لا يتغير، ويمكن إنشاء فاتورة جديدة

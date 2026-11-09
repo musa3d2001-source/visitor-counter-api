@@ -124,7 +124,7 @@ async function claimRefund(environment: Environment, input: { orderId: string; a
       : await db<PaymentRow[]>`
           select p.id, p.provider, p.environment, p.amount_fils, p.gateway_invoice_id, p.gateway_payment_id from payments p
           where p.order_id = ${order.id} and p.status = 'paid'
-            and not exists (select 1 from payment_extras e where e.payment_id = p.id)
+            and not exists (select 1 from payment_extras e where e.payment_id = p.id and e.gateway_payment_id is null)
           order by p.created_at desc limit 1 for update
         `;
     if (!payment || payment.provider !== "myfatoorah" || !payment.gateway_invoice_id) throw new RefundError("لا يوجد دفع إلكتروني مرتبط بهذا الطلب، فلا يمكن استرداده عبر البوابة.");
@@ -364,17 +364,33 @@ export type RefundEvent = { invoiceId: string; refundId: string; status: string;
 export async function applyRefundEvent(gateway: RefundGateway, environment: Environment, ev: RefundEvent): Promise<void> {
   if (ev.status !== "REFUNDED" && ev.status !== "CANCELED") return;
   const details = (reason: RefundAlertReason) => ({ refundId: ev.refundId, status: ev.status, invoiceId: ev.invoiceId, amountFils: ev.amountFils, reason });
-  const [payment] = await sql<{ id: string; order_id: string; environment: string; extra_state: string | null }[]>`
-    select p.id, p.order_id, p.environment, (select e.state from payment_extras e where e.payment_id = p.id) as extra_state
-    from payments p where p.provider = 'myfatoorah' and p.gateway_invoice_id = ${ev.invoiceId}
+  const [payment] = await sql<{ id: string; order_id: string; environment: string }[]>`
+    select p.id, p.order_id, p.environment from payments p where p.provider = 'myfatoorah' and p.gateway_invoice_id = ${ev.invoiceId}
   `;
   if (!payment) return raiseRefundAlert(sql, { orderId: null, paymentId: null, details: details("unknown_invoice") });
   if (payment.environment !== environment) return raiseRefundAlert(sql, { orderId: payment.order_id, paymentId: payment.id, details: details("other_environment") });
 
-  if (payment.extra_state !== null) {
+  const extras = await sql<{ id: string; state: string; gateway_payment_id: string | null; gateway_refund_id: string | null }[]>`
+    select id, state, gateway_payment_id, gateway_refund_id from payment_extras where payment_id = ${payment.id}
+  `;
+  const perTransaction = extras.filter((e) => e.gateway_payment_id !== null);
+  let transactionExtra = perTransaction.find((e) => e.gateway_refund_id === ev.refundId) ?? null;
+  if (!transactionExtra && perTransaction.length) {
+    // الحدث لا يذكر معرفنا الخارجي، والبوابة تعرفه: extra:<id> يحدد العملية دون تخمين، حتى قبل وصول رد MakeRefund
+    const sent = (await gateway.getRefundStatus(ev.invoiceId, "InvoiceId")).find((r) => String(r.RefundId) === ev.refundId);
+    transactionExtra = perTransaction.find((e) => `extra:${e.id}` === sent?.ExternalIdentifier) ?? null;
+  }
+  if (transactionExtra) {
+    const extraId = transactionExtra.id;
+    await sql.begin((db) => applyExtraRefundEvent(db, { ...ev, extraId }));
+    return;
+  }
+
+  const wholeInvoice = extras.find((e) => e.gateway_payment_id === null);
+  if (wholeInvoice) {
     await sql.begin(async (db) => {
       const applied = await applyExtraRefundEvent(db, ev);
-      if (applied === 0 && ev.status === "REFUNDED" && payment.extra_state !== "refunded") {
+      if (applied === 0 && ev.status === "REFUNDED" && wholeInvoice.state !== "refunded") {
         await raiseRefundAlert(db, { orderId: payment.order_id, paymentId: payment.id, details: details("extra_mismatch") });
       }
     });
@@ -397,6 +413,10 @@ export async function applyRefundEvent(gateway: RefundGateway, environment: Envi
     // وللاسترداد فاتورة خاصة به (Refund.InvoiceId في الحدث) تختلف عن ReferencedInvoice.Id
     const list = await gateway.getRefundStatus(ev.invoiceId, "InvoiceId");
     confirmed = list.find((r) => String(r.RefundId) === ev.refundId && /^refunded$/i.test(r.RefundStatus)) ?? null;
+    // استرداد من لوحة البوابة على فاتورة بعمليتين ناجحتين: قد يخص أيًا منهما، وتطبيقه على الطلب قد يسحب وصولًا مدفوعًا
+    if (perTransaction.some((e) => e.state !== "refunded" && e.state !== "dismissed")) {
+      return raiseRefundAlert(sql, { orderId: payment.order_id, paymentId: payment.id, details: details("extra_ambiguous") });
+    }
   }
 
   const t = await sql.begin(async (db): Promise<Transition | null> => {

@@ -63,7 +63,7 @@ export default async function OrderPage({ params, searchParams }: { params: Prom
   const [settled] = await sql<{ gateway_payment_id: string | null; gateway_invoice_id: string | null; payment_method: string | null }[]>`
     select p.gateway_payment_id, p.gateway_invoice_id, p.payment_method from payments p
     where p.order_id = ${order.id} and p.provider = 'myfatoorah' and p.status in ('paid', 'refunded')
-      and not exists (select 1 from payment_extras e where e.payment_id = p.id)
+      and not exists (select 1 from payment_extras e where e.payment_id = p.id and e.gateway_payment_id is null)
     order by coalesce(p.paid_at, p.created_at) desc limit 1
   `;
   // الطالب يرى الاسترداد فقط بعد أن تقبله البوابة. المحاولات غير المؤكدة لا تخصه ولا تغير طلبه

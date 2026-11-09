@@ -1,12 +1,14 @@
 import { afterAll, afterEach, beforeAll, beforeEach, describe, expect, it, vi } from "vitest";
 import { closeOrder, createOrder } from "@/server/commerce/orders";
+import { evaluateCoupon } from "@/server/commerce/coupons";
+import { runPaymentReconciliation } from "@/server/payments/reconcile";
 import { OrderClosedError, OrderSettledError, PaymentInProgressError, checkOrderInvoices, resetPaymentMethodsCache, startPayment, verifyAndApplyPayment } from "@/server/payments/service";
 import { MyFatoorahError } from "@/server/payments/myfatoorah";
 import { resetEnvCache } from "@/server/env";
 import { startSimulator, type Simulator } from "../mocks/myfatoorah-simulator";
 import { closeDb, resetDb, sql } from "../helpers/db";
 import { asOtherServer, confirmPaid, expireInvoice, expireLocally, invoiceIdOf, invoicesCreated, makeStale, newOrder, orderRow, pause, paymentRows, statusCalls } from "../helpers/payment-flow";
-import { createBundle, createProduct, createUser } from "../helpers/factories";
+import { createBundle, createCoupon, createProduct, createUser } from "../helpers/factories";
 import { SIM_API_KEY, SIM_PORT, TEST_ENV, WEBHOOK_SECRET } from "../test-env";
 
 const ctx = vi.hoisted(() => ({ user: null as unknown, admin: null as unknown, cart: [] as string[], redirected: [] as string[] }));
@@ -419,6 +421,25 @@ describe("a declined attempt on an all-methods link", () => {
     await expect(verifyAndApplyPayment({ paymentId })).resolves.toMatchObject({ state: "failed" });
     expect((await orderRow(order.id)).status).toBe("pending");
     expect((await paymentRows(order.id)).map((p) => p.status)).toEqual(["failed", "pending"]);
+  });
+
+  it("an old decline on a replaced link leaves the order and its code alone, through Refresh and the job", async () => {
+    const coupon = await createCoupon({ kind: "percent", value: 10, maxRedemptions: 1 });
+    const user = await createUser({ phone: "+96599887766" });
+    const product = await createProduct({ priceFils: 3000 });
+    const order = await createOrder({ user, productIds: [product.id], couponCode: coupon.code, isTest: true });
+    const first = await startPayment(order, 1);
+    const { paymentId } = await sim.pay(invoiceIdOf(first.url), "fail");
+    await verifyAndApplyPayment({ paymentId });
+    const second = await startPayment(await orderRow(order.id), null);
+    expect(second.reused).toBe(false);
+
+    await expect(checkOrderInvoices(order.id)).resolves.toMatchObject({ allChecked: true });
+    expect((await orderRow(order.id)).status).toBe("pending");
+    await sql`update payments set last_checked_at = now() - interval '11 minutes', reconcile_claimed_at = null where order_id = ${order.id}`;
+    await runPaymentReconciliation();
+    expect((await orderRow(order.id)).status).toBe("pending");
+    await expect(evaluateCoupon(coupon.code, (await createUser()).id, 3000)).resolves.toMatchObject({ ok: false });
   });
 
   it("takes the order lock before the payment row, like every other payment path", async () => {

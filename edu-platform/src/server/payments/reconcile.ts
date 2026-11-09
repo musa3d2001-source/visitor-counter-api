@@ -64,8 +64,11 @@ export async function runPaymentReconciliation(): Promise<ReconcileReport> {
         join orders o on o.id = q.order_id
         where q.provider = 'myfatoorah' and q.gateway_invoice_id is not null
           and q.environment = ${cfg.environment}
-          and q.status in ('initiated', 'pending', 'failed', 'expired')
-          and (o.status in ('pending', 'failed') or coalesce(q.expires_at, q.created_at + make_interval(mins => ${INVOICE_TTL_MINUTES})) > now() - make_interval(hours => ${LINK_STILL_PAYABLE_HOURS}))
+          and (
+            (q.status in ('initiated', 'pending', 'failed', 'expired') and o.status in ('pending', 'failed'))
+            -- فاتورة مدفوعة تبقى ضمن المتابعة طوال عمر رابطها: عملية ثانية عليها لا يكشفها غير البوابة إن ضاع Webhook
+            or (q.status in ('initiated', 'pending', 'failed', 'expired', 'paid', 'refunded') and coalesce(q.expires_at, q.created_at + make_interval(mins => ${INVOICE_TTL_MINUTES})) > now() - make_interval(hours => ${LINK_STILL_PAYABLE_HOURS}))
+          )
           and (q.last_checked_at is null or q.last_checked_at < now() - make_interval(mins => ${RECHECK_AFTER_MINUTES}))
           and (q.reconcile_claimed_at is null or q.reconcile_claimed_at < now() - make_interval(mins => ${CLAIM_LEASE_MINUTES}))
         order by (o.status in ('pending', 'failed') and o.created_at <= now() - make_interval(hours => ${ORDER_LIFETIME_HOURS})) desc,

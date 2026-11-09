@@ -35,12 +35,13 @@ export type ExtraPayment = {
 const NEEDS_OWNER = ["open", "refund_failed", "refund_unknown"];
 
 /**
- * تسجيل دفعة زائدة مرة واحدة فقط لكل صف دفع (قيد فريد)، فإعادة التحقق أو تكرار Webhook لا ينشئ سجلًا ثانيًا ولا تدقيقًا ثانيًا.
+ * تسجيل دفعة زائدة مرة واحدة فقط (قيود فريدة)، فإعادة التحقق أو تكرار Webhook لا ينشئ سجلًا ثانيًا ولا تدقيقًا ثانيًا.
+ * بلا gatewayPaymentId: الفاتورة كلها زائدة (سجل واحد للفاتورة). وبه: عملية ناجحة إضافية على فاتورة (سجل لكل عملية).
  */
-export async function recordExtraPayment(db: Db, input: { paymentId: string; orderId: string; kind: ExtraPaymentKind; amountFils: number; details?: Record<string, unknown> }): Promise<boolean> {
+export async function recordExtraPayment(db: Db, input: { paymentId: string; orderId: string; kind: ExtraPaymentKind; amountFils: number; gatewayPaymentId?: string | null; details?: Record<string, unknown> }): Promise<boolean> {
   const inserted = await db<{ id: string }[]>`
-    insert into payment_extras (payment_id, order_id, kind, amount_fils, details)
-    values (${input.paymentId}, ${input.orderId}, ${input.kind}, ${input.amountFils}, ${db.json((input.details ?? {}) as never)})
+    insert into payment_extras (payment_id, order_id, kind, amount_fils, gateway_payment_id, details)
+    values (${input.paymentId}, ${input.orderId}, ${input.kind}, ${input.amountFils}, ${input.gatewayPaymentId ?? null}, ${db.json((input.details ?? {}) as never)})
     on conflict do nothing
     returning id
   `;
@@ -51,7 +52,7 @@ export async function recordExtraPayment(db: Db, input: { paymentId: string; ord
       action: "payment.extra_recorded",
       entityType: "payment_extra",
       entityId: inserted[0].id,
-      metadata: { orderId: input.orderId, paymentId: input.paymentId, kind: input.kind, amountFils: input.amountFils, ...input.details },
+      metadata: { orderId: input.orderId, paymentId: input.paymentId, kind: input.kind, amountFils: input.amountFils, gatewayPaymentId: input.gatewayPaymentId ?? null, ...input.details },
     },
     db,
   );
@@ -60,7 +61,7 @@ export async function recordExtraPayment(db: Db, input: { paymentId: string; ord
 
 const listColumns = () => sql`
   e.id, e.payment_id, e.order_id, o.number as order_number, o.is_test as order_is_test, e.kind, e.state, e.amount_fils, e.details,
-  p.gateway_invoice_id, p.gateway_payment_id, e.gateway_refund_id, e.refund_error, e.refund_reason, e.refund_requested_at, e.created_at
+  p.gateway_invoice_id, coalesce(e.gateway_payment_id, p.gateway_payment_id) as gateway_payment_id, e.gateway_refund_id, e.refund_error, e.refund_reason, e.refund_requested_at, e.created_at
 `;
 
 /** القائمة المعروضة للمالك: كل ما لم يُحسم بعد، الأحدث أولًا */
@@ -117,13 +118,16 @@ export async function dismissExtraPayment(input: { extraId: string; adminId: str
  * تطبيق حدث استرداد (Code 2) على دفعة زائدة. النتيجة مبنية على توقيع Webhook فقط، كما هو حال جدول refunds.
  * الاسترداد الذي لم نعرف رقمه بعد (أرسلناه وانقطع الرد، أو نفذه المالك من لوحة البوابة) لا يطابق إلا بالمبلغ كاملًا،
  * حتى لا يغلق استرداد جزئي سجل دفعة كاملة.
+ * extraId لسجل عملية بعينها عرفناه من البوابة. وبدونه يطابق سجل الفاتورة الكاملة فقط:
+ * صف الدفع لا يصير مستردًا لأن إحدى عمليتيه استُردت، والدفعة التي أكملت الطلب ما زالت قائمة.
  */
-export async function applyExtraRefundEvent(db: Db, input: { invoiceId: string; refundId: string; status: string; amountFils: number | null }): Promise<number> {
-  const matches = await db<{ id: string; payment_id: string; state: ExtraPaymentState; order_id: string }[]>`
-    select e.id, e.payment_id, e.state, e.order_id from payment_extras e
+export async function applyExtraRefundEvent(db: Db, input: { invoiceId: string; refundId: string; status: string; amountFils: number | null; extraId?: string }): Promise<number> {
+  const matches = await db<{ id: string; payment_id: string; state: ExtraPaymentState; order_id: string; gateway_payment_id: string | null }[]>`
+    select e.id, e.payment_id, e.state, e.order_id, e.gateway_payment_id from payment_extras e
     join payments p on p.id = e.payment_id
     where p.gateway_invoice_id = ${input.invoiceId}
       and e.state not in ('refunded', 'dismissed')
+      and ${input.extraId ? db`e.id = ${input.extraId}` : db`e.gateway_payment_id is null`}
       and (e.gateway_refund_id = ${input.refundId} or (e.gateway_refund_id is null and e.amount_fils = ${input.amountFils}))
     for update of e
   `;
@@ -131,7 +135,7 @@ export async function applyExtraRefundEvent(db: Db, input: { invoiceId: string; 
   for (const row of matches) {
     if (input.status === "REFUNDED") {
       await db`update payment_extras set state = 'refunded', gateway_refund_id = ${input.refundId}, resolved_at = now(), refund_claimed_at = null, refund_error = null where id = ${row.id}`;
-      await db`update payments set status = 'refunded' where id = ${row.payment_id}`;
+      if (row.gateway_payment_id === null) await db`update payments set status = 'refunded' where id = ${row.payment_id}`;
       await audit({ actorId: null, action: "payment_extra.refund_completed", entityType: "payment_extra", entityId: row.id, metadata: { orderId: row.order_id, gatewayRefundId: input.refundId } }, db);
       applied++;
     } else if (input.status === "CANCELED" && row.state !== "open") {
