@@ -37,6 +37,7 @@ import { ENTITLEMENT_SOURCE_LABELS, PRODUCT_TYPE_LABELS, type ProductType } from
 import { ar, gradeVars } from "@/lib/design";
 import { formatDate, formatDateTime } from "@/lib/utils";
 import { grantAction, revokeAction, setActiveAction } from "../actions";
+import { StudentEmailCorrection, StudentPasswordReset } from "../_components/recovery";
 import { BandChip, ProfileHero } from "../../_components/people/band";
 import { StudentsArt } from "../../_components/people/art";
 import { Kwd, PersonAvatar, SoftNote, Timeline, TimelineItem, TypeIcon } from "../../_components/people/bits";
@@ -129,6 +130,19 @@ export default async function StudentPage({ params }: { params: Promise<{ id: st
           hint={user.last_login_at ? formatTime(user.last_login_at) : undefined}
         />
       </StatGrid>
+
+      {user.role === "student" ? (
+        <Section title="استعادة الحساب" icon={<KeyRound />} tone="gold" description="للطالب الذي فقد الوصول إلى حسابه. كل إجراء يتطلب سببًا ويُسجَّل في سجل التدقيق.">
+          <div className="mb-4 flex flex-wrap gap-2" data-testid="student-account-state">
+            {user.email_verified_at ? <StatusPill tone="success">البريد مؤكد</StatusPill> : <StatusPill tone="warning">البريد غير مؤكد</StatusPill>}
+            {user.must_change_password ? <StatusPill tone="warning">بانتظار اختيار كلمة مرور جديدة</StatusPill> : null}
+          </div>
+          <div className="grid items-start gap-4 lg:grid-cols-2">
+            <StudentPasswordReset userId={user.id} />
+            <StudentEmailCorrection userId={user.id} currentEmail={user.email} />
+          </div>
+        </Section>
+      ) : null}
 
       <Section
         title="الصلاحيات (المكتبة)"

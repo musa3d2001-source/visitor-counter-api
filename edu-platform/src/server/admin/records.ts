@@ -116,9 +116,9 @@ export async function listStudents(q: string | undefined, limit = 200) {
 
 export async function getStudent(id: string) {
   const [user] = await sql<
-    { id: string; full_name: string; email: string; phone: string | null; role: string; is_active: boolean; created_at: Date; last_login_at: Date | null; grade_name: string | null }[]
+    { id: string; full_name: string; email: string; phone: string | null; role: string; is_active: boolean; created_at: Date; last_login_at: Date | null; grade_name: string | null; email_verified_at: Date | null; must_change_password: boolean }[]
   >`
-    select u.id, u.full_name, u.email, u.phone, u.role, u.is_active, u.created_at, u.last_login_at, g.name as grade_name
+    select u.id, u.full_name, u.email, u.phone, u.role, u.is_active, u.created_at, u.last_login_at, g.name as grade_name, u.email_verified_at, u.must_change_password
     from users u left join grades g on g.id = u.grade_id where u.id = ${id}
   `;
   if (!user) return null;

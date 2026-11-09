@@ -6,7 +6,9 @@ import { sql } from "@/server/db";
 import { adminGrant, adminRevoke } from "@/server/access/entitlements";
 import { invalidateAllUserSessions } from "@/server/auth/session";
 import { audit } from "@/server/platform/audit";
+import { mailIsReal } from "@/server/platform/mailer";
 import { AdminError, adminAction, isUuid, str } from "@/server/admin/common";
+import { correctStudentEmail, resetStudentPassword } from "@/server/admin/student-accounts";
 
 function requireReason(fd: FormData) {
   const reason = str(fd, "reason");
@@ -42,6 +44,29 @@ export async function revokeAction(_p: ActionState, fd: FormData): Promise<Actio
     const count = await adminRevoke({ userId, productId, adminId, reason, ip });
     revalidatePath(`/admin/students/${userId}`);
     return { ok: true, message: count ? `تم سحب ${count} صلاحية` : "لا توجد صلاحية نشطة لسحبها" };
+  });
+}
+
+/** لا يعيد تحميل الصفحة: تبقى الأسرار ظاهرة حتى يضغط المالك «تم» */
+export async function resetStudentPasswordAction(_p: ActionState, fd: FormData): Promise<ActionState> {
+  return adminAction(async ({ adminId, ip }) => {
+    const userId = str(fd, "userId");
+    if (!isUuid(userId)) throw new AdminError("طلب غير صالح");
+    const reason = requireReason(fd);
+    const { link, temporaryPassword } = await resetStudentPassword({ studentId: userId, adminId, reason, ip });
+    return { ok: true, message: "تم إلغاء كلمة المرور الحالية وتسجيل خروج الطالب من كل الأجهزة.", secrets: { link, temporaryPassword } };
+  });
+}
+
+export async function correctStudentEmailAction(_p: ActionState, fd: FormData): Promise<ActionState> {
+  return adminAction(async ({ adminId, ip }) => {
+    const userId = str(fd, "userId");
+    if (!isUuid(userId)) throw new AdminError("طلب غير صالح");
+    const reason = requireReason(fd);
+    await correctStudentEmail({ studentId: userId, newEmail: str(fd, "email"), adminId, reason, ip });
+    revalidatePath(`/admin/students/${userId}`);
+    revalidatePath("/admin/students");
+    return { ok: true, message: mailIsReal() ? "تم تصحيح البريد وإرسال رابط تأكيد إلى العنوان الجديد وتنبيه إلى القديم." : "تم تصحيح البريد. سيبقى غير مؤكد إلى أن يُفعَّل إرسال البريد." };
   });
 }
 
