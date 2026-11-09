@@ -312,6 +312,12 @@ test.describe("دورة المعلم الكاملة", () => {
     await expect(page.getByText("على ملفات المعلمين بانتظار موافقتك")).toBeVisible();
     const [{ waiting }] = await db()<{ waiting: number }[]>`select (select count(*) from teacher_profile_changes where status = 'pending')::int + (select count(*) from products where status = 'in_review')::int as waiting`;
     await expect(page.getByLabel(`${ar(waiting)} بانتظار المراجعة`).first()).toBeVisible();
+    // والمالك على جواله يرى العدد نفسه في القائمة
+    const desktopSize = page.viewportSize()!;
+    await page.setViewportSize({ width: 390, height: 844 });
+    await page.getByRole("button", { name: "فتح قائمة الإدارة" }).click();
+    await expect(page.getByRole("dialog").getByLabel(`${ar(waiting)} بانتظار المراجعة`)).toBeVisible();
+    await page.setViewportSize(desktopSize);
 
     // المالك يرى القديم والجديد معًا، وبعد الاعتماد يتغير ما يراه الزائر
     await page.goto("/admin/review");

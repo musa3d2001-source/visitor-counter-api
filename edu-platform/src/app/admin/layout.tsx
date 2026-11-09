@@ -32,12 +32,13 @@ export default async function AdminLayout({ children }: { children: React.ReactN
     actor.kind === "owner" ? pendingReviewCount() : Promise.resolve(0),
     actor.kind === "owner" ? pendingProfileChangesCount() : Promise.resolve(0),
   ]);
+  const waitingReview = pending + pendingProfiles;
   const role = actor.kind;
   const name = actor.kind === "teacher" ? actor.teacherName : actor.name;
   const logoUrl = settings.logo_key ? storage().publicUrl(settings.logo_key) : null;
   return (
     <div className="flex min-h-dvh bg-canvas">
-      <AdminSidebar siteName={settings.site_name} adminName={name} role={role} pendingReview={pending + pendingProfiles} logoUrl={logoUrl} />
+      <AdminSidebar siteName={settings.site_name} adminName={name} role={role} pendingReview={waitingReview} logoUrl={logoUrl} />
       <div className="relative isolate min-w-0 flex-1">
         {/* وهج مشمس خفيف أعلى مساحة العمل (زخرفي) */}
         <div
@@ -45,7 +46,7 @@ export default async function AdminLayout({ children }: { children: React.ReactN
           aria-hidden
         />
         <SandboxBanner />
-        <AdminMobileNav siteName={settings.site_name} role={role} pendingReview={pending} adminName={name} logoUrl={logoUrl} />
+        <AdminMobileNav siteName={settings.site_name} role={role} pendingReview={waitingReview} adminName={name} logoUrl={logoUrl} />
         <main id="main" className="mx-auto w-full max-w-[84rem] px-4 pt-6 pb-16 sm:px-6 lg:px-10 lg:pt-9">
           {children}
         </main>
