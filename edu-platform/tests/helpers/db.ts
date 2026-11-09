@@ -9,6 +9,8 @@ export async function resetDb() {
   const list = tables.map((t) => `"${t.tablename}"`).join(", ");
   await sql.unsafe(`truncate table ${list} restart identity cascade`);
   await seedStructure(getDb());
+  // المالك اعتمد الرسوم في بيئة الاختبار، واختبار fee-rules يحذف هذا الصف ليختبر ما قبل الاعتماد
+  await sql`insert into settings (key, value) values ('fee_rules_confirmed_at', ${sql.json("2026-01-01T00:00:00.000Z")})`;
 }
 
 export { closeDb, sql };

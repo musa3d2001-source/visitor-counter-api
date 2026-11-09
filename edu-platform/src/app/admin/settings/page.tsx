@@ -15,6 +15,7 @@ import { env } from "@/server/env";
 import { storage } from "@/server/storage";
 import { AdminPageHeader, Section } from "@/components/admin/page-header";
 import { SettingsForm } from "@/components/admin/settings-form";
+import { TeacherMoneyRules } from "@/components/admin/teacher-money-rules";
 import { FileUploader } from "@/components/admin/file-uploader";
 import { QuickAction } from "@/components/admin/confirm-button";
 import { StatusPill } from "@/components/admin/status-badge";
@@ -86,6 +87,7 @@ export default async function SettingsPage() {
             footer_note: s.footer_note,
             fee_percent: String(s.fee_percent_bps / 100),
             fee_fixed: filsToKwdString(s.fee_fixed_fils),
+            fee_rules_confirmed_on: s.fee_rules_confirmed_at ? formatDateTime(s.fee_rules_confirmed_at) : null,
           }}
         />
 
@@ -108,6 +110,8 @@ export default async function SettingsPage() {
               </div>
             ) : null}
           </Section>
+
+          <TeacherMoneyRules audience="owner" feePercentBps={s.fee_percent_bps} feeFixedFils={s.fee_fixed_fils} />
 
           <Section title="بوابة الدفع" description="تُضبط من متغيرات البيئة على الخادم، لا تُعرض المفاتيح هنا أبدًا." icon={<CreditCard />} tone="green">
             <div className="mb-3 flex flex-wrap items-center gap-2 rounded-2xl bg-canvas px-3 py-2.5">

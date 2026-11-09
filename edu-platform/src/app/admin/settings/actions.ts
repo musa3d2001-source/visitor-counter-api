@@ -60,6 +60,9 @@ export async function saveSettingsAction(_p: ActionState, fd: FormData): Promise
       fee_percent_bps: Math.round(feePct * 100),
       fee_fixed_fils: feeFixed,
     };
+    // الاعتماد مرة واحدة بخانة صريحة، ولا يتغير تاريخه بحفظ لاحق
+    const confirmsFeeRules = bool(fd, "fee_rules_confirm") && (await getSettings()).fee_rules_confirmed_at === null;
+    if (confirmsFeeRules) patch.fee_rules_confirmed_at = new Date().toISOString();
     const parsed = settingsSchema.partial().safeParse(patch);
     if (!parsed.success) {
       const errs: Record<string, string> = {};
@@ -86,6 +89,16 @@ export async function saveSettingsAction(_p: ActionState, fd: FormData): Promise
       },
       ip,
     });
+    if (confirmsFeeRules) {
+      await audit({
+        actorId: adminId,
+        action: "settings.fee_rules_confirm",
+        entityType: "settings",
+        entityId: "fee_rules_confirmed_at",
+        metadata: { feePercentBps: parsed.data.fee_percent_bps, feeFixedFils: parsed.data.fee_fixed_fils },
+        ip,
+      });
+    }
     revalidatePath("/", "layout");
     return { ok: true, message: "تم حفظ الإعدادات وتطبيقها على الموقع" };
   });

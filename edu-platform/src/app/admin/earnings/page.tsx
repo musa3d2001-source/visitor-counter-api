@@ -2,9 +2,11 @@ import { notFound, redirect } from "next/navigation";
 import { Banknote, Clock3, FileText, FlaskConical, HandCoins, Info, Landmark, Percent, Receipt, Wallet } from "lucide-react";
 import { requireStaff } from "@/server/auth/permissions";
 import { sql } from "@/server/db";
+import { getSettings } from "@/server/platform/settings";
 import { listEarnings, listPayouts, saleLines, teacherBalance, teacherSalesSummary } from "@/server/commerce/earnings";
 import { AdminPageHeader, Section, StatGrid, StatTile } from "@/components/admin/page-header";
 import { CellTitle, DataList, DataRow } from "@/components/admin/data-list";
+import { TeacherMoneyRules } from "@/components/admin/teacher-money-rules";
 import { ToneIcon } from "@/components/admin/icon-tile";
 import { StatusPill } from "@/components/admin/status-badge";
 import { Alert } from "@/components/ui/alert";
@@ -29,7 +31,7 @@ export default async function TeacherEarningsPage({ searchParams }: { searchPara
   if (actor.kind === "owner") redirect("/admin/teachers");
   if (actor.kind !== "teacher") notFound();
   const teacherId = actor.teacherId;
-  const [[t], summary, balance, earnings, payouts, sales] = await Promise.all([
+  const [[t], summary, balance, earnings, payouts, sales, settings] = await Promise.all([
     sql<{ revenue_share_bps: number | null }[]>`select revenue_share_bps from teachers where id = ${teacherId}`,
     teacherSalesSummary(teacherId, { includeTest }),
     teacherBalance(teacherId, { includeTest }),
@@ -41,6 +43,7 @@ export default async function TeacherEarningsPage({ searchParams }: { searchPara
       where l.teacher_id = ${teacherId} and o.status in ('paid', 'refunded') and (${includeTest} or not o.is_test)
       order by o.paid_at desc limit 100
     `,
+    getSettings(),
   ]);
   const shareOn = t?.revenue_share_bps !== null && t?.revenue_share_bps !== undefined;
   const sharePct = shareOn ? ar(String(t!.revenue_share_bps! / 100)) : null;
@@ -96,6 +99,8 @@ export default async function TeacherEarningsPage({ searchParams }: { searchPara
           لم يُفعَّل احتساب الأرباح لحسابك بعد. تواصل مع إدارة المنصة.
         </p>
       ) : null}
+
+      <TeacherMoneyRules audience="teacher" shareBps={t?.revenue_share_bps ?? null} feePercentBps={settings.fee_percent_bps} feeFixedFils={settings.fee_fixed_fils} />
 
       {shareOn ? (
         <Section title="تفاصيل الأرباح" description={`الصافي = قيمة البيع − حصته من الخصم − الرسوم المعتمدة. تبقى أرباح كل بيع قيد فترة الاسترداد ${count(REFUND_HOLD_DAYS, W.day)} من تأكيد الدفع ثم تدخل رصيدك المستحق، والمستردات تُعكس تلقائيًا.`} icon={<Wallet />} tone="gold" flush>

@@ -28,8 +28,10 @@ import { getTeacherAdmin, subjectOptions, teacherSubjectIds } from "@/server/adm
 import { listAdminProducts } from "@/server/admin/products";
 import { listEarnings, listPayouts, teacherBalance, teacherSalesSummary } from "@/server/commerce/earnings";
 import { storage } from "@/server/storage";
+import { getSettings } from "@/server/platform/settings";
 import { Section, StatCard, StatGrid } from "@/components/admin/page-header";
 import { TeacherForm } from "@/components/admin/teacher-form";
+import { TeacherMoneyRules } from "@/components/admin/teacher-money-rules";
 import { FileUploader } from "@/components/admin/file-uploader";
 import { OneTimeSecretForm } from "@/components/admin/one-time-secret-form";
 import { ConfirmButton, QuickAction } from "@/components/admin/confirm-button";
@@ -82,7 +84,7 @@ export default async function TeacherAdminPage({ params, searchParams }: { param
   const teacher = await getTeacherAdmin(id);
   if (!teacher) notFound();
   const includeTest = sp.test === "1";
-  const [subjects, chosen, products, summary, balance, earnings, payouts] = await Promise.all([
+  const [subjects, chosen, products, summary, balance, earnings, payouts, settings] = await Promise.all([
     subjectOptions(),
     teacherSubjectIds(id),
     listAdminProducts(owner, { teacherId: id }),
@@ -90,6 +92,7 @@ export default async function TeacherAdminPage({ params, searchParams }: { param
     teacherBalance(id, { includeTest }),
     listEarnings(id, { includeTest, limit: 200 }),
     listPayouts(id),
+    getSettings(),
   ]);
   const photo = teacher.photo_key ? storage().publicUrl(teacher.photo_key) : null;
   const shareOn = teacher.revenue_share_bps !== null;
@@ -554,6 +557,8 @@ export default async function TeacherAdminPage({ params, searchParams }: { param
           </DataList>
         )}
       </Section>
+
+      <TeacherMoneyRules audience="owner" shareBps={teacher.revenue_share_bps} feePercentBps={settings.fee_percent_bps} feeFixedFils={settings.fee_fixed_fils} />
 
       <Section title={`محتوى المعلم (${ar(products.length)})`} icon={<BookOpenCheck />} tone="sky">
         {products.length === 0 ? (

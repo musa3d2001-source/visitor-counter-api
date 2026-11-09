@@ -29,6 +29,8 @@ export const settingsSchema = z.object({
   /** الرسوم المعتمدة لحساب صافي أرباح المعلمين: نسبة (نقاط أساس 100 = 1%) + مبلغ ثابت لكل طلب بالفلس */
   fee_percent_bps: z.number().int().min(0).max(2000),
   fee_fixed_fils: z.number().int().min(0).max(10000),
+  /** متى اعتمد المالك الرسوم صراحة. وجود القيم لا يكفي، فالصفر قيمة افتراضية وقد يكون قرارًا. قبله لا يُباع محتوى أي معلم */
+  fee_rules_confirmed_at: z.string().nullable(),
 });
 
 export type PlatformSettings = z.infer<typeof settingsSchema>;
@@ -82,6 +84,7 @@ export const DEFAULT_SETTINGS: PlatformSettings = {
   footer_note: "جميع الحقوق محفوظة. المحتوى مخصص للاستخدام الشخصي للطالب فقط.",
   fee_percent_bps: 0,
   fee_fixed_fils: 0,
+  fee_rules_confirmed_at: null,
 };
 
 /**

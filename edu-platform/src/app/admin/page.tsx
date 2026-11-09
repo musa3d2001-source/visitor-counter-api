@@ -36,6 +36,7 @@ import { RECOVERY_CODE_WORD, recoveryCodesAreLow } from "@/lib/two-factor";
 import { Button } from "@/components/ui/button";
 import { Eyebrow } from "@/components/ui/section-head";
 import { AdminNotice, MiniStat, MoreLink, Section, StatGrid, StatTile } from "@/components/admin/page-header";
+import { getSettings } from "@/server/platform/settings";
 import { DataList, DataRow, RankList } from "@/components/admin/data-list";
 import { Segmented } from "@/components/admin/filter-bar";
 import { ToneIcon } from "@/components/admin/icon-tile";
@@ -57,7 +58,7 @@ export default async function AdminDashboard({ searchParams }: { searchParams: P
   const sp = await searchParams;
   const days = [7, 30, 90].includes(Number(sp.days)) ? Number(sp.days) : 30;
   const includeTest = sp.test === "1";
-  const [contentHealth, totals, latest, top, series, pending, teachersTop, paymentAlerts, extraPayments, refundsWaiting, mail, twoFactor] = await Promise.all([
+  const [contentHealth, totals, latest, top, series, pending, teachersTop, paymentAlerts, extraPayments, refundsWaiting, mail, twoFactor, platform] = await Promise.all([
     contentHealthCounts(),
     dashboardTotals(includeTest),
     latestOrders(8, includeTest),
@@ -70,6 +71,7 @@ export default async function AdminDashboard({ searchParams }: { searchParams: P
     refundsNeedingOwnerCount(),
     mailHealth(),
     getTwoFactorStatus(actor.userId),
+    getSettings(),
   ]);
   const qs = (patch: Record<string, string | undefined>) => {
     const p = new URLSearchParams({ ...(sp.days ? { days: sp.days } : {}), ...(includeTest ? { test: "1" } : {}) });
@@ -119,6 +121,12 @@ export default async function AdminDashboard({ searchParams }: { searchParams: P
           </>
         }
       />
+
+      {platform.fee_rules_confirmed_at === null ? (
+        <AdminNotice href="/admin/settings" icon={<ShieldAlert />} tone="coral" action="اعتماد الرسوم">
+          <b>رسوم الدفع لم تُعتمد بعد.</b> لن يُباع محتوى أي معلم حتى تعتمدها من الإعدادات، ولو كانت صفرًا.
+        </AdminNotice>
+      ) : null}
 
       {needsOwnerAttention(contentHealth) ? (
         <AdminNotice href="/admin/content-health" icon={<ShieldAlert />} tone="coral" action="المراجعة">

@@ -32,6 +32,8 @@ export type SettingsValues = {
   /** نسبة الرسوم كنص (مثال "2.5") والرسوم الثابتة بالدينار (مثال "0.100") */
   fee_percent: string;
   fee_fixed: string;
+  /** تاريخ اعتماد الرسوم معروضًا، أو null إن لم تُعتمد */
+  fee_rules_confirmed_on: string | null;
   footer_note: string;
 };
 
@@ -199,7 +201,7 @@ export function SettingsForm({ action, values }: { action: ServerAction; values:
 
       <Card title="الرسوم المعتمدة لحساب أرباح المعلمين" icon={<Percent />} tone="gold">
         <p className="mb-4 text-sm leading-7 text-muted">
-          تُخصم من قيمة كل طلب قبل احتساب حصة المعلم (مثل رسوم بوابة الدفع). تُطبق على المبيعات الجديدة فقط ولا تغيّر السجلات السابقة.
+          يدخل هذا المعدل في حساب حصة المعلم بدل رسوم ماي فاتورة الفعلية، فاضبطه ليقارب ما تدفعه. يُخصم من المبلغ المدفوع في كل طلب قبل احتساب الحصة، ويُطبق على الدفعات القادمة فقط ولا يغيّر السجلات السابقة.
         </p>
         <div className="grid gap-4 sm:grid-cols-2">
           <Field label="نسبة الرسوم من قيمة الطلب (%)" htmlFor="fee_percent" error={fe.fee_percent_bps} hint="مثال: 2.5، الحد الأقصى 20%">
@@ -209,6 +211,18 @@ export function SettingsForm({ action, values }: { action: ServerAction; values:
             <Input id="fee_fixed" name="fee_fixed" defaultValue={values.fee_fixed} inputMode="decimal" dir="ltr" className="num text-start" />
           </Field>
         </div>
+        {values.fee_rules_confirmed_on ? (
+          <p className="mt-4 text-sm leading-7 text-ink-soft" data-testid="fee-rules-confirmed">
+            اعتمدت هذه الرسوم في {values.fee_rules_confirmed_on}. أي تعديل بعدها يُسجَّل ويسري على الدفعات القادمة.
+          </p>
+        ) : (
+          <Checkbox
+            name="fee_rules_confirm"
+            data-testid="fee-rules-confirm"
+            className="mt-4 items-start text-[0.9rem] leading-7"
+            label="راجعت النسبة والمبلغ الثابت وأعتمدهما، حتى لو كانا صفرًا. قبل هذا الاعتماد لا يُباع محتوى أي معلم."
+          />
+        )}
       </Card>
 
       <Card title="الأسئلة الشائعة" icon={<CircleHelp />} tone="violet" description="تظهر في الصفحة الرئيسية بالترتيب نفسه.">

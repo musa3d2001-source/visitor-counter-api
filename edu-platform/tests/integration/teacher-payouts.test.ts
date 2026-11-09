@@ -229,8 +229,8 @@ describe("إلغاء التسوية", () => {
     await sale(t, 2000, 8);
     const id = await pay(t.id, 100);
     ctx.user = { id: t.user!.id, email: t.user!.email, fullName: "معلم", phone: null, role: "teacher", gradeId: null, isActive: true };
-    expect((await voidPayoutAction(null, form({ payoutId: id, reason: "محاولة" }))).ok).toBeFalsy();
-    expect((await recordPayoutAction(null, form({ teacherId: t.id, amount: "0.100", method: "cash", reason: "محاولة" }))).ok).toBeFalsy();
+    expect((await voidPayoutAction(null, form({ payoutId: id, reason: "محاولة" })))?.ok).toBeFalsy();
+    expect((await recordPayoutAction(null, form({ teacherId: t.id, amount: "0.100", method: "cash", reason: "محاولة" })))?.ok).toBeFalsy();
     expect((await teacherBalance(t.id)).paidFils).toBe(100);
     expect(await listPayouts(t.id)).toHaveLength(1);
   });
@@ -241,11 +241,11 @@ describe("الإجراء على الخادم", () => {
     const t = await createTeacher({ shareBps: 5000 });
     await sale(t, 2000, 8);
     const res = await recordPayoutAction(null, form({ teacherId: t.id, amount: "5.000", method: "bank_transfer", reference: "A1", reason: "تسوية" }));
-    expect(res.error).toContain("1.000");
-    expect(res.error).toContain("خانة التأكيد");
+    expect(res?.error).toContain("1.000");
+    expect(res?.error).toContain("خانة التأكيد");
     expect(await listPayouts(t.id)).toHaveLength(0);
     const ok = await recordPayoutAction(null, form({ teacherId: t.id, amount: "5.000", method: "bank_transfer", reference: "A1", reason: "تسوية", confirmOverBalance: "on" }));
-    expect(ok.ok).toBe(true);
+    expect(ok?.ok).toBe(true);
     expect((await teacherBalance(t.id)).balanceFils).toBe(-4000);
   });
 
@@ -253,9 +253,9 @@ describe("الإجراء على الخادم", () => {
     const t = await createTeacher({ shareBps: 5000 });
     await sale(t, 2000, 8);
     const id = await pay(t.id, 700);
-    expect((await voidPayoutAction(null, form({ payoutId: id, reason: "خطأ" }))).ok).toBe(true);
-    expect((await voidPayoutAction(null, form({ payoutId: id, reason: "خطأ" }))).error).toContain("ملغاة");
-    expect((await voidPayoutAction(null, form({ payoutId: "x", reason: "خطأ" }))).error).toBeTruthy();
+    expect((await voidPayoutAction(null, form({ payoutId: id, reason: "خطأ" })))?.ok).toBe(true);
+    expect((await voidPayoutAction(null, form({ payoutId: id, reason: "خطأ" })))?.error).toContain("ملغاة");
+    expect((await voidPayoutAction(null, form({ payoutId: "x", reason: "خطأ" })))?.error).toBeTruthy();
     expect((await teacherBalance(t.id)).balanceFils).toBe(1000);
   });
 });

@@ -8,6 +8,7 @@ import { audit } from "../platform/audit";
 import { assertProductAccess, PermissionError, type Actor } from "../auth/permissions";
 import { deleteVideo } from "../video/bunny";
 import { closedVideoProductIds } from "../video/policy";
+import { getSettings } from "../platform/settings";
 import { AdminError } from "./common";
 import { CONTAINER_PRODUCT_TYPES, PDF_PRODUCT_TYPES, VIDEO_PRODUCT_TYPES, isContainerType, isVideoType, type ProductStatus, type ProductType } from "@/lib/labels";
 import { randomSuffix } from "@/lib/utils";
@@ -440,8 +441,10 @@ export async function publishBlockers(productId: string, opts: PublishCheckOptio
     issues.push("الفيديو هنا ملف خام يستطيع الطالب تنزيله، فلا يُنشر في الإنتاج. استخدم Bunny Stream (VIDEO_PROVIDER=bunny) وارفع الدروس عليه، أو اضبط ALLOW_FILE_VIDEO=true إن كنت تقبل ذلك");
   }
   if (!opts.ignoreShare && !p.is_free) {
-    const missing = (await productTeacherShares(productId)).filter((t) => t.share_bps === null);
+    const shares = await productTeacherShares(productId);
+    const missing = shares.filter((t) => t.share_bps === null);
     if (missing.length) issues.push(`لم تُحدَّد نسبة ${missing.map((t) => t.display_name).join("، ")}. حددها في صفحة المعلم قبل النشر، فبدونها يُباع المنتج دون أن يُسجَّل للمعلم حقه`);
+    if (shares.length && (await getSettings()).fee_rules_confirmed_at === null) issues.push("لم تُعتمد رسوم الدفع بعد. راجعها واعتمدها من الإعدادات قبل نشر محتوى أي معلم");
   }
   return issues;
 }

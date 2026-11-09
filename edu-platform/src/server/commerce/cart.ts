@@ -72,10 +72,12 @@ export async function containerCoverage(containerIds: string[]): Promise<Map<str
 
 /**
  * منتجات منشورة لا يصح بيعها الآن، بما فيها ما نُشر قبل هذه الضوابط:
- * ملف معيب فيها أو في محتوياتها، أو سعر صفر لم يُعلَّم مجانيًا، أو معلم بلا نسبة متفق عليها، أو فيديو مغلق.
+ * ملف معيب فيها أو في محتوياتها، أو سعر صفر لم يُعلَّم مجانيًا، أو معلم بلا نسبة متفق عليها، أو محتوى معلم قبل اعتماد الرسوم، أو فيديو مغلق.
  */
 export async function unsellableProductIds(ids: string[]): Promise<Set<string>> {
   if (ids.length === 0) return new Set();
+  const settings = await getSettings();
+  const feeRulesConfirmed = settings.fee_rules_confirmed_at !== null;
   const rows = await sql<{ root: string }[]>`
     with recursive c(root, id) as (
       select r, r from unnest(${ids}::uuid[]) as r
@@ -88,10 +90,10 @@ export async function unsellableProductIds(ids: string[]): Promise<Set<string>> 
     join products root on root.id = c.root
     left join teachers t on t.id = item.teacher_id
     where (root.price_fils = 0 and not root.is_free)
-      or (t.id is not null and t.revenue_share_bps is null and not item.is_free and not root.is_free)
+      or (t.id is not null and not item.is_free and not root.is_free and (t.revenue_share_bps is null or not ${feeRulesConfirmed}::boolean))
       or exists (select 1 from product_files f where f.product_id = c.id and f.kind = 'main' and f.check_status = any(${FLAGGED_STATUSES}::text[]))
   `;
-  const closed = await closedVideoProductIds(sql, ids, await getSettings());
+  const closed = await closedVideoProductIds(sql, ids, settings);
   return new Set([...rows.map((r) => r.root), ...closed]);
 }
 

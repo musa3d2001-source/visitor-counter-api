@@ -28,6 +28,7 @@ export default async function globalSetup() {
     await sql.unsafe(`truncate table ${tables.map((t) => `"${t.tablename}"`).join(", ")} restart identity cascade`);
     rmSync(E2E_STORAGE_DIR, { recursive: true, force: true });
     await seedStructure(sql);
+    await sql`insert into settings (key, value) values ('fee_rules_confirmed_at', ${sql.json("2026-01-01T00:00:00.000Z")})`;
     await seedDemo(sql, { publish: true, storageDir: E2E_STORAGE_DIR, academicYear: "2026-2027" });
     await seedDemoTeachers(sql, { publish: true, storageDir: E2E_STORAGE_DIR, academicYear: "2026-2027" });
     await closeDemoBrowser();
