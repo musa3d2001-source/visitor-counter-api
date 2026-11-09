@@ -6,7 +6,7 @@ import { getCurrentSession, getCurrentUser } from "@/server/auth/session";
 import { safeNextPath } from "@/lib/utils";
 import { TWO_FACTOR_SETUP_PATH } from "@/lib/two-factor";
 import { LoginForm } from "./login-form";
-import { MobilePerks } from "../_components/auth-bits";
+import { MobilePerks } from "../_components/mobile-perks";
 
 export const metadata: Metadata = { title: "تسجيل الدخول", robots: { index: false } };
 

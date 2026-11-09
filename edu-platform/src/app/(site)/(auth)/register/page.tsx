@@ -5,7 +5,7 @@ import { getCurrentUser } from "@/server/auth/session";
 import { listGrades } from "@/server/catalog/queries";
 import { safeNextPath } from "@/lib/utils";
 import { RegisterForm } from "./register-form";
-import { MobilePerks } from "../_components/auth-bits";
+import { MobilePerks } from "../_components/mobile-perks";
 
 export const metadata: Metadata = { title: "إنشاء حساب", robots: { index: false } };
 

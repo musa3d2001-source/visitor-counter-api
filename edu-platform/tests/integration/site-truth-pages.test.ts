@@ -35,7 +35,7 @@ const { default: CheckoutPage } = await import("@/app/(site)/checkout/page");
 const { default: ContactPage } = await import("@/app/(site)/contact/page");
 const { SiteFooter } = await import("@/components/site/footer");
 const { AuthCard } = await import("@/components/site/auth-card");
-const { MobilePerks } = await import("@/app/(site)/(auth)/_components/auth-bits");
+const { MobilePerks } = await import("@/app/(site)/(auth)/_components/mobile-perks");
 const { SandboxBanner } = await import("@/components/site/sandbox-banner");
 const { generateMetadata } = await import("@/app/layout");
 
