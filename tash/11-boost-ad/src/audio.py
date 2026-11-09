@@ -182,7 +182,7 @@ if args.hook == 'A' and v1 is None:                                 # no voice 1
     for k, (dly, gn) in enumerate([(0.375, 0.2), (0.75, 0.1)]):
         for i in range(3): m.add(lp(wtick(NOTES[i]), 3200), tickT(0.0, i) + dly, gain=gn * vdk, pan=[-0.4, 0.4][k % 2], bus='sfx')
     m.add(wood_tock(560, 0.45 * vdk), fr(15), bus='sfx')
-if v1 is not None and args.hook == 'A': m.add(v1, 0.0, gain=0.9, bus='voice')
+if v1 is not None and args.hook == 'A': m.add(v1, 0.0, gain=1.8, bus='voice')
 if args.hook == 'B':                                      # a soft wooden tock under each word swap; heavy on «مشروعك»
     m.add(wood_tock(560, 0.45), fr(15), bus='sfx')
     m.add(thump(0.5), fr(30), bus='sfx'); m.add(wood_tock(380, 0.5), fr(30), bus='sfx')
@@ -273,7 +273,7 @@ m.add(mirwas_dum(), lt, gain=0.9, bus='sfx')
 m.add(group_clap(91, 10, 0.4), lt, gain=0.95, bus='sfx')
 m.add(hum_bed(fr(S['fallAway'][0]) - lt, 0.6), lt, gain=0.4, bus='sfx')
 v2 = load_stem('voice2.wav')
-if v2 is not None and S.get('talk'): m.add(v2, 9.4, gain=0.9, bus='voice')
+if v2 is not None and S.get('talk'): m.add(v2, fr(S['talk'][0]) - 0.02, gain=1.8, bus='voice')   # «شنو حسابهم؟!» with its words
 
 # typing ticks while the dots type on the lit ش (soft; louder in the crowd)
 crowd0 = fr(S['crowd'][0]) if S.get('crowd') else 99
@@ -305,12 +305,14 @@ def sonic_logo_local(t0):
     ticks = [0.12, 0.2867, 0.4533]
     for k, dt in enumerate(ticks): m.add(wtick(NOTES[k], 1.1), t0 + dt, gain=0.5, pan=[0.25, 0, -0.25][k], bus='sfx')
     m.add(whoosh(0.5, 400, 6000, pan_from=0.4, pan_to=-0.2), snap - 0.42, gain=0.5, bus='sfx')
-    m.add(hp(tash_hit(), 60), snap - 0.004, gain=1.05, bus='sfx')
+    m.add(hp(tash_hit(), 60), snap - 0.004, gain=0.6 if os.path.exists(os.path.join(HERE, 'assets', 'rec', 'voice3_tash.wav')) else 1.05, bus='sfx')
     m.add(pop(500, 1300, 0.06), fr(H3['shadda']) + 0.06, gain=0.42, bus='sfx')
     return E
 
 
+v3 = load_stem('voice3_tash.wav')                                   # «طشّ!»: the «ط» lands on the snap
 sonic_logo_local(H3['t0'])
+if v3 is not None: m.add(v3, snap - 0.04, gain=2.2, bus='voice')
 m.add(bass808(D2, 1.4, glide=D2 * 1.5, gain=0.32, drive=3.4), snap, bus='music')
 
 # --- hand-back + CTA: a soft tock as the dots settle, calm ticks, the last bar ends on the triplet
@@ -342,8 +344,9 @@ if H3.get('tag'): mus += [(fr(H3['tag'][0]) - 0.1, 0), (fr(H3['tag'][0]) + 0.1, 
 mus += [(fr(CT['swap'][0]), -2), (fr(CT['words'][0]), -5), (fr(CT['words'][0]) + 1.0, -5), (DUR - 0.6, -4), (DUR, -8)]
 mus.sort()
 duck = [(0, 0)]
-if v1 is not None and args.hook == 'A': duck += [(0.0, -6), (0.95, -6), (1.05, 0)]
-if v2 is not None and S.get('talk'): duck += [(9.35, 0), (9.42, -6), (10.6, -6), (10.75, 0)]
+if v1 is not None and args.hook == 'A': duck += [(0.0, -9), (0.95, -9), (1.05, 0)]
+if v2 is not None and S.get('talk'): duck += [(9.32, 0), (9.38, -9), (10.45, -9), (10.65, 0)]
+if v3 is not None: duck += [(snap + 0.03, 0), (snap + 0.06, -8), (snap + 0.7, -8), (snap + 0.9, 0)]
 duck = sorted(duck + [(DUR + TAIL, 0)])
 m.process_bus('music', lambda x: x * automation(len(x), mus)[:, None] * automation(len(x), duck)[:, None])
 m.process_bus('music', lambda x: x + reverb(hp(x, 250), decay=0.9, mix=1.0, tone=5000)[:len(x)] * 0.12)   # the room, high-passed
@@ -357,7 +360,8 @@ def low_mono(x, f=150, trim_db=-2.0):
 
 m.process_bus('music', lambda x: peak_eq(low_mono(x, 150, -3.0), 2500, 2.5, 0.8))
 m.process_bus('sfx', lambda x: low_mono(x, 150, 0.0))
-m.process_bus('sfx', lambda x: x * automation(len(x), [(0, 0), (snap - 0.3, 0), (snap - 0.25, -2), (snap - 0.01, 0), (DUR + TAIL, 0)])[:, None])
+sfx_auto = [(0, 0), (snap - 0.3, 0), (snap - 0.25, -2), (snap - 0.01, 0)] + ([(snap + 0.05, 0), (snap + 0.09, -5), (snap + 0.65, -5), (snap + 0.85, 0)] if v3 is not None else []) + [(DUR + TAIL, 0)]
+m.process_bus('sfx', lambda x: x * automation(len(x), sfx_auto)[:, None])
 
 # ----------------------------------------------------------------------------- loop-aware master
 import subprocess, tempfile
