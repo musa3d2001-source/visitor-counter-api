@@ -18,6 +18,8 @@
     "admin:create": "tsx scripts/create-admin.ts",
     "admin:reset-2fa": "tsx scripts/reset-admin-2fa.ts",
     "payments:purge-test-orders": "tsx scripts/purge-test-orders.ts",
+    "storage:backup": "tsx scripts/storage-backup.ts",
+    "storage:restore": "tsx scripts/storage-restore.ts",
     "test": "vitest run",
     "test:unit": "vitest run tests/unit",
     "test:integration": "vitest run tests/integration",
