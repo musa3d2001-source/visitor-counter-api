@@ -8,6 +8,7 @@ import postgres from "postgres";
 import { loadEnvFile } from "./_env";
 import { buildDemoPdf, closeDemoBrowser } from "./demo-pdf";
 import { seedDemoTeachers } from "./demo-teachers";
+import { maxPreviewPages } from "../src/lib/preview-policy";
 import { PDFDocument } from "pdf-lib";
 import { randomUUID } from "node:crypto";
 import { mkdirSync, writeFileSync } from "node:fs";
@@ -130,10 +131,11 @@ export async function seedDemo(sql: postgres.Sql, opts: { publish: boolean; stor
     const cacheKey = `${d.level}-${d.subject}-${d.type}`;
     let pdf = pdfCache.get(cacheKey);
     if (!pdf) {
-      pdf = await buildDemoPdf({ gradeName: GRADE_NAMES[d.level], subjectName: subject.name, typeTitle: TYPE_TITLES[d.type], pages: d.type === "final_notes" ? 8 : 5 });
+      pdf = await buildDemoPdf({ gradeName: GRADE_NAMES[d.level], subjectName: subject.name, typeTitle: TYPE_TITLES[d.type], pages: d.type === "final_notes" ? 10 : 5 });
       pdfCache.set(cacheKey, pdf);
     }
     const pageCount = (await PDFDocument.load(pdf)).getPageCount();
+    const previewCount = maxPreviewPages(pageCount);
     const [product] = await sql<{ id: string }[]>`
       insert into products (slug, type, title, summary, description, contents, grade_id, subject_id, academic_year, term,
                             price_fils, compare_at_price_fils, status, is_downloadable, preview_pages, page_count, published_at, sort_order)
@@ -142,25 +144,26 @@ export async function seedDemo(sql: postgres.Sql, opts: { publish: boolean; stor
         ${`محتوى تجريبي أصلي لأغراض العرض والاختبار. يحتوي على شرح مختصر وأمثلة محلولة وتدريبات لمادة ${subject.name}.`},
         ${"شرح مختصر لكل درس\nأمثلة محلولة خطوة بخطوة\nتدريبات متنوعة مع الإجابات\nأسئلة متوقعة للاختبار"},
         ${grade.id}, ${subject.id}, ${opts.academicYear}, ${d.term}, ${d.price}, ${d.compareAt ?? null}, ${status},
-        ${d.downloadable ?? false}, 2, ${pageCount}, ${opts.publish ? new Date() : null}, ${created})
+        ${d.downloadable ?? false}, ${previewCount}, ${pageCount}, ${opts.publish ? new Date() : null}, ${created})
       returning id
     `;
     // حفظ الملفات في التخزين المحلي الخاص
     const mainKey = `products/${product.id}/${randomUUID()}.pdf`;
     writePrivate(opts.storageDir, mainKey, pdf);
-    await sql`
-      insert into product_files (product_id, kind, title, storage_key, original_name, mime_type, size_bytes, page_count)
-      values (${product.id}, 'main', ${d.title}, ${mainKey}, 'demo.pdf', 'application/pdf', ${pdf.length}, ${pageCount})
+    const [mainFile] = await sql<{ id: string }[]>`
+      insert into product_files (product_id, kind, title, storage_key, original_name, mime_type, size_bytes, page_count, check_status, checked_at)
+      values (${product.id}, 'main', ${d.title}, ${mainKey}, 'demo.pdf', 'application/pdf', ${pdf.length}, ${pageCount}, 'ok', now())
+      returning id
     `;
     const src = await PDFDocument.load(pdf);
     const prev = await PDFDocument.create();
-    for (const p of await prev.copyPages(src, [0, 1])) prev.addPage(p);
+    for (const p of await prev.copyPages(src, Array.from({ length: previewCount }, (_, i) => i))) prev.addPage(p);
     const prevBytes = await prev.save();
     const prevKey = `previews/${product.id}/${randomUUID()}.pdf`;
     writePrivate(opts.storageDir, prevKey, prevBytes);
     await sql`
-      insert into product_files (product_id, kind, title, storage_key, original_name, mime_type, size_bytes, page_count, is_auto_preview)
-      values (${product.id}, 'preview', 'معاينة مجانية', ${prevKey}, 'preview.pdf', 'application/pdf', ${prevBytes.length}, 2, true)
+      insert into product_files (product_id, kind, title, storage_key, original_name, mime_type, size_bytes, page_count, is_auto_preview, check_status, checked_at, source_file_id)
+      values (${product.id}, 'preview', 'معاينة مجانية', ${prevKey}, 'preview.pdf', 'application/pdf', ${prevBytes.length}, ${previewCount}, true, 'ok', now(), ${mainFile.id})
     `;
     created++;
   }

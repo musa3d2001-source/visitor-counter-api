@@ -38,7 +38,7 @@ export function makeDemoClip(cacheDir: string, seconds = 8, label = "demo"): Cli
 const TEACHERS = [
   { slug: "demo-math-teacher", name: "أ. خالد (معلم تجريبي)", headline: "شرح الرياضيات للمرحلة المتوسطة، حساب تجريبي للعرض", level: 9, subject: "math", share: 4000 },
   { slug: "demo-science-teacher", name: "أ. نورة (معلمة تجريبية)", headline: "العلوم بأسلوب مبسط، حساب تجريبي للعرض", level: 8, subject: "science", share: 5000 },
-  { slug: "demo-english-teacher", name: "أ. يوسف (معلم تجريبي)", headline: "English made easy، حساب تجريبي للعرض", level: 7, subject: "english", share: null },
+  { slug: "demo-english-teacher", name: "أ. يوسف (معلم تجريبي)", headline: "English made easy، حساب تجريبي للعرض", level: 7, subject: "english", share: 4500 },
 ];
 
 export async function seedDemoTeachers(sql: postgres.Sql, opts: { publish: boolean; storageDir: string; academicYear: string }) {

@@ -75,20 +75,20 @@ export async function createProduct(opts: {
   const slug = `p-${uniq()}`;
   const status = opts.status ?? "published";
   const [p] = await sql<{ id: string; price_fils: number }[]>`
-    insert into products (slug, type, title, grade_id, subject_id, academic_year, term, price_fils, status, published_at)
+    insert into products (slug, type, title, grade_id, subject_id, academic_year, term, price_fils, is_free, status, published_at)
     values (${slug}, ${opts.type ?? "final_notes"}, ${opts.title ?? `منتج اختبار ${slug}`}, ${gradeId}, ${subjectId}, '2026-2027', 1,
-            ${opts.priceFils ?? 3000}, ${status}, ${status === "published" ? new Date() : null})
+            ${opts.priceFils ?? 3000}, ${(opts.priceFils ?? 3000) === 0}, ${status}, ${status === "published" ? new Date() : null})
     returning id, price_fils
   `;
   let mainFileId: string | null = null;
   let previewFileId: string | null = null;
   if (opts.withFile ?? true) {
-    const pdf = await makePdf(3, `Main ${slug}`);
+    const pdf = await makePdf(5, `Main ${slug}`);
     const key = `products/${p.id}/${randomUUID()}.pdf`;
     writePrivate(key, pdf);
     const [f] = await sql<{ id: string }[]>`
-      insert into product_files (product_id, kind, title, storage_key, original_name, mime_type, size_bytes, page_count)
-      values (${p.id}, 'main', 'الملف الرئيسي', ${key}, 'main.pdf', 'application/pdf', ${pdf.length}, 3)
+      insert into product_files (product_id, kind, title, storage_key, original_name, mime_type, size_bytes, page_count, check_status, checked_at)
+      values (${p.id}, 'main', 'الملف الرئيسي', ${key}, 'main.pdf', 'application/pdf', ${pdf.length}, 5, 'ok', now())
       returning id
     `;
     mainFileId = f.id;
@@ -98,8 +98,8 @@ export async function createProduct(opts: {
     const key = `previews/${p.id}/${randomUUID()}.pdf`;
     writePrivate(key, pdf);
     const [f] = await sql<{ id: string }[]>`
-      insert into product_files (product_id, kind, title, storage_key, original_name, mime_type, size_bytes, page_count, is_auto_preview)
-      values (${p.id}, 'preview', 'معاينة', ${key}, 'preview.pdf', 'application/pdf', ${pdf.length}, 1, true)
+      insert into product_files (product_id, kind, title, storage_key, original_name, mime_type, size_bytes, page_count, is_auto_preview, check_status, checked_at, source_file_id)
+      values (${p.id}, 'preview', 'معاينة', ${key}, 'preview.pdf', 'application/pdf', ${pdf.length}, 1, true, 'ok', now(), ${mainFileId})
       returning id
     `;
     previewFileId = f.id;
