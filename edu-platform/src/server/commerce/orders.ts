@@ -30,7 +30,7 @@ export type OrderRow = {
   closed_reason: OrderClosedReason | null;
 };
 
-export type OrderClosedReason = "expired" | "student_cancelled" | "already_owned";
+export type OrderClosedReason = "expired" | "student_cancelled" | "already_owned" | "coupon_unavailable";
 
 export type OrderItemRow = { id: string; product_id: string; title: string; product_type: string; unit_price_fils: number; slug: string | null };
 
@@ -106,7 +106,7 @@ export async function createOrder(input: {
     let couponId: string | null = null;
     let couponCode: string | null = null;
     if (input.couponCode) {
-      const check = await evaluateCoupon(input.couponCode, input.user.id, cart.subtotalFils, tx);
+      const check = await evaluateCoupon(input.couponCode, input.user.id, cart.subtotalFils, tx, { lock: true });
       if (!check.ok) throw new OrderError(check.error);
       discountFils = check.discountFils;
       couponId = check.coupon.id;

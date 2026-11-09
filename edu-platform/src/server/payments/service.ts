@@ -4,6 +4,7 @@ import { sql, type Db } from "../db";
 import { env, type Env } from "../env";
 import { filsToKwdString, kwdNumberToFils } from "@/lib/money";
 import { closeOrder, findOpenOrdersCovering, markOrderPaid, type OrderClosedReason, type OrderRow } from "../commerce/orders";
+import { reacquireCouponHold } from "../commerce/coupons";
 import { computeCart } from "../commerce/cart";
 import { accessibleProductIds } from "../access/entitlements";
 import { audit } from "../platform/audit";
@@ -251,6 +252,11 @@ async function decidePayment(orderId: string, environment: "sandbox" | "live", w
       await closeOrder(db, { orderId, reason: "already_owned", actorId: null });
       return { kind: "closed", reason: "already_owned" };
     }
+    // الطلب الذي فشل دفعه حرر كوده، فيعيد حجزه تحت قفل الكود قبل أي فاتورة
+    if (order.status === "failed" && order.coupon_id && !(await reacquireCouponHold(db, { couponId: order.coupon_id, userId: order.user_id }))) {
+      await closeOrder(db, { orderId, reason: "coupon_unavailable", actorId: null });
+      return { kind: "closed", reason: "coupon_unavailable" };
+    }
     const [open] = await db<{ payment_url: string }[]>`
       select payment_url from payments
       where order_id = ${orderId} and provider = 'myfatoorah' and environment = ${environment} and status = 'pending'
@@ -411,7 +417,7 @@ type ConfirmedPayment = {
  * نكمل الطلب فقط إن أُغلق بسبب انتهاء المدة أو إلغاء الطالب، وكل منتج ما زال منشورًا ومتاحًا،
  * وسعره اليوم لا يزيد عن السعر المدفوع (الزيادة تعني أنه يأخذه بأقل من ثمنه، والنقص لا يمنعه لأنه دفع ثمنه كاملًا)،
  * ولم يصبح مملوكًا له من طريق آخر (وإلا أصبح الخصم مكررًا).
- * القسيمة لا تُعاد مراجعتها: تحققنا منها عند إنشاء الطلب والمبلغ مطابق له.
+ * القسيمة لا تُعاد مراجعتها: تحققنا منها عند إنشاء الطلب والمبلغ مطابق له، ولو تجاوزت الدفعة المتأخرة حد الكود فالمال وصل بالسعر الذي عُرض.
  * أي مانع يعني أن الدفعة تُسجل للمالك ولا يتغير الطلب.
  */
 async function lateCompletionBlockers(db: Db, order: OrderRow): Promise<string[]> {

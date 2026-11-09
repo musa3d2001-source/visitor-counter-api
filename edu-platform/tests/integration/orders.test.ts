@@ -110,14 +110,14 @@ describe("coupons", () => {
     await expect(createOrder({ user, productIds: [p.id], couponCode: expired.code, isTest: false })).rejects.toBeInstanceOf(OrderError);
   });
 
-  it("enforces per-user limit (counted on paid orders)", async () => {
+  it("enforces per-user limit (paid orders and the student's own open orders)", async () => {
     const user = await createUser();
     const p1 = await createProduct({ priceFils: 2000 });
     const p2 = await createProduct({ priceFils: 2000 });
     const c = await createCoupon({ kind: "percent", value: 50, maxPerUser: 1 });
     const o1 = await createOrder({ user, productIds: [p1.id], couponCode: c.code, isTest: false });
-    // طلب غير مدفوع لا يستهلك الكود
-    expect(await evaluateCoupon(c.code, user.id, 2000)).toMatchObject({ ok: true });
+    // A9: الطلب المفتوح يحجز الكود لصاحبه، فلا يستخدمه في طلب ثانٍ قبل أن يكتمل الأول أو يُغلق
+    expect(await evaluateCoupon(c.code, user.id, 2000)).toMatchObject({ ok: false, error: "لديك طلب مفتوح يستخدم هذا الكود. أكمله أو ألغه أولًا" });
     await payOrder(o1.id, o1.total_fils);
     expect(await evaluateCoupon(c.code, user.id, 2000)).toMatchObject({ ok: false, error: "سبق لك استخدام هذا الكود" });
     await expect(createOrder({ user, productIds: [p2.id], couponCode: c.code, isTest: false })).rejects.toThrow("سبق لك استخدام هذا الكود");
