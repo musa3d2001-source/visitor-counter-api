@@ -306,12 +306,7 @@ export async function setTeacherCanUpload(teacherId: string, canUpload: boolean,
   await audit({ actorId: ownerId, action: canUpload ? "teacher.upload_enable" : "teacher.upload_disable", entityType: "teacher", entityId: teacherId, ip });
 }
 
-/** المعلم يحدّث ملفه العام (النبذة والعنوان والصورة فقط) */
-export async function updateOwnTeacherProfile(teacherId: string, userId: string, input: { headline: string; bio: string }) {
-  await sql`update teachers set headline = ${input.headline}, bio = ${input.bio} where id = ${teacherId} and user_id = ${userId}`;
-  await audit({ actorId: userId, action: "teacher.profile_update", entityType: "teacher", entityId: teacherId });
-}
-
+/** للمالك: صورة المعلم تتغير مباشرة. تعديلات المعلم نفسه تمر من teacher-profile-review */
 export async function setTeacherPhoto(teacherId: string, key: string | null, actorId: string) {
   const [t] = await sql<{ photo_key: string | null }[]>`select photo_key from teachers where id = ${teacherId}`;
   if (!t) throw new AdminError("المعلم غير موجود");

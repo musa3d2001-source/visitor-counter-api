@@ -91,3 +91,28 @@ create table if not exists product_rights_attestations (
 );
 create index if not exists product_rights_attestations_product_idx on product_rights_attestations (product_id, attested_at desc);
 alter table product_rights_attestations enable row level security;
+
+-- ---------------------------------------------------------------------
+-- تعديلات المعلم على ملفه العام تنتظر موافقة المالك، والصفحة العامة تقرأ teachers.* المعتمد فقط.
+-- فارغ في النص يعني بلا تغيير، وتعديل واحد معلق لكل معلم يحل الجديد فيه محل السابق.
+-- ---------------------------------------------------------------------
+create table if not exists teacher_profile_changes (
+  id uuid primary key default gen_random_uuid(),
+  teacher_id uuid not null references teachers(id) on delete cascade,
+  headline text check (headline is null or char_length(headline) <= 140),
+  bio text check (bio is null or char_length(bio) <= 3000),
+  photo_action text not null default 'none' check (photo_action in ('none', 'replace', 'remove')),
+  photo_key text,
+  status text not null default 'pending' check (status in ('pending', 'approved', 'rejected')),
+  submitted_by uuid references users(id) on delete set null,
+  submitted_at timestamptz not null default now(),
+  reviewed_by uuid references users(id) on delete set null,
+  reviewed_at timestamptz,
+  review_note text check (review_note is null or char_length(review_note) between 1 and 500),
+  check ((photo_action = 'replace') = (photo_key is not null)),
+  check (status = 'pending' or reviewed_at is not null),
+  check (status <> 'rejected' or review_note is not null)
+);
+create unique index if not exists teacher_profile_changes_one_pending on teacher_profile_changes (teacher_id) where status = 'pending';
+create index if not exists teacher_profile_changes_teacher_idx on teacher_profile_changes (teacher_id, submitted_at desc);
+alter table teacher_profile_changes enable row level security;

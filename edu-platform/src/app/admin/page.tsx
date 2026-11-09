@@ -26,6 +26,7 @@ import {
 import { dashboardTotals, latestOrders, salesByDay, topProducts, topTeachers } from "@/server/admin/stats";
 import { requireStaff, type Actor } from "@/server/auth/permissions";
 import { pendingReviewCount } from "@/server/admin/products";
+import { pendingProfileChangesCount } from "@/server/admin/teacher-profile-review";
 import { contentHealthCounts, needsOwnerAttention } from "@/server/admin/content-health";
 import { teacherDashboard } from "@/server/admin/teachers";
 import { openPaymentAlertCount } from "@/server/payments/monitoring";
@@ -49,7 +50,7 @@ import { ar, count, W } from "@/lib/design";
 import { PRODUCT_TYPE_LABELS, type ProductType } from "@/lib/labels";
 import { formatDateTime } from "@/lib/utils";
 import { DashHero, HeroChip } from "./_components/overview/bands";
-import { ALERT, EXTRA_PAYMENT, Kwd, CONTENT, MAIL_MESSAGE, REFUND, SALE, todayLabel, VERIFICATION_LINK } from "./_components/overview/money";
+import { ALERT, EXTRA_PAYMENT, Kwd, CONTENT, MAIL_MESSAGE, PROFILE_EDIT, REFUND, SALE, todayLabel, VERIFICATION_LINK } from "./_components/overview/money";
 import { QuickTiles } from "./_components/overview/quick-tiles";
 
 export const metadata = { title: "الرئيسية" };
@@ -60,7 +61,7 @@ export default async function AdminDashboard({ searchParams }: { searchParams: P
   const sp = await searchParams;
   const days = [7, 30, 90].includes(Number(sp.days)) ? Number(sp.days) : 30;
   const includeTest = sp.test === "1";
-  const [contentHealth, totals, latest, top, series, pending, teachersTop, paymentAlerts, extraPayments, refundsWaiting, mail, twoFactor, platform] = await Promise.all([
+  const [contentHealth, totals, latest, top, series, pending, teachersTop, paymentAlerts, extraPayments, refundsWaiting, mail, twoFactor, platform, pendingProfiles] = await Promise.all([
     contentHealthCounts(),
     dashboardTotals(includeTest),
     latestOrders(8, includeTest),
@@ -74,7 +75,9 @@ export default async function AdminDashboard({ searchParams }: { searchParams: P
     mailHealth(),
     getTwoFactorStatus(actor.userId),
     getSettings(),
+    pendingProfileChangesCount(),
   ]);
+  const reviewWaiting = pending + pendingProfiles;
   const qs = (patch: Record<string, string | undefined>) => {
     const p = new URLSearchParams({ ...(sp.days ? { days: sp.days } : {}), ...(includeTest ? { test: "1" } : {}) });
     for (const [k, v] of Object.entries(patch)) (v === undefined ? p.delete(k) : p.set(k, v));
@@ -188,6 +191,12 @@ export default async function AdminDashboard({ searchParams }: { searchParams: P
         </AdminNotice>
       ) : null}
 
+      {pendingProfiles > 0 ? (
+        <AdminNotice href="/admin/review" icon={<UserRound />} action="مراجعة الآن">
+          يوجد {count(pendingProfiles, PROFILE_EDIT)} على ملفات المعلمين بانتظار موافقتك
+        </AdminNotice>
+      ) : null}
+
       <StatGrid>
         <StatTile label="إجمالي المبيعات" value={<Kwd fils={totals.salesFils} />} icon={<Banknote />} href="/admin/reports" />
         <StatTile
@@ -204,7 +213,7 @@ export default async function AdminDashboard({ searchParams }: { searchParams: P
       <QuickTiles
         items={[
           { href: "/admin/products/new", label: "منتج جديد", sub: "فيديو أو مذكرة أو باقة", icon: <Plus />, tone: "sky" },
-          { href: "/admin/review", label: "مراجعة المحتوى", sub: pending ? count(pending, CONTENT) : "لا شيء بالانتظار", icon: <BadgeCheck />, tone: "gold", badge: pending ? ar(pending) : undefined },
+          { href: "/admin/review", label: "مراجعة المحتوى", sub: pending ? count(pending, CONTENT) : pendingProfiles ? count(pendingProfiles, PROFILE_EDIT) : "لا شيء بالانتظار", icon: <BadgeCheck />, tone: "gold", badge: reviewWaiting ? ar(reviewWaiting) : undefined },
           { href: "/admin/orders", label: "الطلبات", sub: "الدفع والاسترداد", icon: <Receipt />, tone: "green" },
           { href: "/admin/coupons", label: "الكوبونات", sub: "خصومات وعروض", icon: <Ticket />, tone: "coral" },
           { href: "/admin/reports", label: "التقارير", sub: "تصدير وتحليل", icon: <ChartColumn />, tone: "violet" },

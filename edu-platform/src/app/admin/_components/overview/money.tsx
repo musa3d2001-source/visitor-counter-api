@@ -41,6 +41,7 @@ export const PAYOUT: CountWord = { one: "تسوية", two: "تسويتان", plu
 
 /** «محتوى واحد / محتويان / ٣ محتويات / ١١ محتوى» */
 export const CONTENT: CountWord = { one: "محتوى", two: "محتويان", plural: "محتويات", acc: "محتوى" };
+export const PROFILE_EDIT: CountWord = { one: "تعديل", two: "تعديلان", plural: "تعديلات", acc: "تعديلًا" };
 
 /** تاريخ اليوم بالعربية (توقيت الكويت، أرقام هندية): «الثلاثاء ٣ نوفمبر» */
 export function todayLabel(d = new Date()) {

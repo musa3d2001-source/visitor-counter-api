@@ -23,7 +23,11 @@ export async function POST(req: Request) {
   try {
     const res = await completeUpload(parsed.data, actor);
     if (parsed.data.productId) revalidatePath(`/admin/products/${parsed.data.productId}`);
-    if (parsed.data.target === "teacher_photo") revalidatePath("/admin/teachers", "layout");
+    if (parsed.data.target === "teacher_photo") {
+      revalidatePath("/admin/teachers", "layout");
+      revalidatePath("/admin/profile");
+      revalidatePath("/admin/review");
+    }
     if (parsed.data.target === "logo") revalidatePath("/", "layout");
     return NextResponse.json({ ok: true, ...res }, { headers: { "cache-control": "no-store" } });
   } catch (err) {

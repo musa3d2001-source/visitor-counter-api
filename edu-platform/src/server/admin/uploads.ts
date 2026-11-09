@@ -13,6 +13,7 @@ import { activeVideoProvider, probeStoredMp4Duration, syncLessonStatus } from ".
 import { AdminError, UUID_RE } from "./common";
 import { firstMainFile, nextLessonOrder, refreshPageCount, regenerateAutoPreview, type PreviewResult } from "./products";
 import { setTeacherPhoto } from "./teachers";
+import { proposeTeacherPhoto } from "./teacher-profile-review";
 import { isVideoType, PDF_PRODUCT_TYPES, type ProductType } from "@/lib/labels";
 import { maxPreviewPages, PREVIEW_POLICY } from "@/lib/preview-policy";
 
@@ -318,6 +319,10 @@ export async function completeUpload(input: z.infer<typeof completeSchema>, acto
   }
 
   if (input.target === "teacher_photo") {
+    if (actor.kind === "teacher") {
+      await proposeTeacherPhoto(actor, input.key);
+      return { id: ref!, message: "رُفعت الصورة وهي بانتظار موافقة الإدارة، وتبقى صورتك الحالية ظاهرة حتى ذلك الحين" };
+    }
     await setTeacherPhoto(ref!, input.key, actor.userId);
     return { id: ref!, message: "تم تحديث صورة المعلم" };
   }

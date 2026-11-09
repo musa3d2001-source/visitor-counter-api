@@ -3,6 +3,7 @@ import { headers } from "next/headers";
 import { notFound } from "next/navigation";
 import { requireStaff } from "@/server/auth/permissions";
 import { pendingReviewCount } from "@/server/admin/products";
+import { pendingProfileChangesCount } from "@/server/admin/teacher-profile-review";
 import { getSettings } from "@/server/platform/settings";
 import { storage } from "@/server/storage";
 import { AdminMobileNav, AdminSidebar } from "@/components/admin/sidebar";
@@ -26,13 +27,17 @@ export default async function AdminLayout({ children }: { children: React.ReactN
     const path = (await headers()).get("x-pathname") ?? "";
     if (OWNER_ONLY_PREFIXES.some((p) => path === p || path.startsWith(`${p}/`))) notFound();
   }
-  const [settings, pending] = await Promise.all([getSettings(), actor.kind === "owner" ? pendingReviewCount() : Promise.resolve(0)]);
+  const [settings, pending, pendingProfiles] = await Promise.all([
+    getSettings(),
+    actor.kind === "owner" ? pendingReviewCount() : Promise.resolve(0),
+    actor.kind === "owner" ? pendingProfileChangesCount() : Promise.resolve(0),
+  ]);
   const role = actor.kind;
   const name = actor.kind === "teacher" ? actor.teacherName : actor.name;
   const logoUrl = settings.logo_key ? storage().publicUrl(settings.logo_key) : null;
   return (
     <div className="flex min-h-dvh bg-canvas">
-      <AdminSidebar siteName={settings.site_name} adminName={name} role={role} pendingReview={pending} logoUrl={logoUrl} />
+      <AdminSidebar siteName={settings.site_name} adminName={name} role={role} pendingReview={pending + pendingProfiles} logoUrl={logoUrl} />
       <div className="relative isolate min-w-0 flex-1">
         {/* وهج مشمس خفيف أعلى مساحة العمل (زخرفي) */}
         <div
