@@ -1,388 +1,429 @@
 {
-  "_note": "STAKK photoreal cut: edit decision list. Read by src/tools/conform.py (bakes graded, retimed 30 fps JPEG sequences into src/footage/<seq>/) and by the page (src/footage/manifest.json). Times: edit seconds (cues.json grid). keys: [t_edit, t_source, speed_in, speed_out]; between keys the source time follows a cubic Hermite with those speeds (so speed ramps are smooth and measured). Source clips are 24 fps, 1080x1912.",
-  "srcFps": 24,
-  "fps": 30,
-  "clips": {
-    "b1_smash": "footage/ai/b1_smash.mp4",
-    "b2_crust": "footage/ai/b2_crust.mp4",
-    "b3_heel": "footage/ai/b3_heel.mp4",
-    "b4_melt": "footage/ai/b4_melt.mp4",
-    "b5_stack": "footage/ai/b5_stack.mp4",
-    "b6_sauce": "footage/ai/b6_sauce.mp4",
-    "b7_crown": "footage/ai/b7_crown.mp4"
+ "_note": "STAKK photoreal cut: edit decision list. Read by src/tools/conform.py (bakes graded, retimed 30 fps JPEG sequences into src/footage/<seq>/) and by the page (src/footage/manifest.json). Times: edit seconds (cues.json grid). keys: [t_edit, t_source, speed_in, speed_out]; between keys the source time follows a cubic Hermite with those speeds (so speed ramps are smooth and measured). Source clips are 24 fps, 1080x1912.",
+ "srcFps": 24,
+ "fps": 30,
+ "clips": {
+  "b1_smash_v3": "footage/ai/b1_smash_v3.mp4",
+  "b2_sear": "footage/ai/b2_sear.mp4",
+  "c1_patty": "footage/ai/c1_patty.mp4",
+  "c2_double": "footage/ai/c2_double.mp4",
+  "c3_toppings": "footage/ai/c3_toppings.mp4",
+  "c4_sauce": "footage/ai/c4_sauce.mp4",
+  "b7_crown": "footage/ai/b7_crown.mp4"
+ },
+ "seq": [
+  {
+   "id": "S01",
+   "clip": "b1_smash_v3",
+   "from": 0.0,
+   "to": 0.9,
+   "keys": [
+    [
+     0.0,
+     1.25,
+     1.25,
+     1.25
+    ],
+    [
+     0.4,
+     1.75,
+     1.25,
+     1.25
+    ],
+    [
+     0.9,
+     2.375,
+     1.25,
+     1.25
+    ]
+   ],
+   "blend": false,
+   "crisp": [
+    0.4
+   ],
+   "frame": {
+    "z": 1.0
+   },
+   "why": "owner-approved retake b1_smash_v3 (compact, finely ground ball; the original b1 read as «جنه مخ»). One source frame per output frame for the whole shot (1.25x, nearest, no blends): f30 (1.250 s) at 0.00 -> f56 (2.333 s) at 0.867. The press descends through 0.00-0.37 with the ball whole and sharp under it (f30-f41, 12 frames); f41 (1.708 s) is the kiss, the first compressed frame f42 (1.750 s) lands on the smash cue 0.40, f43-f44 flatten it, f45 (1.875 s, 0.50) is the first sharp pressed frame, then the press holds while the steam starts. No blending anywhere: the press's motion-blurred frames (f36-f44) are shown as photographed, never doubled into a ghost rim"
   },
-  "seq": [
-    {
-      "id": "S01",
-      "clip": "b1_smash",
-      "from": 0.0,
-      "to": 0.9,
-      "keys": [
-        [
-          0.0,
-          0.77,
-          1.1,
-          1.1
-        ],
-        [
-          0.4,
-          1.21,
-          1.1,
-          1.25
-        ],
-        [
-          0.5333,
-          1.375,
-          1.25,
-          0.5
-        ],
-        [
-          0.9,
-          1.5583,
-          0.5,
-          0.5
-        ]
-      ],
-      "blend": [
-        [
-          0.55,
-          0.9
-        ]
-      ],
-      "crisp": [
-        0.4
-      ],
-      "frame": {
-        "z": 1.0
-      },
-      "why": "press contact f29 (1.21 s) on the smash cue 0.40; 1.1x into the hit, then 1.25x (one source frame per output frame, nearest) through the fast compression f29-f33 so the press's motion blur never doubles into blended ghosts; from f33 (0.533) the press is down and the steam builds at 0.5x, frame-blended. ECD fix: the old 0.55x blend from 0.44 showed a doubled press rim at 0.47-0.57"
-    },
-    {
-      "id": "S02",
-      "clip": "b2_crust",
-      "from": 0.9,
-      "to": 2.42,
-      "keys": [
-        [
-          0.9,
-          0.8,
-          1.0,
-          1.0
-        ],
-        [
-          2.3,
-          2.2,
-          1.0,
-          1.0
-        ]
-      ],
-      "blend": true,
-      "frame": {
-        "z": 1.0,
-        "shiftY": 450,
-        "fadeTop": 300
-      },
-      "why": "top-down crust; frame lowered 450 px with a dark falloff on top (the light pool ends) so the stacked title sits on calm griddle, never on crust. 2.15-2.42 is the whip handle"
-    },
-    {
-      "id": "S03",
-      "clip": "b3_heel",
-      "from": 1.93,
-      "to": 3.9,
-      "keys": [
-        [
-          1.93,
-          0.0,
-          0,
-          0
-        ],
-        [
-          2.4,
-          0.0,
-          0,
-          0.5
-        ],
-        [
-          2.83,
-          0.215,
-          0.5,
-          0.5
-        ],
-        [
-          2.97,
-          0.3375,
-          1.25,
-          1.25
-        ],
-        [
-          3.4,
-          0.875,
-          1.25,
-          0.8
-        ],
-        [
-          3.9,
-          1.325,
-          1.0,
-          1.0
-        ]
-      ],
-      "blend": [
-        [
-          2.4,
-          2.84
-        ]
-      ],
-      "crisp": [
-        3.4
-      ],
-      "frame": {
-        "z": 1.0
-      },
-      "why": "the source opens on a locked-off bun (f0-f5 identical), so frame 0 holds under the whip and the camera lands on the heel at 2.40; 0.5x until the patty enters, then 1.25x (24 fps -> 30 fps one-to-one, no blended ghosts) so the patty lands f21 (0.875 s) on 3.40"
-    },
-    {
-      "id": "S04",
-      "clip": "b2_crust",
-      "from": 3.9,
-      "to": 4.25,
-      "keys": [
-        [
-          3.9,
-          3.0,
-          1.0,
-          1.0
-        ],
-        [
-          4.25,
-          3.35,
-          1.0,
-          1.0
-        ]
-      ],
-      "blend": true,
-      "frame": {
-        "z": 1.6,
-        "cx": 0.62,
-        "cy": 0.0
-      },
-      "why": "1.6x punch-in on the top rim of the b2 patty (lace tips + fat bubbles), dark griddle above the label"
-    },
-    {
-      "id": "S05",
-      "clip": "b3_heel",
-      "from": 4.25,
-      "to": 4.9,
-      "keys": [
-        [
-          4.2667,
-          3.125,
-          1.25,
-          1.25
-        ],
-        [
-          4.3667,
-          3.25,
-          1.25,
-          1.0
-        ],
-        [
-          4.4,
-          3.4583,
-          1.0,
-          1.0
-        ],
-        [
-          4.9,
-          3.9583,
-          1.0,
-          1.0
-        ]
-      ],
-      "blend": [
-        [
-          4.45,
-          4.9
-        ]
-      ],
-      "crisp": [
-        4.4
-      ],
-      "frame": {
-        "z": 1.0
-      },
-      "why": "cheddar slice falls one source frame per output frame (f75-f78, nearest, no ghosting), then lands flat on f83 at 4.40. ECD fix: source f79-f82 are an AI ghost duplicate (a flat slice already on the patty while the falling slice is still above it, then a translucent bump as one morphs into the other), so the edit jumps f78 -> f83 across the contact: the slice slaps down in one frame"
-    },
-    {
-      "id": "S06",
-      "clip": "b4_melt",
-      "from": 4.9,
-      "to": 5.75,
-      "keys": [
-        [
-          4.9,
-          4.53,
-          0.5,
-          0.5
-        ],
-        [
-          5.75,
-          4.955,
-          0.5,
-          0.5
-        ]
-      ],
-      "blend": true,
-      "frame": {
-        "z": 1.0
-      },
-      "why": "half-time: the drip grows down the heel at 0.5x (frames 109-119), frame-blended"
-    },
-    {
-      "id": "S07a",
-      "clip": "b5_stack",
-      "from": 5.75,
-      "to": 6.4,
-      "keys": [
-        [
-          5.75,
-          0.0,
-          0.5,
-          0.5
-        ],
-        [
-          6.4,
-          0.325,
-          0.5,
-          0.5
-        ]
-      ],
-      "blend": true,
-      "frame": {
-        "z": 1.0
-      },
-      "why": "the finished double stack before anything falls (f0-f8, the first pickle is still above the top crop): the «دبل!» and cheese2 beats"
-    },
-    {
-      "id": "S07b",
-      "clip": "b5_stack",
-      "from": 6.4,
-      "to": 6.55,
-      "keys": [
-        [
-          6.4,
-          2.25,
-          1.0,
-          1.0
-        ],
-        [
-          6.65,
-          2.5,
-          1.0,
-          1.0
-        ]
-      ],
-      "blend": false,
-      "crisp": [
-        6.4,
-        6.525
-      ],
-      "frame": {
-        "z": 1.18,
-        "cx": 0.5,
-        "cy": 0.6
-      },
-      "why": "cut on contact: opens on the centre pickle's landing frame f54 (2.25 s) at 6.40; the first onion ring touches a pickle at real speed on f57 = 6.533 (the onion SFX sits on 6.525) and the shot cuts on that frame. ECD fix: it used to run to 6.65, and f58-f60 show the ring hovering over a pickle with air under it while the centre pickle morphs. Nearest frames: frame blending ghosted the falls, minterpolate warped them"
-    },
-    {
-      "id": "S08",
-      "clip": "b6_sauce",
-      "from": 6.55,
-      "to": 7.9,
-      "keys": [
-        [
-          6.5667,
-          0.0,
-          0.85,
-          0.85
-        ],
-        [
-          7.0,
-          0.375,
-          1.0,
-          1.25
-        ],
-        [
-          7.4,
-          0.875,
-          1.25,
-          1.0
-        ],
-        [
-          7.9,
-          1.425,
-          1.2,
-          1.2
-        ]
-      ],
-      "blend": [
-        [
-          6.55,
-          6.97
-        ]
-      ],
-      "crisp": [
-        7.4
-      ],
-      "frame": {
-        "z": 1.0
-      },
-      "why": "one continuous top-down take on red from the S07b cut (6.55): pickles and onion rings lying flat (b6 f0-f8, a locked-off plate, frame-blended), the sauce enters at the top on f9 (7.00), falls one source frame per output frame (1.25x, nearest) and makes contact f21 (0.875 s) on 7.40, then pools at 1.0-1.2x. ECD fix: replaces the old S07c (b5 f80-f86), where the onion rings stood propped at impossible angles over the pickles for 0.5 s"
-    },
-    {
-      "id": "S09",
-      "clip": "b7_crown",
-      "from": 7.9,
-      "to": 13.8,
-      "keys": [
-        [
-          7.9,
-          0.165,
-          1.25,
-          1.25
-        ],
-        [
-          8.4,
-          0.79,
-          1.25,
-          0.85
-        ],
-        [
-          10.4,
-          2.44,
-          0.8,
-          0.8
-        ],
-        [
-          13.8,
-          5.0,
-          0.706,
-          0.706
-        ]
-      ],
-      "blend": [
-        [
-          8.47,
-          13.8
-        ]
-      ],
-      "crisp": [
-        8.4
-      ],
-      "frame": {
-        "z": 1.0
-      },
-      "why": "S09 + S10 + clean hero handle as one take: crown lands f19 (0.79 s) on 8.40 at 1.25x, then 0.85-0.7x hero push; 10.40-13.80 only shows in ?clean=1"
-    }
-  ]
+  {
+   "id": "S02",
+   "clip": "b2_sear",
+   "from": 0.9,
+   "to": 2.4,
+   "keys": [
+    [
+     0.9,
+     0.0417,
+     1.25,
+     1.25
+    ],
+    [
+     2.3667,
+     1.875,
+     1.25,
+     1.25
+    ]
+   ],
+   "blend": false,
+   "frame": {
+    "z": 1.0,
+    "nd": [
+     760,
+     980,
+     0.72
+    ]
+   },
+   "why": "owner laughed at b2_lift: the spatula carried the patty on TOP of the blade, lifted backwards. Replaced by the CD-approved b2_sear (Kling 3.0 Turbo): low side-angle macro of a smash patty searing on the black griddle, crispy lacy browned edges, fat sizzling, steam rising through warm amber bokeh, no tools or hands, slow push-in. One source frame per output frame (1.25x, nearest, no blends): f1 (0.042 s) at 0.90 -> f45 (1.875 s) at 2.367, then the hard cut on the 2.40 beat. f0 is a held start frame (f0->f1 differs by 0.4/255) and is skipped. f1-f45 is the window where the steam curls up left of the title and only reaches «سالفة» in the last frames, and the bokeh lights stay left of the words (from ~f50 a thick steam cloud fills the title band; f76-f120 put a bokeh light behind «طبقة»); the lace edges hold their shape frame to frame. nd: a graduated ND (x0.72 in linear light above y 760, clear by y 980) takes the steam and kitchen behind the title down to S01's background density; the white-balance trim (conform.py TRIM) pulls the amber haze toward S01's kitchen"
+  },
+  {
+   "id": "S03a",
+   "clip": "c1_patty",
+   "from": 2.4,
+   "to": 3.4,
+   "keys": [
+    [
+     2.4,
+     0.0,
+     0.35,
+     0.35
+    ],
+    [
+     3.2333,
+     0.2917,
+     0.35,
+     1.25
+    ],
+    [
+     3.2667,
+     0.3333,
+     1.25,
+     1.25
+    ],
+    [
+     3.3667,
+     0.4583,
+     1.25,
+     1.25
+    ]
+   ],
+   "blend": [
+    [
+     2.4,
+     3.2
+    ]
+   ],
+   "crisp": [
+    3.2667,
+    3.3,
+    3.3333,
+    3.3667
+   ],
+   "frame": {
+    "z": 1.0
+   },
+   "why": "the red stage opens on the empty toasted heel (c1 f0-f7, a locked-off plate with nothing in frame, 0.35x frame-blended) under the heel label; f7 is reached on 3.233 and shown crisp, so no blend ever mixes in the patty (it first appears in f8). The patty drops through the frame one source frame per output frame: f8 (top edge) 3.267, f9 3.300, f10 3.333, f11 (contact, motion-smeared) 3.367"
+  },
+  {
+   "id": "S03b",
+   "clip": "c1_patty",
+   "from": 3.4,
+   "to": 3.65,
+   "keys": [
+    [
+     3.4,
+     0.75,
+     1.25,
+     1.25
+    ],
+    [
+     3.6333,
+     1.0417,
+     1.25,
+     1.25
+    ]
+   ],
+   "blend": false,
+   "crisp": [
+    3.4
+   ],
+   "frame": {
+    "z": 1.0
+   },
+   "why": "jump f11 -> f18 across the landing: source f12-f16 are the patty sliding and curling into place (an AI wobble with a curled tip, heavy smear) and f17 still ghosts its left edge. f18 = first crisp settled frame on the patty cue 3.40, then 1.25x one-to-one"
+  },
+  {
+   "id": "S04",
+   "clip": "c1_patty",
+   "from": 3.65,
+   "to": 4.25,
+   "keys": [
+    [
+     3.6667,
+     1.0833,
+     1.25,
+     1.25
+    ],
+    [
+     4.2333,
+     1.7917,
+     1.25,
+     1.25
+    ]
+   ],
+   "blend": false,
+   "frame": {
+    "z": 1.31,
+    "cx": 0.383,
+    "cy": 0.574
+   },
+   "why": "scale cut (same locked shot): 1.31x baked punch-in on the patty's left edge, the crispy lace overhanging the heel (c1 f26-f43, the patty at rest; the cheddar only enters at f58). The burger fills the width, so the rim sits ~100 px from the frame's left edge"
+  },
+  {
+   "id": "S05",
+   "clip": "c1_patty",
+   "from": 4.25,
+   "to": 4.9,
+   "keys": [
+    [
+     4.2667,
+     2.8333,
+     1.25,
+     1.25
+    ],
+    [
+     4.8667,
+     3.5833,
+     1.25,
+     1.25
+    ]
+   ],
+   "blend": false,
+   "crisp": [
+    4.4
+   ],
+   "frame": {
+    "z": 1.0
+   },
+   "why": "back to the wide on action (scale cut, same locked shot): the cheddar is still falling (f68), its corner touches the patty f70, the slice slaps down f71 and lies flat on the cheese cue 4.40 (f72, the crown rule: first landed frame on the beat; its flap's last trace is one frame of blur), clean f73, then the melt starts at 1.25x one-to-one (to f86)"
+  },
+  {
+   "id": "S06",
+   "clip": "c1_patty",
+   "from": 4.9,
+   "to": 5.75,
+   "keys": [
+    [
+     4.9,
+     4.1667,
+     0.6,
+     0.6
+    ],
+    [
+     5.7333,
+     4.6666,
+     0.6,
+     0.6
+    ]
+   ],
+   "blend": true,
+   "frame": {
+    "z": 1.31,
+    "cx": 0.62,
+    "cy": 0.6
+   },
+   "why": "half-time: 1.31x punch-in on the same burger's cheddar drip (c1 f100 -> f112 at 0.6x, frame-blended): the drip grows down the patty over the heel"
+  },
+  {
+   "id": "S07a",
+   "clip": "c2_double",
+   "from": 5.75,
+   "to": 6.12,
+   "keys": [
+    [
+     5.7667,
+     1.1667,
+     1.25,
+     1.25
+    ],
+    [
+     6.1,
+     1.5833,
+     1.25,
+     1.25
+    ]
+   ],
+   "blend": false,
+   "crisp": [
+    5.9
+   ],
+   "frame": {
+    "z": 1.0
+   },
+   "why": "the second patty falls through the frame (c2 f28-f30, real motion smear), touches the cheddar f31 and is down on the patty2 cue 5.90 (f32, «دبل!» pops on that frame), settles f33 (left edge smeared) and is crisp from f34; one source frame per output frame to f38 (6.10)"
+  },
+  {
+   "id": "S07b",
+   "clip": "c2_double",
+   "from": 6.12,
+   "to": 6.25,
+   "keys": [
+    [
+     6.1333,
+     2.75,
+     1.25,
+     1.25
+    ],
+    [
+     6.2333,
+     2.875,
+     1.25,
+     1.25
+    ]
+   ],
+   "blend": false,
+   "crisp": [
+    6.1667
+   ],
+   "frame": {
+    "z": 1.0
+   },
+   "why": "jump cut (same locked shot) straight onto the second cheddar slumping onto the patty (f66, already below the «دبل!» band), lying down on the cheese2 cue 6.15 (f67 at 6.167), f68 drape, f69 flat. Skips f39-f65 (the double at rest, then the slice falling through the «دبل!» band)"
+  },
+  {
+   "id": "S08a",
+   "clip": "c3_toppings",
+   "from": 6.25,
+   "to": 6.525,
+   "keys": [
+    [
+     6.2667,
+     0.5833,
+     1.25,
+     1.25
+    ],
+    [
+     6.5,
+     0.875,
+     1.25,
+     1.25
+    ]
+   ],
+   "blend": false,
+   "crisp": [
+    6.4
+   ],
+   "frame": {
+    "z": 1.0
+   },
+   "why": "jump cut: the first pickle falls (c3 f14-f17), touches the cheddar f18 on the pickles cue 6.40 and bounces (f19-f21) while the next pickles enter at the top"
+  },
+  {
+   "id": "S08b",
+   "clip": "c3_toppings",
+   "from": 6.525,
+   "to": 6.9,
+   "keys": [
+    [
+     6.5333,
+     2.0,
+     1.25,
+     1.25
+    ],
+    [
+     6.8667,
+     2.4167,
+     1.25,
+     1.25
+    ]
+   ],
+   "blend": false,
+   "crisp": [
+    6.6667
+   ],
+   "frame": {
+    "z": 1.0
+   },
+   "why": "jump cut on the 16th: all the pickles are down, the second onion ring falls (f48-f51) and lands f52 on 6.667 (onions cue 6.65); the stack settles"
+  },
+  {
+   "id": "S08c",
+   "clip": "c4_sauce",
+   "from": 6.9,
+   "to": 7.9,
+   "keys": [
+    [
+     6.9,
+     1.75,
+     1.25,
+     1.25
+    ],
+    [
+     7.4,
+     2.375,
+     1.25,
+     1.25
+    ],
+    [
+     7.8667,
+     4.375,
+     7.3,
+     7.3
+    ]
+   ],
+   "blend": false,
+   "crisp": [
+    7.4
+   ],
+   "frame": {
+    "z": 1.0
+   },
+   "why": "c3 f58 -> c4 f42 on the 6.90 beat (the stack is at rest on both; the rings settle a few px and steam starts): the sauce tip enters the top f43 (6.933), falls one source frame per output frame, touches the onion f57 on the sauce cue 7.40, then a speed ramp (linear acceleration 1.25 -> 7.3x, nearest frames) runs the rest of the pour: the stream thins (f94, the last attached frame, on 7.80), breaks, a last drip falls (f99 on 7.833) and the pool settles (f105 on 7.867). So the 7.90 jump cut to b7 f4 (same burger, same framing: c4 ends on the frame b7 starts from) only skips the pool settling, not the stream (ECD: before, the full stream vanished on that cut)"
+  },
+  {
+   "id": "S09",
+   "clip": "b7_crown",
+   "from": 7.9,
+   "to": 13.8,
+   "keys": [
+    [
+     7.9,
+     0.165,
+     1.25,
+     1.25
+    ],
+    [
+     8.4,
+     0.79,
+     1.25,
+     0.85
+    ],
+    [
+     10.4,
+     2.44,
+     0.8,
+     0.8
+    ],
+    [
+     13.8,
+     5.0,
+     0.706,
+     0.706
+    ]
+   ],
+   "blend": [
+    [
+     8.47,
+     13.8
+    ]
+   ],
+   "crisp": [
+    8.4
+   ],
+   "frame": {
+    "z": 1.0
+   },
+   "why": "S09 + S10 + clean hero handle as one take (unchanged by the one-stage re-edit): crown lands f19 (0.79 s) on 8.40 at 1.25x, then 0.85-0.7x hero push; 10.40-13.80 only shows in ?clean=1"
+  }
+ ]
 }

@@ -76,7 +76,7 @@ Says exactly what we do and where it stops. It's safe, but it has the least pers
 
 نسوي الإعلان نفسه: فكرة وسكربت، فيديو، تصميم، موشن ومونتاج — للريلز والتيك توك والستوري.
 
-🇰🇼 الخاص مفتوح، أو واتساب ↓
+🇰🇼 الخاص مفتوح — اطلب إعلانك بالخاص ↓
 
 </div>
 
@@ -99,7 +99,7 @@ It rhymes with the launch-ad hook. «إحنا نسويه… وإنت تنزّل�
 ### Why B
 - **Line 1 is the whole brand idea in one short line.** The tagline plus «•••» is the typing indicator, and it rhymes with the lime dots in the avatar right next to it. No other bio can say that.
 - **Line 2 is honest and complete.** «الإعلان نفسه» quietly rules out account management, and all five services are named, with social ads given as their platforms.
-- **Line 3 does the job of three lines.** The flag gives location without a sentence, «الخاص مفتوح» is warmer than «اطلب بالخاص», and «↓» points at the WhatsApp link below.
+- **Line 3 does the job of three lines.** The flag gives location without a sentence, «الخاص مفتوح» is warmer than «اطلب بالخاص», and «↓» points at the link below (TikTok). Contact is DM only for now.
 - **Two emoji only**, and neither starts a line as a bullet.
 - Switch to **C** later if the launch ad becomes the thing people recognise us by.
 
@@ -135,7 +135,7 @@ Highlight names show about 10–12 characters under the circle. Every name below
 
 **شلون تطلب؟**
 - الأربع خطوات (من بوست «شلون تطلب إعلانك؟»).
-- آخر إطار: ملصق رابط «اطلب إعلانك» ← الواتساب.
+- آخر إطار: «اطلب إعلانك بالخاص» (الخاص بس — بدون رقم).
 
 **الأسعار**
 - «السعر يعتمد على ثلاثة أشياء: نوع الإعلان، مدته، وكم مقاس تبي.»
@@ -157,18 +157,13 @@ Highlight names show about 10–12 characters under the circle. Every name below
 
 ## 5. Link in bio
 
-**One link at launch: WhatsApp Business.** One door, no link-tree page. Add a second link only when there's something worth linking to, such as a portfolio page.
+**Owner's decision (7 Nov): contact is DM only for now — no phone number, no WhatsApp.**
 
-```
-https://wa.me/965XXXXXXXX?text=%D9%87%D9%84%D8%A7%20%D8%B7%D8%B4%D9%91%D8%8C%20%D8%B9%D9%86%D8%AF%D9%8A%20%D9%85%D8%B4%D8%B1%D9%88%D8%B9%20%D9%88%D8%A3%D8%A8%D9%8A%20%D8%A5%D8%B9%D9%84%D8%A7%D9%86.
-```
-
-- Replace `965XXXXXXXX` with the real number: country code, no `+`, no spaces.
-- The pre-filled message decodes to: «هلا طشّ، عندي مشروع وأبي إعلان.»
-- **Link title:** «واتساب — اطلب إعلانك»
-- **Contact buttons** on the business profile: WhatsApp and Email `[[البريد]]`. Add a Call button only if someone actually answers the phone.
-- **Address:** leave it empty unless there's a place clients can visit. Don't invent an office.
-- WhatsApp greeting, away message and quick replies: use `07-ops/01-welcome-and-quick-replies.md` (`/hala` etc.). They're already written and match our prices and process.
+- **Link:** `https://www.tiktok.com/@tash.creative` — title «تيك توك».
+- **Contact buttons:** none for now. **Address:** empty. Don't invent an office.
+- Every post caption ends with both handles: إنستقرام @tash.creative.kw · تيك توك @tash.creative.
+- DM greeting and quick replies: `07-ops/01-welcome-and-quick-replies.md` (`/hala` etc.) as Instagram Saved Replies.
+- **No WhatsApp for now** (owner, 7 Nov: «واتس مانبيه حاليا»). Formal things (written offer, invoice, usage rights, delivery links, final approval) go by email `[[الإيميل]]` once the owner sets one up; it then goes on the profile as an Email contact button only, not in the bio.
 
 ---
 

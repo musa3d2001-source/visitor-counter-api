@@ -18,7 +18,10 @@
 
 ما عندك فكرة؟ عادي ترا — الفكرة شغلنا.
 
-الخاص مفتوح، أو الواتساب من الرابط بالبايو •••
+الخاص مفتوح — اطلب إعلانك بالخاص •••
+
+إنستقرام: @tash.creative.kw
+تيك توك: @tash.creative
 
 #TASHcreative #اعلانات_الكويت #مشاريع_كويتية #kuwait #q8 #adproduction
 ```
@@ -32,8 +35,8 @@
 | 03 | الخطوة ٢: عرض مكتوب فيه الباقة والسعر والموعد قبل لا نبدأ. |
 | 04 | الخطوة ٣: تثبّت بعربون، نكتب الفكرة والسكربت، وبعد الاعتماد نبدأ الإنتاج. |
 | 05 | الخطوة ٤: تستلم ملف جاهز بأعلى جودة وتنزّله وين ما تبي. |
-| 06 | الخاص مفتوح… أو الواتساب من الرابط بالبايو. |
+| 06 | الخاص مفتوح… تابعونا على الإنستقرام والتيك توك. |
 
 ## Notes for this post
 - The steps follow `07-ops/05-process-and-timeline.md` (written offer, 50% deposit, two approval gates, two revision rounds). If ops changes the process, change this post too.
-- The closing slide points to «الرابط بالبايو» rather than printing a phone number, so it never goes stale. Put the WhatsApp link in the bio before posting (see POSTING-PLAN).
+- The closing slide points to «الرابط بالبايو» rather than printing a phone number. Contact is DM only (no WhatsApp for now); the slide says «تابعونا على الإنستقرام والتيك توك.»

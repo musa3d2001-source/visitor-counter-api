@@ -3,3 +3,5 @@ tash/review/
 *.parts/
 *.silent.mp4
 __pycache__/
+tash/**/_rejected/
+tash/**/*.ready

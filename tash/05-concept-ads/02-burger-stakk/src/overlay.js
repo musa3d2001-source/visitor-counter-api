@@ -28,30 +28,31 @@ function outWords(spans, t, start, { dur = 0.14, drop = -30 } = {}) {
 }
 
 // ------------------------------------------------------------------------------------------- label layout
-// Every label sits on calm ground (red seamless, dark griddle, charcoal) and never on food detail; sup and hero can
-// arrive on different beats (the claim lands with the shot that proves it). anchors: per sequence, frame-space px.
+// One-stage cut: every layer falls from the top of frame through the red band where the type lives, so each label
+// arrives when its layer has landed and leaves before the next layer falls through its band (falls measured frame by
+// frame on the source, see SCRIPT.md). Labels sit on calm red, never on food; sup and hero can arrive on different beats.
+// anchors: per baked sequence, frame-space px on the real object (the conformed 1080x1920 frame).
 const LABELS = [
-  { key: 'heel', top: 820, sup: 'بريوش', hero: 'محمّص بالزبدة', supAt: 'heel', heroAt: +0.05, out: 3.12,
-    anchors: { S03: [230, 1300] } },                                 // the toasted top of the heel; gone by 3.26, before the falling patty reaches the label's band
-  { key: 'patty', top: 222, sup: 'سماش…', hero: 'أطرافه مقرمشة', heroSize: 120, heroLH: 1.0, supAt: 'patty', heroAt: 3.62, out: 4.11,
-    anchors: { S03: [200, 1212], S04: [385, 600] } },               // «سماش…» on the landed patty; the crisp claim on the real lace (S04);
-                                                                     // gone on the S05 cut so the falling cheddar never passes under it
-  { key: 'cheese', top: 236, sup: '…على مهله', hero: 'تشيدر يذوب', heroFirst: true, supAt: 'cheeseSlow', heroAt: 0, out: 'end',
-    anchors: { S05: [92, 1190], S06: [565, 1108] } },               // slice corner, then the drip as it leaves the cheese
-  { key: 'crunch', top: 226, sup: 'مخلل وبصل…', hero: 'يقرمشون', supAt: 'pickles', heroAt: 'onions', out: 7.01,
-    anchors: { S07b: [262, 792], S08: [190, 880] } },               // the left pickle as it lands (side), then the left pickle lying flat (top-down);
-                                                                     // gone (7.01-7.15) before the sauce, which enters at the top at 7.00, reaches the label's band (~7.17)
-  { key: 'sauce', top: 236, sup: 'صوص ستاك', hero: 'السرّي', supAt: 'sauce', heroAt: +0.05, out: 8.06,
-    anchors: { S08: [560, 760] } },                                  // the pool; exits before the crown falls through (8.17)
+  { key: 'heel', top: 740, sup: 'بريوش', hero: 'محمّص بالزبدة', supAt: 'heel', heroAt: +0.05, out: 3.19,
+    anchors: { S03a: [262, 1286] } },                                // the toasted top of the heel; gone by 3.333, when the patty (f10) reaches the band
+  { key: 'patty', top: 560, sup: 'سماش…', hero: 'أطرافه مقرمشة', heroSize: 120, heroLH: 1.0, supAt: 'patty', heroAt: 3.65, out: 4.11,
+    anchors: { S03b: [100, 1320], S04: [125, 1258] } },              // the patty's lacy left rim (wide), then the same rim in the 1.31x punch-in;
+                                                                     // gone on the S05 cut (4.267), where the cheddar is already in the band
+  { key: 'cheese', top: 600, sup: '…على مهله', hero: 'تشيدر يذوب', heroFirst: true, supAt: 'cheeseSlow', heroAt: 0, out: 'end',
+    anchors: { S05: [420, 1248], S06: [603, 1262] } },              // the slice, then its drip in the half-time punch-in; gone before patty 2 falls in (5.767)
+  { key: 'crunch', top: 300, sup: 'مخلل وبصل…', hero: 'يقرمشون', supAt: 6.525, heroAt: 'onions', out: 7.0,
+    anchors: { S08b: [190, 975], S08c: [190, 975] } },              // a landed pickle; arrives on the 6.525 cut, after the pickle rain (f16-f41 fill the band);
+                                                                     // gone by 7.14: the sauce blob (c4 f43 on, source x 472-655) reaches the pill's row at 7.13
+                                                                     // and the hero's row at 7.17 (measured per frame)
+  { key: 'sauce', top: 300, sup: 'صوص ستاك', hero: 'السرّي', supAt: 'sauce', heroAt: +0.05, out: 8.06,
+    anchors: { S08c: [565, 878], S09: [565, 870] } },               // the pool under the stream (c4 → b7 is one framing); exits before the crown falls through (8.17)
 ];
+// a leader re-draws only when the framing really changes (the two punch-ins); the jump cuts on the red stage keep it
+const REDRAW = new Set(['S04', 'S06']);
 
-export function createOverlay(ui, C, { W = 1080, H = 1920, toScreen, whipShift, seqFor, clean = false, layers }) {
+export function createOverlay(ui, C, { W = 1080, H = 1920, toScreen, seqFor, seqFrom, clean = false, layers }) {
   const T = C.text, D = C.drops;
   const svg = document.createElementNS(NS, 'svg'); svg.setAttribute('viewBox', `0 0 ${W} ${H}`); svg.setAttribute('class', 'lines'); ui.appendChild(svg);
-  // vertical-only blur for type that rides the whip (same travel axis as the picture's smear)
-  const defs = document.createElementNS(NS, 'svg'); defs.setAttribute('width', '0'); defs.setAttribute('height', '0'); defs.style.position = 'absolute';
-  defs.innerHTML = '<filter id="vblur" x="-10%" y="-60%" width="120%" height="220%" color-interpolation-filters="sRGB"><feGaussianBlur id="vblur-g" stdDeviation="0 0"/></filter>';
-  ui.appendChild(defs); const vg = defs.querySelector('#vblur-g');
 
   // ------------------------------------------------ title: four words stacked like layers on the dark griddle
   const title = el('div', 'title', ui); css(title, { top: '246px' });
@@ -62,7 +63,8 @@ export function createOverlay(ui, C, { W = 1080, H = 1920, toScreen, whipShift, 
     const box = el('div', 'label left', ui); box.style.top = cfg.top + 'px';
     const a = el('div', 'l-sup pill', null, cfg.sup); const b = el('div', 'l-hero', null, cfg.hero);
     if (cfg.heroSize) css(b, { fontSize: cfg.heroSize + 'px' }); if (cfg.heroLH) css(b, { lineHeight: String(cfg.heroLH) });
-    if (cfg.heroFirst) { box.appendChild(b); box.appendChild(el('div', '')).appendChild(a); } else { box.appendChild(el('div', '')).appendChild(a); box.appendChild(b); }
+    // hero first (the melt): the pill sits 22 px under the hero so it clears «يذوب»'s descenders and the 9 px drop shadow
+    if (cfg.heroFirst) { box.appendChild(b); const w = box.appendChild(el('div', '')); w.style.marginTop = '22px'; w.appendChild(a); } else { box.appendChild(el('div', '')).appendChild(a); box.appendChild(b); }
     const line = document.createElementNS(NS, 'path'); line.setAttribute('class', 'leader'); svg.appendChild(line);
     const dot = document.createElementNS(NS, 'circle'); dot.setAttribute('class', 'ldot'); svg.appendChild(dot);
     const ring = document.createElementNS(NS, 'circle'); ring.setAttribute('class', 'lring'); svg.appendChild(ring);
@@ -71,8 +73,8 @@ export function createOverlay(ui, C, { W = 1080, H = 1920, toScreen, whipShift, 
   const when = (v, base) => (typeof v === 'string' ? (D[v] ?? T[v]) : typeof v === 'number' && Math.abs(v) < 1 ? base + v : v);
   const win = L => T[L.key];
 
-  // ------------------------------------------------ «دبل!» over the finished double stack (S07a)
-  const dbl = el('div', 'double', ui); css(dbl, { top: '560px' }); const dblW = words(el('div', 'd-hero', dbl, 'دبل!'));
+  // ------------------------------------------------ «دبل!» high over the double (S07): above the band the second cheddar drapes through
+  const dbl = el('div', 'double', ui); css(dbl, { top: '260px' }); const dblW = words(el('div', 'd-hero', dbl, 'دبل!'));
 
   // ------------------------------------------------ hero offer: all in the red band above the crown (never on the food)
   const prod = el('div', 'product', ui); css(prod, { right: '72px', top: '236px', textAlign: 'right' });
@@ -140,9 +142,8 @@ export function createOverlay(ui, C, { W = 1080, H = 1920, toScreen, whipShift, 
     if (!tb) { L.line.style.opacity = '0'; L.dot.setAttribute('r', '0'); L.ring.style.opacity = '0'; return; }
     const sx = tb.x0 - rb.left + (tb.x1 - tb.x0) * 0.3, sy = tb.y1 - rb.top + 16;
     const [ax, ay] = toScreen(seq, t, A[0], A[1]);
-    // draw-on starts with the label or with the shot, whichever is later
-    const shotStart = { S04: 3.9, S06: 4.9, S08: C.shots[7].at }[seq] ?? first;
-    const s0 = Math.max(first, shotStart);
+    // draw-on starts with the label or with the punch-in, whichever is later
+    const s0 = REDRAW.has(seq) ? Math.max(first, seqFrom(seq)) : first;
     const dk = E.outCubic(clamp((t - s0 - 0.04) / 0.28)) * exitK;
     const ex = lerp(sx, ax, dk), ey = lerp(sy, ay, dk);
     const mx = sx, my = lerp(sy, ey, 0.55);
@@ -158,8 +159,8 @@ export function createOverlay(ui, C, { W = 1080, H = 1920, toScreen, whipShift, 
   function render(t) {
     for (const e of [ui, ec, sg]) e.style.display = clean ? 'none' : (e === ui ? 'block' : e.style.display);
     if (clean) return;
-    // title (S02): words rise into place on 16ths, squash on landing; exit riding the whip (same travel, vertical blur)
-    const tOn = t >= T.title[0] && t < C.shots[2].at;   // the title lives on S02's plate: it leaves with the plate at the whip's cut (no smear left on the red stage)
+    // title (S02): words rise into place on 16ths, squash on landing, and go out with the hard cut on the 2.40 beat
+    const tOn = t >= T.title[0] && t < T.title[1];
     title.style.display = tOn ? 'block' : 'none';
     if (tOn) {
       tWords.forEach((s, i) => {
@@ -169,12 +170,9 @@ export function createOverlay(ui, C, { W = 1080, H = 1920, toScreen, whipShift, 
         const sq = a > 0.11 ? 1 - 0.16 * Math.exp(-(a - 0.11) * 14) * Math.cos((a - 0.11) * 30) : 1;
         css(s, { opacity: String(clamp(a / 0.05)), transform: `translateY(${f1(y)}px) scale(${f3(2 - sq)}, ${f3(sq)})` });
       });
-      const sh = whipShift(t), v = Math.abs(whipShift(t + 1 / 60) - whipShift(t - 1 / 60));
-      css(title, { transform: `translateY(${f1(sh)}px)`, filter: v > 2 ? 'url(#vblur)' : 'none' });
-      vg.setAttribute('stdDeviation', `0 ${f1(Math.min(90, v * 0.3))}`);
     }
     for (const L of LB) labelFrame(L, t);
-    // «دبل!» — one word, big, lands with the double (patty2)
+    // «دبل!» — one word, big, lands with the double (patty2), drops out as the pickles fall in
     const dOn = t >= T.double[0] && t < T.double[1];
     dbl.style.display = dOn ? 'block' : 'none';
     if (dOn) { popWords(dblW, t, T.double[0], { rise: 120, rot: -8, from: 0.3 }); outWords(dblW, t, T.double[1] - 0.12, { dur: 0.12 }); }

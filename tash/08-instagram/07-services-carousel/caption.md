@@ -22,6 +22,9 @@
 
 تبي واحد منها؟ ولا الخمسة مع بعض؟ دزّ لنا بالخاص •••
 
+إنستقرام: @tash.creative.kw
+تيك توك: @tash.creative
+
 #TASHcreative #اعلانات_الكويت #موشن_جرافيك #تصميم_اعلاني #kuwait #ريلز #adproduction #motiongraphics
 ```
 

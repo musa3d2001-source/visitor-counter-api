@@ -16,6 +16,9 @@
 
 عندك عطر أو منتج فاخر؟ خلّ إعلانه علينا •••
 
+إنستقرام: @tash.creative.kw
+تيك توك: @tash.creative
+
 #TASHcreative #اعلانات_الكويت #عطور_الكويت #conceptad #kuwait #3D #productad #perfumead
 ```
 

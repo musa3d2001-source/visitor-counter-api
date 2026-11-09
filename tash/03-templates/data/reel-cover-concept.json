@@ -1,7 +1,7 @@
 {
   "variant": "concept",
   "theme": "ink",
-  "image": { "src": "/05-concept-ads/02-burger-stakk/still-hero.png", "dy": 70 },
+  "image": { "src": "/05-concept-ads/02-burger-stakk/still-hero.png" },
   "headline": "إعلان أكل؟\nلازم يجوّع.",
   "concept": { "slate": "CONCEPT AD — 02 / BURGER" },
   "card": "top"

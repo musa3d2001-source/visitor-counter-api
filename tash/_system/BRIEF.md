@@ -16,8 +16,12 @@ The work itself is the proof. Quality bar = a real studio reel, not "someone usi
 > **AI footage (owner-approved exception to §3.5):** the owner subscribed to Higgsfield and approved photoreal AI footage
 > for (a) the launch ad's people/hands shots (`tash/04-launch-ad/footage/ai/`) and (b) the STAKK burger and HABBA coffee
 > concept ads, after the owner judged their CGI "cartoonish, not real" (`tash/05-concept-ads/{02-burger-stakk,03-coffee-habba}/footage/ai/`).
-> Only the CD generates (the credits are the owner's); teammates never call Higgsfield. Before editing, read the folder's `_CD-NOTES.md`:
-> it gives event times, usable ranges, flaws and the credit line. Type, edit, sound and the TASH signature stay ours.
+> Only the CD generates (the credits are the owner's); teammates never call Higgsfield. The CD notes have been folded into each film's
+> `SCRIPT.md` (credit line, job ids, measured events) and `footage/HANDOFF-launch.md`; read those before editing. Type, edit, sound and the TASH signature stay ours.
+> **Licensed stock footage (owner-approved, 7 Nov):** real food footage from free-licence libraries (Mixkit; Pexels/Pixabay once an API key exists) may be
+> used IN ads, never "stolen" footage. Rules: only clips whose licence allows commercial use; record source URL, clip id and licence in the film's
+> SCRIPT.md; prefer clips from ONE shoot/series so the product stays consistent; our type, edit, grade, sound and signature on top; never imply the
+> stock restaurant is our client. Third-party social videos (YouTube/IG/TikTok) are reference-only (screenshots for look/texture), never in the film.
 > **Real-brand exception (owner request): `tash/09-pitch-mor/`** is a *spec pitch* ad for MOR «مور», a real café, made to be shown
 > to MOR. It is not client work and must never read as commissioned: keep the spec slate, invent no facts, and see `09-pitch-mor/BRIEF-MOR.md`.
 

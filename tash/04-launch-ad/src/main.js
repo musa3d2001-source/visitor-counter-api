@@ -38,7 +38,8 @@ const LY = V ? {
   sting: { logoW: 560, cy: 0.42 },
 };
 // vertical focus used when 1080×1920 footage is cover-cropped into 4:5 (0 = keep top, 1 = keep bottom)
-const FY = { HOOK: 0.20, GLORY: 0.52, BURGER: 0.62, COFFEE: 0.26, RING: 0.36, SPRAY: 0.40, PROD: 0.52, EDIT: 0.5, DIWAN: 0.22, CAFE: 0.30, CAR: 0.24, ASK: 0.12 };
+// COFFEE and RING share one focus so the cup-rim → ring match cut lands on the same pixels in 4:5 too (rim ≈ 524,506)
+const FY = { HOOK: 0.20, GLORY: 0.52, BURGER: 0.62, COFFEE: 0.26, RING: 0.26, SPRAY: 0.40, PROD: 0.52, EDIT: 0.5, DIWAN: 0.22, CAFE: 0.30, CAR: 0.24, ASK: 0.12 };
 const fy = id => (V ? 0.5 : FY[id] ?? 0.5);
 
 // ---------------------------------------------------------------------------------------------- canvas helpers
@@ -61,9 +62,10 @@ function fullFiltered(img, id, filter, o = {}) {
   fg.filter = filter; fg.drawImage(img, (iw - sw) * (o.fx ?? 0.5), (ih - sh) * (o.fy ?? fy(id)), sw, sh, 0, 0, W, H); fg.filter = 'none';
   g.drawImage(flt, 0, 0);
 }
-/** horizontal smear: running average of n shifted copies (directional blur for whips); overscanned so edges never show */
-function smear(img, id, shift, spread, n = 11) {
-  const os = 0.14, ow = W * (1 + 2 * os), oh = H * (1 + 2 * os);
+/** horizontal smear: running average of n shifted copies (directional blur for whips); overscanned so edges never show.
+ *  The first copy (alpha 1, offset shift − spread/2) always covers the frame while os·W ≥ |shift − spread/2|. */
+function smear(img, id, shift, spread, n = 11, os = 0.14) {
+  const ow = W * (1 + 2 * os), oh = H * (1 + 2 * os);
   for (let i = 0; i < n; i++) {
     const k = n === 1 ? 0 : i / (n - 1) - 0.5;
     g.globalAlpha = 1 / (i + 1);
@@ -161,7 +163,7 @@ const edName = el('div', 'tl', ed, 'TASH_LAUNCH_v12 · 9:16 · 30P'); css(edName
 const TRK = { v2: 78, v1: 120, a1: 206 }, TH = { v2: 30, v1: 72, a1: 64 }, TX0 = 92, TW = LY.ed.w - TX0 - 28;
 for (const [k, lab] of [['v2', 'V2'], ['v1', 'V1'], ['a1', 'A1']]) { const l = el('div', 'tl', ed, lab); css(l, { left: '28px', top: (TRK[k] + TH[k] / 2 - 9) + 'px' }); }
 const ED_CLIPS = [ // the montage, as clips on V1 (widths ∝ duration)
-  ['layl-final_3.00-6.00', 30, 2.0], ['stakk-crown_7.80-9.60', 40, 1.5], ['habba-pour_5.00-6.60', 44, 1.0], ['ring', 20, 1.25], ['layl-spray_6.00-8.00', 30, 2.25],
+  ['layl-final_3.00-6.00', 30, 2.0], ['stakk-crown_7.90-9.40', 37, 1.5], ['habba-pour_5.9667-6.9667', 29, 1.0], ['ring', 20, 1.25], ['layl-spray_6.00-8.00', 30, 2.25],
   ['layl-wire_3.00-6.00', 20, 0.9], ['layl-clay_3.00-6.00', 30, 0.9], ['layl-final_10.50-12.60', 30, 1.4],
 ];
 const edTot = ED_CLIPS.reduce((a, c) => a + c[2], 0);
@@ -271,7 +273,8 @@ async function drawGlory(t) {
 async function drawBurger(t) {
   const s = S.BURGER, img = await clip(s, t);
   const kIn = prog(t, s.at, 0.2); // whip landing: starts smeared, resolves over 6 f
-  if (kIn < 1) smear(img, 'BURGER', lerp(110, 0, E.outCubic(kIn)), lerp(240, 0, E.outCubic(kIn)));
+  // the overscan settles with the smear (1.28× → 1×), so the landing frame no longer pops from 1.28× to 1× at 3.70
+  if (kIn < 1) { const e = E.outCubic(kIn); smear(img, 'BURGER', lerp(110, 0, e), lerp(240, 0, e), 11, 0.14 * (1 - e)); }
   else full(img, 'BURGER');
   const b = burn(t); if (b > 0) burnFx(b);
 }
@@ -288,7 +291,7 @@ function burnFx(k) { // light-sweep burn: the frame burns out (brighter, flatter
 }
 async function drawRing(t) {
   const s = S.RING;
-  try { full(await clip(s, t), 'RING'); } catch { ink(); g.fillStyle = '#c9a24a'; g.beginPath(); g.arc(540, 570, 390, 0, 7); g.lineWidth = 60; g.strokeStyle = '#c9a24a'; g.stroke(); }
+  try { full(await clip(s, t), 'RING'); } catch { ink(); g.fillStyle = '#c9a24a'; g.beginPath(); g.arc(524, 654, 280, 0, 7); g.lineWidth = 60; g.strokeStyle = '#c9a24a'; g.stroke(); }
 }
 async function drawSpray(t) {
   const s = S.SPRAY, img = await clip(s, t);

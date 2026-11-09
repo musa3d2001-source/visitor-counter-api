@@ -2,9 +2,9 @@
   "1": {
     "folder": "01-habba-concept-reel",
     "video": "05-concept-ads/03-coffee-habba/HABBA-concept-9x16.mp4",
-    "video_sha1": "92099287ceb8e9752ecfb2606604423b98b444e2",
+    "video_sha1": "84b7d460772b7c5696b9ae48276dcd9957134222",
     "poster": "05-concept-ads/03-coffee-habba/poster.png",
-    "poster_sha1": "9e7631deeb52fdb726a36ec0aad24c2c8a0a90db",
+    "poster_sha1": "1064a9ca6549afa28839d9c748dacd7081142288",
     "spec": {
       "w": 1080,
       "h": 1920,
@@ -18,14 +18,14 @@
       "dur": 15.6
     },
     "cover": "unchanged",
-    "why": "photoreal cut (18:22): its poster already keeps the TASH pill at y≈290, inside the grid crop; the old CGI poster needed 30 px"
+    "why": "photoreal cut (re-delivered 18:51): its poster keeps the TASH pill at y≈292, inside the grid crop; the old CGI poster needed 30 px"
   },
   "2": {
     "folder": "02-stakk-concept-reel",
     "video": "05-concept-ads/02-burger-stakk/STAKK-concept-9x16.mp4",
-    "video_sha1": "c7fbabd8666aa7a65f9a8ed856d753b182913d26",
+    "video_sha1": "9075ce331d3c03582c254d5ad9a2dad5dcd47646",
     "poster": "05-concept-ads/02-burger-stakk/poster.png",
-    "poster_sha1": "210648dcb0f3a21f02910a5b5ca14a92f7a51870",
+    "poster_sha1": "4ac7540610fdb553b40f3a35c222d6ee75ea386b",
     "spec": {
       "w": 1080,
       "h": 1920,
@@ -39,7 +39,7 @@
       "dur": 13.8
     },
     "cover": "unchanged",
-    "why": ""
+    "why": "photoreal one-stage cut, S02 re-cut with the sear shot (7 Nov; poster.png unchanged since the 19:48 S01 retake): the poster slate starts at y≈271, inside the grid crop (240) with 31 px to spare"
   },
   "3": {
     "folder": "03-layl-concept-reel",
@@ -65,7 +65,7 @@
   "9": {
     "folder": "09-launch-reel",
     "video": "04-launch-ad/TASH-launch-9x16.mp4",
-    "video_sha1": "5ea0e735b2d11bd4d9e4fbf71764cfde1f1dd897",
+    "video_sha1": "05ea276f5b714f9b0171c618ca193808c8a60f85",
     "poster": "04-launch-ad/poster.png",
     "poster_sha1": "c302fe9e95455106449cd1903fc58d824eac6eb0",
     "spec": {

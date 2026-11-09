@@ -16,6 +16,9 @@
 
 اسحب وشوف. وإذا هذا اللي تدوّر عليه… الخاص مفتوح •••
 
+إنستقرام: @tash.creative.kw
+تيك توك: @tash.creative
+
 #TASHcreative #اعلانات_الكويت #مشاريع_كويتية #kuwait #adproduction #q8
 ```
 

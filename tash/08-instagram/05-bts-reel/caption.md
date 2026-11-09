@@ -16,6 +16,9 @@
 
 فكرتك تقدر تمشي نفس المشوار. دزّها لنا •••
 
+إنستقرام: @tash.creative.kw
+تيك توك: @tash.creative
+
 #TASHcreative #خلف_الكواليس #اعلانات_الكويت #3D #kuwait #behindthescenes #productad #motiondesign
 ```
 

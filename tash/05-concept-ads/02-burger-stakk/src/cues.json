@@ -1,5 +1,5 @@
 {
-  "_note": "STAKK concept ad — single source of truth for picture + sound. 120 BPM, beat k lands at t0 + 0.5k. Shot timings are LOCKED (launch-ad editor cuts from ?clean=1).",
+  "_note": "STAKK concept ad — single source of truth for picture + sound. 120 BPM, beat k lands at t0 + 0.5k. One-stage re-edit: from 2.40 the build is ONE burger on ONE red stage (c1-c4 chained clips, then b7), cut on the grid; S09-S12 unchanged (launch-ad editor cuts 7.90-9.40 from ?clean=1).",
   "fps": 30,
   "bpm": 120,
   "t0": 0.4,
@@ -13,44 +13,44 @@
     },
     {
       "id": "S02",
-      "name": "CRUST + TITLE",
+      "name": "SEAR + TITLE",
       "at": 0.9,
-      "end": 2.15
+      "end": 2.4
     },
     {
       "id": "S03",
-      "name": "BUILD A — heel, patty",
-      "at": 2.15,
-      "end": 3.9
+      "name": "RED STAGE — heel, patty (one locked shot from here to the hero)",
+      "at": 2.4,
+      "end": 3.65
     },
     {
       "id": "S04",
-      "name": "INSERT — lacy crust edge",
-      "at": 3.9,
+      "name": "PUNCH-IN — the patty's lacy edge (same shot)",
+      "at": 3.65,
       "end": 4.25
     },
     {
       "id": "S05",
-      "name": "BUILD B — cheddar",
+      "name": "RED STAGE — cheddar",
       "at": 4.25,
       "end": 4.9
     },
     {
       "id": "S06",
-      "name": "INSERT — cheese melt (half-time)",
+      "name": "PUNCH-IN — the melt (half-time, same shot)",
       "at": 4.9,
       "end": 5.75
     },
     {
       "id": "S07",
-      "name": "BUILD C — double burst",
+      "name": "RED STAGE — double, cheddar 2",
       "at": 5.75,
-      "end": 6.55
+      "end": 6.25
     },
     {
       "id": "S08",
-      "name": "TOP-DOWN — pickles + onion flat, sauce pour",
-      "at": 6.55,
+      "name": "RED STAGE — pickles, onions, sauce",
+      "at": 6.25,
       "end": 7.9
     },
     {
@@ -61,7 +61,7 @@
     },
     {
       "id": "S10",
-      "name": "HERO — turntable + offer",
+      "name": "HERO — push + offer",
       "at": 8.4,
       "end": 10.4
     },
@@ -79,10 +79,6 @@
     }
   ],
   "smash": 0.4,
-  "whip": [
-    1.95,
-    2.3
-  ],
   "drops": {
     "heel": 2.4,
     "patty": 3.4,
@@ -90,22 +86,22 @@
     "patty2": 5.9,
     "cheese2": 6.15,
     "pickles": 6.4,
-    "onions": 6.525,
+    "onions": 6.65,
     "sauce": 7.4,
     "crown": 8.4
   },
   "text": {
     "title": [
       0.9,
-      2.15
+      2.4
     ],
     "heel": [
       2.4,
-      3.3
+      3.333
     ],
     "patty": [
       3.4,
-      4.3
+      4.25
     ],
     "cheese": [
       4.4,
@@ -114,15 +110,15 @@
     "cheeseSlow": 4.9,
     "double": [
       5.9,
-      6.36
+      6.267
     ],
     "crunch": [
-      6.4,
-      7.35
+      6.525,
+      7.15
     ],
     "sauce": [
       7.4,
-      8.3
+      8.2
     ],
     "product": 8.55,
     "price": 8.9,
@@ -131,8 +127,21 @@
   },
   "endcard": 10.4,
   "sting": 11.4,
-  "_onions": "photoreal cut: onions moved 6.65 -> 6.525 (one 16th earlier, same grid). In the footage the first ring lands 3 source frames after the pickle; stretching that to 0.25 s needed 0.5x, which stuttered or ghosted the falling ring.",
-  "sauceIn": 7.0,
+  "sauceIn": 6.9,
+  "sauceBreak": 7.8333,
   "stingOffset": 0.1,
-  "_ecd": "ECD review: S07 now ends at 6.55 (cut on the onion ring's contact frame); S08 starts there as one top-down take (pickles and onions lying flat, sauce enters at sauceIn 7.00, contact 7.40). The old S07c (6.65-7.15, rings propped at impossible angles) is gone. stingOffset: the TASH sting picture and sonic logo both start 0.1 s in, so the cut at 11.40 lands on the typing bubble instead of two empty Ink frames."
+  "music": {
+    "_note": "score landmarks, kept exactly where the previous cut had them so the music is bit-identical (audio.py reads these, not the shot list)",
+    "introEnd": 2.15,
+    "half": [
+      4.9,
+      5.75
+    ],
+    "gap": [
+      8.15,
+      8.4
+    ],
+    "roll": 7.9
+  },
+  "_onestage": "One-stage re-edit (owner: «يلوع الجبد، فيه أخطاء ومو متناسق»): the build is cut from four chained clips of one burger on one stage. Every drop cue shows that layer's first landed frame (edl.json; SCRIPT.md §6). Moved: onions 6.525 -> 6.65 (a 16th later: the ring's real landing after a jump cut), sauceIn 7.00 -> 6.90 (the sauce enters on the 6.90 beat). Removed: the S02 -> S03 whip (hard cut on the 2.40 beat). Text windows follow the falls: every label leaves before the next layer falls through its band (crunch ends 7.14: the sauce blob reaches its row at 7.13). ECD pass: S02 became the spatula lift (b2_lift, owner found the top-down crust ugly), since replaced by the sear (b2_sear: the owner laughed at the lift, the patty sat on top of the blade); S08c speed-ramps the pour after contact, so the stream breaks on sauceBreak (7.833) before the 7.90 cut instead of vanishing on it."
 }

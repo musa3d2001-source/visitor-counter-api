@@ -2,12 +2,13 @@
 
 # طشّ | TASH Creative: ملف تسليم الإطلاق
 
-*Launch delivery index · 6 Nov 2026*
+*Launch delivery index · 6 Nov 2026 · photoreal update · STAKK one-stage cut (23:20) · STAKK S02 sear re-cut (7 Nov, 00:08)*
 
-هذا الفهرس يجمع كل ملفات إطلاق طشّ: الهوية، الشعار، القوالب، إعلان الإطلاق، الإعلانات التجريبية، الكلام، التشغيل، وحزمة إنستغرام.
-كل رقم بهالصفحة مقاس على الملفات نفسها يوم 6 نوفمبر 2026 (فحص الجودة الأخير).
+هذا الفهرس يجمع كل ملفات إطلاق طشّ: الهوية، الشعار، القوالب، إعلان الإطلاق، الإعلانات التجريبية، الكلام، التشغيل، حزمة إنستغرام، ومقترح «مور» (مو للنشر).
+«ستاك» و«حبّة» صاروا بلقطات واقعية بدال الـCGI، والتحديث وصل لإعلان الإطلاق والقوالب والدليل وإنستغرام. كل رقم بهالصفحة مقاس على الملفات نفسها يوم 6 نوفمبر 2026 بعد هالتحديث (فحص الجودة الأخير، §10). وبعدها انعاد مونتاج «ستاك» (ملف 23:20): من 2.40 لين الهيرو صار برجر واحد ينبني على نفس المسرح الأحمر، ووصل لإنستغرام (§10).
 
 **ما في شي هني منشور.** المالك ينشر بيده بعد ما يعتمد. الخطة والترتيب بـ`08-instagram/POSTING-PLAN.md`.
+**قبل النشر في قرارات تنتظر المالك:** §8.
 
 **ابدأوا بهالثلاث:** `01-brand-guide/TASH-Brand-Guide.pdf` ← `04-launch-ad/TASH-launch-9x16.mp4` ← `08-instagram/profile-preview.png`.
 
@@ -17,40 +18,46 @@
 
 | المجلد | شنو فيه | أهم الملفات | الحالة |
 |---|---|---|---|
-| `01-brand-guide/` | دليل الهوية · *Brand guide*، 29 صفحة A4 عرضي | `TASH-Brand-Guide.pdf` · `brand-guide.html` · `pages/page-01…29.png` | جاهز |
+| `01-brand-guide/` | دليل الهوية · *Brand guide*، 29 صفحة A4 عرضي | `TASH-Brand-Guide.pdf` · `brand-guide.html` · `pages/page-01…29.png` | جاهز. صفحات 12 و22 و23 و28 انحدثت: صور «ستاك» و«حبّة» الواقعية، ألوان «ستاك» مقاسة من جديد، وتحت كل صورة شلون انسوت، وصفحة التراخيص تذكر لقطات Higgsfield |
 | `02-logo/` | الشعار والتوقيع المتحرّك · *Logo & sting* | `svg/` (15 ملف) · `png/` (15) · `avatar/` (ليموني وحبر: SVG و1080 و320) · `motion/tash-logo-sting-9x16.mp4` · `motion/tash-logo-sting-9x16-lime.mp4` · `motion/tash-logo-sting-1x1.mp4` · `motion/tash-sonic-logo.wav` | جاهز |
-| `03-templates/` | قوالب إنستغرام · *Templates*: 13 قالب + ستوري متحرّك | `README.md` · `templates/*.html` · `data/*.json` · `examples/` · `examples/_overview.png` (نظرة شاملة) · `render.mjs` | جاهز |
-| `04-launch-ad/` | إعلان الإطلاق «هذا منتجك. / وهذا إعلانه.» · *Launch ad* | `TASH-launch-9x16.mp4` · `TASH-launch-4x5.mp4` · `poster.png` · `contact-sheet.png` · `SCRIPT.md` | جاهز، ويحتاج تأكيد المالك على لقطات الذكاء الاصطناعي (§7) |
-| `05-concept-ads/01-perfume-layl/` | «ليل» عطر · *LAYL perfume*، مبني 3D بالكامل | `LAYL-concept-9x16.mp4` · `poster.png` · `still-hero.png` · `contact-sheet.png` · `bts/` (wire / clay / final) · `SCRIPT.md` | جاهز |
-| `05-concept-ads/02-burger-stakk/` | «ستاك برجر» · *STAKK burger* | `STAKK-concept-9x16.mp4` (نسخة CGI) · `poster.png` · `still-hero.png` · `contact-sheet.png` · `SCRIPT.md` · `footage/ai/` | **قيد الشغل:** نسخة بلقطات واقعية بدال الـCGI |
-| `05-concept-ads/03-coffee-habba/` | «حبّة» قهوة مختصة · *HABBA coffee*، لقطات واقعية | `HABBA-concept-9x16.mp4` · `poster.png` · `still-hero.png` · `contact-sheet.png` · `SCRIPT.md` · `footage/HANDOFF-launch.md` | جاهز |
-| `06-copy/` | صوت طشّ والكلام · *Voice & copy* | `voice-and-tone.md` · `instagram-profile.md` · `grid-captions.md` · `pinned-posts.md` · `cta-bank.md` · `content-calendar-first-4-weeks.md` · `scripts-voiceover-options.md` | جاهز. `grid-captions.md` مسودة؛ الكابشن النهائي بـ`08-instagram` |
-| `07-ops/` | تشغيل العملاء · *Client ops* | `README.md` · `01…09-*.md` · `10-project-tracker.csv` · `rate-card.png` · `rate-card-story.png` · `order-form.png` · `order-form.pdf` | جاهز. الأسعار مبدئية لين يعتمدها المالك |
-| `08-instagram/` | حزمة الإطلاق · *Instagram launch package*: 9 بوستات | `POSTING-PLAN.md` · `01…09-*/` (ملفات الرفع + `caption.md`) · `profile-preview.png` · `profile-preview-light.png` · `stories/day2-new-work-habba.png` | جاهز ما عدا بوست 2 (ينتظر «ستاك» الجديد) |
-| `09-pitch-mor/` | مقترح غير رسمي لمقهى «مور» · *MOR spec pitch* | `BRIEF-MOR.md` · `footage/ai/frames/` | **قيد الشغل** (فريمات أولية بس). علامة حقيقية: **مو للنشر** على حسابنا، يتعرض على «مور» بس |
-| `_system/` | النظام المشترك · *Shared system* | `BRIEF.md` · `CRAFT-ADDENDUM.md` · `tokens.css` · `brand/` · `motion/` · `audio/` · `fonts/` · `tools/` · `vendor/` · `vendor/README.md` (التراخيص) | ثابت. لا تعدّلونه |
-| `review/` | مسودات ولقطات مراجعة · *Scratch* (6.3 GB) | — | مستبعد من git (`.gitignore`) |
+| `03-templates/` | قوالب إنستغرام · *Templates*: 13 قالب + ستوري متحرّك | `README.md` · `templates/*.html` · `data/*.json` · `examples/` · `examples/_overview.png` (نظرة شاملة) · `render.mjs` | جاهز. أمثلة «ستاك» صارت بالبرجر الواقعي، وانصلح لون نقاط الكتابة بغلاف الكاروسيل (مثالين جديدين: ليموني وفاتح) |
+| `04-launch-ad/` | إعلان الإطلاق «هذا منتجك. / وهذا إعلانه.» · *Launch ad* | `TASH-launch-9x16.mp4` · `TASH-launch-4x5.mp4` · `poster.png` · `contact-sheet.png` · `SCRIPT.md` · `footage/` | جاهز. لقطة البرجر ولقطة القهوة صارت من «ستاك» و«حبّة» الواقعيين، والخاتم انضبط على حافة الفنجان الجديد. قرارات المالك بـ§8 |
+| `05-concept-ads/01-perfume-layl/` | «ليل» عطر · *LAYL perfume*، 3D مبني بالكود بالكامل | `LAYL-concept-9x16.mp4` · `poster.png` · `still-hero.png` · `contact-sheet.png` · `bts/` (wire / clay / final) · `SCRIPT.md` | جاهز |
+| `05-concept-ads/02-burger-stakk/` | «ستاك برجر» · *STAKK burger*، لقطات واقعية (Higgsfield) | `STAKK-concept-9x16.mp4` · `poster.png` · `still-hero.png` · `contact-sheet.png` · `SCRIPT.md` · `footage/HANDOFF-launch.md` · `footage/ai/` | جاهز (ملف 7 نوفمبر 00:08). من 2.40 لين الهيرو البرجر ينبني طبقة طبقة بشكل متواصل: نفس البرجر، نفس المسرح الأحمر، نفس الكاميرا (أربع مقاطع متسلسلة c1–c4 وبعدها التاج b7)، بدال ثلاث أربع برجرات على خلفيتين. لقطة السماش انعادت بطلب المالك، ولقطة S02 (تحت «كل طبقة لها سالفة») صارت قرص اللحم وهو ينشوي على الصاج بلا ملعقة ولا يد، بدال لقطة الرفع اللي كانت اللحمة فيها فوق الملعقة بالمقلوب. مصادر الـCGI القديمة بـ`src/_cgi-v1/` للمرجع بس، والفيلم ما يقراها |
+| `05-concept-ads/03-coffee-habba/` | «حبّة» قهوة مختصة · *HABBA coffee*، لقطات واقعية (Higgsfield) | `HABBA-concept-9x16.mp4` · `poster.png` · `still-hero.png` · `contact-sheet.png` · `SCRIPT.md` · `footage/HANDOFF-launch.md` · `footage/ai/` | جاهز. مصادر الـCGI القديمة بـ`src/_cgi-v1/` للمرجع بس |
+| `06-copy/` | صوت طشّ والكلام · *Voice & copy* | `voice-and-tone.md` · `instagram-profile.md` · `grid-captions.md` · `pinned-posts.md` · `cta-bank.md` · `content-calendar-first-4-weeks.md` · `scripts-voiceover-options.md` | جاهز. `grid-captions.md` مسودة (صارت مطابقة للكابشن النهائي)؛ الكابشن اللي ينلصق بـ`08-instagram` |
+| `07-ops/` | تشغيل العملاء · *Client ops* | `README.md` · `01…09-*.md` · `10-project-tracker.csv` · `rate-card.png` · `rate-card-story.png` · `order-form.png` · `order-form.pdf` | جاهز. الأسعار مبدئية لين يعتمدها المالك (§8) |
+| `08-instagram/` | حزمة الإطلاق · *Instagram launch package*: 9 بوستات + ستوريين | `POSTING-PLAN.md` · `01…09-*/` (ملفات الرفع + `caption.md`) · `profile-preview.png` · `profile-preview-light.png` · `stories/day2-new-work-habba.png` · `stories/new-work-stakk.png` | جاهز. بوستات 1 و2 و9 صارت النسخ الواقعية، وعلامة «AI» لازم تنفعّل عليها (§8). بوست 2 صار نسخة «ستاك» الجديدة (23:20)، مطابقة بايت ببايت |
+| `09-pitch-mor/` | مقترح غير رسمي لمقهى «مور» · *MOR spec pitch* | `BRIEF-MOR.md` · `SCRIPT.md` · `MOR-spec-ad-9x16.mp4` · `MOR-spec-ad-4x5.mp4` · `poster.png` · `contact-sheet.png` · `footage/ai/` | **مو للنشر.** «مور» مقهى حقيقي بالجهراء، وما طلب هالإعلان ولا اعتمده. يتعرض على «مور» بس، بقرار المالك، وما ينزل على حسابنا ولا ينقدّم كشغل عميل. لوحة `SPEC AD — NOT COMMISSIONED BY MOR` لازم تبقى. يشتغل عليه فريق ثاني، وما انفحص بهالمراجعة |
+| `_system/` | النظام المشترك · *Shared system* | `BRIEF.md` · `CRAFT-ADDENDUM.md` · `tokens.css` · `brand/` · `motion/` · `audio/` · `fonts/` · `tools/` · `vendor/` · `vendor/README.md` (التراخيص) | ثابت. لا تعدّلونه (ملاحظة بـ§7) |
+| `review/` | مسودات ولقطات مراجعة · *Scratch* (6.4 GB) | — | مستبعد من git (`tash/review/` بـ`.gitignore`) |
 
 ---
 
 ## 2. الفيديوهات · Videos (measured)
 
-كلها: H.264 High · yuv420p · 30 fps · AAC 48 kHz ستيريو. الصوت مقاس بـ`_system/tools/audio-check.sh` (EBU R128، والذروة ذروة حقيقية).
+كلها: H.264 High · yuv420p · 30 fps · AAC 48 kHz ستيريو. الصوت مقاس بـ`_system/tools/audio-check.sh` (EBU R128، والذروة ذروة حقيقية). كلها بين −15 و−13 LUFS، وذروتها −1.4 dBTP أو أقل.
 
 | الملف | المقاس | المدة | الصوت (LUFS · dBTP) | ملاحظة |
 |---|---|---|---|---|
-| `04-launch-ad/TASH-launch-9x16.mp4` | 1080×1920 | 27.0 ث | −14.0 · −1.5 | ريل، والماستر لبوست 9 |
+| `04-launch-ad/TASH-launch-9x16.mp4` | 1080×1920 | 27.0 ث | −14.0 · −1.5 | ريل، والماستر لبوست 9. البرجر والقهوة من «ستاك» و«حبّة» الواقعيين؛ صوت الصبّ يوقف مع خيط الحليب |
 | `04-launch-ad/TASH-launch-4x5.mp4` | 1080×1350 | 27.0 ث | −14.0 · −1.5 | مو قصّة: كل لقطة متركّبة من جديد للمقاس |
-| `05-concept-ads/01-perfume-layl/LAYL-concept-9x16.mp4` | 1080×1920 | 15.9 ث | −14.0 · −1.8 | |
-| `05-concept-ads/02-burger-stakk/STAKK-concept-9x16.mp4` | 1080×1920 | 13.8 ث | −14.0 · −1.2 | نسخة CGI (ملف 15:42). النسخة الواقعية كانت تنرندر وقت الفحص: عيدوا القياس، وشغّلوا `package_reels.py` لبوست 2 |
-| `05-concept-ads/03-coffee-habba/HABBA-concept-9x16.mp4` | 1080×1920 | 15.6 ث | −13.9 · −1.5 | |
+| `05-concept-ads/01-perfume-layl/LAYL-concept-9x16.mp4` | 1080×1920 | 15.9 ث | −14.0 · −1.8 | 3D بالكود |
+| `05-concept-ads/02-burger-stakk/STAKK-concept-9x16.mp4` | 1080×1920 | 13.8 ث | −13.6 · −1.6 | لقطات واقعية: برجر واحد ينبني على مسرح أحمر واحد (ملف 7 نوفمبر 00:08، 36.9 MB) |
+| `05-concept-ads/03-coffee-habba/HABBA-concept-9x16.mp4` | 1080×1920 | 15.6 ث | −14.0 · −1.5 | لقطات واقعية (ملف 18:51) |
 | `02-logo/motion/tash-logo-sting-9x16.mp4` (و`-lime`) | 1080×1920 | 4.2 ث | −13.6 · −1.5 | |
 | `02-logo/motion/tash-logo-sting-1x1.mp4` | 1080×1080 | 4.2 ث | −13.6 · −1.5 | |
-| `03-templates/examples/story-new-work-anim.mp4` | 1080×1920 | 7.0 ث | −13.9 · −1.5 | ستوري «شغل جديد» |
+| `03-templates/examples/story-new-work-anim.mp4` | 1080×1920 | 7.0 ث | −13.9 · −1.5 | ستوري «شغل جديد» («ليل») |
 | `08-instagram/05-bts-reel/reel.mp4` | 1080×1920 | 13.07 ث | −14.0 · −2.2 | ورا الكواليس («ليل») |
-| `08-instagram/0{1,2,3,9}-*/reel.mp4` | — | — | — | نسخ مطابقة بايت ببايت للماستر (md5) |
+| `08-instagram/0{1,2,3,9}-*/reel.mp4` | — | — | — | نسخ مطابقة بايت ببايت للماستر (`cmp` وmd5)، وغلاف 1 و2 نفس بكسلات الـ`poster.png` |
 
-**لوحة الإعلان التجريبي · Concept label:** آخر 3 ثواني من «ليل» و«ستاك» و«حبّة» وريل الكواليس فيها `CONCEPT AD` + «إعلان تجريبي — علامة خيالية»، ونفس الشي على أغلفة البوستات 1 و2 و3 و5.
+`contact-sheet.png` لكل فيلم انعاد توليده من الـMP4 الحالي وطلع مطابق للمسلّم (0 فرق).
+
+**لوحة الإعلان التجريبي · Concept label:** `CONCEPT AD` + «إعلان تجريبي — علامة خيالية» موجودة بآخر كل إعلان تجريبي، وعلى أغلفة البوستات 1 و2 و3 و5:
+- «ليل»: من 11.90 لين آخر فريم (آخر 4 ثواني كلها). ريل الكواليس: من حوالي 9.2 لين الآخر (13.07).
+- «حبّة»: من 13.10 لين الآخر (آخر 2.5 ثانية).
+- «ستاك»: على بطاقة العميل 10.55–11.40، وبعدين تحت شعار طشّ 12.72–13.80. وقت فقاعة الكتابة (11.40–12.72) ما في غير `TASH / 2026` (§7).
+
 إعلان الإطلاق إعلاننا إحنا، وشغلنا التجريبي اللي فيه مكتوب عليه «نماذج تجريبية · CONCEPT WORK».
 
 ---
@@ -66,14 +73,15 @@
 cd tash && python3 -m http.server 8000
 # http://localhost:8000/01-brand-guide/brand-guide.html
 # http://localhost:8000/04-launch-ad/src/index.html?play                  ← معاينة حيّة (live preview)
-# http://localhost:8000/05-concept-ads/01-perfume-layl/src/index.html?t=12.6   ← فريم واحد (one frame)
+# http://localhost:8000/05-concept-ads/02-burger-stakk/src/index.html?t=9.4   ← فريم واحد (one frame)
 # http://localhost:8000/03-templates/templates/post-cta.html?data=/03-templates/data/post-cta-01.json&guide
 ```
 
 <div dir="rtl">
 
 - `07-ops/rate-card.html` و`07-ops/order-form.html` تنفتح مباشرة بالمتصفح (`file://`).
-- **الكابشن اللي ينلصق** موجود بـ`08-instagram/NN-*/caption.md` بس (مو `06-copy/grid-captions.md`).
+- **الكابشن اللي ينلصق** موجود بـ`08-instagram/NN-*/caption.md` بس (`06-copy/grid-captions.md` مسودة الكاتب).
+- **كريدت كل فيلم** (شلون انسوى، وأرقام مهام Higgsfield) بـ`SCRIPT.md` بمجلده.
 
 ---
 
@@ -86,17 +94,18 @@ cd tash && python3 -m http.server 8000
 | أي صفحة: صور ثابتة أول · *stills first* | `node _system/tools/render.mjs --page <dir>/src/index.html --stills 0.5,2,4.25 --stills-dir review/<اسمك>` |
 | الشعارات · *logos* | `node _system/tools/export-logo.mjs` |
 | التوقيع المتحرّك · *sting* | `python3 02-logo/motion/src/sting_audio.py` (يكتب `review/sting/sting.wav`، انسخوه لـ`02-logo/motion/tash-sonic-logo.wav`)، بعدين `node _system/tools/render.mjs --page "02-logo/motion/src/sting.html" --out 02-logo/motion/tash-logo-sting-9x16.mp4 --audio 02-logo/motion/tash-sonic-logo.wav --workers 2` · ليموني: `?theme=lime` · مربع: `?fmt=11` |
-| دليل الهوية · *brand guide* | `node 01-brand-guide/src/build.mjs` (PDF + صور الصفحات؛ `--only 28` لصفحة وحدة). الصور المساعدة: `src/prep-*.{py,sh,mjs}` |
+| دليل الهوية · *brand guide* | `python3 01-brand-guide/src/prep-media.py` (صور الإعلانات) ← `node 01-brand-guide/src/build.mjs` (PDF + صور الصفحات؛ `--only 28` لصفحة وحدة) |
 | القوالب · *templates* | `node 03-templates/render.mjs --all` · أو قالب واحد: `node 03-templates/render.mjs <template.html> <data.json> <out.png>` · الستوري المتحرّك: `03-templates/README.md` §6 |
-| إعلان الإطلاق · *launch ad* | `bash 04-launch-ad/src/tools/extract.sh` (**لازم أول**: الصفحة تقرا اللقطات من `review/launch-footage/`) ← `python3 04-launch-ad/src/audio.py` ← `node _system/tools/render.mjs --page 04-launch-ad/src/index.html --out 04-launch-ad/TASH-launch-9x16.mp4 --audio 04-launch-ad/src/audio.wav --workers 2` · 4:5: `?fmt=45` · الغلاف: `?poster=1` |
 | «ليل» · *LAYL* | `python3 05-concept-ads/01-perfume-layl/src/audio.py` ← `node _system/tools/render.mjs --page 05-concept-ads/01-perfume-layl/src/index.html --out 05-concept-ads/01-perfume-layl/LAYL-concept-9x16.mp4 --audio 05-concept-ads/01-perfume-layl/src/audio.wav --workers 2` |
-| «حبّة» · *HABBA* | `python3 05-concept-ads/03-coffee-habba/src/audio.py` ← `node _system/tools/render.mjs --page 05-concept-ads/03-coffee-habba/src/index.html --out 05-concept-ads/03-coffee-habba/HABBA-concept-9x16.mp4 --audio 05-concept-ads/03-coffee-habba/src/audio.wav --workers 2` (اللقطات: `bash 05-concept-ads/03-coffee-habba/src/tools/extract.sh`) |
-| «ستاك» · *STAKK* | **انتظروا النسخة الجديدة.** `src/` الحين بنص الشغل، فما يطلّع الملف المسلّم. مصادر الـCGI القديمة بـ`src/_cgi-v1/` |
+| «ستاك» · *STAKK* | (بس إذا تغيّرت اللقطات أو `src/edl.json`) `bash 05-concept-ads/02-burger-stakk/src/tools/extract.sh` ← `python3 05-concept-ads/02-burger-stakk/src/audio.py` ← `node _system/tools/render.mjs --page 05-concept-ads/02-burger-stakk/src/index.html --out 05-concept-ads/02-burger-stakk/STAKK-concept-9x16.mp4 --audio 05-concept-ads/02-burger-stakk/src/audio.wav --workers 2` |
+| «حبّة» · *HABBA* | (بس إذا تغيّرت اللقطات) `bash 05-concept-ads/03-coffee-habba/src/tools/extract.sh` ← `python3 05-concept-ads/03-coffee-habba/src/audio.py` ← `node _system/tools/render.mjs --page 05-concept-ads/03-coffee-habba/src/index.html --out 05-concept-ads/03-coffee-habba/HABBA-concept-9x16.mp4 --audio 05-concept-ads/03-coffee-habba/src/audio.wav --workers 2` |
+| إعلان الإطلاق · *launch ad* | لقطات «ستاك» و«حبّة» النظيفة والخاتم: الأوامر بـ`04-launch-ad/SCRIPT.md` §7 (لازم تنعاد إذا تغيّر «ستاك» أو «حبّة») ← `bash 04-launch-ad/src/tools/extract.sh` (**لازم**: الصفحة تقرا اللقطات من `review/launch-footage/`) ← `python3 04-launch-ad/src/audio.py` ← `node _system/tools/render.mjs --page 04-launch-ad/src/index.html --out 04-launch-ad/TASH-launch-9x16.mp4 --audio 04-launch-ad/src/audio.wav --workers 2` · 4:5: `?fmt=45` · الغلاف: `?poster=1` |
 | الأسعار ونموذج الطلب · *ops* | `node 07-ops/src/render.mjs` |
 | حزمة إنستغرام · *Instagram* | `python3 08-instagram/src/package_reels.py --check` ← `bash 08-instagram/src/build.sh` (و`--bts` لريل الكواليس، حوالي 8 دقايق) |
 | فحص الصوت والشيت · *checks* | `bash _system/tools/audio-check.sh <file.mp4> review/<اسمك>/spec.png` · `bash _system/tools/contact.sh <file.mp4> <out.png>` |
 
 سكربت الرندر (`render.mjs`) يضبط الصوت تلقائياً على −14 LUFS وذروة −1.5 dBTP وقت الدمج.
+إذا انعاد أي فيلم، شغّلوا `package_reels.py --check` وبعدين `build.sh`، عشان نسخ إنستغرام تبقى مطابقة للماستر.
 
 ---
 
@@ -106,11 +115,11 @@ cd tash && python3 -m http.server 8000
 |---|---|---|
 | الشعار والهوية · *logo & identity* | مرسوم بالكود من حروف Alexandria محوّلة لمسارات، والنقاط الثلاث دواير مضبوطة | `_system/brand/logo.mjs` |
 | الحركة والتوقيع · *motion & sting* | صفحات HTML / SVG / Canvas، كل فريم دالة من الوقت (ما في `Math.random` ولا أنيميشن CSS)، ومرندرة بـChromium ← FFmpeg | `_system/motion/`، `_system/tools/render.mjs` |
-| الـ3D · *3D* | Three.js: قارورة «ليل» مبنية من الصفر بالكود، إضاءة استوديو مبنية بنفسها، وزجاج وسائل بمواد فيزيائية؛ ولقطة الخاتم بإعلان الإطلاق | `05-concept-ads/01-perfume-layl/src/scene.js`، `04-launch-ad/src/built/ring/` |
-| الصوت · *audio* | موسيقى ومؤثرات مركّبة بالكود من الصفر (تصفيق خليجي، مرواس، عود بأسلوب Karplus-Strong، مقامات حجاز وبياتي) — بدون عيّنات ولا موسيقى منزّلة | `_system/audio/tashaudio.py` + `src/audio.py` بكل قطعة |
-| النصوص · *type* | نص حي يتشكّل بـChromium من خطوط OFL، ما في نص مرسوم كصورة | `_system/fonts/` |
-| لقطات الذكاء الاصطناعي · *AI footage* | بموافقة المالك، ولّدها المدير الإبداعي بـHiggsfield (فريم بداية GPT Image 2.6 ← فيديو Kling 3.0). القص والتلوين والنص والصوت والتوقيع من شغلنا | لقطات الناس بإعلان الإطلاق، فيلم «حبّة»، ونسخة «ستاك» الجديدة؛ الكريدت بـ`SCRIPT.md` |
-| العلامات الخيالية · *fictional brands* | «ليل» و«ستاك برجر» و«حبّة» و«لومة» (مثال القالب) كلها من تأليفنا؛ ما في منتج أو مطعم حقيقي | `05-concept-ads/`، `03-templates/data/` |
+| الـ3D · *3D* | Three.js: «ليل» كله (القارورة والإضاءة والزجاج والسائل مبنية من الصفر بالكود)، وخاتم إعلان الإطلاق. نسخ الـCGI القديمة من «ستاك» و«حبّة» انشالت من الأفلام، ومصادرها بـ`src/_cgi-v1/` للمرجع | `05-concept-ads/01-perfume-layl/src/`، `04-launch-ad/src/built/ring/` |
+| لقطات الذكاء الاصطناعي · *AI footage* | بموافقة المالك وباشتراكه، ولّدها المدير الإبداعي بـHiggsfield (فريم بداية ← فيديو Kling 3.0؛ الموديلات بالضبط بكريدت كل فيلم). الفريق ما يولّد شي. القص والتلوين والنص والصوت والتوقيع من شغلنا | «ستاك» كله، «حبّة» كله، ولقطات الناس بإعلان الإطلاق ومشهدي البرجر والقهوة فيه (من «ستاك» و«حبّة»)، ولقطات «مور». الكريدت وأرقام المهام بـ`SCRIPT.md` كل فيلم |
+| الصوت · *audio* | موسيقى ومؤثرات مركّبة بالكود من الصفر (تصفيق خليجي، مرواس، عود بأسلوب Karplus-Strong، مقامات حجاز وبياتي)، بدون عيّنات ولا موسيقى منزّلة. صوت لقطات الذكاء الاصطناعي المولّد انشال | `_system/audio/tashaudio.py` + `src/audio.py` بكل قطعة |
+| النصوص · *type* | نص حي يتشكّل بـChromium من خطوط OFL، ما في نص مرسوم كصورة ولا نص داخل اللقطات المولّدة | `_system/fonts/` |
+| العلامات الخيالية · *fictional brands* | «ليل» و«ستاك برجر» و«حبّة» و«لومة» (مثال القالب) كلها من تأليفنا؛ ما في منتج أو مطعم حقيقي. الاستثناء الوحيد «مور»: علامة حقيقية بمقترح غير رسمي، مو للنشر | `05-concept-ads/`، `03-templates/data/`، `09-pitch-mor/` |
 
 ---
 
@@ -122,7 +131,7 @@ cd tash && python3 -m http.server 8000
 | Three.js r180 | MIT | `_system/vendor/three/LICENSE` |
 | GSAP 3.13.0 (موجودة بالنظام، وما تستخدمها أي قطعة مسلّمة) | GreenSock Standard «No Charge» | رأس كل ملف بـ`_system/vendor/gsap/` |
 | الصوت والصور والكود والنصوص | ملك طشّ | — |
-| لقطات Higgsfield | باشتراك المالك؛ راجعوا شروط الاستخدام التجاري قبل أول شغل عميل مدفوع | `*/footage/ai/` |
+| لقطات Higgsfield | باشتراك المالك. **شروط الاستخدام التجاري ما انراجعت للحين** (§8) | `*/footage/ai/` |
 
 الملخص الكامل: `_system/vendor/README.md`. ما في صور ستوك ولا موسيقى ولا مؤثرات منزّلة، ولا شعارات منصّات (الجوال والمحادثة بالإعلانات عامّين).
 
@@ -130,20 +139,34 @@ cd tash && python3 -m http.server 8000
 
 ## 7. حدود معروفة · Known limitations (honest)
 
-1. **«ستاك» (بوست 2) للحين نسخة CGI**، والمالك قال إنها «كرتونية». النسخة الواقعية قيد الشغل. لين توصل: `src/` ما يطابق الملف المسلّم، و`SCRIPT.md` يوصف نسخة الـCGI، وصور «ستاك» بالقوالب والدليل والستوري `story-new-work-02` كلها CGI. لا تنشرون بوست 2 قبلها إلا إذا المالك وافق.
-2. **إعلان الإطلاق يعرض لقطات قديمة**: لقطة «ستاك» ولقطة صبّ «حبّة» بالمونتاج من نسخ الـCGI. طريقة التبديل بـ`05-concept-ads/03-coffee-habba/footage/HANDOFF-launch.md`.
-3. **سياسة لقطات الذكاء الاصطناعي** تحتاج كلمة أخيرة من المالك: البند §3.5 بالبريف يمنع المولّدات المدفوعة، والملاحظة فوقه تستثني لقطات Higgsfield. فعّلوا علامة «AI» بالمنصة على البوستات 9 و1 (و2 بعد التبديل).
-4. **الجوال بلقطة البداية** يشبه جوال معروف (بدون شعار). يحتاج قرار.
-5. **بوست 6 «صورة عادية»** رندر 3D من شغلنا مسوّى مثل صورة جوال، مو صورة حقيقية؛ مكتوب هالشي بالبوست وبالكابشن. لوحته «للتوضيح: منتج تجريبي لعلامة خيالية» + `DEMO · CONCEPT AD 01`، مو نفس الجملة الرسمية حرفياً.
-6. **الأسعار مبدئية** (فرضية 10 د.ك بالساعة)، ورقم الواتساب `965XXXXXXXX` لازم ينحط، واسم الحساب ينتظر قرار المالك (`08-instagram/POSTING-PLAN.md` §2).
+1. **اللقطات المولّدة فيها آثار تبين فريم بفريم**، والمونتاج يلف حولها أكثر ما يخفيها: ضربة السماش بـ«ستاك» تشوش بين 0.40 و0.50 (والكاميرا تنط بين 0.47 و0.50)، وطيحة اللحمة الأولى (3.27–3.37) والثانية (5.77–5.87) لطخة حركة، وبالبناء قفزات مقصودة داخل نفس اللقطة (6.13 و6.53 و6.90)؛ ولقطتي التقريب بـ«ستاك» (S04 وS06) وحبّات «حبّة» (S4b) مكبّرة فشوي ناعمة، وحركة الستارة بـ«حبّة» تأثير ضوء مو ستارة حقيقية. التفاصيل بـ`SCRIPT.md` كل فيلم (§8 بـ«ستاك»، «Known weaknesses» بـ«حبّة»).
+2. **لوحة «ستاك» التجريبية تختفي وقت فقاعة الكتابة** (11.40–12.72): موجودة قبلها على بطاقة العميل وبعدها تحت شعار طشّ، فالقاعدة («بآخر الثواني») متحققة، بس مو متواصلة مثل «ليل» و«حبّة». نفس تصميم نسخة الـCGI، وما تغيّر بهالمراجعة.
+3. **إعلان الإطلاق:** (انصلّح: صوت الصبّ صار يوقف مع خيط الحليب عند 5.50.) باقي: بالسحبة السريعة (*whip*) من لقطة «وهذا إعلانه.» للبرجر، إطارها يكبر فجأة 1.28× تحت التشويش (3.43)؛ ولوحة «نماذج تجريبية» على خبزة البرجر التحتانية. كلها بـ`04-launch-ad/SCRIPT.md` §9.
+4. **ستوري «ستاك»** (`08-instagram/stories/new-work-stakk.png` ومثال `story-new-work-02`): الخلفية الحمرا ممدودة على الجنبين (110 و86 بكسل) عشان الخبزة ما تنقص؛ مو لقطة. وصورة «ستاك» بصفحتي 22 و23 بالدليل مقصوصة يمين لأن البرجر يعبّي عرض اللقطة.
+5. **بوست 6 «صورة عادية»** رندر 3D من شغلنا مسوّى مثل صورة جوال، مو صورة حقيقية؛ مكتوب هالشي بالبوست وبالكابشن.
+6. **نفس القارورة بأربع مربعات** بالشبكة (9 و3 و6 و5). الحل بـ`08-instagram/POSTING-PLAN.md` §3a (قرار المالك).
 7. **الصوت انحكم عليه بالقياس** (LUFS، الذروة، الطيف) مو بالسمع على أجهزة كثيرة. ما في تعليق صوتي.
 8. **الاعتماد على `review/`**: إعلان الإطلاق وريل الكواليس يقرون لقطاتهم من `review/` (مستبعد من git)، فلازم تشغّلون `extract.sh` أول بأي نسخة جديدة من المستودع.
-9. **حجم المستودع:** حوالي 860 MB برّا `review/`. ما في ملف أكبر من 40 MB (أكبر واحد 37 MB). الريلز بـ`08-instagram` نسخ مكررة (حوالي 120 MB)، وتسلسلات JPEG بـ`05-concept-ads/*/src/footage/` (حوالي 120 MB) تنعاد من `footage/ai/`.
-10. **«مور»** علامة حقيقية: المقترح للعرض على «مور» بس، بموافقة المالك، ومو شغل عميل. لا ينزل على حسابنا كأنه بتكليف.
+9. **حجم المستودع:** حوالي 840 MB برّا `review/` و`09-pitch-mor/` (و1.15 GB مع «مور»). ما في ملف أكبر من 40 MB (أكبر واحد 37.8 MB: فيلم «مور»؛ و«ستاك» ونسخته بإنستغرام 36.9 MB). الريلز بـ`08-instagram` نسخ مكررة (123 MB)، وتسلسلات JPEG بـ`05-concept-ads/{02-burger-stakk,03-coffee-habba}/src/footage/` (114 MB) تنعاد من `footage/ai/`.
+10. **`_system/BRIEF.md`** (ملاحظة الذكاء الاصطناعي فوق) للحين تقول اقروا `_CD-NOTES.md` قبل المونتاج. هالملفات انشالت، ومحتواها (أوقات اللقطات، المقاطع المعتمدة، العيوب، الكريدت) صار بـ`SCRIPT.md` و`footage/HANDOFF-launch.md` كل فيلم. ما عدّلناها لأن `_system/` ممنوع؛ القائد يحدّثها.
 
 ---
 
-## 8. الخطوات الجاية (اختيارية) · Next steps (optional)
+## 8. قرارات تنتظر المالك · Open owner decisions
+
+| # | القرار | التفاصيل |
+|---|---|---|
+| 1 | **الأسعار** | كلها مبدئية، مبنية على فرضية 10 د.ك بالساعة (`07-ops/04-pricing.md`). هايلايت «الأسعار» ينتظرها |
+| 2 | **التواصل** | ✅ محسوم (7 نوفمبر): **الخاص لكل شي، وبدون واتساب ولا رقم حالياً.** باقي: الإيميل `[[الإيميل]]` للأمور الرسمية (العرض، الفاتورة، الحقوق، روابط التسليم، الاعتماد)، وأوقات الرد `[[أوقات الرد]]` |
+| 3 | **اسم العرض** | «طشّ \| صناعة إعلانات 🎬» (البريف) أو «طشّ TASH \| استوديو إعلانات» (فريق الكلام). ينقرر مرة وحدة (`08-instagram/POSTING-PLAN.md` §2) |
+| 4 | **علامة «AI» بإنستغرام** | **تنفعّل** على بوستات 1 و2 و9 (وستوري «ستاك» و«حبّة» إذا التطبيق يعرضها)، وتبقى مطفية على 3 و4 و5 و6 و8. بوست 7 قرار المالك (فيه صورتين صغار من لقطات البرجر والقهوة). ويعتمد المالك سطر الكابشن: بوست 9 سطر 4، والسطر 5 الاختياري ببوست 1 و2 (`POSTING-PLAN.md` §5 و§7) |
+| 5 | **شروط Higgsfield التجارية** | لازم المالك يتأكد من شروط الاستخدام التجاري لاشتراكه قبل النشر، وقبل أي شغل عميل مدفوع |
+| 6 | **الجوال بلقطة البداية** | الجوال بلقطة الإطلاق الأولى وبالغلاف يشبه آيفون (بدون شعار)، وظهر الجوالات بلقطتي الديوانية والمقهى فيه ثلاث كاميرات. يبقى أو تنعاد اللقطة؟ (`04-launch-ad/SCRIPT.md` §9) |
+| 7 | «مور» | يتعرض على «مور» أو لا، ومتى وشلون. بأي حال: مو للنشر على حسابنا |
+
+---
+
+## 9. الخطوات الجاية (اختيارية) · Next steps (optional)
 
 كل شي هني اختياري. الحزمة تشتغل بدونه.
 
@@ -151,21 +174,39 @@ cd tash && python3 -m http.server 8000
 |---|---|---|
 | تصوير منتج حقيقي · *real product shoot* | منتج عميل حقيقي بإضاءة استوديو، بدال الـ3D أو الذكاء الاصطناعي؛ أول «قبل/بعد» حقيقي | مع أول عميل وبإذن مكتوب، أو مصوّر شريك (قرار المالك بـ`07-ops`) |
 | تعليق صوتي · *voice-over* | صوت كويتي حقيقي يقرّب الإعلان من الناس | النصوص جاهزة: `06-copy/scripts-voiceover-options.md`؛ موهبة حقيقية بعقد، بدون استنساخ صوت |
-| مولّدات فيديو مدفوعة · *paid AI video* | لقطات ناس وأماكن أوسع بسرعة | بس بموافقة المالك وبكريدت، ونفس قواعد الصدق: ما نقول «صوّرنا» على شي مولّد |
+| لقطات ذكاء اصطناعي لعميل · *AI footage for a client* | نفس مستوى «ستاك» و«حبّة» لمنتج عميل | بعد مراجعة شروط Higgsfield، وبموافقة العميل المكتوبة، ونفس قواعد الصدق: ما نقول «صوّرنا» على شي مولّد |
 | إعلان تجريبي رابع · *4th concept ad* | تنويع بالشبكة (بدال تكرار القارورة) | `06-copy/content-calendar-first-4-weeks.md`، الأسبوع 4 |
 | أول شغل عميل · *first client piece* | يحل محل التجريبي بالتثبيت | بإذن مكتوب (`07-ops/09-delivery-message.md`) |
 
 ---
 
-## 9. فحص الجودة الأخير · Final QA log (6 Nov 2026)
+## 10. فحص الجودة الأخير · Final QA log (6 Nov 2026, after the photoreal update)
 
-**انفحص:** كل ملفات MP4 (المقاس، الـfps، الترميز، المدة، الصوت)؛ آخر 3 ثواني من كل إعلان تجريبي وأغلفة إنستغرام (لوحة التجريبي)؛ الروابط بين الملفات وتحميل 13 صفحة HTML بدون أخطاء أو 404؛ النصوص العربية (همزة، ة/ه، علامات الترقيم، الأرقام)؛ الادعاءات (أرقام، تقييمات، علامات حقيقية)؛ التراخيص؛ الملفات الكبيرة والأسرار.
+**انفحص** (كل شي برّا `09-pitch-mor/`):
+- كل ملفات MP4 بـffprobe (المقاس، 30 fps، H.264 High + AAC 48 kHz، المدة)، والصوت بـ`audio-check.sh` (كلها −13.6 لين −14.0 LUFS، والذروة −1.4 dBTP أو أقل). جدول §2.
+- آخر 3 ثواني من «ليل» و«ستاك» و«حبّة» وريل الكواليس، فريم كل عُشر ثانية بـ«ستاك» (§2 و§7).
+- ريلز إنستغرام 1 و2 و3 و9 مطابقة بايت ببايت للماستر (`cmp`)، و`package_reels.py --check` ما لقى تغيير؛ غلاف 1 و2 نفس بكسلات الـ`poster.png`؛ `check_captions.py` ينجح بالبوستات التسعة.
+- الـ`contact-sheet.png` للأفلام الأربعة انعاد توليدها وطلعت مطابقة؛ شفت شيت إعلان الإطلاق 9:16 و4:5، والبوسترات والستوريات وأمثلة القوالب المتغيّرة وصفحتي 22 و28 بالدليل بحجمها الكامل.
+- ما في `_CD-NOTES.md` بأي مكان (ولا حتى بـ`review/`). ما في ملف أكبر من 95 MB (أكبر واحد 38.0 MB). `tash/review/` مستبعد بـ`.gitignore`.
+- الكريدت بـ`SCRIPT.md`: «ستاك» و«حبّة» Higgsfield مع أرقام المهام؛ إعلان الإطلاق Higgsfield للناس وللبرجر والقهوة، و3D للخاتم ولقطات «ليل»؛ «ليل» Three.js بالكود.
+- العربي بكل نص تغيّر اليوم (الكابشن، الستوريات، القوالب، صفحات الدليل، لوحات الأفلام): الهمزة، ة/ه، الشدّة، جهة علامات الترقيم، وما في كلمة مقسومة حروف (الكود يحرّك كلمات بس).
 
 **انصلّح:**
-- `06-copy/grid-captions.md`: سطرين صاروا غلط بعد التسليم (كابشن بوست 9 يقول كل اللقطات من الإعلانات التجريبية، وبوست 5 يذكر ستوري بورد مو موجود)، وانضاف تنبيه إن الكابشن النهائي بـ`08-instagram`.
-- `06-copy/voice-and-tone.md` §8: «بنيناها 3D» صار بس لـ«ليل» والخاتم، مو «حبّة» أو «ستاك».
-- `01-brand-guide`: سطر «الصور» بصفحة التراخيص (ص 28) صار يذكر لقطات «حبّة» و«ستاك» المولّدة، وانعاد بناء الـPDF وصورة الصفحة.
-- `07-ops/01-welcome-and-quick-replies.md`: فاصلة ناقصة برد التعديلات.
-- انضاف `_system/vendor/README.md` (المكتبات والخطوط ورخصها) بطلب صريح.
+- `06-copy/grid-captions.md`: سطر 4 ببوست 9 صار غلط بعد التحديث (يقول لقطات المنتجات من إعلاناتنا التجريبية والناس بس بالذكاء الاصطناعي، والبرجر والقهوة صاروا مولّدين والخاتم أصلاً مو من إعلان تجريبي). صار نفس الكابشن النهائي، وانضاف السطر 5 الاختياري لبوست 1 و2.
+- `06-copy/voice-and-tone.md` §8: لقطات البرجر والقهوة بإعلان الإطلاق انضافت للقطات المولّدة.
+- `05-concept-ads/02-burger-stakk/SCRIPT.md`: وقت اللوحة التجريبية كان مكتوب 10.55–13.80 متواصل، وصار الوقت المقاس (§2)؛ وسطر الكريدت ما عاد ينسب فريم بداية لقطة السماش الجديدة لـGPT Image 2.6 (الموديل مو مسجّل بتسليم المدير الإبداعي).
+- `08-instagram/POSTING-PLAN.md` §7 (بند 2 و13) و`08-instagram/09-launch-reel/caption.md`: ملاحظات «للحين قديم» عن هالملف و`grid-captions.md` صارت محلولة.
+- هالفهرس: «ستاك» واقعي وجاهز، إعلان الإطلاق والقوالب والدليل وإنستغرام محدّثين، «مور» موصوف كمقترح غير رسمي مو للنشر، وقرارات المالك (§8).
+
+**ما انصلّح (يحتاج قرار):** فجوة لوحة «ستاك» وقت الكتابة (§7). (انصلّحت بعدها: صوت الصبّ بإعلان الإطلاق، وسطر مجلد `04-launch-ad/` بصفحة 28 بالدليل صار يذكر لقطات الناس والبرجر والقهوة.)
+
+**تحديث «ستاك» (مونتاج المرحلة الوحدة، ملف 6 نوفمبر 23:20؛ انفحص ووصل للباقي من 23:26):**
+- الماستر: 414 فريم، 13.80 ث، 1080×1920، H.264 High + AAC 48 kHz، −13.6 LUFS · −1.6 dBTP، 37.4 MB (sha1 98fc5df3…). `poster.png` و`still-hero.png` انعاد رندرهم من الصفحة وطلعوا نفس البكسلات (0 فرق)، فما تغيّروا؛ و`contact-sheet.png` مطابق للي ينعاد من الـMP4.
+- إنستغرام: `package_reels.py --check` لقى بس بوست 2. `build.sh` غيّر ريل بوست 2 (مطابق بايت ببايت للماستر) و`src/sources.json` بس، وكل الباقي طلع نفس الملفات بالضبط: الغلاف، معاينتي البروفايل، وستوري «ستاك» (لوحتها من الفريم النظيف 9.40، بقسم التاج اللي ما تغيّر).
+- إعلان الإطلاق: لقطة البرجر (3.50–5.00) من «ستاك» النظيف 7.90–9.40، يعني من مقطع التاج b7 بس. انسحبت من جديد من الصفحة الحالية وطلعت مطابقة بايت ببايت للملف اللي يستخدمه الإعلان (وتسلسل JPEG بـ`review/launch-footage/` بعد)، فما فيها ولا فريم من اللقطات المحذوفة، وما انعاد رندر الإعلان.
+- القوالب والدليل: صور «ستاك» فيهم من `still-hero.png` و`poster.png` ولوحة 9.40 (كلها من b7)، وبطاقة العميل وتوقيع طشّ؛ ولا وحدة من لقطات البناء القديمة. أمثلة القوالب انعاد رندرها وطلعت نفس البكسلات، وصفحتي 22 و23 بالدليل انشافت بحجمها، فالدليل ما انعاد بناؤه.
+- آخر 3 ثواني من بوست 2: اللوحة التجريبية على بطاقة العميل (11.0) وتحت شعار طشّ (13.0 وآخر فريم)، والعربي سليم بحجمه الأصلي.
+- ما في إشارة لملف محذوف (`b1_smash.mp4`، `b2_crust`، b3–b6) غير شرح إنها انشالت بـ`SCRIPT.md` و`footage/HANDOFF-launch.md` و`src/edl.json`.
+- **باقي:** نسخة المشاركة `review/share/TASH-Instagram-Kit/` و`.zip` (21:01) فيها ريل «ستاك» القديم (sha1 f90b8edd…) و`POSTING-PLAN.md` القديم. هي برّا git، بس إذا بتنرسل لازم تنعاد. والـzip (240.9 MB) هو الملف الوحيد الأكبر من 95 MB، وهو بـ`review/`.
 
 </div>

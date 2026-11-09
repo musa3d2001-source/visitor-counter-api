@@ -9,9 +9,14 @@ Pipeline per output frame:
   pixels             : the two neighbouring 24 fps source frames, blended in linear light (slow motion),
                        or the nearest frame (crisp: real-speed action and every event frame)
   framing            : cover crop at zoom z around (cx, cy), one Lanczos resample to 1080x1920
-                       (S02: frame lowered with a dark falloff on top, see edl.json)
-  grade (shared)     : 1) per-clip black match  2) one look (sat trim, gentle S, highlight roll-off to cream)
-                       3) red-stage secondary: the seamless red of b3/b6/b7 is pulled to the client red #E23B2E
+                       (optional 'shiftY': frame lowered into a dark falloff; used by the retired b2_lift S02, kept as an option)
+  grade (shared)     : 0) the one-stage chain (c1..c4) is first matched to b7_crown: they end / start on the same
+                          frame (c4 f120 = b7 f0, pixel-aligned), so a quadratic RGB transfer is fitted on that pair
+                       1) per-clip black match (dark clips), then an optional per-clip white-balance trim (TRIM)
+                       2) one look (sat trim, gentle S, highlight roll-off to cream)
+                       3) red-stage secondary: the seamless red of b7 (and so of the matched chain) is pulled to #E23B2E
+  nd grad (per seq)  : optional 'nd': [y_full, y_clear, k] in edl frame{}: a graduated ND on the graded frame (linear light x k
+                       above y_full, feathered to x1 at y_clear, output px). S02 b2_sear: darkens the steam and bokeh behind the title
 Usage: python3 conform.py [seq ...]     (no args: all sequences)
 """
 import json, os, subprocess, sys, shutil
@@ -32,12 +37,22 @@ BLACK = np.array([10, 9, 7], np.float32) / 255           # every dark clip's 0.5
 CREAM = np.array([252, 243, 226], np.float32) / 255      # highlights roll off toward the client cream (#FFF3DC family)
 BRAND_RED = np.array([226, 59, 46], np.float32) / 255    # #E23B2E
 LOOK = dict(sat=0.93, contrast=0.012, knee=0.84)
-# stage-red sample regions (source px) for the clips shot on the red seamless
-STAGE = {'b3_heel': (100, 100, 980, 700), 'b6_sauce': (0, 0, 200, 500), 'b7_crown': (100, 100, 980, 500)}
-DARK = {'b1_smash', 'b2_crust', 'b4_melt', 'b5_stack'}
+# the one-stage chain: four Kling start->end-frame clips between keyframes edited from the b7 hero frame. They share one
+# stage and one burger; their look differs from b7's (more orange stage, warmer burger), so each chain frame is first
+# mapped into b7's colour (fit below), then gets the same look and the same red-stage secondary as b7. The secondary is
+# measured per clip on its own clean reference frame (after the match), because the generated stage drifts a little
+# from clip to clip (raw top-of-frame red 220-238 / 58-71 / 31-40): every clip's stage lands on #E23B2E.
+CHAIN = ('c1_patty', 'c2_double', 'c3_toppings', 'c4_sauce')
+CHAIN_PAIR = ('c4_sauce', 120, 'b7_crown', 0)      # the shared frame: c4 ends where b7 starts
+# stage-red sample region (source px) of the red-seamless clips (nothing falls through it on the reference frames)
+STAGE = {c: (100, 100, 980, 500) for c in CHAIN + ('b7_crown',)}
+DARK = {'b1_smash_v3', 'b2_sear'}
+# per-clip white-balance trim (linear-light RGB gains, after the black match), measured against the S01 griddle look:
+# b2_sear's steam haze runs more amber than b1_smash_v3's kitchen (background median R/B 1.93 vs 1.59 on S01's last frame)
+TRIM = {'b2_sear': (0.92, 1.0, 1.04)}
 # the frame each clip's correction is measured on (clean stage, nothing falling through the sample region),
 # so every sequence cut from the same clip gets identical numbers
-REF = {'b1_smash': 40, 'b2_crust': 60, 'b3_heel': 30, 'b4_melt': 60, 'b5_stack': 0, 'b6_sauce': 60, 'b7_crown': 60}
+REF = {'b1_smash_v3': 40, 'b2_sear': 40, 'c1_patty': 40, 'c2_double': 50, 'c3_toppings': 100, 'c4_sauce': 110, 'b7_crown': 60}
 
 
 def smooth(e0, e1, x):
@@ -79,10 +94,37 @@ def look(x):
     return np.where(hi, xr, x)
 
 
+def feats(x):
+    r, g, b = x[..., 0], x[..., 1], x[..., 2]
+    return np.stack([np.ones_like(r), r, g, b, r * r, g * g, b * b, r * g, r * b, g * b], -1)
+
+
+_CHAIN_M = None
+def chain_matrix():
+    """quadratic RGB -> RGB transfer (10 x 3), least squares on the pixel-aligned shared frame c4 f120 -> b7 f0
+    (display-referred 0..1). Three passes drop the worst 10 % of pixels (steam that differs between the two takes).
+    Measured: mean abs error 9.6 -> 1.55 /255 on that frame, the same as between two consecutive chain clips (1.2-1.5)."""
+    global _CHAIN_M
+    if _CHAIN_M is None:
+        a, fa, b, fb = CHAIN_PAIR
+        A = decode(a, fa, fa)[fa].astype(np.float32) / 255
+        B = decode(b, fb, fb)[fb].astype(np.float32) / 255
+        X = feats(A)[20:-20, 20:-20].reshape(-1, 10)[::7]; Y = B[20:-20, 20:-20].reshape(-1, 3)[::7]
+        w = np.ones(len(X), np.float64)
+        for it in range(4):
+            sw = np.sqrt(w)[:, None]
+            M = np.linalg.lstsq(X * sw, Y * sw, rcond=None)[0]
+            e = np.abs(X @ M - Y).mean(-1)
+            if it < 3: w = w * (e < np.percentile(e[w > 0], 90))
+        _CHAIN_M = M.astype(np.float32)
+    return _CHAIN_M
+
+
 class ClipGrade:
     """Per-clip correction measured once on a reference frame, so the same numbers grade every frame of the clip."""
-    def __init__(self, clip, ref):
+    def __init__(self, clip, ref, pre=None):
         self.clip = clip
+        self.pre = pre
         self.d = np.zeros(3, np.float32)
         if clip in DARK:
             p = np.percentile(ref.reshape(-1, 3), 0.5, axis=0).astype(np.float32)
@@ -100,8 +142,12 @@ class ClipGrade:
             self.red = dict(h0=hm % 360, dh=dh, ks=ts / max(sm, 1e-3), kv=(1 - tv) / max(1 - vm, 1e-3), meas=(hm % 360, sm, vm))
 
     def base(self, x):
+        if self.pre is not None:
+            x = feats(x) @ self.pre
         if np.any(self.d):
             x = x + self.d * np.clip(1 - x / 0.35, 0, 1) ** 2
+        if self.clip in TRIM:
+            x = (np.clip(x, 0, 1) ** 2.2 * np.array(TRIM[self.clip], np.float32)) ** (1 / 2.2)
         return x
 
     def __call__(self, x):
@@ -181,6 +227,16 @@ def frame_img(seq, x):
     return out * (1 - a) + top * a
 
 
+def nd(seq, y):
+    """graduated ND on the graded output frame: linear light x k above y_full, smoothstep to x1 at y_clear"""
+    g = seq.get('frame', {}).get('nd')
+    if not g:
+        return y
+    y0, y1, k = g
+    m = 1 - (1 - k) * (1 - smooth(y0, y1, np.arange(H, dtype=np.float32)[:, None, None]))
+    return np.clip((np.clip(y, 0, 1) ** 2.2 * m) ** (1 / 2.2), 0, 1)
+
+
 def run(seq):
     sid, clip = seq['id'], seq['clip']
     st = make_st(seq['keys'])
@@ -201,7 +257,8 @@ def run(seq):
             else: fidx.append((a, min(a + 1, 120), w))
     lo, hi = min(min(a, b) for a, b, _ in fidx), max(max(a, b) for a, b, _ in fidx)
     src = decode(clip, lo, hi)
-    grade = ClipGrade(clip, decode(clip, REF[clip], REF[clip])[REF[clip]].astype(np.float32) / 255)
+    grade = ClipGrade(clip, decode(clip, REF[clip], REF[clip])[REF[clip]].astype(np.float32) / 255,
+                      pre=chain_matrix() if clip in CHAIN else None)
     d = os.path.join(OUT, sid)
     shutil.rmtree(d, ignore_errors=True); os.makedirs(d)
     enc = subprocess.Popen(['ffmpeg', '-v', 'error', '-y', '-f', 'rawvideo', '-pix_fmt', 'rgb24', '-s', f'{W}x{H}', '-r', str(FPS), '-i', '-',
@@ -210,7 +267,7 @@ def run(seq):
     for (a, b, w) in fidx:
         if w == 0: x = src[a].astype(np.float32) / 255
         else: x = to_srgb(to_lin(src[a]) * (1 - w) + to_lin(src[b]) * w)
-        y = grade(frame_img(seq, x))
+        y = nd(seq, grade(frame_img(seq, x)))
         enc.stdin.write((y * 255 + 0.5).astype(np.uint8).tobytes())
     enc.stdin.close(); enc.wait()
     size = sum(os.path.getsize(os.path.join(d, f)) for f in os.listdir(d))

@@ -161,7 +161,7 @@ Note that ٨ also deletes the claim instead of rephrasing it. Some lines can't b
 
 ## 8. How we talk about AI
 
-**What's true:** we use the best tool for each job: 3D, motion, code, editing, and AI tools where they actually serve the idea. (LAYL and the launch ad's ring shot are built in 3D; say «بنيناها 3D» only about those. HABBA's footage, STAKK's re-cut and the launch ad's people shots are owner-approved AI footage, so never say «بنيناها 3D» or «صوّرنا» about them.)
+**What's true:** we use the best tool for each job: 3D, motion, code, editing, and AI tools where they actually serve the idea. (LAYL and the launch ad's ring shot are built in 3D; say «بنيناها 3D» only about those. HABBA's footage, STAKK's re-cut, and the launch ad's people shots and its burger and coffee shots (taken from STAKK and HABBA) are owner-approved AI footage, so never say «بنيناها 3D» or «صوّرنا» about them.)
 
 **The rule:** the tools are the kitchen, not the menu. **We sell the idea, the script, the direction and the finish.**
 

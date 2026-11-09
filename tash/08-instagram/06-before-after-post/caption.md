@@ -16,6 +16,9 @@
 
 عندك صورة منتج عادية؟ دزّها لنا، ونقول لك شنو نقدر نسوي فيها •••
 
+إنستقرام: @tash.creative.kw
+تيك توك: @tash.creative
+
 #TASHcreative #قبل_وبعد #اعلانات_الكويت #تصميم_اعلاني #kuwait #beforeandafter #addesign #مشاريع_كويتية
 ```
 

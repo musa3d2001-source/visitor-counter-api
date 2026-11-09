@@ -7,9 +7,12 @@ import { boot, E, clamp, lerp } from '/_system/motion/kit.js';
 
 const q = new URLSearchParams(location.search);
 const W = 1080, H = 1920, DUR = 1.8;
-// match-cut handoff: at t=0 the band's outer edge sits exactly on the cup rim of the previous shot
-// (HABBA pour, measured: centre 560,570 · Ø ≈ 780 px), then settles to the hero framing with an expo tail.
-const A = { cx: 560, cy: 570, r: 390 }, B = { cx: 540, cy: 800, r: 318 };
+// match-cut handoff: at t=0 the band's outer edge sits exactly on the cup rim of the previous shot, then settles to
+// the hero framing with an expo tail. Rim = the photoreal HABBA exit frame (clean f208, launch 5.967), least-squares
+// fit of the cup's outer lip: centre 524,654 · r ≈ 310 px (HABBA hand-off: ≈ 518,658 · r ≈ 312). This is the hand-off's
+// "RING ×0.80, moved ≈ (−46, +98)" done in the ring's own camera, so the plate stays full-frame and sharp.
+// (v1, CGI HABBA: centre 560,570 · r 390.)
+const A = { cx: 524, cy: 654, r: 310 }, B = { cx: 540, cy: 800, r: 318 };
 const PXU = 1920 / (2 * Math.tan(THREE.MathUtils.degToRad(15))); // px per world unit at distance 1 (fov 30)
 
 const renderer = new THREE.WebGLRenderer({ antialias: true, preserveDrawingBuffer: true });

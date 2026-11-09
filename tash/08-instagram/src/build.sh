@@ -2,7 +2,7 @@
 # Rebuild the Instagram launch package (everything except the BTS video, which has its own steps below).
 #   bash 08-instagram/src/build.sh          # from anywhere
 #   bash 08-instagram/src/build.sh --bts    # also re-extract plates, re-score and re-render the BTS reel (~8 min)
-# Order matters: post 6 feeds a picture in post 7; every upload file feeds the profile preview.
+# Order matters: post 6 and the launch master feed pictures in post 7; every upload file feeds the profile preview.
 set -euo pipefail
 TASH="$(cd "$(dirname "$0")/../.." && pwd)"; cd "$TASH"
 R=review/ig-package; mkdir -p "$R/ba" "$R/profile"
@@ -16,6 +16,9 @@ node _system/tools/render.mjs --page $S/ba/before.html --stills 0 --stills-dir $
 cp $R/ba/before_000.00.png $S/ba/plates/before-wide.png
 cp 05-concept-ads/01-perfume-layl/still-hero.png $S/ba/plates/after-still-hero.png
 node $T $S/templates/before-after.html $S/data/06-before-after.json 08-instagram/06-before-after-post/post.png
+
+echo "── post 7 pictures cut from the launch master (slides 03, 05, 06: phone, script card, edit timeline)"
+python3 $S/launch_frames.py
 
 echo "── carousels 4, 7, 8"
 node $T $S/templates/deck.html $S/data/04-ehna-tash.json 08-instagram/04-ehna-tash-carousel/slide.png
@@ -33,6 +36,12 @@ node $T $S/templates/reel-cover-bts.html $S/data/05-bts-cover.json 08-instagram/
 
 echo "── day-2 story (HABBA «شغل جديد», from the coffee team's current hero still)"
 node $T 03-templates/templates/story-new-work.html $S/data/story-new-work-habba.json 08-instagram/stories/day2-new-work-habba.png
+
+echo "── STAKK «شغل جديد» story: STAKK's own clean frame at 9.40 s, red seamless continued sideways so the whole burger fits"
+mkdir -p "$R/stakk"
+node _system/tools/render.mjs --page "05-concept-ads/02-burger-stakk/src/index.html?clean=1" --stills 9.4 --stills-dir $R/stakk --prefix clean >/dev/null
+python3 $S/stakk_story_plate.py $R/stakk/clean_009.40.png $S/assets/stakk-story-plate.png
+node $T 03-templates/templates/story-new-work.html $S/data/story-new-work-stakk.json 08-instagram/stories/new-work-stakk.png
 
 echo "── profile previews (dark = profile-preview.png, light = profile-preview-light.png)"
 node _system/tools/render.mjs --page $S/profile/index.html --stills 0 --stills-dir $R/profile --prefix dark >/dev/null
