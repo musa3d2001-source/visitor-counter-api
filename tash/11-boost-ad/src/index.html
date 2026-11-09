@@ -8,7 +8,7 @@
   #stage { position: relative; width: 1080px; height: 1920px; overflow: hidden; background: #0B0B0B; }
   #stage canvas, #stage .layer { position: absolute; left: 0; top: 0; }
   #gl { visibility: hidden; }
-  #grain { opacity: .045; mix-blend-mode: overlay; pointer-events: none; }
+  #grain { opacity: .032; pointer-events: none; }        /* normal blend: ±1.6 levels everywhere, shadows included */
   #vig { inset: 0; pointer-events: none; }
 </style>
 </head><body>
@@ -17,8 +17,8 @@
   <canvas id="gl"></canvas>
   <canvas id="c2"></canvas>
   <canvas id="fx"></canvas>
-  <canvas id="grain"></canvas>
   <div id="vig" class="layer"></div>
+  <canvas id="grain"></canvas>
 </div>
 <script type="module">
   await new Promise(r => (document.readyState === 'complete' ? r() : addEventListener('load', r)));

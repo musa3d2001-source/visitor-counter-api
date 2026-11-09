@@ -77,11 +77,12 @@ function drawBody(ctx, key, { color = COL.paper, alpha = 1, dy = 0, blur = 0 } =
   ctx.save(); ctx.globalAlpha = alpha; if (blur > 0.05) ctx.filter = `blur(${blur.toFixed(2)}px)`;
   ctx.translate(b.ox, BL + dy); ctx.fillStyle = color; ctx.fill(b.path); ctx.restore();
 }
-function drawMark(ctx, { alpha = 1, dy = 0, blur = 0, shaddaDY = 0, shaddaAlpha = 1, wipe = 1 } = {}) {
+function drawMark(ctx, { alpha = 1, dy = 0, blur = 0, shaddaDY = 0, shaddaAlpha = 1, wipe = 1, lx = MARK.lx, ly = MARK.ly, ms = MS, dots = false } = {}) {
   if (alpha <= 0) return;
   ctx.save(); ctx.globalAlpha = alpha; if (blur > 0.05) ctx.filter = `blur(${blur.toFixed(2)}px)`;
-  if (wipe < 1) { const x0 = MARK.lx - 20, w = D.W * MS + 40; ctx.beginPath(); ctx.rect(x0 + (1 - wipe) * w, 0, wipe * w + 2, H); ctx.clip(); }
-  ctx.translate(MARK.lx, MARK.ly + dy); ctx.scale(MS, MS);
+  if (wipe < 1) { const x0 = lx - 20, w = D.W * ms + 40; ctx.beginPath(); ctx.rect(x0 + (1 - wipe) * w, 0, wipe * w + 2, H); ctx.clip(); }
+  ctx.translate(lx, ly + dy); ctx.scale(ms, ms);
+  if (dots) { ctx.save(); ctx.fillStyle = COL.lime; for (const k of [1, 0, -1]) { ctx.beginPath(); ctx.arc(MID.x + k * (2 * D.DOTS.r + D.DOTS.gap), MID.y, D.DOTS.r, 0, Math.PI * 2); ctx.fill(); } ctx.restore(); }
   ctx.fillStyle = COL.paper;
   ctx.save(); ctx.translate(D.TX, D.TY); ctx.fill(MARK.body); ctx.restore();
   if (shaddaAlpha > 0) { ctx.globalAlpha = alpha * shaddaAlpha; ctx.translate(D.TX + D.SHADDA_DX, D.TY + D.SHADDA_DY + shaddaDY); ctx.fill(MARK.shadda); }
@@ -127,6 +128,7 @@ function drawLine(ctx, L, fxw) {
   ctx.restore();
 }
 const on = () => ({ alpha: 1, blur: 0, dy: 0 });
+const ctaWords = f => i => { const k = ef(f, CT.words[i], CT.words[i] + 4, E.outCubic); return { alpha: k, blur: 14 * (1 - k), dy: 8 * (1 - k) }; };
 const rise = (f, starts, dur = 6, r = 34, b = 9) => i => { const k = ef(f, starts[i], starts[i] + dur); return { alpha: clamp(k * 1.6), blur: (1 - k) * b, dy: (1 - k) * r }; };
 const exitUp = (f, f0, inner) => i => { const e = inner(i), k = ef(f, f0 + i, f0 + i + 3, E.inExpo); return { ...e, alpha: e.alpha * (1 - k), dy: (e.dy || 0) - 30 * k, blur: (e.blur || 0) + 6 * k }; };
 await Promise.all([F.l2, F.tag, F.handle, '800 80px Alexandria'].map(f => document.fonts.load(f, 'طشّ @tash')));
@@ -140,8 +142,13 @@ const LINE = {
   handle: makeLine(PLAT === 'tt' ? '@tash.creative' : '@tash.creative.kw', F.handle, 506, 840, { ltr: true }),
 };
 
+const POSTER_PROP = makeLine('خلّ إعلانك علينا', '800 84px Alexandria', 540, (FMT === '45' ? 830 : 1040) - DY);
 // ------------------------------------------------------------------ 3D studio
 const rig = makeRig(C, { W, H, A });
+const POSTER = Q.has('poster');
+const PZ = 1.35;                                                    // cover: the lit word ×1.35, centred in the 3:4 / 4:5 crops
+const PC = { x: 540, y: FMT === '45' ? 560 : 760 };
+if (POSTER) rig.setOverride({ s: [PC.x + 142 * PZ, PC.y - 64 * PZ], scale: 100 * PZ, yaw: 0, el: 0, fov: 16 });
 let studio = null;
 if (!Q.has('no3d')) {
   const { createStudio } = await import('./scene3d.js');
@@ -152,6 +159,7 @@ if (!Q.has('no3d')) {
 const P0 = C.dot.pitch, R0 = C.dot.d / 2, PM = C.dot.pitchMark, RM = C.dot.dMark / 2;
 const ZEND = 1.03 * 1.10;                               // the studio's final zoom (creep × punch)
 const rowX = (i, pitch) => A.x + (1 - i) * pitch;
+const RET_CX = 1110, RET_CY = A.y - 100;                      // control point of the return arcs (solved: clears the question line by ≥ 6 px)
 function ctaAmp(t) {
   const t0 = CT.swap[0] / FPS;
   if (t < t0) return 0;
@@ -169,6 +177,7 @@ function group(t) {
     if (HOOK === 'B' && f >= 15) { k = lerp(1.025, 1, ef(f, 15, 17)); }
   } else if (f < 90) {
     if (HOOK === 'B' && f < 33) k = lerp(1.035, 1, ef(f, 30, 32));
+    k *= lerp(1, 0.97, fp(f, C.break.question, 90));           // the abandoned word keeps drifting away (never a still frame)
     for (const e of C.break.exit) if (f >= e && f < e + 4) dy += 6 * (1 - fp(f, e, e + 4)) ** 2;
   } else if (f < S.cut) {
     k = lerp(1.12, 1, ef(f, 90, 96)) * lerp(1, 1.02, fp(f, 90, S.cut)); sh(3, 4);
@@ -195,7 +204,8 @@ function dotsAt(t) {
       const p = fp(f, fs, fs + C.break.fallDur);
       if (p >= 1) return null;
       const q = E.inQuad(p), tip = -16 * Math.sin(Math.PI * clamp(p / 0.4)) * (p < 0.4 ? 1 : 0);
-      return { x: lerp(x0, x0 + [170, 50, -110][i], q), y: lerp(y0, H + 125, q) + tip, r: lerp(R0, C.break.fallDMax / 2, q), sq: -0.12 * q };
+      const r = lerp(R0, C.break.fallDMax / 2, E.outQuad(p));        // perspective: big while still in Zone A/B
+      return { x: lerp(x0, x0 + [150, 30, -120][i], q), y: lerp(y0, H + r + 10, E.inCubic(p)) + tip, r, sq: -0.1 * q };
     });
   }
   if (f < C.ret.enter[2]) return [];
@@ -207,7 +217,7 @@ function dotsAt(t) {
       const o = order.indexOf(i);
       const end = { x: rowX(i, P0), y: A.y - 60 };
       const p = E.outCubic(fp(f, fe, C.ret.row));
-      const p0 = { x: 958 + 30 * o, y: H + 95 }, p1 = { x: 1062, y: A.y + 10 };    // clear of the question's right end (x 864)
+      const p0 = { x: 880 + 22 * o, y: H + 70 }, p1 = { x: RET_CX, y: RET_CY };    // left of the right rail; right of the question's end (x 864)
       let x = (1 - p) ** 2 * p0.x + 2 * p * (1 - p) * p1.x + p * p * end.x;
       let y = (1 - p) ** 2 * p0.y + 2 * p * (1 - p) * p1.y + p * p * end.y;
       let r = lerp(54, R0, E.outCubic(fp(f, fe, C.ret.row))), sq = 0;
@@ -264,13 +274,14 @@ function crowdAt(t) {
     const pitch = c.d * 1.25 * (1 - merge), rr = c.d / 2 * clamp(pop, 0, 1.15) * (1 + 0.45 * merge);
     const go = E.inCubic(fp(f, c.leave, c.leave + 7));
     for (let i = 0; i < 3; i++) {
+      if (go > 0 && i !== 1) { out.push(null); continue; }           // folded: one dot per triplet streams in
       const h = -typing(t + c.ph, i, { period: 0.5, phase: 1 / 12, amp: c.d * 0.9 }) * (1 - merge);
       const x0 = c.x + (1 - i) * pitch, y0 = c.y - h;
-      const tx = rowX(i, P0 * ZEND), ty = A.y;
-      const cx = (x0 + tx) / 2 + (c.x < A.x ? -80 : 80), cy = Math.min(y0, ty) - 40;
+      const k = c.seed % 3, tx = rowX(k, P0 * ZEND), ty = A.y;       // each lands on one of the three home dots
+      const cx = lerp(x0, tx, 0.35), cy = A.y - 150;                   // a tall arc that drops onto the row from above
       const x = (1 - go) ** 2 * x0 + 2 * go * (1 - go) * cx + go * go * tx;
       const y = (1 - go) ** 2 * y0 + 2 * go * (1 - go) * cy + go * go * ty;
-      out.push({ x, y, r: rr * (1 - 0.6 * go), sq: 0, a: 1 - Math.max(0, (go - 0.85) / 0.15) });
+      out.push({ x, y, r: rr * (1 - 0.45 * go), sq: 0, a: 1 - Math.max(0, (go - 0.82) / 0.18) });
     }
   }
   return out;
@@ -299,6 +310,9 @@ function disc(ctx, d) {
   ctx.globalAlpha = d.a ?? 1;
   ctx.beginPath(); ctx.ellipse(d.x, d.y + d.r * sq * 0.9, d.r * (1 + sq * 0.6), d.r * (1 - sq), 0, 0, Math.PI * 2); ctx.fill();
 }
+const crowdLayer = new OffscreenCanvas(W, H), cx2 = crowdLayer.getContext('2d');
+const CUTS = [90, S.cut, S.fallAway[0], H3.snap, CT.swap[0]];
+const seg = t => CUTS.filter(c => t * FPS >= c).length;
 function drawDots(t) {
   fx.clearRect(0, 0, W, H);
   const main = dotsAt(t);
@@ -310,15 +324,29 @@ function drawDots(t) {
     fx.fillStyle = g; fx.fillRect(d.x - R, d.y - R, 2 * R, 2 * R);
   }
   // shutter 180°: each dot is smeared between its positions at shutter open and close (crisp, bright, on-brand)
-  const sh = 0.25 / FPS, a0 = dotsAt(t - sh), a1 = dotsAt(t + sh), c0 = crowdAt(t - sh), c1 = crowdAt(t + sh);
+  const sh = 0.25 / FPS;
+  const cross = seg(t - sh) !== seg(t) || seg(t + sh) !== seg(t);      // a cut inside the shutter: no smear across it
+  const a0 = cross ? main : dotsAt(t - sh), a1 = cross ? main : dotsAt(t + sh);
+  // the crowd: 90° shutter, drawn on its own layer and hidden where it passes the lit word's face (it flies in behind it)
+  const cs = sh / 2, c0 = crowdAt(t - cs), c1 = crowdAt(t + cs);
+  if (c0.length || c1.length) {
+    cx2.clearRect(0, 0, W, H); cx2.fillStyle = COL.lime;
+    for (let i = 0; i < Math.max(c0.length, c1.length); i++) smear(cx2, c0[i], c1[i]);
+    cx2.globalAlpha = 1;
+    const z = rig.camera(t * FPS).scale / 100, b = BODY.mashrou3ak;
+    cx2.save(); cx2.globalCompositeOperation = 'destination-out';
+    cx2.translate(A.x, A.y); cx2.scale(z, z); cx2.translate(-A.x, -A.y); cx2.translate(b.ox, BL); cx2.fill(b.path);
+    cx2.restore();
+    fx.drawImage(crowdLayer, 0, 0);
+  }
   fx.fillStyle = COL.lime;
   for (let i = 0; i < Math.max(a0.length, a1.length); i++) smear(fx, a0[i], a1[i]);
-  for (let i = 0; i < Math.max(c0.length, c1.length); i++) smear(fx, c0[i], c1[i]);
   fx.globalAlpha = 1;
 }
 
 // ------------------------------------------------------------------ the frame
 function seek(t) {
+  if (POSTER) t = 9.3;
   const f = t * FPS;
   const in3D = studio && f >= S.cut && f < S.fallAway[1];
   // 3D layer
@@ -327,7 +355,7 @@ function seek(t) {
     cv.gl.style.visibility = 'visible';
     const p = fp(f, S.fallAway[0], S.fallAway[1]);
     cv.gl.style.transformOrigin = `${A.x}px ${A.y}px`;
-    cv.gl.style.transform = p > 0 ? `scale(${lerp(1, 0.94, E.inCubic(p)).toFixed(4)})` : 'none';
+    cv.gl.style.transform = p > 0 ? `scale(${(1 + 0.03 * p).toFixed(4)})` : 'none';   // overscan: the blur never shows the canvas edge
     cv.gl.style.filter = p > 0 ? `blur(${(14 * p).toFixed(2)}px)` : 'none';
     cv.gl.style.opacity = String(1 - E.inQuad(p));
     grade.style.visibility = 'visible'; grade.style.opacity = cv.gl.style.opacity;
@@ -343,7 +371,7 @@ function seek(t) {
     const dim = ef(f, C.break.dim[0], C.break.dim[1], E.inOutCubic);
     const color = mix(COL.paper, COL.smoke, dim);
     const alpha = lerp(1, 0.85, ef(f, C.break.dim[1], 72, E.outCubic));
-    const sink = 8 * E.outQuad(fp(f, C.break.dim[0], 80));
+    const sink = 6 * E.outQuad(fp(f, C.break.dim[0], C.break.question)) + 18 * fp(f, C.break.question, 90);   // steady sink through the hold
     withGroup(c2, G, () => {
       drawBody(c2, key, { color, alpha, dy: sink });
       if (f < 30) contactShadows(c2, key, d0.map(d => ({ x: A.x + (d.x - A.x - G.dx) / G.k, r: d.r / G.k, h: d.h })));
@@ -356,6 +384,10 @@ function seek(t) {
   } else if (f < S.cut) {
     withGroup(c2, G, () => drawMark(c2));
     drawLine(c2, LINE.prop, rise(f, C.hero1.prop));
+  } else if (POSTER) {
+    drawLine(c2, POSTER_PROP, on);
+    const mw = 300, ms = mw / D.W;
+    drawMark(c2, { lx: 540 - mw / 2, ly: (FMT === '45' ? 1000 : 1235) - D.H * ms / 2, ms, dots: true });
   } else if (f < H3.snap) {
     if (S.talk) drawLine(c2, LINE.talk, exitUp(f, S.talkOut, rise(f, S.talk, 6, 30, 8)));
     if (!studio) withGroup(c2, G, () => drawBody(c2, 'mashrou3ak', { color: '#3a3a36' }));
@@ -368,19 +400,19 @@ function seek(t) {
       if (f >= CT.swap[0]) drawBody(c2, 'mashrou3ak', { alpha: p, dy: 60 * (1 - p), blur: 10 * (1 - p) });
     });
     if (H3.tag) drawLine(c2, LINE.tag, exitUp(f, H3.tagOut, rise(f, H3.tag, 6, 30, 8)));
-    if (f >= CT.swap[0]) drawLine(c2, LINE.cta, i => { const k = ef(f, CT.words[i], CT.words[i] + 4, E.outCubic); return { alpha: k, blur: 14 * (1 - k), dy: 8 * (1 - k) }; });
+    if (f >= CT.swap[0]) drawLine(c2, LINE.cta, ctaWords(f));
   } else {
     const wind = f >= CT.windup ? fp(f, CT.windup, DUR * FPS) : 0;
     withGroup(c2, G, () => {
       drawBody(c2, 'mashrou3ak', { blur: 4 * wind });
       contactShadows(c2, 'mashrou3ak', d0.map(d => ({ x: A.x + (d.x - A.x - G.dx) / G.k, r: d.r / G.k, h: d.h })));
     });
-    drawLine(c2, LINE.cta, on);
+    drawLine(c2, LINE.cta, ctaWords(f));
   }
   if (f >= CT.handle[0]) { const k = ef(f, CT.handle[0], CT.handle[1], E.outCubic); drawLine(c2, LINE.handle, () => ({ alpha: k, blur: 8 * (1 - k), dy: 0 })); }
 
   drawDots(t);
-  grain(cv.grain, Math.round(f), { amount: 22, scale: 2 });
+  grain(cv.grain, Math.round(f), { amount: 50, scale: 1 });
 }
 
 boot({ width: W, height: H, fps: FPS, duration: DUR, seek });

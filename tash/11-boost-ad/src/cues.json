@@ -15,7 +15,7 @@
     "B": { "words": [["mashawi", 0], ["rmoosh", 15], ["mashrou3ak", 30]] }
   },
   "break": { "crack": 30, "jolt": 2, "fall": [32, 34, 36], "fallDur": 8, "fallDMax": 160, "exit": [40, 42, 44], "dim": [34, 44], "question": 45 },
-  "ret": { "stir": 72, "enter": [82, 79, 76], "row": 86, "compress": [86, 88], "contact": 90, "rapid": [84, 85, 86, 87, 88, 89] },
+  "ret": { "stir": 72, "enter": [80, 76, 72], "row": 86, "compress": [86, 88], "contact": 90, "rapid": [84, 85, 86, 87, 88, 89] },
   "hero1": { "at": 90, "slamDur": 6, "prop": [93, 96, 99], "triplet": 120, "end": 150 },
 
   "studio": {
@@ -29,22 +29,22 @@
     "talk": [282, 286, 291],
     "talkOut": 341,
     "punch": 345,
-    "crowd": [348, 372],
+    "crowd": [348, 360],
     "stream": [366, 378],
     "compress": 377,
     "fallAway": [379, 388]
   },
   "hero3": { "t0": 11.88, "snap": 390, "shadda": 395, "tag": [403, 407, 411], "tagOut": 461 },
-  "cta": { "swap": [462, 470], "words": [468, 472, 476], "handle": [480, 484], "calm": 16.2, "full": 19.0, "windup": 594 },
+  "cta": { "swap": [462, 470], "words": [468, 472, 476], "handle": [480, 484], "calm": 16.0, "full": 19.0, "windup": 594 },
 
   "ticks": { "notes": [1174.7, 1244.5, 1480.0] },
   "hits": { "hero1": 3.0, "hero2": 9.0, "hero3": 13.0 },
 
   "len14": {
-    "_note": "14 s cut (?len=14): 0–5.00 identical; a compressed studio (cut 5.00, lights on 7.00 = HERO 2); snap on 9.00; CTA built 10.13 and held to 14.00.",
+    "_note": "14 s cut (?len=14): 0–5.00 identical; a compressed studio (cut 5.00, lights on 7.00 = HERO 2); snap on 9.00 with «طشّ» held to 9.77; CTA built 10.50 and held 3.50 s to 14.00.",
     "duration": 14.0,
-    "studio": { "cut": 150, "lift": 162, "fly": [[168, 183], [165, 180], [162, 177]], "detach": 195, "homeRow": 204, "homeCompress": [204, 207], "lightsOn": 210, "talk": null, "punch": 225, "crowd": [225, 250], "stream": [244, 258], "compress": 257, "fallAway": [259, 268] },
+    "studio": { "cut": 150, "lift": 162, "fly": [[168, 183], [165, 180], [162, 177]], "detach": 195, "homeRow": 204, "homeCompress": [204, 207], "lightsOn": 210, "talk": null, "punch": 225, "crowd": [225, 237], "stream": [244, 258], "compress": 257, "fallAway": [259, 268] },
     "hero3": { "t0": 7.88, "snap": 270, "shadda": 275, "tag": null, "tagOut": null },
-    "cta": { "swap": [282, 290], "words": [288, 292, 296], "handle": [300, 304], "calm": 10.2, "full": 13.0, "windup": 414 }
+    "cta": { "swap": [293, 301], "words": [299, 303, 307], "handle": [311, 315], "calm": 10.0, "full": 13.0, "windup": 414 }
   }
 }

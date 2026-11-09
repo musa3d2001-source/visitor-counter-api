@@ -93,7 +93,7 @@ function sweepGeometry(yFloor, zCove, R, floorLevel, wallLevel = 0, xHalf = 90, 
 }
 
 export async function createStudio(canvas, { W, H, A, word, baseline, rig, tune = {} }) {
-  const TU = { exposure: 1.0, amb: 0.12, pool: 140, poolAngle: 0.42, floorE: 0.11, wallE: 0.14, lamp: 48, key: 800, fill: 2.0, local: 0.35, depth: 0.2, bevel: 0.055, ...tune };
+  const TU = { exposure: 1.0, amb: 0.12, pool: 520, poolAngle: 0.3, floorE: 0.11, wallE: 0.14, lamp: 56, key: 800, fill: 2.0, local: 0.35, depth: 0.14, bevel: 0.04, lampRange: 5.0, ...tune };
   const renderer = new THREE.WebGLRenderer({ canvas, antialias: true, preserveDrawingBuffer: true, powerPreference: 'high-performance' });
   renderer.setPixelRatio(1); renderer.setSize(W, H, false);
   renderer.toneMapping = THREE.NeutralToneMapping; renderer.toneMappingExposure = TU.exposure;
@@ -115,12 +115,26 @@ export async function createStudio(canvas, { W, H, A, word, baseline, rig, tune 
   const yFloor = (H / 2 - (baseline + word.ink[3])) / 100 - 0.004;
   const smooth = (a, b, x) => { const k = Math.min(1, Math.max(0, (x - a) / (b - a))); return k * k * (3 - 2 * k); };
   // emissive level along the floor (z = depth toward the camera); the long lens maps z 40–62 onto most of the lower frame
-  const floorLevel = z => 0.45 + 0.55 * (1 - smooth(2, 45, z));
+  // the floor is brightest just in front of the word; behind it, it falls to the wall level so there is no lit seam
+  const floorLevel = z => (z < 0.6 ? lerpS(TU.wallE, 1.0, smooth(-6, 0.6, z)) : 0.45 + 0.55 * (1 - smooth(2, 45, z)));
+  const lerpS = (a, b, k) => a + (b - a) * k;
   const ramp = new THREE.DataTexture(new Uint8Array([...Array(256)].flatMap((_, k) => [k, k, k, 255])), 1, 256);
   ramp.needsUpdate = true; ramp.magFilter = ramp.minFilter = THREE.LinearFilter; ramp.colorSpace = THREE.NoColorSpace;
   const sweepMat = new THREE.MeshStandardMaterial({ color: SWEEP, roughness: 0.93, metalness: 0, dithering: true, emissive: 0xE8E0D0, emissiveMap: ramp, emissiveIntensity: TU.floorE });
-  const sweep = new THREE.Mesh(sweepGeometry(yFloor, -8.0, 2.8, floorLevel, TU.wallE), sweepMat); sweep.receiveShadow = true;
+  const sweep = new THREE.Mesh(sweepGeometry(yFloor, -15.0, 6.0, floorLevel, TU.wallE), sweepMat); sweep.receiveShadow = true;
   scene.add(sweep);
+  // contact shadow: a soft dark decal on the floor under the word's footprint (grounds it; no levitation)
+  {
+    const c = document.createElement('canvas'); c.width = 512; c.height = 128; const g = c.getContext('2d');
+    const grd = g.createRadialGradient(256, 64, 4, 256, 64, 64); grd.addColorStop(0, 'rgba(0,0,0,1)'); grd.addColorStop(1, 'rgba(0,0,0,0)');
+    g.save(); g.scale(4, 1); g.fillStyle = grd; g.fillRect(0, 0, 128, 128); g.restore();
+    const tex = new THREE.CanvasTexture(c);
+    const w = (word.ink[2] - word.ink[0]) / 100 * 1.12, d = 1.5;
+    const decal = new THREE.Mesh(new THREE.PlaneGeometry(w, d), new THREE.MeshBasicMaterial({ map: tex, transparent: true, opacity: 0.62, depthWrite: false, color: 0x000000, polygonOffset: true, polygonOffsetFactor: -2 }));
+    decal.rotation.x = -Math.PI / 2;
+    decal.position.set((ox + (word.ink[0] + word.ink[2]) / 2 - W / 2) / 100, yFloor + 0.003, -0.12);
+    scene.add(decal);
+  }
 
   const [ax, ay] = rig.world(A.x, A.y);
   const cx = (ox + (word.ink[0] + word.ink[2]) / 2 - W / 2) / 100;
@@ -129,10 +143,10 @@ export async function createStudio(canvas, { W, H, A, word, baseline, rig, tune 
   const hemi = new THREE.HemisphereLight(0xfff6e8, 0x3a362e, TU.amb); scene.add(hemi);
   // background pool: a wide soft spot on the floor BEHIND the word, aimed low at the cove (never reaches the front faces)
   const pool = new THREE.SpotLight(0xfff0d8, TU.pool, 0, TU.poolAngle, 1.0, 2);
-  pool.position.set(cx + 0.2, yFloor + 0.45, -1.7); pool.target.position.set(cx + 0.1, yFloor + 1.5, -10.8);
+  pool.position.set(cx + 0.2, yFloor + 0.5, -2.2); pool.target.position.set(cx + 0.1, yFloor + 2.6, -21.0);
   scene.add(pool, pool.target);
   // three lamps (the dots' stations): point lights, decay 2
-  const lamps = [0, 1, 2].map(() => { const l = new THREE.PointLight(LAMP, 0, 7.5, 2); scene.add(l); return l; });   // range-capped: no wash on the far wall
+  const lamps = [0, 1, 2].map(() => { const l = new THREE.PointLight(LAMP, 0, TU.lampRange, 2); scene.add(l); return l; });   // range-capped: rims, no wash on the floor seam or the wall
   // key: a softbox front-right, 45° high; fill front-left; three tiny local lights on the ش tops
   const key = new THREE.SpotLight(0xfffaf0, 0, 0, 0.5, 0.95, 2);
   key.position.set(ax + 7.5, ay + 7.5, 9.5); key.target.position.set(cx, yFloor + 0.9, 0);

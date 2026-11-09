@@ -26,20 +26,21 @@ export function makeRig(C, { W, H, A }) {
   const home = i => [ax + (1 - i) * P, ay, ZD];        // i = 0 is the rightmost dot
   // the lamp stations (dot 1 top-back, dot 2 back-right high, dot 3 back-left high). Height is in world units over A.
   // just behind the front plane, so they rake the bevels and side walls but never reach the front faces
-  const LAMP = [[ax - 0.35, ay + 2.45, -0.75], [ax + 3.05, ay + 1.25, -0.65], [ax - 5.25, ay + 1.45, -0.7]];
+  // stations ordered like the dots (right, middle, left), so no two flights ever cross on screen
+  const LAMP = [[ax + 3.05, ay + 1.25, -0.65], [ax - 0.35, ay + 2.45, -0.75], [ax - 5.25, ay + 1.45, -0.7]];
   const typ = (t, i, amp) => -typing(t + T.lead, i, { period: T.period, phase: T.phase, amp }); // px up (≥ 0)
 
   // ------------------------------------------------------------------ camera keys (frame → pose)
   const HERO = { s: [A.x, A.y], scale: 100, yaw: 0, el: 0, fov: 16 };
-  const len14 = S.cut === 150 && S.lightsOn === 210;
   const BACK = { s: [A.x - 40, A.y + 150], scale: 70, yaw: 0, el: 5.5, fov: 24 };
   const DRIFT = { s: [A.x - 44, A.y + 160], scale: 68, yaw: 1.5, el: 5.5, fov: 24 };
   const ORBIT = { s: [A.x - 20, A.y + 110], scale: 80, yaw: -10.5, el: 0.9, fov: 20 };
-  const KEYS = len14
-    ? [[S.cut, HERO], [S.lift, BACK, E.outCubic], [S.fly[0][1], DRIFT, E.linear], [S.detach, ORBIT, E.inOutCubic], [S.lightsOn, HERO, E.inOutCubic]]
-    : [[S.cut, HERO], [S.lift - 1, BACK, E.outCubic], [S.fly[0][1], DRIFT, E.linear], [S.detach - 1, ORBIT, E.inOutCubic], [S.lightsOn, HERO, E.inOutCubic]];
+  const lastFly = Math.max(...S.fly.map(x => x[1]));
+  const KEYS = [[S.cut, HERO], [S.lift - 1, BACK, E.outCubic], [lastFly, DRIFT, E.linear], [S.detach - 1, ORBIT, E.inOutCubic], [S.lightsOn, HERO, E.inOutCubic]];
 
+  let OVERRIDE = null;                                 // a fixed pose for the cover (poster mode)
   function pose(f) {
+    if (OVERRIDE) return OVERRIDE;
     let p = HERO;
     if (f <= KEYS[0][0]) p = HERO;
     else if (f >= KEYS[KEYS.length - 1][0]) p = HERO;
@@ -59,6 +60,8 @@ export function makeRig(C, { W, H, A }) {
       const punch = f >= S.punch ? 1 + 0.10 * (0.86 + 0.14 * E.outCubic(fp(f, S.punch, S.punch + 12))) : 1;
       p = { ...p, scale: p.scale * creep * punch };
     }
+    // the world falls away behind the dots: shrink in the camera (no CSS scale, so the frame edge never shows)
+    if (f >= S.fallAway[0]) p = { ...p, scale: p.scale * lerp(1, 0.94, E.inCubic(fp(f, S.fallAway[0], S.fallAway[1]))) };
     return p;
   }
 
@@ -138,7 +141,7 @@ export function makeRig(C, { W, H, A }) {
       if (f >= S.lightsOn) k *= lerp(1, 0.6, E.outCubic(fp(f, S.lightsOn, S.lightsOn + 6))) * (1 + 0.25 * typ(t, i, ampAt(f)) / T.amp);
       return { pos, k };
     });
-    const key = E.outCubic(fp(f, S.lightsOn, S.lightsOn + 4));
+    const key = E.outCubic(fp(f, S.lightsOn - 1, S.lightsOn + 3));          // on the contact frame the key is already ≈60%
     let flare = 0;                                                       // ≤ +0.15 stop per bounce, ≤ 3 a second
     if (f >= S.punch && f < S.fallAway[0]) flare = Math.max(...[0, 1, 2].map(i => typ(t, i, 1))) ** 2 * 0.15;
     const fill = 0.35 * key;
@@ -147,5 +150,6 @@ export function makeRig(C, { W, H, A }) {
     return { lamps, key: key * Math.pow(2, flare), fill, local, pool };
   }
 
-  return { pose, camera, project, dot3, lights, home, LAMP, PIVOT, R0, world, typ, ZD };
+  const setOverride = p => { OVERRIDE = p; };
+  return { pose, camera, project, dot3, lights, home, LAMP, PIVOT, R0, world, typ, ZD, setOverride, HERO };
 }

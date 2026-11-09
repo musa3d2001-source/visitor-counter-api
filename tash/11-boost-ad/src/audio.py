@@ -37,7 +37,8 @@ NOTES = C['ticks']['notes']                    # D6, E♭6, F♯6
 seed(120)
 R = np.random.default_rng(120)
 
-m = Mix(DUR, tail=0.0)
+TAIL = 2.0
+m = Mix(DUR, tail=TAIL)                        # the tail is folded back onto the head (the film loops)
 
 
 # ----------------------------------------------------------------------------- local voices
@@ -60,11 +61,12 @@ def broken_tick():
 
 
 def thump(gain=1.0):
-    """Heavy exit thump: a felt body + a short sub."""
-    k = kick(f0=105, f1=42, d=0.42, punch=0.6, click=0.08)
-    felt = lp(noise(0.12, 'brown'), 300) * env_exp(0.12, 0.03) * 0.6
-    k[:len(felt)] += felt
-    return k * gain
+    """Exit thump: a short body (70 Hz floor) + a 250–800 Hz felt knock + a 2–4 kHz click, so phones hear it."""
+    k = hp(kick(f0=120, f1=70, d=0.18, punch=0.4, click=0.0), 60) * 0.5
+    knock = bp(noise(0.09), 250, 800) * env_exp(0.09, 0.022) * 0.8
+    click = bp(noise(0.01), 2000, 4000) * env_exp(0.01, 0.0025) * 0.5
+    y = np.zeros(len(k)); y += k; y[:len(knock)] += knock; y[:len(click)] += click
+    return fade(y, 0.0003, 0.03) * gain
 
 
 def wood_tock(freq=520, gain=1.0):
@@ -94,7 +96,23 @@ def air_fall(d=0.27, gain=1.0, pan=0.0):
 
 
 def room_tone(d):
-    return stereo(bp(noise(d, 'pink'), 160, 2400) * 0.02, 0, width=0.8)        # air, not rumble
+    """Room air in the band a phone speaker plays (never rumble, never digital silence)."""
+    return stereo(bp(noise(d, 'pink'), 160, 2400) * 0.02 + bp(noise(d, 'pink'), 900, 4000) * 0.03, 0, width=0.8)
+
+
+def bass808(f, d, glide=None, gain=1.0, drive=3.2):
+    """The 808, lighter (−6 dB) plus a band-passed saturated copy (250–1500 Hz) so the note reads on phones."""
+    x = mono(sub808(f, d, glide_from=glide, drive=drive))
+    mid = bp(sat(x * 4.0, 3.0), 250, 1500) * 0.4
+    return (x * 0.4 + mid) * gain
+
+
+def group_clap(seed_=0, n=7, d=0.38):
+    """A group clap: one of the recorded takes in src/assets/rec/clap_*.wav when present (round-robin), else synthesised."""
+    if CLAPS:
+        c = CLAPS[seed_ % len(CLAPS)]
+        return c * (0.9 + 0.2 * ((seed_ * 37) % 10) / 10)
+    return claps_ensemble(n, d, seed_=seed_)
 
 
 def epiano(f, d=1.2, vel=0.8, bright=0.55):
@@ -109,16 +127,36 @@ def epiano(f, d=1.2, vel=0.8, bright=0.55):
     return fade(np.stack([y * (1 + trem), y * (1 - trem)], axis=1) * 0.45, 0.002, 0.15)
 
 
-def load_stem(name):
-    p = os.path.join(HERE, 'assets', 'rec', name)
-    if not os.path.exists(p): return None
-    sr, x = wavfile.read(p); x = x.astype(np.float32)
-    if x.dtype != np.float32 or np.abs(x).max() > 2: x = x / 32768.0
+def _read(p):
+    sr, x = wavfile.read(p)
+    x = x.astype(np.float32) / (32768.0 if np.issubdtype(x.dtype, np.integer) else 1.0)
     if sr != SR:
         from scipy.signal import resample_poly
         x = resample_poly(x, SR, sr, axis=0)
-    x = hp(x, 90)                                          # HPF 90 Hz; no pitch or time effects
-    return x / (np.abs(x).max() + 1e-9) * 0.7
+    return x
+
+
+def deess(x, f=5500, thresh_db=-30, ratio=4.0):
+    """Light de-esser: compress only the band above f."""
+    hi = hp(x, f, order=4); lo = x - hi
+    return lo + compress(hi, thresh_db=thresh_db, ratio=ratio, attack=0.002, release=0.06)[:len(hi), 0]
+
+
+def load_stem(name, target_lufs=-20.0):
+    """A recorded line: HPF 90 Hz, light de-ess, loudness-matched (no pitch or time effects, no AI)."""
+    p = os.path.join(HERE, 'assets', 'rec', name)
+    if not os.path.exists(p): return None
+    x = mono(_read(p)); x = hp(x, 90); x = mono(deess(x))
+    return x * db(target_lufs - lufs(stereo(x)))
+
+
+CLAPS = []
+_rec = os.path.join(HERE, 'assets', 'rec')
+if os.path.isdir(_rec):
+    for fn in sorted(os.listdir(_rec)):
+        if fn.startswith('clap_') and fn.endswith('.wav'):
+            c = mono(_read(os.path.join(_rec, fn))); c = hp(c, 120)
+            CLAPS.append(stereo(c * db(-24 - lufs(stereo(c))), 0, width=0.6))
 
 
 D2, A1, C2, Eb2, G1 = nf('D2'), nf('A1'), nf('C2'), nf('Eb2'), nf('G1')
@@ -133,9 +171,11 @@ last_bar = int((DUR - 1.0) // 2)                        # bars 1..last_bar start
 m.add(room_tone(DUR + 0.1), 0.0, gain=0.5)
 
 # --- 0.00–1.00 HOOK: onset slam + typing ticks (+ voice 1 on hook A)
-m.add(thump(0.55), 0.0, bus='sfx')
+m.add(thump(0.6), 0.0, bus='sfx'); m.add(wood_tock(330, 0.5), 0.0, bus='sfx')
 m.add(stereo(hp(noise(0.25, 'pink'), 2500) * env_exp(0.25, 0.05) * 0.18, 0, width=0.8), 0.0, bus='sfx')
 for i in range(3): m.add(wtick(NOTES[i]), tickT(0.0, i), gain=0.5, pan=[0.25, 0, -0.25][i], bus='sfx')
+for k, (dly, gn) in enumerate([(0.375, 0.2), (0.75, 0.1)]):       # dotted-8th echoes of the typing (fills 0.4–1.0 s)
+    for i in range(3): m.add(lp(wtick(NOTES[i]), 3200), tickT(0.0, i) + dly, gain=gn, pan=[-0.4, 0.4][k % 2], bus='sfx')
 v1 = load_stem('voice1.wav')
 if v1 is not None and args.hook == 'A': m.add(v1, 0.0, gain=0.9, bus='voice')
 if args.hook == 'B':                                      # a soft wooden tock under each word swap; heavy on «مشروعك»
@@ -145,12 +185,13 @@ m.add(pad([nf(n) for n in ['D3', 'A3']], 1.1, cutoff=700, attack=0.3, release=0.
 
 # --- 1.00 the talk breaks: broken tick, three falls toward the camera, three heavy thumps
 m.add(broken_tick(), fr(BR['crack']), gain=0.7, pan=0.25, bus='sfx')
+m.add(reverb(hp(broken_tick(), 400), decay=1.3, mix=1.0, tone=3500), fr(BR['crack']), gain=0.35, bus='sfx')   # the crack rings out
 for i, (fs, fe) in enumerate(zip(BR['fall'], BR['exit'])):
-    m.add(air_fall(fr(fe - fs) + 0.02, 0.7, [0.3, 0.05, -0.25][i]), fr(fs), bus='sfx')
-    m.add(thump(db(-1.5 * i)), fr(fe), gain=0.9, pan=[0.2, 0, -0.2][i], bus='sfx')
+    m.add(air_fall(fr(fe - fs) + 0.02, 0.42, [0.3, 0.05, -0.25][i]), fr(fs), bus='sfx')
+    m.add(thump(db(-1.5 * i)), fr(fe), gain=0.44, pan=[0.2, 0, -0.2][i], bus='sfx')
 
 # --- 1.50–2.40: room tone + a low D pad (−30 dB). Nobody's talking.
-m.add(pad([nf('D3'), nf('A3'), nf('D4')], 1.25, cutoff=900, attack=0.4, release=0.5), fr(BR['question']) - 0.1, gain=0.14, bus='music')
+m.add(sat(pad([nf('D4'), nf('A4'), nf('D5')], 1.5, cutoff=2200, attack=0.35, release=0.5) * 1.6, 1.4), fr(BR['crack']), gain=0.11, bus='music')   # audible on phones
 
 # --- 2.40 the return: a low-passed dum from below, rising ticks, six rapid ticks, a light whoosh
 m.add(lp(mirwas_dum(), 600), fr(RT['stir']), gain=0.8, bus='sfx')
@@ -159,8 +200,8 @@ for k, f in enumerate(RT['rapid']): m.add(wtick(NOTES[2] * 2 ** ((2 * k - 4) / 1
 m.add(hp(whoosh(0.42, 500, 5200, pan_from=0.5, pan_to=-0.1, peak=0.8), 150), fr(88) - 0.34, gain=0.45, bus='sfx')
 
 # --- HERO 1 (3.00): tash_hit + group claps + a saturated 808 on D
-m.add(tash_hit(), 3.0 - 0.004, gain=0.85, bus='sfx')
-m.add(sub808(D2, 1.6, glide_from=D2 * 1.5, glide_t=0.03, drive=3.4), 3.0, gain=0.34, bus='music')
+m.add(hp(tash_hit(), 60), 3.0 - 0.004, gain=1.0, bus='sfx')
+m.add(bass808(D2, 1.6, glide=D2 * 1.5, gain=0.34, drive=3.4), 3.0, bus='music')
 for i in range(3): m.add(wtick(NOTES[i], 0.8), tickT(4.0, i), gain=0.32, pan=[0.25, 0, -0.25][i], bus='sfx')   # the proud triplet
 
 
@@ -173,14 +214,14 @@ def groove_bar(b, level=1.0, claps=True, bass=True, chord='D', shaker_=True):
         at = t0 + beat * B + (sw if (beat * 2) % 2 == 1 else 0)
         m.add(mirwas_dum() if kind == 'dum' else mirwas_tak(), at, gain=v * (0.5 if kind == 'dum' else 0.7) * level, pan=-0.1 if kind == 'tak' else 0.0, bus='music')
     if claps:
-        for beat in (1, 3): m.add(claps_ensemble(7, 0.38, seed_=int(b * 7 + beat)), t0 + beat * B, gain=0.7 * level, bus='music')
+        for beat in (1, 3): m.add(group_clap(int(b * 7 + beat)), t0 + beat * B, gain=0.7 * level, bus='music')
     if shaker_:
         for k in range(16):
             at = t0 + k * B / 4 + (0.03 if k % 2 else 0)
             m.add(shaker(0.09), at, gain=(0.22 if k % 4 == 0 else 0.13) * level, pan=0.3, bus='music')
     if bass:
         for beat, f, d, glide in [(0, D2, 0.85, None), (1.75, D2 * 2, 0.22, None), (2.5, A1, 0.45, None), (3.5, D2, 0.4, C2)]:
-            m.add(sub808(f, d, glide_from=glide, drive=3.2), t0 + beat * B, gain=0.22 * level, bus='music')
+            m.add(bass808(f, d, glide=glide, gain=0.22 * level), t0 + beat * B, bus='music')
     m.add(pad([nf(n) for n in CHORDS[chord]], 2.05, cutoff=1900, attack=0.25, release=0.5), t0, gain=0.16 * level, bus='music')
     up = [nf(n) * 2 for n in CHORDS[chord][1:]]                      # rootless voicing, one octave up
     for beat, d, v in [(0, 1.0, 0.75), (1.5, 0.35, 0.5), (2.5, 0.6, 0.62), (3.5, 0.3, 0.45)]:
@@ -205,20 +246,20 @@ cut = fr(S['cut'])
 m.add(reverb(impact(1.2, sub_f=46, bright=0.35, space=0.0)[:, 0] * 0.6, decay=2.2, mix=0.55, tone=4200), cut, gain=0.4, bus='sfx')
 m.add(riser(0.22, 900, 5000, tonal=False), fr(S['lift']) - 0.14, gain=0.25, bus='sfx')
 for i, (fs, fe) in enumerate(S['fly']):
-    m.add(whoosh(fr(fe - fs) + 0.05, 600, 4200, pan_from=0.0, pan_to=[0.2, 0.6, -0.6][i], peak=0.65), fr(fs), gain=0.32, bus='sfx')
-    m.add(lamp_clack(), fr(fe), gain=0.75, pan=[0.1, 0.55, -0.55][i], bus='sfx')
+    m.add(whoosh(fr(fe - fs) + 0.05, 600, 4200, pan_from=0.0, pan_to=[0.6, 0.15, -0.6][i], peak=0.65), fr(fs), gain=0.32, bus='sfx')
+    m.add(lamp_clack(), fr(fe), gain=0.75, pan=[0.55, 0.1, -0.55][i], bus='sfx')
 first_lamp = min(fe for _, fe in S['fly'])
 m.add(hum_bed(lt - fr(first_lamp) + 0.3, 1.0), fr(first_lamp), gain=0.55, bus='sfx')
 m.add(riser(1.0, 250, 7000), lt - 1.0, gain=0.42, bus='sfx')
 for k in range(3):
-    m.add(whoosh(0.4, 700, 3800, pan_from=[0.2, 0.6, -0.6][k], pan_to=0.0, peak=0.7), fr(S['detach']), gain=0.18, bus='sfx')
+    m.add(whoosh(0.4, 700, 3800, pan_from=[0.6, 0.15, -0.6][k], pan_to=0.0, peak=0.7), fr(S['detach']), gain=0.18, bus='sfx')
     m.add(wood_tock(470 + 40 * k, 0.55), fr(S['homeRow']) + (k - 1) * 2 / FPS, pan=[0.2, 0, -0.2][k], bus='sfx')
 
 # --- HERO 2 (lights on): a deep lamp thunk + low dum + one group clap
-m.add(impact(1.6, sub_f=50, bright=0.5, space=0.25), lt - 0.004, gain=0.6, bus='sfx')
+m.add(hp(impact(1.6, sub_f=50, bright=0.5, space=0.25), 60), lt - 0.004, gain=0.6, bus='sfx')
 m.add(lamp_clack(1.2), lt, gain=0.8, bus='sfx')
 m.add(mirwas_dum(), lt, gain=0.9, bus='sfx')
-m.add(claps_ensemble(10, 0.4, seed_=91), lt, gain=0.7, bus='sfx')
+m.add(group_clap(91, 10, 0.4), lt, gain=0.7, bus='sfx')
 m.add(hum_bed(fr(S['fallAway'][0]) - lt, 0.6), lt, gain=0.4, bus='sfx')
 v2 = load_stem('voice2.wav')
 if v2 is not None and S.get('talk'): m.add(v2, 9.4, gain=0.9, bus='voice')
@@ -237,7 +278,7 @@ if S.get('crowd'):
     for sec in [int(c0), int(c0) + 1]:
         for i in range(3):
             at = tickT(sec, i)
-            if c0 - 0.05 <= at < c1: m.add(claps_ensemble(12, 0.36, seed_=int(at * 100)), at, gain=0.55, pan=[0.2, 0, -0.2][i], bus='sfx')
+            if c0 - 0.05 <= at < c1: m.add(group_clap(int(at * 100), 12, 0.36), at, gain=0.55, pan=[0.2, 0, -0.2][i], bus='sfx')
     n = 46
     for k in range(n):
         at = c0 + (c1 - c0) * (k / n) ** 0.8 + R.normal(0, 0.012)
@@ -252,24 +293,24 @@ def sonic_logo_local(t0):
     ticks = [0.12, 0.2867, 0.4533]
     for k, dt in enumerate(ticks): m.add(wtick(NOTES[k], 1.1), t0 + dt, gain=0.5, pan=[0.25, 0, -0.25][k], bus='sfx')
     m.add(whoosh(0.5, 400, 6000, pan_from=0.4, pan_to=-0.2), snap - 0.42, gain=0.5, bus='sfx')
-    m.add(tash_hit(), snap - 0.004, gain=0.95, bus='sfx')
+    m.add(hp(tash_hit(), 60), snap - 0.004, gain=1.05, bus='sfx')
     m.add(pop(500, 1300, 0.06), fr(H3['shadda']) + 0.06, gain=0.42, bus='sfx')
     return E
 
 
 sonic_logo_local(H3['t0'])
-m.add(sub808(D2, 1.4, glide_from=D2 * 1.5, glide_t=0.03, drive=3.4), snap, gain=0.32, bus='music')
+m.add(bass808(D2, 1.4, glide=D2 * 1.5, gain=0.32, drive=3.4), snap, bus='music')
 
 # --- hand-back + CTA: a soft tock as the dots settle, calm ticks, the last bar ends on the triplet
 m.add(wood_tock(440, 0.6), fr(CT['swap'][1]) - 2 / FPS, bus='sfx')
 for sec in range(int(fr(CT['swap'][1])), int(DUR)):
     for i in range(3):
         at = tickT(sec, i)
-        if at < CT['calm'] or at >= DUR: continue
+        if tickT(sec, 0) < CT['calm'] - 0.01 or at >= DUR: continue
         loud = sec == int(DUR) - 1
         m.add(wtick(NOTES[i]), at, gain=0.34 if loud else 0.16, pan=[0.25, 0, -0.25][i], bus='sfx')
 # the loop wind-up: a short reverse swell into the seam (f0's slam lands as the next beat)
-sw = stereo(hp(noise(0.22, 'pink'), 1200) * np.linspace(0, 1, n_(0.22)) ** 2.5 * 0.22, 0, width=0.7)
+sw = stereo(fade(hp(noise(0.22, 'pink'), 1200) * np.linspace(0, 1, n_(0.22)) ** 2.5 * 0.22, 0.001, 0.003), 0, width=0.7)
 m.add(sw, DUR - 0.22, bus='sfx')
 
 
@@ -288,8 +329,12 @@ mus += [(H3['t0'] + 0.82 - 0.02, 0), (snap - 0.3, -14), (snap - 0.004, -14), (sn
 if H3.get('tag'): mus += [(fr(H3['tag'][0]) - 0.1, 0), (fr(H3['tag'][0]) + 0.1, -5), (fr(H3['tagOut']), -5)]
 mus += [(fr(CT['swap'][0]), -2), (fr(CT['words'][0]), -8), (fr(CT['words'][0]) + 1.0, -8), (DUR - 0.6, -6), (DUR, -10)]
 mus.sort()
-m.process_bus('music', lambda x: x * automation(len(x), mus)[:, None])
-m.process_bus('music', lambda x: reverb(x, decay=0.9, mix=0.12, tone=5000)[:len(x)])
+duck = [(0, 0)]
+if v1 is not None and args.hook == 'A': duck += [(0.0, -6), (0.95, -6), (1.05, 0)]
+if v2 is not None and S.get('talk'): duck += [(9.35, 0), (9.42, -6), (10.6, -6), (10.75, 0)]
+duck = sorted(duck + [(DUR + TAIL, 0)])
+m.process_bus('music', lambda x: x * automation(len(x), mus)[:, None] * automation(len(x), duck)[:, None])
+m.process_bus('music', lambda x: x + reverb(hp(x, 250), decay=0.9, mix=1.0, tone=5000)[:len(x)] * 0.12)   # the room, high-passed
 
 
 def low_mono(x, f=150, trim_db=-2.0):
@@ -300,13 +345,59 @@ def low_mono(x, f=150, trim_db=-2.0):
 
 m.process_bus('music', lambda x: peak_eq(low_mono(x, 150, -3.0), 2500, 2.5, 0.8))
 m.process_bus('sfx', lambda x: low_mono(x, 150, 0.0))
-m.process_bus('sfx', lambda x: x * automation(len(x), [(0, 0), (snap - 0.3, 0), (snap - 0.25, -2), (snap - 0.01, 0), (DUR, 0)])[:, None])
+m.process_bus('sfx', lambda x: x * automation(len(x), [(0, 0), (snap - 0.3, 0), (snap - 0.25, -2), (snap - 0.01, 0), (DUR + TAIL, 0)])[:, None])
 
+# ----------------------------------------------------------------------------- loop-aware master
+import subprocess, tempfile
+from scipy import signal as _sig
+
+
+def limit(x, ceiling_db=-2.0, look=0.004, release=0.08):
+    """Look-ahead peak limiter with NO delay (centred peak window) and the gain state starting at 1 (no fade-in)."""
+    c = db(ceiling_db); d = n_(look)
+    up = _sig.resample_poly(x, 4, 1, axis=0)                          # true-peak detection on a 4× oversampled copy
+    tp = np.abs(up).max(axis=1)[:4 * len(x)].reshape(-1, 4).max(axis=1)
+    pk = maximum_filter1d(np.maximum(tp, np.abs(x).max(axis=1)), 2 * d + 1)
+    g = np.minimum(1.0, c / (pk + 1e-9))
+    a_ = math.exp(-1 / (release * SR))
+    gs, _ = _sig.lfilter([1 - a_], [1, -a_], g, zi=[g[0] * a_])
+    return np.clip(x * np.minimum(g, gs)[:, None], -c, c)
+
+
+def ffmpeg_lufs(x):
+    with tempfile.NamedTemporaryFile(suffix='.wav') as f:
+        wavfile.write(f.name, SR, x.astype(np.float32))
+        o = subprocess.run(['ffmpeg', '-nostats', '-i', f.name, '-af', 'ebur128=peak=true', '-f', 'null', '-'], capture_output=True, text=True).stderr
+    I = float([l for l in o.splitlines() if l.strip().startswith('I:')][-1].split()[1])
+    P = float([l for l in o.splitlines() if l.strip().startswith('Peak:')][-1].split()[1])
+    return I, P
+
+
+raw = m.buf.copy()
+for b in m.buses.values(): raw += b[:len(raw)]
+Nf = n_(DUR)
+loop = raw[:Nf].copy(); loop[:len(raw) - Nf] += raw[Nf:]          # the tail rings into the head, as it does on replay
+tile = np.vstack([loop, loop, loop])
+tile = hp(tile, 24, order=4)
+tile = compress(tile, thresh_db=-14, ratio=2.0, attack=0.01, release=0.15)
+tile = sat(tile * 1.05, 1.15)
+y = tile[Nf:2 * Nf]
+for _ in range(4):                                                 # loudness by ffmpeg's meter (what the platforms and the mux see)
+    yl = limit(np.vstack([y, y, y]), -2.2)[Nf:2 * Nf]
+    I, P = ffmpeg_lufs(yl)
+    if abs(I + 14.0) < 0.1: break
+    y = y * db(-14.0 - I)
+y = yl
 os.makedirs(os.path.join(HERE, 'audio'), exist_ok=True)
 out = os.path.join(HERE, 'audio', f'audio-{args.len}{args.hook}.wav')
-y = m.master(out, ceiling_db=-1.5, target_lufs=-14.0)
-for c in (-1.9, -2.3, -2.8, -3.4):                       # the engine skips its true-peak pass when loudness is already on target
-    if true_peak_db(y) <= -1.5: break
-    y = limiter(y, c)
 wavfile.write(out, SR, y.astype(np.float32))
-print(f'final: {lufs(y):.1f} LUFS, true peak {true_peak_db(y):.1f} dBTP')
+I, P = ffmpeg_lufs(y)
+
+
+def share(x, lo, hi):
+    f, p = _sig.welch(x.mean(axis=1), SR, nperseg=8192)
+    return p[(f >= lo) & (f < hi)].sum() / p[(f >= 20)].sum()
+
+
+print(f'wrote {out}: {I:.1f} LUFS, true peak {P:.1f} dBTP · energy <150 Hz {100 * share(y, 20, 150):.0f}% · 500–6k {100 * share(y, 500, 6000):.0f}% · '
+      f'first sample {np.abs(y[:48]).max():.3f} · seam jump {np.abs(y[0] - y[-1]).max():.3f}')
