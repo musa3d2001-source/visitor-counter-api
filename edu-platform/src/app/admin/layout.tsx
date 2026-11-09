@@ -19,7 +19,7 @@ export const metadata: Metadata = {
  * الصفحات الخاصة بالمالك تستدعي requireOwnerPage() (المعلم يحصل على 404).
  */
 /** مسارات المالك فقط — يُرفض المعلم مبكرًا هنا (قبل بث الصفحة) لتعود حالة 404 صحيحة */
-const OWNER_ONLY_PREFIXES = ["/admin/teachers", "/admin/review", "/admin/catalog", "/admin/bundles", "/admin/orders", "/admin/students", "/admin/coupons", "/admin/reports", "/admin/settings", "/admin/mail", "/admin/security"];
+const OWNER_ONLY_PREFIXES = ["/admin/teachers", "/admin/review", "/admin/catalog", "/admin/bundles", "/admin/orders", "/admin/students", "/admin/coupons", "/admin/reports", "/admin/settings", "/admin/mail", "/admin/security", "/admin/ops"];
 
 export default async function AdminLayout({ children }: { children: React.ReactNode }) {
   const actor = await requireStaff();

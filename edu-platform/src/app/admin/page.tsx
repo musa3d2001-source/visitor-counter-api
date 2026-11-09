@@ -33,6 +33,7 @@ import { openPaymentAlertCount } from "@/server/payments/monitoring";
 import { extraPaymentsNeedingOwnerCount } from "@/server/payments/extras";
 import { refundsNeedingOwnerCount } from "@/server/payments/refunds";
 import { mailHealth } from "@/server/platform/mail-status";
+import { opsSummary } from "@/server/platform/ops-status";
 import { getTwoFactorStatus } from "@/server/auth/two-factor";
 import { RECOVERY_CODE_WORD, recoveryCodesAreLow } from "@/lib/two-factor";
 import { Button } from "@/components/ui/button";
@@ -61,7 +62,7 @@ export default async function AdminDashboard({ searchParams }: { searchParams: P
   const sp = await searchParams;
   const days = [7, 30, 90].includes(Number(sp.days)) ? Number(sp.days) : 30;
   const includeTest = sp.test === "1";
-  const [contentHealth, totals, latest, top, series, pending, teachersTop, paymentAlerts, extraPayments, refundsWaiting, mail, twoFactor, platform, pendingProfiles] = await Promise.all([
+  const [contentHealth, totals, latest, top, series, pending, teachersTop, paymentAlerts, extraPayments, refundsWaiting, mail, twoFactor, platform, pendingProfiles, ops] = await Promise.all([
     contentHealthCounts(),
     dashboardTotals(includeTest),
     latestOrders(8, includeTest),
@@ -76,6 +77,8 @@ export default async function AdminDashboard({ searchParams }: { searchParams: P
     getTwoFactorStatus(actor.userId),
     getSettings(),
     pendingProfileChangesCount(),
+    // صفحة المراقبة لا يصح أن توقف الصفحة الرئيسية
+    opsSummary().catch(() => null),
   ]);
   const reviewWaiting = pending + pendingProfiles;
   const qs = (patch: Record<string, string | undefined>) => {
@@ -146,6 +149,24 @@ export default async function AdminDashboard({ searchParams }: { searchParams: P
       {recoveryCodesAreLow(twoFactor) ? (
         <AdminNotice href="/admin/security" icon={<KeyRound />} tone="coral" action="إصدار رموز">
           {twoFactor.recoveryRemaining === 0 ? "لم يبق لديك أي رمز استرداد" : `بقي لديك ${count(twoFactor.recoveryRemaining, RECOVERY_CODE_WORD)} فقط من رموز الاسترداد`}. أصدر رموزًا جديدة قبل أن تحتاجها
+        </AdminNotice>
+      ) : null}
+
+      {ops && !ops.cronConfigured ? (
+        <AdminNotice href="/admin/ops" icon={<ShieldAlert />} tone="coral" action="التفاصيل">
+          الوظائف المجدولة لا تعمل على هذا النشر لأن CRON_SECRET غير مضبوط. الموقع نفسه يعمل
+        </AdminNotice>
+      ) : null}
+
+      {ops && ops.jobsNeedingAttention > 0 ? (
+        <AdminNotice href="/admin/ops" icon={<ShieldAlert />} tone="coral" action="التفاصيل">
+          وظيفة مجدولة فشلت أو تأخرت عن موعدها، وقد تتأخر معها تسوية المدفوعات أو إغلاق الطلبات
+        </AdminNotice>
+      ) : null}
+
+      {ops && !ops.alertEmailConfigured ? (
+        <AdminNotice href="/admin/ops" icon={<ShieldAlert />} tone="gold" action="التفاصيل">
+          لن تصلك رسالة عند حدوث مشكلة في الموقع لأن OPS_ALERT_EMAIL غير مضبوط
         </AdminNotice>
       ) : null}
 

@@ -21,6 +21,8 @@ export const E2E_SMTP_PORT = Number(process.env.E2E_SMTP_PORT ?? 4026);
 export const E2E_SINK_URL = `http://127.0.0.1:${Number(process.env.E2E_SINK_HTTP_PORT ?? 4027)}`;
 export const E2E_MAIL_PORT = Number(process.env.E2E_MAIL_PORT ?? 3101);
 export const E2E_MAIL_BASE_URL = `http://localhost:${E2E_MAIL_PORT}`;
+export const E2E_CRON_SECRET = "e2e-cron-secret-0123456789abcdef";
+export const E2E_OPS_ALERT_EMAIL = "owner-ops@darb-e2e.test";
 
 export const E2E_SERVER_ENV: Record<string, string> = {
   NODE_ENV: "production",
@@ -40,6 +42,8 @@ export const E2E_SERVER_ENV: Record<string, string> = {
   TRUST_PROXY: "true",
   // حساب المدير في بقية الرحلات بلا تحقق بخطوتين. المسار الإلزامي يغطيه 10-admin-two-factor على خادم مستقل
   ADMIN_2FA_REQUIRED: "false",
+  CRON_SECRET: E2E_CRON_SECRET,
+  OPS_ALERT_EMAIL: E2E_OPS_ALERT_EMAIL,
   // الفيديو عبر محاكي Bunny Stream (بديل اختبار مطابق للعقد الموثق)
   VIDEO_PROVIDER: "bunny",
   BUNNY_STREAM_LIBRARY_ID: E2E_BUNNY.library,

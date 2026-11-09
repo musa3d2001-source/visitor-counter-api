@@ -7,6 +7,7 @@ import { useEffect, useState } from "react";
 import type * as React from "react";
 import { Dialog } from "radix-ui";
 import {
+  Activity,
   BadgeCheck,
   ChartColumn,
   ExternalLink,
@@ -71,6 +72,7 @@ const OWNER_GROUPS: NavGroup[] = [
     items: [
       { href: "/admin/settings", label: "إعدادات المنصة", Icon: Settings, tone: "slate" },
       { href: "/admin/mail", label: "البريد الصادر", Icon: Mail, tone: "sky" },
+      { href: "/admin/ops", label: "صحة المنصة", Icon: Activity, tone: "coral" },
       { href: "/admin/security", label: "أمان الحساب", Icon: ShieldCheck, tone: "teal" },
     ],
   },
