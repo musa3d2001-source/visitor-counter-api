@@ -145,3 +145,52 @@ end;
 $$;
 create trigger consent_records_immutable before update or delete on consent_records
   for each row execute function consent_records_append_only();
+
+-- ---------------------------------------------------------------------
+-- 9) ردود البوابة: لا نحفظ بيانات العميل ولا البطاقة
+--    سياسة الخصوصية تقول ذلك، والكود يخزن منذ هذا الإصدار نسخة مفلترة فقط. هذه الدوال تطابق القوائم
+--    في src/lib/anonymize.ts، والاختبار gateway-redaction يقارن بينهما، وتنظف الصفوف الأقدم.
+--    القائمة قائمة سماح: ما لم يرد فيها يسقط. لا يعاد بناء جدول، والتعديل يخص الصفوف التي فيها زيادة فقط.
+-- ---------------------------------------------------------------------
+create function redaction_pick(source jsonb, keys text[]) returns jsonb
+language sql immutable as $$
+  select coalesce(jsonb_object_agg(k, source -> k), '{}'::jsonb)
+  from unnest(keys) as k
+  where jsonb_typeof(source) = 'object' and jsonb_typeof(source -> k) in ('string', 'number', 'boolean', 'null')
+$$;
+
+create function redact_gateway_status(status jsonb) returns jsonb
+language sql immutable as $$
+  select case when jsonb_typeof(status) is distinct from 'object' then '{}'::jsonb else
+    redaction_pick(status, array['InvoiceId', 'InvoiceStatus', 'InvoiceReference', 'CustomerReference', 'CreatedDate', 'ExpiryDate', 'InvoiceValue', 'InvoiceDisplayValue', 'DueDeposit', 'DepositStatus'])
+    || case when jsonb_typeof(status -> 'InvoiceTransactions') = 'array' then jsonb_build_object('InvoiceTransactions', (
+      select coalesce(jsonb_agg(redaction_pick(t.value, array['TransactionDate', 'PaymentGateway', 'ReferenceId', 'TrackId', 'TransactionId', 'PaymentId', 'AuthorizationId', 'TransactionStatus', 'TransationValue', 'CustomerServiceCharge', 'DueValue', 'PaidCurrency', 'PaidCurrencyValue', 'Currency', 'Error', 'ErrorCode']) order by t.ordinality), '[]'::jsonb)
+      from jsonb_array_elements(status -> 'InvoiceTransactions') with ordinality as t
+    )) else '{}'::jsonb end
+  end
+$$;
+
+create function redact_webhook_payload(payload jsonb) returns jsonb
+language sql immutable as $$
+  select case when jsonb_typeof(payload) is distinct from 'object' then '{}'::jsonb else
+    jsonb_build_object('Event', redaction_pick(payload -> 'Event', array['Code', 'Name', 'CountryIsoCode', 'CreationDate', 'Reference']))
+    || case when jsonb_typeof(payload -> 'Data') = 'object' then jsonb_build_object('Data', (
+      select coalesce(jsonb_object_agg(s.section, redaction_pick(payload -> 'Data' -> s.section, s.keys)), '{}'::jsonb)
+      from (values
+        ('Invoice', array['Id', 'Status', 'Reference', 'CreationDate', 'ExpirationDate', 'ExternalIdentifier']),
+        ('Transaction', array['Id', 'Status', 'PaymentMethod', 'PaymentId', 'ReferenceId', 'TrackId', 'AuthorizationId', 'TransactionDate', 'Error']),
+        ('Amount', array['BaseCurrency', 'ValueInBaseCurrency', 'ServiceCharge', 'ReceivableAmount', 'DisplayCurrency', 'ValueInDisplayCurrency']),
+        ('Refund', array['Id', 'Reference', 'Status', 'InvoiceId', 'CreationDate', 'RefundDate', 'RRN']),
+        ('ReferencedInvoice', array['Id', 'Reference', 'ExternalIdentifier', 'PaymentMethod', 'BaseCurrency', 'ValueInBaseCurrency', 'RemainingValueInBaseCurrency']),
+        ('Dispute', array['Type', 'Status', 'CreatedDate', 'ChargeBackType', 'Reason', 'DisputeTransactionId', 'InvoiceTransactionId'])
+      ) as s(section, keys)
+      where jsonb_typeof(payload -> 'Data' -> s.section) = 'object'
+    )) else '{}'::jsonb end
+  end
+$$;
+
+update payments set last_gateway_status = redact_gateway_status(last_gateway_status)
+where last_gateway_status is not null and last_gateway_status <> redact_gateway_status(last_gateway_status);
+
+update payment_events set payload = redact_webhook_payload(payload)
+where payload <> redact_webhook_payload(payload);

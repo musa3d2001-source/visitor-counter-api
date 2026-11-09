@@ -534,7 +534,7 @@ async function applyConfirmedPayment(db: Db, p: ConfirmedPayment): Promise<{ res
     update payments set status = case when status = 'refunded' then status else 'paid' end, paid_at = coalesce(paid_at, now()),
       gateway_payment_id = coalesce(gateway_payment_id, ${p.transaction?.PaymentId ?? null}),
       payment_method = coalesce(${p.transaction?.PaymentGateway ?? null}, payment_method),
-      last_gateway_status = ${db.json(p.status as never)}, error_message = null, last_checked_at = now()
+      last_gateway_status = ${db.json(redactGatewayStatus(p.status) as never)}, error_message = null, last_checked_at = now()
     where id = ${p.paymentId}
   `;
 
@@ -606,18 +606,17 @@ export async function verifyAndApplyPayment(key: { paymentId?: string; invoiceId
   const keyValue = key.paymentId ?? key.invoiceId;
   if (!keyValue || !/^[0-9A-Za-z-]{1,64}$/.test(keyValue)) return { state: "invalid", error: "مرجع دفع غير صالح" };
 
-  const fetched = await client(cfg, opts.timeoutMs).getPaymentStatus(keyValue, key.paymentId ? "PaymentId" : "InvoiceId");
+  const status = await client(cfg, opts.timeoutMs).getPaymentStatus(keyValue, key.paymentId ? "PaymentId" : "InvoiceId");
+  // البوابة تعيد اسم العميل وبريده وهاتفه ورقم البطاقة كل مرة. نقرأ الرد كاملًا ولا نخزن منه إلا ما تحتاجه المراجعة
+  const stored = redactGatewayStatus(status);
   const [payment] = await sql<{ id: string; order_id: string; amount_fils: number; status: string; environment: string }[]>`
     select id, order_id, amount_fils, status, environment from payments
-    where provider = 'myfatoorah' and gateway_invoice_id = ${String(fetched.InvoiceId)}
+    where provider = 'myfatoorah' and gateway_invoice_id = ${String(status.InvoiceId)}
   `;
   if (!payment) return { state: "invalid", error: "فاتورة غير معروفة" };
   if (payment.environment !== cfg.environment) return { state: "invalid", error: "بيئة الدفع لا تطابق" };
   const [order] = await sql<OrderRow[]>`select * from orders where id = ${payment.order_id}`;
   if (!order) return { state: "invalid", error: "الطلب غير موجود" };
-  // البوابة تعيد اسم العميل وبريده وهاتفه كل مرة: إعادة الفحص بعد حذف بيانات الطالب لا تعيدها إلى سجلاتنا
-  const [buyer] = await sql<{ anonymized_at: Date | null }[]>`select anonymized_at from users where id = ${order.user_id}`;
-  const status = buyer?.anonymized_at ? (redactGatewayStatus(fetched) as unknown as typeof fetched) : fetched;
 
   if (status.CustomerReference && status.CustomerReference !== order.number) {
     return { state: "invalid", error: "الفاتورة لا تخص هذا الطلب" };
@@ -628,7 +627,7 @@ export async function verifyAndApplyPayment(key: { paymentId?: string; invoiceId
     const newExtra = await sql.begin(async (db) => {
       await db`select id from orders where id = ${order.id} for update`;
       const [row] = await db<{ gateway_payment_id: string | null }[]>`
-        update payments set error_message = 'amount/currency mismatch', last_gateway_status = ${db.json(status as never)}, last_checked_at = now(),
+        update payments set error_message = 'amount/currency mismatch', last_gateway_status = ${db.json(stored as never)}, last_checked_at = now(),
           gateway_payment_id = coalesce(gateway_payment_id, ${result.state === "paid" ? (result.transaction?.PaymentId ?? null) : null})
         where id = ${payment.id}
         returning gateway_payment_id
@@ -661,7 +660,7 @@ export async function verifyAndApplyPayment(key: { paymentId?: string; invoiceId
   if (result.state === "expired") {
     await sql`
       update payments set status = case when status in ('paid', 'refunded') then status else 'expired' end,
-        last_gateway_status = ${sql.json(status as never)}, last_checked_at = now()
+        last_gateway_status = ${sql.json(stored as never)}, last_checked_at = now()
       where id = ${payment.id}
     `;
     return { state: "expired", orderId: order.id };
@@ -676,12 +675,12 @@ export async function verifyAndApplyPayment(key: { paymentId?: string; invoiceId
       const [row] = await db<{ status: string; acknowledged_failure_id: string | null }[]>`select status, acknowledged_failure_id from payments where id = ${payment.id} for update`;
       // رفض قديم: تجاوزه الطالب بإعادة المحاولة، أو جاءت بعده محاولة أحدث. إعادة قراءته لا تغيّر شيئًا
       if (declined !== null && (declined === row.acknowledged_failure_id || declined !== newest)) {
-        await db`update payments set last_gateway_status = ${db.json(status as never)}, last_checked_at = now() where id = ${payment.id}`;
+        await db`update payments set last_gateway_status = ${db.json(stored as never)}, last_checked_at = now() where id = ${payment.id}`;
         return false;
       }
       await db`
         update payments set status = case when status in ('paid', 'refunded') then status else 'failed' end,
-          error_message = ${result.error}, last_gateway_status = ${db.json(status as never)}, last_checked_at = now()
+          error_message = ${result.error}, last_gateway_status = ${db.json(stored as never)}, last_checked_at = now()
         where id = ${payment.id}
       `;
       if (row.status !== "pending") return true;
@@ -703,7 +702,7 @@ export async function verifyAndApplyPayment(key: { paymentId?: string; invoiceId
   const inProgress = hasOpenTransaction(status);
   // الوثائق لا تذكر كيف تظهر الفاتورة بعد انتهاء رابطها. إن بقيت Pending بعد المهلة ولا عملية عليها، نعدها منتهية محليًا ونستمر في فحصها
   await sql`
-    update payments set last_gateway_status = ${sql.json(status as never)}, last_checked_at = now(),
+    update payments set last_gateway_status = ${sql.json(stored as never)}, last_checked_at = now(),
       status = case
         when status = 'pending' and not ${inProgress}
           and coalesce(expires_at, created_at + make_interval(mins => ${INVOICE_TTL_MINUTES})) + make_interval(mins => ${IN_PROGRESS_GRACE_MINUTES}) < now()
@@ -714,17 +713,6 @@ export async function verifyAndApplyPayment(key: { paymentId?: string; invoiceId
 }
 
 const isRecord = (v: unknown): v is Record<string, unknown> => typeof v === "object" && v !== null && !Array.isArray(v);
-
-async function webhookBelongsToAnonymizedAccount(body: WebhookV2Body): Promise<boolean> {
-  const data = body.Data as { Invoice?: { Id?: string | number }; ReferencedInvoice?: { Id?: string | number } };
-  const invoiceId = data.Invoice?.Id ?? data.ReferencedInvoice?.Id;
-  if (invoiceId === undefined || invoiceId === null) return false;
-  const rows = await sql`
-    select 1 from payments p join orders o on o.id = p.order_id join users u on u.id = o.user_id
-    where p.provider = 'myfatoorah' and p.gateway_invoice_id = ${String(invoiceId)} and u.anonymized_at is not null limit 1
-  `;
-  return rows.length > 0;
-}
 
 /**
  * معالجة Webhook V2 من MyFatoorah:
@@ -769,8 +757,8 @@ export async function handleMyFatoorahWebhook(
   }
 
   const eventKey = createHash("sha256").update(`${body.Event.Code}|${signature}|${rawBody}`).digest("hex");
-  // نزاع أو استرداد يصل بعد حذف بيانات الطالب: الحدث يحمل بيانات العميل، فلا يُخزن كاملًا
-  const stored = (await webhookBelongsToAnonymizedAccount(body)) ? redactWebhookPayload(body) : body;
+  // الحدث يحمل بيانات العميل والبطاقة: لا يُخزن منه إلا ما تحتاجه المراجعة، لأي طالب وفي أي وقت
+  const stored = redactWebhookPayload(body);
   // مطالبة ذرّية: نسخة واحدة فقط تعالج الحدث، ويمكن إعادة المطالبة بحدث عالق منذ أكثر من ٥ دقائق
   const claimed = await sql<{ id: string }[]>`
     insert into payment_events (provider, event_key, event_name, payload, signature_valid, claimed_at)

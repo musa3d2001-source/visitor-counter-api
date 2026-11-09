@@ -1,6 +1,6 @@
 /**
  * قيم حذف بيانات الطالب وفلاتر ردود البوابة. بلا اعتماديات خادم: يستخدمها التحقق من البريد والواجهة أيضًا.
- * القيود في 0011_accounts_hardening.sql تكرر النطاق وقيمة كلمة المرور: غيّرها معًا.
+ * 0011_accounts_hardening.sql يكرر النطاق وقيمة كلمة المرور وقوائم السماح أدناه: غيّرها معًا.
  */
 export const ANONYMIZED_EMAIL_DOMAIN = "anonymized.invalid";
 
@@ -48,8 +48,8 @@ function pick(source: unknown, keys: readonly string[]): Json {
   return out;
 }
 
-const STATUS_INVOICE_KEYS = ["InvoiceId", "InvoiceStatus", "InvoiceReference", "CustomerReference", "CreatedDate", "ExpiryDate", "InvoiceValue", "InvoiceDisplayValue", "DueDeposit", "DepositStatus"] as const;
-const STATUS_TRANSACTION_KEYS = [
+export const STATUS_INVOICE_KEYS = ["InvoiceId", "InvoiceStatus", "InvoiceReference", "CustomerReference", "CreatedDate", "ExpiryDate", "InvoiceValue", "InvoiceDisplayValue", "DueDeposit", "DepositStatus"] as const;
+export const STATUS_TRANSACTION_KEYS = [
   "TransactionDate",
   "PaymentGateway",
   "ReferenceId",
@@ -68,7 +68,7 @@ const STATUS_TRANSACTION_KEYS = [
   "ErrorCode",
 ] as const;
 
-/** آخر رد GetPaymentStatus بلا اسم العميل وبريده وهاتفه ورقم البطاقة. ما يبقى يكفي لتدقيق العملية */
+/** ما يُخزَّن من رد GetPaymentStatus دائمًا: بلا اسم العميل وبريده وهاتفه ورقم البطاقة. ما يبقى يكفي لتدقيق العملية */
 export function redactGatewayStatus(status: unknown): Json {
   if (!isObject(status)) return {};
   const out = pick(status, STATUS_INVOICE_KEYS);
@@ -76,7 +76,8 @@ export function redactGatewayStatus(status: unknown): Json {
   return out;
 }
 
-const WEBHOOK_SECTIONS: Record<string, readonly string[]> = {
+export const WEBHOOK_EVENT_KEYS = ["Code", "Name", "CountryIsoCode", "CreationDate", "Reference"] as const;
+export const WEBHOOK_SECTIONS: Record<string, readonly string[]> = {
   Invoice: ["Id", "Status", "Reference", "CreationDate", "ExpirationDate", "ExternalIdentifier"],
   Transaction: ["Id", "Status", "PaymentMethod", "PaymentId", "ReferenceId", "TrackId", "AuthorizationId", "TransactionDate", "Error"],
   Amount: ["BaseCurrency", "ValueInBaseCurrency", "ServiceCharge", "ReceivableAmount", "DisplayCurrency", "ValueInDisplayCurrency"],
@@ -85,10 +86,10 @@ const WEBHOOK_SECTIONS: Record<string, readonly string[]> = {
   Dispute: ["Type", "Status", "CreatedDate", "ChargeBackType", "Reason", "DisputeTransactionId", "InvoiceTransactionId"],
 };
 
-/** حدث Webhook بلا Customer و Card و IP وما شابهها. ما لا يرد في القائمة يسقط */
+/** ما يُخزَّن من حدث Webhook دائمًا: بلا Customer و Card و IP وما شابهها. ما لا يرد في القائمة يسقط */
 export function redactWebhookPayload(payload: unknown): Json {
   if (!isObject(payload)) return {};
-  const out: Json = { Event: pick(payload.Event, ["Code", "Name", "CountryIsoCode", "CreationDate", "Reference"]) };
+  const out: Json = { Event: pick(payload.Event, WEBHOOK_EVENT_KEYS) };
   if (isObject(payload.Data)) {
     const source = payload.Data;
     const data: Json = {};

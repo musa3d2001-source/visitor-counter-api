@@ -564,7 +564,7 @@ describe("what the gateway sends after the deletion", () => {
     const invoiceId = invoiceIdOf(url);
     const { paymentId } = await sim.pay(invoiceId, "success");
     expect(await verifyAndApplyPayment({ invoiceId: String(invoiceId) })).toMatchObject({ state: "paid" });
-    expect(await storedStatus(order.id)).toMatch(/CustomerEmail/);
+    expect(await storedStatus(order.id)).not.toMatch(PII);
     const a = await admin();
     await run(user.id, a.id, user.email);
     return { user, order, invoiceId, paymentId, a };
@@ -590,7 +590,7 @@ describe("what the gateway sends after the deletion", () => {
     expect(await sql`select 1 from payment_alerts where order_id = ${order.id} and resolved_at is null`).toHaveLength(1);
   });
 
-  it("another student's event keeps its customer details", async () => {
+  it("no student's event or invoice stores the customer or the card, and the ids stay", async () => {
     const { order } = await newOrder();
     await sql`update orders set customer_name = 'سارة أحمد' where id = ${order.id}`;
     const { url } = await startPayment({ ...order, customer_name: "سارة أحمد" }, null);
@@ -599,7 +599,14 @@ describe("what the gateway sends after the deletion", () => {
     const { body, headers } = sim.buildWebhook(invoiceId, paymentId);
     expect((await handleMyFatoorahWebhook(body, headers)).status).toBe(200);
     const event = await sql<{ event_name: string }[]>`select event_name from payment_events order by received_at desc limit 1`;
-    expect(await eventPayload(invoiceId, event[0].event_name)).toMatch(/سارة/);
+    const stored = await eventPayload(invoiceId, event[0].event_name);
+    expect(stored).not.toMatch(PII);
+    expect(stored).not.toMatch(/450875|"Card"|"IP"/);
+    expect(stored).toContain(paymentId);
+    const status = await storedStatus(order.id);
+    expect(status).not.toMatch(PII);
+    expect(status).not.toMatch(/450875|CardNumber/);
+    expect(status).toContain(paymentId);
   });
 
   it("a late payment on a closed order does not bring access back: it waits for the owner to refund", async () => {
