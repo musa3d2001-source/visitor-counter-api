@@ -7,21 +7,30 @@ import { readSettings } from "../platform/settings";
  * السجل المحاسبي لأرباح المعلمين (اختياري لكل معلم — يفعّله المالك بتحديد نسبة):
  *   قيمة البند − حصته من الخصم − حصته من الرسوم المعتمدة = الصافي المؤهل
  *   حصة المعلم = floor(الصافي × النسبة) ، حصة المنصة = الباقي
- * يُسجَّل لحظة تأكيد الدفع داخل نفس المعاملة (لا يتكرر — order_item_id فريد)،
+ * يُسجَّل لحظة تأكيد الدفع داخل نفس المعاملة (لا يتكرر — order_item_id وorder_item_part_id فريدان)،
  * ويُعكس عند الاسترداد. التسوية يدوية عبر teacher_payouts مع سجل تدقيق.
+ * بند الباقة يتوزع أولًا على محتوياتها بسعر القائمة (order_item_parts)، ثم يوزَّع الخصم والرسوم على الأجزاء كأنها بنود.
  */
 
-/** توزيع مبلغ على أوزان بدقة الفلس (أكبر باقٍ) — مجموع النتيجة = المبلغ دائمًا */
+/**
+ * توزيع مبلغ على أوزان بدقة الفلس (أكبر باقٍ) — مجموع النتيجة = المبلغ دائمًا.
+ * الحساب بأعداد صحيحة: الباقيان المتساويان يبقيان متساويين فيُحسم التعادل بالترتيب، والكسور العشرية كانت تكسر ذلك.
+ * وزن صفر لا يأخذ فلسًا أبدًا.
+ */
 export function allocateProportional(total: number, weights: number[]): number[] {
   if (!Number.isInteger(total) || total < 0) throw new Error("total must be a non-negative integer");
-  const sum = weights.reduce((a, b) => a + b, 0);
+  if (weights.some((w) => !Number.isInteger(w) || w < 0)) throw new Error("weights must be non-negative integers");
   if (weights.length === 0) return [];
+  const sum = weights.reduce((a, b) => a + b, 0);
   if (sum <= 0 || total === 0) return weights.map(() => 0);
-  const exact = weights.map((w) => (total * w) / sum);
-  const out = exact.map((x) => Math.floor(x));
-  let remainder = total - out.reduce((a, b) => a + b, 0);
-  const order = exact.map((x, i) => ({ i, frac: x - Math.floor(x) })).sort((a, b) => b.frac - a.frac || a.i - b.i);
-  for (let k = 0; remainder > 0; k = (k + 1) % order.length, remainder--) out[order[k].i] += 1;
+  const parts = weights.map((w, i) => {
+    const scaled = BigInt(total) * BigInt(w);
+    return { i, floor: Number(scaled / BigInt(sum)), rest: scaled % BigInt(sum) };
+  });
+  const out = parts.map((p) => p.floor);
+  const missing = total - out.reduce((a, b) => a + b, 0);
+  const order = [...parts].sort((a, b) => (a.rest === b.rest ? a.i - b.i : a.rest > b.rest ? -1 : 1));
+  for (let k = 0; k < missing; k++) out[order[k].i] += 1;
   return out;
 }
 
@@ -67,36 +76,165 @@ export function computeEarningLines(
   });
 }
 
-/** تسجيل أرباح طلب مدفوع (idempotent) — يُستدعى داخل معاملة تأكيد الدفع */
-export async function recordEarnings(db: Db, order: { id: string; total_fils: number; discount_fils: number; is_test: boolean }) {
+type TreeProduct = { id: string; type: string; title: string; price_fils: number; teacher_id: string | null; teacher_name: string | null; share_bps: number | null };
+type LineOwner = { id: string; name: string | null; shareBps: number | null };
+export type ExpandedPart = { productId: string; title: string; owner: LineOwner | null; listPriceFils: number; grossFils: number };
+
+/**
+ * توزيع قيمة بند على محتوياته. دالة نقية: الشجرة والمنتجات تُقرأ قبلها.
+ *  - الباقة تتوزع دائمًا على محتوياتها، ومحتوى بلا معلم تبقى حصته للمنصة.
+ *  - الدورة والوحدة تبقيان سطرًا واحدًا لمعلمها، إلا إن ضمّت محتوى لمعلم آخر. عندها تتوزع، وما لا معلم له فيها يتبع معلمها.
+ *  - مجموع أسعار المحتويات صفر: لا أساس للتوزيع، فيبقى البند سطرًا واحدًا.
+ * null تعني أن البند لم يتوزع ويُسجَّل كسطر مباشر.
+ */
+export function expandLine(
+  rootId: string,
+  grossFils: number,
+  rootOwner: LineOwner | null,
+  children: Map<string, string[]>,
+  products: Map<string, TreeProduct>,
+): ExpandedPart[] | null {
+  const ownerOf = (p: TreeProduct, inherited: LineOwner | null): LineOwner | null =>
+    p.teacher_id ? { id: p.teacher_id, name: p.teacher_name, shareBps: p.share_bps } : inherited;
+  const hasOtherTeacher = (id: string, teacherId: string | null, seen: Set<string>): boolean =>
+    (children.get(id) ?? []).some((kid) => {
+      if (seen.has(kid)) return false;
+      const t = products.get(kid)?.teacher_id ?? null;
+      return (t !== null && t !== teacherId) || hasOtherTeacher(kid, teacherId, new Set([...seen, kid]));
+    });
+  const shouldSplit = (node: TreeProduct, owner: LineOwner | null, kids: string[]) =>
+    kids.length > 0 &&
+    kids.reduce((a, k) => a + products.get(k)!.price_fils, 0) > 0 &&
+    (node.type === "bundle" || hasOtherTeacher(node.id, owner?.id ?? null, new Set([node.id])));
+
+  const root = products.get(rootId);
+  if (!root || !shouldSplit(root, rootOwner, children.get(rootId) ?? [])) return null;
+
+  const out = new Map<string, ExpandedPart>();
+  const walk = (id: string, amount: number, owner: LineOwner | null, seen: Set<string>) => {
+    const node = products.get(id)!;
+    const kids = (children.get(id) ?? []).filter((k) => !seen.has(k));
+    if (!shouldSplit(node, owner, kids)) {
+      const prior = out.get(id);
+      if (prior) prior.grossFils += amount;
+      else out.set(id, { productId: id, title: node.title, owner, listPriceFils: node.price_fils, grossFils: amount });
+      return;
+    }
+    const shares = allocateProportional(amount, kids.map((k) => products.get(k)!.price_fils));
+    const passed = node.type === "bundle" ? null : owner;
+    kids.forEach((k, i) => walk(k, shares[i], ownerOf(products.get(k)!, passed), new Set([...seen, k])));
+  };
+  walk(rootId, grossFils, rootOwner, new Set([rootId]));
+  return [...out.values()];
+}
+
+type OrderLine = {
+  orderItemId: string | null;
+  partId: string | null;
+  productId: string | null;
+  title: string;
+  teacherId: string | null;
+  teacherName: string | null;
+  shareBps: number | null;
+  grossFils: number;
+};
+
+/** يحوّل بنود الطلب إلى أسطر محاسبية: بند مباشر أو أجزاء باقة. الأجزاء تُكتب مرة واحدة ولا يعاد حسابها */
+async function orderLines(db: Db, orderId: string): Promise<OrderLine[]> {
   const items = await db<
-    { id: string; product_id: string; title: string; unit_price_fils: number; teacher_id: string | null; teacher_name: string | null; share_bps: number | null }[]
+    { id: string; product_id: string | null; title: string; unit_price_fils: number; teacher_id: string | null; teacher_name: string | null; share_bps: number | null }[]
   >`
     select oi.id, oi.product_id, oi.title, oi.unit_price_fils, oi.teacher_id, oi.teacher_name, t.revenue_share_bps as share_bps
     from order_items oi left join teachers t on t.id = oi.teacher_id
-    where oi.order_id = ${order.id}
+    where oi.order_id = ${orderId}
     order by oi.created_at, oi.id
   `;
-  const eligible = items.some((i) => i.teacher_id && i.share_bps !== null);
+  const saved = await db<
+    { id: string; order_item_id: string; product_id: string | null; title: string; teacher_id: string | null; teacher_name: string | null; share_bps: number | null; gross_fils: number }[]
+  >`
+    select p.id, p.order_item_id, p.product_id, p.title, p.teacher_id, p.teacher_name, t.revenue_share_bps as share_bps, p.gross_fils
+    from order_item_parts p left join teachers t on t.id = p.teacher_id
+    where p.order_id = ${orderId}
+    order by p.created_at, p.id
+  `;
+  const roots = items.filter((i) => i.product_id && !saved.some((p) => p.order_item_id === i.id)).map((i) => i.product_id!);
+  const edges = roots.length
+    ? await db<{ parent: string; child: string; sort_order: number }[]>`
+        with recursive c(parent, child, sort_order, depth) as (
+          select bi.bundle_id, bi.product_id, bi.sort_order, 1 from bundle_items bi where bi.bundle_id = any(${roots}::uuid[])
+          union
+          select bi.bundle_id, bi.product_id, bi.sort_order, c.depth + 1 from c join bundle_items bi on bi.bundle_id = c.child where c.depth < 8
+        )
+        select distinct parent, child, sort_order from c order by parent, sort_order, child
+      `
+    : [];
+  const children = new Map<string, string[]>();
+  for (const e of edges) {
+    const list = children.get(e.parent) ?? [];
+    if (!list.includes(e.child)) list.push(e.child);
+    children.set(e.parent, list);
+  }
+  const products = new Map<string, TreeProduct>();
+  if (edges.length) {
+    const ids = [...new Set([...roots, ...edges.map((e) => e.child)])];
+    const rows = await db<TreeProduct[]>`
+      select p.id, p.type, p.title, p.price_fils, p.teacher_id, t.display_name as teacher_name, t.revenue_share_bps as share_bps
+      from products p left join teachers t on t.id = p.teacher_id
+      where p.id = any(${ids}::uuid[])
+    `;
+    for (const r of rows) products.set(r.id, r);
+  }
+
+  const lines: OrderLine[] = [];
+  for (const it of items) {
+    const already = saved.filter((p) => p.order_item_id === it.id);
+    if (already.length) {
+      for (const p of already) {
+        lines.push({ orderItemId: null, partId: p.id, productId: p.product_id, title: p.title, teacherId: p.teacher_id, teacherName: p.teacher_name, shareBps: p.share_bps, grossFils: p.gross_fils });
+      }
+      continue;
+    }
+    const owner = it.teacher_id ? { id: it.teacher_id, name: it.teacher_name, shareBps: it.share_bps } : null;
+    const parts = it.product_id ? expandLine(it.product_id, it.unit_price_fils, owner, children, products) : null;
+    if (!parts) {
+      lines.push({ orderItemId: it.id, partId: null, productId: it.product_id, title: it.title, teacherId: it.teacher_id, teacherName: it.teacher_name, shareBps: it.share_bps, grossFils: it.unit_price_fils });
+      continue;
+    }
+    for (const p of parts) {
+      const [row] = await db<{ id: string }[]>`
+        insert into order_item_parts (order_id, order_item_id, product_id, title, teacher_id, teacher_name, list_price_fils, gross_fils)
+        values (${orderId}, ${it.id}, ${p.productId}, ${p.title}, ${p.owner?.id ?? null}, ${p.owner?.name ?? null}, ${p.listPriceFils}, ${p.grossFils})
+        returning id
+      `;
+      lines.push({ orderItemId: null, partId: row.id, productId: p.productId, title: p.title, teacherId: p.owner?.id ?? null, teacherName: p.owner?.name ?? null, shareBps: p.owner?.shareBps ?? null, grossFils: p.grossFils });
+    }
+  }
+  return lines;
+}
+
+/** تسجيل أرباح طلب مدفوع (idempotent) — يُستدعى داخل معاملة تأكيد الدفع */
+export async function recordEarnings(db: Db, order: { id: string; total_fils: number; discount_fils: number; is_test: boolean }) {
+  const lines = await orderLines(db, order.id);
+  const eligible = lines.some((l) => l.teacherId && l.shareBps !== null);
   if (!eligible) return 0;
   const settings = await readSettings(db);
   const fee = computeOrderFee(order.total_fils, settings.fee_percent_bps, settings.fee_fixed_fils);
-  const lines = computeEarningLines(
-    items.map((i) => ({ orderItemId: i.id, grossFils: i.unit_price_fils, shareBps: i.teacher_id ? i.share_bps : null })),
+  const computed = computeEarningLines(
+    lines.map((l, k) => ({ orderItemId: String(k), grossFils: l.grossFils, shareBps: l.teacherId ? l.shareBps : null })),
     order.discount_fils,
     fee,
   );
   let n = 0;
-  for (let k = 0; k < items.length; k++) {
-    const it = items[k];
-    const l = lines[k];
-    if (!it.teacher_id || it.share_bps === null) continue;
+  for (let k = 0; k < lines.length; k++) {
+    const it = lines[k];
+    const l = computed[k];
+    if (!it.teacherId || it.shareBps === null) continue;
     const rows = await db`
-      insert into teacher_earnings (order_id, order_item_id, teacher_id, teacher_name, product_id, product_title,
+      insert into teacher_earnings (order_id, order_item_id, order_item_part_id, teacher_id, teacher_name, product_id, product_title,
         gross_fils, discount_fils, fee_fils, net_fils, share_bps, teacher_fils, platform_fils, is_test)
-      values (${order.id}, ${it.id}, ${it.teacher_id}, ${it.teacher_name ?? ""}, ${it.product_id}, ${it.title},
-        ${l.grossFils}, ${l.discountFils}, ${l.feeFils}, ${l.netFils}, ${it.share_bps}, ${l.teacherFils}, ${l.platformFils}, ${order.is_test})
-      on conflict (order_item_id) do nothing
+      values (${order.id}, ${it.orderItemId}, ${it.partId}, ${it.teacherId}, ${it.teacherName ?? ""}, ${it.productId}, ${it.title},
+        ${l.grossFils}, ${l.discountFils}, ${l.feeFils}, ${l.netFils}, ${it.shareBps}, ${l.teacherFils}, ${l.platformFils}, ${order.is_test})
+      on conflict do nothing
       returning id
     `;
     n += rows.length;
@@ -137,6 +275,8 @@ export type EarningRow = {
   order_id: string;
   order_number: string;
   product_title: string;
+  /** عنوان الباقة حين يكون السطر جزءًا منها */
+  bundle_title: string | null;
   teacher_name: string;
   gross_fils: number;
   discount_fils: number;
@@ -153,9 +293,11 @@ export type EarningRow = {
 
 export async function listEarnings(teacherId: string, opts: { includeTest?: boolean; from?: Date; to?: Date; limit?: number } = {}, db: Db = sql) {
   return db<EarningRow[]>`
-    select te.id, te.order_id, o.number as order_number, te.product_title, te.teacher_name, te.gross_fils, te.discount_fils, te.fee_fils,
+    select te.id, te.order_id, o.number as order_number, te.product_title, root.title as bundle_title, te.teacher_name, te.gross_fils, te.discount_fils, te.fee_fils,
       te.net_fils, te.share_bps, te.teacher_fils, te.platform_fils, te.status, te.is_test, te.created_at, te.reversed_at
     from teacher_earnings te join orders o on o.id = te.order_id
+      left join order_item_parts part on part.id = te.order_item_part_id
+      left join order_items root on root.id = part.order_item_id
     where te.teacher_id = ${teacherId}
       and (${opts.includeTest ?? false} or not te.is_test)
       ${opts.from ? db`and te.created_at >= ${opts.from}` : db``}
@@ -210,12 +352,25 @@ export async function recordPayout(input: {
   });
 }
 
+/**
+ * أسطر البيع المنسوبة للمعلمين: البند المباشر، أو أجزاؤه إن كان باقة توزعت.
+ * كل تقرير مبيعات يمر من هنا حتى لا تُنسب الباقة كاملة لمعلم واحد أو تضيع مبيعات من بداخلها.
+ */
+export const saleLines = (db: Db = sql) => db`(
+  select oi.order_id, oi.id as line_id, oi.product_id, oi.title, oi.teacher_id, oi.teacher_name, oi.unit_price_fils as gross_fils
+  from order_items oi
+  where not exists (select 1 from order_item_parts part where part.order_item_id = oi.id)
+  union all
+  select part.order_id, part.id, part.product_id, part.title, part.teacher_id, part.teacher_name, part.gross_fils
+  from order_item_parts part
+)`;
+
 /** ملخص مبيعات معلم (للمالك وللمعلم نفسه) — من طلبات مدفوعة حقيقية فقط */
 export async function teacherSalesSummary(teacherId: string, opts: { includeTest?: boolean; from?: Date; to?: Date } = {}, db: Db = sql) {
   const [r] = await db<{ orders: number; items: number; gross: string }[]>`
-    select count(distinct o.id)::int as orders, count(oi.id)::int as items, coalesce(sum(oi.unit_price_fils), 0)::bigint as gross
-    from order_items oi join orders o on o.id = oi.order_id
-    where oi.teacher_id = ${teacherId} and o.status = 'paid'
+    select count(distinct o.id)::int as orders, count(l.line_id)::int as items, coalesce(sum(l.gross_fils), 0)::bigint as gross
+    from ${saleLines(db)} l join orders o on o.id = l.order_id
+    where l.teacher_id = ${teacherId} and o.status = 'paid'
       and (${opts.includeTest ?? false} or not o.is_test)
       ${opts.from ? db`and o.paid_at >= ${opts.from}` : db``}
       ${opts.to ? db`and o.paid_at < ${opts.to}` : db``}

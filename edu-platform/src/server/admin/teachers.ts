@@ -5,7 +5,7 @@ import { audit } from "../platform/audit";
 import { hashPassword } from "../auth/password";
 import { revokeEmailLinks } from "../auth/email-verification";
 import { loginFailurePrefix } from "../auth/service";
-import { teacherBalance, teacherSalesSummary } from "../commerce/earnings";
+import { saleLines, teacherBalance, teacherSalesSummary } from "../commerce/earnings";
 import { mailIsReal, redactSecrets, sendMail } from "../platform/mailer";
 import { getSettings } from "../platform/settings";
 import { AdminError } from "./common";
@@ -46,8 +46,8 @@ export async function listTeachersAdmin(q?: string): Promise<TeacherListRow[]> {
     select t.*, u.email as account_email, u.is_active as account_active, u.last_login_at as account_last_login,
       (select count(*)::int from products p where p.teacher_id = t.id and p.status <> 'archived') as products,
       (select count(*)::int from products p where p.teacher_id = t.id and p.status = 'published') as published_products,
-      (select count(*)::int from order_items oi join orders o on o.id = oi.order_id where oi.teacher_id = t.id and o.status = 'paid' and not o.is_test) as paid_items,
-      (select coalesce(sum(oi.unit_price_fils), 0)::bigint from order_items oi join orders o on o.id = oi.order_id where oi.teacher_id = t.id and o.status = 'paid' and not o.is_test) as paid_gross,
+      (select count(*)::int from ${saleLines()} l join orders o on o.id = l.order_id where l.teacher_id = t.id and o.status = 'paid' and not o.is_test) as paid_items,
+      (select coalesce(sum(l.gross_fils), 0)::bigint from ${saleLines()} l join orders o on o.id = l.order_id where l.teacher_id = t.id and o.status = 'paid' and not o.is_test) as paid_gross,
       (select coalesce(sum(te.teacher_fils), 0)::bigint from teacher_earnings te where te.teacher_id = t.id and te.status = 'active' and not te.is_test) as earned,
       (select coalesce(sum(tp.amount_fils), 0)::bigint from teacher_payouts tp where tp.teacher_id = t.id) as paid_out
     from teachers t left join users u on u.id = t.user_id
@@ -332,9 +332,9 @@ export async function teacherDashboard(teacherId: string) {
     teacherSalesSummary(teacherId),
     teacherBalance(teacherId),
     sql<{ order_number: string; paid_at: Date; title: string; unit_price_fils: number; status: string }[]>`
-      select o.number as order_number, o.paid_at, oi.title, oi.unit_price_fils, o.status
-      from order_items oi join orders o on o.id = oi.order_id
-      where oi.teacher_id = ${teacherId} and o.status in ('paid', 'refunded') and not o.is_test
+      select o.number as order_number, o.paid_at, l.title, l.gross_fils as unit_price_fils, o.status
+      from ${saleLines()} l join orders o on o.id = l.order_id
+      where l.teacher_id = ${teacherId} and o.status in ('paid', 'refunded') and not o.is_test
       order by o.paid_at desc limit 10
     `,
     sql<{ id: string; title: string; review_note: string | null }[]>`

@@ -2,7 +2,7 @@ import { notFound, redirect } from "next/navigation";
 import { Banknote, FileText, FlaskConical, HandCoins, Info, Percent, Receipt, Wallet } from "lucide-react";
 import { requireStaff } from "@/server/auth/permissions";
 import { sql } from "@/server/db";
-import { listEarnings, listPayouts, teacherBalance, teacherSalesSummary } from "@/server/commerce/earnings";
+import { listEarnings, listPayouts, saleLines, teacherBalance, teacherSalesSummary } from "@/server/commerce/earnings";
 import { AdminPageHeader, Section, StatGrid, StatTile } from "@/components/admin/page-header";
 import { CellTitle, DataList, DataRow } from "@/components/admin/data-list";
 import { ToneIcon } from "@/components/admin/icon-tile";
@@ -34,9 +34,9 @@ export default async function TeacherEarningsPage({ searchParams }: { searchPara
     listEarnings(teacherId, { includeTest, limit: 200 }),
     listPayouts(teacherId),
     sql<{ order_number: string; paid_at: Date; title: string; unit_price_fils: number; status: string }[]>`
-      select o.number as order_number, o.paid_at, oi.title, oi.unit_price_fils, o.status
-      from order_items oi join orders o on o.id = oi.order_id
-      where oi.teacher_id = ${teacherId} and o.status in ('paid', 'refunded') and (${includeTest} or not o.is_test)
+      select o.number as order_number, o.paid_at, l.title, l.gross_fils as unit_price_fils, o.status
+      from ${saleLines()} l join orders o on o.id = l.order_id
+      where l.teacher_id = ${teacherId} and o.status in ('paid', 'refunded') and (${includeTest} or not o.is_test)
       order by o.paid_at desc limit 100
     `,
   ]);
@@ -125,7 +125,7 @@ export default async function TeacherEarningsPage({ searchParams }: { searchPara
                       <p className="text-xs whitespace-nowrap text-muted">{formatDate(e.created_at)}</p>
                     </TD>
                     <TD className="max-w-60">
-                      <CellTitle title={e.product_title} />
+                      <CellTitle title={e.product_title} sub={e.bundle_title ? `ضمن «${e.bundle_title}»` : undefined} />
                     </TD>
                     <TD className="num">{filsToKwdString(e.gross_fils)}</TD>
                     <TD className="num text-muted">{filsToKwdString(e.discount_fils)}</TD>

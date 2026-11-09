@@ -32,3 +32,30 @@ create index if not exists product_files_source_idx on product_files (source_fil
 alter table products add column if not exists is_free boolean not null default false;
 alter table products drop constraint if exists products_free_means_zero;
 alter table products add constraint products_free_means_zero check (not is_free or price_fils = 0);
+
+-- ---------------------------------------------------------------------
+-- أجزاء البند: باقة تضم محتوى معلمين مختلفين تتوزع قيمتها على محتوياتها بسعر قائمة كل محتوى.
+-- تُكتب لحظة تأكيد الدفع مع منح الصلاحيات، ومجموع الأجزاء يساوي قيمة البند بالفلس بما فيها ما لا معلم له.
+-- teacher_earnings.order_item_id يبقى فريدًا ويصبح اختياريًا: الكود المنشور يكتب فيه كما هو، وسطر الجزء يكتب order_item_part_id بدلًا منه.
+-- ---------------------------------------------------------------------
+create table if not exists order_item_parts (
+  id uuid primary key default gen_random_uuid(),
+  order_id uuid not null references orders(id) on delete restrict,
+  order_item_id uuid not null references order_items(id) on delete restrict,
+  product_id uuid references products(id) on delete set null,
+  title text not null,
+  teacher_id uuid references teachers(id) on delete set null,
+  teacher_name text,
+  list_price_fils integer not null check (list_price_fils >= 0),
+  gross_fils integer not null check (gross_fils >= 0),
+  created_at timestamptz not null default now(),
+  unique (order_item_id, product_id)
+);
+create index if not exists order_item_parts_order_idx on order_item_parts (order_id);
+create index if not exists order_item_parts_teacher_idx on order_item_parts (teacher_id) where teacher_id is not null;
+alter table order_item_parts enable row level security;
+
+alter table teacher_earnings alter column order_item_id drop not null;
+alter table teacher_earnings add column if not exists order_item_part_id uuid unique references order_item_parts(id) on delete restrict;
+alter table teacher_earnings drop constraint if exists teacher_earnings_one_source;
+alter table teacher_earnings add constraint teacher_earnings_one_source check ((order_item_id is null) <> (order_item_part_id is null));

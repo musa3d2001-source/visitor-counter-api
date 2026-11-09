@@ -382,7 +382,10 @@ export default async function TeacherAdminPage({ params, searchParams }: { param
                     </Link>
                     <p className="text-xs text-muted">{formatDate(e.created_at)}</p>
                   </TD>
-                  <TD className="max-w-48 text-xs font-semibold text-ink">{e.product_title}</TD>
+                  <TD className="max-w-48 text-xs font-semibold text-ink">
+                    {e.product_title}
+                    {e.bundle_title ? <span className="block font-normal text-muted">ضمن «{e.bundle_title}»</span> : null}
+                  </TD>
                   <TD className="num">{filsToKwdString(e.gross_fils)}</TD>
                   <TD className="num text-muted">{filsToKwdString(e.discount_fils)}</TD>
                   <TD className="num text-muted">{filsToKwdString(e.fee_fils)}</TD>
@@ -418,7 +421,12 @@ export default async function TeacherAdminPage({ params, searchParams }: { param
                     <span className="font-sans text-[0.78rem] font-semibold whitespace-nowrap text-muted">{formatDate(e.created_at)}</span>
                   </>
                 }
-                sub={<span className="line-clamp-2">{e.product_title}</span>}
+                sub={
+                  <span className="line-clamp-2">
+                    {e.product_title}
+                    {e.bundle_title ? ` (ضمن «${e.bundle_title}»)` : ""}
+                  </span>
+                }
                 aside={
                   <>
                     <span className="flex flex-wrap gap-1">
