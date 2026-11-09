@@ -82,6 +82,22 @@ describe("اعتماد الرسوم قبل أول بيع لمعلم", () => {
     expect((await publishBlockers(unit.id)).join(" ")).not.toContain("رسوم الدفع");
   });
 
+  it("a fee change reaches the audit log with the values before and after", async () => {
+    await saveSettings({ fee_percent_bps: 100, fee_fixed_fils: 50 }, owner.id);
+    await sql`delete from audit_logs where action = 'settings.update'`;
+    expect((await saveSettingsAction(null, form({ fee_percent: "2.5", fee_fixed: "0.100" })))?.ok).toBe(true);
+    const [log] = await sql<{ metadata: Record<string, unknown> }[]>`select metadata from audit_logs where action = 'settings.update'`;
+    expect(log.metadata.fees).toEqual({ from: [100, 50], to: [250, 100] });
+  });
+
+  it("a save that leaves the fees alone records no fee change", async () => {
+    await saveSettings({ fee_percent_bps: 250, fee_fixed_fils: 100 }, owner.id);
+    await sql`delete from audit_logs where action = 'settings.update'`;
+    expect((await saveSettingsAction(null, form({ fee_percent: "2.5", fee_fixed: "0.100" })))?.ok).toBe(true);
+    const [log] = await sql<{ metadata: Record<string, unknown> }[]>`select metadata from audit_logs where action = 'settings.update'`;
+    expect(log.metadata.fees).toBeUndefined();
+  });
+
   it("entering values alone does not count as confirmation", async () => {
     await unconfirm();
     await saveSettings({ fee_percent_bps: 250, fee_fixed_fils: 100 }, owner.id);

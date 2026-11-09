@@ -1,3 +1,4 @@
+import { randomUUID } from "node:crypto";
 import { afterAll, beforeAll, beforeEach, describe, expect, it } from "vitest";
 import { createOrder, markOrderPaid, type OrderRow } from "@/server/commerce/orders";
 import { applyAcceptedRefund } from "../helpers/payment-flow";
@@ -133,7 +134,7 @@ describe("الاسترداد، التسوية اليدوية والرصيد", ()
     await sql`update teacher_earnings set created_at = now() - interval '8 days' where order_id = ${order.id}`;
     expect(await teacherBalance(teacher.id)).toEqual({ earnedFils: 2000, heldFils: 0, reversedFils: 0, paidFils: 0, balanceFils: 2000, salesCount: 1 });
 
-    const payoutId = await recordPayout({ teacherId: teacher.id, amountFils: 2000, method: "bank_transfer", reference: "TRX-1", note: "تسوية نوفمبر", ownerId: owner.id });
+    const { id: payoutId } = await recordPayout({ requestId: randomUUID(), teacherId: teacher.id, amountFils: 2000, method: "bank_transfer", reference: "TRX-1", note: "تسوية نوفمبر", ownerId: owner.id });
     expect(payoutId).toMatch(/[0-9a-f-]{36}/);
     expect((await teacherBalance(teacher.id)).balanceFils).toBe(0);
     const [log] = await sql<{ action: string; actor_id: string }[]>`select action, actor_id from audit_logs where entity_id = ${teacher.id} and action = 'teacher.payout'`;
@@ -147,8 +148,8 @@ describe("الاسترداد، التسوية اليدوية والرصيد", ()
 
   it("rejects invalid payout amounts", async () => {
     const teacher = await createTeacher({ shareBps: 5000 });
-    await expect(recordPayout({ teacherId: teacher.id, amountFils: 0, method: "cash", reference: "", note: "", ownerId: owner.id })).rejects.toThrow();
-    await expect(recordPayout({ teacherId: teacher.id, amountFils: 10.5, method: "cash", reference: "", note: "", ownerId: owner.id })).rejects.toThrow();
+    await expect(recordPayout({ requestId: randomUUID(), teacherId: teacher.id, amountFils: 0, method: "cash", reference: "", note: "", ownerId: owner.id })).rejects.toThrow();
+    await expect(recordPayout({ requestId: randomUUID(), teacherId: teacher.id, amountFils: 10.5, method: "cash", reference: "", note: "", ownerId: owner.id })).rejects.toThrow();
   });
 
   it("sandbox (test) orders are excluded from balances and sales by default", async () => {

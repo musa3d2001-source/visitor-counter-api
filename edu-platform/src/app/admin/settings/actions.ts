@@ -29,6 +29,8 @@ const FIELD_LABELS: Record<string, string> = {
 
 export async function saveSettingsAction(_p: ActionState, fd: FormData): Promise<ActionState> {
   return adminAction(async ({ adminId, ip }) => {
+    // تُقرأ قبل الحفظ: هي ما يصف التغيير في سجل التدقيق
+    const before = await getSettings();
     let faq: unknown = [];
     try {
       faq = JSON.parse(str(fd, "faq") || "[]");
@@ -61,7 +63,7 @@ export async function saveSettingsAction(_p: ActionState, fd: FormData): Promise
       fee_fixed_fils: feeFixed,
     };
     // الاعتماد مرة واحدة بخانة صريحة، ولا يتغير تاريخه بحفظ لاحق
-    const confirmsFeeRules = bool(fd, "fee_rules_confirm") && (await getSettings()).fee_rules_confirmed_at === null;
+    const confirmsFeeRules = bool(fd, "fee_rules_confirm") && before.fee_rules_confirmed_at === null;
     if (confirmsFeeRules) patch.fee_rules_confirmed_at = new Date().toISOString();
     const parsed = settingsSchema.partial().safeParse(patch);
     if (!parsed.success) {
@@ -75,7 +77,6 @@ export async function saveSettingsAction(_p: ActionState, fd: FormData): Promise
     const [a, b] = (parsed.data.academic_year ?? "2026-2027").split("-").map(Number);
     if (b !== a + 1) throw new AdminError("العام الدراسي غير صحيح (مثال: 2026-2027)");
     await saveSettings(parsed.data, adminId);
-    const before = await getSettings();
     await audit({
       actorId: adminId,
       action: "settings.update",

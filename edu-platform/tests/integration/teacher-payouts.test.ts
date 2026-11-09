@@ -1,3 +1,4 @@
+import { randomUUID } from "node:crypto";
 import { readFileSync } from "node:fs";
 import { afterAll, beforeAll, beforeEach, describe, expect, it, vi } from "vitest";
 import { renderToStaticMarkup } from "react-dom/server";
@@ -22,6 +23,7 @@ vi.mock("@/server/auth/session", async (original) => ({
 
 const { recordPayoutAction, voidPayoutAction } = await import("@/app/admin/teachers/actions");
 const { default: TeacherEarningsPage } = await import("@/app/admin/earnings/page");
+const { default: TeacherAdminPage } = await import("@/app/admin/teachers/[id]/page");
 
 let owner: Awaited<ReturnType<typeof createUser>>;
 beforeAll(async () => {
@@ -43,8 +45,8 @@ async function sale(teacher: TestTeacher, priceFils: number, ageDays = 0, isTest
   if (ageDays) await sql`update teacher_earnings set created_at = now() - make_interval(days => ${ageDays}) where order_id = ${order.id}`;
   return order;
 }
-const pay = (teacherId: string, amountFils: number, extra: { confirmOverBalance?: boolean; reference?: string; note?: string } = {}) =>
-  recordPayout({ teacherId, amountFils, method: "bank_transfer", reference: extra.reference ?? "TRX-9", note: extra.note ?? "تسوية", ownerId: owner.id, confirmOverBalance: extra.confirmOverBalance });
+const pay = (teacherId: string, amountFils: number, extra: { confirmOverBalance?: boolean; reference?: string; note?: string; requestId?: string } = {}) =>
+  recordPayout({ requestId: extra.requestId ?? randomUUID(), teacherId, amountFils, method: "bank_transfer", reference: extra.reference ?? "TRX-9", note: extra.note ?? "تسوية", ownerId: owner.id, confirmOverBalance: extra.confirmOverBalance }).then((r) => r.id);
 const refusal = async (p: Promise<unknown>) => {
   const err = await p.then(
     () => null,
@@ -187,6 +189,64 @@ describe("قفل صف المعلم عند التسوية", () => {
   });
 });
 
+describe("التسوية لا تُسجل مرتين", () => {
+  it("two identical requests at once, with balance for both, write one payout and one audit row", async () => {
+    const t = await createTeacher({ shareBps: 5000 });
+    await sale(t, 8000, 8);
+    expect((await teacherBalance(t.id)).balanceFils).toBe(4000);
+    const requestId = randomUUID();
+    const [a, b] = await Promise.all([pay(t.id, 1000, { requestId }), pay(t.id, 1000, { requestId })]);
+    expect(a).toBe(b);
+    expect(await listPayouts(t.id)).toHaveLength(1);
+    expect((await teacherBalance(t.id)).balanceFils).toBe(3000);
+    expect(await payoutAudit(t.id, "teacher.payout")).toHaveLength(1);
+  });
+
+  it("a repeat after the response was lost answers with the first payout and says so", async () => {
+    const t = await createTeacher({ shareBps: 5000 });
+    await sale(t, 8000, 8);
+    ctx.user = { id: owner.id, email: owner.email, fullName: "المالك", phone: null, role: "admin", gradeId: null, isActive: true };
+    const fields = { requestId: randomUUID(), teacherId: t.id, amount: "1.000", method: "cash", reference: "", reason: "تسوية" };
+    expect(await recordPayoutAction(null, form(fields))).toMatchObject({ ok: true, message: "تم تسجيل التسوية" });
+    expect((await recordPayoutAction(null, form(fields)))?.message).toContain("ولم تُسجل مرة ثانية");
+    expect(await listPayouts(t.id)).toHaveLength(1);
+    expect((await teacherBalance(t.id)).balanceFils).toBe(3000);
+  });
+
+  it("two different requests for the same amount are two payouts", async () => {
+    const t = await createTeacher({ shareBps: 5000 });
+    await sale(t, 8000, 8);
+    await pay(t.id, 1000);
+    await pay(t.id, 1000);
+    expect(await listPayouts(t.id)).toHaveLength(2);
+  });
+
+  it("a request id reused with another amount is refused, not treated as the earlier payout", async () => {
+    const t = await createTeacher({ shareBps: 5000 });
+    await sale(t, 8000, 8);
+    const requestId = randomUUID();
+    await pay(t.id, 1000, { requestId });
+    expect((await refusal(pay(t.id, 1500, { requestId }))).reason).toBe("request_mismatch");
+    expect(await listPayouts(t.id)).toHaveLength(1);
+  });
+
+  it("the form cannot be sent without a request id", async () => {
+    const t = await createTeacher({ shareBps: 5000 });
+    await sale(t, 8000, 8);
+    ctx.user = { id: owner.id, email: owner.email, fullName: "المالك", phone: null, role: "admin", gradeId: null, isActive: true };
+    expect((await recordPayoutAction(null, form({ teacherId: t.id, amount: "1.000", method: "cash", reason: "تسوية" })))?.error).toContain("حدّث الصفحة");
+    expect(await listPayouts(t.id)).toHaveLength(0);
+  });
+
+  it("the database refuses a second row with the same request id", async () => {
+    const t = await createTeacher({ shareBps: 5000 });
+    const requestId = randomUUID();
+    const insert = () => sql`insert into teacher_payouts (teacher_id, amount_fils, method, reference, note, paid_at, created_by, request_id) values (${t.id}, 100, 'cash', '', '', now(), ${owner.id}, ${requestId})`;
+    await insert();
+    await expect(insert()).rejects.toThrow(/teacher_payouts_request_id_key/);
+  });
+});
+
 describe("إلغاء التسوية", () => {
   it("restores the balance exactly once, keeps the row, and audits who and why", async () => {
     const t = await createTeacher({ shareBps: 5000 });
@@ -233,9 +293,23 @@ describe("إلغاء التسوية", () => {
     const id = await pay(t.id, 100);
     ctx.user = { id: t.user!.id, email: t.user!.email, fullName: "معلم", phone: null, role: "teacher", gradeId: null, isActive: true };
     expect((await voidPayoutAction(null, form({ payoutId: id, reason: "محاولة" })))?.ok).toBeFalsy();
-    expect((await recordPayoutAction(null, form({ teacherId: t.id, amount: "0.100", method: "cash", reason: "محاولة" })))?.ok).toBeFalsy();
+    expect((await recordPayoutAction(null, form({ requestId: randomUUID(), teacherId: t.id, amount: "0.100", method: "cash", reason: "محاولة" })))?.ok).toBeFalsy();
     expect((await teacherBalance(t.id)).paidFils).toBe(100);
     expect(await listPayouts(t.id)).toHaveLength(1);
+  });
+});
+
+describe("نموذج التسوية في صفحة المعلم", () => {
+  const html = async (id: string) => renderToStaticMarkup(await TeacherAdminPage({ params: Promise.resolve({ id }), searchParams: Promise.resolve({}) }));
+  const requestIdIn = (markup: string) => /name="requestId" value="([0-9a-f-]{36})"/.exec(markup)?.[1];
+
+  it("each render carries a new request id, so a second real payout is never taken for a repeat", async () => {
+    const t = await createTeacher({ shareBps: 5000 });
+    const first = requestIdIn(await html(t.id));
+    const second = requestIdIn(await html(t.id));
+    expect(first).toBeTruthy();
+    expect(second).toBeTruthy();
+    expect(second).not.toBe(first);
   });
 });
 
@@ -243,11 +317,13 @@ describe("الإجراء على الخادم", () => {
   it("refuses an amount over the balance from a crafted request and asks for the confirmation", async () => {
     const t = await createTeacher({ shareBps: 5000 });
     await sale(t, 2000, 8);
-    const res = await recordPayoutAction(null, form({ teacherId: t.id, amount: "5.000", method: "bank_transfer", reference: "A1", reason: "تسوية" }));
+    const requestId = randomUUID();
+    const res = await recordPayoutAction(null, form({ requestId, teacherId: t.id, amount: "5.000", method: "bank_transfer", reference: "A1", reason: "تسوية" }));
     expect(res?.error).toContain("1.000");
     expect(res?.error).toContain("خانة التأكيد");
     expect(await listPayouts(t.id)).toHaveLength(0);
-    const ok = await recordPayoutAction(null, form({ teacherId: t.id, amount: "5.000", method: "bank_transfer", reference: "A1", reason: "تسوية", confirmOverBalance: "on" }));
+    // الرفض لم يسجل شيئًا، فالنموذج نفسه يكمل بعد التأشير
+    const ok = await recordPayoutAction(null, form({ requestId, teacherId: t.id, amount: "5.000", method: "bank_transfer", reference: "A1", reason: "تسوية", confirmOverBalance: "on" }));
     expect(ok?.ok).toBe(true);
     expect((await teacherBalance(t.id)).balanceFils).toBe(-4000);
   });

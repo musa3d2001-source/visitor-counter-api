@@ -345,7 +345,7 @@ export async function listPayouts(teacherId: string, db: Db = sql) {
 /** رفض تسوية لسبب يخص المالك، والإجراء يحوّله إلى رسالة مفهومة */
 export class PayoutRefused extends Error {
   constructor(
-    public readonly reason: "over_balance" | "bank_details" | "already_voided" | "void_reason",
+    public readonly reason: "over_balance" | "bank_details" | "already_voided" | "void_reason" | "request_mismatch",
     public readonly payableFils = 0,
   ) {
     super(`PAYOUT_REFUSED_${reason}`);
@@ -356,8 +356,10 @@ export class PayoutRefused extends Error {
 /**
  * تسجيل تسوية يدوية (تحويل بنكي/نقدي تم خارج المنصة) — للمالك فقط.
  * المبلغ فوق الرصيد المستحق الآن يُرفض ما لم يؤكده المالك صراحة، والفحص تحت قفل صف المعلم حتى لا تمر تسويتان معًا.
+ * requestId يصدر مرة واحدة مع النموذج: نقرتان أو إعادة إرسال بعد انقطاع تصل إلى التسوية الأولى ولا تكتب ثانية.
  */
 export async function recordPayout(input: {
+  requestId: string;
   teacherId: string;
   amountFils: number;
   method: "bank_transfer" | "cash" | "other";
@@ -367,18 +369,23 @@ export async function recordPayout(input: {
   ownerId: string;
   ip?: string;
   confirmOverBalance?: boolean;
-}) {
+}): Promise<{ id: string; repeated: boolean }> {
   if (!Number.isInteger(input.amountFils) || input.amountFils <= 0) throw new Error("INVALID_AMOUNT");
   if (looksLikeBankDetails(input.reference) || looksLikeBankDetails(input.note)) throw new PayoutRefused("bank_details");
   return sql.begin(async (tx) => {
     const [t] = await tx<{ id: string; display_name: string }[]>`select id, display_name from teachers where id = ${input.teacherId} for update`;
     if (!t) throw new Error("TEACHER_NOT_FOUND");
+    const [earlier] = await tx<{ id: string; teacher_id: string; amount_fils: number }[]>`select id, teacher_id, amount_fils from teacher_payouts where request_id = ${input.requestId}`;
+    if (earlier) {
+      if (earlier.teacher_id !== input.teacherId || earlier.amount_fils !== input.amountFils) throw new PayoutRefused("request_mismatch");
+      return { id: earlier.id, repeated: true };
+    }
     const { balanceFils } = await teacherBalance(input.teacherId, {}, tx);
     const overByFils = Math.max(0, input.amountFils - Math.max(balanceFils, 0));
     if (overByFils > 0 && !input.confirmOverBalance) throw new PayoutRefused("over_balance", balanceFils);
     const [row] = await tx<{ id: string }[]>`
-      insert into teacher_payouts (teacher_id, amount_fils, method, reference, note, paid_at, created_by)
-      values (${input.teacherId}, ${input.amountFils}, ${input.method}, ${input.reference}, ${input.note}, ${input.paidAt ?? new Date()}, ${input.ownerId})
+      insert into teacher_payouts (teacher_id, amount_fils, method, reference, note, paid_at, created_by, request_id)
+      values (${input.teacherId}, ${input.amountFils}, ${input.method}, ${input.reference}, ${input.note}, ${input.paidAt ?? new Date()}, ${input.ownerId}, ${input.requestId})
       returning id
     `;
     await audit(
@@ -393,7 +400,7 @@ export async function recordPayout(input: {
       },
       tx,
     );
-    return row.id;
+    return { id: row.id, repeated: false };
   });
 }
 

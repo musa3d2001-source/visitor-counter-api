@@ -1,3 +1,4 @@
+import { randomUUID } from "node:crypto";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import {
@@ -379,7 +380,7 @@ export default async function TeacherAdminPage({ params, searchParams }: { param
           </p>
           <ConfirmButton
             action={recordPayoutAction}
-            hidden={{ teacherId: teacher.id }}
+            hidden={{ teacherId: teacher.id, requestId: randomUUID() }}
             label="تسجيل تسوية يدوية"
             icon={<Banknote aria-hidden />}
             variant="primary"

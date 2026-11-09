@@ -67,6 +67,7 @@ function parseTeacher(fd: FormData): TeacherInput {
     isPublished: bool(fd, "isPublished"),
     canUpload: bool(fd, "canUpload"),
     revenueShareBps: parsed.data.revenueShare,
+    confirmExtremeShare: bool(fd, "confirmExtremeShare"),
     sortOrder: parsed.data.sortOrder,
     subjectIds: [...new Set(subjectIds)],
   };
@@ -180,14 +181,17 @@ export async function recordPayoutAction(_prev: ActionState, fd: FormData): Prom
     if (!["bank_transfer", "cash", "other"].includes(method)) throw new AdminError("اختر طريقة التسوية");
     const reference = str(fd, "reference").slice(0, 120);
     const note = str(fd, "reason").slice(0, 500);
+    const requestId = str(fd, "requestId");
+    if (!isUuid(requestId)) throw new AdminError("حدّث الصفحة ثم سجّل التسوية من جديد");
+    let repeated = false;
     try {
-      await recordPayout({ teacherId: id, amountFils: amount, method: method as "bank_transfer" | "cash" | "other", reference, note, ownerId: adminId, ip, confirmOverBalance: bool(fd, "confirmOverBalance") });
+      ({ repeated } = await recordPayout({ requestId, teacherId: id, amountFils: amount, method: method as "bank_transfer" | "cash" | "other", reference, note, ownerId: adminId, ip, confirmOverBalance: bool(fd, "confirmOverBalance") }));
     } catch (err) {
       throw payoutError(err);
     }
     revalidatePath(`/admin/teachers/${id}`);
     revalidatePath("/admin/teachers");
-    return { ok: true, message: "تم تسجيل التسوية" };
+    return { ok: true, message: repeated ? "سُجلت هذه التسوية من قبل، ولم تُسجل مرة ثانية" : "تم تسجيل التسوية" };
   });
 }
 
@@ -214,5 +218,6 @@ function payoutError(err: unknown) {
   }
   if (err.reason === "bank_details") return new AdminError("لا تكتب الآيبان أو بيانات الحساب البنكي هنا، فالمنصة لا تحفظها.");
   if (err.reason === "void_reason") return new AdminError("اكتب سبب الإلغاء");
+  if (err.reason === "request_mismatch") return new AdminError("حدّث الصفحة ثم سجّل التسوية من جديد");
   return new AdminError("هذه التسوية ملغاة مسبقًا أو غير موجودة");
 }
