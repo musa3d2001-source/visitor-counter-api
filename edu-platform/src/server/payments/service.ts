@@ -6,6 +6,8 @@ import { filsToKwdString, kwdNumberToFils } from "@/lib/money";
 import { closeOrder, endedProductsInOrder, findOpenOrdersCovering, markOrderPaid, type OrderClosedReason, type OrderRow } from "../commerce/orders";
 import { reacquireCouponHold } from "../commerce/coupons";
 import { computeCart } from "../commerce/cart";
+import { closedVideoProductIds } from "../video/policy";
+import { readSettings } from "../platform/settings";
 import { accessibleProductIds } from "../access/entitlements";
 import { audit } from "../platform/audit";
 import {
@@ -276,6 +278,11 @@ async function decidePayment(orderId: string, environment: "sandbox" | "live", w
     }
     // انتهى تاريخ إتاحة منتج بعد إنشاء الطلب: لا نصدر عليه فاتورة ولا نعيد رابطًا قديمًا
     if ((await endedProductsInOrder(db, orderId)).length) {
+      await closeOrder(db, { orderId, reason: "product_ended", actorId: null });
+      return { kind: "closed", reason: "product_ended" };
+    }
+    // أُغلق بيع الفيديو بعد إنشاء الطلب: لا فاتورة جديدة عليه. دفعة وصلت فعلًا على فاتورة سابقة لا تمر من هنا ولا تضيع
+    if ((await closedVideoProductIds(db, items.map((i) => i.product_id), await readSettings(db))).size) {
       await closeOrder(db, { orderId, reason: "product_ended", actorId: null });
       return { kind: "closed", reason: "product_ended" };
     }

@@ -2,7 +2,7 @@
 
 import { redirect } from "next/navigation";
 import { revalidatePath } from "next/cache";
-import { getCartIds, writeCartIds } from "@/server/commerce/cart";
+import { getCartIds, unsellableProductIds, writeCartIds } from "@/server/commerce/cart";
 import { getPublishedProductsByIds } from "@/server/catalog/queries";
 import { sql } from "@/server/db";
 import { containerCoverage } from "@/server/commerce/cart";
@@ -29,6 +29,7 @@ async function addProduct(productId: string): Promise<{ ok: boolean; message: st
   const [product] = await getPublishedProductsByIds([id.data]);
   if (!product) return { ok: false, message: "هذا المنتج غير متاح حاليًا" };
   if (product.saleEnded) return { ok: false, message: "انتهى بيع هذا المنتج" };
+  if ((await unsellableProductIds([product.id])).has(product.id)) return { ok: false, message: "هذا المنتج غير متاح للبيع حاليًا" };
   const ids = await getCartIds();
   if (ids.includes(product.id)) return { ok: true, message: "المنتج موجود في سلتك" };
 

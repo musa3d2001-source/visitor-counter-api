@@ -5,6 +5,8 @@ import { env } from "../env";
 import { getPublishedProductsByIds, type ProductCard } from "../catalog/queries";
 import { accessibleProductIds } from "../access/entitlements";
 import { FLAGGED_STATUSES } from "../access/file-check";
+import { getSettings } from "../platform/settings";
+import { closedVideoProductIds } from "../video/policy";
 import { isContainerType } from "@/lib/labels";
 
 /**
@@ -70,7 +72,7 @@ export async function containerCoverage(containerIds: string[]): Promise<Map<str
 
 /**
  * منتجات منشورة لا يصح بيعها الآن، بما فيها ما نُشر قبل هذه الضوابط:
- * ملف معيب فيها أو في محتوياتها، أو سعر صفر لم يُعلَّم مجانيًا، أو معلم بلا نسبة متفق عليها.
+ * ملف معيب فيها أو في محتوياتها، أو سعر صفر لم يُعلَّم مجانيًا، أو معلم بلا نسبة متفق عليها، أو فيديو مغلق.
  */
 export async function unsellableProductIds(ids: string[]): Promise<Set<string>> {
   if (ids.length === 0) return new Set();
@@ -89,7 +91,8 @@ export async function unsellableProductIds(ids: string[]): Promise<Set<string>> 
       or (t.id is not null and t.revenue_share_bps is null and not item.is_free and not root.is_free)
       or exists (select 1 from product_files f where f.product_id = c.id and f.kind = 'main' and f.check_status = any(${FLAGGED_STATUSES}::text[]))
   `;
-  return new Set(rows.map((r) => r.root));
+  const closed = await closedVideoProductIds(sql, ids, await getSettings());
+  return new Set([...rows.map((r) => r.root), ...closed]);
 }
 
 /**

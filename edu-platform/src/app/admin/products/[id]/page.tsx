@@ -134,7 +134,7 @@ export default async function EditProductPage({
   const [files, blockers, options, bundleItems, candidates, lessons, teachers, shares] = await Promise.all([
     getProductFiles(id),
     // السعر والنسبة قرار يُتخذ داخل نموذج الاعتماد، والمعلم لا يملكهما
-    publishBlockers(id, reviewing || !owner ? { ignorePrice: true, ignoreShare: true } : {}),
+    publishBlockers(id, { ...(reviewing || !owner ? { ignorePrice: true, ignoreShare: true } : {}), ignoreVideoHosting: !owner }),
     catalogOptions(),
     isContainer ? getBundleItemsAdmin(id) : Promise.resolve([]),
     isContainer && editable ? bundleCandidates(id, product.grade_id, actor) : Promise.resolve([]),

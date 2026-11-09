@@ -2,6 +2,7 @@ import "server-only";
 import { sql, type Db } from "../db";
 import { servablePreviewSql } from "./preview-rule";
 import { audit } from "../platform/audit";
+import { isContainerType, isVideoType } from "@/lib/labels";
 
 /**
  * صلاحيات الوصول:
@@ -128,7 +129,7 @@ export async function grantProduct(db: Db, input: GrantInput): Promise<{ granted
   };
 
   await upsert(product.id, input.source, null);
-  if (product.type === "bundle" || product.type === "video_course" || product.type === "unit") {
+  if (isContainerType(product.type)) {
     for (const itemId of await containerClosure(db, product.id)) await upsert(itemId, "bundle", product.id);
   }
   return { granted, expiresAt };
@@ -278,7 +279,7 @@ export async function getLibrary(userId: string): Promise<{ items: LibraryItem[]
     let last = pf.reduce<Date | null>((acc, f) => (f.updated_at && (!acc || f.updated_at > acc) ? f.updated_at : acc), null);
     if (p.last_watch && (!last || p.last_watch > last)) last = p.last_watch;
     // الحاويات التي لا تحتوي دروسًا أو ملفات مباشرة تُعرض كباقات (محتوياتها تظهر منفردة)
-    if ((p.type === "video_course" || p.type === "unit") && p.lesson_count === 0 && pf.length === 0) {
+    if (isContainerType(p.type) && isVideoType(p.type) && p.lesson_count === 0 && pf.length === 0) {
       bundles.push({ id: p.id, title: p.title, slug: p.slug });
       continue;
     }

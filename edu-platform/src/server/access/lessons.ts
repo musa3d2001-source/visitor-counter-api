@@ -2,6 +2,8 @@ import "server-only";
 import { sql } from "../db";
 import { hasProductAccess, isTeacherOfProduct } from "./entitlements";
 import { signedEmbedUrl } from "../video/bunny";
+import { closedVideoProductIds } from "../video/policy";
+import { getSettings } from "../platform/settings";
 
 export type LessonRow = {
   id: string;
@@ -25,9 +27,9 @@ export type LessonAccess =
 /**
  * صلاحية مشاهدة درس (على الخادم دائمًا):
  *  - المالك، ومعلم المنتج نفسه (للمعاينة داخل اللوحة)
- *  - الدرس المجاني: لأي زائر إن كان المنتج منشورًا والدرس جاهزًا
+ *  - الدرس المجاني: لأي زائر إن كان المنتج منشورًا والدرس جاهزًا والفيديو غير مغلق (انظر video/policy)
  *  - غير ذلك: لمن يملك المنتج (مباشرة أو عبر باقة/دورة) وصلاحيته غير منتهية
- * الدرس غير الجاهز (قيد المعالجة) لا يُعرض للطلاب.
+ * الدرس غير الجاهز (قيد المعالجة) لا يُعرض للطلاب. إغلاق الفيديو لا يمس حق من اشترى.
  */
 export async function checkLessonAccess(lessonId: string, user: { id: string; role: string } | null): Promise<LessonAccess> {
   if (!/^[0-9a-f-]{36}$/i.test(lessonId)) return { ok: false, reason: "not_found" };
@@ -41,7 +43,7 @@ export async function checkLessonAccess(lessonId: string, user: { id: string; ro
   if (user?.role === "teacher" && (await isTeacherOfProduct(user.id, l.product_id))) return { ok: true, lesson: l, via: "staff" };
   if (!l.is_published) return { ok: false, reason: "not_found" };
   if (l.processing_status !== "ready") return { ok: false, reason: "not_ready" };
-  if (l.is_free_preview && l.product_status === "published") return { ok: true, lesson: l, via: "free" };
+  if (l.is_free_preview && l.product_status === "published" && !(await closedVideoProductIds(sql, [l.product_id], await getSettings())).size) return { ok: true, lesson: l, via: "free" };
   if (!user) return { ok: false, reason: "unauthenticated" };
   if (await hasProductAccess(user.id, l.product_id)) return { ok: true, lesson: l, via: "owned" };
   return { ok: false, reason: "forbidden" };

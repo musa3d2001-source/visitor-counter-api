@@ -3,8 +3,10 @@ import { servablePreviewSql } from "../access/preview-rule";
 import { cache } from "react";
 import { sql } from "../db";
 import { storage } from "../storage";
+import { getSettings } from "../platform/settings";
 import { bunnyThumbnailUrl } from "../video/bunny";
-import { isVideoType, TEACHER_PAGE_ORDER, type ProductType } from "@/lib/labels";
+import { videoCloseFlags, type VideoCloseFlags } from "../video/policy";
+import { isVideoType, TEACHER_PAGE_ORDER, VIDEO_PRODUCT_TYPES, type ProductType } from "@/lib/labels";
 
 /**
  * استعلامات الكتالوج العامة — تعرض فقط ما هو منشور:
@@ -175,9 +177,25 @@ const videoStats = () => sql`
       (select coalesce(sum(duration_seconds), 0)::int from vl) as total_duration,
       (select vl.id from vl join products lp on lp.id = vl.product_id where vl.is_free_preview and lp.status = 'published' order by vl.depth, vl.sort_order, vl.created_at limit 1) as preview_lesson_id,
       (select thumbnail_key from vl where thumbnail_key is not null order by depth, sort_order, created_at limit 1) as lesson_thumb_key,
-      (select video_ref from vl where provider = 'bunny' order by depth, sort_order, created_at limit 1) as bunny_ref
+      (select video_ref from vl where provider = 'bunny' order by depth, sort_order, created_at limit 1) as bunny_ref,
+      exists (select 1 from vl where provider = 'file') as has_file_lesson,
+      exists (select 1 from c join products cp on cp.id = c.id where (c.depth = 0 or cp.status in ('published', 'hidden')) and cp.type = any(${VIDEO_PRODUCT_TYPES}::text[])) as has_video_item
   ) vs on true
 `;
+
+/** لا تُعرض في القوائم العامة منتجات فيديو أُغلق بيعها، فلا يرى الطالب سعرًا أو معاينة لما لا يستطيع شراءه. صفحة المنتج نفسها تبقى لمن اشتراه */
+const hideClosedVideo = ({ allClosed, rawClosed }: VideoCloseFlags) => sql`
+  and not (${allClosed}::boolean and (vs.has_video_item or vs.lesson_count > 0))
+  and not (${rawClosed}::boolean and vs.has_file_lesson)
+`;
+
+const currentCloseFlags = async () => videoCloseFlags(await getSettings());
+
+/** معاينات المنتجات المغلقة لا تعمل، فلا يبقى لها رابط أو شارة في القوائم التي لا تُخفيها */
+async function stripClosedPreviews(cards: ProductCard[]): Promise<ProductCard[]> {
+  const { allClosed } = await currentCloseFlags();
+  return allClosed ? cards.map((c) => ({ ...c, previewLessonId: null })) : cards;
+}
 
 const visibleJoin = () => sql`
   from products p
@@ -268,6 +286,7 @@ export async function listProducts(opts: {
   limit?: number;
   order?: "display" | "latest";
 }): Promise<ProductCard[]> {
+  const closed = await currentCloseFlags();
   const rows = await sql<ProductRow[]>`
     select ${cardColumns()}
     ${visibleJoin()}
@@ -277,6 +296,7 @@ export async function listProducts(opts: {
       ${opts.excludeType ? sql`and p.type <> ${opts.excludeType}` : sql``}
       ${opts.term ? sql`and (p.term = ${opts.term} or p.term is null)` : sql``}
       ${opts.featuredOnly ? sql`and p.is_featured` : sql``}
+      ${hideClosedVideo(closed)}
     order by ${opts.order === "latest" ? sql`p.published_at desc nulls last, p.created_at desc` : sql`p.sort_order, p.published_at desc nulls last`}
     limit ${opts.limit ?? 200}
   `;
@@ -285,6 +305,7 @@ export async function listProducts(opts: {
 
 /** الأكثر طلبًا — من بيانات مبيعات حقيقية فقط (طلبات مدفوعة غير تجريبية) */
 export async function bestSellers(opts: { gradeId?: string; limit?: number }): Promise<ProductCard[]> {
+  const closed = await currentCloseFlags();
   const rows = await sql<(ProductRow & { sold: number })[]>`
     select ${cardColumns()}, sales.sold
     from (
@@ -300,6 +321,7 @@ export async function bestSellers(opts: { gradeId?: string; limit?: number }): P
     left join subjects s on s.id = p.subject_id
     where p.status = 'published' and (p.subject_id is null or s.is_published)
       ${opts.gradeId ? sql`and p.grade_id = ${opts.gradeId}` : sql``}
+      ${hideClosedVideo(closed)}
     order by sales.sold desc, p.sort_order
     limit ${opts.limit ?? 8}
   `;
@@ -382,16 +404,18 @@ export async function getBundleItems(bundleId: string, opts: { includeUnpublishe
       ${opts.includeUnpublished ? sql`` : sql`and p.status = 'published'`}
     order by bi.sort_order, p.sort_order
   `;
-  return rows.map(toCard);
+  return stripClosedPreviews(rows.map(toCard));
 }
 
 /** الباقات المنشورة التي تتضمن هذا المنتج (لاقتراح التوفير) */
 export async function getBundlesContaining(productId: string): Promise<ProductCard[]> {
+  const closed = await currentCloseFlags();
   const rows = await sql<ProductRow[]>`
     select ${cardColumns()}
     ${visibleJoin()}
       and p.type = 'bundle'
       and exists (select 1 from bundle_items bi where bi.bundle_id = p.id and bi.product_id = ${productId})
+      ${hideClosedVideo(closed)}
     order by p.sort_order
     limit 4
   `;
@@ -515,12 +539,13 @@ export async function includedProducts(productId: string): Promise<ProductCard[]
 
 /** أحدث منتجات الفيديو المنشورة (للصفحة الرئيسية) */
 export async function latestVideoProducts(limit = 8): Promise<ProductCard[]> {
+  const closed = await currentCloseFlags();
   const rows = await sql<ProductRow[]>`
     select ${cardColumns()}
     ${visibleJoin()}
-      and (p.type in ('video_lesson', 'unit', 'quiz_review', 'exam_review', 'video_course') or vs.lesson_count > 0)
       and p.type <> 'bundle'
       and vs.lesson_count > 0
+      ${hideClosedVideo(closed)}
     order by p.is_featured desc, p.published_at desc nulls last, p.created_at desc
     limit ${limit}
   `;
@@ -647,10 +672,12 @@ export type TeacherContentGroup = {
 
 /** محتوى المعلم المنشور: الصف ← المادة ← الأنواع بترتيب «ما قبل الاختبار أولًا» */
 export async function teacherContent(teacherId: string): Promise<TeacherContentGroup[]> {
+  const closed = await currentCloseFlags();
   const rows = await sql<(ProductRow & { grade_level: number; subject_sort: number | null })[]>`
     select ${cardColumns()}, g.level as grade_level, s.sort_order as subject_sort
     ${visibleJoin()}
       and p.teacher_id = ${teacherId}
+      ${hideClosedVideo(closed)}
     order by g.level, s.sort_order nulls last, p.sort_order, p.published_at desc nulls last
   `;
   const groups = new Map<string, TeacherContentGroup>();
@@ -686,8 +713,10 @@ export async function getPublishedProductsByIds(ids: string[]): Promise<ProductC
 }
 
 export async function sitemapEntries() {
+  const closed = await currentCloseFlags();
   const products = await sql<{ slug: string; updated_at: Date }[]>`
     select p.slug, p.updated_at ${visibleJoin()}
+      ${hideClosedVideo(closed)}
   `;
   const grades = await listGrades();
   const subjects = await sql<{ grade_slug: string; slug: string }[]>`

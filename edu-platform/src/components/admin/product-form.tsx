@@ -4,7 +4,7 @@ import { usePreservingAction } from "./use-preserving-action";
 import { useId, useMemo, useState } from "react";
 import { BookOpen, CalendarClock, FileText, Layers, MapPin, PlayCircle, Save, ShieldCheck, Tag } from "lucide-react";
 import type { ActionState } from "@/lib/action-state";
-import { ACCESS_MODE_LABELS, PRODUCT_TYPES, PRODUCT_TYPE_LABELS, isPdfType, isVideoType, type ProductType } from "@/lib/labels";
+import { ACCESS_MODE_LABELS, PRODUCT_TYPES, PRODUCT_TYPE_LABELS, VIDEO_PRODUCT_TYPES, isPdfType, isVideoType, type ProductType } from "@/lib/labels";
 import { Alert } from "@/components/ui/alert";
 import { Checkbox, Field, Input, Select, Textarea } from "@/components/ui/form";
 import { SubmitButton } from "@/components/ui/submit-button";
@@ -46,7 +46,8 @@ export type ProductFormDefaults = {
 const TYPE_GROUPS: { label: string; types: ProductType[] }[] = [
   {
     label: "فيديو",
-    types: ["unit", "video_lesson", "quiz_review", "exam_review", "video_course"],
+    // شرح الوحدة أولًا لأنه الأكثر استخدامًا، والبقية من القائمة المعتمدة حتى يظهر أي نوع جديد
+    types: ["unit", ...VIDEO_PRODUCT_TYPES.filter((t) => t !== "unit")],
   },
   {
     label: "مذكرات PDF",

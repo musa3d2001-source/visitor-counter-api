@@ -7,8 +7,9 @@ import { ensureProductFilesChecked, FILE_PROBLEM_LABELS, FLAGGED_STATUSES, recor
 import { audit } from "../platform/audit";
 import { assertProductAccess, PermissionError, type Actor } from "../auth/permissions";
 import { deleteVideo } from "../video/bunny";
+import { closedVideoProductIds } from "../video/policy";
 import { AdminError } from "./common";
-import { CONTAINER_PRODUCT_TYPES, PDF_PRODUCT_TYPES, VIDEO_PRODUCT_TYPES, isContainerType, type ProductStatus, type ProductType } from "@/lib/labels";
+import { CONTAINER_PRODUCT_TYPES, PDF_PRODUCT_TYPES, VIDEO_PRODUCT_TYPES, isContainerType, isVideoType, type ProductStatus, type ProductType } from "@/lib/labels";
 import { randomSuffix } from "@/lib/utils";
 
 /**
@@ -224,7 +225,8 @@ function assertContent(input: ProductContentInput) {
   if (PDF_PRODUCT_TYPES.includes(input.type) && !input.subjectId) {
     throw new AdminError("اختر المادة", { subjectId: "المادة مطلوبة لهذا النوع" });
   }
-  if (["video_lesson", "unit", "quiz_review", "exam_review"].includes(input.type) && !input.subjectId) {
+  // الدورة الكاملة وحدها قد تجمع أكثر من مادة
+  if (isVideoType(input.type) && input.type !== "video_course" && !input.subjectId) {
     throw new AdminError("اختر المادة", { subjectId: "المادة مطلوبة لهذا النوع" });
   }
 }
@@ -433,6 +435,10 @@ export async function publishBlockers(productId: string, opts: PublishCheckOptio
     if (l.failed > 0) issues.push("يوجد درس فشلت معالجته، احذفه أو ارفعه من جديد");
     else if (l.not_ready > 0) issues.push("لا يمكن النشر قبل اكتمال معالجة الفيديو");
   }
+  // المالك وحده يستطيع تغيير الاستضافة، فلا يوقف هذا الشرط إرسال المعلم للمراجعة. إيقاف قسم الفيديو من الإعدادات لا يمنع تجهيز المحتوى ونشره
+  if (!opts.ignoreVideoHosting && (await closedVideoProductIds(sql, [productId], { videos_enabled: true })).size) {
+    issues.push("الفيديو هنا ملف خام يستطيع الطالب تنزيله، فلا يُنشر في الإنتاج. استخدم Bunny Stream (VIDEO_PROVIDER=bunny) وارفع الدروس عليه، أو اضبط ALLOW_FILE_VIDEO=true إن كنت تقبل ذلك");
+  }
   if (!opts.ignoreShare && !p.is_free) {
     const missing = (await productTeacherShares(productId)).filter((t) => t.share_bps === null);
     if (missing.length) issues.push(`لم تُحدَّد نسبة ${missing.map((t) => t.display_name).join("، ")}. حددها في صفحة المعلم قبل النشر، فبدونها يُباع المنتج دون أن يُسجَّل للمعلم حقه`);
@@ -440,7 +446,7 @@ export async function publishBlockers(productId: string, opts: PublishCheckOptio
   return issues;
 }
 
-export type PublishCheckOptions = { ignorePrice?: boolean; ignoreAccessDate?: boolean; ignoreShare?: boolean };
+export type PublishCheckOptions = { ignorePrice?: boolean; ignoreAccessDate?: boolean; ignoreShare?: boolean; ignoreVideoHosting?: boolean };
 
 /** معلمو المنتج وما بداخله من محتوى بأي عمق، فالباقة تحمل حصص معلمي محتوياتها */
 export async function productTeacherShares(productId: string): Promise<{ teacher_id: string; display_name: string; share_bps: number | null }[]> {
@@ -512,7 +518,7 @@ export async function submitForReview(id: string, actor: Actor, ip?: string) {
   if (p.status !== "draft") throw new AdminError("يمكن إرسال المسودات فقط للمراجعة");
   // فترة الإتاحة يحددها المالك عند الاعتماد، فلا يوقف تاريخها إرسال المعلم للمراجعة
   // السعر ونسبة المعلم قرار المالك عند الاعتماد، فلا يوقفان إرسال المعلم للمراجعة
-  const issues = await publishBlockers(id, { ignorePrice: true, ignoreAccessDate: true, ignoreShare: true });
+  const issues = await publishBlockers(id, { ignorePrice: true, ignoreAccessDate: true, ignoreShare: true, ignoreVideoHosting: true });
   if (issues.length) throw new AdminError(issues.join("، "));
   await sql`update products set status = 'in_review', submitted_at = now() where id = ${id} and status = 'draft'`;
   await audit({ actorId: actor.userId, action: "product.submit_review", entityType: "product", entityId: id, ip });

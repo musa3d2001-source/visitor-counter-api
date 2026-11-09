@@ -14,6 +14,7 @@ import { assertProductAccess, PermissionError, type Actor } from "@/server/auth/
 import { syncLessonStatus } from "@/server/video/service";
 import { AdminError, bool, int, isUuid, staffAction, str } from "@/server/admin/common";
 import { PREVIEW_POLICY } from "@/lib/preview-policy";
+import { isVideoType } from "@/lib/labels";
 import {
   addBundleItem,
   approveAndPublish,
@@ -455,7 +456,7 @@ export async function addBunnyLessonAction(_prev: ActionState, fd: FormData): Pr
     const videoId = str(fd, "videoRef").toLowerCase();
     if (!/^[0-9a-f-]{36}$/i.test(videoId)) throw new AdminError("معرّف فيديو Bunny غير صحيح، انسخ Video ID (بصيغة GUID) من لوحة Bunny Stream", { videoRef: "معرّف غير صحيح" });
     const p = await assertProductAccess(actor, productId, "view");
-    if (!["video_lesson", "unit", "quiz_review", "exam_review", "video_course"].includes(p.type)) throw new AdminError("الدروس متاحة لمنتجات الفيديو فقط");
+    if (!isVideoType(p.type)) throw new AdminError("الدروس متاحة لمنتجات الفيديو فقط");
     const order = await nextLessonOrder(productId);
     const minutes = Number(str(fd, "durationMinutes") || "0");
     const [l] = await sql<{ id: string }[]>`
