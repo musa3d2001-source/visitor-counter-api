@@ -341,7 +341,7 @@ describe("a timeout", () => {
     await sql`update refunds set status = 'not_sent', claimed_at = null where order_id = ${order.id}`;
     sim.setFault("/v2/GetRefundStatus", "error");
     sim.state.requests.length = 0;
-    await expect(ask(order, undefined)).resolves.toMatchObject({ state: "not_sent", error: expect.stringContaining("فلم نرسل شيئًا") });
+    await expect(ask(order, undefined)).resolves.toMatchObject({ state: "held_back", error: expect.stringContaining("فلم نرسل شيئًا") });
     expect(makeRefundCalls()).toHaveLength(0);
     expect(refundsOnGateway(invoice)).toHaveLength(1);
     expect((await refundOf(order.id)).status).toBe("not_sent");
@@ -355,11 +355,26 @@ describe("a timeout", () => {
     await sql`update refunds set status = 'not_sent', claimed_at = null where order_id = ${order.id}`;
     sim.setRefundStatus(refundsOnGateway(invoice)[0].RefundId, "UnderReview" as never);
     sim.state.requests.length = 0;
-    await expect(ask(order, undefined)).resolves.toMatchObject({ state: "not_sent", error: expect.stringContaining("UnderReview") });
+    await expect(ask(order, undefined)).resolves.toMatchObject({ state: "held_back", error: expect.stringContaining("UnderReview") });
     expect(makeRefundCalls()).toHaveLength(0);
     expect(refundsOnGateway(invoice)).toHaveLength(1);
     expect((await refundOf(order.id)).status).toBe("not_sent");
     expect((await orderRow(order.id)).status).toBe("paid");
+  });
+
+  it("tells the owner nothing was sent, not that the gateway refused, when it could not be asked", async () => {
+    const { order } = await paidOrder();
+    sim.setRefundRefusal("Insufficient refund balance");
+    await ask(order);
+    sim.setRefundRefusal(null);
+    sim.setFault("/v2/GetRefundStatus", "error");
+    sim.state.requests.length = 0;
+    const out = await resendRefundAction({}, form({ orderId: order.id }));
+    expect(out?.error).toContain("لم يُرسل طلب الاسترداد");
+    expect(out?.error).not.toContain("رفضت البوابة");
+    expect(out?.error).not.toContain("الرصيد");
+    expect(makeRefundCalls()).toHaveLength(0);
+    expect((await refundOf(order.id)).status).toBe("failed");
   });
 
   it("an empty answer with Data: null reads as nothing found, as the documentation allows", async () => {
@@ -414,6 +429,61 @@ describe("a timeout", () => {
     await expect(recheck((await refundOf(order.id)).id)).resolves.toEqual({ state: "requested" });
     expect(refundsOnGateway(invoice)).toHaveLength(1);
     expect((await orderRow(order.id)).status).toBe("refunded");
+  });
+});
+
+describe("a new refund after the owner dismissed one whose outcome was unknown", () => {
+  async function dismissedUnknown() {
+    const { order, invoice } = await paidOrder();
+    sim.setFault("/v2/MakeRefund", "drop-after");
+    await ask(order);
+    sim.clearFaults();
+    const { id } = await refundOf(order.id);
+    await staleClaim(order.id);
+    await expect(dismissRefundAction({}, form({ refundId: id, orderId: order.id, reason: "راجعنا لوحة البوابة" }))).resolves.toMatchObject({ ok: true });
+    sim.state.requests.length = 0;
+    return { order, invoice };
+  }
+
+  it("does not go out while the gateway shows the earlier request", async () => {
+    const { order, invoice } = await dismissedUnknown();
+    await expect(ask(order)).resolves.toMatchObject({ state: "held_back", error: expect.stringContaining("طلب استرداد سابق") });
+    expect(makeRefundCalls()).toHaveLength(0);
+    expect(refundsOnGateway(invoice)).toHaveLength(1);
+    expect((await orderRow(order.id)).status).toBe("paid");
+  });
+
+  it("says so to the owner in words that do not blame the gateway", async () => {
+    const { order } = await dismissedUnknown();
+    const out = await refundOrderAction({}, form({ orderId: order.id, reason: "طلب الطالب" }));
+    expect(out?.error).toContain("لم يُرسل طلب الاسترداد");
+    expect(out?.error).not.toContain("رفضت البوابة");
+  });
+
+  it("does not go out when the gateway cannot be asked", async () => {
+    const { order } = await dismissedUnknown();
+    sim.setFault("/v2/GetRefundStatus", "error");
+    await expect(ask(order)).resolves.toMatchObject({ state: "held_back" });
+    expect(makeRefundCalls()).toHaveLength(0);
+  });
+
+  it("goes out once the gateway shows the earlier request as cancelled", async () => {
+    const { order, invoice } = await dismissedUnknown();
+    sim.setRefundStatus(refundsOnGateway(invoice)[0].RefundId, "Canceled");
+    await expect(ask(order)).resolves.toEqual({ state: "requested" });
+    expect(makeRefundCalls()).toHaveLength(1);
+  });
+
+  it("goes out when the earlier request never reached the gateway", async () => {
+    const { order, invoice } = await paidOrder();
+    sim.setFault("/v2/MakeRefund", "down");
+    await ask(order);
+    sim.clearFaults();
+    const { id } = await refundOf(order.id);
+    await staleClaim(order.id);
+    await dismissRefundAction({}, form({ refundId: id, orderId: order.id, reason: "راجعنا لوحة البوابة" }));
+    await expect(ask(order)).resolves.toEqual({ state: "requested" });
+    expect(refundsOnGateway(invoice)).toHaveLength(1);
   });
 });
 
@@ -744,6 +814,17 @@ describe("a refund recorded before this command existed", () => {
     expect((await orderRow(order.id)).status).toBe("refunded");
     expect(await activeEntitlements(user.id)).toEqual([]);
     expect(await auditCount("order.refund_undone", order.id)).toBe(0);
+  });
+});
+
+describe("a refund that has waited too long on the gateway", () => {
+  it("comes back to the owner's count", async () => {
+    const before = await refundsNeedingOwnerCount();
+    const { order } = await paidOrder();
+    await ask(order);
+    expect(await refundsNeedingOwnerCount()).toBe(before);
+    await sql`update refunds set accepted_at = now() - interval '73 hours' where order_id = ${order.id}`;
+    expect(await refundsNeedingOwnerCount()).toBe(before + 1);
   });
 });
 

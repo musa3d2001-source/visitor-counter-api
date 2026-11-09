@@ -1,7 +1,7 @@
 import "server-only";
 import { sql, type Db } from "../db";
 import { audit } from "../platform/audit";
-import { CHARGE_CHECK_FRESH_MINUTES } from "./limits";
+import { CHARGE_CHECK_FRESH_MINUTES, REFUND_STUCK_HOURS } from "./limits";
 
 /**
  * الدفعات الزائدة: مال حقيقي أكدته البوابة ولا يكمل طلبًا.
@@ -85,7 +85,11 @@ export async function orderExtraPayments(orderId: string): Promise<ExtraPayment[
 }
 
 export async function extraPaymentsNeedingOwnerCount(): Promise<number> {
-  const [{ n }] = await sql<{ n: number }[]>`select count(*)::int as n from payment_extras where state = any(${NEEDS_OWNER}::text[])`;
+  const [{ n }] = await sql<{ n: number }[]>`
+    select count(*)::int as n from payment_extras
+    where state = any(${NEEDS_OWNER}::text[])
+       or (state = 'refund_requested' and coalesce(refund_requested_at, created_at) < now() - make_interval(hours => ${REFUND_STUCK_HOURS}))
+  `;
   return n;
 }
 

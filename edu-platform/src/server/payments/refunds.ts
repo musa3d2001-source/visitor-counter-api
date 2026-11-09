@@ -7,6 +7,7 @@ import { sendRefundCancelledEmail, sendRefundEmail } from "../commerce/order-mai
 import { isDefiniteGatewayRefusal, type MfRefundStatus, type MyFatoorahClient } from "./myfatoorah";
 import { applyExtraRefundEvent } from "./extras";
 import { raiseRefundAlert, type RefundAlertReason } from "./monitoring";
+import { REFUND_STUCK_HOURS } from "./limits";
 import { REFUND_SENDING_STALE_MINUTES } from "./limits";
 
 /**
@@ -28,7 +29,8 @@ type Environment = "sandbox" | "live";
 type Actor = { actorId: string | null; ip?: string | null };
 
 export type RefundOutcome = {
-  state: Extract<RefundStatus, "requested" | "completed" | "failed" | "unknown" | "not_sent">;
+  /** held_back: توقفنا قبل الإرسال ولم يصل البوابة شيء في هذه المحاولة، فلا يُعرض على أنه رفض منها */
+  state: Extract<RefundStatus, "requested" | "completed" | "failed" | "unknown" | "not_sent"> | "held_back";
   error?: string;
   /** لم تظهر العملية لدى البوابة بعد، لكن الوقت ما زال مبكرًا للجزم */
   wait?: true;
@@ -64,8 +66,10 @@ type Claim = {
   attempt: number;
   /** الحالة قبل المطالبة: إليها نعود إن تعذر التحقق قبل الإرسال */
   prior: RefundStatus | null;
-  /** أُرسل هذا السجل من قبل، فيجب سؤال البوابة قبل الإرسال */
+  /** أُرسل هذا السجل من قبل، أو أُغلق سجل سابق بعد إرساله، فيجب سؤال البوابة قبل الإرسال */
   checkFirst: boolean;
+  /** سجل سابق أُرسل ثم أغلقه المالك: مرجعه الخارجي يختلف عن هذا السجل، فلا يطابقه matchGatewayRefund */
+  hadDismissed: boolean;
 };
 
 const externalIdOf = (refundId: string, attempt: number) => `refund:${refundId}:${attempt}`;
@@ -106,6 +110,7 @@ async function claimRefund(environment: Environment, input: { orderId: string; a
       where order_id = ${order.id} and status <> 'dismissed'
       order by created_at desc limit 1 for update
     `;
+    const [dismissed] = await db`select 1 from refunds where order_id = ${order.id} and status = 'dismissed' and attempt > 0 limit 1`;
     if (row?.status === "sending") throw new RefundError(row.claim_stale ? NEEDS_RECHECK : "يجري إرسال طلب الاسترداد الآن.");
     if (row?.status === "unknown") throw new RefundError(NEEDS_RECHECK);
     if (row?.status === "requested") throw new RefundError("أُرسل طلب استرداد لهذا الطلب وينتظر التنفيذ.");
@@ -164,7 +169,8 @@ async function claimRefund(environment: Environment, input: { orderId: string; a
       reason,
       attempt,
       prior: row?.status ?? null,
-      checkFirst: Boolean(row && row.attempt > 0),
+      checkFirst: Boolean(row && row.attempt > 0) || Boolean(dismissed),
+      hadDismissed: Boolean(dismissed),
     };
   });
 }
@@ -277,14 +283,19 @@ export async function requestRefund(gateway: RefundGateway, environment: Environ
   try {
     if (claim.checkFirst) {
       const holdBack = async (error: string): Promise<RefundOutcome> => {
-        await sql`update refunds set status = ${claim.prior ?? "failed"}, claimed_at = null, error = ${error.slice(0, 500)} where id = ${claim.refundId} and status = 'sending'`;
-        return { state: claim.prior === "not_sent" ? "not_sent" : "failed", error };
+        await sql`update refunds set status = ${claim.prior ?? "not_sent"}, claimed_at = null, error = ${error.slice(0, 500)} where id = ${claim.refundId} and status = 'sending'`;
+        return { state: "held_back", error };
       };
       let list: MfRefundStatus[];
       try {
         list = await gateway.getRefundStatus(claim.invoiceId, "InvoiceId");
       } catch (err) {
         return await holdBack(`تعذر سؤال البوابة عن الطلب السابق فلم نرسل شيئًا: ${message(err)}`);
+      }
+      if (claim.hadDismissed) {
+        const current = externalIdOf(claim.refundId, claim.attempt);
+        const earlier = list.find((r) => r.ExternalIdentifier?.startsWith("refund:") && r.ExternalIdentifier !== current && !/^cancell?ed$/i.test(r.RefundStatus));
+        if (earlier) return await holdBack(`لدى البوابة طلب استرداد سابق لهذا الطلب (${earlier.RefundId}) ولم يُلغ، فلم نرسل طلبًا جديدًا. راجعه في لوحة MyFatoorah.`);
       }
       const found = matchGatewayRefund(list, { refundId: claim.refundId, attempt: claim.attempt, gatewayRefundId: null, amountFils: claim.amountFils });
       const kind = found ? gatewayFactKind(found.RefundStatus) : null;
@@ -317,7 +328,7 @@ export async function requestRefund(gateway: RefundGateway, environment: Environ
  * إعادة التحقق الصريحة من البوابة قبل أي إعادة إرسال. تعذر السؤال لا يغيّر شيئًا.
  * عدم العثور على العملية يعني not_sent فقط إن مضت دقيقتان على المطالبة، وإلا قد يكون الطلب ما زال في الطريق.
  */
-export async function recheckRefund(gateway: RefundGateway, environment: Environment, input: { refundId: string; adminId: string; ip?: string }): Promise<RefundOutcome> {
+export async function recheckRefund(gateway: RefundGateway, environment: Environment, input: { refundId: string; adminId: string | null; ip?: string }): Promise<RefundOutcome> {
   const actor: Actor = { actorId: input.adminId, ip: input.ip };
   const [row] = await sql<(RefundRow & { gateway_invoice_id: string | null; environment: string | null })[]>`
     select r.*, ${staleClaim(sql)}, p.gateway_invoice_id, p.environment
@@ -505,12 +516,13 @@ export async function orderRefunds(orderId: string): Promise<RefundQueueRow[]> {
   `;
 }
 
-/** عدد الاستردادات التي تنتظر قرارًا من المالك. requested لا يحتاج شيئًا منه، فالبوابة هي من ستحسمه */
+/** عدد الاستردادات التي تنتظر قرارًا من المالك. requested لا يحتاج شيئًا منه ما دامت البوابة تحسمه، إلا إن طال انتظاره */
 export async function refundsNeedingOwnerCount(): Promise<number> {
   const [{ n }] = await sql<{ n: number }[]>`
     select count(*)::int as n from refunds
     where status in ('unknown', 'not_sent', 'failed', 'recorded')
        or (status = 'sending' and coalesce(claimed_at < now() - make_interval(mins => ${REFUND_SENDING_STALE_MINUTES}), true))
+       or (status = 'requested' and coalesce(accepted_at, created_at) < now() - make_interval(hours => ${REFUND_STUCK_HOURS}))
   `;
   return n;
 }

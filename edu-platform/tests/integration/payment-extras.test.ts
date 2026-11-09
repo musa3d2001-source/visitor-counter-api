@@ -21,7 +21,7 @@ vi.mock("@/server/auth/guards", async (original) => ({
 }));
 vi.mock("next/cache", () => ({ revalidatePath: () => {} }));
 
-const { dismissExtraPaymentAction, refundExtraPaymentAction } = await import("@/app/admin/orders/actions");
+const { dismissExtraPaymentAction, recheckExtraPaymentAction, refundExtraPaymentAction } = await import("@/app/admin/orders/actions");
 
 let sim: Simulator;
 let admin: Awaited<ReturnType<typeof createUser>>;
@@ -505,12 +505,108 @@ describe("the gateway's refund events", () => {
   });
 });
 
+describe("a refund event that beats the MakeRefund reply", () => {
+  const eventDuringSend = (invoice: number, status: "REFUNDED" | "CANCELED") =>
+    sim.setBeforeRefundReply(async (r) => {
+      const { body, headers } = sim.buildRefundWebhook(invoice, r.RefundId, status);
+      await handleMyFatoorahWebhook(body, headers);
+    });
+  const send = (extraId: string) => refundExtraPayment({ extraId, adminId: admin.id, reason: "دفعة مكررة" });
+
+  it("a completed refund is not written back to requested", async () => {
+    const { order, second, extra } = await flaggedOrder();
+    eventDuringSend(second, "REFUNDED");
+    await expect(send(extra.id)).resolves.toEqual({ state: "refunded" });
+    expect(await extraOf(order.id)).toMatchObject({ state: "refunded" });
+    expect((await openExtraPayments()).map((e) => e.id)).not.toContain(extra.id);
+  });
+
+  it("a cancelled refund stays visible as cancelled, and can be sent again", async () => {
+    const { order, second, extra } = await flaggedOrder();
+    eventDuringSend(second, "CANCELED");
+    await expect(send(extra.id)).resolves.toMatchObject({ state: "refund_failed", error: expect.stringContaining("ألغت") });
+    expect(await extraOf(order.id)).toMatchObject({ state: "refund_failed" });
+    sim.clearFaults();
+    await expect(send(extra.id)).resolves.toEqual({ state: "refund_requested" });
+  });
+
+  it("the owner's message reports the stored result", async () => {
+    const { second, extra } = await flaggedOrder();
+    eventDuringSend(second, "REFUNDED");
+    const f = new FormData();
+    f.set("extraId", extra.id);
+    f.set("reason", "دفعة مكررة");
+    await expect(refundExtraPaymentAction({}, f)).resolves.toMatchObject({ ok: true, message: expect.stringContaining("مستردة") });
+  });
+});
+
+describe("re-checking a refund the gateway accepted", () => {
+  const form = (extraId: string) => {
+    const f = new FormData();
+    f.set("extraId", extraId);
+    return f;
+  };
+  async function requested() {
+    const made = await flaggedOrder();
+    await refundExtraPayment({ extraId: made.extra.id, adminId: admin.id, reason: "دفعة مكررة" });
+    const row = await extraOf(made.order.id);
+    sim.state.requests.length = 0;
+    return { ...made, refundId: Number(row.gateway_refund_id) };
+  }
+
+  it("picks up a completed refund whose webhook was lost", async () => {
+    const { order, extra, refundId } = await requested();
+    const before = await moneySnapshot(order.id);
+    sim.setRefundStatus(refundId, "Refunded");
+    await expect(recheckExtraPaymentAction({}, form(extra.id))).resolves.toMatchObject({ ok: true, message: expect.stringContaining("تؤكد") });
+    expect(await extraOf(order.id)).toMatchObject({ state: "refunded" });
+    expect(await moneySnapshot(order.id)).toBe(before);
+    expect(refundCalls()).toHaveLength(0);
+    expect(await auditCount("payment_extra.refund_rechecked", extra.id)).toBe(1);
+  });
+
+  it("picks up a cancellation whose webhook was lost, so the owner can send it again", async () => {
+    const { order, extra, refundId } = await requested();
+    sim.setRefundStatus(refundId, "Canceled");
+    await expect(recheckExtraPaymentAction({}, form(extra.id))).resolves.toMatchObject({ error: expect.stringContaining("ألغت") });
+    expect(await extraOf(order.id)).toMatchObject({ state: "refund_failed" });
+    await expect(refundExtraPayment({ extraId: extra.id, adminId: admin.id, reason: "إعادة" })).resolves.toEqual({ state: "refund_requested" });
+  });
+
+  it("leaves a refund the gateway is still processing as it is", async () => {
+    const { order, extra } = await requested();
+    await expect(recheckExtraPaymentAction({}, form(extra.id))).resolves.toMatchObject({ ok: true, message: expect.stringContaining("بانتظار") });
+    expect(await extraOf(order.id)).toMatchObject({ state: "refund_requested" });
+  });
+
+  it("changes nothing when the gateway cannot be asked", async () => {
+    const { order, extra } = await requested();
+    sim.setFault("/v2/GetRefundStatus", "error");
+    await expect(recheckExtraPaymentAction({}, form(extra.id))).resolves.toMatchObject({ error: expect.stringContaining("ولم يتغير شيء") });
+    expect(await extraOf(order.id)).toMatchObject({ state: "refund_requested" });
+  });
+
+  it("refuses a record that is not waiting on the gateway", async () => {
+    const { extra } = await flaggedOrder();
+    await expect(recheckExtraPaymentAction({}, form(extra.id))).resolves.toMatchObject({ error: expect.stringContaining("لا يحتاج") });
+  });
+});
+
 describe("the owner's queue", () => {
   const form = (values: Record<string, string>) => {
     const f = new FormData();
     for (const [k, v] of Object.entries(values)) f.set(k, v);
     return f;
   };
+
+  it("brings a refund back after it has waited on the gateway too long", async () => {
+    const before = await extraPaymentsNeedingOwnerCount();
+    const { order, extra } = await flaggedOrder();
+    await refundExtraPayment({ extraId: extra.id, adminId: admin.id, reason: "دفعة مكررة" });
+    expect(await extraPaymentsNeedingOwnerCount()).toBe(before);
+    await sql`update payment_extras set refund_requested_at = now() - interval '73 hours' where order_id = ${order.id}`;
+    expect(await extraPaymentsNeedingOwnerCount()).toBe(before + 1);
+  });
 
   it("lists what is undecided and counts only what needs a decision", async () => {
     const before = await extraPaymentsNeedingOwnerCount();

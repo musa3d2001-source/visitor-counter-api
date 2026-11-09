@@ -2,7 +2,7 @@ import "server-only";
 import { sql } from "../db";
 import { closeOrder } from "../commerce/orders";
 import { INVOICE_TTL_MINUTES, ORDER_LIFETIME_HOURS } from "./limits";
-import { paymentsConfig, verifyAndApplyPayment } from "./service";
+import { paymentsConfig, recheckExtraPayment, recheckOrderRefund, verifyAndApplyPayment } from "./service";
 
 /**
  * وظيفة التسوية (A7, A8): شبكة الأمان عندما لا يصلنا Webhook ولا يعود الطالب من صفحة الدفع.
@@ -24,6 +24,9 @@ const CLOSE_BATCH_SIZE = 50;
 const ABANDONED_CLAIM_MINUTES = 60;
 /** فاتورة طلب أُغلق تُتابَع حتى هذه المدة بعد انتهاء رابطها، لالتقاط دفعة تأخر تأكيدها */
 const LINK_STILL_PAYABLE_HOURS = 3;
+/** استرداد قبلته البوابة ولم يُحسم بعد هذه المدة نسأل عنه، ثم مرة كل هذه المدة: نتيجته لا يصح أن تعتمد على Webhook واحد */
+const REFUND_SWEEP_HOURS = 3;
+const REFUND_SWEEP_BATCH = 15;
 
 export type ReconcileReport = {
   mode: "sandbox" | "live" | "none";
@@ -37,6 +40,9 @@ export type ReconcileReport = {
   stoppedEarly: boolean;
   closed: number;
   abandonedClaims: number;
+  refundsChecked: number;
+  refundsResolved: number;
+  refundErrors: number;
 };
 
 export async function runPaymentReconciliation(): Promise<ReconcileReport> {
@@ -53,6 +59,9 @@ export async function runPaymentReconciliation(): Promise<ReconcileReport> {
     stoppedEarly: false,
     closed: 0,
     abandonedClaims: 0,
+    refundsChecked: 0,
+    refundsResolved: 0,
+    refundErrors: 0,
   };
 
   if (cfg.enabled) {
@@ -98,6 +107,67 @@ export async function runPaymentReconciliation(): Promise<ReconcileReport> {
         consecutiveFailures++;
         console.error("[reconcile] invoice check failed", row.id, err instanceof Error ? err.message : String(err));
       }
+    }
+
+    // الاستردادات بعد الفواتير: مال وصل للتو أولى بالوقت. المطالبة بعقد مؤقت حتى لا تكررها نسخة متزامنة، وما لم يُفحص يُعاد في الجولة التالية
+    const budgetLeft = () => Date.now() - started <= TIME_BUDGET_MS && consecutiveFailures < STOP_AFTER_FAILURES;
+    const sweep = async (ids: string[], release: (ids: string[]) => Promise<unknown>, check: (id: string) => Promise<boolean>) => {
+      for (const [index, id] of ids.entries()) {
+        if (!budgetLeft()) {
+          report.stoppedEarly = true;
+          await release(ids.slice(index));
+          return;
+        }
+        try {
+          report.refundsChecked++;
+          if (await check(id)) report.refundsResolved++;
+          consecutiveFailures = 0;
+        } catch (err) {
+          report.refundErrors++;
+          consecutiveFailures++;
+          console.error("[reconcile] refund check failed", id, err instanceof Error ? err.message : String(err));
+        }
+      }
+    };
+    if (budgetLeft()) {
+      const refunds = await sql<{ id: string }[]>`
+        update refunds set swept_at = now()
+        where id in (
+          select r.id from refunds r join payments p on p.id = r.payment_id
+          where r.status = 'requested' and p.environment = ${cfg.environment}
+            and coalesce(r.accepted_at, r.created_at) < now() - make_interval(hours => ${REFUND_SWEEP_HOURS})
+            and (r.swept_at is null or r.swept_at < now() - make_interval(hours => ${REFUND_SWEEP_HOURS}))
+          order by r.swept_at asc nulls first
+          limit ${REFUND_SWEEP_BATCH}
+          for update of r skip locked
+        )
+        returning id
+      `;
+      await sweep(
+        refunds.map((r) => r.id),
+        (ids) => sql`update refunds set swept_at = null where id = any(${ids}::uuid[])`,
+        async (refundId) => (await recheckOrderRefund({ refundId, adminId: null }, { timeoutMs: CALL_TIMEOUT_MS })).state !== "requested",
+      );
+    }
+    if (budgetLeft()) {
+      const extras = await sql<{ id: string }[]>`
+        update payment_extras set swept_at = now()
+        where id in (
+          select e.id from payment_extras e join payments p on p.id = e.payment_id
+          where e.state = 'refund_requested' and p.environment = ${cfg.environment}
+            and coalesce(e.refund_requested_at, e.created_at) < now() - make_interval(hours => ${REFUND_SWEEP_HOURS})
+            and (e.swept_at is null or e.swept_at < now() - make_interval(hours => ${REFUND_SWEEP_HOURS}))
+          order by e.swept_at asc nulls first
+          limit ${REFUND_SWEEP_BATCH}
+          for update of e skip locked
+        )
+        returning id
+      `;
+      await sweep(
+        extras.map((e) => e.id),
+        (ids) => sql`update payment_extras set swept_at = null where id = any(${ids}::uuid[])`,
+        async (extraId) => (await recheckExtraPayment({ extraId, adminId: null }, { timeoutMs: CALL_TIMEOUT_MS })).state !== "refund_requested",
+      );
     }
   }
 

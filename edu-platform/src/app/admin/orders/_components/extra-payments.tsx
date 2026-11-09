@@ -1,7 +1,7 @@
 import Link from "next/link";
-import { Banknote, RotateCcw, XCircle } from "lucide-react";
+import { Banknote, RefreshCw, RotateCcw, XCircle } from "lucide-react";
 import type { ExtraPayment, ExtraPaymentState } from "@/server/payments/extras";
-import { refundExtraPaymentAction, dismissExtraPaymentAction } from "../actions";
+import { recheckExtraPaymentAction, refundExtraPaymentAction, dismissExtraPaymentAction } from "../actions";
 import { ConfirmButton } from "@/components/admin/confirm-button";
 import { StatusPill, TestBadge, type StatusTone } from "@/components/admin/status-badge";
 import { ToneIcon } from "@/components/admin/icon-tile";
@@ -34,6 +34,7 @@ export function ExtraPaymentsList({ extras, canRefund, showOrder }: { extras: Ex
     <ul className="flex flex-col gap-3" aria-label="الدفعات الزائدة" data-testid="extra-payments">
       {extras.map((e) => {
         const refundable = canRefund && (e.state === "open" || e.state === "refund_failed" || e.state === "refund_unknown" || e.state === "refund_sending");
+        const recheckable = canRefund && e.state === "refund_requested";
         const dismissable = e.state === "open" || e.state === "refund_failed";
         const blockers = [...new Set((e.details.blockers ?? []).map(blockerText))];
         return (
@@ -73,8 +74,20 @@ export function ExtraPaymentsList({ extras, canRefund, showOrder }: { extras: Ex
               {blockers.length ? <p className="text-[0.84rem] leading-6 text-ink-soft">لم يكتمل الطلب لأن: {blockers.join("، ")}</p> : null}
               {e.refund_error ? <p className="text-[0.84rem] leading-6 break-words text-danger">{e.refund_error}</p> : null}
             </div>
-            {refundable || dismissable ? (
+            {refundable || recheckable || dismissable ? (
               <div className="flex flex-wrap items-center gap-2">
+                {recheckable ? (
+                  <ConfirmButton
+                    action={recheckExtraPaymentAction}
+                    hidden={{ extraId: e.id }}
+                    label="إعادة التحقق"
+                    icon={<RefreshCw aria-hidden />}
+                    variant="outline"
+                    title="سؤال البوابة عن هذا الاسترداد؟"
+                    description="نسأل MyFatoorah عن حالة الطلب ونطبق ما تقوله. لا يُرسل أي طلب استرداد جديد."
+                    confirmLabel="إعادة التحقق"
+                  />
+                ) : null}
                 {refundable ? (
                   <ConfirmButton
                     action={refundExtraPaymentAction}

@@ -26,7 +26,7 @@ import {
   type WebhookV2Body,
 } from "./myfatoorah";
 import { WEBHOOK_STALE_CLAIM_MINUTES, raiseDisputeAlert, recordWebhookRejection, type WebhookRejectionReason } from "./monitoring";
-import { recordExtraPayment, type ExtraPaymentKind, type ExtraPaymentState } from "./extras";
+import { applyExtraRefundEvent, recordExtraPayment, type ExtraPaymentKind, type ExtraPaymentState } from "./extras";
 import { CLAIM_STALE_SECONDS, INVOICE_REUSE_MARGIN_MINUTES, INVOICE_TTL_MINUTES, IN_PROGRESS_GRACE_MINUTES, ORDER_LIFETIME_HOURS, REFUND_SENDING_STALE_MINUTES } from "./limits";
 import { RefundError, applyRefundEvent, recheckRefund, requestRefund, type RefundOutcome } from "./refunds";
 import { sendOrderConfirmationEmail } from "../commerce/order-mail";
@@ -789,9 +789,9 @@ export async function requestOrderRefund(input: { orderId: string; adminId: stri
 }
 
 /** سؤال البوابة عن طلب استرداد نتيجته غير مؤكدة، قبل أي إعادة إرسال */
-export async function recheckOrderRefund(input: { refundId: string; adminId: string; ip?: string }): Promise<RefundOutcome> {
+export async function recheckOrderRefund(input: { refundId: string; adminId: string | null; ip?: string }, opts: { timeoutMs?: number } = {}): Promise<RefundOutcome> {
   const cfg = refundsConfig();
-  return recheckRefund(client(cfg), cfg.environment, input);
+  return recheckRefund(client(cfg, opts.timeoutMs), cfg.environment, input);
 }
 
 export class ExtraPaymentRefundError extends Error {
@@ -801,7 +801,7 @@ export class ExtraPaymentRefundError extends Error {
   }
 }
 
-type ExtraRefundOutcome = { state: Extract<ExtraPaymentState, "refund_requested" | "refunded" | "refund_failed" | "refund_unknown">; error?: string };
+type ExtraRefundOutcome = { state: ExtraPaymentState; error?: string };
 
 /**
  * استرداد دفعة زائدة واحدة لدى البوابة بأمر من المالك. يخص هذه الدفعة فقط: لا يلمس حالة الطلب ولا الوصول ولا الأرباح.
@@ -841,8 +841,14 @@ export async function refundExtraPayment(input: { extraId: string; adminId: stri
 
   const externalId = `extra:${claim.id}`;
   const mf = client(cfg);
-  const finish = async (state: ExtraRefundOutcome["state"], patch: { error?: string; refundId?: string; reference?: string }): Promise<ExtraRefundOutcome> => {
-    await sql.begin(async (db) => {
+  const finish = async (state: ExtraPaymentState, patch: { error?: string; refundId?: string; reference?: string }): Promise<ExtraRefundOutcome> =>
+    sql.begin(async (db): Promise<ExtraRefundOutcome> => {
+      // الحدث قد يسبق رد MakeRefund ويحسم السجل: ما حُفظ هو الحقيقة، ولا نكتب فوقه
+      const [current] = await db<{ state: ExtraPaymentState; refund_error: string | null }[]>`select state, refund_error from payment_extras where id = ${claim.id} for update`;
+      if (current.state !== "refund_sending") {
+        await db`update payment_extras set gateway_refund_reference = coalesce(gateway_refund_reference, ${patch.reference ?? null}) where id = ${claim.id}`;
+        return current.refund_error ? { state: current.state, error: current.refund_error } : { state: current.state };
+      }
       await db`
         update payment_extras set state = ${state}, refund_claimed_at = null, refund_error = ${patch.error?.slice(0, 500) ?? null},
           gateway_refund_id = coalesce(${patch.refundId ?? null}, gateway_refund_id),
@@ -853,9 +859,8 @@ export async function refundExtraPayment(input: { extraId: string; adminId: stri
       `;
       if (state === "refunded" && claim.whole_invoice) await db`update payments set status = 'refunded' where id = ${claim.payment_id}`;
       await audit({ actorId: input.adminId, action: `payment_extra.${state}`, entityType: "payment_extra", entityId: claim.id, reason: input.reason, metadata: { orderId: claim.order_id, attempt: claim.attempt, gatewayRefundId: patch.refundId ?? null, error: patch.error?.slice(0, 200) ?? null }, ip: input.ip ?? null }, db);
+      return patch.error ? { state, error: patch.error } : { state };
     });
-    return patch.error ? { state, error: patch.error } : { state };
-  };
 
   if (claim.hadPriorAttempt) {
     let existing;
@@ -882,4 +887,39 @@ export async function refundExtraPayment(input: { extraId: string; adminId: stri
     const message = err instanceof Error ? err.message : String(err);
     return finish(isDefiniteGatewayRefusal(err) ? "refund_failed" : "refund_unknown", { error: message });
   }
+}
+
+/**
+ * سؤال البوابة عن استرداد دفعة زائدة أُرسل ولم يصلنا حسمه: من المالك أو من وظيفة التسوية.
+ * لا يرسل شيئًا، والنتيجة تمر بما يمر به Webhook. وتعذر السؤال يرمي ولا يغيّر شيئًا.
+ */
+export async function recheckExtraPayment(input: { extraId: string; adminId: string | null; ip?: string }, opts: { timeoutMs?: number } = {}): Promise<{ state: ExtraPaymentState }> {
+  const cfg = paymentsConfig();
+  if (!cfg.enabled) throw new ExtraPaymentRefundError(`بوابة الدفع غير مفعلة: ${cfg.reason}`);
+  const [row] = await sql<{ id: string; order_id: string; state: ExtraPaymentState; amount_fils: number; gateway_refund_id: string | null; gateway_invoice_id: string | null; environment: string }[]>`
+    select e.id, e.order_id, e.state, e.amount_fils, e.gateway_refund_id, p.gateway_invoice_id, p.environment
+    from payment_extras e join payments p on p.id = e.payment_id where e.id = ${input.extraId}
+  `;
+  if (!row) throw new ExtraPaymentRefundError("الدفعة غير موجودة");
+  if (row.state !== "refund_requested") throw new ExtraPaymentRefundError("هذا السجل لا يحتاج إلى إعادة تحقق.");
+  if (row.environment !== cfg.environment) throw new ExtraPaymentRefundError("هذه الدفعة من وضع دفع مختلف عن الوضع الحالي");
+  if (!row.gateway_invoice_id) throw new ExtraPaymentRefundError("لا يوجد مرجع دفع لدى البوابة");
+  const invoiceId = row.gateway_invoice_id;
+
+  let list;
+  try {
+    list = await client(cfg, opts.timeoutMs).getRefundStatus(invoiceId, "InvoiceId");
+  } catch (err) {
+    throw new ExtraPaymentRefundError(`تعذر سؤال البوابة الآن ولم يتغير شيء: ${err instanceof Error ? err.message : String(err)}`);
+  }
+  const found = list.find((r) => String(r.RefundId) === row.gateway_refund_id) ?? list.find((r) => r.ExternalIdentifier === `extra:${row.id}`);
+  const status = !found ? null : /^refunded$/i.test(found.RefundStatus) ? "REFUNDED" : /^cancell?ed$/i.test(found.RefundStatus) ? "CANCELED" : null;
+  if (!found || !status) return { state: row.state };
+  const refundId = String(found.RefundId);
+  return sql.begin(async (db) => {
+    await applyExtraRefundEvent(db, { invoiceId, refundId, status, amountFils: row.amount_fils, extraId: row.id });
+    const [now] = await db<{ state: ExtraPaymentState }[]>`select state from payment_extras where id = ${row.id}`;
+    await audit({ actorId: input.adminId, action: "payment_extra.refund_rechecked", entityType: "payment_extra", entityId: row.id, metadata: { orderId: row.order_id, gatewayRefundId: refundId, gatewayStatus: found.RefundStatus, state: now.state }, ip: input.ip ?? null }, db);
+    return { state: now.state };
+  });
 }

@@ -2,7 +2,7 @@ import { existsSync, readFileSync } from "node:fs";
 import { resolve } from "node:path";
 import { afterAll, afterEach, beforeAll, beforeEach, describe, expect, it, vi } from "vitest";
 import { closeOrder, createOrder, type OrderRow } from "@/server/commerce/orders";
-import { resetPaymentMethodsCache, startPayment } from "@/server/payments/service";
+import { refundExtraPayment, requestOrderRefund, resetPaymentMethodsCache, startPayment, verifyAndApplyPayment } from "@/server/payments/service";
 import { RECONCILE_BATCH_SIZE, runPaymentReconciliation } from "@/server/payments/reconcile";
 import { GET } from "@/app/api/cron/reconcile-payments/route";
 import { resetEnvCache } from "@/server/env";
@@ -20,6 +20,8 @@ let sim: Simulator;
 async function retireOpenWork() {
   await sql`update payments set status = 'paid', expires_at = now() - interval '1 day' where status in ('initiated', 'pending', 'failed', 'expired', 'paid', 'refunded')`;
   await sql`update orders set status = 'refunded' where status in ('pending', 'failed')`;
+  await sql`update refunds set status = 'completed' where status = 'requested'`;
+  await sql`update payment_extras set state = 'refunded' where state = 'refund_requested'`;
 }
 
 beforeAll(async () => {
@@ -397,6 +399,116 @@ describe("closing stale orders", () => {
     await sql`update payments set environment = 'live' where order_id = ${order.id}`;
     expect(await runPaymentReconciliation()).toMatchObject({ claimed: 0, closed: 0 });
     expect((await orderRow(order.id)).status).toBe("pending");
+  });
+
+  describe("refunds the gateway accepted and never settled for us", () => {
+    async function paidThenRefunded() {
+      const made = await openInvoice();
+      await sim.pay(made.invoice, "success");
+      await verifyAndApplyPayment({ invoiceId: String(made.invoice) });
+      const admin = await createUser({ role: "admin" });
+      await requestOrderRefund({ orderId: made.order.id, adminId: admin.id, reason: "طلب الطالب" });
+      // الفاتورة نفسها خارج المتابعة، حتى يقيس التقرير الاستردادات وحدها
+      await sql`update payments set expires_at = now() - interval '1 day' where order_id = ${made.order.id}`;
+      const [refund] = await sql<{ id: string; gateway_refund_id: string }[]>`select id, gateway_refund_id from refunds where order_id = ${made.order.id}`;
+      return { ...made, admin, refundId: refund.id, gatewayRefundId: Number(refund.gateway_refund_id) };
+    }
+    /** وقت سحب الوصول يطابق وقت القبول عمدًا: بهما يعرف الإلغاء أي وصول يعيده، فيتقدمان معًا */
+    const ageRefund = async (orderId: string, hours = 4) => {
+      await sql`update entitlements e set revoked_at = r.accepted_at - make_interval(hours => ${hours}) from refunds r where r.order_id = ${orderId} and e.order_id = r.order_id and e.revoked_at = r.accepted_at`;
+      await sql`update refunds set accepted_at = accepted_at - make_interval(hours => ${hours}), swept_at = null where order_id = ${orderId}`;
+    };
+
+    async function extraRefund() {
+      const made = await openInvoice();
+      await sim.pay(made.invoice, "success");
+      await verifyAndApplyPayment({ invoiceId: String(made.invoice) });
+      await sim.pay(made.invoice, "success");
+      await verifyAndApplyPayment({ invoiceId: String(made.invoice) });
+      const admin = await createUser({ role: "admin" });
+      const [{ id }] = await sql<{ id: string }[]>`select id from payment_extras where order_id = ${made.order.id}`;
+      await refundExtraPayment({ extraId: id, adminId: admin.id, reason: "دفعة مكررة" });
+      await sql`update payments set expires_at = now() - interval '1 day' where order_id = ${made.order.id}`;
+      await sql`update payment_extras set refund_requested_at = now() - interval '4 hours' where id = ${id}`;
+      const [{ gateway_refund_id }] = await sql<{ gateway_refund_id: string }[]>`select gateway_refund_id from payment_extras where id = ${id}`;
+      return { ...made, extraId: id, gatewayRefundId: Number(gateway_refund_id) };
+    }
+    const extraState = async (id: string) => (await sql<{ state: string }[]>`select state from payment_extras where id = ${id}`)[0].state;
+
+    it("picks up a completed refund whose webhook was lost", async () => {
+      const { order, gatewayRefundId, refundId } = await paidThenRefunded();
+      sim.setRefundStatus(gatewayRefundId, "Refunded");
+      await ageRefund(order.id);
+      expect(await runPaymentReconciliation()).toMatchObject({ refundsChecked: 1, refundsResolved: 1, refundErrors: 0 });
+      expect((await sql`select status from refunds where id = ${refundId}`)[0].status).toBe("completed");
+    });
+
+    it("picks up a cancellation whose webhook was lost, and gives the student back what they paid for", async () => {
+      const { user, product, order, gatewayRefundId, refundId } = await paidThenRefunded();
+      expect(await activeEntitlements(user.id)).not.toContain(product.id);
+      sim.setRefundStatus(gatewayRefundId, "Canceled");
+      await ageRefund(order.id);
+      expect(await runPaymentReconciliation()).toMatchObject({ refundsChecked: 1, refundsResolved: 1 });
+      expect((await sql`select status from refunds where id = ${refundId}`)[0].status).toBe("failed");
+      expect((await orderRow(order.id)).status).toBe("paid");
+      expect(await activeEntitlements(user.id)).toContain(product.id);
+    });
+
+    it("sends nothing to the gateway, and leaves a refund still in process as it is", async () => {
+      const { order, refundId } = await paidThenRefunded();
+      await ageRefund(order.id);
+      sim.state.requests.length = 0;
+      expect(await runPaymentReconciliation()).toMatchObject({ refundsChecked: 1, refundsResolved: 0 });
+      expect(sim.state.requests.filter((r) => r.path === "/v2/MakeRefund")).toHaveLength(0);
+      expect((await sql`select status from refunds where id = ${refundId}`)[0].status).toBe("requested");
+    });
+
+    it("does not ask again on the very next run", async () => {
+      const { order } = await paidThenRefunded();
+      await ageRefund(order.id);
+      await runPaymentReconciliation();
+      expect(await runPaymentReconciliation()).toMatchObject({ refundsChecked: 0 });
+      await sql`update refunds set swept_at = now() - interval '4 hours' where order_id = ${order.id}`;
+      expect(await runPaymentReconciliation()).toMatchObject({ refundsChecked: 1 });
+    });
+
+    it("leaves a young refund to its webhook", async () => {
+      const { order } = await paidThenRefunded();
+      await ageRefund(order.id, 1);
+      expect(await runPaymentReconciliation()).toMatchObject({ refundsChecked: 0 });
+    });
+
+    it("does not ask about a refund from another payment mode", async () => {
+      const { order } = await paidThenRefunded();
+      await ageRefund(order.id);
+      await sql`update payments set environment = 'live' where order_id = ${order.id}`;
+      expect(await runPaymentReconciliation()).toMatchObject({ refundsChecked: 0 });
+    });
+
+    it("stops when the gateway is down and changes nothing; what it did not reach waits for the next run", async () => {
+      const made = [await paidThenRefunded(), await paidThenRefunded(), await paidThenRefunded(), await paidThenRefunded()];
+      for (const m of made) await ageRefund(m.order.id);
+      sim.setFault("/v2/GetRefundStatus", "error");
+      expect(await runPaymentReconciliation()).toMatchObject({ refundsChecked: 3, refundErrors: 3, stoppedEarly: true });
+      expect(await sql`select 1 from refunds where order_id = any(${made.map((m) => m.order.id)}::uuid[]) and status <> 'requested'`).toHaveLength(0);
+      const unreached = await sql`select id from refunds where order_id = any(${made.map((m) => m.order.id)}::uuid[]) and swept_at is null`;
+      expect(unreached).toHaveLength(1);
+    });
+
+    it("picks up a lost completion on an extra payment", async () => {
+      const { order, extraId, gatewayRefundId } = await extraRefund();
+      sim.setRefundStatus(gatewayRefundId, "Refunded");
+      expect(await runPaymentReconciliation()).toMatchObject({ refundsChecked: 1, refundsResolved: 1 });
+      expect(await extraState(extraId)).toBe("refunded");
+      expect((await orderRow(order.id)).status).toBe("paid");
+    });
+
+    it("picks up a lost cancellation on an extra payment", async () => {
+      const { extraId, gatewayRefundId } = await extraRefund();
+      sim.setRefundStatus(gatewayRefundId, "Canceled");
+      await runPaymentReconciliation();
+      expect(await extraState(extraId)).toBe("refund_failed");
+    });
   });
 
   it("a claim abandoned over an hour ago is closed, a fresh one is not", async () => {

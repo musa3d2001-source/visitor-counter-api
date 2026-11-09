@@ -3,7 +3,7 @@
 import { revalidatePath } from "next/cache";
 import type { ActionState } from "@/lib/action-state";
 import { sql } from "@/server/db";
-import { ExtraPaymentRefundError, checkOrderInvoices, recheckOrderRefund, refundExtraPayment, requestOrderRefund } from "@/server/payments/service";
+import { ExtraPaymentRefundError, checkOrderInvoices, recheckExtraPayment, recheckOrderRefund, refundExtraPayment, requestOrderRefund } from "@/server/payments/service";
 import { dismissExtraPayment } from "@/server/payments/extras";
 import { RefundError, dismissRefund, type RefundOutcome } from "@/server/payments/refunds";
 import { assertRefundStepUp } from "@/server/auth/step-up";
@@ -24,6 +24,7 @@ function refundActionResult(out: RefundOutcome): ActionState {
   if (out.state === "completed") return { ok: true, message: REFUND_COMPLETED_MESSAGE };
   if (out.state === "unknown") return { error: out.error === undefined || out.wait ? REFUND_UNKNOWN_MESSAGE : `${REFUND_UNKNOWN_MESSAGE} (${out.error})` };
   if (out.state === "not_sent") return { error: `لم يُرسل طلب الاسترداد: ${out.error ?? "لم تجده البوابة"}. يمكنك إعادة الإرسال.` };
+  if (out.state === "held_back") return { error: `لم يُرسل طلب الاسترداد ولم يتغير الطلب. السبب: ${out.error ?? "غير معروف"}` };
   return { error: refusalMessage(out.error) };
 }
 
@@ -158,6 +159,26 @@ export async function refundExtraPaymentAction(_p: ActionState, fd: FormData): P
     if (out.state === "refunded") return { ok: true, message: "البوابة تؤكد أن هذه الدفعة مستردة" };
     if (out.state === "refund_unknown") return { error: "لم نتأكد من نتيجة الطلب لدى البوابة. أعد المحاولة، وسنتحقق أولًا حتى لا يتكرر الاسترداد." };
     return { error: `رفضت البوابة طلب الاسترداد: ${out.error ?? ""}` };
+  });
+}
+
+/** سؤال البوابة عن استرداد دفعة زائدة لم يُحسم. لا يرسل شيئًا، فلا يحتاج خطوة تحقق إضافية */
+export async function recheckExtraPaymentAction(_p: ActionState, fd: FormData): Promise<ActionState> {
+  return adminAction(async ({ adminId, ip }) => {
+    const extraId = str(fd, "extraId");
+    if (!isUuid(extraId)) throw new AdminError("طلب غير صالح");
+    let out;
+    try {
+      out = await recheckExtraPayment({ extraId, adminId, ip });
+    } catch (err) {
+      if (err instanceof ExtraPaymentRefundError) throw new AdminError(err.userMessage);
+      throw err;
+    }
+    revalidatePath("/admin/orders");
+    revalidatePath("/admin");
+    if (out.state === "refunded") return { ok: true, message: "البوابة تؤكد تنفيذ استرداد هذه الدفعة." };
+    if (out.state === "refund_failed") return { error: "ألغت البوابة طلب الاسترداد ولم يخرج المال. يمكنك إعادة المحاولة." };
+    return { ok: true, message: "ما زال الطلب بانتظار التنفيذ لدى البوابة." };
   });
 }
 
