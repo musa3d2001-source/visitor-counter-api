@@ -1,18 +1,19 @@
 import { FileText, Layers, PlayCircle } from "lucide-react";
 import type * as React from "react";
 import { ToneIcon, type ToneIconSize } from "@/components/admin/icon-tile";
-import { toneStyle, type AdminTone } from "@/components/admin/tones";
+import { FIT_AMOUNT, toneStyle, type AdminTone } from "@/components/admin/tones";
 import { initial } from "@/lib/design";
-import { filsToKwdString } from "@/lib/money";
+import { filsToKwdString, longAmount } from "@/lib/money";
 import { cn } from "@/lib/utils";
 import { KIND_TONE, personTone, productKind } from "./helpers";
 
 /** مبلغ بالدينار: أرقام لاتينية داخل ‎.num‎ ثم «د.ك» */
 export function Kwd({ fils, className, unitClassName, ...rest }: { fils: number; className?: string; unitClassName?: string } & React.ComponentProps<"span">) {
+  const text = filsToKwdString(fils);
   return (
     <span className={cn("whitespace-nowrap", className)}>
-      <span className="num" {...rest}>
-        {filsToKwdString(fils)}
+      <span className="num" data-long={longAmount(text)} {...rest}>
+        {text}
       </span>{" "}
       <span className={cn("text-[0.8em] font-bold text-muted", unitClassName)}>د.ك</span>
     </span>
@@ -165,7 +166,7 @@ export function Metric({ label, value, tone = "teal", className }: { label: stri
         <span className="size-1.5 shrink-0 rounded-full bg-[var(--b)]" aria-hidden />
         {label}
       </p>
-      <div className="mt-0.5 truncate font-display text-[1.02rem] leading-tight font-black text-ink">{value}</div>
+      <div className={`mt-0.5 truncate font-display text-[1.02rem] leading-tight font-black text-ink ${FIT_AMOUNT}`}>{value}</div>
     </div>
   );
 }

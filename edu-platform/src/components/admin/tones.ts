@@ -30,6 +30,10 @@ export function toneStyle(tone: AdminTone = "teal"): AdminToneStyle {
   return { "--a": t.a, "--b": t.b, "--d": t.d, "--soft": t.soft, "--tink": t.tink, "--icon": t.icon };
 }
 
+/** لحاوية الرقم في البطاقات: المبلغ الطويل يصغر خطه حتى لا يُقص (longAmount)، والوحدة تنزل سطرًا عند الحاجة */
+export const FIT_AMOUNT =
+  "[overflow-wrap:anywhere] [&_.whitespace-nowrap]:whitespace-normal [&_.num[data-long=s]]:text-[0.9em] [&_.num[data-long=m]]:text-[0.8em] [&_.num[data-long=l]]:text-[0.72em]";
+
 /** حلقة تركيز للبطاقة التي تحوي رابطًا ممتدًا (.stretched) — النظام يغطي .card-soft/.panel/article فقط */
 export const STRETCHED_FOCUS =
   "has-[.stretched:focus-visible]:outline-[3px] has-[.stretched:focus-visible]:outline-offset-2 has-[.stretched:focus-visible]:outline-solid has-[.stretched:focus-visible]:outline-brand-600";

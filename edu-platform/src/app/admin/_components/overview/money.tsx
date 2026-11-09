@@ -1,12 +1,13 @@
 import type { CountWord } from "@/lib/design";
-import { filsToKwdString } from "@/lib/money";
+import { filsToKwdString, longAmount } from "@/lib/money";
 import { cn } from "@/lib/utils";
 
 /** مبلغ بالدينار: أرقام لاتينية داخل .num ثم «د.ك» بخط أصغر */
 export function Kwd({ fils, className, unitClassName, "data-testid": testId }: { fils: number; className?: string; unitClassName?: string; "data-testid"?: string }) {
+  const text = filsToKwdString(fils);
   return (
     <span className={cn("whitespace-nowrap", className)} data-testid={testId}>
-      <span className="num">{filsToKwdString(fils)}</span> <span className={cn("text-[0.72em] font-bold text-muted", unitClassName)}>د.ك</span>
+      <span className="num" data-long={longAmount(text)}>{text}</span> <span className={cn("text-[0.72em] font-bold text-muted", unitClassName)}>د.ك</span>
     </span>
   );
 }

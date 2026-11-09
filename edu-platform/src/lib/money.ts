@@ -27,6 +27,16 @@ export function formatKwd(fils: number): string {
   return `${filsToKwdString(fils)} د.ك`;
 }
 
+/**
+ * مقاس المبلغ الطويل داخل بطاقة ضيقة (انظر FIT_AMOUNT): تصغّره البطاقة بقدر طوله
+ * حتى يبقى الرقم سطرًا واحدًا، فلا يُقص آخره ولا تنزل خانة منه إلى السطر التالي.
+ */
+export function longAmount(text: string): "s" | "m" | "l" | undefined {
+  if (text.length >= 11) return "l";
+  if (text.length === 10) return "m";
+  return text.length === 9 ? "s" : undefined;
+}
+
 /** تحويل قيمة البوابة (رقم عشري بالدينار) إلى فلس مع التقريب الآمن */
 export function kwdNumberToFils(value: number): number {
   return Math.round(value * FILS_PER_KWD);

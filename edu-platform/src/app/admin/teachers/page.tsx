@@ -161,7 +161,7 @@ export default async function TeachersPage({ searchParams }: { searchParams: Pro
                         <Metric
                           tone="gold"
                           label="الرصيد المستحق"
-                          value={t.revenue_share_bps === null ? <span className="text-[0.85rem] text-muted">غير مفعّل</span> : <Kwd fils={t.balance} />}
+                          value={t.revenue_share_bps === null ? <span className="text-[0.85rem] text-muted">غير مفعّل</span> : <Kwd fils={t.balance} data-testid="teacher-card-balance" />}
                         />
                       </div>
                       <p className="mt-2 text-[0.78rem] leading-6 text-muted">

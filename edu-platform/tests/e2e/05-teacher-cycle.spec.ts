@@ -332,4 +332,54 @@ test.describe("دورة المعلم الكاملة", () => {
     await expect(visitor.getByText(approved)).toHaveCount(0);
     await Promise.all([teacherCtx.close(), visitorCtx.close()]);
   });
+
+  test("رصيد المعلم يظهر كاملًا مهما ضاقت الشاشة", async ({ page, browser }) => {
+    const ts = Date.now();
+    const name = `أ. رصيد طويل ${ts % 100000}`;
+    const email = `teacher-balance-${ts}@example.com`;
+    const password = "Long-Balance-Pass-2026";
+    const [u] = await db()<{ id: string }[]>`insert into users (email, password_hash, full_name, role, email_verified_at) values (${email}, ${await hashPassword(password)}, ${name}, 'teacher', now()) returning id`;
+    const [teacher] = await db()<{ id: string }[]>`insert into teachers (slug, display_name, mode, user_id, is_published, revenue_share_bps) values (${`e2e-balance-${ts}`}, ${name}, 'self_managed', ${u.id}, false, 4000) returning id`;
+    await db()`insert into teacher_payouts (teacher_id, amount_fils, reference) values (${teacher.id}, 12500750, ${`E2E-${ts}`})`;
+
+    const expectWhole = async (p: Page, testId: string, amount: string, oneLine: boolean) => {
+      const original = p.viewportSize()!;
+      const figure = p.getByTestId(testId);
+      await expect(figure).toContainText(amount);
+      for (const width of [360, 390, 820, 1440]) {
+        await p.setViewportSize({ width, height: 844 });
+        const { hidden, lines } = await figure.evaluate((el) => {
+          const tile = el.closest("div")!;
+          const digits = el.matches(".num") ? el : el.querySelector(".num")!;
+          return { hidden: tile.scrollWidth - tile.clientWidth, lines: digits.getClientRects().length };
+        });
+        expect(hidden, `الجزء المقصوص من ${testId} عند عرض ${width}`).toBeLessThanOrEqual(0);
+        if (oneLine) expect(lines, `أسطر ${testId} عند عرض ${width}`).toBe(1);
+      }
+      await p.setViewportSize(original);
+    };
+    const list = `/admin/teachers?q=${encodeURIComponent(name)}`;
+
+    await loginAdmin(page);
+    await page.goto(list);
+    await expectWhole(page, "teacher-card-balance", "-12500.750", true);
+    await page.goto(`/admin/teachers/${teacher.id}`);
+    await expectWhole(page, "teacher-balance", "-12500.750", true);
+
+    const teacherCtx = await browser.newContext();
+    const teacherPage = await teacherCtx.newPage();
+    await login(teacherPage, email, password, "/admin");
+    await teacherPage.goto("/admin/earnings");
+    await expectWhole(teacherPage, "my-balance", "-12500.750", true);
+
+    // مبلغ بسبع خانات لا يتسع سطرًا واحدًا: ينزل باقيه ولا يُقص شيء منه
+    await db()`insert into teacher_payouts (teacher_id, amount_fils, reference) values (${teacher.id}, 1200000000, ${`E2E-${ts}-2`})`;
+    await page.goto(list);
+    await expectWhole(page, "teacher-card-balance", "-1212500.750", false);
+    await page.goto(`/admin/teachers/${teacher.id}`);
+    await expectWhole(page, "teacher-balance", "-1212500.750", false);
+    await teacherPage.reload();
+    await expectWhole(teacherPage, "my-balance", "-1212500.750", false);
+    await teacherCtx.close();
+  });
 });

@@ -334,31 +334,31 @@ export default async function TeacherAdminPage({ params, searchParams }: { param
       >
         <StatGrid cols={3}>
           <StatCard label="عمليات بيع" tone="green" value={<span>{ar(summary.items)}</span>} hint={count(summary.orders, W.order)} icon={<FileText />} />
-          <StatCard label="إجمالي المبيعات" tone="sky" value={<><span className="num">{filsToKwdString(summary.grossFils)}</span> <span className="text-sm text-muted">د.ك</span></>} icon={<Banknote />} />
+          <StatCard label="إجمالي المبيعات" tone="sky" value={<Kwd fils={summary.grossFils} unitClassName="text-sm" />} icon={<Banknote />} />
           <StatCard
             label="إجمالي أرباح المعلم"
             tone="violet"
-            value={<><span className="num">{filsToKwdString(balance.earnedFils)}</span> <span className="text-sm text-muted">د.ك</span></>}
+            value={<Kwd fils={balance.earnedFils} unitClassName="text-sm" />}
             hint={balance.reversedFils ? `معكوس بسبب استرداد: ${filsToKwdString(balance.reversedFils)}` : undefined}
             icon={<Wallet />}
           />
           <StatCard
             label="قيد فترة الاسترداد"
             tone="coral"
-            value={<><span className="num" data-testid="teacher-held">{filsToKwdString(balance.heldFils)}</span> <span className="text-sm text-muted">د.ك</span></>}
+            value={<Kwd fils={balance.heldFils} unitClassName="text-sm" data-testid="teacher-held" />}
             hint={`لا تُدفع قبل مرور ${count(REFUND_HOLD_DAYS, W.day)} على البيع`}
             icon={<Clock3 />}
           />
           <StatCard
             label="المسدد"
             tone="teal"
-            value={<><span className="num" data-testid="teacher-paid">{filsToKwdString(balance.paidFils)}</span> <span className="text-sm text-muted">د.ك</span></>}
+            value={<Kwd fils={balance.paidFils} unitClassName="text-sm" data-testid="teacher-paid" />}
             icon={<Landmark />}
           />
           <StatCard
             label="الرصيد المستحق الآن"
             tone="gold"
-            value={<><span className={`num ${balance.balanceFils < 0 ? "text-danger" : ""}`} data-testid="teacher-balance">{filsToKwdString(balance.balanceFils)}</span> <span className="text-sm text-muted">د.ك</span></>}
+            value={<Kwd fils={balance.balanceFils} className={balance.balanceFils < 0 ? "text-danger" : undefined} unitClassName="text-sm" data-testid="teacher-balance" />}
             hint="الأرباح بعد فترة الاسترداد ناقص المسدد"
             icon={<Wallet />}
           />

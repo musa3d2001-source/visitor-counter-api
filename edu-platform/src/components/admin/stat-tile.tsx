@@ -3,7 +3,7 @@ import { ArrowDownLeft, ArrowUpLeft, Minus } from "lucide-react";
 import type * as React from "react";
 import { cn } from "@/lib/utils";
 import { ToneIcon } from "./icon-tile";
-import { STRETCHED_FOCUS, toneStyle, type AdminTone } from "./tones";
+import { FIT_AMOUNT, STRETCHED_FOCUS, toneStyle, type AdminTone } from "./tones";
 
 /**
  * لون تلقائي للبطاقة حين لا يُمرَّر tone: يُستنتج من معنى التسمية حتى يبقى المعنى نفسه بلون واحد
@@ -106,7 +106,7 @@ export function StatTile({
           label
         )}
       </p>
-      <div className="mt-1 font-display text-[clamp(1.55rem,2.6vw,2.15rem)] leading-[1.2] font-black tracking-tight text-ink [&_.text-muted]:font-bold [&_.text-sm]:text-[0.9rem]">
+      <div className={`mt-1 font-display text-[clamp(1.55rem,2.6vw,2.15rem)] leading-[1.2] font-black tracking-tight text-ink [&_.text-muted]:font-bold [&_.text-sm]:text-[0.9rem] ${FIT_AMOUNT}`}>
         {value}
       </div>
       {hint ? <p className="mt-1.5 text-[0.8rem] leading-6 font-medium text-[var(--tink)]">{hint}</p> : null}

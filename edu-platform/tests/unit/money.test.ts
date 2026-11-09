@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { computeDiscount, filsToKwdString, formatKwd, kwdNumberToFils, parseKwdToFils } from "@/lib/money";
+import { computeDiscount, filsToKwdString, formatKwd, kwdNumberToFils, longAmount, parseKwdToFils } from "@/lib/money";
 
 describe("money (fils)", () => {
   it("parses KWD strings to integer fils without float errors", () => {
@@ -37,6 +37,16 @@ describe("money (fils)", () => {
     expect(kwdNumberToFils(2.5)).toBe(2500);
     expect(kwdNumberToFils(0.1 + 0.2)).toBe(300);
     expect(kwdNumberToFils(10.942)).toBe(10942);
+  });
+
+  it("marks only the amounts too long for a narrow tile", () => {
+    expect(longAmount(filsToKwdString(1250750))).toBeUndefined();
+    expect(longAmount(filsToKwdString(-1250750))).toBe("s");
+    expect(longAmount(filsToKwdString(12500750))).toBe("s");
+    expect(longAmount(filsToKwdString(-12500750))).toBe("m");
+    expect(longAmount(filsToKwdString(125000750))).toBe("m");
+    expect(longAmount(filsToKwdString(-125000750))).toBe("l");
+    expect(longAmount(filsToKwdString(-1212500750))).toBe("l");
   });
 
   it("computes discounts safely", () => {
