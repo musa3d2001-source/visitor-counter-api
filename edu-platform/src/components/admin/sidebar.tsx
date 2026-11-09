@@ -51,6 +51,7 @@ const OWNER_GROUPS: NavGroup[] = [
     items: [
       { href: "/admin/products", label: "المحتوى والمنتجات", Icon: FileText, tone: "sky" },
       { href: "/admin/review", label: "مراجعة المحتوى", Icon: BadgeCheck, badge: "review", tone: "gold" },
+      { href: "/admin/content-health", label: "سلامة المحتوى", Icon: ShieldCheck, tone: "coral" },
       { href: "/admin/teachers", label: "المعلمون", Icon: GraduationCap, tone: "pink" },
       { href: "/admin/catalog", label: "المراحل والمواد", Icon: Layers, tone: "green" },
       { href: "/admin/bundles", label: "الباقات والدورات", Icon: Package, tone: "coral" },

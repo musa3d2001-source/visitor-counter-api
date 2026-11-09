@@ -27,10 +27,11 @@ import {
   Upload,
 } from "lucide-react";
 import { requireStaff } from "@/server/auth/permissions";
-import { bundleCandidates, catalogOptions, getAdminProduct, getBundleItemsAdmin, getLessonsAdmin, getProductFiles, publishBlockers, teacherOptions } from "@/server/admin/products";
+import { bundleCandidates, catalogOptions, getAdminProduct, getBundleItemsAdmin, getLessonsAdmin, getProductFiles, isExtremeShare, productTeacherShares, publishBlockers, teacherOptions } from "@/server/admin/products";
+import { FILE_PROBLEM_LABELS, isFlagged, type FlaggedStatus } from "@/server/access/file-check";
 import { activeVideoProvider } from "@/server/video/service";
 import { bunnyConfigured } from "@/server/video/bunny";
-import { storage } from "@/server/storage";
+import { storage, uploadLimitLabel } from "@/server/storage";
 import { AdminPageHeader, Section } from "@/components/admin/page-header";
 import { ProductForm } from "@/components/admin/product-form";
 import { ProductStatusBadge, StatusPill } from "@/components/admin/status-badge";
@@ -49,6 +50,7 @@ import { filsToKwdString } from "@/lib/money";
 import { W, ar, count, duration, gradeClass, gradeVars, subjectVars, toneClass, type CountWord } from "@/lib/design";
 import { ACCESS_MODE_LABELS, PROCESSING_STATUS_LABELS, PRODUCT_TYPE_LABELS, isContainerType, isPdfType, isVideoType } from "@/lib/labels";
 import { cn, formatDate, formatDateTime } from "@/lib/utils";
+import { PREVIEW_ISSUE_LABELS, PREVIEW_POLICY, PREVIEW_RULE_TEXT, maxPreviewPages, previewIssue } from "@/lib/preview-policy";
 import { CatalogBand } from "../../_components/catalog/band";
 import { AdminThumb } from "../../_components/catalog/thumb";
 import { PosterPreview } from "../../_components/catalog/poster";
@@ -76,6 +78,9 @@ import {
 } from "../actions";
 
 export const metadata = { title: "تعديل المحتوى" };
+
+/** إجراءات هذه الصفحة تفحص ملفات المنتج قبل نشره، وقد تكون كبيرة */
+export const maxDuration = 60;
 
 function fmtSize(n: number) {
   return n > 1024 * 1024 ? `${(n / 1024 / 1024).toFixed(1)} م.ب` : `${Math.max(1, Math.round(n / 1024))} ك.ب`;
@@ -125,17 +130,25 @@ export default async function EditProductPage({
   const canUpload = editable && (owner || (actor.kind === "teacher" && actor.canUpload));
   const provider = activeVideoProvider();
 
-  const [files, blockers, options, bundleItems, candidates, lessons, teachers] = await Promise.all([
+  const reviewing = owner && product.status === "in_review";
+  const [files, blockers, options, bundleItems, candidates, lessons, teachers, shares] = await Promise.all([
     getProductFiles(id),
-    publishBlockers(id),
+    // السعر والنسبة قرار يُتخذ داخل نموذج الاعتماد، والمعلم لا يملكهما
+    publishBlockers(id, reviewing || !owner ? { ignorePrice: true, ignoreShare: true } : {}),
     catalogOptions(),
     isContainer ? getBundleItemsAdmin(id) : Promise.resolve([]),
     isContainer && editable ? bundleCandidates(id, product.grade_id, actor) : Promise.resolve([]),
     isVideo ? getLessonsAdmin(id) : Promise.resolve([]),
     owner ? teacherOptions() : Promise.resolve([]),
+    owner ? productTeacherShares(id) : Promise.resolve([]),
   ]);
+  const shareMissing = shares.filter((t) => t.share_bps === null);
+  const shareExtreme = shares.filter((t) => isExtremeShare(t.share_bps));
+  const shareSummary = shares.map((t) => `${t.display_name}: ${t.share_bps === null ? "بلا نسبة" : `${ar(t.share_bps / 100)}٪`}`).join("، ");
   const mainFiles = files.filter((f) => f.kind === "main");
   const preview = files.find((f) => f.kind === "preview");
+  const previewProblem = preview ? previewIssue(preview, mainFiles[0]) : null;
+  const previewAllowance = maxPreviewPages(mainFiles[0]?.page_count);
   const coverUrl = product.cover_key ? storage().publicUrl(product.cover_key) : null;
   const itemsTotal = bundleItems.reduce((s, i) => s + i.price_fils, 0);
   const processing = lessons.some((l) => l.processing_status === "processing" || l.processing_status === "uploading");
@@ -145,7 +158,7 @@ export default async function EditProductPage({
 
   const checklist = [
     {
-      done: true,
+      done: !owner || product.is_free || product.price_fils > 0 || reviewing,
       label: owner ? "البيانات الأساسية والسعر" : "البيانات الأساسية",
     },
     ...(isPdf ? [{ done: mainFiles.length > 0, label: "رفع ملف PDF واحد على الأقل" }] : []),
@@ -324,10 +337,21 @@ export default async function EditProductPage({
               لا يمكن الاعتماد الآن: {blockers.join("، ")}
             </Alert>
           ) : null}
+          {shareMissing.length ? (
+            <Alert tone="danger" className="mb-4" title="لا يوجد اتفاق على نسبة المعلم">
+              لم تُحدَّد نسبة {shareMissing.map((t) => t.display_name).join("، ")}، فلن يُعتمد هذا المحتوى بسعر. حدد النسبة في صفحة المعلم أولًا، أو اعتمده مجانيًا.
+            </Alert>
+          ) : null}
           <ActionForm action={approveAndPublishAction} className="grid gap-4 rounded-[1.4rem] bg-white/80 p-4 sm:grid-cols-2 lg:grid-cols-4">
             <input type="hidden" name="id" value={id} />
-            <Field label="السعر المعتمد (د.ك)" htmlFor="ap-price" required>
-              <Input id="ap-price" name="price" defaultValue={filsToKwdString(product.proposed_price_fils ?? product.price_fils)} inputMode="decimal" dir="ltr" className="num text-start" />
+            {/* لا يُملأ السعر من اقتراح المعلم ولا بصفر: الاعتماد دون قراءة يتوقف عند هذا الحقل */}
+            <Field
+              label="السعر المعتمد (د.ك)"
+              htmlFor="ap-price"
+              required
+              hint={product.proposed_price_fils !== null ? `اقتراح المعلم: ${filsToKwdString(product.proposed_price_fils)} د.ك` : undefined}
+            >
+              <Input id="ap-price" name="price" defaultValue={product.price_fils > 0 ? filsToKwdString(product.price_fils) : ""} inputMode="decimal" dir="ltr" className="num text-start" />
             </Field>
             <Field label="السعر السابق (اختياري)" htmlFor="ap-compare">
               <Input
@@ -355,6 +379,17 @@ export default async function EditProductPage({
               <Field label="أو أيام" htmlFor="ap-days">
                 <Input id="ap-days" name="accessDays" type="number" min={1} defaultValue={product.access_days ?? ""} className="num" />
               </Field>
+            </div>
+            {shares.length ? (
+              <p className="text-sm leading-7 text-ink-soft sm:col-span-2 lg:col-span-4">
+                نسبة المعلم من صافي البيع: <b className="font-display font-extrabold text-ink">{shareSummary}</b>
+              </p>
+            ) : null}
+            <div className="flex flex-col gap-1 sm:col-span-2 lg:col-span-4">
+              <Checkbox name="isFree" label="اعتماده مجانيًا، بدون سعر (يُتجاهل السعر المكتوب)" />
+              {shareExtreme.length ? (
+                <Checkbox name="confirmShare" label={`أؤكد النسبة: ${shareExtreme.map((t) => `${t.display_name} ${ar((t.share_bps as number) / 100)}٪`).join("، ")}`} />
+              ) : null}
             </div>
             <div className="sm:col-span-2 lg:col-span-4">
               <SubmitButton variant="accent" size="lg" disabled={blockers.length > 0} pendingText="جارٍ الاعتماد…">
@@ -423,7 +458,21 @@ export default async function EditProductPage({
                   {product.status === "published" ? (
                     <QuickAction action={setStatusAction} hidden={{ id, status: "hidden" }} icon={<EyeOff aria-hidden />} label="إخفاء عن الطلاب" variant="outline" size="md" />
                   ) : product.status !== "in_review" ? (
-                    <QuickAction action={setStatusAction} hidden={{ id, status: "published" }} icon={<Send aria-hidden />} label="نشر للطلاب" variant="primary" size="lg" />
+                    shareExtreme.length && !product.is_free ? (
+                      <ConfirmButton
+                        action={setStatusAction}
+                        hidden={{ id, status: "published", confirmShare: "1" }}
+                        label="نشر للطلاب"
+                        icon={<Send aria-hidden />}
+                        variant="primary"
+                        size="lg"
+                        title="تأكيد نسبة المعلم"
+                        description={`نسبة المعلم من صافي كل بيع: ${shareSummary}. هل هذه هي النسبة المتفق عليها؟`}
+                        confirmLabel="نعم، انشر"
+                      />
+                    ) : (
+                      <QuickAction action={setStatusAction} hidden={{ id, status: "published" }} icon={<Send aria-hidden />} label="نشر للطلاب" variant="primary" size="lg" />
+                    )
                   ) : null}
                   {product.status === "archived" || product.status === "hidden" ? (
                     <QuickAction action={setStatusAction} hidden={{ id, status: "draft" }} label="إرجاع إلى المسودات" variant="ghost" />
@@ -650,7 +699,7 @@ export default async function EditProductPage({
                       </ToneIcon>
                       {lessons.length ? "إضافة درس آخر" : "رفع أول درس فيديو"}
                     </h3>
-                    <LessonUploader productId={id} provider={provider} />
+                    <LessonUploader productId={id} provider={provider} maxLabel={uploadLimitLabel("video")} />
                   </div>
                   {owner && bunnyConfigured() ? (
                     <details className="group rounded-[1.25rem] border border-line bg-canvas/60 p-4">
@@ -705,7 +754,7 @@ export default async function EditProductPage({
                   accept="application/pdf,.pdf"
                   multiple
                   label="اسحب ملفات PDF هنا أو اضغط للاختيار"
-                  hint="PDF فقط، حتى 100 ميجابايت للملف، يمكن رفع عدة ملفات"
+                  hint={`PDF فقط، حتى ${uploadLimitLabel("pdf")} للملف، بدون كلمة مرور أو قيود، يمكن رفع عدة ملفات`}
                   compact={!isPdf}
                 />
               ) : null}
@@ -735,6 +784,11 @@ export default async function EditProductPage({
                         ) : (
                           <p className="font-display font-extrabold text-ink">{f.title}</p>
                         )}
+                        {isFlagged(f.check_status) ? (
+                          <p className="mt-1 text-xs font-bold text-danger" data-testid="file-flagged">
+                            {FILE_PROBLEM_LABELS[f.check_status as FlaggedStatus]}. احذفه وارفع نسخة سليمة.
+                          </p>
+                        ) : null}
                         <p className="mt-1.5 flex flex-wrap gap-1.5 text-xs text-muted">
                           <span className="chip min-h-6 bg-mist px-2 text-[0.72rem] text-ink-soft">{f.page_count ? count(f.page_count, W.page) : "عدد الصفحات غير معروف"}</span>
                           <span className="chip min-h-6 bg-mist px-2 text-[0.72rem] text-ink-soft">
@@ -803,7 +857,13 @@ export default async function EditProductPage({
           ) : null}
 
           {isPdf ? (
-            <Section icon={<Eye />} tone="gold" title="المعاينة المجانية" description={`تُولَّد تلقائيًا من الصفحات الأولى في الملف الأول (عدد صفحات المعاينة: ${ar(product.preview_pages)})، أو ارفع ملف معاينة مخصص.`}>
+            <Section icon={<Eye />} tone="gold" title="المعاينة المجانية" description={`تُولَّد تلقائيًا من الصفحات الأولى في الملف الأول، أو ارفع ملف معاينة مخصص. ${PREVIEW_RULE_TEXT}`}>
+              {previewProblem ? (
+                <Alert tone="warning" className="mb-4" title="هذه المعاينة لا تظهر للطلاب">
+                  {PREVIEW_ISSUE_LABELS[previewProblem]}. اضغط «توليد تلقائي» لإصلاحها.
+                </Alert>
+              ) : null}
+              {mainFiles.length && previewAllowance === 0 ? <Alert tone="info" className="mb-4">الملف الأول أقل من {ar(PREVIEW_POLICY.pagesPerFreePage)} صفحات، فلا تتاح له معاينة حتى لا تكشف الملف كله.</Alert> : null}
               {preview ? (
                 <div className="mb-4 flex flex-wrap items-center gap-3 rounded-[1.25rem] border-2 border-[#FFE08A] bg-[#FFFBEA] p-3">
                   <ToneIcon tone="gold" size="sm">
@@ -945,6 +1005,7 @@ export default async function EditProductPage({
                 academicYear: product.academic_year,
                 term: product.term ? String(product.term) : "",
                 price: filsToKwdString(product.price_fils),
+                isFree: product.is_free,
                 compareAtPrice: product.compare_at_price_fils ? filsToKwdString(product.compare_at_price_fils) : "",
                 proposedPrice: product.proposed_price_fils !== null ? filsToKwdString(product.proposed_price_fils) : "",
                 isDownloadable: product.is_downloadable,

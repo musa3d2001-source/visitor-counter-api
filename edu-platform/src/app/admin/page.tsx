@@ -25,6 +25,7 @@ import {
 import { dashboardTotals, latestOrders, salesByDay, topProducts, topTeachers } from "@/server/admin/stats";
 import { requireStaff, type Actor } from "@/server/auth/permissions";
 import { pendingReviewCount } from "@/server/admin/products";
+import { contentHealthCounts, needsOwnerAttention } from "@/server/admin/content-health";
 import { teacherDashboard } from "@/server/admin/teachers";
 import { openPaymentAlertCount } from "@/server/payments/monitoring";
 import { extraPaymentsNeedingOwnerCount } from "@/server/payments/extras";
@@ -56,7 +57,8 @@ export default async function AdminDashboard({ searchParams }: { searchParams: P
   const sp = await searchParams;
   const days = [7, 30, 90].includes(Number(sp.days)) ? Number(sp.days) : 30;
   const includeTest = sp.test === "1";
-  const [totals, latest, top, series, pending, teachersTop, paymentAlerts, extraPayments, refundsWaiting, mail, twoFactor] = await Promise.all([
+  const [contentHealth, totals, latest, top, series, pending, teachersTop, paymentAlerts, extraPayments, refundsWaiting, mail, twoFactor] = await Promise.all([
+    contentHealthCounts(),
     dashboardTotals(includeTest),
     latestOrders(8, includeTest),
     topProducts(6, includeTest),
@@ -117,6 +119,16 @@ export default async function AdminDashboard({ searchParams }: { searchParams: P
           </>
         }
       />
+
+      {needsOwnerAttention(contentHealth) ? (
+        <AdminNotice href="/admin/content-health" icon={<ShieldAlert />} tone="coral" action="المراجعة">
+          <b>يوجد محتوى يحتاج إلى قرارك قبل أن يصل إلى مشترٍ:</b> ملفات معيبة أو معاينات مخالفة أو منتجات بلا سعر أو بلا نسبة معلم.
+        </AdminNotice>
+      ) : contentHealth.unchecked > 0 ? (
+        <AdminNotice href="/admin/content-health" icon={<ShieldAlert />} tone="gold" action="فحص الملفات">
+          <b>{ar(contentHealth.unchecked)} ملف قديم لم يُفحص بعد.</b> افحصها قبل أن يكتشف مشترٍ ملفًا لا يفتح.
+        </AdminNotice>
+      ) : null}
 
       {recoveryCodesAreLow(twoFactor) ? (
         <AdminNotice href="/admin/security" icon={<KeyRound />} tone="coral" action="إصدار رموز">

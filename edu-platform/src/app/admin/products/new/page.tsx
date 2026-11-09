@@ -115,6 +115,7 @@ export default async function NewProductPage({
             academicYear: settings.academic_year,
             term: "1",
             price: owner ? "" : "0",
+            isFree: false,
             compareAtPrice: "",
             proposedPrice: "",
             isDownloadable: false,

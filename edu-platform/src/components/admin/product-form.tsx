@@ -12,6 +12,7 @@ import { cn } from "@/lib/utils";
 import { SubjectArt } from "@/components/art";
 import { subjectSlugFromName } from "@/components/site/card-parts";
 import { ar, gradeClass, toneClass } from "@/lib/design";
+import { PREVIEW_POLICY, PREVIEW_RULE_TEXT } from "@/lib/preview-policy";
 import { toneStyle, type AdminTone } from "./tones";
 
 type ServerAction = (prev: ActionState, fd: FormData) => Promise<ActionState>;
@@ -27,6 +28,7 @@ export type ProductFormDefaults = {
   academicYear: string;
   term: string;
   price: string;
+  isFree: boolean;
   compareAtPrice: string;
   proposedPrice: string;
   isDownloadable: boolean;
@@ -99,6 +101,7 @@ export function ProductForm({
   const [subjectId, setSubjectId] = useState(v.subjectId);
   const [type, setType] = useState<ProductType>(v.type);
   const [accessMode, setAccessMode] = useState(v.accessMode || "unlimited");
+  const [isFree, setIsFree] = useState(Boolean(v.isFree));
   const gradeSubjects = useMemo(() => subjects.filter((s) => s.grade_id === gradeId), [subjects, gradeId]);
   const fe = state?.fieldErrors ?? {};
   const isPdf = isPdfType(type);
@@ -214,13 +217,14 @@ export function ProductForm({
                   htmlFor="price"
                   error={fe.price}
                   required
-                  hint={v.proposedPrice ? `السعر المقترح من المعلم: ${v.proposedPrice} د.ك` : "بالدينار الكويتي، مثال: 2.500 (ضع 0 للمجاني)"}
+                  hint={v.proposedPrice ? `السعر المقترح من المعلم: ${v.proposedPrice} د.ك` : "بالدينار الكويتي، مثال: 2.500"}
                 >
-                  <Input id="price" name="price" defaultValue={v.price} inputMode="decimal" dir="ltr" className="num text-start" required aria-invalid={Boolean(fe.price)} />
+                  <Input id="price" name="price" defaultValue={v.price} inputMode="decimal" dir="ltr" className="num text-start" required={!isFree} disabled={isFree} aria-invalid={Boolean(fe.price)} />
                 </Field>
                 <Field label="السعر السابق (اختياري)" htmlFor="compareAtPrice" error={fe.compareAtPrice} hint="فقط عند وجود عرض حقيقي، يجب أن يكون أكبر من السعر">
-                  <Input id="compareAtPrice" name="compareAtPrice" defaultValue={v.compareAtPrice} inputMode="decimal" dir="ltr" className="num text-start" aria-invalid={Boolean(fe.compareAtPrice)} />
+                  <Input id="compareAtPrice" name="compareAtPrice" defaultValue={v.compareAtPrice} inputMode="decimal" dir="ltr" className="num text-start" disabled={isFree} aria-invalid={Boolean(fe.compareAtPrice)} />
                 </Field>
+                <Checkbox name="isFree" label="منتج مجاني (بدون سعر)" checked={isFree} onChange={(e) => setIsFree(e.target.checked)} className="min-h-11 sm:col-span-2" />
                 <input type="hidden" name="proposedPrice" value={v.proposedPrice} />
               </>
             ) : (
@@ -261,9 +265,9 @@ export function ProductForm({
               label="صفحات المعاينة المجانية"
               htmlFor="previewPages"
               error={fe.previewPages}
-              hint={isPdf ? "تُستخرج تلقائيًا من أول ملف (0 = بدون معاينة)" : "للمذكرات فقط، في الفيديو حدّد «درس مجاني» من قائمة الدروس"}
+              hint={isPdf ? `تُستخرج تلقائيًا من أول ملف (0 = بدون معاينة). ${PREVIEW_RULE_TEXT}` : "للمذكرات فقط، في الفيديو حدّد «درس مجاني» من قائمة الدروس"}
             >
-              <Input id="previewPages" name="previewPages" type="number" min={0} max={30} defaultValue={v.previewPages} className="num" />
+              <Input id="previewPages" name="previewPages" type="number" min={0} max={PREVIEW_POLICY.maxPages} defaultValue={Math.min(Number(v.previewPages) || 0, PREVIEW_POLICY.maxPages)} className="num" />
             </Field>
             {owner ? (
               <>

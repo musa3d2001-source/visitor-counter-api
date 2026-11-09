@@ -208,6 +208,8 @@ test.describe("دورة المعلم الكاملة", () => {
     await page.goto("/admin/teachers/new");
     await page.fill("#displayName", name);
     await page.fill("#slug", `e2e-managed-${ts}`);
+    // لا يُنشر منتج بسعر لمعلم بلا نسبة متفق عليها
+    await page.fill("#revenueShare", "40");
     await page.check(`input[name="s:${subject.subject_id}"]`);
     await page.getByLabel("إظهار صفحة المعلم للطلاب").check();
     await page.getByRole("button", { name: "حفظ المعلم" }).click();
