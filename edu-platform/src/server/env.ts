@@ -76,6 +76,14 @@ const schema = z.object({
   /** مزود الفيديو للرفع الجديد: file (التخزين الخاص للمنصة) أو bunny (Bunny Stream — موصى به للإنتاج) */
   VIDEO_PROVIDER: z.enum(["file", "bunny"]).default("file"),
   /** يسمح بنشر وبيع فيديو ملف خام (رابط MP4 يمكن تنزيله) على نشر NODE_ENV=production. الافتراضي الإطلاق بالمذكرات فقط */
+  /** false: لا فهرسة في محركات البحث على هذا النشر. رابط vercel.app لا يُفهرس أصلًا مهما كانت القيمة */
+  SITE_INDEXABLE: z.preprocess(
+    (v) => (v === "" ? undefined : v),
+    z
+      .enum(["true", "false"])
+      .default("true")
+      .transform((v) => v === "true"),
+  ),
   ALLOW_FILE_VIDEO: z
     .enum(["true", "false"])
     .default("false")

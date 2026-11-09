@@ -3,6 +3,7 @@ import { getSettings } from "@/server/platform/settings";
 import { siteFacts } from "@/server/platform/site-facts";
 import { publicHero, publicTagline } from "@/lib/site-truth";
 import { env } from "@/server/env";
+import { siteIndexable } from "@/server/platform/indexing";
 import "./globals.css";
 
 /** كل الصفحات ديناميكية (جلسات + CSP nonce لكل طلب) — البناء لا يحتاج قاعدة بيانات */
@@ -29,6 +30,8 @@ export async function generateMetadata(): Promise<Metadata> {
     },
     twitter: { card: "summary_large_image" },
     formatDetection: { telephone: false },
+    // الصفحة التي تضبط robots بنفسها تبقى أقوى، وكل ما عداها يرث هذا المنع
+    ...(siteIndexable() ? {} : { robots: { index: false, follow: false } }),
   };
 }
 

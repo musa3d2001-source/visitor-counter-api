@@ -1,10 +1,12 @@
 import type { MetadataRoute } from "next";
 import { sitemapEntries } from "@/server/catalog/queries";
 import { env } from "@/server/env";
+import { siteIndexable } from "@/server/platform/indexing";
 
 export const dynamic = "force-dynamic";
 
 export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
+  if (!siteIndexable()) return [];
   const base = env().APP_URL.replace(/\/$/, "");
   const { products, grades, subjects, stages, teachers } = await sitemapEntries();
   return [

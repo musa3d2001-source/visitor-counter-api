@@ -68,5 +68,7 @@ test.describe("الزائر", () => {
     await expect(page.locator('meta[property="og:title"]')).toHaveCount(1);
     const canonical = await page.locator('link[rel="canonical"]').getAttribute("href");
     expect(canonical).toContain("/grades/grade-6");
+    await page.goto("/");
+    expect(await page.locator('link[rel="canonical"]').getAttribute("href")).toMatch(/^http:\/\/localhost:\d+\/?$/);
   });
 });

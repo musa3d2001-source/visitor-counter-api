@@ -1,3 +1,4 @@
+import type { Metadata } from "next";
 import { BadgePercent, FileText, GraduationCap, MonitorPlay, Users } from "lucide-react";
 import {
   getBundleItems,
@@ -30,6 +31,9 @@ import { SubjectExplorer } from "./_home/subject-explorer";
 import { ExamBand } from "./_home/exam-band";
 import { ClosingCta, HomeFaq, HowSteps } from "./_home/sections";
 import s from "./_home/home.module.css";
+
+/** على هذه الصفحة وحدها: في التخطيط الجذري سترثه كل صفحة بلا عنوان خاص بها */
+export const metadata: Metadata = { alternates: { canonical: "/" } };
 
 /** يوزّع العناصر بالتناوب بين مجموعاتها (المواد مثلًا) حتى لا تتجاور ثلاث بطاقات بلون واحد */
 function interleave<T>(items: T[], key: (x: T) => string): T[] {
