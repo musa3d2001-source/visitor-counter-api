@@ -8,6 +8,7 @@ import { getUserOrder } from "@/server/commerce/orders";
 import { sql } from "@/server/db";
 import { getSettings } from "@/server/platform/settings";
 import { paymentsConfig } from "@/server/payments/service";
+import { orderConsentNeeds } from "@/server/platform/consent";
 import { canSayNothingWasCharged, hasUnresolvedAttempt, type ExtraPaymentKind } from "@/server/payments/extras";
 import { cancelOrderAction, retryPaymentAction, refreshOrderStatusAction } from "../../checkout/actions";
 import { ContactLinks, PaymentUnavailableNotice, realContactLinks } from "@/components/site/payment-unavailable-notice";
@@ -16,6 +17,7 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { SubmitButton } from "@/components/ui/submit-button";
 import { PrintButton } from "@/components/site/print-button";
+import { PurchaseConsentFields } from "@/components/site/purchase-consent";
 import { Sparkle, SpotArt } from "@/components/art";
 import { ORDER_STATUS_LABELS, PRODUCT_TYPE_LABELS, REFUND_PUBLIC_STATUS_LABELS, isContainerType, isVideoType, paymentMethodLabel, type ProductType } from "@/lib/labels";
 import { filsToKwdString } from "@/lib/money";
@@ -100,6 +102,9 @@ export default async function OrderPage({ params, searchParams }: { params: Prom
   const extraCopy = extraPayment ? EXTRA_COPY[extraPayment.kind] : null;
   const closedCopy = order.status === "cancelled" && order.closed_reason ? CLOSED_COPY[order.closed_reason] : null;
   const refundInProcess = refund?.status === "requested";
+  // طلب أقدم من سجل الموافقات: زر الدفع المباشر لا يظهر، ويُطلب الإقرار في نموذج واحد
+  const consentNeeds = unpaid && paymentsOn ? await orderConsentNeeds({ orderId: order.id, userId: user.id }) : { guardian: false, terms: false };
+  const needsConsent = consentNeeds.guardian || consentNeeds.terms;
 
   return (
     <div className="bg-sunny">
@@ -150,12 +155,14 @@ export default async function OrderPage({ params, searchParams }: { params: Prom
                         <RotateCcw aria-hidden /> تحديث الحالة
                       </SubmitButton>
                     </form>
-                    <form action={retryPaymentAction} data-testid="order-retry">
-                      <input type="hidden" name="orderId" value={order.id} />
-                      <SubmitButton variant="outline" size="lg">
-                        إكمال الدفع
-                      </SubmitButton>
-                    </form>
+                    {needsConsent ? null : (
+                      <form action={retryPaymentAction} data-testid="order-retry">
+                        <input type="hidden" name="orderId" value={order.id} />
+                        <SubmitButton variant="outline" size="lg">
+                          إكمال الدفع
+                        </SubmitButton>
+                      </form>
+                    )}
                   </div>
                 </>
               ) : order.status === "failed" ? (
@@ -173,12 +180,14 @@ export default async function OrderPage({ params, searchParams }: { params: Prom
                   </p>
                   {paymentsOn ? (
                     <div className="mt-6 flex flex-wrap justify-center gap-3 sm:justify-start">
-                      <form action={retryPaymentAction}>
-                        <input type="hidden" name="orderId" value={order.id} />
-                        <SubmitButton size="xl" variant="light">
-                          <RotateCcw aria-hidden /> إعادة محاولة الدفع
-                        </SubmitButton>
-                      </form>
+                      {needsConsent ? null : (
+                        <form action={retryPaymentAction}>
+                          <input type="hidden" name="orderId" value={order.id} />
+                          <SubmitButton size="xl" variant="light">
+                            <RotateCcw aria-hidden /> إعادة محاولة الدفع
+                          </SubmitButton>
+                        </form>
+                      )}
                       <form action={refreshOrderStatusAction}>
                         <input type="hidden" name="orderId" value={order.id} />
                         <SubmitButton size="xl" variant="outline">
@@ -256,7 +265,26 @@ export default async function OrderPage({ params, searchParams }: { params: Prom
           </Alert>
         ) : null}
 
-        {sp.error === "mode" ? (
+        {needsConsent ? (
+          <section className="panel mt-6 p-5 sm:p-7 no-print" aria-labelledby="consent-title" data-testid="order-consent">
+            <h2 id="consent-title" className="font-display text-[1.35rem] font-black">
+              أكمل هذه الخطوة لتتابع الدفع
+            </h2>
+            <form action={retryPaymentAction}>
+              <input type="hidden" name="orderId" value={order.id} />
+              <PurchaseConsentFields guardian={consentNeeds.guardian} terms={consentNeeds.terms} />
+              <SubmitButton size="lg" className="mt-4" data-testid="order-consent-submit">
+                إكمال الدفع
+              </SubmitButton>
+            </form>
+          </section>
+        ) : null}
+
+        {sp.error === "consent" ? (
+          <Alert tone="warning" className="mt-6 no-print" title="لم تكتمل الموافقة">
+            حدد الخانات المطلوبة ثم اضغط «إكمال الدفع».
+          </Alert>
+        ) : sp.error === "mode" ? (
           <Alert tone="danger" className="mt-6 no-print" title="لا يمكن إكمال دفع هذا الطلب">
             أُنشئ هذا الطلب في وضع دفع مختلف عن الوضع الحالي، ولن يتغير ذلك بالتحديث. يمكنك إلغاء هذا الطلب ثم إنشاء طلب جديد من <Link href="/cart">السلة</Link>.
           </Alert>

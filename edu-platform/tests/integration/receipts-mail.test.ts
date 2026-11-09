@@ -1,12 +1,12 @@
 import { afterAll, afterEach, beforeAll, beforeEach, describe, expect, it, vi } from "vitest";
 import { renderToStaticMarkup } from "react-dom/server";
 import { completeFreeOrder, createOrder, type OrderRow } from "@/server/commerce/orders";
-import { handleMyFatoorahWebhook, requestOrderRefund, resetPaymentMethodsCache, startPayment, verifyAndApplyPayment } from "@/server/payments/service";
+import { handleMyFatoorahWebhook, requestOrderRefund, resetPaymentMethodsCache, verifyAndApplyPayment } from "@/server/payments/service";
 import { paymentMethodLabel } from "@/lib/labels";
 import { resetEnvCache } from "@/server/env";
 import { startSimulator, type Simulator } from "../mocks/myfatoorah-simulator";
 import { closeDb, resetDb, sql } from "../helpers/db";
-import { invoiceIdOf, newOrder, orderRow } from "../helpers/payment-flow";
+import { invoiceIdOf, newOrder, orderRow, startPayment } from "../helpers/payment-flow";
 import { activeEntitlements, createCoupon, createProduct, createUser } from "../helpers/factories";
 import { SIM_API_KEY, SIM_PORT, TEST_ENV, WEBHOOK_SECRET } from "../test-env";
 

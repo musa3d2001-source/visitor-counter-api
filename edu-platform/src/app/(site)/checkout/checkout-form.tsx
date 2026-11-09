@@ -7,6 +7,7 @@ import { Alert } from "@/components/ui/alert";
 import { SubmitButton } from "@/components/ui/submit-button";
 import type { PaymentMethodOption } from "@/server/payments/service";
 import { filsToKwdString } from "@/lib/money";
+import { PurchaseConsentFields } from "@/components/site/purchase-consent";
 
 export function CheckoutForm({
   coupon,
@@ -14,12 +15,14 @@ export function CheckoutForm({
   methods,
   disabled,
   sandbox,
+  needsTerms,
 }: {
   coupon: string;
   total: number;
   methods: PaymentMethodOption[];
   disabled: boolean;
   sandbox: boolean;
+  needsTerms: boolean;
 }) {
   const [state, action] = useActionState(placeOrderAction, null);
   return (
@@ -48,6 +51,8 @@ export function CheckoutForm({
           </div>
         </fieldset>
       ) : null}
+      {/* قد يطلب الخادم ما لم تتوقعه الصفحة (تغير السعر بعد فتحها)، فلا تبقى رسالة بلا خانتها */}
+      <PurchaseConsentFields guardian={(total > 0 && !disabled) || Boolean(state?.fieldErrors?.guardianDeclaration)} terms={(needsTerms && !disabled) || Boolean(state?.fieldErrors?.termsAccepted)} errors={state?.fieldErrors} />
       {state?.error ? (
         <Alert tone="danger" className="mt-4">
           {state.error}

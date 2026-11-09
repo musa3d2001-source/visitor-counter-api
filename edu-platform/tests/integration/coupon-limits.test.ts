@@ -1,11 +1,11 @@
 import { afterAll, afterEach, beforeAll, describe, expect, it } from "vitest";
 import { OrderError, closeOrder, completeFreeOrder, createOrder, type OrderRow } from "@/server/commerce/orders";
 import { evaluateCoupon } from "@/server/commerce/coupons";
-import { OrderClosedError, resetPaymentMethodsCache, startPayment, verifyAndApplyPayment } from "@/server/payments/service";
+import { OrderClosedError, resetPaymentMethodsCache, verifyAndApplyPayment } from "@/server/payments/service";
 import { resetEnvCache } from "@/server/env";
 import { startSimulator, type Simulator } from "../mocks/myfatoorah-simulator";
 import { closeDb, resetDb, sql } from "../helpers/db";
-import { asOtherServer, confirmPaid, invoiceIdOf, invoicesCreated, makeStale, orderRow, pause } from "../helpers/payment-flow";
+import { asOtherServer, confirmPaid, invoiceIdOf, invoicesCreated, makeStale, orderRow, pause, startPayment } from "../helpers/payment-flow";
 import { activeEntitlements, createCoupon, createProduct, createUser } from "../helpers/factories";
 import { SIM_API_KEY, SIM_PORT, TEST_ENV, WEBHOOK_SECRET } from "../test-env";
 

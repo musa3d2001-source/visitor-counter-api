@@ -2,7 +2,6 @@ import { afterAll, afterEach, beforeAll, beforeEach, describe, expect, it, vi } 
 import { renderToStaticMarkup } from "react-dom/server";
 import { resetEnvCache } from "@/server/env";
 import { createOrder } from "@/server/commerce/orders";
-import { startPayment } from "@/server/payments/service";
 import {
   confirmEmailToken,
   EmailVerificationRequiredError,
@@ -20,6 +19,7 @@ import { startSmtpSink, type SmtpSink } from "../mocks/smtp-sink";
 import { closeDb, resetDb, sql } from "../helpers/db";
 import { createCoupon, createProduct, createUser, TEST_PASSWORD } from "../helpers/factories";
 import { SIM_API_KEY, SIM_PORT, TEST_ENV, WEBHOOK_SECRET } from "../test-env";
+import { startPayment } from "../helpers/payment-flow";
 
 const ctx = vi.hoisted(() => ({ user: null as unknown, cart: [] as string[] }));
 vi.mock("@/server/auth/guards", async (original) => ({ ...(await original<typeof import("@/server/auth/guards")>()), requireUser: async () => ctx.user, assertUser: async () => ctx.user }));
@@ -138,7 +138,7 @@ describe("who must verify", () => {
 
 describe("registration stays instant", () => {
   it("the account opens with no mail step, and the link is a separate later send", async () => {
-    const r = await registerStudent({ fullName: "طالب جديد", email: "fresh@farqad.test", password: "Student-Pass-1", phone: null }, { ip: IP, userAgent: "t" });
+    const r = await registerStudent({ fullName: "طالب جديد", email: "fresh@farqad.test", password: "Student-Pass-1", phone: null, acceptedDocuments: true }, { ip: IP, userAgent: "t" });
     expect(r.ok).toBe(true);
     expect(mailsTo("fresh@farqad.test")).toHaveLength(0);
     if (!r.ok) throw new Error("register");

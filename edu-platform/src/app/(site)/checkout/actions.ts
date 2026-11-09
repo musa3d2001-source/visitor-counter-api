@@ -19,6 +19,7 @@ import {
 import { MyFatoorahError } from "@/server/payments/myfatoorah";
 import { hitRateLimit } from "@/server/auth/rate-limit";
 import { EmailVerificationRequiredError, verifyEmailPath } from "@/server/auth/email-verification";
+import { ConsentRequiredError, recordOrderPageConsent, requestConsentMeta } from "@/server/platform/consent";
 import { sql } from "@/server/db";
 import type { ActionState } from "@/lib/action-state";
 
@@ -54,6 +55,8 @@ export async function placeOrderAction(_prev: ActionState, fd: FormData): Promis
       // لا نترك طلبًا معلّقًا لا يمكن دفعه؛ الطلبات المجانية تكتمل كالمعتاد
       paidCheckoutBlockedReason: cfg.enabled ? undefined : "الدفع الإلكتروني غير متاح حاليًا. تبقى المنتجات في سلتك لتعود إليها لاحقًا.",
       refuseOverlappingOpenOrders: cfg.enabled,
+      // القيمة من النموذج وحده لا تكفي: createOrder يفرضها، و startPayment يتأكد من وجود السجل
+      consent: { guardianDeclared: fd.get("guardianDeclaration") === "on", termsAccepted: fd.get("termsAccepted") === "on", meta: await requestConsentMeta() },
     });
     orderId = order.id;
     if (order.total_fils === 0) {
@@ -65,6 +68,7 @@ export async function placeOrderAction(_prev: ActionState, fd: FormData): Promis
     }
   } catch (err) {
     if (err instanceof EmailVerificationRequiredError) redirect(verifyEmailPath("/checkout"));
+    if (err instanceof ConsentRequiredError) return { fieldErrors: err.fieldErrors() };
     if (err instanceof OpenOrderExistsError) redirect(`/orders/${err.orderId}?from=open-order`);
     if (err instanceof OrderError) return { error: err.userMessage };
     if (err instanceof OrderClosedError && err.reason === "already_owned") return { error: "أصبح أحد المنتجات في مكتبتك، فلم ننشئ طلبًا لتجنب الدفع مرتين." };
@@ -94,9 +98,12 @@ export async function retryPaymentAction(fd: FormData) {
   if (!limit.allowed) redirect(`/orders/${found.order.id}?error=rate`);
   let url: string;
   try {
+    // طلب أقدم من سجل الموافقات: الإقرار يأتي من نموذج صفحة الطلب، و startPayment يرفض بدونه
+    await recordOrderPageConsent({ orderId: found.order.id, userId: user.id, guardianDeclared: fd.get("guardianDeclaration") === "on", termsAccepted: fd.get("termsAccepted") === "on", meta: await requestConsentMeta() });
     url = (await startPayment(found.order, null)).url;
   } catch (err) {
     if (err instanceof EmailVerificationRequiredError) redirect(verifyEmailPath(`/orders/${found.order.id}`));
+    if (err instanceof ConsentRequiredError) redirect(`/orders/${found.order.id}?error=consent`);
     if (err instanceof OrderSettledError) redirect(`/orders/${found.order.id}`);
     const code = err instanceof PaymentModeMismatchError ? "mode" : err instanceof InvoiceNeedsReviewError ? "review" : err instanceof OrderClosedError ? "closed" : err instanceof PaymentInProgressError ? "inprogress" : "payment";
     redirect(`/orders/${found.order.id}?error=${code}`);

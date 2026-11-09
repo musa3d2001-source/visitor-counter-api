@@ -144,7 +144,8 @@ describe("email_log never holds a raw reset token", () => {
         ('keep@farqad.test', 's', 'order_confirmation', 'تفاصيل الطلب http://x.test/orders/1', 'logged')
     `;
     const migration = readFileSync(resolve(process.cwd(), "db/migrations/0011_accounts_hardening.sql"), "utf8");
-    await sql.unsafe(migration.slice(migration.indexOf("update email_log")));
+    const start = migration.indexOf("update email_log");
+    await sql.unsafe(migration.slice(start, migration.indexOf(";", start) + 1));
     const [scrubbed] = await sql<{ body: string }[]>`select body from email_log where to_email = 'old@farqad.test'`;
     expect(scrubbed.body).toBe("افتح:\nhttp://x.test/reset-password?token=[REDACTED]\nشكرًا");
     const [kept] = await sql<{ body: string }[]>`select body from email_log where to_email = 'keep@farqad.test'`;

@@ -1,10 +1,10 @@
 import { afterAll, afterEach, beforeAll, beforeEach, describe, expect, it, vi } from "vitest";
-import { refundExtraPayment, requestOrderRefund, resetPaymentMethodsCache, startPayment, verifyAndApplyPayment } from "@/server/payments/service";
+import { refundExtraPayment, requestOrderRefund, resetPaymentMethodsCache, verifyAndApplyPayment } from "@/server/payments/service";
 import { resetEnvCache } from "@/server/env";
 import { getTwoFactorStatus } from "@/server/auth/two-factor";
 import { startSimulator, type Simulator } from "../mocks/myfatoorah-simulator";
 import { closeDb, resetDb, sql } from "../helpers/db";
-import { expireLocally, invoiceIdOf, newOrder, orderRow } from "../helpers/payment-flow";
+import { expireLocally, invoiceIdOf, newOrder, orderRow, startPayment } from "../helpers/payment-flow";
 import { createUser } from "../helpers/factories";
 import { enrolAdmin, freshCode, wrongCode } from "../helpers/two-factor";
 import { SIM_API_KEY, SIM_PORT, TEST_ENV, WEBHOOK_SECRET } from "../test-env";

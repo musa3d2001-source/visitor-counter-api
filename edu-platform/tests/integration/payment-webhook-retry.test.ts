@@ -1,11 +1,11 @@
 import { createServer, type Server } from "node:http";
 import type { AddressInfo } from "node:net";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
-import { handleMyFatoorahWebhook, startPayment } from "@/server/payments/service";
+import { handleMyFatoorahWebhook } from "@/server/payments/service";
 import { startSimulator, type Simulator } from "../mocks/myfatoorah-simulator";
 import { closeDb, resetDb } from "../helpers/db";
 import { activeEntitlements } from "../helpers/factories";
-import { invoiceIdOf, newOrder, orderRow } from "../helpers/payment-flow";
+import { invoiceIdOf, newOrder, orderRow, startPayment } from "../helpers/payment-flow";
 import { SIM_API_KEY, SIM_PORT, WEBHOOK_SECRET } from "../test-env";
 
 /**

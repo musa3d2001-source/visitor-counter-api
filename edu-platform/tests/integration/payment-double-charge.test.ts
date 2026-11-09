@@ -2,12 +2,12 @@ import { afterAll, afterEach, beforeAll, beforeEach, describe, expect, it, vi } 
 import { closeOrder, createOrder } from "@/server/commerce/orders";
 import { evaluateCoupon } from "@/server/commerce/coupons";
 import { runPaymentReconciliation } from "@/server/payments/reconcile";
-import { OrderClosedError, OrderSettledError, PaymentInProgressError, checkOrderInvoices, resetPaymentMethodsCache, startPayment, verifyAndApplyPayment } from "@/server/payments/service";
+import { OrderClosedError, OrderSettledError, PaymentInProgressError, checkOrderInvoices, resetPaymentMethodsCache, verifyAndApplyPayment } from "@/server/payments/service";
 import { MyFatoorahError } from "@/server/payments/myfatoorah";
 import { resetEnvCache } from "@/server/env";
 import { startSimulator, type Simulator } from "../mocks/myfatoorah-simulator";
 import { closeDb, resetDb, sql } from "../helpers/db";
-import { asOtherServer, confirmPaid, expireInvoice, expireLocally, invoiceIdOf, invoicesCreated, makeStale, newOrder, orderRow, pause, paymentRows, statusCalls } from "../helpers/payment-flow";
+import { asOtherServer, confirmPaid, expireInvoice, expireLocally, invoiceIdOf, invoicesCreated, makeStale, newOrder, orderRow, pause, paymentRows, startPayment, statusCalls } from "../helpers/payment-flow";
 import { createBundle, createCoupon, createProduct, createUser } from "../helpers/factories";
 import { SIM_API_KEY, SIM_PORT, TEST_ENV, WEBHOOK_SECRET } from "../test-env";
 

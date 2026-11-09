@@ -1,11 +1,12 @@
 import { afterAll, afterEach, beforeAll, describe, expect, it, vi } from "vitest";
 import { createOrder, OrderError, type OrderRow } from "@/server/commerce/orders";
-import { PaymentModeMismatchError, paymentsConfig, startPayment } from "@/server/payments/service";
+import { PaymentModeMismatchError, paymentsConfig } from "@/server/payments/service";
 import { resetEnvCache } from "@/server/env";
 import { startSimulator, type Simulator } from "../mocks/myfatoorah-simulator";
 import { closeDb, resetDb, sql } from "../helpers/db";
 import { createProduct, createUser } from "../helpers/factories";
 import { SIM_API_KEY, SIM_PORT, TEST_ENV, WEBHOOK_SECRET } from "../test-env";
+import { startPayment } from "../helpers/payment-flow";
 
 /** ما يصل إلى الخدمة من إجراءات الشراء — تستبدلها الاختبارات لتشغيل الإجراءات الحقيقية خارج Next.js */
 const ctx = vi.hoisted(() => ({ user: null as unknown, cart: [] as string[], redirected: [] as string[] }));
@@ -176,6 +177,7 @@ describe("startPayment refuses an order from the other mode", () => {
     setEnv({ MYFATOORAH_API_KEY: "wrong-key" });
     const fd = new FormData();
     fd.set("orderId", order.id);
+    fd.set("guardianDeclaration", "on");
     await expect(retryPaymentAction(fd)).rejects.toThrow(/NEXT_REDIRECT/);
     expect(ctx.redirected).toEqual([`/orders/${order.id}?error=payment`]);
   });
@@ -229,7 +231,9 @@ describe("disabled mode writes no pending rows", () => {
     const p = await createProduct({ priceFils: 3000 });
     ctx.user = user;
     ctx.cart = [p.id];
-    await expect(placeOrderAction(null, new FormData())).rejects.toThrow(/NEXT_REDIRECT/);
+    const fd = new FormData();
+    fd.set("guardianDeclaration", "on");
+    await expect(placeOrderAction(null, fd)).rejects.toThrow(/NEXT_REDIRECT/);
     expect(ctx.redirected[0]).toContain("/pay/");
     const [o] = await sql<{ status: string; is_test: boolean }[]>`select status, is_test from orders where user_id = ${user.id}`;
     expect(o).toEqual({ status: "pending", is_test: true });

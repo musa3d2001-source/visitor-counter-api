@@ -2,13 +2,13 @@ import { existsSync, readFileSync } from "node:fs";
 import { resolve } from "node:path";
 import { afterAll, afterEach, beforeAll, beforeEach, describe, expect, it, vi } from "vitest";
 import { closeOrder, createOrder, type OrderRow } from "@/server/commerce/orders";
-import { refundExtraPayment, requestOrderRefund, resetPaymentMethodsCache, startPayment, verifyAndApplyPayment } from "@/server/payments/service";
+import { refundExtraPayment, requestOrderRefund, resetPaymentMethodsCache, verifyAndApplyPayment } from "@/server/payments/service";
 import { RECONCILE_BATCH_SIZE, runPaymentReconciliation } from "@/server/payments/reconcile";
 import { GET } from "@/app/api/cron/reconcile-payments/route";
 import { resetEnvCache } from "@/server/env";
 import { startSimulator, type Simulator } from "../mocks/myfatoorah-simulator";
 import { closeDb, resetDb, sql } from "../helpers/db";
-import { asOtherServer, auditCount, invoiceIdOf, makeStale, newOrder, orderRow, paymentRows, statusCalls } from "../helpers/payment-flow";
+import { asOtherServer, auditCount, invoiceIdOf, makeStale, newOrder, orderRow, paymentRows, startPayment, statusCalls } from "../helpers/payment-flow";
 import { activeEntitlements, createProduct, createUser } from "../helpers/factories";
 import { SIM_API_KEY, SIM_PORT, TEST_ENV, WEBHOOK_SECRET } from "../test-env";
 

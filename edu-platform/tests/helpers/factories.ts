@@ -4,6 +4,8 @@ import { dirname, resolve } from "node:path";
 import { PDFDocument, StandardFonts } from "pdf-lib";
 import { sql } from "@/server/db";
 import { hashPassword } from "@/server/auth/password-core";
+import { recordConsent } from "@/server/platform/consent";
+import { ACCOUNT_CONSENT_KINDS } from "@/lib/consent";
 import type { SessionUser } from "@/server/auth/session";
 import { TEST_STORAGE_DIR } from "../test-env";
 
@@ -17,13 +19,17 @@ async function passwordHash() {
 let counter = 0;
 const uniq = () => `${Date.now().toString(36)}${(counter++).toString(36)}`;
 
-export async function createUser(opts: { role?: "student" | "admin" | "teacher"; email?: string; fullName?: string; isActive?: boolean; phone?: string | null } = {}): Promise<SessionUser> {
+export async function createUser(opts: { role?: "student" | "admin" | "teacher"; email?: string; fullName?: string; isActive?: boolean; phone?: string | null; legacyConsent?: boolean } = {}): Promise<SessionUser> {
   const email = opts.email ?? `user-${uniq()}@example.com`;
   const [u] = await sql<{ id: string; email: string; full_name: string; phone: string | null; role: "student" | "admin" | "teacher"; grade_id: string | null; is_active: boolean }[]>`
     insert into users (email, password_hash, full_name, role, is_active, phone)
     values (${email}, ${await passwordHash()}, ${opts.fullName ?? "طالب تجريبي"}, ${opts.role ?? "student"}, ${opts.isActive ?? true}, ${opts.phone ?? null})
     returning id, email, full_name, phone, role, grade_id, is_active
   `;
+  // الطالب العادي سجّل من النموذج فوافق. legacyConsent: حساب أقدم من سجل الموافقات
+  if (u.role === "student" && !opts.legacyConsent) {
+    for (const kind of ACCOUNT_CONSENT_KINDS) await recordConsent(sql, { userId: u.id, kind, meta: { ip: null, userAgent: null } });
+  }
   return { id: u.id, email: u.email, fullName: u.full_name, phone: u.phone, role: u.role, gradeId: u.grade_id, isActive: u.is_active };
 }
 

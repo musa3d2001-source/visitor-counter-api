@@ -56,6 +56,7 @@ export async function newStudentPage(browser: Browser) {
 /** شراء المنتجات الموجودة في السلة عبر محاكي البوابة */
 export async function checkoutAndPay(page: Page, outcome: "success" | "fail") {
   await page.goto("/checkout");
+  await page.getByTestId("guardian-declaration").check();
   await page.getByTestId("place-order").click();
   await page.waitForURL(/\/pay\//);
   await page.getByTestId(outcome === "success" ? "sim-pay-success" : "sim-pay-fail").click();

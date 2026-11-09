@@ -1,12 +1,13 @@
 import { createServer, type Server } from "node:http";
 import type { AddressInfo } from "node:net";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
-import { handleMyFatoorahWebhook, startPayment, verifyAndApplyPayment } from "@/server/payments/service";
+import { handleMyFatoorahWebhook, verifyAndApplyPayment } from "@/server/payments/service";
 import { createOrder } from "@/server/commerce/orders";
 import { startSimulator, type Simulator } from "../mocks/myfatoorah-simulator";
 import { closeDb, resetDb, sql } from "../helpers/db";
 import { activeEntitlements, createProduct, createUser } from "../helpers/factories";
 import { SIM_API_KEY, SIM_PORT, WEBHOOK_SECRET } from "../test-env";
+import { startPayment } from "../helpers/payment-flow";
 
 /**
  * مسار HTTP كامل كما سيحدث في الإنتاج:

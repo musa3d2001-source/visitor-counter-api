@@ -5,7 +5,7 @@ import { computeCart } from "@/server/commerce/cart";
 import { OrderError, createOrder, type OrderRow } from "@/server/commerce/orders";
 import { getPublishedProductsByIds } from "@/server/catalog/queries";
 import { approveAndPublish, createProduct as adminCreateProduct, getAdminProduct, listAdminProducts, publishBlockers, setProductStatus, submitForReview, updateProduct, type ProductInput } from "@/server/admin/products";
-import { OrderClosedError, resetPaymentMethodsCache, startPayment, verifyAndApplyPayment } from "@/server/payments/service";
+import { OrderClosedError, resetPaymentMethodsCache, verifyAndApplyPayment } from "@/server/payments/service";
 import { NoteCard } from "@/components/site/note-card";
 import { ProductRow } from "@/components/site/product-row";
 import { SaleEndedNotice } from "@/app/(site)/products/[slug]/_components/purchase";
@@ -13,7 +13,7 @@ import type { Actor } from "@/server/auth/permissions";
 import { resetEnvCache } from "@/server/env";
 import { startSimulator, type Simulator } from "../mocks/myfatoorah-simulator";
 import { closeDb, resetDb, sql } from "../helpers/db";
-import { invoiceIdOf, invoicesCreated, orderRow } from "../helpers/payment-flow";
+import { invoiceIdOf, invoicesCreated, orderRow, startPayment } from "../helpers/payment-flow";
 import { activeEntitlements, createContainer, createProduct, createTeacher, createUser, createVideoProduct, gradeAndSubject } from "../helpers/factories";
 import { SIM_API_KEY, SIM_PORT, TEST_ENV, WEBHOOK_SECRET } from "../test-env";
 

@@ -71,7 +71,8 @@ async function checkoutHtml(priceFils: number) {
 async function orderHtml(status: "pending" | "failed", search: { error?: string } = {}) {
   const user = await createUser();
   const product = await createProduct({ priceFils: 3000 });
-  const order = await createOrder({ user, productIds: [product.id], isTest: true });
+  // كما يصل من نموذج الشراء: هذه الاختبارات عن أزرار الدفع لا عن الموافقة
+  const order = await createOrder({ user, productIds: [product.id], isTest: true, consent: { guardianDeclared: true, termsAccepted: true, meta: { ip: null, userAgent: null } } });
   if (status === "failed") await sql`update orders set status = 'failed' where id = ${order.id}`;
   ctx.user = user;
   return renderToStaticMarkup(await OrderPage({ params: Promise.resolve({ id: order.id }), searchParams: Promise.resolve(search) }));

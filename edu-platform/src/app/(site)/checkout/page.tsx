@@ -9,6 +9,7 @@ import { computeCart, getCartIds } from "@/server/commerce/cart";
 import { evaluateCoupon } from "@/server/commerce/coupons";
 import { getPaymentMethods, paymentsConfig, type PaymentMethodOption } from "@/server/payments/service";
 import { getSettings } from "@/server/platform/settings";
+import { missingAccountConsents } from "@/server/platform/consent";
 import { Alert } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/form";
@@ -41,6 +42,8 @@ export default async function CheckoutPage({ searchParams }: { searchParams: Pro
   if (total > 0 && cfg.enabled && (await emailVerificationRequired(user.id))) {
     redirect(verifyEmailPath(couponCode ? `/checkout?coupon=${encodeURIComponent(couponCode)}` : "/checkout"));
   }
+
+  const needsTerms = (await missingAccountConsents(user.id)).length > 0;
 
   let methods: PaymentMethodOption[] = [];
   let methodsError = false;
@@ -184,6 +187,7 @@ export default async function CheckoutPage({ searchParams }: { searchParams: Pro
                   methods={methods}
                   disabled={total > 0 && !cfg.enabled}
                   sandbox={cfg.enabled && cfg.environment === "sandbox"}
+                  needsTerms={needsTerms}
                 />
               </div>
             </CheckoutStep>

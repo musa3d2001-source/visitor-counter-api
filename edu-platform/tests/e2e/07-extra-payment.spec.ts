@@ -15,6 +15,7 @@ test.describe("دفعة ثانية على طلب مدفوع", () => {
     await expect(student.getByText("أضيفت إلى السلة").first()).toBeVisible();
 
     await student.goto("/checkout");
+    await student.getByTestId("guardian-declaration").check();
     await student.getByTestId("place-order").click();
     await student.waitForURL(/\/pay\//);
     const firstInvoiceUrl = student.url();

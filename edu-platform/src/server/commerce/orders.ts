@@ -9,6 +9,8 @@ import { sendOrderConfirmationEmail } from "./order-mail";
 import { INVOICE_TTL_MINUTES, ORDER_LIFETIME_HOURS } from "../payments/limits";
 import type { SessionUser } from "../auth/session";
 import { EmailVerificationRequiredError, emailVerificationRequired } from "../auth/email-verification";
+import { ConsentRequiredError, missingAccountConsents, recordConsent, type ConsentMeta } from "../platform/consent";
+import type { ConsentField } from "@/lib/consent";
 
 export type OrderRow = {
   id: string;
@@ -92,15 +94,24 @@ export async function createOrder(input: {
   paidCheckoutBlockedReason?: string;
   /** صفحة الشراء تفعّله: طلب مفتوح يغطي نفس المنتج يرفض الإنشاء بـ OpenOrderExistsError */
   refuseOverlappingOpenOrders?: boolean;
+  /**
+   * ما أُرسل من نموذج الشراء. صفحة الشراء تمرره دائمًا، وعندها يُرفض طلب بلا موافقة ولا يُكتب شيء.
+   * إن غاب (أدوات واختبارات) فلا سجل للطلب، ولن يصدر له رابط دفع: startPayment هو الحارس الأخير.
+   */
+  consent?: { guardianDeclared: boolean; termsAccepted: boolean; meta: ConsentMeta };
 }): Promise<OrderRow> {
   const cart = await computeCart(input.productIds, input.user.id);
   if (cart.payableLines.length === 0) {
     throw new OrderError(cart.lines.some((l) => l.saleEnded) ? "انتهى بيع ما تبقى في سلتك، فلم ننشئ طلبًا." : cart.lines.length ? "كل المنتجات في سلتك موجودة في مكتبتك مسبقًا." : "سلتك فارغة.");
   }
   return sql.begin(async (tx) => {
-    if (input.refuseOverlappingOpenOrders) {
+    if (input.consent || input.refuseOverlappingOpenOrders) {
       // قفل صف الطالب يجعل تبويبين يضغطان الشراء معًا يصطفان، فيرى الثاني طلب الأول. FOR NO KEY UPDATE لا يتعارض مع مفاتيح الجداول المرتبطة
-      await tx`select id from users where id = ${input.user.id} for no key update`;
+      const [buyer] = await tx<{ anonymized_at: Date | null }[]>`select anonymized_at from users where id = ${input.user.id} for no key update`;
+      // حذف بيانات الطالب يأخذ القفل نفسه: طلب كان ينتظره لا يكتب بيانات الجلسة القديمة بعد الحذف
+      if (buyer?.anonymized_at) throw new OrderError("هذا الحساب لم يعد متاحًا.");
+    }
+    if (input.refuseOverlappingOpenOrders) {
       const [open] = await findOpenOrdersCovering(tx, { userId: input.user.id, productIds: cart.payableLines.map((l) => l.id), isTest: input.isTest });
       if (open) throw new OpenOrderExistsError(open.id);
     }
@@ -118,6 +129,14 @@ export async function createOrder(input: {
     if (total > 0 && input.paidCheckoutBlockedReason) throw new OrderError(input.paidCheckoutBlockedReason);
     // بعد حساب الخصم: طلب مجاني بالكامل (أو بكوبون ١٠٠٪) لا يُمنع
     if (total > 0 && (await emailVerificationRequired(input.user.id, tx))) throw new EmailVerificationRequiredError();
+    // بعد حساب الخصم: الإقرار يسبق كل دفع، والطلب المجاني لا دفع فيه. الحساب الأقدم من السجل يوافق هنا ولا يُقفل
+    const missingDocuments = input.consent ? await missingAccountConsents(input.user.id, tx) : [];
+    if (input.consent) {
+      const missing: ConsentField[] = [];
+      if (missingDocuments.length && !input.consent.termsAccepted) missing.push("termsAccepted");
+      if (total > 0 && !input.consent.guardianDeclared) missing.push("guardianDeclaration");
+      if (missing.length) throw new ConsentRequiredError(missing);
+    }
     const [order] = await tx<OrderRow[]>`
       insert into orders (user_id, subtotal_fils, discount_fils, total_fils, coupon_id, coupon_code, is_test,
                           customer_name, customer_email, customer_phone)
@@ -138,6 +157,10 @@ export async function createOrder(input: {
         insert into order_items (order_id, product_id, title, product_type, unit_price_fils, teacher_id, teacher_name)
         values (${order.id}, ${line.id}, ${line.title}, ${line.type}, ${line.priceFils}, ${t?.teacher_id ?? null}, ${t?.teacher_name ?? null})
       `;
+    }
+    if (input.consent) {
+      for (const kind of missingDocuments) await recordConsent(tx, { userId: input.user.id, kind, orderId: order.id, meta: input.consent.meta });
+      if (total > 0) await recordConsent(tx, { userId: input.user.id, kind: "guardian_purchase", orderId: order.id, meta: input.consent.meta });
     }
     return order;
   });

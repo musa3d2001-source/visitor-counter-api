@@ -1,6 +1,6 @@
 import { afterAll, afterEach, beforeAll, beforeEach, describe, expect, it, vi } from "vitest";
 import { createOrder, type OrderRow } from "@/server/commerce/orders";
-import { handleMyFatoorahWebhook, recheckOrderRefund, refundExtraPayment, requestOrderRefund, resetPaymentMethodsCache, startPayment, verifyAndApplyPayment } from "@/server/payments/service";
+import { handleMyFatoorahWebhook, recheckOrderRefund, refundExtraPayment, requestOrderRefund, resetPaymentMethodsCache, verifyAndApplyPayment } from "@/server/payments/service";
 import { RefundError, dismissRefund, openRefunds, refundsNeedingOwnerCount, requestRefund, type RefundGateway } from "@/server/payments/refunds";
 import { MyFatoorahClient } from "@/server/payments/myfatoorah";
 import { reportSummary } from "@/server/admin/stats";
@@ -8,7 +8,7 @@ import { adminGrant, adminRevoke } from "@/server/access/entitlements";
 import { resetEnvCache } from "@/server/env";
 import { startSimulator, type Simulator } from "../mocks/myfatoorah-simulator";
 import { closeDb, resetDb, sql } from "../helpers/db";
-import { asOtherServer, auditCount, expireLocally, invoiceIdOf, moneySnapshot, newOrder, orderRow, pause } from "../helpers/payment-flow";
+import { asOtherServer, auditCount, expireLocally, invoiceIdOf, moneySnapshot, newOrder, orderRow, pause, startPayment } from "../helpers/payment-flow";
 import { activeEntitlements, createBundle, createProduct, createTeacher, createUser, createVideoProduct } from "../helpers/factories";
 import { SIM_API_KEY, SIM_PORT, TEST_ENV, WEBHOOK_SECRET } from "../test-env";
 

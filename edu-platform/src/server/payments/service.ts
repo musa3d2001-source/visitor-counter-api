@@ -31,6 +31,7 @@ import { CLAIM_STALE_SECONDS, INVOICE_REUSE_MARGIN_MINUTES, INVOICE_TTL_MINUTES,
 import { RefundError, applyRefundEvent, recheckRefund, requestRefund, type RefundOutcome } from "./refunds";
 import { sendExtraPaymentEmail, sendOrderConfirmationEmail } from "../commerce/order-mail";
 import { EmailVerificationRequiredError, emailVerificationRequired } from "../auth/email-verification";
+import { assertOrderConsent } from "../platform/consent";
 
 /**
  * خدمة الدفع — قواعد حاسمة:
@@ -376,6 +377,8 @@ export async function startPayment(order: OrderRow, paymentMethodId: number | nu
   if (order.is_test !== (cfg.environment === "sandbox")) throw new PaymentModeMismatchError();
   // كل طريق إلى صفحة الدفع يمر من هنا، فلا يفلت منه إعادة المحاولة ولا طلب قديم
   if (await emailVerificationRequired(order.user_id)) throw new EmailVerificationRequiredError();
+  // نموذج مصنوع أو طلب قديم أو إعادة محاولة: لا فاتورة بلا إقرار مسجل لهذا الطلب
+  await assertOrderConsent({ orderId: order.id, userId: order.user_id });
 
   const walk = await checkOrderInvoices(order.id, { stopOnError: true });
   if (walk.otherMode && !walk.unreachable) throw new PaymentModeMismatchError();

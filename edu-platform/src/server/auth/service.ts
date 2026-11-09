@@ -2,12 +2,14 @@ import "server-only";
 import { sql } from "../db";
 import { adminTwoFactorRequired, env } from "../env";
 import { hashPassword, verifyPassword, burnPasswordTime } from "./password";
-import { createSession, generateToken, hashToken } from "./session";
+import { createSession, createSessionIn, generateToken, hashToken } from "./session";
 import { hitRateLimit, clearRateLimit, peekRateLimit, reserveFailureSlot, type FailurePolicy } from "./rate-limit";
 import { completeLoginChallenge, startLoginChallenge, twoFactorIsActive, type CompleteChallengeResult } from "./two-factor";
 import { mailIsReal, sendMail } from "../platform/mailer";
 import { getSettings } from "../platform/settings";
 import { audit } from "../platform/audit";
+import { consentMeta, recordConsent } from "../platform/consent";
+import { ACCOUNT_CONSENT_KINDS } from "@/lib/consent";
 import { passwordPolicyError, type PasswordRole } from "@/lib/password-policy";
 import { count, W } from "@/lib/design";
 
@@ -105,9 +107,10 @@ export async function completeTwoFactorLogin(token: string | undefined, code: un
 }
 
 export async function registerStudent(
-  input: { fullName: string; email: string; password: string; phone: string | null; gradeId?: string },
+  input: { fullName: string; email: string; password: string; phone: string | null; gradeId?: string; acceptedDocuments: boolean },
   meta: { ip: string; userAgent: string },
 ): Promise<AuthResult> {
+  if (!input.acceptedDocuments) return { ok: false, error: "يجب الموافقة على الشروط والأحكام وسياسة الخصوصية." };
   const limit = await hitRateLimit(`register:ip:${meta.ip}`, 30, 60 * 60);
   if (!limit.allowed) return { ok: false, error: "محاولات تسجيل كثيرة من هذا الجهاز. حاول لاحقًا." };
   const exists = await sql`select 1 from users where email = ${input.email}`;
@@ -119,13 +122,17 @@ export async function registerStudent(
     gradeId = g[0]?.id ?? null;
   }
   try {
-    const [user] = await sql<{ id: string }[]>`
-      insert into users (email, password_hash, full_name, phone, grade_id, role)
-      values (${input.email}, ${hash}, ${input.fullName}, ${input.phone}, ${gradeId}, 'student')
-      returning id
-    `;
-    const s = await createSession(user.id, meta);
-    return { ok: true, userId: user.id, token: s.token, expiresAt: s.expiresAt };
+    // الحساب وموافقته وجلسته معًا: لا يوجد حساب بلا ما وافق عليه
+    return await sql.begin(async (tx): Promise<AuthResult> => {
+      const [user] = await tx<{ id: string }[]>`
+        insert into users (email, password_hash, full_name, phone, grade_id, role)
+        values (${input.email}, ${hash}, ${input.fullName}, ${input.phone}, ${gradeId}, 'student')
+        returning id
+      `;
+      for (const kind of ACCOUNT_CONSENT_KINDS) await recordConsent(tx, { userId: user.id, kind, meta: consentMeta(meta) });
+      const s = await createSessionIn(tx, user.id, meta);
+      return { ok: true, userId: user.id, token: s.token, expiresAt: s.expiresAt };
+    });
   } catch (err) {
     if (String((err as { code?: string }).code) === "23505") return { ok: false, error: "هذا البريد مسجل مسبقًا." };
     throw err;

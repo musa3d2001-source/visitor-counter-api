@@ -5,7 +5,6 @@ import {
   paymentsConfig,
   requestOrderRefund,
   resetPaymentMethodsCache,
-  startPayment,
   verifyAndApplyPayment,
 } from "@/server/payments/service";
 import { MyFatoorahError } from "@/server/payments/myfatoorah";
@@ -15,6 +14,7 @@ import { startSimulator, type Simulator } from "../mocks/myfatoorah-simulator";
 import { closeDb, resetDb, sql } from "../helpers/db";
 import { activeEntitlements, createProduct, createUser } from "../helpers/factories";
 import { SIM_API_KEY, SIM_PORT, TEST_ENV, WEBHOOK_SECRET } from "../test-env";
+import { startPayment } from "../helpers/payment-flow";
 
 let sim: Simulator;
 

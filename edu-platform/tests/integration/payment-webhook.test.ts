@@ -2,13 +2,14 @@ import { afterAll, afterEach, beforeAll, beforeEach, describe, expect, it } from
 import { NextRequest } from "next/server";
 import { POST, maxDuration } from "@/app/api/payments/myfatoorah/webhook/route";
 import { createOrder, type OrderRow } from "@/server/commerce/orders";
-import { handleMyFatoorahWebhook, paymentsConfig, startPayment, verifyAndApplyPayment } from "@/server/payments/service";
+import { handleMyFatoorahWebhook, paymentsConfig, verifyAndApplyPayment } from "@/server/payments/service";
 import { WEBHOOK_STALE_CLAIM_MINUTES, openPaymentAlertCount, openPaymentAlerts, resolvePaymentAlert, webhookDeliveryStatus } from "@/server/payments/monitoring";
 import { resetEnvCache } from "@/server/env";
 import { startSimulator, type Simulator } from "../mocks/myfatoorah-simulator";
 import { closeDb, resetDb, sql } from "../helpers/db";
 import { activeEntitlements, createProduct, createUser } from "../helpers/factories";
 import { SIM_API_KEY, SIM_PORT, TEST_ENV, WEBHOOK_SECRET } from "../test-env";
+import { startPayment } from "../helpers/payment-flow";
 
 let sim: Simulator;
 

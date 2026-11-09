@@ -2,11 +2,11 @@ import { afterAll, afterEach, beforeAll, describe, expect, it, vi } from "vitest
 import { renderToStaticMarkup } from "react-dom/server";
 import { closeOrder, type OrderRow } from "@/server/commerce/orders";
 import { resetEnvCache } from "@/server/env";
-import { resetPaymentMethodsCache, startPayment, verifyAndApplyPayment } from "@/server/payments/service";
+import { resetPaymentMethodsCache, verifyAndApplyPayment } from "@/server/payments/service";
 import { canSayNothingWasCharged } from "@/server/payments/extras";
 import { startSimulator, type Simulator } from "../mocks/myfatoorah-simulator";
 import { closeDb, resetDb, sql } from "../helpers/db";
-import { expireLocally, invoiceIdOf, newOrder, orderRow } from "../helpers/payment-flow";
+import { expireLocally, invoiceIdOf, newOrder, orderRow, startPayment } from "../helpers/payment-flow";
 
 const WAIT = "توجد محاولة دفع لم تُحسم بعد";
 import { SIM_API_KEY, SIM_PORT, TEST_ENV, WEBHOOK_SECRET } from "../test-env";

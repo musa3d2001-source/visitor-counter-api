@@ -1,10 +1,10 @@
 import { afterAll, afterEach, beforeAll, beforeEach, describe, expect, it, vi } from "vitest";
 import { createOrder, OpenOrderExistsError, type OrderRow } from "@/server/commerce/orders";
-import { resolveOpenOrderForCheckout, resetPaymentMethodsCache, startPayment } from "@/server/payments/service";
+import { resolveOpenOrderForCheckout, resetPaymentMethodsCache } from "@/server/payments/service";
 import { resetEnvCache } from "@/server/env";
 import { startSimulator, type Simulator } from "../mocks/myfatoorah-simulator";
 import { closeDb, resetDb, sql } from "../helpers/db";
-import { asOtherServer, auditCount, confirmPaid, invoiceIdOf, invoicesCreated, makeStale, orderRow, pause, paymentRows, statusCalls } from "../helpers/payment-flow";
+import { asOtherServer, auditCount, confirmPaid, invoiceIdOf, invoicesCreated, makeStale, orderRow, pause, paymentRows, startPayment, statusCalls } from "../helpers/payment-flow";
 import { createBundle, createProduct, createUser } from "../helpers/factories";
 import { SIM_API_KEY, SIM_PORT, TEST_ENV, WEBHOOK_SECRET } from "../test-env";
 
@@ -56,7 +56,7 @@ const fd = (values: Record<string, string> = {}) => {
 };
 
 async function checkout() {
-  await expect(placeOrderAction({}, fd())).rejects.toThrow(/NEXT_REDIRECT/);
+  await expect(placeOrderAction({}, fd({ guardianDeclaration: "on" }))).rejects.toThrow(/NEXT_REDIRECT/);
   return ctx.redirected.at(-1)!;
 }
 
@@ -187,7 +187,7 @@ describe("checkout with an open order for the same product", () => {
     const user = await student([product.id]);
     const { placing, firstId } = await asOtherServer(async (tx) => {
       await tx`select id from users where id = ${user.id} for no key update`;
-      const placing = placeOrderAction({}, fd()).catch((e: unknown) => e);
+      const placing = placeOrderAction({}, fd({ guardianDeclaration: "on" })).catch((e: unknown) => e);
       await pause();
       const first = await createOrder({ user, productIds: [product.id], isTest: true });
       return { placing, firstId: first.id };

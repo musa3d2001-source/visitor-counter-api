@@ -44,7 +44,8 @@ export async function registerAction(_prev: ActionState, fd: FormData): Promise<
     return { fieldErrors: { passwordConfirm: "كلمتا المرور غير متطابقتين" }, values };
   }
   if (fd.get("terms") !== "on") return { fieldErrors: { terms: "يجب الموافقة على الشروط والأحكام" }, values };
-  const res = await registerStudent(parsed.data, { ip: await clientIp(), userAgent: await userAgent() });
+  // لا يصل هنا إلا بعد فحص خانة الموافقة أعلاه، والخدمة ترفض بدونها
+  const res = await registerStudent({ ...parsed.data, acceptedDocuments: true }, { ip: await clientIp(), userAgent: await userAgent() });
   if (!res.ok) return { error: res.error, values };
   await setSessionCookie(res.token, res.expiresAt);
   // التسجيل فوري: الرابط يخرج بعد الرد، وفشله لا يعطل الحساب ويمكن إعادة طلبه

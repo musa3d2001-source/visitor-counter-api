@@ -1,5 +1,6 @@
 import "server-only";
 import { sql } from "../db";
+import type { ConsentKind } from "@/lib/consent";
 
 /** استعلامات الإدارة: الطلبات، الطلاب، الكوبونات */
 
@@ -96,6 +97,7 @@ export type AdminStudentRow = {
   created_at: Date;
   last_login_at: Date | null;
   grade_name: string | null;
+  anonymized_at: Date | null;
   paid_orders: number;
   active_entitlements: number;
 };
@@ -103,7 +105,7 @@ export type AdminStudentRow = {
 export async function listStudents(q: string | undefined, limit = 200) {
   const s = q?.trim();
   return sql<AdminStudentRow[]>`
-    select u.id, u.full_name, u.email, u.phone, u.is_active, u.created_at, u.last_login_at, g.name as grade_name,
+    select u.id, u.full_name, u.email, u.phone, u.is_active, u.created_at, u.last_login_at, g.name as grade_name, u.anonymized_at,
       (select count(*)::int from orders o where o.user_id = u.id and o.status = 'paid') as paid_orders,
       (select count(*)::int from entitlements e where e.user_id = u.id and e.revoked_at is null) as active_entitlements
     from users u left join grades g on g.id = u.grade_id
@@ -116,9 +118,9 @@ export async function listStudents(q: string | undefined, limit = 200) {
 
 export async function getStudent(id: string) {
   const [user] = await sql<
-    { id: string; full_name: string; email: string; phone: string | null; role: string; is_active: boolean; created_at: Date; last_login_at: Date | null; grade_name: string | null; email_verified_at: Date | null; must_change_password: boolean }[]
+    { id: string; full_name: string; email: string; phone: string | null; role: string; is_active: boolean; created_at: Date; last_login_at: Date | null; grade_name: string | null; email_verified_at: Date | null; must_change_password: boolean; anonymized_at: Date | null }[]
   >`
-    select u.id, u.full_name, u.email, u.phone, u.role, u.is_active, u.created_at, u.last_login_at, g.name as grade_name, u.email_verified_at, u.must_change_password
+    select u.id, u.full_name, u.email, u.phone, u.role, u.is_active, u.created_at, u.last_login_at, g.name as grade_name, u.email_verified_at, u.must_change_password, u.anonymized_at
     from users u left join grades g on g.id = u.grade_id where u.id = ${id}
   `;
   if (!user) return null;
@@ -162,7 +164,12 @@ export async function getStudent(id: string) {
     where a.entity_type = 'user' and a.entity_id = ${id}
     order by a.created_at desc limit 50
   `;
-  return { user, orders, entitlements, access, auditTrail };
+  const consents = await sql<{ id: string; kind: ConsentKind; document_version: string; ip: string | null; user_agent: string | null; created_at: Date; order_id: string | null; order_number: string | null }[]>`
+    select c.id, c.kind, c.document_version, c.ip, c.user_agent, c.created_at, c.order_id, o.number as order_number
+    from consent_records c left join orders o on o.id = c.order_id
+    where c.user_id = ${id} order by c.created_at desc, c.kind limit 50
+  `;
+  return { user, orders, entitlements, access, auditTrail, consents };
 }
 
 /** المنتجات القابلة للمنح يدويًا (كل المنتجات غير المؤرشفة) */

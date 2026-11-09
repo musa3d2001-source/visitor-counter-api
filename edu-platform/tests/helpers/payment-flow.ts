@@ -1,5 +1,7 @@
 import postgres from "postgres";
 import { applyRefundToOrder, createOrder, markOrderPaid, type OrderRow } from "@/server/commerce/orders";
+import { startPayment as realStartPayment } from "@/server/payments/service";
+import { recordConsent } from "@/server/platform/consent";
 import type { SessionUser } from "@/server/auth/session";
 import type { Simulator } from "../mocks/myfatoorah-simulator";
 import { sql } from "./db";
@@ -23,8 +25,18 @@ export const invoiceIdOf = (url: string) => Number(new URL(url).pathname.split("
 export async function newOrder(priceFils = 3000): Promise<{ user: SessionUser; product: TestProduct; order: OrderRow }> {
   const user = await createUser({ phone: "+96599887766" });
   const product = await createProduct({ priceFils });
-  const order = await createOrder({ user, productIds: [product.id], isTest: true });
+  // كما يفعل نموذج الشراء: الإقرار مسجل مع الطلب
+  const order = await createOrder({ user, productIds: [product.id], isTest: true, consent: { guardianDeclared: true, termsAccepted: true, meta: { ip: null, userAgent: null } } });
   return { user, product, order };
+}
+
+/**
+ * startPayment الحقيقي بعد الإقرار الذي يكتبه نموذج الشراء. اختبارات الدفع لا تختبر الموافقة،
+ * وحارس startPayment نفسه مغطى بلا هذا الغلاف في consent.test.ts.
+ */
+export async function startPayment(...args: Parameters<typeof realStartPayment>) {
+  await recordConsent(sql, { userId: args[0].user_id, kind: "guardian_purchase", orderId: args[0].id, meta: { ip: null, userAgent: null } });
+  return realStartPayment(...args);
 }
 
 export async function orderRow(id: string): Promise<OrderRow> {
