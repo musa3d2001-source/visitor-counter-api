@@ -70,7 +70,8 @@ test.describe("منتج انتهى تاريخ إتاحته", () => {
     await expect(page.getByTestId("add-to-cart")).toHaveCount(0);
     await expectNoHorizontalOverflow(page);
 
-    test.skip(info.project.name !== "desktop", "شاشة المالك مغطاة على الكمبيوتر");
+    // شاشة المالك مغطاة على الكمبيوتر
+    if (info.project.name !== "desktop") return;
     await loginAdmin(page);
     await page.goto(`/admin/products?q=${encodeURIComponent(slug)}`);
     await expect(page.getByTestId("admin-sale-ended").first()).toBeVisible();

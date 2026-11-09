@@ -671,6 +671,42 @@ describe("refund webhooks with an id we do not know (portal refunds)", () => {
   });
 });
 
+describe("a refund recorded before this command existed", () => {
+  const resend = (order: OrderRow) => requestOrderRefund({ orderId: order.id, adminId: admin.id });
+
+  async function legacyRefund() {
+    const paid = await paidOrder();
+    // كما كان يفعل النظام القديم: يقلب الطلب محليًا دون أي طلب إلى البوابة
+    await sql`
+      insert into refunds (order_id, payment_id, amount_fils, reason, status, created_by)
+      select ${paid.order.id}, p.id, ${paid.order.total_fils}, 'طلب قديم', 'recorded', ${admin.id} from payments p where p.order_id = ${paid.order.id}
+    `;
+    await sql`update orders set status = 'refunded' where id = ${paid.order.id}`;
+    await sql`update payments set status = 'refunded' where order_id = ${paid.order.id}`;
+    await sql`update entitlements set revoked_at = now(), revoke_reason = 'استرداد: طلب قديم' where order_id = ${paid.order.id}`;
+    return paid;
+  }
+
+  it("is sent to the gateway without applying the refund a second time", async () => {
+    const { order, user, invoice } = await legacyRefund();
+    await expect(resend(order)).resolves.toEqual({ state: "requested" });
+    expect(await refundOf(order.id)).toMatchObject({ status: "requested", attempt: 1, accepted_at: null });
+    expect(refundsOnGateway(invoice)).toHaveLength(1);
+    expect(await auditCount("order.refund", order.id)).toBe(0);
+    expect(await refundMails(user.email)).toHaveLength(0);
+  });
+
+  it("does not give access back if the gateway cancels it, because this command did not take it", async () => {
+    const { order, user, invoice } = await legacyRefund();
+    await resend(order);
+    await portalEvent(invoice, refundsOnGateway(invoice)[0].RefundId, "CANCELED");
+    expect(await refundOf(order.id)).toMatchObject({ status: "failed" });
+    expect((await orderRow(order.id)).status).toBe("refunded");
+    expect(await activeEntitlements(user.id)).toEqual([]);
+    expect(await auditCount("order.refund_undone", order.id)).toBe(0);
+  });
+});
+
 describe("the owner's queue", () => {
   it("lists every refund that is not completed and counts what needs a decision", async () => {
     const before = await refundsNeedingOwnerCount();
@@ -724,7 +760,12 @@ describe("the owner's queue", () => {
     const { order } = await paidOrder();
     ctx.admin = null;
     try {
-      await expect(refundOrderAction({}, form({ orderId: order.id, reason: "طلب الطالب" }))).resolves.toEqual({ error: "غير مصرح لك بتنفيذ هذا الإجراء" });
+      const denied = { error: "غير مصرح لك بتنفيذ هذا الإجراء" };
+      await expect(refundOrderAction({}, form({ orderId: order.id, reason: "طلب الطالب" }))).resolves.toEqual(denied);
+      await expect(resendRefundAction({}, form({ orderId: order.id }))).resolves.toEqual(denied);
+      await expect(recheckRefundAction({}, form({ refundId: order.id, orderId: order.id }))).resolves.toEqual(denied);
+      await expect(dismissRefundAction({}, form({ refundId: order.id, orderId: order.id, reason: "تمت التسوية" }))).resolves.toEqual(denied);
+      await expect(refundExtraPaymentAction({}, form({ extraId: order.id, reason: "دفعة مكررة" }))).resolves.toEqual(denied);
     } finally {
       ctx.admin = admin;
     }
