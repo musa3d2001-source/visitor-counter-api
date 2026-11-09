@@ -3,6 +3,7 @@ import { mkdirSync, writeFileSync } from "node:fs";
 import { join, resolve } from "node:path";
 import { checkoutAndPay, db, login, loginAdmin, registerStudent } from "./helpers";
 import { E2E_BUNNY } from "./e2e-env";
+import { hashPassword } from "../../src/server/auth/password-core";
 
 /**
  * الدورة الكاملة للمعلم (المتطلب 9):
@@ -277,5 +278,46 @@ test.describe("دورة المعلم الكاملة", () => {
     await expect(page.getByText(name).first()).toBeVisible();
     await page.goto(`/teachers/e2e-managed-${ts}`);
     await expect(page.getByText(title).first()).toBeVisible();
+  });
+
+  test("تعديل المعلم لملفه ينتظر موافقة المالك، ثم يظهر للطلاب", async ({ page, browser }) => {
+    const ts = Date.now();
+    const email = `teacher-profile-${ts}@example.com`;
+    const password = "Profile-Review-Pass-2026";
+    const slug = `e2e-profile-${ts}`;
+    const name = `أ. ملف للمراجعة ${ts % 100000}`;
+    const approved = "عنوان معتمد ظاهر للطلاب";
+    const proposed = `عنوان ينتظر الموافقة ${ts % 100000}`;
+    const [u] = await db()<{ id: string }[]>`insert into users (email, password_hash, full_name, role, email_verified_at) values (${email}, ${await hashPassword(password)}, ${name}, 'teacher', now()) returning id`;
+    await db()`insert into teachers (slug, display_name, mode, user_id, is_published, revenue_share_bps, headline, bio) values (${slug}, ${name}, 'self_managed', ${u.id}, true, 4000, ${approved}, 'نبذة معتمدة')`;
+
+    const teacherCtx = await browser.newContext();
+    const tp = await teacherCtx.newPage();
+    await login(tp, email, password, "/admin");
+    await tp.goto("/admin/profile");
+    await tp.fill("#headline", proposed);
+    await tp.getByRole("button", { name: "إرسال للمراجعة" }).click();
+    await expect(tp.getByTestId("profile-pending")).toBeVisible();
+
+    // الزائر يرى المعتمد وحده حتى يوافق المالك
+    const visitorCtx = await browser.newContext();
+    const visitor = await visitorCtx.newPage();
+    await visitor.goto(`/teachers/${slug}`);
+    await expect(visitor.getByText(approved).first()).toBeVisible();
+    await expect(visitor.getByText(proposed)).toHaveCount(0);
+
+    // المالك يرى القديم والجديد معًا، وبعد الاعتماد يتغير ما يراه الزائر
+    await loginAdmin(page);
+    await page.goto("/admin/review");
+    const card = page.getByTestId("profile-change").filter({ hasText: name });
+    await expect(card).toContainText(approved);
+    await expect(card).toContainText(proposed);
+    await card.getByRole("button", { name: "اعتماد ونشر التعديل" }).click();
+    await expect(card).toHaveCount(0);
+
+    await visitor.reload();
+    await expect(visitor.getByText(proposed).first()).toBeVisible();
+    await expect(visitor.getByText(approved)).toHaveCount(0);
+    await Promise.all([teacherCtx.close(), visitorCtx.close()]);
   });
 });
