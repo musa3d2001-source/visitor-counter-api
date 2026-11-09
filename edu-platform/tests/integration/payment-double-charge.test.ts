@@ -250,16 +250,17 @@ describe("short invoices, 72 hour orders", () => {
   it.each([
     ["SendPayment", null, "/v2/SendPayment"],
     ["ExecutePayment", 1, "/v2/ExecutePayment"],
-  ])("%s carries a 60 minute ExpiryDate in Kuwait time with an explicit offset", async (_n, method, path) => {
+  ])("%s carries a 60 minute ExpiryDate as documented: Kuwait time with no offset", async (_n, method, path) => {
     const { order } = await newOrder();
     await startPayment(order, method);
     const body = sim.state.requests.find((r) => r.path === path)!.body as { ExpiryDate: string };
-    expect(body.ExpiryDate).toMatch(/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}\+03:00$/);
-    const minutes = (Date.parse(body.ExpiryDate) - Date.now()) / 60_000;
+    expect(body.ExpiryDate).toMatch(/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}$/);
+    const expiresAt = Date.parse(`${body.ExpiryDate}+03:00`);
+    const minutes = (expiresAt - Date.now()) / 60_000;
     expect(minutes).toBeGreaterThan(58);
     expect(minutes).toBeLessThanOrEqual(60);
     const [row] = await paymentRows(order.id);
-    expect(Math.abs(new Date(row.expires_at!).getTime() - Date.parse(body.ExpiryDate))).toBeLessThan(1000);
+    expect(Math.abs(new Date(row.expires_at!).getTime() - expiresAt)).toBeLessThan(1000);
   });
 
   it("an order past 72 hours is closed instead of billed", async () => {
@@ -319,7 +320,7 @@ describe("reading an invoice's state", () => {
   it("Canceled at the gateway expires the invoice and leaves the order alone", async () => {
     const { order } = await newOrder();
     const { url } = await startPayment(order, null);
-    sim.expireInvoice(invoiceIdOf(url));
+    sim.cancelInvoice(invoiceIdOf(url));
     await expect(verifyAndApplyPayment({ invoiceId: String(invoiceIdOf(url)) })).resolves.toEqual({ state: "expired", orderId: order.id });
     expect((await paymentRows(order.id))[0].status).toBe("expired");
     expect((await orderRow(order.id)).status).toBe("pending");

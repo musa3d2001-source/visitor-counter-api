@@ -186,8 +186,9 @@ export class MyFatoorahClient {
   }
 
   async getRefundStatus(key: string, keyType: "InvoiceId" | "RefundId" | "RefundReference") {
-    const data = await this.call<{ RefundStatusResult?: MfRefundStatus[] | null }>("/v2/GetRefundStatus", { Key: key, KeyType: keyType });
-    return data.RefundStatusResult ?? [];
+    // الوثائق تصف Data بأنها قابلة لأن تكون null، وغياب النتيجة يعني أن البوابة لا تعرف استردادًا بهذا المفتاح
+    const data = await this.call<{ RefundStatusResult?: MfRefundStatus[] | null } | null>("/v2/GetRefundStatus", { Key: key, KeyType: keyType });
+    return data?.RefundStatusResult ?? [];
   }
 }
 
@@ -221,14 +222,13 @@ export type ExecuteInput = {
 };
 
 /**
- * وقت انتهاء الفاتورة بالصيغة التي نرسلها: توقيت الكويت مع إزاحة صريحة (2026-11-09T18:30:00+03:00).
- * الوثائق تطلب date-time ولا تذكر منطقة زمنية. الإزاحة الصريحة صيغة date-time صحيحة ولا تحتمل التأويل إن قرأتها البوابة كما هي.
- * لم نرسل Z لأن البوابة إن قرأت الأرقام كوقت محلي للكويت فسينتهي الرابط قبل فتحه. وإن تجاهلت الإزاحة
- * فالأرقام أصلًا بتوقيت الكويت. أي قراءة خاطئة في الاتجاه الآخر تطيل عمر الرابط فقط، وعندها يبقى منع الدفع المزدوج
- * قائمًا على فحص كل الفواتير. يجب التأكد من ذلك على بيئة البوابة التجريبية الحقيقية قبل الإطلاق.
+ * وقت انتهاء الفاتورة بالصيغة التي تنص عليها أمثلة الوثائق الرسمية: Y-m-d\TH:i:s بتوقيت Asia/Kuwait، بلا إزاحة ولا Z.
+ * الكويت UTC+3 طوال السنة، فلا حاجة إلى قواعد توقيت صيفي. نفس الأرقام يجب أن تُقرأ كوقت محلي للكويت،
+ * وأي قراءة خاطئة تغيّر عمر الرابط فقط، بينما يبقى منع الدفع المزدوج قائمًا على فحص كل الفواتير.
+ * يجب التأكد من ذلك على بيئة البوابة التجريبية الحقيقية قبل الإطلاق.
  */
 export function gatewayExpiryDate(at: Date): string {
-  return `${new Date(at.getTime() + 3 * 3600_000).toISOString().slice(0, 19)}+03:00`;
+  return new Date(at.getTime() + 3 * 3600_000).toISOString().slice(0, 19);
 }
 
 /** ردود لا تعني أن البوابة قررت الرفض: مهلة أو تعارض مع طلب جارٍ أو ضغط، والعملية ربما ما زالت قيد التنفيذ */
@@ -326,7 +326,10 @@ export function interpretPaymentStatus(
   return { state: "pending", transaction: focus ?? null, error: null };
 }
 
-/** هل لدى البنك عملية لم تُحسم على هذه الفاتورة؟ إنشاء فاتورة جديدة الآن قد ينتهي بخصمين */
+/**
+ * هل على الفاتورة محاولة لم تُحسم؟ الوثائق تقول إن InProgress يعني أن العميل لم يحاول الدفع بعد،
+ * فقد تكون صفحة بنك تركها الطالب. لذلك لا تعني خصمًا جاريًا، لكنها تمنعنا من الجزم بأن شيئًا لم يُخصم.
+ */
 export function hasOpenTransaction(data: MfPaymentStatus): boolean {
   return (data.InvoiceTransactions ?? []).some((t) => t.TransactionStatus === "InProgress" || t.TransactionStatus === "Authorize");
 }

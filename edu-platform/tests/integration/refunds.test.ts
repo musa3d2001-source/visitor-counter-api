@@ -362,6 +362,19 @@ describe("a timeout", () => {
     expect((await orderRow(order.id)).status).toBe("paid");
   });
 
+  it("an empty answer with Data: null reads as nothing found, as the documentation allows", async () => {
+    const { order } = await paidOrder();
+    sim.setFault("/v2/MakeRefund", "down");
+    await ask(order);
+    sim.clearFaults();
+    const { id } = await refundOf(order.id);
+    await staleClaim(order.id);
+    sim.setRefundStatusNullData(true);
+    await expect(recheck(id)).resolves.toMatchObject({ state: "not_sent" });
+    await expect(resendRefundAction({}, form({ orderId: order.id }))).resolves.toMatchObject({ ok: true });
+    expect((await orderRow(order.id)).status).toBe("refunded");
+  });
+
   it("a re-check that cannot reach the gateway changes nothing", async () => {
     const { order } = await paidOrder();
     sim.setFault("/v2/MakeRefund", "down");
@@ -587,6 +600,18 @@ describe("refund webhooks for a refund we know", () => {
 });
 
 describe("refund webhooks with an id we do not know (portal refunds)", () => {
+  it("confirms against the original invoice, because the refund has its own invoice number", async () => {
+    const { order, invoice } = await paidOrder();
+    const portal = sim.portalRefund(invoice, order.total_fils);
+    expect(portal.RefundInvoiceId).not.toBe(invoice);
+    const { body } = sim.buildRefundWebhook(invoice, portal.RefundId, "REFUNDED");
+    expect(JSON.parse(body).Data).toMatchObject({ Refund: { InvoiceId: String(portal.RefundInvoiceId) }, ReferencedInvoice: { Id: String(invoice) } });
+    sim.state.requests.length = 0;
+    await portalEvent(invoice, portal.RefundId);
+    expect(sim.state.requests.filter((r) => r.path === "/v2/GetRefundStatus").map((r) => r.body)).toEqual([{ Key: String(invoice), KeyType: "InvoiceId" }]);
+    expect((await orderRow(order.id)).status).toBe("refunded");
+  });
+
   it("are applied when they match a paid order in full", async () => {
     const { order, user, invoice } = await paidTeacherOrder();
     const portal = sim.portalRefund(invoice, order.total_fils);

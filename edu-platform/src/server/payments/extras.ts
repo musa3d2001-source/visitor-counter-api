@@ -41,7 +41,7 @@ export async function recordExtraPayment(db: Db, input: { paymentId: string; ord
   const inserted = await db<{ id: string }[]>`
     insert into payment_extras (payment_id, order_id, kind, amount_fils, details)
     values (${input.paymentId}, ${input.orderId}, ${input.kind}, ${input.amountFils}, ${db.json((input.details ?? {}) as never)})
-    on conflict (payment_id) do nothing
+    on conflict do nothing
     returning id
   `;
   if (inserted.length === 0) return false;

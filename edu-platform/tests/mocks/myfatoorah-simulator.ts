@@ -10,8 +10,13 @@
  *   - غلاف الاستجابة: { IsSuccess, Message, ValidationErrors, Data }
  *   - Authorization: Bearer <token>
  *   - InvoiceStatus: Pending | Paid | Canceled ؛ TransactionStatus: InProgress | Succss | Failed | Canceled (بنفس تهجئة البوابة "Succss")
- *   - ExpiryDate بصيغة date-time ويحدد عمر رابط الفاتورة. الوثائق لا تذكر كيف تظهر الفاتورة المنتهية، والقيمة الموثقة الوحيدة لفاتورة مغلقة هي Canceled
+ *   - ExpiryDate بصيغة Y-m-d\TH:i:s بتوقيت Asia/Kuwait كما في مثال الوثائق الرسمي، ولا يقبل المحاكي أي إزاحة أو Z
+ *   - الوثائق لا تذكر كيف تظهر الفاتورة بعد انتهاء رابطها: تبقى هنا Pending والدفع عليها مرفوض. Canceled لا تظهر إلا عبر cancelInvoice صراحة
+ *   - InvoiceStatus: Pending | Paid | Canceled، وDuplicatePayment موجودة في المكتبة الرسمية فقط، فلا تظهر إلا عبر reportDuplicatePayment
  *   - MakeRefund يقبل ترويسة Idempotency-Key (نفس المفتاح يعيد الرد نفسه) وExternalIdentifier، وGetRefundStatus يعيد RefundStatusResult
+ *   - Data في GetRefundStatus قابلة لأن تكون null حسب الوثائق: setRefundStatusNullData
+ *   - InvoiceId في GetRefundStatus هو الفاتورة المستخدمة في الاستعلام، وللاسترداد نفسه فاتورة خاصة به تظهر في Refund.InvoiceId بالـ Webhook، بينما الأصلية في ReferencedInvoice.Id
+ *   - إعادة محاولة Webhook (حتى ٥ مرات وبحد أقصى ١٨٠ ثانية بين المحاولات) عبر webhookRetries وwebhookRetryDelayMs
  *   - InvoiceDisplayValue بصيغة الوثائق "3.000 KD" و"12,345.000 KD"، وCurrency/PaidCurrency = "KD"
  *   - Language: AR | EN فقط، وأي قيمة أخرى تُرفض بخطأ تحقق
  *   - Webhook V2: الترويسة MyFatoorah-Signature فقط (الوثائق لا تذكر أي ترويسة إصدار)
@@ -48,9 +53,11 @@ export type SimTransaction = {
 
 export type SimInvoice = {
   InvoiceId: number;
-  InvoiceStatus: "Pending" | "Paid";
-  /** تُحسب حالة Canceled من هذا الوقت: الوثائق تقول إن ExpiryDate يحدد انتهاء رابط الفاتورة */
+  InvoiceStatus: "Pending" | "Paid" | "Canceled";
+  /** بعده يرفض رابط الفاتورة أي دفعة، وتبقى حالتها كما هي: الوثائق لا تذكر تغيرها */
   ExpiresAtMs: number;
+  /** تُعرض InvoiceStatus بهذه القيمة بدل Paid (المكتبة الرسمية تعرف DuplicatePayment، والوثائق لا تصف متى تظهر) */
+  ReportDuplicatePayment?: boolean;
   InvoiceReference: string;
   CustomerReference: string | null;
   UserDefinedField: string | null;
@@ -66,7 +73,7 @@ export type SimInvoice = {
   Refunds: SimRefund[];
 };
 
-export type SimRefund = { RefundId: number; AmountFils: number; Comment: string; ExternalIdentifier: string | null; Status: "Refunded" | "Canceled" | "Pending" };
+export type SimRefund = { RefundId: number; RefundInvoiceId: number; AmountFils: number; Comment: string; ExternalIdentifier: string | null; Status: "Refunded" | "Canceled" | "Pending" };
 
 /** down: قطع الاتصال دون رد | error: ٥٠٠ | drop-after: البوابة تنفذ الطلب ثم ينقطع الاتصال قبل الرد */
 export type SimFault = "down" | "error" | "drop-after";
@@ -81,6 +88,10 @@ export type SimulatorOptions = {
   duplicateWebhooks?: boolean;
   /** تأخير إرسال Webhook بعد إعادة التوجيه */
   webhookDelayMs?: number;
+  /** عدد مرات إعادة الإرسال عند رد غير 2xx، كما تُضبط في إعدادات Webhook V2 بلوحة البوابة (الحد الأقصى ٥) */
+  webhookRetries?: number;
+  /** المهلة بين المحاولات (الحد الأقصى في البوابة ١٨٠ ثانية، وتُقصّر هنا للاختبار) */
+  webhookRetryDelayMs?: number;
 };
 
 export type SimWebhookOptions = {
@@ -114,14 +125,22 @@ export type Simulator = {
   /** تعذر الرد عن فاتورة واحدة فقط في GetPaymentStatus */
   setStatusFault(invoiceId: number, on: boolean): void;
   clearFaults(): void;
-  /** يجعل الفاتورة منتهية الآن (يمرر الزمن دون انتظار) */
+  /** ينهي رابط الفاتورة الآن (يمرر الزمن دون انتظار): يُرفض الدفع عليه وتبقى حالتها Pending */
   expireInvoice(invoiceId: number): void;
-  /** عملية جارية لدى البنك على الفاتورة (InProgress) دون نتيجة بعد */
+  /** تعرض البوابة الفاتورة Canceled صراحة، وهي القيمة الموثقة الوحيدة لفاتورة أُغلقت دون دفع */
+  cancelInvoice(invoiceId: number): void;
+  /** تعرض البوابة InvoiceStatus = DuplicatePayment لفاتورة عليها أكثر من نجاح */
+  reportDuplicatePayment(invoiceId: number): void;
+  /** محاولة بدأت ولم تُحسم (InProgress): الوثائق تقول إن العميل لم يحاول الدفع بعد، وقد يكون ترك صفحة البنك */
   startTransaction(invoiceId: number): string;
   /** تغيير حالة استرداد لدى البوابة */
   setRefundStatus(refundId: number, status: SimRefund["Status"]): void;
   /** رفض صريح لكل MakeRefund برسالة من البوابة (IsSuccess=false)، مثل عدم كفاية الرصيد */
   setRefundRefusal(message: string | null): void;
+  /** Data: null في رد GetRefundStatus عندما لا يوجد ما يُعرض، والوثائق تصفها بأنها قابلة لذلك */
+  setRefundStatusNullData(on: boolean): void;
+  /** ينفذ بعد تسجيل الاسترداد وقبل رد MakeRefund: حدث Webhook يصل قبل الرد */
+  setBeforeRefundReply(hook: ((refund: SimRefund, invoice: SimInvoice) => Promise<void>) | null): void;
   /** استرداد نفذه التاجر من لوحة البوابة: بلا ExternalIdentifier ولم يمر بنا */
   portalRefund(invoiceId: number, amountFils: number, status?: SimRefund["Status"]): SimRefund;
   /** محاكاة دفع مباشرة (بدون متصفح) — تُعيد PaymentId */
@@ -224,6 +243,8 @@ export async function startSimulator(opts: SimulatorOptions): Promise<Simulator>
   let amountTamper: number | null = null;
   let refundRefusal: string | null = null;
   let displayCurrency: string | null = null;
+  let refundStatusNullData = false;
+  let beforeRefundReply: ((refund: SimRefund, invoice: SimInvoice) => Promise<void>) | null = null;
   let baseUrl = "";
   const faults = new Map<string, SimFault>();
   const statusFaults = new Set<number>();
@@ -231,6 +252,8 @@ export async function startSimulator(opts: SimulatorOptions): Promise<Simulator>
   /** الوثائق: نفس Idempotency-Key خلال ٢٥٠ دقيقة يعيد الرد الأصلي دون إعادة التنفيذ */
   const idempotent = new Map<string, unknown>();
   const isExpired = (inv: SimInvoice) => inv.InvoiceStatus === "Pending" && Date.now() >= inv.ExpiresAtMs;
+  /** الصيغة الوحيدة التي تذكرها الوثائق، وتُقرأ بتوقيت الكويت (UTC+3 طوال السنة) */
+  const parseExpiryDate = (v: unknown) => (typeof v === "string" && /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}$/.test(v) ? Date.parse(`${v}+03:00`) : NaN);
 
   const createInvoice = (b: Record<string, unknown>, paymentMethodId: number | null): SimInvoice => {
     const id = nextInvoiceId++;
@@ -251,7 +274,7 @@ export async function startSimulator(opts: SimulatorOptions): Promise<Simulator>
       PaymentMethodId: paymentMethodId,
       CreatedDate: new Date().toISOString().replace("Z", ""),
       // بدون ExpiryDate تُؤخذ مدة ملف الحساب في اللوحة (ثلاثة أيام هنا)
-      ExpiresAtMs: typeof b.ExpiryDate === "string" ? Date.parse(b.ExpiryDate) : Date.now() + 3 * 86400_000,
+      ExpiresAtMs: b.ExpiryDate ? parseExpiryDate(b.ExpiryDate) : Date.now() + 3 * 86400_000,
       Transactions: [],
       Refunds: [],
     };
@@ -272,8 +295,8 @@ export async function startSimulator(opts: SimulatorOptions): Promise<Simulator>
       if (!isUrl(b.ErrorUrl)) errors.push({ Name: "ErrorUrl", Error: "The ErrorUrl field is required." });
     }
     if (b.ExpiryDate !== undefined && b.ExpiryDate !== null) {
-      const at = typeof b.ExpiryDate === "string" ? Date.parse(b.ExpiryDate) : NaN;
-      if (!Number.isFinite(at)) errors.push({ Name: "ExpiryDate", Error: "ExpiryDate must be a valid date-time." });
+      const at = parseExpiryDate(b.ExpiryDate);
+      if (!Number.isFinite(at)) errors.push({ Name: "ExpiryDate", Error: "ExpiryDate must use Y-m-d\\TH:i:s in the Asia/Kuwait time zone." });
       else if (at <= Date.now()) errors.push({ Name: "ExpiryDate", Error: "ExpiryDate must be in the future." });
     }
     if (b.DisplayCurrencyIso !== undefined && b.DisplayCurrencyIso !== "KWD") {
@@ -290,12 +313,12 @@ export async function startSimulator(opts: SimulatorOptions): Promise<Simulator>
     const expiry = new Date(inv.ExpiresAtMs);
     return {
       InvoiceId: inv.InvoiceId,
-      InvoiceStatus: isExpired(inv) ? "Canceled" : inv.InvoiceStatus,
+      InvoiceStatus: inv.ReportDuplicatePayment ? "DuplicatePayment" : inv.InvoiceStatus,
       InvoiceReference: inv.InvoiceReference,
       CustomerReference: inv.CustomerReference,
       CreatedDate: inv.CreatedDate,
       ExpiryDate: expiry.toLocaleDateString("en-US", { month: "long", day: "numeric", year: "numeric", timeZone: "Asia/Kuwait" }),
-      ExpiryTime: expiry.toISOString().slice(11, 23),
+      ExpiryTime: new Date(inv.ExpiresAtMs + 3 * 3600_000).toISOString().slice(11, 23),
       InvoiceValue: Number(kwd(shownFils)),
       Comments: null,
       CustomerName: inv.CustomerName,
@@ -414,7 +437,7 @@ export async function startSimulator(opts: SimulatorOptions): Promise<Simulator>
     const payload = {
       Event: { Code: 2, Name: "REFUND_STATUS_CHANGED", CountryIsoCode: "KWT", CreationDate: new Date().toISOString(), Reference: `WH-R${refundId}-${status}` },
       Data: {
-        Refund: { Id: String(refundId), Reference: `RF${refundId}`, Status: status, InvoiceId: String(inv.InvoiceId), CreationDate: new Date().toISOString(), RefundDate: new Date().toISOString(), RRN: "", Comment: refund.Comment, VendorComment: "" },
+        Refund: { Id: String(refundId), Reference: `RF${refundId}`, Status: status, InvoiceId: String(refund.RefundInvoiceId), CreationDate: new Date().toISOString(), RefundDate: new Date().toISOString(), RRN: "", Comment: refund.Comment, VendorComment: "" },
         ReferencedInvoice: { Id: String(inv.InvoiceId), Reference: inv.InvoiceReference, ExternalIdentifier: inv.CustomerReference ?? "", PaymentMethod: "KNET", BaseCurrency: "KWD", ValueInBaseCurrency: kwd(inv.InvoiceValueFils), RemainingValueInBaseCurrency: "0.000" },
         Amount: { BaseCurrency: "KWD", ValueInBaseCurrency: kwd(refund.AmountFils), Distribution: {} },
       },
@@ -428,11 +451,18 @@ export async function startSimulator(opts: SimulatorOptions): Promise<Simulator>
     const { body, headers } = buildWebhook(inv.InvoiceId, tx.PaymentId);
     const times = opts.duplicateWebhooks ? 2 : 1;
     for (let i = 0; i < times; i++) {
-      try {
-        const r = await fetch(opts.webhookUrl, { method: "POST", headers, body });
-        state.webhookDeliveries.push({ invoiceId: inv.InvoiceId, paymentId: tx.PaymentId, status: r.status, body: await r.text() });
-      } catch (err) {
-        state.webhookDeliveries.push({ invoiceId: inv.InvoiceId, paymentId: tx.PaymentId, status: null, error: String(err), body: "" });
+      // البوابة تتوقف عند أول رد ناجح، وتعيد عند أي رد آخر حتى ينفد العدد المضبوط
+      for (let attempt = 0; attempt <= (opts.webhookRetries ?? 0); attempt++) {
+        if (attempt > 0) await new Promise((r) => setTimeout(r, opts.webhookRetryDelayMs ?? 0));
+        let status: number | null = null;
+        try {
+          const r = await fetch(opts.webhookUrl, { method: "POST", headers, body });
+          status = r.status;
+          state.webhookDeliveries.push({ invoiceId: inv.InvoiceId, paymentId: tx.PaymentId, status, body: await r.text() });
+        } catch (err) {
+          state.webhookDeliveries.push({ invoiceId: inv.InvoiceId, paymentId: tx.PaymentId, status: null, error: String(err), body: "" });
+        }
+        if (status !== null && status >= 200 && status < 300) break;
       }
     }
   };
@@ -440,8 +470,8 @@ export async function startSimulator(opts: SimulatorOptions): Promise<Simulator>
   const pay: Simulator["pay"] = async (invoiceId, outcome) => {
     const inv = state.invoices.get(invoiceId);
     if (!inv) throw new Error(`unknown invoice ${invoiceId}`);
-    // البوابة لا تقبل دفعة على رابط انتهى
-    if (isExpired(inv)) throw new Error(`invoice ${invoiceId} is expired`);
+    // البوابة لا تقبل دفعة على رابط انتهى أو فاتورة ملغاة
+    if (isExpired(inv) || inv.InvoiceStatus === "Canceled") throw new Error(`invoice ${invoiceId} is expired`);
     const paymentId = `0707${invoiceId}${String(randomInt(0, 1e9)).padStart(9, "0")}`.slice(0, 20);
     const method = METHODS.find((m) => m.PaymentMethodId === inv.PaymentMethodId) ?? METHODS[0];
     const success = outcome === "success";
@@ -581,6 +611,7 @@ export async function startSimulator(opts: SimulatorOptions): Promise<Simulator>
         else if (keyType === "RefundId") found = entries.filter((e) => e.r.RefundId === Number(key));
         else if (keyType === "RefundReference") found = entries.filter((e) => `RF${e.r.RefundId}` === key);
         else return validationError(res, [{ Name: "KeyType", Error: "Invalid KeyType." }]);
+        if (found.length === 0 && refundStatusNullData) return envelope(res, 200, { IsSuccess: true, Message: "", Data: null });
         return envelope(res, 200, {
           IsSuccess: true,
           Message: "",
@@ -588,7 +619,8 @@ export async function startSimulator(opts: SimulatorOptions): Promise<Simulator>
             RefundStatusResult: found.map(({ inv, r }) => ({
               RefundId: r.RefundId,
               RefundStatus: r.Status,
-              InvoiceId: inv.InvoiceId,
+              // الوثائق: الفاتورة المستخدمة في الاستعلام. عند السؤال برقم الاسترداد فهي فاتورة الاسترداد لا الأصلية
+              InvoiceId: keyType === "InvoiceId" ? inv.InvoiceId : r.RefundInvoiceId,
               Amount: r.AmountFils / 1000,
               RefundReference: `RF${r.RefundId}`,
               RefundAmount: r.AmountFils / 1000,
@@ -606,15 +638,17 @@ export async function startSimulator(opts: SimulatorOptions): Promise<Simulator>
         const invId = keyType === "PaymentId" ? state.paymentIndex.get(key) : Number(key);
         const inv = invId ? state.invoices.get(invId) : undefined;
         if (!inv) return validationError(res, [{ Name: "Key", Error: "Invalid key." }]);
-        if (inv.InvoiceStatus !== "Paid") return envelope(res, 400, { IsSuccess: false, Message: "Invoice is not paid.", Data: null });
+        const successes = inv.Transactions.filter((t) => t.TransactionStatus === "Succss").length;
+        if (inv.InvoiceStatus !== "Paid" || successes === 0) return envelope(res, 400, { IsSuccess: false, Message: "Invoice is not paid.", Data: null });
         const amountFils = Math.round(Number(body.Amount) * 1000);
         if (refundRefusal) return envelope(res, 400, { IsSuccess: false, Message: refundRefusal, Data: null });
         // الملغى لم يخرج مالًا، فلا يحسب من المبلغ المسترد
         const refunded = inv.Refunds.filter((r) => r.Status !== "Canceled").reduce((s, r) => s + r.AmountFils, 0);
-        if (!(amountFils > 0) || amountFils + refunded > inv.InvoiceValueFils) {
+        // الحد هو ما قُبض فعلًا: فاتورة عليها نجاحان يمكن رد مبلغيها، ولا أكثر
+        if (!(amountFils > 0) || amountFils + refunded > inv.InvoiceValueFils * successes) {
           return validationError(res, [{ Name: "Amount", Error: "Refund amount exceeds the paid amount." }]);
         }
-        const refund: SimRefund = { RefundId: nextRefundId++, AmountFils: amountFils, Comment: String(body.Comment ?? ""), ExternalIdentifier: typeof body.ExternalIdentifier === "string" ? body.ExternalIdentifier : null, Status: "Pending" };
+        const refund: SimRefund = { RefundId: nextRefundId++, RefundInvoiceId: nextInvoiceId++, AmountFils: amountFils, Comment: String(body.Comment ?? ""), ExternalIdentifier: typeof body.ExternalIdentifier === "string" ? body.ExternalIdentifier : null, Status: "Pending" };
         inv.Refunds.push(refund);
         const reply = {
           IsSuccess: true,
@@ -623,13 +657,14 @@ export async function startSimulator(opts: SimulatorOptions): Promise<Simulator>
             Key: key,
             RefundId: refund.RefundId,
             RefundReference: `RF${refund.RefundId}`,
-            RefundInvoiceId: nextInvoiceId++,
+            RefundInvoiceId: refund.RefundInvoiceId,
             Amount: amountFils / 1000,
             Comment: refund.Comment,
             ExternalIdentifier: refund.ExternalIdentifier,
           },
         };
         if (idempotencyKey) idempotent.set(idempotencyKey, reply);
+        if (beforeRefundReply) await beforeRefundReply(refund, inv);
         if (fault === "drop-after") {
           req.socket.destroy();
           return;
@@ -738,11 +773,23 @@ ${isExpired(inv) ? `<p data-testid="sim-expired">انتهت صلاحية هذا 
       statusFaults.clear();
       delays.clear();
       refundRefusal = null;
+      refundStatusNullData = false;
+      beforeRefundReply = null;
     },
     expireInvoice: (invoiceId) => {
       const inv = state.invoices.get(invoiceId);
       if (!inv) throw new Error(`unknown invoice ${invoiceId}`);
       inv.ExpiresAtMs = Date.now() - 1000;
+    },
+    cancelInvoice: (invoiceId) => {
+      const inv = state.invoices.get(invoiceId);
+      if (!inv) throw new Error(`unknown invoice ${invoiceId}`);
+      inv.InvoiceStatus = "Canceled";
+    },
+    reportDuplicatePayment: (invoiceId) => {
+      const inv = state.invoices.get(invoiceId);
+      if (!inv) throw new Error(`unknown invoice ${invoiceId}`);
+      inv.ReportDuplicatePayment = true;
     },
     startTransaction: (invoiceId) => {
       const inv = state.invoices.get(invoiceId);
@@ -774,10 +821,16 @@ ${isExpired(inv) ? `<p data-testid="sim-expired">انتهت صلاحية هذا 
     setRefundRefusal: (message) => {
       refundRefusal = message;
     },
+    setRefundStatusNullData: (on) => {
+      refundStatusNullData = on;
+    },
+    setBeforeRefundReply: (hook) => {
+      beforeRefundReply = hook;
+    },
     portalRefund: (invoiceId, amountFils, status = "Refunded") => {
       const inv = state.invoices.get(invoiceId);
       if (!inv) throw new Error(`unknown invoice ${invoiceId}`);
-      const refund: SimRefund = { RefundId: nextRefundId++, AmountFils: amountFils, Comment: "portal", ExternalIdentifier: null, Status: status };
+      const refund: SimRefund = { RefundId: nextRefundId++, RefundInvoiceId: nextInvoiceId++, AmountFils: amountFils, Comment: "portal", ExternalIdentifier: null, Status: status };
       inv.Refunds.push(refund);
       return refund;
     },

@@ -72,6 +72,8 @@ alter table orders add column closed_reason text check (closed_reason is null or
 alter table payments add column expires_at timestamptz;
 alter table payments add column last_checked_at timestamptz;
 alter table payments add column reconcile_claimed_at timestamptz;
+-- رفض أكمل الطالب بعده على الرابط نفسه: إعادة قراءته (Webhook مكرر أو فحص) لا تعيد الطلب إلى فاشل
+alter table payments add column acknowledged_failure_id text;
 
 create index payments_recheck_idx on payments (last_checked_at asc nulls first)
   where gateway_invoice_id is not null and status in ('initiated', 'pending', 'failed', 'expired');
@@ -83,10 +85,12 @@ create index payments_recheck_idx on payments (last_checked_at asc nulls first)
 -- ---------------------------------------------------------------------
 create table payment_extras (
   id uuid primary key default gen_random_uuid(),
-  payment_id uuid not null unique references payments(id) on delete restrict,
+  payment_id uuid not null references payments(id) on delete restrict,
   order_id uuid not null references orders(id) on delete restrict,
   kind text not null check (kind in ('duplicate', 'after_refund', 'late_review', 'amount_mismatch')),
   amount_fils integer not null check (amount_fils > 0),
+  -- فارغ: الدفعة الزائدة هي الفاتورة كلها. وإلا فهي عملية نجاح إضافية بعينها على فاتورة أكملت الطلب أو سُجلت
+  gateway_payment_id text,
   details jsonb not null default '{}'::jsonb,
   state text not null default 'open' check (state in ('open', 'refund_sending', 'refund_unknown', 'refund_requested', 'refunded', 'refund_failed', 'dismissed')),
   refund_attempt integer not null default 0,
@@ -97,11 +101,15 @@ create table payment_extras (
   refund_reason text check (char_length(refund_reason) <= 500),
   refund_requested_by uuid references users(id) on delete set null,
   refund_requested_at timestamptz,
+  -- آخر مرة سألت فيها وظيفة التسوية البوابة عن استرداد لم يصلنا حدثه
+  swept_at timestamptz,
   resolved_by uuid references users(id) on delete set null,
   resolved_at timestamptz,
   created_at timestamptz not null default now(),
   updated_at timestamptz not null default now()
 );
+create unique index payment_extras_one_per_invoice on payment_extras (payment_id) where gateway_payment_id is null;
+create unique index payment_extras_one_per_transaction on payment_extras (payment_id, gateway_payment_id) where gateway_payment_id is not null;
 create index payment_extras_open_idx on payment_extras (created_at desc) where state not in ('refunded', 'dismissed');
 create index payment_extras_order_idx on payment_extras (order_id);
 create trigger payment_extras_updated before update on payment_extras for each row execute function set_updated_at();
@@ -128,7 +136,7 @@ where p.provider = 'myfatoorah'
       )
     )
   )
-on conflict (payment_id) do nothing;
+on conflict (payment_id) where gateway_payment_id is null do nothing;
 -- END backfill payment_extras
 
 -- ---------------------------------------------------------------------
@@ -152,11 +160,14 @@ alter table refunds add column source text not null default 'owner' check (sourc
 alter table refunds add column accepted_at timestamptz;
 alter table refunds add column completed_at timestamptz;
 alter table refunds add column updated_at timestamptz not null default now();
+-- آخر مرة سألت فيها وظيفة التسوية البوابة عن طلب قبلته ولم يصلنا حدثه
+alter table refunds add column swept_at timestamptz;
 create trigger refunds_updated before update on refunds for each row execute function set_updated_at();
 create unique index refunds_one_live_per_order on refunds (order_id) where status <> 'dismissed';
 create index refunds_open_idx on refunds (created_at desc) where status not in ('completed', 'dismissed');
 
 -- ---------------------------------------------------------------------
--- 7) الطلب المفتوح يحجز كود الخصم: عدّ الحجوزات يتم تحت قفل صف الكود عند كل طلب جديد
+-- 7) الطلب المفتوح يحجز كود الخصم: عدّ الحجوزات يتم تحت قفل صف الكود عند كل طلب جديد.
+--    الطلب الفاشل يحجزه ما دام على طلبه رابط يمكن دفعه
 -- ---------------------------------------------------------------------
-create index orders_coupon_open_idx on orders (coupon_id) where coupon_id is not null and status = 'pending';
+create index orders_coupon_open_idx on orders (coupon_id) where coupon_id is not null and status in ('pending', 'failed');

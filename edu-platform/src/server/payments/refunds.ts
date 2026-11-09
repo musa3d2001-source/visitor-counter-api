@@ -393,8 +393,10 @@ export async function applyRefundEvent(gateway: RefundGateway, environment: Envi
   const [peek] = await find(sql, false);
   let confirmed: MfRefundStatus | null = null;
   if (!peek && ev.status === "REFUNDED") {
-    const list = await gateway.getRefundStatus(ev.refundId, "RefundId");
-    confirmed = list.find((r) => String(r.RefundId) === ev.refundId && String(r.InvoiceId) === ev.invoiceId && /^refunded$/i.test(r.RefundStatus)) ?? null;
+    // نسأل بالفاتورة الأصلية ونطابق برقم الاسترداد: الوثائق تقول إن InvoiceId في الرد هو الفاتورة المستخدمة في الاستعلام،
+    // وللاسترداد فاتورة خاصة به (Refund.InvoiceId في الحدث) تختلف عن ReferencedInvoice.Id
+    const list = await gateway.getRefundStatus(ev.invoiceId, "InvoiceId");
+    confirmed = list.find((r) => String(r.RefundId) === ev.refundId && /^refunded$/i.test(r.RefundStatus)) ?? null;
   }
 
   const t = await sql.begin(async (db): Promise<Transition | null> => {

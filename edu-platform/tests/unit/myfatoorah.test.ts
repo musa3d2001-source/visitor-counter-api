@@ -156,15 +156,15 @@ describe("hasOpenTransaction", () => {
 });
 
 describe("gatewayExpiryDate", () => {
-  it("writes Kuwait wall-clock time with the explicit offset", () => {
-    expect(gatewayExpiryDate(new Date("2026-11-09T15:30:45.900Z"))).toBe("2026-11-09T18:30:45+03:00");
+  it("writes Kuwait wall-clock time in the documented Y-m-d\\TH:i:s format, with no offset", () => {
+    expect(gatewayExpiryDate(new Date("2026-11-09T15:30:45.900Z"))).toBe("2026-11-09T18:30:45");
   });
   it("crosses midnight correctly", () => {
-    expect(gatewayExpiryDate(new Date("2026-12-31T22:15:00Z"))).toBe("2027-01-01T01:15:00+03:00");
+    expect(gatewayExpiryDate(new Date("2026-12-31T22:15:00Z"))).toBe("2027-01-01T01:15:00");
   });
-  it("is the same instant when read back", () => {
+  it("is the same instant when read as Kuwait time", () => {
     const at = new Date("2026-11-09T15:30:45.000Z");
-    expect(Date.parse(gatewayExpiryDate(at))).toBe(at.getTime());
+    expect(Date.parse(`${gatewayExpiryDate(at)}+03:00`)).toBe(at.getTime());
   });
 });
 
