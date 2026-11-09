@@ -4,6 +4,7 @@ import { env } from "../env";
 import { burnPasswordTime, verifyPassword } from "./password";
 import { generateToken, hashToken } from "./session";
 import { hitRateLimit } from "./rate-limit";
+import { constantTimeEqual } from "./two-factor-core";
 import { audit } from "../platform/audit";
 import { mailIsReal, sendMail } from "../platform/mailer";
 import { getSettings } from "../platform/settings";
@@ -65,14 +66,28 @@ export async function verificationState(userId: string): Promise<VerificationSta
   };
 }
 
-/** ينشئ رابطًا ويرسله. الروابط السابقة لا تبطل إلا بعد نجاح الإرسال، فلا يخسر الطالب رابطًا يعمل */
-export async function sendEmailVerificationLink(userId: string, email: string): Promise<boolean> {
+/** مع كل تغيير لكلمة المرور: رابط طُلب قبله لا يصلح بعده، وخاصة رابط يغيّر عنوان الحساب */
+export async function revokeEmailLinks(db: Db, userId: string) {
+  await db`update email_verification_tokens set used_at = now() where user_id = ${userId} and used_at is null`;
+}
+
+/**
+ * ينشئ رابطًا ويرسله. الروابط السابقة لا تبطل إلا بعد نجاح الإرسال، فلا يخسر الطالب رابطًا يعمل.
+ * verifiedPasswordHash: الهاش الذي تحققنا منه للتو. الإدراج مشروط ببقائه هو نفسه، وبصمته تُحفظ مع الرابط،
+ * فتغيير كلمة المرور في أي لحظة بعد الفحص يبطل الرابط ولو سبق الإدراج نفسه.
+ */
+export async function sendEmailVerificationLink(userId: string, email: string, opts: { verifiedPasswordHash?: string } = {}): Promise<boolean> {
   const token = generateToken();
   const id = hashToken(token);
-  await sql`
-    insert into email_verification_tokens (id, user_id, email, expires_at)
-    values (${id}, ${userId}, ${email}, now() + make_interval(hours => ${LINK_HOURS}))
+  const fingerprint = opts.verifiedPasswordHash ? hashToken(opts.verifiedPasswordHash) : null;
+  const inserted = await sql`
+    insert into email_verification_tokens (id, user_id, email, password_fingerprint, expires_at)
+    select ${id}, u.id, ${email}::citext, ${fingerprint}, now() + make_interval(hours => ${LINK_HOURS})
+    from users u
+    where u.id = ${userId} and u.anonymized_at is null ${opts.verifiedPasswordHash ? sql`and u.password_hash = ${opts.verifiedPasswordHash}` : sql``}
+    returning id
   `;
+  if (inserted.length === 0) return false;
   const settings = await getSettings();
   const link = `${env().APP_URL.replace(/\/$/, "")}/verify-email/confirm?token=${encodeURIComponent(token)}`;
   const sent = await sendMail({
@@ -108,8 +123,8 @@ export async function resendEmailVerification(userId: string, ip: string): Promi
   if (!cooldown.allowed) return { ok: false, error: `أرسلنا رابطًا قبل قليل. يمكنك طلب غيره بعد ${cooldown.retryAfterSeconds < 60 ? "أقل من دقيقة" : "دقيقة"}.` };
   const [perUser, perIp] = await Promise.all([hitRateLimit(`verify:user:${userId}`, RESEND.perUser, RESEND.windowSec), hitRateLimit(`verify:ip:${ip}`, RESEND.perIp, RESEND.windowSec)]);
   if (!perUser.allowed || !perIp.allowed) return { ok: false, error: "طلبت روابط كثيرة. حاول بعد ساعة." };
-  const target = state.pendingEmail ?? state.email;
-  const sent = await sendEmailVerificationLink(userId, target);
+  // عنوان الحساب فقط: الإرسال إلى عنوان آخر لا يكون إلا بكلمة المرور، عبر نموذج التصحيح
+  const sent = await sendEmailVerificationLink(userId, state.email);
   return sent ? { ok: true, message: "أرسلنا رابطًا جديدًا. افتح أحدث رسالة، فالروابط السابقة لم تعد تعمل." } : { ok: false, error: "تعذر إرسال الرسالة الآن. حاول بعد قليل." };
 }
 
@@ -138,7 +153,7 @@ export async function requestEmailCorrection(userId: string, email: string, curr
   if (u.email.toLowerCase() === email) {
     // الرجوع عن تصحيح سابق: رابط جديد لعنوان الحساب يبطل الرابط المرسل إلى العنوان الآخر
     if (!(await verificationState(userId)).pendingEmail) return { ok: false, error: "هذا هو بريدك الحالي. استخدم «إرسال رابط جديد».", field: "email" };
-    await sendEmailVerificationLink(userId, email);
+    await sendEmailVerificationLink(userId, email, { verifiedPasswordHash: u.password_hash });
     return { ok: true, message: CORRECTION_ACCEPTED };
   }
 
@@ -156,7 +171,7 @@ export async function requestEmailCorrection(userId: string, email: string, curr
     });
     return { ok: true, message: CORRECTION_ACCEPTED };
   }
-  await sendEmailVerificationLink(userId, email);
+  await sendEmailVerificationLink(userId, email, { verifiedPasswordHash: u.password_hash });
   return { ok: true, message: CORRECTION_ACCEPTED };
 }
 
@@ -169,15 +184,18 @@ export async function confirmEmailToken(token: string, ip: string): Promise<{ ok
   const id = hashToken(token);
   try {
     return await sql.begin(async (tx) => {
-      const [row] = await tx<{ user_id: string; email: string; current_email: string; expires_at: Date; used_at: Date | null; is_active: boolean }[]>`
-        select t.user_id, t.email, u.email as current_email, t.expires_at, t.used_at, u.is_active
+      const [row] = await tx<{ user_id: string; email: string; current_email: string; expires_at: Date; used_at: Date | null; is_active: boolean; password_fingerprint: string | null; password_hash: string }[]>`
+        select t.user_id, t.email, u.email as current_email, t.expires_at, t.used_at, u.is_active, t.password_fingerprint, u.password_hash
         from email_verification_tokens t join users u on u.id = t.user_id
         where t.id = ${id} for update
       `;
       if (!row || row.used_at || new Date(row.expires_at).getTime() <= Date.now() || !row.is_active) return { ok: false as const, error: CONFIRM_FAILED };
+      // الرابط يغيّر عنوان الحساب ولا يتطلب جلسة، فلا يعمل إلا إن بقيت كلمة المرور التي طُلب بها
+      const changesAddress = row.email.toLowerCase() !== row.current_email.toLowerCase();
+      if (changesAddress && !(row.password_fingerprint && constantTimeEqual(row.password_fingerprint, hashToken(row.password_hash)))) return { ok: false as const, error: CONFIRM_FAILED };
       await tx`update users set email = ${row.email}, email_verified_at = now() where id = ${row.user_id}`;
       await tx`update email_verification_tokens set used_at = now() where user_id = ${row.user_id} and used_at is null`;
-      if (row.email.toLowerCase() !== row.current_email.toLowerCase()) {
+      if (changesAddress) {
         // روابط الاستعادة خرجت إلى العنوان القديم
         await tx`update password_reset_tokens set used_at = now() where user_id = ${row.user_id} and used_at is null`;
         await audit({ actorId: row.user_id, action: "user.email_corrected_by_student", entityType: "user", entityId: row.user_id, metadata: { from: row.current_email, to: row.email }, ip }, tx);

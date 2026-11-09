@@ -34,7 +34,7 @@ export default async function VerifyEmailPage({ searchParams }: { searchParams: 
           </p>
           {state.pendingEmail ? <p>يبقى بريد حسابك {state.email} حتى تفتح الرابط من العنوان الجديد.</p> : null}
         </Alert>
-        <ResendForm first={!state.linkSent} />
+        <ResendForm first={!state.linkSent} toAccountAddress={state.pendingEmail ? state.email : null} />
         <CorrectEmailForm />
         <div className="text-[0.92rem] leading-7 text-ink-soft">
           <p>لا تجد الرسالة؟ افحص مجلد الرسائل غير المرغوب فيها، أو اطلب رابطًا جديدًا بعد دقيقة.</p>

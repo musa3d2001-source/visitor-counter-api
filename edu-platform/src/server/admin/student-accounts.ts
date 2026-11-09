@@ -6,7 +6,7 @@ import { hashPassword } from "../auth/password";
 import { generateToken, hashToken } from "../auth/session";
 import { hitRateLimit } from "../auth/rate-limit";
 import { loginFailurePrefix } from "../auth/service";
-import { sendEmailVerificationLink } from "../auth/email-verification";
+import { revokeEmailLinks, sendEmailVerificationLink } from "../auth/email-verification";
 import { audit } from "../platform/audit";
 import { mailIsReal, redactSecrets, sendMail } from "../platform/mailer";
 import { getSettings } from "../platform/settings";
@@ -71,6 +71,7 @@ export async function resetStudentPassword(input: { studentId: string; adminId: 
       insert into password_reset_tokens (id, user_id, expires_at)
       values (${hashToken(token)}, ${input.studentId}, now() + make_interval(hours => ${OWNER_SECRET_HOURS}))
     `;
+    await revokeEmailLinks(tx, input.studentId);
     await tx`delete from sessions where user_id = ${input.studentId}`;
     await tx`delete from rate_limits where starts_with(key, ${loginFailurePrefix(u!.email)})`;
     await audit(
@@ -111,7 +112,7 @@ export async function correctStudentEmail(input: { studentId: string; newEmail: 
       await tx`update users set email = ${email}, email_verified_at = null where id = ${input.studentId}`;
       // رابط صدر للعنوان القديم لا يعمل بعد التصحيح
       await tx`update password_reset_tokens set used_at = now() where user_id = ${input.studentId} and used_at is null`;
-      await tx`update email_verification_tokens set used_at = now() where user_id = ${input.studentId} and used_at is null`;
+      await revokeEmailLinks(tx, input.studentId);
       await audit({ actorId: input.adminId, action: "student.email_corrected", entityType: "user", entityId: input.studentId, reason: input.reason, metadata: { from: u!.email, to: email }, ip: input.ip }, tx);
       return u!.email;
     });

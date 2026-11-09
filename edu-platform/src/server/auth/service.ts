@@ -5,6 +5,7 @@ import { hashPassword, verifyPassword, burnPasswordTime } from "./password";
 import { createSession, createSessionIn, generateToken, hashToken } from "./session";
 import { hitRateLimit, clearRateLimit, peekRateLimit, reserveFailureSlot, type FailurePolicy } from "./rate-limit";
 import { completeLoginChallenge, startLoginChallenge, twoFactorIsActive, type CompleteChallengeResult } from "./two-factor";
+import { revokeEmailLinks } from "./email-verification";
 import { mailIsReal, sendMail } from "../platform/mailer";
 import { getSettings } from "../platform/settings";
 import { audit } from "../platform/audit";
@@ -194,6 +195,7 @@ export async function resetPassword(token: string, newPassword: string): Promise
     const hash = await hashPassword(newPassword);
     await tx`update users set password_hash = ${hash}, must_change_password = false, temp_password_expires_at = null where id = ${row.user_id}`;
     await tx`update password_reset_tokens set used_at = now() where user_id = ${row.user_id} and used_at is null`;
+    await revokeEmailLinks(tx, row.user_id);
     await tx`delete from sessions where user_id = ${row.user_id}`;
     await tx`delete from rate_limits where starts_with(key, ${loginFailurePrefix(row.email)})`;
     return { ok: true as const };
@@ -218,6 +220,7 @@ export async function changePassword(userId: string, current: string, next: stri
   await sql.begin(async (tx) => {
     await tx`update users set password_hash = ${hash} where id = ${userId}`;
     await tx`update password_reset_tokens set used_at = now() where user_id = ${userId} and used_at is null`;
+    await revokeEmailLinks(tx, userId);
     await tx`delete from sessions where user_id = ${userId} and id <> ${keepSessionId}`;
     // خطوة كلمة مرور معلقة بالكلمة القديمة لا تكتمل بعد تغييرها
     await tx`delete from login_challenges where user_id = ${userId}`;
@@ -249,6 +252,7 @@ export async function completeForcedPasswordChange(userId: string, next: string,
     `;
     if (updated.length === 0) return false;
     await tx`update password_reset_tokens set used_at = now() where user_id = ${userId} and used_at is null`;
+    await revokeEmailLinks(tx, userId);
     await tx`delete from sessions where user_id = ${userId}`;
     await audit({ actorId: userId, action: "user.temporary_password_replaced", entityType: "user", entityId: userId, ip: meta.ip }, tx);
     return true;

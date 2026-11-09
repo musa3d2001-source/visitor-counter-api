@@ -9,7 +9,7 @@ import { Alert } from "@/components/ui/alert";
 import { SubmitButton } from "@/components/ui/submit-button";
 import { BIG_INPUT, IconInput, PasswordInput } from "../_components/auth-fields";
 
-export function ResendForm({ first }: { first: boolean }) {
+export function ResendForm({ first, toAccountAddress }: { first: boolean; toAccountAddress: string | null }) {
   const [state, action] = useActionState(resendVerificationAction, null);
   return (
     <form action={action} className="flex flex-col gap-3">
@@ -17,8 +17,13 @@ export function ResendForm({ first }: { first: boolean }) {
       {state?.error ? <Alert tone="danger">{state.error}</Alert> : null}
       <SubmitButton size="xl" pendingText="جارٍ الإرسال…" className="w-full">
         <Send aria-hidden />
-        {first ? "إرسال رابط التأكيد" : "إرسال رابط جديد"}
+        {toAccountAddress ? "إرسال الرابط إلى بريد حسابك" : first ? "إرسال رابط التأكيد" : "إرسال رابط جديد"}
       </SubmitButton>
+      {toAccountAddress ? (
+        <p className="text-[0.88rem] leading-6 text-ink-soft" data-testid="resend-account-hint">
+          يصل هذا الزر إلى <bdi dir="ltr">{toAccountAddress}</bdi> ويلغي الرابط السابق. لإرسال رابط جديد إلى العنوان الجديد، اكتبه مع كلمة مرورك في النموذج أدناه.
+        </p>
+      ) : null}
     </form>
   );
 }

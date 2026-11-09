@@ -18,11 +18,14 @@ alter table users add column temp_password_expires_at timestamptz;
 -- 2) روابط تأكيد البريد
 --    id = SHA-256 للرمز (لا يُخزَّن الرمز نفسه). email هو العنوان الذي يؤكده هذا الرابط:
 --    عند تصحيح الطالب لبريده لا يتغير حسابه قبل فتح الرابط من العنوان الجديد.
+--    password_fingerprint: بصمة كلمة المرور التي أثبتها طالب التصحيح. رابط يغيّر العنوان لا يعمل
+--    إلا ما دامت هي نفسها، فلا يستعيد من سرق كلمة قديمة الحساب بعد أن غيّرها صاحبه.
 -- ---------------------------------------------------------------------
 create table email_verification_tokens (
   id text primary key check (char_length(id) = 64),
   user_id uuid not null references users(id) on delete cascade,
   email citext not null check (char_length(email) between 5 and 254),
+  password_fingerprint text check (password_fingerprint is null or char_length(password_fingerprint) = 64),
   expires_at timestamptz not null,
   used_at timestamptz,
   created_at timestamptz not null default now()
