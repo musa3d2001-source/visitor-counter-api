@@ -1,5 +1,7 @@
 import type { Metadata } from "next";
 import Link from "next/link";
+import { publicFaq } from "@/lib/site-truth";
+import { siteFacts } from "@/server/platform/site-facts";
 import {
   ArrowLeft,
   AtSign,
@@ -32,7 +34,7 @@ const GREEN = toneVars({ from: "#3DDC84", to: "#169C4F", deep: "#0F6B36", soft: 
 const TEAL = toneVars({ from: "#2DC2B3", to: "#0A6B66", deep: "#063F3C", soft: "#DDF6F4", ink: "#0A6670" });
 
 const helpTiles = (mailWorks: boolean) => [
-  { href: "/library", Icon: LibraryBig, title: "مشترياتك في «مكتبتي»", text: "كل ما اشتريته يظهر هناك فور تأكيد الدفع.", vars: subjectVars("math") },
+  { href: "/library", Icon: LibraryBig, title: "مشترياتك في «مكتبتي»", text: "كل ما اشتريته يظهر هناك بعد تأكيد الدفع.", vars: subjectVars("math") },
   { href: "/forgot-password", Icon: KeyRound, title: "نسيت كلمة المرور؟", text: mailWorks ? "أرسل لنفسك رابطًا لتعيين كلمة مرور جديدة." : "تواصل معنا لنصدر لك رابطًا جديدًا.", vars: subjectVars("social") },
   { href: "/refund-policy", Icon: RotateCcw, title: "سياسة الاسترجاع", text: "متى يُسترجع المبلغ، وكيف تطلب ذلك.", vars: subjectVars("arabic") },
   { href: "/terms", Icon: ScrollText, title: "الشروط والأحكام", text: "استخدام الحساب والمحتوى والدفع.", vars: subjectVars("english") },
@@ -73,7 +75,7 @@ export default async function ContactPage() {
       ltr: true,
     },
   ].filter(Boolean) as Channel[];
-  const faq = s.faq ?? [];
+  const faq = publicFaq(s.faq ?? [], await siteFacts());
   const cols = channels.length >= 4 ? "lg:grid-cols-4" : channels.length === 3 ? "lg:grid-cols-3" : "";
 
   return (
@@ -84,7 +86,7 @@ export default async function ContactPage() {
             تواصل <span className="text-hl">معنا</span>
           </>
         }
-        sub="يسعدنا الرد على استفساراتك حول الشروحات والمذكرات والطلبات. اختر الطريقة الأنسب لك."
+        sub="يسعدنا الرد على استفساراتك حول المحتوى والطلبات. اختر الطريقة الأنسب لك."
         breadcrumbs={[{ label: "الرئيسية", href: "/" }, { label: "تواصل معنا" }]}
         eyebrow={{ icon: <MessagesSquare aria-hidden />, label: "نحن هنا لمساعدتك", tone: "coral" }}
         aside={

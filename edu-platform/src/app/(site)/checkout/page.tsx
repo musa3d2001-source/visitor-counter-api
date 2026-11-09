@@ -8,6 +8,8 @@ import { emailVerificationRequired, verifyEmailPath } from "@/server/auth/email-
 import { computeCart, getCartIds } from "@/server/commerce/cart";
 import { evaluateCoupon } from "@/server/commerce/coupons";
 import { getPaymentMethods, paymentsConfig, type PaymentMethodOption } from "@/server/payments/service";
+import { paymentPublicState } from "@/server/payments/public-state";
+import { paymentClaims } from "@/lib/site-truth";
 import { getSettings } from "@/server/platform/settings";
 import { missingAccountConsents } from "@/server/platform/consent";
 import { Alert } from "@/components/ui/alert";
@@ -38,6 +40,7 @@ export default async function CheckoutPage({ searchParams }: { searchParams: Pro
   // التوفير الحقيقي فقط (السعر قبل الخصم أعلى من الحالي)، بنفس حساب السلة
   const saved = cart.payableLines.reduce((sum, l) => sum + (savings(l.priceFils, l.compareAtPriceFils)?.fils ?? 0), 0);
   const cfg = paymentsConfig();
+  const claims = paymentClaims(paymentPublicState());
   const settings = await getSettings();
   if (total > 0 && cfg.enabled && (await emailVerificationRequired(user.id))) {
     redirect(verifyEmailPath(couponCode ? `/checkout?coupon=${encodeURIComponent(couponCode)}` : "/checkout"));
@@ -60,9 +63,9 @@ export default async function CheckoutPage({ searchParams }: { searchParams: Pro
     <>
       <PageHeader
         breadcrumbs={[{ label: "السلة", href: "/cart" }, { label: "إتمام الشراء" }]}
-        eyebrow={{ icon: <Lock />, label: total > 0 ? (cfg.enabled ? "دفع آمن" : "الدفع غير متاح حاليًا") : "طلب مجاني", tone: "teal" }}
+        eyebrow={{ icon: <Lock />, label: total > 0 ? claims.checkoutEyebrow : "طلب مجاني", tone: "teal" }}
         title="إتمام الشراء"
-        sub={total > 0 ? (cfg.enabled ? "ثلاث خطوات قصيرة، ثم ننقلك إلى صفحة الدفع الآمنة لإتمام العملية." : "يمكنك مراجعة طلبك هنا، لكن الدفع الإلكتروني متوقف في الوقت الحالي.") : "ثلاث خطوات قصيرة، ويُضاف المحتوى إلى مكتبتك مباشرة."}
+        sub={total > 0 ? claims.checkoutSub : "ثلاث خطوات قصيرة، ويُضاف المحتوى إلى مكتبتك مباشرة."}
         aside={
           <TiltedPosters
             items={cart.payableLines.map((l) => ({ key: l.id, title: l.title, type: l.type, subjectName: l.subjectName, subjectSlug: l.subjectSlug, gradeName: l.gradeName, coverUrl: l.coverUrl }))}
@@ -186,7 +189,8 @@ export default async function CheckoutPage({ searchParams }: { searchParams: Pro
                   total={total}
                   methods={methods}
                   disabled={total > 0 && !cfg.enabled}
-                  sandbox={cfg.enabled && cfg.environment === "sandbox"}
+                  paymentNote={claims.checkoutNote}
+                  secureNote={Boolean(claims.hero)}
                   needsTerms={needsTerms}
                 />
               </div>

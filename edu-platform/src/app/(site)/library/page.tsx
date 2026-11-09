@@ -105,7 +105,7 @@ export default async function LibraryPage({ searchParams }: { searchParams: Prom
       <PageHeader
         eyebrow={{ icon: <Sparkles />, label: `أهلًا ${user.fullName.split(" ")[0]}`, tone: "gold" }}
         title="مكتبتي"
-        sub={items.length ? "دروسك ومذكراتك كلها هنا، وتفتح من أي جهاز." : "أي شرح أو مذكرة تشتريها يظهر هنا فور تأكيد الدفع."}
+        sub={items.length ? "كل ما اشتريته هنا، ويفتح من أي جهاز." : "ما تشتريه يظهر هنا بعد تأكيد الدفع."}
         actions={
           <Button asChild variant="outline">
             <Link href="/account">
@@ -128,7 +128,7 @@ export default async function LibraryPage({ searchParams }: { searchParams: Prom
           <EmptyStart
             art="library"
             title="مكتبتك فارغة حاليًا"
-            description="اختر صفك ثم المادة، وابدأ بالشرح أو المذكرة التي تحتاجها."
+            description="اختر صفك ثم المادة، وابدأ بما تحتاجه."
             grades={grades}
             actions={
               <>

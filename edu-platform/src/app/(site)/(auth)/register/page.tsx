@@ -15,7 +15,7 @@ export default async function RegisterPage({ searchParams }: { searchParams: Pro
   if (await getCurrentUser()) redirect(next);
   const grades = await listGrades();
   return (
-    <AuthCard title="إنشاء حساب جديد" subtitle="حساب واحد لكل دروسك ومذكراتك، ويستغرق أقل من دقيقة">
+    <AuthCard title="إنشاء حساب جديد" subtitle="حساب واحد لكل مشترياتك، ويستغرق أقل من دقيقة">
       <RegisterForm next={next} grades={grades.map((g) => ({ id: g.id, name: g.name }))} />
       <MobilePerks />
     </AuthCard>

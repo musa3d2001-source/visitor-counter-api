@@ -3,26 +3,23 @@ import { ArrowLeft, ChevronDown, MessageCircle, Zap } from "lucide-react";
 import { Sparkle, StepArt } from "@/components/art";
 import { SectionHead } from "@/components/ui/section-head";
 import { ar, gradeClass } from "@/lib/design";
+import { homeSteps, paymentClaims, type SiteFacts } from "@/lib/site-truth";
 import { cn } from "@/lib/utils";
 import type { HeroGrade } from "./hero";
 import s from "./home.module.css";
 
-/** خطوات البدء (نص مطابق لما يحدث فعلًا: الدفع عبر ماي فاتورة، والمكتبة بعد تأكيد الدفع) */
-const STEPS = [
-  { t: "اختر صفك ومادتك", p: "كل شيء مرتب حسب الصف والمادة، أو ابدأ من صفحة معلمك مباشرة.", c: s.s1 },
-  { t: "شاهد المعاينة مجانًا", p: "حيث تجد شارة «معاينة مجانية» تشاهد درسًا أو تقرأ أول الصفحات قبل الشراء، بدون حساب.", c: s.s2 },
-  { t: "ادفع بأمان", p: "عبر بوابة ماي فاتورة بكي نت أو البطاقة البنكية، ولا نحتفظ ببيانات بطاقتك.", c: s.s3 },
-  { t: "ذاكر من مكتبتك", p: "بعد تأكيد الدفع يظهر ما اشتريته في «مكتبتي»، وتكمل الفيديو من حيث توقفت.", c: s.s4 },
-];
+const STEP_TONES = [s.s1, s.s2, s.s3, s.s4];
 
-export function HowSteps() {
+/** خطوات البدء: نصها يتبع ما هو صحيح الآن عن الدفع والمحتوى. الموقع الفارغ لا خطوات له */
+export function HowSteps({ facts }: { facts: SiteFacts }) {
+  if (!facts.content) return null;
   return (
     <section className={cn(s.section, s.how)} aria-labelledby="how-title" id="how">
       <div className={s.wrap}>
         <SectionHead id="how-title" icon={<Zap size={16} />} eyebrow="سهلة وواضحة" title={<>كيف تبدأ؟ <span className="text-hl">أربع خطوات</span></>} />
         <ol className={s.steps}>
-          {STEPS.map((x, i) => (
-            <li key={x.t} className={cn(s.step, x.c)}>
+          {homeSteps(facts).map((x, i) => (
+            <li key={x.t} className={cn(s.step, STEP_TONES[i])}>
               <span className={s.stepArt} aria-hidden>
                 <StepArt n={i + 1} />
                 <span className={s.stepNum}>{ar(i + 1)}</span>
@@ -37,7 +34,7 @@ export function HowSteps() {
   );
 }
 
-export function HomeFaq({ faq, whatsapp }: { faq: { q: string; a: string }[]; whatsapp: string }) {
+export function HomeFaq({ faq, whatsapp, hasContact }: { faq: { q: string; a: string }[]; whatsapp: string; hasContact: boolean }) {
   if (!faq.length) return null;
   const wa = whatsapp.replace(/\D/g, "");
   return (
@@ -50,7 +47,7 @@ export function HomeFaq({ faq, whatsapp }: { faq: { q: string; a: string }[]; wh
             eyebrow="عندك سؤال؟"
             tone="coral"
             title="الأسئلة الشائعة"
-            sub="كل ما يهمك عن الشراء والمشاهدة والمكتبة، بإجابات مختصرة."
+            sub="كل ما يهمك عن الشراء والمكتبة، بإجابات مختصرة."
             className="sm:mb-8"
           />
         </div>
@@ -67,24 +64,26 @@ export function HomeFaq({ faq, whatsapp }: { faq: { q: string; a: string }[]; wh
             </details>
           ))}
         </div>
-        <div className={cn(s.helpCard, "on-dark")}>
-          <span className={s.helpIcon} aria-hidden>
-            <MessageCircle size={26} />
-          </span>
-          <h3 className={s.helpTitle}>لم تجد إجابتك؟</h3>
-          <p>راسلنا ونساعدك في أي شيء يخص الشراء أو المشاهدة.</p>
-          <a href={wa ? `https://wa.me/${wa}` : "/contact"} className="btn btn-3d btn-accent btn-md mt-5">
-            تواصل معنا
-            <ArrowLeft aria-hidden />
-          </a>
-        </div>
+        {hasContact ? (
+          <div className={cn(s.helpCard, "on-dark")}>
+            <span className={s.helpIcon} aria-hidden>
+              <MessageCircle size={26} />
+            </span>
+            <h3 className={s.helpTitle}>لم تجد إجابتك؟</h3>
+            <p>راسلنا ونساعدك في أي شيء يخص الشراء أو المحتوى.</p>
+            <a href={wa ? `https://wa.me/${wa}` : "/contact"} className="btn btn-3d btn-accent btn-md mt-5">
+              تواصل معنا
+              <ArrowLeft aria-hidden />
+            </a>
+          </div>
+        ) : null}
       </div>
     </section>
   );
 }
 
 /** الدعوة الختامية: لوح فيروزي مشمس وأزرار الصفوف الأربعة */
-export function ClosingCta({ grades }: { grades: HeroGrade[] }) {
+export function ClosingCta({ grades, facts }: { grades: HeroGrade[]; facts: SiteFacts }) {
   if (!grades.length) return null;
   return (
     <section className={cn(s.section, s.ctaSec)} aria-labelledby="cta-title">
@@ -97,7 +96,7 @@ export function ClosingCta({ grades }: { grades: HeroGrade[] }) {
             <h2 id="cta-title" className="h-section text-white">
               جاهز تبدأ؟ <span className="text-gold">اختر صفك الآن</span>
             </h2>
-            <p>ابدأ بالمعاينة المجانية حيث تتوفر، وكل ما تشتريه تجده في «مكتبتي» بعد تأكيد الدفع.</p>
+            <p>ابدأ بالمعاينة المجانية حيث تتوفر{paymentClaims(facts.payment).afterConfirm ? "، وكل ما تشتريه تجده في «مكتبتي» بعد تأكيد الدفع" : ""}.</p>
           </div>
           <ul className={s.ctaGrades}>
             {grades.map((g) => (

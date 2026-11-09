@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { BookOpenText, CirclePlay, Clock3, GraduationCap, Layers, Library, ListVideo, MonitorSmartphone, Play, ShieldCheck, Sparkles, Zap } from "lucide-react";
 import type { PlaylistGroup, ProductCard, ProductDetail, PublicFileInfo } from "@/server/catalog/queries";
+import { paymentClaims, productLibraryLine, type PaymentPublicState } from "@/lib/site-truth";
 import { AddToCart } from "@/components/site/add-to-cart";
 import { ProductGrid } from "@/components/site/product-card";
 import { TeacherAvatar } from "@/components/site/teacher-avatar";
@@ -25,15 +26,20 @@ export function accessPeriodText(p: Pick<ProductDetail, "accessMode" | "accessUn
   return "بلا تاريخ انتهاء";
 }
 
-/** ضمانات صحيحة لمنتج الفيديو */
-export const VIDEO_TRUST: TrustItem[] = [
-  { icon: <ShieldCheck aria-hidden />, text: "دفع آمن عبر ماي فاتورة: كي نت أو بطاقة", bg: "#DEF8EE", fg: "#0A6F52" },
-  { icon: <Library aria-hidden />, text: "يظهر في مكتبتي فور تأكيد الدفع", bg: "#FFF0C7", fg: "#6E4700" },
-  { icon: <MonitorSmartphone aria-hidden />, text: "تكمل من حيث توقفت على أي جهاز", bg: "#E8EEFF", fg: "#2B33B5" },
-];
+/** ضمانات صحيحة لمنتج الفيديو، تتبع حال الدفع الفعلية */
+function videoTrust(payment: PaymentPublicState): TrustItem[] {
+  const paymentLine = paymentClaims(payment).productLine;
+  const libraryLine = productLibraryLine(payment, false);
+  return [
+    ...(paymentLine ? [{ icon: <ShieldCheck aria-hidden />, text: paymentLine, bg: "#DEF8EE", fg: "#0A6F52" }] : []),
+    ...(libraryLine ? [{ icon: <Library aria-hidden />, text: libraryLine, bg: "#FFF0C7", fg: "#6E4700" }] : []),
+    { icon: <MonitorSmartphone aria-hidden />, text: "تكمل من حيث توقفت على أي جهاز", bg: "#E8EEFF", fg: "#2B33B5" },
+  ];
+}
 
 /** صفحة منتج الفيديو (درس/وحدة/مراجعة/دورة/باقة فيها فيديوهات) */
 export function VideoProductView({
+  payment,
   product,
   playlist,
   included,
@@ -50,6 +56,7 @@ export function VideoProductView({
   unavailable,
   breadcrumbs,
 }: {
+  payment: PaymentPublicState;
   product: ProductDetail;
   playlist: PlaylistGroup[];
   included: ProductCard[];
@@ -173,7 +180,7 @@ export function VideoProductView({
               hidePrice={unavailable}
               preview={!isOwned && previewHref ? { href: previewHref, label: "شاهد المعاينة المجانية", icon: <Play className="fill-current" aria-hidden /> } : null}
               accessText={accessPeriodText(product)}
-              trust={videoClosed || unavailable ? [] : VIDEO_TRUST}
+              trust={videoClosed || unavailable ? [] : videoTrust(payment)}
             />
           </div>
         </aside>

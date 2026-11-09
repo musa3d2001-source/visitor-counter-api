@@ -35,7 +35,7 @@ const FLAT_MAX = 6;
 export async function generateMetadata({ params }: { params: Promise<Params> }): Promise<Metadata> {
   const t = await getTeacherBySlug((await params).slug);
   if (!t) return { title: "المعلم غير موجود" };
-  const description = t.headline || `شروحات ومراجعات ${t.name} بالفيديو`;
+  const description = t.headline || `محتوى ${t.name} المنشور على المنصة`;
   return {
     title: t.name,
     description,
@@ -176,7 +176,7 @@ export default async function TeacherPage({ params }: { params: Promise<Params> 
 
       {groups.length === 0 ? (
         <div className="mx-auto max-w-7xl px-4 pt-10 sm:px-6">
-          <EmptyState headingLevel={2} icon={<PlayCircle />} title="لم يُنشر محتوى لهذا المعلم بعد" description="تظهر شروحاته ومراجعاته هنا فور نشرها." />
+          <EmptyState headingLevel={2} icon={<PlayCircle />} title="لم يُنشر محتوى لهذا المعلم بعد" description="يظهر محتواه هنا فور نشره." />
         </div>
       ) : (
         <>

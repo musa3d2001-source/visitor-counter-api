@@ -12,6 +12,7 @@ import { orderConsentNeeds } from "@/server/platform/consent";
 import { canSayNothingWasCharged, hasUnresolvedAttempt, type ExtraPaymentKind } from "@/server/payments/extras";
 import { cancelOrderAction, retryPaymentAction, refreshOrderStatusAction } from "../../checkout/actions";
 import { ContactLinks, PaymentUnavailableNotice, realContactLinks } from "@/components/site/payment-unavailable-notice";
+import { ORDER_PAYMENT_FALLBACK } from "@/lib/site-truth";
 import { Alert } from "@/components/ui/alert";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -81,7 +82,7 @@ export default async function OrderPage({ params, searchParams }: { params: Prom
     select status, amount_fils, accepted_at, completed_at, created_at from refunds
     where order_id = ${order.id} and status in ('recorded', 'requested', 'completed') order by created_at desc limit 1
   `;
-  const methodName = paymentMethodLabel(settled?.payment_method ?? payment?.payment_method) ?? (settled ? "MyFatoorah" : null);
+  const methodName = paymentMethodLabel(settled?.payment_method ?? payment?.payment_method) ?? (settled ? ORDER_PAYMENT_FALLBACK : null);
   const statusTone = order.status === "paid" ? "success" : order.status === "failed" ? "danger" : order.status === "pending" ? "warning" : "neutral";
   const heroKey = order.status === "paid" || order.status === "pending" || order.status === "failed" ? order.status : "other";
   const hero = HERO[heroKey];

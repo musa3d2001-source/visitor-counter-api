@@ -10,6 +10,7 @@ import { GradeCard, GradeGrid } from "@/components/site/grade-card";
 import { countParts, type CountWord } from "@/lib/design";
 import type { ProductType } from "@/lib/labels";
 import { filsToKwdString } from "@/lib/money";
+import { paymentClaims, type PaymentPublicState } from "@/lib/site-truth";
 import { cn } from "@/lib/utils";
 
 export type PosterItem = {
@@ -93,11 +94,12 @@ export function SumRow({ label, children, tone, className }: { label: React.Reac
   );
 }
 
-/** ميزات حقيقية للدفع والوصول (نفس ما يذكره تذييل الموقع) */
-export function TrustList({ className }: { className?: string }) {
+/** ميزات حقيقية للدفع والوصول، تتبع حال الدفع الفعلية */
+export function TrustList({ payment, className }: { payment: PaymentPublicState; className?: string }) {
+  const claims = paymentClaims(payment);
   const rows = [
-    { icon: <ShieldCheck />, text: "دفع آمن عبر ماي فاتورة: كي نت والبطاقات", cls: "from-[#2dc2b3] to-[#0a6b66] text-white" },
-    { icon: <Zap />, text: "يظهر في مكتبتك فور تأكيد الدفع", cls: "from-[#ffd25e] to-[#eb9b00] text-[#3d2a00]" },
+    ...(claims.cartLine ? [{ icon: <ShieldCheck />, text: claims.cartLine, cls: "from-[#2dc2b3] to-[#0a6b66] text-white" }] : []),
+    ...(claims.afterConfirm ? [{ icon: <Zap />, text: "يظهر في مكتبتك بعد تأكيد الدفع", cls: "from-[#ffd25e] to-[#eb9b00] text-[#3d2a00]" }] : []),
     { icon: <MonitorSmartphone />, text: "يفتح على الجوال والحاسوب", cls: "from-[#b28cff] to-[#6a3fe0] text-white" },
   ];
   return (

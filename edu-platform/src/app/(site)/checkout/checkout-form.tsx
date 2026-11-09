@@ -1,7 +1,7 @@
 "use client";
 
 import { useActionState } from "react";
-import { CircleCheck, Gift, Lock, ShieldCheck } from "lucide-react";
+import { CircleCheck, FlaskConical, Gift, Lock, ShieldCheck } from "lucide-react";
 import { placeOrderAction } from "./actions";
 import { Alert } from "@/components/ui/alert";
 import { SubmitButton } from "@/components/ui/submit-button";
@@ -14,14 +14,18 @@ export function CheckoutForm({
   total,
   methods,
   disabled,
-  sandbox,
+  paymentNote,
+  secureNote,
   needsTerms,
 }: {
   coupon: string;
   total: number;
   methods: PaymentMethodOption[];
   disabled: boolean;
-  sandbox: boolean;
+  /** ملاحظة أسفل الزر حسب حال الدفع الفعلية */
+  paymentNote: string | null;
+  /** أيقونة الأمان لا تظهر إلا والدفع حقيقي */
+  secureNote: boolean;
   needsTerms: boolean;
 }) {
   const [state, action] = useActionState(placeOrderAction, null);
@@ -65,12 +69,10 @@ export function CheckoutForm({
       {disabled ? null : (
         <div className="mt-4 flex items-start gap-3 rounded-2xl bg-brand-50 p-3.5">
           <span className="grid size-9 shrink-0 place-items-center rounded-[0.8rem] bg-linear-to-br from-brand-400 to-brand-600 text-white" aria-hidden>
-            <ShieldCheck className="size-[1.15rem]" />
+            {secureNote || total === 0 ? <ShieldCheck className="size-[1.15rem]" /> : <FlaskConical className="size-[1.15rem]" />}
           </span>
           <p className="text-[0.9rem] leading-7 font-semibold text-brand-800">
-            {total === 0
-              ? "يُضاف المحتوى إلى مكتبتك مباشرة بعد التأكيد."
-              : `${sandbox ? "بيئة اختبار: لن يُخصم أي مبلغ. " : ""}ننقلك إلى صفحة الدفع الآمنة لدى ماي فاتورة، ولا نحتفظ ببيانات بطاقتك.`}
+            {total === 0 ? "يُضاف المحتوى إلى مكتبتك مباشرة بعد التأكيد." : paymentNote}
           </p>
         </div>
       )}

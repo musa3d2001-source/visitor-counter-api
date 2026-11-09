@@ -129,7 +129,7 @@ export default async function AccountPage({ searchParams }: { searchParams: Prom
           <EmptyStart
             art="receipt"
             title="لا توجد طلبات بعد"
-            description="عند شراء أي شرح أو مذكرة ستظهر فاتورته هنا."
+            description="عند أي شراء ستظهر فاتورته هنا."
             grades={[]}
             actions={
               <Button asChild size="lg">

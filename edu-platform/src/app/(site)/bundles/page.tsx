@@ -16,7 +16,7 @@ import s from "./_components/bundles.module.css";
 
 export const metadata: Metadata = {
   title: "الباقات والعروض",
-  description: "باقات تجمع الشروحات والمراجعات والمذكرات لكل صف ومادة بسعر أقل من شرائها منفردة.",
+  description: "باقات تجمع محتوى الصف أو المادة في شراء واحد، والتوفير إن وجد يظهر في صفحة كل باقة.",
   alternates: { canonical: "/bundles" },
 };
 

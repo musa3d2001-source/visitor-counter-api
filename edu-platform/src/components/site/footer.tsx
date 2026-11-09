@@ -3,13 +3,17 @@ import { CreditCard } from "lucide-react";
 import { Sparkle } from "@/components/art";
 import { ar } from "@/lib/design";
 import { getSettings } from "@/server/platform/settings";
+import { siteFacts } from "@/server/platform/site-facts";
+import { paymentClaims, publicTagline } from "@/lib/site-truth";
 import { listGrades } from "@/server/catalog/queries";
 import { storage } from "@/server/storage";
 import { Logo } from "./logo";
 
 /** التذييل: فيروزي داكن بشريط قوس قزح المواد، روابط حقيقية، وسنة بالأرقام الهندية العربية */
 export async function SiteFooter() {
-  const [settings, grades] = await Promise.all([getSettings(), listGrades()]);
+  const [settings, grades, facts] = await Promise.all([getSettings(), listGrades(), siteFacts()]);
+  const tagline = publicTagline(settings.tagline, facts);
+  const paymentLine = paymentClaims(facts.payment).footer;
   const logoUrl = settings.logo_key ? storage().publicUrl(settings.logo_key) : null;
   const year = new Date().getFullYear();
   const contact = [
@@ -30,11 +34,13 @@ export async function SiteFooter() {
       <div className="mx-auto grid max-w-7xl grid-cols-2 gap-x-6 gap-y-10 px-4 pt-16 pb-12 sm:px-6 lg:grid-cols-[1.5fr_1fr_1fr_1fr] lg:pt-20">
         <div className="col-span-2 lg:col-span-1">
           <Logo name={settings.site_name} logoUrl={logoUrl} tone="light" subtitle={grades[0]?.stageName} />
-          {settings.tagline ? <p className="mt-4 max-w-sm text-[1rem] leading-8 text-white/78">{settings.tagline}</p> : null}
-          <p className="mt-5 inline-flex items-center gap-2.5 rounded-2xl border border-white/10 bg-white/6 px-4 py-2.5 text-[0.9rem] leading-6">
-            <CreditCard className="size-4.5 shrink-0 text-[#FFD25E]" aria-hidden />
-            دفع إلكتروني آمن عبر ماي فاتورة: كي نت والبطاقات البنكية
-          </p>
+          {tagline ? <p className="mt-4 max-w-sm text-[1rem] leading-8 text-white/78">{tagline}</p> : null}
+          {paymentLine ? (
+            <p className="mt-5 inline-flex items-center gap-2.5 rounded-2xl border border-white/10 bg-white/6 px-4 py-2.5 text-[0.9rem] leading-6">
+              <CreditCard className="size-4.5 shrink-0 text-[#FFD25E]" aria-hidden />
+              {paymentLine}
+            </p>
+          ) : null}
         </div>
         <FooterCol title="الصفوف" links={grades.map((g) => ({ href: `/grades/${g.slug}`, label: g.name }))} />
         <FooterCol

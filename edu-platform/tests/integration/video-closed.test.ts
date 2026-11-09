@@ -218,7 +218,7 @@ describe.each(CLOSERS)("video closed: $name", ({ close }) => {
       expect(html).not.toContain('data-testid="watch-preview"');
       expect(html).not.toContain("شاهد المعاينة المجانية");
       expect(html).not.toContain("معاينة مجانية");
-      expect(html, "no payment promises for what cannot be bought").not.toContain("فور تأكيد الدفع");
+      expect(html, "no payment promises for what cannot be bought").not.toContain("تأكيد الدفع");
       const times = (needle: string) => html.split(needle).length - 1;
       expect(times('data-testid="lesson-item"')).toBeGreaterThan(0);
       expect(times('data-testid="lesson-locked"'), "every lesson shows locked, the free one too").toBe(times('data-testid="lesson-item"'));

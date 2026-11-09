@@ -25,7 +25,7 @@ export async function generateMetadata({ params }: { params: Promise<Params> }):
   if (!grade || !subject) return {};
   return {
     title: `${subject.name} ${grade.name}`,
-    description: `مذكرات ${subject.name} لـ${grade.name}: المذكرة النهائية، ليلة الاختبار، نماذج الاختبارات والإجابات.`,
+    description: `محتوى ${subject.name} لـ${grade.name} مرتبًا حسب النوع.`,
     alternates: { canonical: `/grades/${grade.slug}/${subject.slug}` },
   };
 }
@@ -144,7 +144,7 @@ export default async function SubjectPage({ params, searchParams }: { params: Pr
                       افهم <span className="text-hl">{subject.name}</span> بالفيديو
                     </>
                   }
-                  sub="شرح بصوت معلمك، وفي كثير منها درس مجاني تشاهده قبل الشراء."
+                  sub="شرح بصوت معلمك، وحيث تجد شارة «معاينة مجانية» تشاهد درسًا قبل الشراء."
                 />
                 <TypeSlots groups={videoGroups} renderItem={(x) => <ProductCard product={x} owned={owned?.has(x.id)} showGrade={false} headingLevel={4} />} />
               </section>

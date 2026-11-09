@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { ArrowLeft, GraduationCap, LibraryBig, Moon, MonitorPlay, Play, PlayCircle, ShieldCheck, Sun, Users, Zap } from "lucide-react";
 import type { ProductCard } from "@/server/catalog/queries";
+import type { TrustKey } from "@/lib/site-truth";
 import { Sparkle, SubjectArt, Swash } from "@/components/art";
 import { PRODUCT_TYPE_LABELS } from "@/lib/labels";
 import { filsToKwdString } from "@/lib/money";
@@ -9,6 +10,13 @@ import { cn } from "@/lib/utils";
 import s from "./home.module.css";
 
 export type HeroGrade = { id: string; slug: string; name: string; level: number };
+
+const TRUST_ICONS: Record<TrustKey, React.ReactNode> = {
+  pay: <ShieldCheck aria-hidden />,
+  library: <Zap aria-hidden />,
+  resume: <PlayCircle aria-hidden />,
+  devices: <MonitorPlay aria-hidden />,
+};
 
 /** يفصل آخر كلمة من العنوان (مع علامة الترقيم بعدها) لتلوينها وخط الإبراز الذهبي تحتها */
 function splitTitle(title: string) {
@@ -34,6 +42,8 @@ export function HomeHero({
   nightReview,
   stats,
   signedIn,
+  trust,
+  hasContact,
 }: {
   title: string;
   subtitle: string;
@@ -44,6 +54,9 @@ export function HomeHero({
   nightReview: ProductCard | null;
   stats: { lessons: number; teachers: number; grades: number };
   signedIn: boolean;
+  /** ما هو صحيح الآن فقط، من site-truth */
+  trust: { key: TrustKey; text: string }[];
+  hasContact: boolean;
 }) {
   const t = splitTitle(title);
   const fanSave = fan[0] ? savings(fan[0].priceFils, fan[0].compareAtPriceFils) : null;
@@ -91,22 +104,33 @@ export function HomeHero({
           </h1>
           {subtitle ? <p className={s.heroSub}>{subtitle}</p> : null}
 
-          <div className={s.heroCtas}>
-            <a href="#grades" className={s.btnPrimary}>
-              اختر صفك وابدأ
-              <span className={s.btnArrow} aria-hidden>
-                <ArrowLeft size={18} />
-              </span>
-            </a>
-            {previewHref ? (
-              <Link href={previewHref} className={s.btnGhost}>
-                <span className={s.btnPlay} aria-hidden>
-                  <Play size={15} fill="currentColor" />
+          {grades.length ? (
+            <div className={s.heroCtas}>
+              <a href="#grades" className={s.btnPrimary}>
+                اختر صفك وابدأ
+                <span className={s.btnArrow} aria-hidden>
+                  <ArrowLeft size={18} />
                 </span>
-                شاهد درسًا مجانًا
+              </a>
+              {previewHref ? (
+                <Link href={previewHref} className={s.btnGhost}>
+                  <span className={s.btnPlay} aria-hidden>
+                    <Play size={15} fill="currentColor" />
+                  </span>
+                  شاهد درسًا مجانًا
+                </Link>
+              ) : null}
+            </div>
+          ) : hasContact ? (
+            <div className={s.heroCtas}>
+              <Link href="/contact" className={s.btnPrimary}>
+                تواصل معنا
+                <span className={s.btnArrow} aria-hidden>
+                  <ArrowLeft size={18} />
+                </span>
               </Link>
-            ) : null}
-          </div>
+            </div>
+          ) : null}
 
           {grades.length ? (
             <nav className={s.quick} aria-labelledby="quick-grades">
@@ -155,24 +179,16 @@ export function HomeHero({
         ) : null}
       </div>
 
-      <ul className={cn(s.wrap, s.trust)} aria-label="مزايا المنصة">
-        <li>
-          <ShieldCheck aria-hidden />
-          دفع آمن بكي نت والبطاقات
-        </li>
-        <li>
-          <Zap aria-hidden />
-          يظهر في مكتبتك بعد تأكيد الدفع
-        </li>
-        <li>
-          <PlayCircle aria-hidden />
-          تكمل الفيديو من حيث توقفت
-        </li>
-        <li>
-          <MonitorPlay aria-hidden />
-          على الجوال والحاسوب
-        </li>
-      </ul>
+      {trust.length ? (
+        <ul className={cn(s.wrap, s.trust)} aria-label="مزايا المنصة" data-testid="hero-trust">
+          {trust.map((x) => (
+            <li key={x.key}>
+              {TRUST_ICONS[x.key]}
+              {x.text}
+            </li>
+          ))}
+        </ul>
+      ) : null}
     </section>
   );
 }

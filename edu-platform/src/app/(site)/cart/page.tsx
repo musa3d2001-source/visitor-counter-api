@@ -9,6 +9,8 @@ import { Alert } from "@/components/ui/alert";
 import { PageHeader, StatPill } from "@/components/ui/page-header";
 import { ProductCover } from "@/components/site/product-cover";
 import { listGrades } from "@/server/catalog/queries";
+import { paymentPublicState } from "@/server/payments/public-state";
+import { paymentClaims } from "@/lib/site-truth";
 import { CompactPrice, Kicker, SaleEndedChip, contentChips, shortTerm } from "@/components/site/card-parts";
 import { PRODUCT_TYPE_LABELS } from "@/lib/labels";
 import { filsToKwdString } from "@/lib/money";
@@ -23,6 +25,7 @@ export default async function CartPage() {
   const [ids, user] = await Promise.all([getCartIds(), getCurrentUser()]);
   const cart = await computeCart(ids, user?.id ?? null);
   const empty = cart.lines.length === 0;
+  const payment = paymentPublicState();
   const grades = empty ? await listGrades() : [];
   // التوفير الحقيقي فقط: الفرق بين السعر قبل الخصم والسعر الحالي حين يكون أعلى منه
   const saved = cart.payableLines.reduce((sum, l) => sum + (savings(l.priceFils, l.compareAtPriceFils)?.fils ?? 0), 0);
@@ -35,8 +38,10 @@ export default async function CartPage() {
         title="السلة"
         sub={
           empty
-            ? "كل ما تضيفه من شروحات ومذكرات يظهر هنا قبل الدفع."
-            : "راجع اختياراتك ثم أكمل الشراء. يظهر كل شيء في مكتبتك فور تأكيد الدفع."
+            ? "كل ما تضيفه يظهر هنا قبل الدفع."
+            : paymentClaims(payment).afterConfirm
+              ? "راجع اختياراتك ثم أكمل الشراء. يظهر كل شيء في مكتبتك بعد تأكيد الدفع."
+              : "راجع اختياراتك هنا. الدفع الإلكتروني غير متاح حاليًا."
         }
         aside={
           empty ? undefined : (
@@ -60,7 +65,7 @@ export default async function CartPage() {
           <EmptyStart
             art="cart"
             title="سلتك فارغة"
-            description="اختر صفك ثم المادة، وأضف الشرح أو المذكرة التي تحتاجها."
+            description="اختر صفك ثم المادة، وأضف ما تحتاجه."
             grades={grades}
             actions={
               <>
@@ -167,7 +172,7 @@ export default async function CartPage() {
                   </Link>
                 </Button>
               ) : null}
-              <TrustList className="mt-6 border-t border-line pt-5" />
+              <TrustList payment={payment} className="mt-6 border-t border-line pt-5" />
             </aside>
             {cart.payableLines.length ? (
               <MobileCheckoutBar

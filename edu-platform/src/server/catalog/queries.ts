@@ -552,6 +552,21 @@ export async function latestVideoProducts(limit = 8): Promise<ProductCard[]> {
   return rows.map(toCard);
 }
 
+/** ما يراه الزائر الآن فعلًا، بقاعدة القوائم نفسها. منه يتقرر أي ادعاء عن المحتوى يصح قوله */
+export const catalogOfferings = cache(async (): Promise<{ video: boolean; notes: boolean; content: boolean; teachers: number }> => {
+  const closed = await currentCloseFlags();
+  const [r] = await sql<{ video: boolean; notes: boolean; products: number; teachers: number }[]>`
+    select
+      coalesce(bool_or(p.type <> 'bundle' and vs.lesson_count > 0), false) as video,
+      coalesce(bool_or(p.type <> 'bundle' and not (p.type = any(${VIDEO_PRODUCT_TYPES}::text[]))), false) as notes,
+      count(*)::int as products,
+      (select count(*)::int from teachers t where t.is_published) as teachers
+    ${visibleJoin()}
+      ${hideClosedVideo(closed)}
+  `;
+  return { video: r.video, notes: r.notes, content: r.products > 0, teachers: r.teachers };
+});
+
 // ---------------------------------------------------------------------------
 // المعلمون
 // ---------------------------------------------------------------------------

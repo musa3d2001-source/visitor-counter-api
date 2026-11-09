@@ -1,5 +1,7 @@
 import type { Metadata, Viewport } from "next";
 import { getSettings } from "@/server/platform/settings";
+import { siteFacts } from "@/server/platform/site-facts";
+import { publicHero, publicTagline } from "@/lib/site-truth";
 import { env } from "@/server/env";
 import "./globals.css";
 
@@ -7,19 +9,22 @@ import "./globals.css";
 export const dynamic = "force-dynamic";
 
 export async function generateMetadata(): Promise<Metadata> {
-  const s = await getSettings();
+  const [s, facts] = await Promise.all([getSettings(), siteFacts()]);
   const base = new URL(env().APP_URL);
+  const tagline = publicTagline(s.tagline, facts);
+  const title = tagline ? `${s.site_name} | ${tagline}` : s.site_name;
+  const description = publicHero({ title: s.hero_title, subtitle: s.hero_subtitle }, facts).subtitle;
   return {
     metadataBase: base,
-    title: { default: `${s.site_name} | ${s.tagline}`, template: `%s | ${s.site_name}` },
-    description: s.hero_subtitle,
+    title: { default: title, template: `%s | ${s.site_name}` },
+    description,
     applicationName: s.site_name,
     openGraph: {
       type: "website",
       locale: "ar_KW",
       siteName: s.site_name,
-      title: `${s.site_name} | ${s.tagline}`,
-      description: s.hero_subtitle,
+      title,
+      description,
       images: [{ url: "/brand/og.png", width: 1200, height: 630, alt: s.site_name }],
     },
     twitter: { card: "summary_large_image" },

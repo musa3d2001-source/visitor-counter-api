@@ -12,6 +12,8 @@ import { ProductGrid, ProductShelf } from "@/components/site/product-card";
 import { previewHref, shortTerm } from "@/components/site/card-parts";
 import { termLabel } from "@/lib/labels";
 import { gradeClass, W } from "@/lib/design";
+import { gradeMeta } from "@/lib/site-truth";
+import { siteFacts } from "@/server/platform/site-facts";
 import { cn } from "@/lib/utils";
 import { balancedGrid, browseStyles as s, GradeWindow, NightPanel, offerPhrase, pillCount, splitByFamily, SubjectCard, ToneHero, typeFamily } from "../_components/browse";
 
@@ -19,8 +21,7 @@ export async function generateMetadata({ params }: { params: Promise<{ gradeSlug
   const grade = await getGradeBySlug((await params).gradeSlug);
   if (!grade) return {};
   return {
-    title: `شروحات ومذكرات ${grade.name}`,
-    description: `شرح الوحدات بالفيديو ومراجعات الاختبارات والمذكرات النهائية لطلاب ${grade.name}، ${grade.stageName} في الكويت.`,
+    ...gradeMeta(grade.name, grade.stageName, await siteFacts()),
     alternates: { canonical: `/grades/${grade.slug}` },
   };
 }
@@ -112,7 +113,7 @@ export default async function GradePage({ params }: { params: Promise<{ gradeSlu
                 اختر <span className="text-hl">مادتك</span>
               </>
             }
-            sub="ادخل المادة لترى شرح وحداتها ومراجعاتها ومذكراتها مرتبة حسب النوع."
+            sub="ادخل المادة لترى محتواها مرتبًا حسب النوع."
           />
           {subjects.length === 0 ? (
             <EmptyState title="لا توجد مواد منشورة لهذا الصف بعد" description="نجهّز المحتوى الآن، وتظهر المواد هنا فور نشرها." />
@@ -163,7 +164,7 @@ export default async function GradePage({ params }: { params: Promise<{ gradeSlu
                   شرح الوحدات <span className="text-hl">بالفيديو</span>
                 </>
               }
-              sub="شرح كل وحدة بصوت معلمك، وفي كثير منها درس مجاني تشاهده قبل الشراء."
+              sub="شرح بصوت معلمك، وحيث تجد شارة «معاينة مجانية» تشاهد درسًا قبل الشراء."
             />
             <ProductShelf products={videos} ownedIds={owned} showGrade={false} className={balancedGrid(videos.length, { md: [3, 2], lg: [4, 3], video: true })} />
           </section>

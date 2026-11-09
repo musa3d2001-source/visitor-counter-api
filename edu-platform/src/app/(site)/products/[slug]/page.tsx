@@ -14,6 +14,8 @@ import { accessExpiry, accessibleProductIds, isTeacherOfProduct } from "@/server
 import { sql } from "@/server/db";
 import { VideoProductView, accessPeriodText } from "./video-view";
 import { getSettings } from "@/server/platform/settings";
+import { paymentPublicState } from "@/server/payments/public-state";
+import { paymentClaims, productLibraryLine } from "@/lib/site-truth";
 import { closedVideoProductIds } from "@/server/video/policy";
 import { unsellableProductIds } from "@/server/commerce/cart";
 import { env } from "@/server/env";
@@ -107,6 +109,7 @@ export default async function ProductPage({ params }: { params: Promise<Params> 
           </Alert>
         ) : null}
         <VideoProductView
+          payment={paymentPublicState()}
           product={product}
           playlist={playlist}
           included={included}
@@ -149,10 +152,12 @@ export default async function ProductPage({ params }: { params: Promise<Params> 
   const readOnly = !product.isDownloadable && !isBundle;
   const readingText = product.isDownloadable ? "قابلة للتنزيل والطباعة بعد الشراء" : readOnly ? "تُقرأ داخل المنصة، ولا تُنزّل" : null;
   const accessText = accessPeriodText(product);
+  const paymentLine = paymentClaims(paymentPublicState()).productLine;
+  const libraryLine = productLibraryLine(paymentPublicState(), isBundle);
 
   const trust: TrustItem[] = [
-    { icon: <ShieldCheck aria-hidden />, text: "دفع آمن عبر ماي فاتورة: كي نت أو بطاقة", bg: "#DEF8EE", fg: "#0A6F52" },
-    { icon: <Library aria-hidden />, text: isBundle ? "كل محتويات الباقة تظهر في مكتبتي فور تأكيد الدفع" : "يظهر في مكتبتي فور تأكيد الدفع", bg: "#FFF0C7", fg: "#6E4700" },
+    ...(paymentLine ? [{ icon: <ShieldCheck aria-hidden />, text: paymentLine, bg: "#DEF8EE", fg: "#0A6F52" }] : []),
+    ...(libraryLine ? [{ icon: <Library aria-hidden />, text: libraryLine, bg: "#FFF0C7", fg: "#6E4700" }] : []),
     ...(readingText ? [{ icon: product.isDownloadable ? <Download aria-hidden /> : <Lock aria-hidden />, text: readingText, bg: "#E8EEFF", fg: "#2B33B5" }] : []),
   ];
 

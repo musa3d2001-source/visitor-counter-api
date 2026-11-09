@@ -1,18 +1,17 @@
-import { CirclePlay, LibraryBig, ShieldCheck } from "lucide-react";
+import { LibraryBig, MonitorSmartphone, ShieldCheck } from "lucide-react";
 import { LogoMark, Sparkle, SubjectArt } from "@/components/art";
 import { subjectVars } from "@/lib/design";
+import { authPerks, type AuthPerkKey } from "@/lib/site-truth";
+import { siteFacts } from "@/server/platform/site-facts";
 
-const PERKS = [
-  { Icon: LibraryBig, text: "ما تشتريه يظهر في «مكتبتي» فور تأكيد الدفع" },
-  { Icon: CirclePlay, text: "تكمل الفيديو من حيث توقفت، على الجوال والحاسوب" },
-  { Icon: ShieldCheck, text: "دفع آمن عبر ماي فاتورة، ولا نحتفظ ببيانات بطاقتك" },
-];
+export const PERK_ICONS: Record<AuthPerkKey, typeof LibraryBig> = { library: LibraryBig, resume: MonitorSmartphone, pay: ShieldCheck };
 
 /**
  * غلاف صفحات الدخول: خلفية مشمسة، لوح أبيض للنموذج، وعلى الحاسوب جانب فيروزي مرسوم
  * (مروحة أغلفة مواد + مزايا حقيقية للمنصة).
  */
-export function AuthCard({ title, subtitle, children }: { title: string; subtitle?: string; children: React.ReactNode }) {
+export async function AuthCard({ title, subtitle, children }: { title: string; subtitle?: string; children: React.ReactNode }) {
+  const perks = authPerks(await siteFacts());
   return (
     <div className="bg-sunny bg-dots relative">
       <span className="absolute inset-x-0 bottom-0 -z-10 h-28 bg-linear-to-b from-transparent to-canvas" aria-hidden />
@@ -61,14 +60,17 @@ export function AuthCard({ title, subtitle, children }: { title: string; subtitl
           </div>
 
           <ul className="mt-8 grid gap-3">
-            {PERKS.map(({ Icon, text }) => (
-              <li key={text} className="flex items-center gap-3 rounded-2xl border border-white/12 bg-white/8 px-4 py-3 text-[0.98rem] leading-7 text-white/90">
-                <span className="grid size-9 shrink-0 place-items-center rounded-full bg-linear-to-br from-[#ffd25e] to-[#eb9b00] text-[#3d2a00]">
-                  <Icon className="size-4.5" aria-hidden />
-                </span>
-                {text}
-              </li>
-            ))}
+            {perks.map(({ key, text }) => {
+              const Icon = PERK_ICONS[key];
+              return (
+                <li key={key} className="flex items-center gap-3 rounded-2xl border border-white/12 bg-white/8 px-4 py-3 text-[0.98rem] leading-7 text-white/90">
+                  <span className="grid size-9 shrink-0 place-items-center rounded-full bg-linear-to-br from-[#ffd25e] to-[#eb9b00] text-[#3d2a00]">
+                    <Icon className="size-4.5" aria-hidden />
+                  </span>
+                  {text}
+                </li>
+              );
+            })}
           </ul>
         </aside>
       </div>

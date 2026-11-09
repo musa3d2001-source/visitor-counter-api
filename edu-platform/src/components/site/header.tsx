@@ -36,7 +36,9 @@ export async function SiteHeader() {
   const stageName = grades[0]?.stageName;
   const first = grades[0];
   const last = grades[grades.length - 1];
-  const range = first && last && first.id !== last.id ? `شروحات من ${first.name} إلى ${last.name} متاحة الآن` : "";
+  // المدى لا يُقال إلا إن كانت كل الصفوف بين طرفيه فيها محتوى فعلًا
+  const contiguous = grades.every((g, i) => i === 0 || g.level === grades[i - 1].level + 1);
+  const range = first && last && first.id !== last.id && contiguous ? `المحتوى من ${first.name} إلى ${last.name} متاح الآن` : "";
   const preview = videos.find((v) => v.previewLessonId);
   const previewHref = preview ? `/watch/${preview.id}?lesson=${preview.previewLessonId}` : null;
   const cartCount = cartIds.length;

@@ -10,6 +10,7 @@ import {
   type ProductCard,
 } from "@/server/catalog/queries";
 import { getSettings } from "@/server/platform/settings";
+import { siteFacts } from "@/server/platform/site-facts";
 import { getCurrentUser } from "@/server/auth/session";
 import { accessibleProductIds } from "@/server/access/entitlements";
 import { VideoCard } from "@/components/site/video-card";
@@ -18,9 +19,11 @@ import { BundleCard } from "@/components/site/bundle-card";
 import { NoteCard } from "@/components/site/note-card";
 import { GradeCard } from "@/components/site/grade-card";
 import { SubjectGrid, SubjectTile } from "@/components/site/subject-tile";
+import { realContactLinks } from "@/components/site/payment-unavailable-notice";
 import { EmptyState } from "@/components/ui/empty-state";
 import { SectionHead } from "@/components/ui/section-head";
 import { academicYearLabel, ar, savings } from "@/lib/design";
+import { EMPTY_GRADES, gradesHeading, heroTrust, publicFaq, publicHero, publicTagline, teachersCopy } from "@/lib/site-truth";
 import { HomeHero, shortGrade } from "./_home/hero";
 import { Rail } from "./_home/rail";
 import { SubjectExplorer } from "./_home/subject-explorer";
@@ -73,7 +76,8 @@ function pickNotes(notes: ProductCard[], levelBySlug: Map<string, number>, limit
  * كل الأرقام والأسعار من قاعدة البيانات.
  */
 export default async function HomePage() {
-  const [stages, stats, settings, user, videos, teachers, allTeachers, bundles, examReviews, quizReviews, finalNotes] = await Promise.all([
+  const [facts, stages, stats, settings, user, videos, teachers, allTeachers, bundles, examReviews, quizReviews, finalNotes] = await Promise.all([
+    siteFacts(),
     listStages(),
     gradeStats(),
     getSettings(),
@@ -110,19 +114,25 @@ export default async function HomePage() {
   const stageName = grades[0]?.stageName ?? "";
   const heroGrades = grades.map((g) => ({ id: g.id, slug: g.slug, name: g.name, level: g.level }));
   const teacherCols = teachers.length % 4 === 0 || teachers.length === 7 ? 4 : 3;
+  const hero = publicHero({ title: settings.hero_title, subtitle: settings.hero_subtitle }, facts);
+  const heading = gradesHeading(facts);
+  const hasContact = realContactLinks(settings).length > 0;
+  const teacherText = teachersCopy(allTeachers.length, facts);
 
   return (
     <div className={s.home}>
       <HomeHero
-        title={settings.hero_title}
-        subtitle={settings.hero_subtitle}
-        tagline={settings.tagline}
+        title={hero.title}
+        subtitle={hero.subtitle}
+        tagline={publicTagline(settings.tagline, facts)}
         grades={heroGrades}
         fan={fan}
         previewHref={previewHref}
         nightReview={examReviews[0] ?? null}
         stats={{ lessons: totalLessons, teachers: allTeachers.length, grades: grades.length }}
         signedIn={Boolean(user)}
+        trust={facts.content ? heroTrust(facts) : []}
+        hasContact={hasContact}
       />
 
       {/* لوح الصفوف: يعلو البطل */}
@@ -140,13 +150,19 @@ export default async function HomePage() {
                 }
                 title={
                   <>
-                    في أي صف أنت؟ <span className="text-hl">كل شيء جاهز لك</span>
+                    {heading.title}
+                    {heading.highlight ? (
+                      <>
+                        {" "}
+                        <span className="text-hl">{heading.highlight}</span>
+                      </>
+                    ) : null}
                   </>
                 }
-                sub="اختر صفك لتجد شروحات الفيديو والمراجعات والمذكرات مرتبة حسب المادة."
+                sub={heading.sub ?? undefined}
               />
               {grades.length === 0 ? (
-                <EmptyState title="المحتوى قيد التجهيز" description="نجهّز الشروحات والمذكرات الآن." />
+                <EmptyState title={EMPTY_GRADES.title} description={EMPTY_GRADES.description} />
               ) : (
                 <ul className={s.gradeGrid} data-testid="grade-picker">
                   {grades.map((g, i) => (
@@ -209,15 +225,21 @@ export default async function HomePage() {
             <SectionHead
               id="teachers-title"
               icon={<Users size={16} />}
-              eyebrow="معلمو المنصة"
+              eyebrow={teacherText.eyebrow}
               tone="coral"
               title={
-                <>
-                  تعلّم مع معلم <span className="text-hl">يشرح لك خطوة بخطوة</span>
-                </>
+                facts.video ? (
+                  <>
+                    تعلّم مع معلم <span className="text-hl">يشرح لك خطوة بخطوة</span>
+                  </>
+                ) : (
+                  <>
+                    {teacherText.lead} <span className="text-hl">{teacherText.highlight}</span>
+                  </>
+                )
               }
-              sub="لكل معلم صفحة تجمع شرحه للوحدات ومراجعاته ومذكراته."
-              more={{ href: "/teachers", label: "كل المعلمين" }}
+              sub={teacherText.section}
+              more={{ href: "/teachers", label: allTeachers.length > 1 ? "كل المعلمين" : "صفحة المعلم" }}
             />
             <Rail label="المعلمين" cols={teacherCols}>
               {teachers.map((t) => (
@@ -285,9 +307,9 @@ export default async function HomePage() {
         </section>
       ) : null}
 
-      <HowSteps />
-      <HomeFaq faq={settings.faq} whatsapp={settings.whatsapp_number} />
-      <ClosingCta grades={heroGrades} />
+      <HowSteps facts={facts} />
+      <HomeFaq faq={publicFaq(settings.faq, facts)} whatsapp={settings.whatsapp_number} hasContact={hasContact} />
+      <ClosingCta grades={heroGrades} facts={facts} />
     </div>
   );
 }

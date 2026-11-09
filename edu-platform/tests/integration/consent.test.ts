@@ -190,7 +190,7 @@ describe("the guardian declaration at checkout", () => {
 
   it("a refusal the page did not expect still shows its box and its message", () => {
     ctx.formState = { fieldErrors: { guardianDeclaration: CONSENT_FIELD_ERRORS.guardianDeclaration, termsAccepted: CONSENT_FIELD_ERRORS.termsAccepted } };
-    const html = renderToStaticMarkup(createElement(CheckoutForm, { coupon: "", total: 0, methods: [], disabled: false, sandbox: false, needsTerms: false }));
+    const html = renderToStaticMarkup(createElement(CheckoutForm, { coupon: "", total: 0, methods: [], disabled: false, paymentNote: null, secureNote: false, needsTerms: false }));
     expect(html).toContain('data-testid="guardian-declaration"');
     expect(html).toContain('data-testid="guardian-declaration-error"');
     expect(html).toContain('data-testid="terms-accepted"');
@@ -198,7 +198,7 @@ describe("the guardian declaration at checkout", () => {
   });
 
   it("a page with nothing to ask shows no boxes", () => {
-    const html = renderToStaticMarkup(createElement(CheckoutForm, { coupon: "", total: 0, methods: [], disabled: false, sandbox: false, needsTerms: false }));
+    const html = renderToStaticMarkup(createElement(CheckoutForm, { coupon: "", total: 0, methods: [], disabled: false, paymentNote: null, secureNote: false, needsTerms: false }));
     expect(html).not.toContain('data-testid="purchase-consent"');
   });
 
