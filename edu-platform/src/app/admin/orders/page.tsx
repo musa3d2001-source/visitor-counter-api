@@ -6,6 +6,7 @@ import { openPaymentAlerts } from "@/server/payments/monitoring";
 import { openExtraPayments } from "@/server/payments/extras";
 import { openRefunds } from "@/server/payments/refunds";
 import { paymentsConfig } from "@/server/payments/service";
+import { refundStepUpActive } from "@/server/auth/step-up";
 import { ExtraPaymentsList } from "./_components/extra-payments";
 import { RefundsList } from "./_components/refunds-list";
 import { resolvePaymentAlertAction } from "./actions";
@@ -24,16 +25,17 @@ import { cn, formatDateTime } from "@/lib/utils";
 import { PeopleBand, BandChip, BandChips } from "../_components/people/band";
 import { OrdersArt } from "../_components/people/art";
 import { Kwd } from "../_components/people/bits";
+import { StepUpOffNote } from "./_components/step-up-off-note";
 import { orderTone } from "../_components/people/helpers";
 
 export const metadata = { title: "الطلبات والمدفوعات" };
 
 export default async function AdminOrdersPage({ searchParams }: { searchParams: Promise<{ q?: string; status?: string; test?: string }> }) {
-  await requireOwnerPage();
+  const owner = await requireOwnerPage();
   const sp = await searchParams;
   const status = ORDER_STATUSES.includes(sp.status as never) ? sp.status : undefined;
   const test = sp.test === "real" || sp.test === "test" ? sp.test : undefined;
-  const [orders, alerts, extras, refunds] = await Promise.all([listAdminOrders({ q: sp.q?.slice(0, 80), status, test }), openPaymentAlerts(), openExtraPayments(), openRefunds()]);
+  const [orders, alerts, extras, refunds, stepUp] = await Promise.all([listAdminOrders({ q: sp.q?.slice(0, 80), status, test }), openPaymentAlerts(), openExtraPayments(), openRefunds(), refundStepUpActive(owner.userId)]);
   const filtered = Boolean(sp.q || status || test);
   const paid = orders.filter((o) => o.status === "paid").length;
   const pending = orders.filter((o) => o.status === "pending").length;
@@ -154,13 +156,15 @@ export default async function AdminOrdersPage({ searchParams }: { searchParams: 
           icon={<RotateCcw />}
           tone="violet"
         >
-          <RefundsList refunds={refunds} canAct={paymentsConfig().enabled} showOrder />
+          {stepUp ? null : <StepUpOffNote />}
+          <RefundsList refunds={refunds} canAct={paymentsConfig().enabled} showOrder stepUp={stepUp} />
         </Section>
       ) : null}
 
       {extras.length ? (
         <Section id="extra-payments" title="دفعات زائدة" description="مبالغ أكدتها البوابة ولا تكمل طلبًا. استرداد الدفعة لا يغيّر الطلب ولا وصول الطالب ولا الأرباح." icon={<Banknote />} tone="coral">
-          <ExtraPaymentsList extras={extras} canRefund={paymentsConfig().enabled} showOrder />
+          {stepUp ? null : <StepUpOffNote />}
+          <ExtraPaymentsList extras={extras} canRefund={paymentsConfig().enabled} showOrder stepUp={stepUp} />
         </Section>
       ) : null}
 

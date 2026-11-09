@@ -6,6 +6,7 @@ import { ConfirmButton } from "@/components/admin/confirm-button";
 import { StatusPill, TestBadge, type StatusTone } from "@/components/admin/status-badge";
 import { ToneIcon } from "@/components/admin/icon-tile";
 import { REFUND_STATUS_LABELS, REFUND_STATUS_HINTS } from "@/lib/labels";
+import { STEP_UP_CONFIRM_FIELD } from "@/lib/two-factor";
 import { formatDateTime } from "@/lib/utils";
 import { Kwd } from "../../_components/people/bits";
 
@@ -21,7 +22,7 @@ const STATUS_TONE: Record<RefundStatus, StatusTone> = {
 };
 
 /** قائمة سجلات الاسترداد: تُستخدم في قائمة المالك وفي صفحة الطلب، بالصفوف والأزرار نفسها */
-export function RefundsList({ refunds, canAct, showOrder }: { refunds: RefundQueueRow[]; canAct: boolean; showOrder?: boolean }) {
+export function RefundsList({ refunds, canAct, showOrder, stepUp }: { refunds: RefundQueueRow[]; canAct: boolean; showOrder?: boolean; stepUp: boolean }) {
   return (
     <ul className="flex flex-col gap-3" aria-label="سجلات الاسترداد" data-testid="refund-queue">
       {refunds.map((r) => {
@@ -98,6 +99,7 @@ export function RefundsList({ refunds, canAct, showOrder }: { refunds: RefundQue
                     title="إعادة إرسال طلب الاسترداد؟"
                     description="نسأل البوابة أولًا عن أي استرداد سابق، ثم نطلب إعادة كامل المبلغ إلى وسيلة الدفع الأصلية. عند قبولها فقط يتغير الطلب ويُغلق الوصول وتُعكس الأرباح. هذه عملية مالية حقيقية في وضع الإنتاج."
                     confirmLabel="إرسال طلب الاسترداد"
+                    fields={stepUp ? [STEP_UP_CONFIRM_FIELD] : undefined}
                   />
                 ) : null}
                 {dismissable ? (

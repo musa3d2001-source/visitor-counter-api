@@ -28,6 +28,7 @@ import { paymentsConfig } from "@/server/payments/service";
 import { openPaymentAlerts } from "@/server/payments/monitoring";
 import { orderExtraPayments } from "@/server/payments/extras";
 import { orderRefunds } from "@/server/payments/refunds";
+import { refundStepUpActive } from "@/server/auth/step-up";
 import { ExtraPaymentsList } from "../_components/extra-payments";
 import { RefundsList } from "../_components/refunds-list";
 import { Alert } from "@/components/ui/alert";
@@ -45,6 +46,8 @@ import { displayPhone } from "@/lib/phone";
 import { count, W } from "@/lib/design";
 import { formatDateTime } from "@/lib/utils";
 import { refundOrderAction, reverifyPaymentAction } from "../actions";
+import { StepUpOffNote } from "../_components/step-up-off-note";
+import { STEP_UP_CONFIRM_FIELD } from "@/lib/two-factor";
 import { BandChip, ProfileHero } from "../../_components/people/band";
 import { OrdersArt } from "../../_components/people/art";
 import { Kwd, PersonAvatar, SoftNote, Timeline, TimelineItem, TypeIcon } from "../../_components/people/bits";
@@ -59,13 +62,13 @@ function paymentTone(status: string): AdminTone {
 type Step = { key: string; at: Date; tone: AdminTone; icon: React.ReactNode; title: React.ReactNode; body?: React.ReactNode };
 
 export default async function AdminOrderPage({ params }: { params: Promise<{ id: string }> }) {
-  await requireOwnerPage();
+  const owner = await requireOwnerPage();
   const { id } = await params;
   if (!/^[0-9a-f-]{36}$/i.test(id)) notFound();
   const data = await getAdminOrder(id);
   if (!data) notFound();
   const { order, items, payments, events } = data;
-  const [alerts, extras, refunds] = await Promise.all([openPaymentAlerts({ orderId: order.id }), orderExtraPayments(order.id), orderRefunds(order.id)]);
+  const [alerts, extras, refunds, stepUp] = await Promise.all([openPaymentAlerts({ orderId: order.id }), orderExtraPayments(order.id), orderRefunds(order.id), refundStepUpActive(owner.userId)]);
   const cfg = paymentsConfig();
   const hasInvoice = payments.some((p) => p.provider === "myfatoorah" && p.gateway_invoice_id);
   const tone = orderTone(order.status);
@@ -338,7 +341,7 @@ export default async function AdminOrderPage({ params }: { params: Promise<{ id:
 
       {extras.length ? (
         <Section title="دفعات زائدة على هذا الطلب" description="استرداد الدفعة الزائدة لا يغيّر الطلب ولا وصول الطالب ولا الأرباح." icon={<Banknote />} tone="coral">
-          <ExtraPaymentsList extras={extras} canRefund={cfg.enabled} />
+          <ExtraPaymentsList extras={extras} canRefund={cfg.enabled} stepUp={stepUp} />
         </Section>
       ) : null}
 
@@ -350,9 +353,10 @@ export default async function AdminOrderPage({ params }: { params: Promise<{ id:
       >
         {refunds.length ? (
           <div className="mb-4">
-            <RefundsList refunds={refunds} canAct={cfg.enabled} />
+            <RefundsList refunds={refunds} canAct={cfg.enabled} stepUp={stepUp} />
           </div>
         ) : null}
+        {!stepUp && (order.status === "paid" || refunds.length > 0) && cfg.enabled ? <StepUpOffNote /> : null}
         {order.status === "paid" && cfg.enabled && canStartRefund ? (
           <ConfirmButton
             action={refundOrderAction}
@@ -364,6 +368,7 @@ export default async function AdminOrderPage({ params }: { params: Promise<{ id:
             requireReason
             reasonLabel="سبب الاسترداد (إلزامي)"
             confirmLabel="إرسال طلب الاسترداد"
+            fields={stepUp ? [STEP_UP_CONFIRM_FIELD] : undefined}
           />
         ) : order.status === "paid" && cfg.enabled && !refunds.some((r) => r.status !== "dismissed") ? (
           <SoftNote icon={<RotateCcw aria-hidden />}>لا توجد دفعة إلكترونية على هذا الطلب، فلا يمكن استرداده عبر البوابة.</SoftNote>

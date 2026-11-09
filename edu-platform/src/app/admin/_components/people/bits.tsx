@@ -31,9 +31,10 @@ export function TypeIcon({ type, size = "sm", className }: { type: string; size?
 }
 
 /** رسالة فراغ صغيرة داخل لوح (أصغر من EmptyState) */
-export function SoftNote({ children, icon, className }: { children: React.ReactNode; icon?: React.ReactNode; className?: string }) {
+export function SoftNote({ children, icon, className, ...props }: { children: React.ReactNode; icon?: React.ReactNode; className?: string } & Omit<React.ComponentProps<"p">, "children" | "className">) {
   return (
     <p
+      {...props}
       className={cn(
         "flex min-h-14 items-center justify-center gap-2 rounded-[1.25rem] border-2 border-dashed border-line-strong bg-[linear-gradient(180deg,#fffaf2,#fff4e4)] px-4 py-3 text-center font-display text-[0.92rem] font-bold text-muted [&_svg]:size-4 [&_svg]:text-brand-600",
         className,

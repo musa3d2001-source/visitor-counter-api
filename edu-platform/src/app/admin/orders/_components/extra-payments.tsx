@@ -6,6 +6,7 @@ import { ConfirmButton } from "@/components/admin/confirm-button";
 import { StatusPill, TestBadge, type StatusTone } from "@/components/admin/status-badge";
 import { ToneIcon } from "@/components/admin/icon-tile";
 import { EXTRA_PAYMENT_KIND_LABELS, EXTRA_PAYMENT_STATE_LABELS } from "@/lib/labels";
+import { STEP_UP_CONFIRM_FIELD } from "@/lib/two-factor";
 import { formatDateTime } from "@/lib/utils";
 import { Kwd } from "../../_components/people/bits";
 
@@ -29,7 +30,7 @@ function blockerText(blocker: string): string {
   return "سبب إغلاق الطلب لا يسمح بإكماله";
 }
 
-export function ExtraPaymentsList({ extras, canRefund, showOrder }: { extras: ExtraPayment[]; canRefund: boolean; showOrder?: boolean }) {
+export function ExtraPaymentsList({ extras, canRefund, showOrder, stepUp }: { extras: ExtraPayment[]; canRefund: boolean; showOrder?: boolean; stepUp: boolean }) {
   return (
     <ul className="flex flex-col gap-3" aria-label="الدفعات الزائدة" data-testid="extra-payments">
       {extras.map((e) => {
@@ -100,6 +101,7 @@ export function ExtraPaymentsList({ extras, canRefund, showOrder }: { extras: Ex
                     requireReason
                     reasonLabel="سبب الاسترداد (إلزامي)"
                     confirmLabel="إرسال طلب الاسترداد"
+                    fields={stepUp ? [STEP_UP_CONFIRM_FIELD] : undefined}
                   />
                 ) : null}
                 {dismissable ? (

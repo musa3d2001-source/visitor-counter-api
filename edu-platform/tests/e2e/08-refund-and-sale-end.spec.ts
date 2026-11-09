@@ -23,6 +23,8 @@ test.describe("استرداد الطلب كاملًا عبر البوابة", ()
     await page.goto(`/admin/orders/${orderId}`);
     // لا حقل مبلغ: الاسترداد دائمًا كامل قيمة الطلب
     await expect(page.locator('input[name="amount"]')).toHaveCount(0);
+    // التحقق بخطوتين غير مفعّل هنا: الصفحة تقول إن الأمر يخرج بلا رمز
+    await expect(page.getByTestId("step-up-off-note")).toBeVisible();
     await page.getByRole("button", { name: "استرداد كامل المبلغ" }).click();
     await page.getByLabel("سبب الاسترداد (إلزامي)").fill("طلب ولي الأمر");
     await page.getByRole("button", { name: "إرسال طلب الاسترداد" }).click();
