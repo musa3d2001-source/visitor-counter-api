@@ -27,7 +27,7 @@ const BAND: Record<LegalKey, { cls: string; dark: boolean }> = {
   terms: { cls: "bg-teal-night", dark: true },
   privacy: { cls: "bg-[radial-gradient(60%_90%_at_0%_0%,rgb(255_133_184/0.55),transparent_60%),linear-gradient(90deg,#9a6bff,#6a3fe0_50%,#4b2fb0)] text-white", dark: true },
   refund: { cls: "bg-[radial-gradient(55%_90%_at_0%_100%,rgb(255_107_90/0.45),transparent_60%),linear-gradient(90deg,#ff9f43,#ffc531_55%,#ffd25e)] text-[#3d2a00]", dark: false },
-  copyright: { cls: "bg-[radial-gradient(55%_90%_at_0%_0%,rgb(52_217_160/0.4),transparent_60%),linear-gradient(90deg,#0b8a66,#076b4f_55%,#064f3b)] text-white", dark: true },
+  copyright: { cls: "bg-[radial-gradient(55%_90%_at_0%_0%,rgb(52_217_160/0.18),transparent_60%),linear-gradient(90deg,#076b4f,#065c44_55%,#064f3b)] text-white", dark: true },
 };
 
 const SECTION_WORD = { one: "قسم", two: "قسمان", plural: "أقسام", acc: "قسمًا" };
