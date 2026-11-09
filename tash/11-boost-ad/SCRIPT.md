@@ -33,7 +33,7 @@ The picture is 100% code: 2D canvas plus a Three.js studio. The music and effect
 |---|---|---|
 | `out/TASH-boost-A-20s-9x16-ig.mp4` | **Master.** Hook A, 20.0 s, 1080×1920 30 fps, IG CTA | IG organic Reel + boost; week-1 arm |
 | `out/TASH-boost-A-20s-9x16-tt.mp4` | Same, TikTok CTA («دزّ لنا بالخاص» + @tash.creative) | TikTok organic + Spark (week 2, budget permitting) |
-| `out/TASH-boost-B-20s-9x16-ig.mp4` | Hook B: «مشاوي؟» → «رموش؟» → «مشروعك» (identical from f33) | Week-1 arm (an ad only, not a grid post) |
+| `out/TASH-boost-B-20s-9x16-ig.mp4` | Hook B: «شاليه؟» (held 1 s) → «مشروعك» at f30 (identical to A from f33) | Week-1 arm (an ad only, not a grid post) |
 | `out/TASH-boost-A-14s-9x16-ig.mp4` | 14.0 s cut (compressed studio, no talk line or tagline) | Week-1 arm (the length test) |
 | `out/TASH-boost-A-20s-4x5-ig.mp4` | 1080×1350, re-laid out (A = 600, 578), 3D re-rendered | Feed placement (asset customisation) |
 | `out/poster-ig.png` · `out/poster-ig-4x5.png` | Designed cover (`?poster=1`): the lit 3D «مشروعك» with the dots home (×1.35), «خلّ إعلانك علينا» and a small «طشّ», all inside the 3:4 grid crop | Reel / ad cover (§7) |
@@ -136,6 +136,11 @@ The body winds up 1.00→1.06 over f594–f599, and f0 starts at 1.06.
     - LRA is 8.1 LU (the CTA dip is now −5 dB, was −8).
     - Nothing new starts after the end, so only tails fold into the head.
 13. **The CTA lines** resolve word by word (f468 / f472 / f476) in every branch.
+14. **Hook B is one category word** (owner, 9 Nov): «شاليه؟», chalet rentals, a business popular with young Kuwaiti men and women.
+    - It is held 1.00 s (read, not just recognised), then «مشروعك» lands at f30 with a heavy tock and the talk breaks.
+    - It replaces the treatment's «مشاوي؟» → «رموش؟» roll-call. The owner rejected «رموش؟».
+    - The word must carry a ش (the dots' slot) and no other dots above the line.
+      «شاي كرك؟» and «شوكولا؟» were too wide for the frame.
 14. **The 14 s cut** holds «طشّ» to 9.77 s (was 9.40); the CTA is built by 10.50 and held 3.50 s.
     - The calm typing ticks start at 11.00, after the dots settle.
     - It has no tagline or talk line on screen. Its primary text is the same as the other arms (§6), so the A-20 vs A-14 test also compares a
@@ -156,7 +161,7 @@ The body winds up 1.00→1.06 over f594–f599, and f0 starts at 1.06.
 | «خلّهم يسولفون عنك!» | 13.43–15.47 | shadda ✓ |
 | IG «اطلب إعلانك بالخاص» + `@tash.creative.kw` | 15.60–20.00 | ✓ |
 | TT «دزّ لنا بالخاص» + `@tash.creative` | 15.60–20.00 | shadda on دزّ ✓ |
-| Hook B «مشاوي؟» · «رموش؟» | 0.00 · 0.50 | ✓ (a native read of «رموش؟» is still wanted; the backup is «شموع؟») |
+| Hook B «شاليه؟» | 0.00–1.00 | ✓ the owner's pick (9 Nov), replacing «مشاوي؟» → «رموش؟»; ink x 169–662 |
 
 **The talk line is dramatised.** «شنو حسابهم؟!» is a question about the viewer's hypothetical project. It has no name,
 avatar, quote marks or timestamp. Never quote it as a real reaction in ad text or DMs. «خلّهم يسولفون عنك!» states an aim,

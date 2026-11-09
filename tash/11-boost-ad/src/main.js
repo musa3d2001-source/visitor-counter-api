@@ -175,7 +175,6 @@ function group(t) {
   const sh = (t0, a) => { const s = shake(t, t0, a); dx += s[0]; dy += s[1]; };
   if (f < 30) {
     k = lerp(1.06, 1, ef(f, 0, 3)); sh(2 / FPS, 4);       // the shake starts on the landing (f2), so f0 stays crisp
-    if (HOOK === 'B' && f >= 15) { k = lerp(1.025, 1, ef(f, 15, 17)); }
   } else if (f < 90) {
     if (HOOK === 'B' && f < 33) k = lerp(1.035, 1, ef(f, 30, 32));
     for (const e of C.break.exit) if (f >= e && f < e + 4) dy += 6 * (1 - fp(f, e, e + 4)) ** 2;
@@ -367,7 +366,7 @@ function seek(t) {
   const d0 = dotsAt(t);
   if (f < 90) {
     let key = 'mashrou3ak';
-    if (HOOK === 'B') key = f < 15 ? 'mashawi' : f < 30 ? 'rmoosh' : 'mashrou3ak';
+    if (HOOK === 'B') for (const [w, at] of C.hook.B.words) if (f >= at) key = w;    // «شاليه؟» (owner's pick) → «مشروعك» at f30
     const dim = ef(f, C.break.dim[0], C.break.dim[1], E.inOutCubic);
     const color = mix(COL.paper, COL.smoke, dim);
     const alpha = lerp(1, 0.85, ef(f, C.break.dim[1], 72, E.outCubic));

@@ -23,7 +23,7 @@ FONTS = os.path.join(TASH, '_system', 'fonts')
 ALEX = os.path.join(FONTS, 'Alexandria-VF.ttf')
 SIZE, WEIGHT = 140, 900
 DOTS = 'threedotsupabovear'
-WORDS = {'mashrou3ak': 'مشروعك', 'mashawi': 'مشاوي؟', 'rmoosh': 'رموش؟', 'shmoo3': 'شموع؟'}
+WORDS = {'mashrou3ak': 'مشروعك', 'shalayh': 'شاليه؟', 'mashawi': 'مشاوي؟', 'shmoo3': 'شموع؟'}
 LINES = [  # (text, font, weight, size): widths for the layout record (the page shapes its own text in the browser)
     ('حلو…', ALEX, 800, 84), ('محد يسولف عنه؟', ALEX, 800, 84), ('خلّ إعلانك علينا', ALEX, 800, 80),
     ('من وين طلبتيه؟!', ALEX, 800, 84), ('خلّهم يسولفون عنك!', ALEX, 700, 64), ('اطلب إعلانك بالخاص', ALEX, 700, 64),

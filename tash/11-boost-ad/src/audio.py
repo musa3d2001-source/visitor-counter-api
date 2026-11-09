@@ -183,8 +183,7 @@ if args.hook == 'A' and v1 is None:                                 # no voice 1
         for i in range(3): m.add(lp(wtick(NOTES[i]), 3200), tickT(0.0, i) + dly, gain=gn * vdk, pan=[-0.4, 0.4][k % 2], bus='sfx')
     m.add(wood_tock(560, 0.45 * vdk), fr(15), bus='sfx')
 if v1 is not None and args.hook == 'A': m.add(v1, 0.0, gain=1.8, bus='voice')
-if args.hook == 'B':                                      # a soft wooden tock under each word swap; heavy on «مشروعك»
-    m.add(wood_tock(560, 0.45), fr(15), bus='sfx')
+if args.hook == 'B':                                      # «شاليه؟» held 1 s, then a heavy tock as «مشروعك» lands (f30)
     m.add(thump(0.5), fr(30), bus='sfx'); m.add(wood_tock(380, 0.5), fr(30), bus='sfx')
 m.add(pad([nf(n) for n in ['D3', 'A3']], 1.1, cutoff=700, attack=0.3, release=0.3), 0.0, gain=0.10, bus='music')
 

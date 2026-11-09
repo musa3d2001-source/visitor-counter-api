@@ -12,7 +12,7 @@
 
   "hook": {
     "A": { "slam": 0, "line": "حلو…", "lineOff": 30, "voice1": 0 },
-    "B": { "words": [["mashawi", 0], ["rmoosh", 15], ["mashrou3ak", 30]] }
+    "B": { "words": [["shalayh", 0], ["mashrou3ak", 30]] }
   },
   "break": { "crack": 30, "jolt": 2, "fall": [32, 34, 36], "fallDur": 8, "fallDMax": 160, "exit": [40, 42, 44], "dim": [34, 44], "question": 45 },
   "ret": { "stir": 72, "enter": [80, 76, 72], "path916": { "sx": 780, "cx": 1140, "cy": -200 }, "path45": { "sx": 780, "cx": 1130, "cy": -60 }, "row": 86, "compress": [86, 88], "contact": 90, "rapid": [84, 85, 86, 87, 88, 89] },
