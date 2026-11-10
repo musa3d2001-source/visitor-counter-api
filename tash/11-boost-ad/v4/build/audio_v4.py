@@ -6,8 +6,8 @@ world swap of 10 Nov (v4/swap/director-plan.json): the world sounds follow the n
 LAYL atomiser + bottle, STAKK crown, a sauce / syrup drizzle that fits both sweet options).
 Pure synthesis on the TASH engine (tash/_system/audio/tashaudio.py) with the patterns of the v3 score (src/audio.py).
 No samples, loops or library music. The only recorded audio is the three approved ElevenLabs stems in
-src/assets/rec/ (voice1.wav, voice2.wav, voice3_tash.wav): re-timed (6 % stretch at most, plus about 45 ms cut out of
-the silent «ك» closure of voice1 so its «ح» lands on f15), filtered, never re-voiced.
+src/assets/rec/ (voice1.wav, voice2.wav, voice3_tash.wav): re-timed (6 % stretch at most, plus about 43 ms cut out of
+the silent «ك» closure of voice1 so its «ح» lands within a frame of f15), filtered, never re-voiced.
 
 Music: 120 BPM, 1 beat = 15 frames = 0.5 s at 30 fps, D Hijaz. Bars start at f30 + 60k, so HERO 1 (f90), HERO 3 (f390)
 and the CTA (f450) each open a bar; group claps fall on every multiple of 30 frames. A-14 has one 2-beat bar at f270 so
@@ -16,9 +16,13 @@ The three dots are three woodblock ticks D6 / E♭6 / F♯6 (1174.7 / 1244.5 / 1
 
 Run (from anywhere):  python3 tash/11-boost-ad/v4/build/audio_v4.py
 Writes v4/build/audio/A20.wav (960 000 samples), A14.wav (672 000 samples), 48 kHz stereo float, and cues.json; prints the
-phone-speaker checks and exits 1 if any check fails. The limiter ceiling starts at -2.8 dBTP (the WAV stays at -2.75 dBTP
-or lower) and is lowered further until the AAC 320 kb/s encode that mux.sh makes also stays at -2 dBTP or lower (AAC
-overshoots the WAV by a few tenths of a dB).
+phone-speaker checks and exits 1 if any check fails. The limiter ceiling starts at -2.85 dBTP and is lowered further until
+the WAV measures -2.85 dBTP or lower (8x across the loop wrap, both a polyphase resample and the ideal band-limited FFT
+interpolation of the loop, and ffmpeg's own meter) and the AAC 320 kb/s encode that mux.sh makes stays at -2 dBTP or lower
+(AAC overshoots the WAV by a few tenths of a dB).
+The checks include one per named world sound (pour, drizzles, bean, atomiser, bloom, glass, sizzle, bun landing): its own
+processed signal must stand +3 dB or more over everything else (voices included) in its own band in some 150 ms window
+of its moment, measured on the processed buses before the master (mono, the loop tail folded in); see audibility().
 """
 import sys, os, json, math, subprocess, tempfile, time
 import numpy as np
@@ -45,6 +49,10 @@ MAX_STRETCH = 0.06
 CLOSURE_CUT = 0.045                               # s cut from the middle of the silent «ك» closure of voice1 (raw time)
 CLOSURE_KEEP = 0.011                              # s of the closure kept after the vowel; the rest stays before the «ح»
 HOOK808_MID_DUCK = (-6.0, 0.30, 0.05)             # dB, until s, ramp back s: the hook 808's phone-band copy under «مشـ»
+HOOK808_BODY_CUT = (-10.0, 0.15, 0.05, 300, 1000) # dB, until s, ramp s, Hz: the whole hook 808 in 300-1000 Hz under «مـ» (C3)
+POUR_SWELL = (0.03, 0.95, 8.0)                    # the opener pour rises from 30 ms before the V1 stem ends to 0.95 s, by dB
+HILU_POUR_MAX = 1.75                              # dB the opener pour may cost «حلو» (V1 from its «ح» to its end), 300-4000 Hz:
+                                                  # its plain level costs 1.4-1.6 dB, a swell under «لو» (0.70 s) took A-20 to 1.9
 
 # ----------------------------------------------------------------------------- mix levels (linear gains)
 G = dict(
@@ -53,10 +61,16 @@ G = dict(
     kick=0.28, kick_full=0.26, soft_kick=0.26, clap=0.90, dum=0.32, tak=0.95, shaker=0.30,
     bass=0.13, pad=0.18, ep=0.36, pluck=0.20,
     tick=0.50, tick_talk=0.30, swarm=0.22, fall_tick=0.46, land_tick=0.46, tap=0.40,
-    pour=0.85, bean=1.35, spray=0.45, bloom=0.55, glass=0.35, drizzle=0.75, sizzle=0.42, thump=0.75,
+    pour=0.85, bean=1.80, spray=0.45, bloom=1.60, glass=0.35, drizzle=0.75, sizzle=0.84, thump=1.50,
     pop=0.50, burst=0.55, shock=0.55, whoosh=0.40, riser=0.30, inflate=0.30, zip=0.22, notepop=0.45, swell=0.55,
 )
-WAV_CEILING = -2.8                                # dBTP limiter ceiling to start from (the AAC loop may lower it)
+DRIZZLE_BAND = (1800, 4500)                       # the drizzle's glossy sheen: where the groove is thin (not the bass's 160-1400 Hz)
+BLOOM_BAND = (1400, 5600)
+THUMP_BAND = (250, 800)
+SIZZLE_BAND = (2000, 9000)
+AUD_WIN, AUD_HOP, AUD_GATE = 0.150, 0.010, 3.0    # audibility: best 150 ms window, own band, >= +3 dB over everything else
+WAV_CEILING = -2.85                               # dBTP limiter ceiling to start from (lowered if the 8x check or the AAC needs it)
+WAV_TP_MAX = -2.85                                # dBTP, the wav's true peak at 8x oversampling across the loop wrap
 MUSIC_SC_DB = -6.0                                # music (and sound beds) side-chained under each voice
 ROOM_TARGET = -40.0
 
@@ -107,10 +121,12 @@ def bass808(f, d, glide=None, gain=1.0, drive=3.2):
     return (x * 0.28 + mid) * gain
 
 
-def hit808(f=A1, d=1.3, gain=1.0, mid_duck=None):
+def hit808(f=A1, d=1.3, gain=1.0, mid_duck=None, body_cut=None):
     """Hero 808: 55 Hz with its 110 / 165 / 220 Hz harmonics written in, saturated, plus a phone-band copy and a click.
     mid_duck=(dB, until_s, ramp_s) lowers only the phone-band copy (250-1600 Hz) at the start, so a voice that starts
-    with the hit is not masked; the body, its harmonics and the click stay (the hook: F2 of the audio check)."""
+    with the hit is not masked; the body, its harmonics and the click stay (the hook: F2 of the audio check).
+    body_cut=(dB, until_s, ramp_s, lo, hi) then cuts lo-hi Hz of the whole note (body and copy) for that long: the
+    saturated body carries 300-1000 Hz too, so the copy's duck alone leaves the «م» of «مشروعك» under it (C3)."""
     t = tt(d)
     ph = np.cumsum(f * (1 + 0.6 * np.exp(-t / 0.03))) / SR
     x = sum(a * np.sin(2 * np.pi * k * ph) for k, a in ((1, 1.0), (2, 0.9), (3, 0.75), (4, 0.6)))
@@ -121,6 +137,10 @@ def hit808(f=A1, d=1.3, gain=1.0, mid_duck=None):
         mid = mid * db(np.interp(t, [0.0, t1, t1 + rr], [dd, dd, 0.0]))
     click = bp(noise(0.01), 1800, 6000) * env_exp(0.01, 0.0018) * 0.5
     y = lp(body, 3000) * 0.60 + mid
+    if body_cut:
+        cd, c1, cr, clo, chi = body_cut
+        band = sig.sosfiltfilt(sig.butter(4, [clo, chi], 'band', fs=SR, output='sos'), y)     # zero phase: a clean cut
+        y = y - band * (1 - db(np.interp(t, [0.0, c1, c1 + cr], [cd, cd, 0.0])))
     y[:len(click)] += click
     return fade(y, 0.0004, 0.12) * gain
 
@@ -163,11 +183,13 @@ def slow_mod(R, N, fc, depth):
     return np.clip(1 + depth * m / (m.std() + 1e-9), 0.25, None)
 
 
-def milk_pour(R, d=1.0, start_db=-5.0, full_at=0.5):
+def milk_pour(R, d=1.0, start_db=-5.0, full_at=0.5, swell=None):
     """Opener and return (HABBA k3_pour, a hot latte): a thin milk stream into the cup while the art forms. A soft,
     steady stream (450-2600 Hz) over a low cup resonance, with a few tiny surface bubbles; no impact and no splash (the
     808 carries the hit on f0). It comes in soft (start_db) and reaches full level at full_at (the f15 punch-in comes
-    closer), so it stays out of the way of «مشـ» at the start; it keeps 2-6 kHz low for the same reason."""
+    closer), so it stays out of the way of «مشـ» at the start; it keeps 2-6 kHz low for the same reason.
+    swell=(from_s, to_s, dB): the stream then rises by dB (the opener: once V1 has spoken, the pour is the sound of the
+    shot until the drain)."""
     N = n_(d); t = np.arange(N) / SR
     stream = bp(noise(d, 'pink'), 450, 2600) * 0.55 + bp(noise(d), 2600, 6000) * 0.05
     cup = lp(noise(d, 'brown'), 380) * 0.22
@@ -176,6 +198,8 @@ def milk_pour(R, d=1.0, start_db=-5.0, full_at=0.5):
         f = R.uniform(700, 1500); p = pop(f, f * R.uniform(1.25, 1.6), 0.025) * R.uniform(0.05, 0.13)
         i0 = n_(R.uniform(0.04, max(0.05, d - 0.06))); y[i0:i0 + len(p)] += p[:N - i0]
     e = np.clip(t / 0.06, 0, 1) ** 1.5 * db(np.interp(t, [0.0, full_at], [start_db, 0.0]))
+    if swell:
+        e = e * db(np.interp(t, [swell[0], swell[1]], [0.0, swell[2]]))
     return stereo(fade(y * e, 0.001, 0.08), 0, width=0.5)
 
 
@@ -208,13 +232,13 @@ def atomiser(d=0.55):
     return stereo(fade(y + hiss, 0.0002, 0.04), 0, width=0.6)
 
 
-def mist_bloom(d=0.8):
+def mist_bloom(d=0.5):
     """Perfume B (LAYL f210-224 punched in: the cloud blooms): a soft, wide swell of air, no tone (the tone is saved
-    for the bottle in the lens)."""
+    for the bottle in the lens). It blooms over the punch-in (f180-194) and is gone by the bottle's glass tone (f195)."""
     N = n_(d); t = np.arange(N) / SR
-    e = np.clip(t / 0.14, 0, 1) ** 1.6 * np.exp(-np.clip(t - 0.14, 0, None) / 0.25)
+    e = np.clip(t / 0.12, 0, 1) ** 1.6 * np.exp(-np.clip(t - 0.12, 0, None) / 0.30)
     l = svf_sweep(noise(d, 'pink'), 1400, 5200, q=0.9); r = svf_sweep(noise(d, 'pink'), 1500, 5600, q=0.9)
-    return fade(np.stack([l * e, r * e], axis=1) * 0.5, 0.004, 0.1)
+    return fade(np.stack([l * e, r * e], axis=1) * 0.5, 0.004, 0.12)
 
 
 def glass_tone(f=nf('Bb6'), d=1.3):
@@ -226,26 +250,33 @@ def glass_tone(f=nf('Bb6'), d=1.3):
     return reverb(stereo(fade(y, 0.004, 0.2), 0, width=0.4), decay=1.2, mix=0.25, tone=8000)
 
 
-def drizzle(R, d=0.95, soft=1.0):
+def drizzle(R, d=0.95, soft=1.0, sheen=1.0, tail=0.2):
     """Sweet (DOSE d4_cake sauce, or syrup on the kunafa; one sound fits both): a slow, glossy drizzle. A thick, slow
-    stream (160-1400 Hz), slow glops (220-600 Hz, low enough to sound thick, high enough for a phone) as it lands and
-    spreads, a faint wet sheen; no crunch."""
+    stream (160-1400 Hz, kept low: that band belongs to the bass and the chords), slow glops (220-600 Hz, low enough to
+    sound thick) as it lands and spreads, each with a small wet smack, and the glossy sheen that a phone hears: a moving
+    wet shine (1.8-4.5 kHz, where the groove is thin) with fine sticky droplets in it; no crunch.
+    sheen scales the shine and the droplets (the drizzle's phone band); tail = the fade-out at the end."""
     N = n_(d); t = np.arange(N) / SR
-    stream = lp(hp(noise(d, 'pink'), 160), 1400) * 0.30 * slow_mod(R, N, 6, 0.3)
-    y = stream + bp(noise(d, 'pink'), 1800, 4500) * 0.045
+    stream = lp(hp(noise(d, 'pink'), 160), 1400) * 0.20 * slow_mod(R, N, 6, 0.3)
+    shine = bp(noise(d, 'pink'), 1800, 4500, order=4) * 0.20 * slow_mod(R, N, 9, 0.45)
+    drops = np.zeros(N)
+    for _ in range(int(60 * d)):
+        c = bp(noise(0.006), 2000, 5000) * env_exp(0.006, 0.0012) * R.uniform(0.15, 0.55)
+        i0 = n_(R.uniform(0.0, d - 0.007)); drops[i0:i0 + len(c)] += c[:N - i0]
+    y = stream + (shine + drops) * sheen
     tk = 0.03
     while tk < d - 0.12:
         f = R.uniform(220, 400); gd = 0.11
         g = phase_osc(np.geomspace(f, f * R.uniform(1.25, 1.45), n_(gd)), gd) * env_exp(gd, 0.035, 0.006) * R.uniform(0.18, 0.32)
-        g = lp(g, 1800); w = bp(noise(0.02), 600, 2000) * env_exp(0.02, 0.004) * 0.08; g[:len(w)] += w
+        g = lp(g, 1800); w = bp(noise(0.02), 1500, 4000) * env_exp(0.02, 0.004) * 0.10 * sheen; g[:len(w)] += w
         i0 = n_(tk); y[i0:i0 + len(g)] += g[:N - i0]
         tk += R.uniform(0.09, 0.17)
-    e = np.clip(t / 0.08, 0, 1) * np.clip((d - t) / 0.2, 0, 1)
+    e = np.clip(t / 0.08, 0, 1) * np.clip((d - t) / tail, 0, 1)
     return stereo(fade(y * e * soft, 0.002, 0.05), 0, width=0.5)
 
 
 def grill(d=1.0, seed_=9):
-    """Burger A-B: the sizzle bed under the falling crown and the landing (engine sizzle), tamed for phones, swelling in
+    """Burger A-B: the sizzle bed under the crown and the landing (engine sizzle), tamed for phones, swelling in
     and easing down by about 7 dB over its length (it holds under the whole burger beat)."""
     s = lp(sizzle(d, density=700, seed_=seed_), 9000)
     e = np.clip(tt(d) / 0.04, 0, 1) * np.exp(-tt(d) / d)
@@ -350,6 +381,15 @@ def ffmpeg_lufs(x):
     return I, P
 
 
+def ffmpeg_tp(x):
+    """ffmpeg's own true-peak meter to two decimals (loudnorm's input_tp; it reads a few hundredths above an 8x resample)."""
+    with tempfile.NamedTemporaryFile(suffix='.wav') as f:
+        wavfile.write(f.name, SR, x.astype(np.float32))
+        o = subprocess.run(['ffmpeg', '-nostats', '-i', f.name, '-af', 'loudnorm=print_format=json', '-f', 'null', '-'],
+                           capture_output=True, text=True).stderr
+    return float(json.loads(o[o.rindex('{'):o.rindex('}') + 1])['input_tp'])
+
+
 def share(x, lo, hi):
     f, p = sig.welch(mono(x), SR, nperseg=8192)
     return float(p[(f >= lo) & (f < hi)].sum() / p[(f >= 20)].sum())
@@ -403,6 +443,41 @@ def sidechain(key, depth_db=MUSIC_SC_DB, thresh_db=-46.0, knee=8.0, att=0.008, r
         env[i] = e
     amt = np.clip((20 * np.log10(env + 1e-9) - thresh_db) / knee, 0, 1)
     return db(np.repeat(depth_db * amt, hop)[:len(k)])
+
+
+def fold_loop(x, Nf):
+    """A bus as the loop plays it: the tail after the loop point rings into the head."""
+    y = x[:Nf].copy(); y[:len(x) - Nf] += x[Nf:]
+    return y
+
+
+def audibility(V, m):
+    """Each named world sound against everything else (all processed buses, voices included, pre-master, mono as a phone
+    speaker sums it, the loop tail folded in), in its own band. Returns one row per sound: the best AUD_WIN window inside
+    its moment (dB own over rest, and when), the whole moment, how much the sound lifts its band, and the share of the
+    sound's 300 Hz-12 kHz energy that falls in that band (so the band is where the sound really is)."""
+    Nf = n_(fr(V['frames']))
+    total = mono(fold_loop(m.buf + sum(m.buses.values()), Nf))
+    W, H = n_(AUD_WIN), n_(AUD_HOP)
+    rows = []
+    for w in world_sounds(V):
+        pm = m.probes[w['probe']]
+        own = mono(fold_loop(sum(pm.buses.values()), Nf))
+        a, b = n_(fr(w['f0'])), min(Nf, n_(fr(w['f1'])))
+        s0, s1 = max(0, a - n_(0.3)), min(Nf, b + n_(0.3))
+        sos = sig.butter(4, w['band'], 'band', fs=SR, output='sos')
+        ob = sig.sosfiltfilt(sos, own[s0:s1]); rb = sig.sosfiltfilt(sos, total[s0:s1] - own[s0:s1])
+        co = np.concatenate([[0.0], np.cumsum(ob ** 2)]); cr = np.concatenate([[0.0], np.cumsum(rb ** 2)])
+        i = np.arange(a - s0, max(a - s0 + 1, b - s0 - W + 1), H)
+        r = 10 * np.log10((co[i + W] - co[i] + 1e-20) / (cr[i + W] - cr[i] + 1e-20))
+        k = int(np.argmax(r)); ia, ib = a - s0, b - s0
+        whole = 10 * np.log10((co[ib] - co[ia] + 1e-20) / (cr[ib] - cr[ia] + 1e-20))
+        rise = 10 * np.log10(((ob + rb)[ia:ib] ** 2).sum() / ((rb[ia:ib] ** 2).sum() + 1e-20))
+        wide = sig.sosfiltfilt(sig.butter(4, [min(300, w['band'][0]), 12000], 'band', fs=SR, output='sos'), own[s0:s1])[ia:ib]
+        rows.append(dict(w, best_db=float(r[k]), best_at=(s0 + i[k]) / SR, whole_db=float(whole), rise_db=float(rise),
+                         band_share=float((ob[ia:ib] ** 2).sum() / ((wide ** 2).sum() + 1e-20)),
+                         passed=bool(r[k] >= AUD_GATE)))
+    return rows
 
 
 def band_energy(x, lo, hi, mask=None):
@@ -498,7 +573,7 @@ def prep_voices():
     info = {}
     raw1 = read_wav(os.path.join(REC, 'voice1.wav'))
     b0, h0 = v1_marks(raw1)
-    # F1: cut about 45 ms out of the silent «ك» closure first; then the same 6 % stretch cap as before (no more stretch);
+    # F1: cut about 43-45 ms out of the silent «ك» closure first; then the same 6 % stretch cap as before (no more stretch);
     # then the head trim, limited to the quiet pre-voicing of the «م», places the «ح» (not the closure) near 0.500 s
     cut1, cut_s, splice = cut_closure(raw1, b0, h0)
     hc = h0 - cut_s                                                   # the cut is before the «ح»: it moves by exactly cut_s
@@ -555,10 +630,11 @@ A20 = dict(
     chords={-30: 'D', 30: 'D', 90: 'D', 150: 'Eb', 210: 'D', 270: 'Eb', 330: 'Eb', 390: 'D', 450: 'Gm', 510: 'Eb', 570: 'D'},
     worlds=[(135, 'kick', 'Coffee A full frame (HABBA bean lands)'), (150, 'clap', 'Coffee B lens (latte heart)'),
             (165, 'kick', 'Perfume A full frame (LAYL atomiser sprays)'), (180, 'clap', 'Perfume B punch-in (the mist blooms)'),
-            (195, 'kick', 'Perfume C lens (LAYL bottle)'), (210, 'kick', 'Burger A full frame (STAKK crown falls)'),
+            (195, 'kick', 'Perfume C lens (LAYL bottle)'), (210, 'kick', 'Burger A full frame (STAKK crown)'),
             (225, '808', 'Burger B: bun lands'), (240, 'kick', 'Burger C lens'), (255, 'kick', 'Sweet A full frame (sauce drizzle)'),
             (270, 'clap', 'Sweet B lens')],
     pour_return=(78, 90), bean=138, spray=165, bloom=180, glass=195, sizzle=(210, 240), bun=225, drizzle=(255, 284),
+    beds=[(210, 240), (255, 285)],                # world beds: the groove makes room (no shaker, the riff plays dull)
     talk=285, mult=[330, 345, 360], build8=360, flood=375, duck=381, pocket=(386, 390), hero3=390,
     cta=450, band=[(450, 'sweet'), (480, 'burger'), (510, 'perfume'), (540, 'coffee')], pop2=457, thin=540,
     swell=(588, 598), windup=588, room_window=(56, 71), swarm=1.0,
@@ -571,13 +647,35 @@ A14 = dict(
     chords={-30: 'D', 30: 'D', 90: 'D', 150: 'Eb', 210: 'D', 270: 'Eb', 300: 'D', 360: 'D'},
     worlds=[(135, 'kick', 'Coffee A full frame (HABBA bean lands)'), (150, 'clap', 'Coffee B lens (latte heart)'),
             (165, 'kick', 'Perfume A full frame (LAYL atomiser sprays)'), (180, 'clap', 'Perfume lens (LAYL bottle)'),
-            (195, 'kick', 'Burger A full frame (STAKK crown falls)'), (210, '808', 'Burger B: bun lands'),
+            (195, 'kick', 'Burger A full frame (STAKK crown)'), (210, '808', 'Burger B: bun lands'),
             (225, 'kick', 'Sweet A full frame (sauce drizzle)'), (240, 'clap', 'Sweet B lens')],
     pour_return=(78, 90), bean=138, spray=165, bloom=None, glass=180, sizzle=(195, 225), bun=210, drizzle=(225, 254),
+    beds=[(195, 225), (225, 255)],
     talk=255, mult=[270, 275, 280], build8=280, flood=285, duck=291, pocket=(296, 300), hero3=300,
     cta=315, band=[(315, 'sweet'), (345, 'burger'), (375, 'coffee')], pop2=318, thin=375,
     swell=(408, 418), windup=414, room_window=(56, 71), swarm=2.0,   # ticks run under V2 here: +6 dB before the duck
 )
+
+
+def world_sounds(V):
+    """The named world sounds and how each is judged audible: its own processed signal against everything else (all buses,
+    voices included, the loop tail folded in), in its own phone band, in the best 150 ms window inside its moment
+    (frames f0-f1; for a hit that is its first 200 ms, so the window holds its onset)."""
+    p0, p1 = V['pour_return']; s0, s1 = V['sizzle']; d0, d1 = V['drizzle']
+    W = [('pour', 'milk pour (latte opener)', 0, 30, (450, 2600)),
+         ('drizzle_drain', 'drizzle (drain)', 30, 45, DRIZZLE_BAND),
+         ('pour_return', 'milk pour (return)', p0, p1, (450, 2600)),
+         ('bean', 'bean tap', V['bean'], V['bean'] + 6, (1000, 4000)),
+         ('spray', 'atomiser spray', V['spray'], V['spray'] + 15, (2000, 9000))]
+    if V['bloom']:
+        W.append(('bloom', 'mist bloom', V['bloom'], V['bloom'] + 15, BLOOM_BAND))
+    W += [('glass', 'bottle glass tone', V['glass'], V['glass'] + 15, (1700, 2050)),
+          ('sizzle', 'sizzle bed', s0, s1, SIZZLE_BAND),
+          ('thump', 'bun landing (808 + thump)', V['bun'], V['bun'] + 6, THUMP_BAND),
+          ('drizzle_sweet', 'drizzle (sweet)', d0, d1 + 1, DRIZZLE_BAND)]
+    return [dict(probe=p, label=l, f0=a, f1=b, band=bd) for p, l, a, b, bd in W]
+
+
 CHORDS = {'D': ['D3', 'F#3', 'A3', 'D4'], 'Eb': ['Eb3', 'G3', 'Bb3', 'Eb4'], 'Gm': ['G2', 'D3', 'G3', 'Bb3']}
 ROOTS = {'D': (nf('D2'), nf('A1')), 'Eb': (nf('Eb2'), nf('Bb1')), 'Gm': (nf('G1'), nf('D2'))}
 MIR = {0: ('dum', 1.0), 3: ('tak', .55), 6: ('tak', .7), 8: ('dum', .85), 10: ('dum', .6), 12: ('tak', .7), 14: ('tak', .5), 15: ('tak', .35)}
@@ -610,11 +708,14 @@ def score(V, VO):
     m = Mix(DUR, tail=2.0)
     cues = []
     hero_frames = {90, V['hero3']}
+    m.probes = {}                                               # world sound -> a Mix holding only that sound (audibility check)
 
-    def put(x, f, bus, what=None, gain=1.0, pan=0.0, width=0.0, dt=0.0):
+    def put(x, f, bus, what=None, gain=1.0, pan=0.0, width=0.0, dt=0.0, probe=None):
         if f + dt * FPS >= F - 1e-6:
             return                                              # no onset at or after the loop point (tails fold in)
         m.add(x, fr(f) + dt, gain=gain, pan=pan, bus=bus, width=width)
+        if probe:                                               # the same signal, alone, for the audibility check
+            m.probes.setdefault(probe, Mix(DUR, tail=2.0)).add(x, fr(f) + dt, gain=gain, pan=pan, bus=bus, width=width)
         if what:
             cues.append(dict(frame=round(f + dt * FPS, 2), t=round(fr(f) + dt, 4), bus=bus, what=what))
 
@@ -624,12 +725,18 @@ def score(V, VO):
     m.add(room_tone(DUR) * 1.0, 0.0, bus='room')
 
     # --- f0-29 HOOK (HABBA k3_pour, hot latte, no ice): 808 + a soft milk pour, V1, ticks f0/5/10, mirwas pickup
-    # (groove), clap f15 on «حلو». The 808 stays the thumb-stop; its phone-band copy is ducked under «مشـ» (F2).
-    dd, t1, rr = HOOK808_MID_DUCK
-    put(hit808(A1, 1.2, mid_duck=HOOK808_MID_DUCK), 0, 'music',
-        f'808 A1 55 Hz (+110/165/220 Hz) on frame 0 (the hit); its 250-1600 Hz copy {dd:+.0f} dB over 0-{t1:.2f} s, back by {t1 + rr:.2f} s', G['hook808'])
-    put(milk_pour(R, 1.0, start_db=-5.0, full_at=0.5), 0, 'sfx',
-        'soft milk pour f0-29 (thin stream into the latte, art forming; comes in soft, full at the f15 punch-in; no ice, no splash)', G['pour'])
+    # (groove), clap f15 on «حلو». The 808 stays the thumb-stop; its phone-band copy is ducked under «مشـ» (F2) and the
+    # whole note steps out of 300-1000 Hz for the «مـ» (C3). The pour starts low (-12 dB, also for the «م») and rises
+    # only once V1 has spoken (the swell starts 30 ms before the V1 stem ends, after the «لو» of «حلو»): f0 is carried by
+    # the 808 alone, the pour is heard from about f25 into the drain.
+    dd, t1, rr = HOOK808_MID_DUCK; cd, c1, cr, clo, chi = HOOK808_BODY_CUT
+    put(hit808(A1, 1.2, mid_duck=HOOK808_MID_DUCK, body_cut=HOOK808_BODY_CUT), 0, 'music',
+        f'808 A1 55 Hz (+110/165/220 Hz) on frame 0 (the hit); its 250-1600 Hz copy {dd:+.0f} dB over 0-{t1:.2f} s, back by {t1 + rr:.2f} s; '
+        f'the whole note {cd:+.0f} dB in {clo}-{chi} Hz over 0-{c1:.2f} s, back by {c1 + cr:.2f} s', G['hook808'])
+    sw0 = min(0.90, len(VO['v1']) / SR - POUR_SWELL[0]); sw1, swdb = POUR_SWELL[1], POUR_SWELL[2]
+    put(milk_pour(R, 1.0, start_db=-12.0, full_at=0.55, swell=(sw0, sw1, swdb)), 0, 'sfx',
+        f'soft milk pour f0-29 (thin stream into the latte, art forming; no ice, no splash): in at -12 dB under «مشـ», full by f16, '
+        f'then {swdb:+.0f} dB over f{sw0 * FPS:.1f}-{sw1 * FPS:.1f}, once V1 has spoken, so it is heard into the drain', G['pour'], probe='pour')
     for i in range(3):
         put(wtick(NOTES[i]), 5 * i, 'sfx', f'typing tick {["right", "middle", "left"][i]} dot ({NOTES[i]:.1f} Hz)', G['tick'], TICK_PAN[i])
     put(group_clap(15, 5, 0.22), 15, 'music', 'group clap on the voiced «حلو» (punch-in)', G['hook_clap'])
@@ -638,7 +745,7 @@ def score(V, VO):
 
     # --- f30-44 DRAIN: the same sweet (sauce on the cake, or syrup on the kunafa): a soft drizzle, not a crunch;
     # three dots fall; music low-pass closes
-    put(drizzle(R, 0.45, soft=0.8), 30, 'sfx', 'soft drizzle (the sweet of the drain; no crunch)', G['drizzle'] * 1.3)
+    put(drizzle(R, 0.50, soft=0.8, sheen=1.3, tail=0.12), 30, 'sfx', 'soft glossy drizzle f30-44 (the sweet of the drain; no crunch; its 1.8-4.5 kHz sheen carries it as the music closes)', G['drizzle'] * 1.3, probe='drizzle_drain')
     for i, (f, hz) in enumerate(zip((32, 34, 36), (1480.0, 1244.5, 1174.7))):
         put(wtick(hz), f, 'sfx', f'falling tick {hz} Hz ({["right", "middle", "left"][i]} dot drops, drags its third)', G['fall_tick'], TICK_PAN[i])
         put(air_fall(0.3, 1.0, TICK_PAN[i] * 1.6), f, 'sfx', None, G['whoosh'] * 0.9)
@@ -654,7 +761,7 @@ def score(V, VO):
     # --- f72-89 RETURN: jump whoosh, riser, filter opens, rising landing ticks right to left; the pour is back f78-89
     put(whoosh(0.22, 350, 6000, pan_from=0.0, pan_to=0.1, peak=0.85), 72, 'sfx', 'jump whoosh (dots turn lime and jump)', G['whoosh'])
     p0, p1 = V['pour_return']
-    put(milk_pour(R, fr(p1 - p0) + 0.08, start_db=-3.0, full_at=0.12), p0, 'sfx', f'the milk pour again, softer, f{p0}-{p1 - 1} (the picture returns to the pour)', G['pour'] * 0.6)
+    put(milk_pour(R, fr(p1 - p0), start_db=-3.0, full_at=0.12), p0, 'sfx', f'the milk pour again f{p0}-{p1 - 1} (the picture returns to the pour), at the level of the opener\'s end', G['pour'] * 2.3, probe='pour_return')
     put(riser(0.6, 300, 8000), 72, 'sfx', 'riser f72-89', G['riser'] * 0.8)
     for i, f in enumerate((78, 81, 84)):
         put(wtick(NOTES[i], 1.1), f, 'sfx', f'rising landing tick {NOTES[i]:.1f} Hz (dot lands on the ش, {["x 807", "x 715", "x 623"][i]})', G['land_tick'], TICK_PAN[i])
@@ -686,18 +793,19 @@ def score(V, VO):
             note(f, f'kick: {what}', 'music')
         elif kind == 'clap':
             note(f, f'group clap: {what}', 'music')
-    put(bean_tap(R), V['bean'], 'sfx', f'a coffee bean lands on the wooden table: small crisp wooden tap, then it rocks flat (Coffee A, n102 = f{V["bean"]})', G['bean'])
+    put(bean_tap(R), V['bean'], 'sfx', f'a coffee bean lands on the wooden table: small crisp wooden tap, then it rocks flat (Coffee A, n102 = f{V["bean"]})', G['bean'], probe='bean')
     put(atomiser(), V['spray'], 'sfx', 'atomiser: short pump click 40 ms after the entry kick (so the kick does not mask it), then a fine '
-        'spray hiss (Perfume A, LAYL spray)', G['spray'], 0.15, dt=0.04)
+        'spray hiss (Perfume A, LAYL spray)', G['spray'], dt=0.04, probe='spray')
     if V['bloom']:
-        put(mist_bloom(), V['bloom'], 'sfx', 'the mist blooms: a soft wide air swell (Perfume B punch-in)', G['bloom'])
-    put(glass_tone(), V['glass'], 'sfx', 'soft glass tone Bb6 (the LAYL bottle in the lens)', G['glass'])
+        put(mist_bloom(), V['bloom'], 'sfx', 'the mist blooms: a soft wide air swell f180-194 (Perfume B punch-in), gone by the glass tone', G['bloom'], probe='bloom')
+    put(glass_tone(), V['glass'], 'sfx', 'soft glass tone Bb6 (the LAYL bottle in the lens)', G['glass'], probe='glass')
     s0, s1 = V['sizzle']
-    put(grill(fr(s1 - s0) + 0.15), s0, 'sfx', f'sizzle bed f{s0}-{s1 - 1} (the STAKK patties under the falling crown)', G['sizzle'])
-    put(hit808(A1, 1.0), V['bun'], 'music', '808 A1 on the bun landing (Burger B, exactly on the cut)', G['land808'])
-    put(bun_thump(), V['bun'], 'sfx', 'bun thump (Burger B)', G['thump'])
+    put(grill(fr(s1 - s0) + 0.15), s0, 'sfx', f'sizzle bed f{s0}-{s1 - 1} (the STAKK patties under the crown; the shaker steps out for it)', G['sizzle'], probe='sizzle')
+    put(hit808(A1, 1.0), V['bun'], 'music', '808 A1 on the bun landing (Burger B, exactly on the cut)', G['land808'], probe='thump')
+    put(bun_thump(), V['bun'], 'sfx', 'bun thump (Burger B)', G['thump'], probe='thump')
     d0, d1 = V['drizzle']
-    put(drizzle(R, fr(d1 - d0)), d0, 'sfx', f'slow glossy drizzle f{d0}-{d1 - 1} (thick sauce onto the cake, or syrup on the kunafa)', G['drizzle'])
+    put(drizzle(R, fr(d1 - d0), sheen=1.4), d0, 'sfx', f'slow glossy drizzle f{d0}-{d1 - 1} (thick sauce onto the cake, or syrup on the kunafa); its 1.8-4.5 kHz sheen leads, '
+        f'the shaker steps out and the riff plays dull under it', G['drizzle'], probe='drizzle_sweet')
 
     # --- TALK: mirwas + bass only, V2, typing ticks under the dot triplet (period 15 f, 5 f lag, right to left)
     t0, t1 = V['talk'], V['mult'][0]
@@ -757,6 +865,7 @@ def score(V, VO):
 
 def groove(V, put, note, hero_frames):
     F = V['frames']
+    land_frames = {w for w, kind, _ in V['worlds'] if kind == '808'}     # the bun landing owns its downbeat (no e-piano stab)
     for b0, nb in V['bars']:
         chord = V['chords'][b0]; root, fifth = ROOTS[chord]
         bar_end = b0 + nb * 15
@@ -785,7 +894,7 @@ def groove(V, put, note, hero_frames):
             if clap_on and not hero:
                 put(group_clap(int(f * 7) % 997, 7, 0.38), f, 'music', f'group clap ({st})', G['clap'])
             # shaker
-            if st in SHAKER and s % SHAKER[st][0] == 0:
+            if st in SHAKER and s % SHAKER[st][0] == 0 and not any(a <= f < b for a, b in V['beds']):
                 put(shaker(0.09), f, 'music', None, (0.22 if s % 4 == 0 else 0.13) / 0.22 * G['shaker'] * SHAKER[st][1], 0.3, dt=sw)
         # bass line
         line = [(0, root, 0.5, None), (7, root * 2, 0.2, None), (10, fifth, 0.35, None), (14, root, 0.3, root * 2 ** (-2 / 12))]
@@ -817,14 +926,18 @@ def groove(V, put, note, hero_frames):
             up = [nf(n) * 2 for n in CHORDS[chord][1:]]
             for beat, dd, v in [(0, 1.0, 0.75), (1.5, 0.35, 0.5), (2.5, 0.6, 0.62), (3.5, 0.3, 0.45)]:
                 ff = b0 + beat * 15
-                if fa - 1e-6 <= ff < fb and beat * 4 < nb * 4 and not any(abs(ff - h) < 0.01 for h in hero_frames):
+                if fa - 1e-6 <= ff < fb and beat * 4 < nb * 4 and not any(abs(ff - h) < 0.01 for h in hero_frames | land_frames):
+                    dd = min([dd] + [fr(lf - ff) for lf in land_frames if ff < lf < ff + dd * FPS])   # the landing chokes it
                     for kk, fq in enumerate(up):
                         put(epiano(fq, dd, v), ff, 'music', None, G['ep'] * lvl, dt=0.008 * kk)
             if st == 'peak' and nb == 4:
                 for s, nm in RIFF[chord]:
                     ff = b0 + s * 3.75
                     if fa <= ff < fb:
-                        put(pluck(nf(nm), 0.5, bright=0.5), ff, 'music', None, G['pluck'], 0.25)
+                        x = pluck(nf(nm), 0.5, bright=0.5)
+                        if any(a <= ff < b for a, b in V['beds']):            # under a bed its top (1.4 kHz up) steps aside
+                            x = lp(x, 1400, order=4) * 1.3
+                        put(x, ff, 'music', None, G['pluck'], 0.25)
 
 
 # ----------------------------------------------------------------------------- bus processing, master, checks
@@ -849,10 +962,13 @@ def process(V, m):
         x = x - lp(x, 120) * (1 - db(-4.0))                                       # low shelf -4 dB (phones)
         return peak_eq(peak_eq(x, 2500, 3.0, 0.8), 1000, 2.0, 0.9)
 
-    m.process_bus('music', music_fx)
     sc_fx = sc ** (8.0 / 6.0)                                                  # sound beds: -8 dB under a voice
-    m.process_bus('sfx', lambda x: low_mono(x * sfx_auto[:, None] * sc_fx[:, None], 150, 0.0))
-    m.process_bus('hit', lambda x: low_mono(x * sfx_auto[:, None] * sc[:, None], 150, 0.0))   # transients pass the 8 ms attack
+    fx = {'music': music_fx,
+          'sfx': lambda x: low_mono(x * sfx_auto[:, None] * sc_fx[:, None], 150, 0.0),
+          'hit': lambda x: low_mono(x * sfx_auto[:, None] * sc[:, None], 150, 0.0)}   # transients pass the 8 ms attack
+    for mx in [m] + list(getattr(m, 'probes', {}).values()):                 # every bus chain is linear once the key is set,
+        for name, fn in fx.items():                                           # so a probe processed alone is exactly its share
+            mx.process_bus(name, fn)                                          # of the processed mix
     return sc
 
 
@@ -891,10 +1007,14 @@ def aac_true_peak(x):
     return float([l for l in o.splitlines() if l.strip().startswith('Peak:')][-1].split()[1])
 
 
-def true_peak_loop(x):
-    """True peak (4x oversampled) of a loop, measured across its wrap (the file is played on repeat)."""
-    up = sig.resample_poly(np.vstack([x, x, x]), 4, 1, axis=0)[4 * len(x):8 * len(x)]
-    return float(20 * np.log10(np.abs(up).max() + 1e-12))
+def true_peak_loop(x, os_=8):
+    """True peak (8x oversampled) of a loop, measured across its wrap (the file is played on repeat): the larger of a
+    polyphase 8x resample and the ideal band-limited 8x interpolation of the loop (FFT, periodic, so the wrap is exact).
+    The short polyphase filter alone under-reads by up to 0.4 dB: the limiter's fast gain steps put energy near 20 kHz."""
+    k = 4000
+    up = sig.resample_poly(np.vstack([x[-k:], x, x[:k]]), os_, 1, axis=0)[os_ * (k // 2):os_ * (len(x) + k + k // 2)]
+    ideal = max(float(np.abs(sig.resample(x[:, c], len(x) * os_)).max()) for c in range(x.shape[1]))
+    return float(20 * np.log10(max(float(np.abs(up).max()), ideal) + 1e-12))
 
 
 def rms_db(x):
@@ -908,19 +1028,20 @@ def render(V, VO, room_gain):
     sc = process(V, m)
     loop = fold(V, m)
     ceiling = WAV_CEILING
-    for _ in range(4):                                  # keep -2 dBTP after the AAC encode too, not only in the WAV
+    for _ in range(6):                                  # the wav (8x and ffmpeg's meter) and the AAC encode under their ceilings
         y = master(V, loop, ceiling)
-        ap = aac_true_peak(y)
-        if ap <= -2.2:
+        tp, ap = max(true_peak_loop(y), ffmpeg_tp(y)), aac_true_peak(y)
+        over = max(tp - WAV_TP_MAX, ap + 2.2)
+        if over <= 0:
             break
-        ceiling -= ap + 2.2 + 0.05
+        ceiling -= over + 0.02
     return dict(y=y, m=m, cues=cues, sc=sc, secs=time.time() - t_, aac_peak=ap, ceiling=ceiling)
 
 
 def checks(V, VO, r):
     y, m, sc = r['y'], r['m'], r['sc']
     F = V['frames']; Nf = len(y)
-    I, P = ffmpeg_lufs(y); TP = true_peak_loop(y)
+    I, P = ffmpeg_lufs(y); TP = true_peak_loop(y); TPff = ffmpeg_tp(y)
     lo, mid = share(y, 20, 150), share(y, 500, 6000)
     a, b = V['room_window']; room = rms_db(y[n_(fr(a)):n_(fr(b))])
     pa, pb = V['pocket']; pocket = rms_db(y[n_(fr(pa)):n_(fr(pb))])
@@ -938,6 +1059,14 @@ def checks(V, VO, r):
             if e > thr: mask[max(0, n_(tc - 0.0025)):n_(tc + 0.0025)] = True
         ev, eb = band_energy(voice, 300, 4000, mask), band_energy(bed, 300, 4000, mask)
         rows.append((name, 10 * np.log10(ev / (eb + 1e-12)), 20 * np.log10(sc[:Nf][mask].min()), mask.sum() / SR))
+    # «حلو» (V1 from its «ح» to the stem's end) over the bed in 300-4000 Hz, with and without the opener pour: the pour
+    # must not cover the end of V1 (it swells only once V1 has spoken)
+    hs, he = VO['info']['V1']['placed_hilu_frication_s'], len(VO['v1']) / SR
+    sel = (env_t >= hs) & (env_t < he); thr = env[sel].max() - 25; mk = np.zeros(Nf, bool)
+    for tc, e in zip(env_t[sel], env[sel]):
+        if e > thr: mk[max(0, n_(tc - 0.0025)):n_(tc + 0.0025)] = True
+    hv = band_energy(voice, 300, 4000, mk); pour = sum(m.probes['pour'].buses.values())[:Nf]
+    hilu_bed = (10 * np.log10(hv / band_energy(bed, 300, 4000, mk)), 10 * np.log10(hv / band_energy(bed - pour, 300, 4000, mk)))
     # F1: where the «ح» of «حلو» is heard in THIS wav: normalised cross-correlation of the uncut stem's «ح» (160 ms from
     # 10 ms before it, same stretch and chain, VO['hilu_ref']) against the mono mix over 0.30-0.90 s
     seg = VO['hilu_ref']; ym = mono(y); w0, w1 = n_(0.30), n_(0.90)
@@ -947,32 +1076,49 @@ def checks(V, VO, r):
     nc = cc / en; k = int(np.argmax(nc)); hilu = (w0 + k) / SR + 0.010; hilu_ncc = float(nc[k])
     far = np.abs(np.arange(len(nc)) - k) > n_(0.015)
     hilu_uniq = hilu_ncc / max(float(nc[far].max()), 1e-6)            # the peak against the best match more than 15 ms away
-    # F2: «مشـ» = the first 150 ms of V1 speech: voice over the bed. Gated in 1-4 kHz (intelligibility) and 2-6 kHz (the
-    # «ش»); 300-1000 Hz and 300-4000 Hz are printed too: below 1 kHz the hook 808 body stays on top by design (the hit)
+    # F2: «مشـ» = the first 150 ms of V1 speech: voice over the bed. Gated in 1-4 kHz (intelligibility), 2-6 kHz (the
+    # «ش») and 300-4000 Hz (the whole phone voice band, the «م» included: C3); 300-1000 Hz and 1-2 kHz are printed too
     on1 = onset(mono(voice)[:n_(0.6)], rel=-30.0)
     msk = np.zeros(Nf, bool); msk[n_(on1):n_(on1 + 0.15)] = True
     head = {bnd: 10 * np.log10(band_energy(voice, *bnd, msk) / (band_energy(bed, *bnd, msk) + 1e-12))
-            for bnd in ((300, 1000), (1000, 4000), (2000, 6000), (300, 4000))}
+            for bnd in ((300, 1000), (1000, 2000), (1000, 4000), (2000, 6000), (300, 4000))}
+    # C3: what the 300-1000 Hz cut under «مـ» costs the f0 hit on a phone: the hook 808 alone, 1-4 kHz, 0-100 ms, with and
+    # without the cut (the same click noise for both)
+    hits = []
+    for cut in (HOOK808_BODY_CUT, None):
+        seed(V['seed']); x = hit808(A1, 1.2, mid_duck=HOOK808_MID_DUCK, body_cut=cut)
+        hits.append(band_energy(np.concatenate([x, np.zeros(SR)]), 1000, 4000, np.arange(len(x) + SR) < n_(0.1)))
+    hit_cost = 10 * np.log10(hits[0] / hits[1])
+    # the named world sounds: each one heard at its moment (see audibility())
+    aud = audibility(V, m)
+    # the loop seam: the step from the last sample to the first is no bigger than the steps of the 10 ms leading into it
+    # (the tail side: after the wrap the f0 hit starts, whose steps are much larger)
+    seam = float(np.abs(y[0] - y[-1]).max()); seam_ref = float(np.abs(np.diff(y[-n_(0.01):], axis=0)).max())
     # 808 harmonics (the hero hit alone)
     h = hit808(A1, 1.4)[:n_(0.6)]; sp = np.abs(np.fft.rfft(h * np.hanning(len(h)))); fq = np.fft.rfftfreq(len(h), 1 / SR)
     lv = lambda f: 20 * np.log10(sp[(fq > f - 4) & (fq < f + 4)].max())
     harm = [round(lv(f) - lv(55), 1) for f in (110, 165, 220)]
     ok = {
         'loudness -14 +/- 0.5 LUFS': abs(I + 14) <= 0.5,
-        'true peak <= -2.75 dBTP in the wav (4x oversampled, across the loop wrap)': TP <= -2.75,
+        f'true peak <= {WAV_TP_MAX} dBTP in the wav (8x oversampled across the loop wrap, and ffmpeg\'s meter)': max(TP, TPff) <= WAV_TP_MAX,
         'true peak <= -2 dBTP after AAC 320k (mux.sh)': r['aac_peak'] <= -2.0,
         'energy 500 Hz-6 kHz >= 25 %': mid >= 0.25,
         'energy < 150 Hz <= 50 %': lo <= 0.50,
         'voices >= +6 dB over the bed (300-4000 Hz)': all(r_[1] >= 6.0 for r_ in rows),
         'music side-chain -6 dB under each voice': all(abs(r_[2] - MUSIC_SC_DB) < 0.3 for r_ in rows),
+        f'the opener pour costs «حلو» (V1 from its «ح» to its end) {HILU_POUR_MAX:.2f} dB or less in 300-4000 Hz': hilu_bed[1] - hilu_bed[0] <= HILU_POUR_MAX,
         'F1: the «ح» of «حلو» within one frame of 0.500 s (cross-correlation on the wav, peak >= 2x any other)': abs(hilu - HILU_AT) <= 1 / FPS and hilu_uniq >= 2.0,
-        'F2: «مشـ» (first 150 ms of V1) >= +6 dB over the bed in 1-4 kHz and 2-6 kHz': min(head[(1000, 4000)], head[(2000, 6000)]) >= 6.0,
+        'F2: «مشـ» (first 150 ms of V1) >= +6 dB over the bed in 1-4 kHz, 2-6 kHz and 300-4000 Hz': min(head[(1000, 4000)], head[(2000, 6000)], head[(300, 4000)]) >= 6.0,
+        'C3: the 300-1000 Hz cut under «مـ» softens the f0 hit by 2 dB or less in 1-4 kHz (0-100 ms)': hit_cost >= -2.0,
+        **{f'heard: {w["label"]} f{w["f0"]}-{w["f1"]}, >= +{AUD_GATE:.0f} dB over everything else in {w["band"][0]}-{w["band"][1]} Hz '
+           f'in a {AUD_WIN * 1000:.0f} ms window': w['passed'] for w in aud},
+        'loop seam: the last->first sample step <= the largest step in the 10 ms before it': seam <= seam_ref,
         'dead-beat room tone -40 dBFS +/- 1.5': abs(room - ROOM_TARGET) <= 1.5,
         f'length {F} frames = {Nf} samples': Nf == F * SR // FPS,
     }
-    return dict(I=I, P=P, TP=TP, lo=lo, mid=mid, room=room, pocket=pocket, voices=rows, harm=harm, ok=ok,
-                hilu=hilu, hilu_ncc=hilu_ncc, hilu_uniq=hilu_uniq, v1_onset=on1, head=head,
-                seam=float(np.abs(y[0] - y[-1]).max()), first=float(np.abs(y[:48]).max()))
+    return dict(I=I, P=P, TP=TP, TPff=TPff, lo=lo, mid=mid, room=room, pocket=pocket, voices=rows, harm=harm, ok=ok, hilu_bed=hilu_bed,
+                hilu=hilu, hilu_ncc=hilu_ncc, hilu_uniq=hilu_uniq, v1_onset=on1, head=head, hit_cost=hit_cost, aud=aud,
+                seam=seam, seam_ref=seam_ref, first=float(np.abs(y[:48]).max()))
 
 
 def calibrate_and_render(V, VO):
@@ -1007,31 +1153,49 @@ def main():
         c = checks(V, VO, r)
         print(f'\n{V["name"]}: wrote {path} ({len(r["y"])} samples = {len(r["y"]) / SR:.3f} s, {V["frames"]} frames, '
               f'48 kHz stereo float; render {r["secs"]:.0f} s)')
-        print(f'  integrated loudness {c["I"]:.1f} LUFS (ffmpeg ebur128) · true peak {c["TP"]:.2f} dBTP (ffmpeg {c["P"]:.1f}; limiter ceiling '
+        print(f'  integrated loudness {c["I"]:.1f} LUFS (ffmpeg ebur128) · true peak {c["TP"]:.2f} dBTP at 8x (ffmpeg {c["TPff"]:.2f}; limiter ceiling '
               f'{r["ceiling"]:.2f}) · after AAC 320k {r["aac_peak"]:.1f} dBTP')
         print(f'  energy share: below 150 Hz {100 * c["lo"]:.1f} % · 500 Hz-6 kHz {100 * c["mid"]:.1f} %')
         for name, ratio, scd, secs in c['voices']:
             print(f'  {name}: voice over music+sfx in 300-4000 Hz {ratio:+.1f} dB over {secs:.2f} s; music side-chain {scd:.1f} dB')
+        print(f'  «حلو» (V1 from its «ح» to its end) over the bed in 300-4000 Hz: {c["hilu_bed"][0]:+.1f} dB '
+              f'({c["hilu_bed"][1]:+.1f} dB without the opener pour)')
         print(f'  F1: the «ح» of «حلو» heard at {c["hilu"]:.4f} s = f{c["hilu"] * FPS:.2f} ({(c["hilu"] - HILU_AT) * 1000:+.1f} ms from '
               f'{HILU_AT:.3f} s; cross-correlation peak {c["hilu_ncc"]:.2f}, {c["hilu_uniq"]:.1f}x the next best)')
         print(f'  F2: «مشـ» (V1 speech from {c["v1_onset"] * 1000:.0f} ms, first 150 ms): voice over the bed '
-              f'{c["head"][(1000, 4000)]:+.1f} dB in 1-4 kHz, {c["head"][(2000, 6000)]:+.1f} dB in 2-6 kHz '
-              f'(300-1000 Hz {c["head"][(300, 1000)]:+.1f} dB, where the 808 hit stays; 300-4000 Hz {c["head"][(300, 4000)]:+.1f} dB)')
+              f'{c["head"][(1000, 4000)]:+.1f} dB in 1-4 kHz, {c["head"][(2000, 6000)]:+.1f} dB in 2-6 kHz, {c["head"][(300, 4000)]:+.1f} dB in 300-4000 Hz '
+              f'(300-1000 Hz {c["head"][(300, 1000)]:+.1f} dB, 1-2 kHz {c["head"][(1000, 2000)]:+.1f} dB)')
+        dc, c1, cr, clo, chi = HOOK808_BODY_CUT
+        print(f'  C3: hook 808 cut {dc:+.0f} dB in {clo}-{chi} Hz over 0-{c1:.2f} s (back by {c1 + cr:.2f} s): the f0 hit alone in 1-4 kHz '
+              f'(0-100 ms) changes by {c["hit_cost"]:+.1f} dB')
+        print(f'  world sounds (own vs everything else, pre-master, mono, own band; best {AUD_WIN * 1000:.0f} ms window inside the moment):')
+        for w in c['aud']:
+            print(f'    {w["label"]:27s} f{w["f0"]}-{w["f1"]:<4} {w["band"][0]:>4}-{w["band"][1]:<4} Hz: best {w["best_db"]:+5.1f} dB at '
+                  f'f{w["best_at"] * FPS:5.1f}; whole moment {w["whole_db"]:+5.1f} dB; lifts its band {w["rise_db"]:+4.1f} dB; '
+                  f'{100 * w["band_share"]:3.0f} % of the sound in that band')
         print(f'  808 harmonics vs 55 Hz: 110 Hz {c["harm"][0]:+.1f} dB, 165 Hz {c["harm"][1]:+.1f} dB, 220 Hz {c["harm"][2]:+.1f} dB')
         print(f'  dead-beat room tone f{V["room_window"][0]}-{V["room_window"][1]} {c["room"]:.1f} dBFS RMS · silence pocket '
-              f'f{V["pocket"][0]}-{V["pocket"][1] - 1} {c["pocket"]:.1f} dBFS · first sample {c["first"]:.3f} · seam jump f{V["frames"] - 1}->f0 {c["seam"]:.4f}')
+              f'f{V["pocket"][0]}-{V["pocket"][1] - 1} {c["pocket"]:.1f} dBFS · first sample {c["first"]:.3f} · seam jump f{V["frames"] - 1}->f0 {c["seam"]:.4f} '
+              f'(largest step in the 10 ms before it {c["seam_ref"]:.4f})')
         for k, v in c['ok'].items():
             print(f'  [{"PASS" if v else "FAIL"}] {k}')
             failed |= not v
         cues = sorted(r['cues'], key=lambda q: (q['frame'], q['bus']))
         sheet[V['name']] = dict(file=f'audio/{V["name"]}.wav', frames=V['frames'], seconds=fr(V['frames']), samples=len(r['y']),
-                                checks=dict(lufs=round(c['I'], 2), true_peak_dbtp=round(c['TP'], 2), aac320_true_peak_dbtp=round(r['aac_peak'], 2),
+                                checks=dict(lufs=round(c['I'], 2), true_peak_dbtp=round(c['TP'], 2), true_peak_ffmpeg_dbtp=round(c['TPff'], 2), aac320_true_peak_dbtp=round(r['aac_peak'], 2),
                                             share_below_150=round(c['lo'], 4), share_500_6k=round(c['mid'], 4),
                                             room_tone_dbfs=round(c['room'], 2),
                                             voice_over_bed_db={n: round(v, 1) for n, v, _, _ in c['voices']},
+                                            hilu_over_bed_db=dict(with_pour=round(c['hilu_bed'][0], 1), without_pour=round(c['hilu_bed'][1], 1)),
                                             f1_hilu_s=round(c['hilu'], 4), f1_hilu_xcorr_peak=round(c['hilu_ncc'], 3), f1_hilu_peak_vs_next=round(c['hilu_uniq'], 2),
                                             f2_mush_first150ms_voice_over_bed_db={f'{a}-{b}': round(v, 1) for (a, b), v in c['head'].items()},
-                                            seam_jump=round(c['seam'], 5), passed=all(c['ok'].values())),
+                                            c3_f0_hit_1_4k_change_db=round(c['hit_cost'], 2),
+                                            world_sounds_heard={w['label']: dict(frames=f'{w["f0"]}-{w["f1"]}', band_hz=f'{w["band"][0]}-{w["band"][1]}',
+                                                                                 best_window_db=round(w['best_db'], 1), best_window_frame=round(w['best_at'] * FPS, 1),
+                                                                                 whole_moment_db=round(w['whole_db'], 1), band_lift_db=round(w['rise_db'], 1),
+                                                                                 share_in_band=round(w['band_share'], 2), passed=w['passed'])
+                                                                for w in c['aud']},
+                                            seam_jump=round(c['seam'], 5), seam_ref=round(c['seam_ref'], 5), passed=all(c['ok'].values())),
                                 cues=cues)
     with open(os.path.join(OUT, 'cues.json'), 'w') as f:
         json.dump(sheet, f, ensure_ascii=False, indent=1)
