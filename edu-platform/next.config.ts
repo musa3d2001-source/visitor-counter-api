@@ -1,6 +1,7 @@
 import type { NextConfig } from "next";
 import { PHASE_PRODUCTION_BUILD } from "next/constants";
 import { bunnyConfigProblem } from "./src/lib/bunny-keys";
+import { envProblems, normaliseEnv } from "./src/server/env-schema";
 
 /**
  * إعدادات Next.js
@@ -65,11 +66,17 @@ const nextConfig: NextConfig = {
   },
 };
 
-/** على Vercel لا توجد خطوة بدء: نشر ناقص يجب أن يفشل عند البناء فتبقى النسخة السابقة تعمل. بدء الخادم يفحصه instrumentation */
+/**
+ * على Vercel لا توجد خطوة بدء: نشر ناقص يجب أن يفشل عند البناء فتبقى النسخة السابقة تعمل. بدء الخادم يفحصه instrumentation.
+ * البناء على Vercel يقرأ متغيرات بيئته (Production أو Preview)، ففيه الفحص الكامل الذي يوقف الخادم عند البدء.
+ * البناء المحلي والاختبارات قد تبني بلا متغيرات التشغيل، فيبقى لها فحص Bunny وحده. الرسالة أسماء متغيرات بلا قيم
+ */
 export default function config(phase: string): NextConfig {
   if (phase === PHASE_PRODUCTION_BUILD) {
-    const problem = bunnyConfigProblem(process.env);
-    if (problem) throw new Error(problem);
+    const onVercel = process.env.VERCEL_ENV === "production" || process.env.VERCEL_ENV === "preview";
+    const problems = onVercel ? envProblems(process.env) : [bunnyConfigProblem(normaliseEnv(process.env))].filter((p): p is string => p !== null);
+    if (onVercel && process.env.NODE_ENV === "production" && !process.env.APP_URL?.trim()) problems.push("APP_URL مطلوب على الإنتاج");
+    if (problems.length) throw new Error(`إعدادات البيئة لا تسمح بتشغيل الخادم، فأُوقف البناء وبقيت النسخة السابقة تعمل:\n${problems.join("\n")}`);
   }
   return nextConfig;
 }

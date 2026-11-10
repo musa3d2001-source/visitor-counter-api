@@ -278,7 +278,7 @@ function hostingSteps(f: LaunchFacts, ticks: LaunchTicks): Built[] {
     blocking: false,
     todo: f.indexing.disabledBySetting ? "احذف SITE_INDEXABLE أو اضبطه على true بعد ربط النطاق الحقيقي، ثم أعد النشر." : "يُفتح للبحث وحده بعد ضبط APP_URL على النطاق الحقيقي.",
     where: ENV_WHERE,
-    facts: [f.indexing.indexable ? "محركات البحث تستطيع فهرسة الموقع." : f.indexing.disabledBySetting ? "الموقع مخفي عن محركات البحث لأن SITE_INDEXABLE=false." : "الموقع مخفي عن محركات البحث لأن عنوانه vercel.app."],
+    facts: [f.indexing.indexable ? "محركات البحث تستطيع فهرسة الموقع." : f.indexing.disabledBySetting ? "الموقع مخفي عن محركات البحث لأن قيمة SITE_INDEXABLE ليست true." : "الموقع مخفي عن محركات البحث لأن عنوانه vercel.app."],
   });
 
   const onVercel = f.deployment.vercelEnv !== null;

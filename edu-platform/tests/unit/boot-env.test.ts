@@ -2,6 +2,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { PHASE_PRODUCTION_BUILD } from "next/constants";
 import { register } from "@/instrumentation";
 import { env, opsAlertEmail, resetEnvCache } from "@/server/env";
+import nextConfig from "../../next.config";
 import { TEST_ENV } from "../test-env";
 
 /**
@@ -25,7 +26,7 @@ const DEPLOYED: Record<string, string> = {
   APP_URL: "https://preview-example.vercel.app",
 };
 
-const ENV_NAMES = [...new Set([...Object.keys(TEST_ENV), ...Object.keys(DEPLOYED), "CRON_SECRET", "OPS_ALERT_EMAIL", "NEXT_RUNTIME", "NEXT_PHASE", "VERCEL_ENV"])];
+const ENV_NAMES = [...new Set([...Object.keys(TEST_ENV), ...Object.keys(DEPLOYED), "CRON_SECRET", "OPS_ALERT_EMAIL", "NEXT_RUNTIME", "NEXT_PHASE", "VERCEL_ENV", "SITE_INDEXABLE", "MYFATOORAH_LIVE_CONFIRMED"])];
 const saved = new Map<string, string | undefined>();
 
 function useEnv(values: Record<string, string>) {
@@ -145,6 +146,67 @@ describe("a broken configuration stops the server at start", () => {
     const trap = trapExit();
     await expect(register()).rejects.toThrow("exit 1");
     expect(trap.exit).toHaveBeenCalledTimes(1);
+  });
+});
+
+describe("a value typed from a phone, as the launch page asks", () => {
+  it.each([
+    ["SITE_INDEXABLE", "True", "SITE_INDEXABLE", true],
+    ["SITE_INDEXABLE", "true ", "SITE_INDEXABLE", true],
+    ["SITE_INDEXABLE", " FALSE", "SITE_INDEXABLE", false],
+    ["TRUST_PROXY", "True", "TRUST_PROXY", true],
+    ["PAYMENTS_MODE", "Disabled ", "PAYMENTS_MODE", "disabled"],
+    ["MAIL_DRIVER", " Log", "MAIL_DRIVER", "log"],
+    ["MYFATOORAH_LIVE_CONFIRMED", "TRUE", "MYFATOORAH_LIVE_CONFIRMED", true],
+    ["VIDEO_PROVIDER", "File", "VIDEO_PROVIDER", "file"],
+    ["DATABASE_PGBOUNCER", "True\n", "DATABASE_PGBOUNCER", true],
+  ] as const)("%s=%j starts the server and reads as meant", async (name, value, key, expected) => {
+    useDeployedEnv({ [name]: value });
+    const { exit } = trapExit();
+    await expect(register()).resolves.toBeUndefined();
+    expect(exit).not.toHaveBeenCalled();
+    expect(env()[key]).toBe(expected);
+  });
+
+  it("a SITE_INDEXABLE it cannot read hides the site from search instead of stopping it", async () => {
+    useDeployedEnv({ SITE_INDEXABLE: "yes please" });
+    const { exit } = trapExit();
+    await expect(register()).resolves.toBeUndefined();
+    expect(exit).not.toHaveBeenCalled();
+    expect(env().SITE_INDEXABLE).toBe(false);
+  });
+
+  it("an empty word means unset, so the default applies", () => {
+    useDeployedEnv({ PAYMENTS_MODE: "  ", TRUST_PROXY: "" });
+    expect(env()).toMatchObject({ PAYMENTS_MODE: "disabled", TRUST_PROXY: true });
+  });
+});
+
+describe("a Vercel build checks what the server would check at start", () => {
+  const build = () => nextConfig(PHASE_PRODUCTION_BUILD);
+
+  it("fails on a value the server would refuse, naming it and never printing a value", () => {
+    useDeployedEnv({ VERCEL_ENV: "production", PAYMENTS_MODE: "nonsense-mode" });
+    expect(build).toThrow("PAYMENTS_MODE");
+    expect(build).toThrow(/^(?!.*(nonsense-mode|do-not-print)).*$/s);
+  });
+
+  it("fails on a production build with no APP_URL", () => {
+    const { APP_URL: _gone, ...rest } = DEPLOYED;
+    useEnv({ ...rest, NODE_ENV: "production", VERCEL_ENV: "production" });
+    expect(build).toThrow("APP_URL");
+  });
+
+  it("passes the deployed environment, and the same one typed with capitals and spaces", () => {
+    useDeployedEnv({ VERCEL_ENV: "preview" });
+    expect(build()).toBeTruthy();
+    useDeployedEnv({ VERCEL_ENV: "production", TRUST_PROXY: "True ", PAYMENTS_MODE: " Disabled", SITE_INDEXABLE: "TRUE" });
+    expect(build()).toBeTruthy();
+  });
+
+  it("a local build without the runtime variables is not stopped", () => {
+    useEnv({ NODE_ENV: "production" });
+    expect(build()).toBeTruthy();
   });
 });
 
