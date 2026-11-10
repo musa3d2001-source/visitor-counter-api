@@ -4,14 +4,15 @@ import { renderToStaticMarkup } from "react-dom/server";
 import { getSettings, saveSettings } from "@/server/platform/settings";
 import { closeDb, resetDb } from "../helpers/db";
 import { createUser } from "../helpers/factories";
+import { provenOwner } from "../helpers/step-up";
 
-const ctx = vi.hoisted(() => ({ user: null as unknown }));
+const ctx = vi.hoisted(() => ({ user: null as unknown, sessionId: "" }));
 vi.mock("next/cache", () => ({ revalidatePath: () => {} }));
 vi.mock("@/server/http", async (original) => ({ ...(await original<typeof import("@/server/http")>()), clientIp: async () => "192.0.2.73", userAgent: async () => "t" }));
 vi.mock("@/server/auth/session", async (original) => ({
   ...(await original<typeof import("@/server/auth/session")>()),
   getCurrentUser: async () => ctx.user,
-  getCurrentSession: async () => (ctx.user ? { user: ctx.user, mustChangePassword: false, needsTwoFactorEnrolment: false } : null),
+  getCurrentSession: async () => (ctx.user ? { user: ctx.user, sessionId: ctx.sessionId, mustChangePassword: false, needsTwoFactorEnrolment: false } : null),
 }));
 
 const { SiteFooter } = await import("@/components/site/footer");
@@ -26,6 +27,7 @@ let owner: Awaited<ReturnType<typeof createUser>>;
 beforeAll(async () => {
   await resetDb();
   owner = await createUser({ role: "admin" });
+  ctx.sessionId = (await provenOwner(owner)).sessionId;
 });
 afterAll(closeDb);
 beforeEach(async () => {

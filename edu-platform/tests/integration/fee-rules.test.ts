@@ -9,15 +9,16 @@ import { getSettings, saveSettings } from "@/server/platform/settings";
 import { TeacherMoneyRules } from "@/components/admin/teacher-money-rules";
 import { closeDb, resetDb, sql } from "../helpers/db";
 import { createBundle, createProduct, createTeacher, createUser, createVideoProduct, type TestTeacher } from "../helpers/factories";
+import { provenOwner } from "../helpers/step-up";
 
-const ctx = vi.hoisted(() => ({ user: null as unknown }));
+const ctx = vi.hoisted(() => ({ user: null as unknown, sessionId: "" }));
 vi.mock("next/cache", () => ({ revalidatePath: () => {} }));
 vi.mock("@/server/http", async (original) => ({ ...(await original<typeof import("@/server/http")>()), clientIp: async () => "192.0.2.72", userAgent: async () => "t" }));
 vi.mock("next/navigation", async (original) => ({ ...(await original<typeof import("next/navigation")>()), useRouter: () => ({ refresh() {} }), usePathname: () => "/admin/earnings" }));
 vi.mock("@/server/auth/session", async (original) => ({
   ...(await original<typeof import("@/server/auth/session")>()),
   getCurrentUser: async () => ctx.user,
-  getCurrentSession: async () => (ctx.user ? { user: ctx.user, mustChangePassword: false, needsTwoFactorEnrolment: false } : null),
+  getCurrentSession: async () => (ctx.user ? { user: ctx.user, sessionId: ctx.sessionId, mustChangePassword: false, needsTwoFactorEnrolment: false } : null),
 }));
 
 const { saveSettingsAction } = await import("@/app/admin/settings/actions");
@@ -40,6 +41,7 @@ const form = (values: Record<string, string>) => {
 beforeAll(async () => {
   await resetDb();
   owner = await createUser({ role: "admin" });
+  ctx.sessionId = (await provenOwner(owner)).sessionId;
   teacher = await createTeacher({ shareBps: 4000, mode: "self_managed", withUser: true });
 });
 afterAll(async () => {

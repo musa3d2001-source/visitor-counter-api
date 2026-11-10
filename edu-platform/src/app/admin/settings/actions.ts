@@ -2,8 +2,10 @@
 
 import { revalidatePath } from "next/cache";
 import type { ActionState } from "@/lib/action-state";
-import { saveSettings, settingsSchema, SETTINGS_LABELS, type PlatformSettings } from "@/server/platform/settings";
+import { describeSettingsChanges, readSettings, saveSettings, settingsChangeNeedsProof, settingsSchema, SETTINGS_LABELS, type PlatformSettings } from "@/server/platform/settings";
 import { audit } from "@/server/platform/audit";
+import { sql } from "@/server/db";
+import { assertFreshProof } from "@/server/auth/step-up";
 import { storage } from "@/server/storage";
 import { getSettings } from "@/server/platform/settings";
 import { AdminError, adminAction, bool, str } from "@/server/admin/common";
@@ -13,8 +15,8 @@ const FIELD_LABELS: Record<string, string> = SETTINGS_LABELS;
 
 export async function saveSettingsAction(_p: ActionState, fd: FormData): Promise<ActionState> {
   return adminAction(async ({ adminId, ip }) => {
-    // تُقرأ قبل الحفظ: هي ما يصف التغيير في سجل التدقيق
-    const before = await getSettings();
+    // من قاعدة البيانات مباشرة وقبل الحفظ: هي أساس حكم الإثبات ووصف التغيير في سجل التدقيق
+    const before = await readSettings();
     let faq: unknown = [];
     try {
       faq = JSON.parse(str(fd, "faq") || "[]");
@@ -64,42 +66,46 @@ export async function saveSettingsAction(_p: ActionState, fd: FormData): Promise
     }
     const [a, b] = (parsed.data.academic_year ?? "2026-2027").split("-").map(Number);
     if (b !== a + 1) throw new AdminError("العام الدراسي غير صحيح (مثال: 2026-2027)");
-    await saveSettings(parsed.data, adminId);
-    await audit({
-      actorId: adminId,
-      action: "settings.update",
-      entityType: "settings",
-      entityId: "platform",
-      metadata: {
-        keys: Object.keys(parsed.data),
-        ...(before.fee_percent_bps !== parsed.data.fee_percent_bps || before.fee_fixed_fils !== parsed.data.fee_fixed_fils
-          ? { fees: { from: [before.fee_percent_bps, before.fee_fixed_fils], to: [parsed.data.fee_percent_bps, parsed.data.fee_fixed_fils] } }
-          : {}),
-        ...(before.watermark_enabled !== parsed.data.watermark_enabled ? { watermark: { from: before.watermark_enabled, to: parsed.data.watermark_enabled } } : {}),
-      },
-      ip,
+    if (settingsChangeNeedsProof(before, parsed.data)) await assertFreshProof({ adminId, ip, command: "settings.sensitive" });
+    await sql.begin(async (tx) => {
+      await saveSettings(parsed.data, adminId, tx);
+      await audit({
+        actorId: adminId,
+        action: "settings.update",
+        entityType: "settings",
+        entityId: "platform",
+        metadata: {
+          keys: Object.keys(parsed.data),
+          changes: describeSettingsChanges(before, parsed.data),
+          ...(before.fee_percent_bps !== parsed.data.fee_percent_bps || before.fee_fixed_fils !== parsed.data.fee_fixed_fils
+            ? { fees: { from: [before.fee_percent_bps, before.fee_fixed_fils], to: [parsed.data.fee_percent_bps, parsed.data.fee_fixed_fils] } }
+            : {}),
+          ...(before.watermark_enabled !== parsed.data.watermark_enabled ? { watermark: { from: before.watermark_enabled, to: parsed.data.watermark_enabled } } : {}),
+        },
+        ip,
+      }, tx);
+      // إيقاف الختم يعني أن الملفات المدفوعة تُسلَّم بلا اسم المشتري: إجراء مستقل في السجل يسهل البحث عنه
+      if (before.watermark_enabled !== parsed.data.watermark_enabled && parsed.data.watermark_enabled !== undefined) {
+        await audit({
+          actorId: adminId,
+          action: parsed.data.watermark_enabled ? "settings.watermark_on" : "settings.watermark_off",
+          entityType: "settings",
+          entityId: "watermark_enabled",
+          metadata: { from: before.watermark_enabled, to: parsed.data.watermark_enabled },
+          ip,
+        }, tx);
+      }
+      if (confirmsFeeRules) {
+        await audit({
+          actorId: adminId,
+          action: "settings.fee_rules_confirm",
+          entityType: "settings",
+          entityId: "fee_rules_confirmed_at",
+          metadata: { feePercentBps: parsed.data.fee_percent_bps, feeFixedFils: parsed.data.fee_fixed_fils },
+          ip,
+        }, tx);
+      }
     });
-    // إيقاف الختم يعني أن الملفات المدفوعة تُسلَّم بلا اسم المشتري: إجراء مستقل في السجل يسهل البحث عنه
-    if (before.watermark_enabled !== parsed.data.watermark_enabled && parsed.data.watermark_enabled !== undefined) {
-      await audit({
-        actorId: adminId,
-        action: parsed.data.watermark_enabled ? "settings.watermark_on" : "settings.watermark_off",
-        entityType: "settings",
-        entityId: "watermark_enabled",
-        metadata: { from: before.watermark_enabled, to: parsed.data.watermark_enabled },
-        ip,
-      });
-    }
-    if (confirmsFeeRules) {
-      await audit({
-        actorId: adminId,
-        action: "settings.fee_rules_confirm",
-        entityType: "settings",
-        entityId: "fee_rules_confirmed_at",
-        metadata: { feePercentBps: parsed.data.fee_percent_bps, feeFixedFils: parsed.data.fee_fixed_fils },
-        ip,
-      });
-    }
     revalidatePath("/", "layout");
     return { ok: true, message: "تم حفظ الإعدادات وتطبيقها على الموقع" };
   });

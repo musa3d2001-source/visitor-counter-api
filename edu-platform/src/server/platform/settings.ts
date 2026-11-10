@@ -140,8 +140,48 @@ export const getSettingsReport = cache((): Promise<SettingsReport> => readSettin
 
 export const getSettings = cache(async (): Promise<PlatformSettings> => (await getSettingsReport()).settings);
 
+/**
+ * ما يحتاج تغييره إثباتًا حديثًا: ما يحسب مال المعلمين، وما يوصل إليه ولي الأمر حين يبحث عن البائع أو الدعم.
+ * من يبدّل رقم واتساب في جلسة مسروقة يستقبل أسئلة الدفع بدل المالك. إيقاف العلامة المائية يُفحص وحده لأن تشغيلها لا يحتاج شيئًا.
+ */
+const PROOF_SETTING_KEYS = ["fee_percent_bps", "fee_fixed_fils", "fee_rules_confirmed_at", "whatsapp_number", "contact_email", "contact_phone", "seller_legal_name", "seller_license_number", "seller_address"] as const satisfies readonly (keyof PlatformSettings)[];
+
+function sameValue(a: unknown, b: unknown): boolean {
+  return JSON.stringify(a) === JSON.stringify(b);
+}
+
+export function settingsChangeNeedsProof(before: PlatformSettings, patch: Partial<PlatformSettings>): boolean {
+  if (before.watermark_enabled && patch.watermark_enabled === false) return true;
+  return PROOF_SETTING_KEYS.some((key) => key in patch && !sameValue(before[key], patch[key]));
+}
+
+/** أي مفتاح يُضاف لاحقًا بهذا الشكل لا تُكتب قيمته في السجل، ولو نسي من أضافه */
+const SECRET_SETTING_NAME = /secret|token|password|api_?key/i;
+/** القيمة الطويلة (الأسئلة الشائعة) تُحفظ أولها: سطر التدقيق دليل لا نسخة احتياطية */
+const AUDIT_VALUE_CHARS = 500;
+
+export type SettingChange = { key: string; secret: true } | { key: string; from: unknown; to: unknown; truncated?: true };
+
+/** ما تغير فعلًا بين قيمتين. القيم غير السرية بالقديم والجديد، والسرية بأنها تغيرت فقط */
+export function describeSettingsChanges(before: PlatformSettings, patch: Partial<PlatformSettings>, isSecret: (key: string) => boolean = (key) => SECRET_SETTING_NAME.test(key)): SettingChange[] {
+  const changes: SettingChange[] = [];
+  for (const key of Object.keys(patch) as (keyof PlatformSettings)[]) {
+    const from = before[key];
+    const to = patch[key];
+    if (sameValue(from, to)) continue;
+    if (isSecret(key)) {
+      changes.push({ key, secret: true });
+      continue;
+    }
+    const long = [from, to].some((v) => JSON.stringify(v ?? null).length > AUDIT_VALUE_CHARS);
+    if (long) changes.push({ key, from: JSON.stringify(from ?? null).slice(0, AUDIT_VALUE_CHARS), to: JSON.stringify(to ?? null).slice(0, AUDIT_VALUE_CHARS), truncated: true });
+    else changes.push({ key, from: from ?? null, to: to ?? null });
+  }
+  return changes;
+}
+
 export async function saveSettings(patch: Partial<PlatformSettings>, actorId: string, db: Db = sql) {
-  const current = await getSettings();
+  const current = await readSettings(db);
   const next = settingsSchema.parse({ ...current, ...patch });
   for (const key of Object.keys(patch) as (keyof PlatformSettings)[]) {
     const value = next[key];

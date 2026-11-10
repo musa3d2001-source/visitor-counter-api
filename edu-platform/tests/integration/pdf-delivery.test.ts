@@ -19,16 +19,17 @@ import { storage } from "@/server/storage";
 import { STAMP_MAX_BYTES, STAMP_MAX_PAGES } from "@/lib/pdf-limits";
 import { closeDb, resetDb, sql } from "../helpers/db";
 import { createProduct, createUser, makePdf, type TestProduct } from "../helpers/factories";
+import { provenOwner } from "../helpers/step-up";
 import { applyAcceptedRefund, confirmPaid } from "../helpers/payment-flow";
 import { completeTicketed, issueTicket } from "../helpers/upload-ticket";
 import { TEST_STORAGE_DIR } from "../test-env";
 
-const session = vi.hoisted(() => ({ user: null as null | { id: string; email: string; role: string } }));
+const session = vi.hoisted(() => ({ user: null as null | { id: string; email: string; role: string }, sessionId: "" }));
 vi.mock("next/cache", () => ({ revalidatePath: () => {} }));
 vi.mock("@/server/auth/session", async (original) => ({
   ...(await original<typeof import("@/server/auth/session")>()),
   getCurrentUser: async () => session.user,
-  getCurrentSession: async () => (session.user ? { user: session.user, mustChangePassword: false, needsTwoFactorEnrolment: false } : null),
+  getCurrentSession: async () => (session.user ? { user: session.user, sessionId: session.sessionId, mustChangePassword: false, needsTwoFactorEnrolment: false } : null),
 }));
 vi.mock("@/server/http", async (original) => ({ ...(await original<typeof import("@/server/http")>()), clientIp: async () => "192.0.2.73", userAgent: async () => "t" }));
 
@@ -48,6 +49,7 @@ beforeAll(async () => {
   (globalThis as Record<string, unknown>).pdfjsWorker = await import("pdfjs-dist/legacy/build/pdf.worker.mjs");
   pdfjs = (await import("pdfjs-dist/legacy/build/pdf.mjs")) as unknown as typeof pdfjs;
   admin = await createUser({ role: "admin" });
+  session.sessionId = (await provenOwner(admin)).sessionId;
   owner = { kind: "owner", userId: admin.id, name: admin.fullName, email: admin.email, teacherId: null, canUpload: true };
 });
 afterAll(async () => {
