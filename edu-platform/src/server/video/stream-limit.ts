@@ -23,6 +23,17 @@ export const STREAM_LIMITS = {
   deniedPerIp: 300,
 } as const;
 
+/**
+ * تجديد رابط التضمين. المشغل يطلب مرة كل نحو 55 دقيقة، فالحد يتسع لعدة أجهزة وتبويبات ويوقف من يجمع الروابط.
+ * الزائر لا يصل إلا للمعاينات المجانية، وعنوانه قد يكون شبكة مدرسة كاملة.
+ */
+export const EMBED_RENEW_WINDOW_SECONDS = 60 * 60;
+export const EMBED_RENEW_LIMITS = { account: 30, anonymousPerIp: 300 } as const;
+
+export function hitEmbedRenewLimit(userId: string | null, ip: string) {
+  return userId ? hitRateLimit(`embed:user:${userId}`, EMBED_RENEW_LIMITS.account, EMBED_RENEW_WINDOW_SECONDS) : hitRateLimit(`embed:ip:${ip}`, EMBED_RENEW_LIMITS.anonymousPerIp, EMBED_RENEW_WINDOW_SECONDS);
+}
+
 export function hitStreamLimit(userId: string | null, ip: string) {
   return userId ? hitRateLimit(`stream:user:${userId}`, STREAM_LIMITS.account, STREAM_WINDOW_SECONDS) : hitRateLimit(`stream:ip:${ip}`, STREAM_LIMITS.anonymousPerIp, STREAM_WINDOW_SECONDS);
 }

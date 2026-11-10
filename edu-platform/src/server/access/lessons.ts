@@ -1,7 +1,7 @@
 import "server-only";
 import { sql } from "../db";
 import { hasProductAccess, isTeacherOfProduct } from "./entitlements";
-import { signedEmbedUrl } from "../video/bunny";
+import { EMBED_TOKEN_TTL_SECONDS, signedEmbedUrl } from "../video/bunny";
 import { closedVideoProductIds } from "../video/policy";
 import { getSettings } from "../platform/settings";
 import { isUuid } from "@/lib/uuid";
@@ -17,7 +17,7 @@ export type LessonRow = {
   duration_seconds: number | null;
   is_free_preview: boolean;
   is_published: boolean;
-  processing_status: "uploading" | "processing" | "ready" | "failed";
+  processing_status: "uploading" | "processing" | "ready" | "failed" | "held";
   product_status: string;
 };
 
@@ -52,11 +52,11 @@ export async function checkLessonAccess(lessonId: string, user: { id: string; ro
 
 export type Playback =
   | { kind: "file"; src: string }
-  | { kind: "bunny"; embedUrl: string };
+  | { kind: "bunny"; embedUrl: string; expiresInSeconds: number };
 
 /** مصدر التشغيل بعد التحقق من الصلاحية — رابط Bunny موقّع وقصير الصلاحية، أو مسار البث المحمي للملفات */
 export function playbackFor(lesson: Pick<LessonRow, "id" | "provider" | "video_ref">, opts: { startAt?: number } = {}): Playback {
-  if (lesson.provider === "bunny") return { kind: "bunny", embedUrl: signedEmbedUrl(lesson.video_ref, { startAt: opts.startAt }) };
+  if (lesson.provider === "bunny") return { kind: "bunny", embedUrl: signedEmbedUrl(lesson.video_ref, { startAt: opts.startAt }), expiresInSeconds: EMBED_TOKEN_TTL_SECONDS };
   return { kind: "file", src: `/api/lessons/${lesson.id}/stream` };
 }
 

@@ -1,6 +1,8 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
+import { headers } from "next/headers";
+import { after } from "next/server";
 import { ArrowRight, ChevronLeft, ChevronRight, Clock, FileText, Keyboard, ListVideo, LogIn, ShoppingCart, Sparkles, UserRound } from "lucide-react";
 import { getCurrentUser } from "@/server/auth/session";
 import { accessibleProductIds, isTeacherOfProduct } from "@/server/access/entitlements";
@@ -22,6 +24,8 @@ import { LockedStage, StageFrame, StageNotice } from "./_components/stage-parts"
 import { isUuid } from "@/lib/uuid";
 import { libraryNote } from "@/lib/site-truth";
 import { paymentPublicState } from "@/server/payments/public-state";
+import { ipFromHeaders } from "@/server/http";
+import { logAccess } from "@/server/platform/audit";
 
 export const metadata: Metadata = { title: "مشاهدة الدرس", robots: { index: false, follow: false } };
 
@@ -75,6 +79,14 @@ export default async function WatchPage({ params, searchParams }: { params: Prom
   const prev = idx > 0 ? [...lessons.slice(0, idx)].reverse().find(canOpen) ?? null : null;
   const startAt = selected && progressBy.get(selected.id) && !progressBy.get(selected.id)!.completed ? progressBy.get(selected.id)!.position_seconds : 0;
   const playback = access?.ok ? playbackFor(access.lesson, { startAt }) : null;
+  // إصدار رابط تضمين يُسجَّل بعد إرسال الصفحة فلا يؤخرها. الرؤوس تُقرأ قبل after لأن المكوّن الخادمي لا يقرؤها داخله
+  if (playback?.kind === "bunny" && access?.ok) {
+    const requestHeaders = await headers();
+    const viewerIp = ipFromHeaders(requestHeaders);
+    const viewerAgent = requestHeaders.get("user-agent");
+    const issued = access.lesson;
+    after(() => logAccess({ userId: user?.id ?? null, productId: issued.product_id, lessonId: issued.id, action: "video", ip: viewerIp, userAgent: viewerAgent }));
+  }
   const doneCount = lessons.filter((l) => progressBy.get(l.id)?.completed).length;
   const videosOff = videoClosed && !lessons.some((l) => owned.has(l.productId));
   const backHref = ownsRoot ? "/library" : `/products/${product.slug}`;
@@ -191,6 +203,7 @@ export default async function WatchPage({ params, searchParams }: { params: Prom
                     kind={playback.kind}
                     src={playback.kind === "file" ? playback.src : undefined}
                     embedUrl={playback.kind === "bunny" ? playback.embedUrl : undefined}
+                    embedExpiresInSeconds={playback.kind === "bunny" ? playback.expiresInSeconds : undefined}
                     startAt={startAt}
                     trackProgress={Boolean(user)}
                     watermark={user?.email}

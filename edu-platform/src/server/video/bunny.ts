@@ -38,6 +38,9 @@ export type BunnyVideo = {
   width: number;
   height: number;
   storageSize: number;
+  /** الوثائق: «Original uploaded file SHA256 hash»، وقد يكون فارغًا */
+  originalHash?: string | null;
+  dateUploaded?: string | null;
 };
 
 export function bunnyConfigured(): boolean {
@@ -95,8 +98,16 @@ export async function deleteVideo(videoId: string): Promise<void> {
   await call("DELETE", `/videos/${videoId}`);
 }
 
+/**
+ * عمر توقيع رفع TUS. الوثائق تطلب ساعة على الأقل، وإعادة التوقيع لا تمدد عمر رفع بدأ، فالرفع يجب أن ينتهي خلال هذه المدة.
+ * لو تسرب التوقيع فهو لرفع على هذا الفيديو وحده، وينتهي بعد ساعتين.
+ */
+export const TUS_CREDENTIAL_TTL_SECONDS = 2 * 60 * 60;
+/** عمر رابط التضمين. المشغل يجدده قبل انتهائه (POST /api/lessons/[id]/embed) بعد فحص الصلاحية من جديد */
+export const EMBED_TOKEN_TTL_SECONDS = 60 * 60;
+
 /** بيانات رفع TUS مباشر من المتصفح (المفتاح السري لا يغادر الخادم) */
-export function tusUploadCredentials(videoId: string, ttlSeconds = 6 * 60 * 60) {
+export function tusUploadCredentials(videoId: string, ttlSeconds = TUS_CREDENTIAL_TTL_SECONDS) {
   const c = cfg();
   const expire = Math.floor(Date.now() / 1000) + ttlSeconds;
   const signature = createHash("sha256").update(`${c.libraryId}${c.apiKey}${expire}${videoId}`).digest("hex");
@@ -115,7 +126,7 @@ export function tusUploadCredentials(videoId: string, ttlSeconds = 6 * 60 * 60) 
 /** رابط تضمين موقّع قصير الصلاحية — يُصدر فقط بعد التحقق من صلاحية الطالب */
 export function signedEmbedUrl(videoId: string, opts: { ttlSeconds?: number; autoplay?: boolean; startAt?: number } = {}): string {
   const c = cfg();
-  const expires = Math.floor(Date.now() / 1000) + (opts.ttlSeconds ?? 3 * 60 * 60);
+  const expires = Math.floor(Date.now() / 1000) + (opts.ttlSeconds ?? EMBED_TOKEN_TTL_SECONDS);
   const token = createHash("sha256").update(`${c.tokenKey}${videoId}${expires}`).digest("hex");
   const q = new URLSearchParams({
     token,

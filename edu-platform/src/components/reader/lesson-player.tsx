@@ -1,10 +1,14 @@
 "use client";
 
 import { useCallback, useEffect, useRef, useState, useSyncExternalStore } from "react";
+import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { Gauge, LoaderCircle, Maximize, Minimize, Pause, Play, RotateCcw, RotateCw, SkipBack, TriangleAlert, Volume2, VolumeX } from "lucide-react";
+import { Gauge, LoaderCircle, LockKeyhole, LogIn, Maximize, Minimize, Pause, Play, RotateCcw, RotateCw, SkipBack, TriangleAlert, Volume2, VolumeX } from "lucide-react";
 import { PlayerJsBridge } from "./playerjs";
 import { ar } from "@/lib/design";
+import { LessonBeatClock } from "@/lib/lesson-beat";
+import { nextRecovery, NO_RECOVERY } from "@/lib/file-playback";
+import { renewalVerdict, renewDelayMs, resumeUrl, retryDelayMs, swapDelayMs } from "@/lib/embed-renewal";
 import { cn } from "@/lib/utils";
 
 const SPEEDS = [0.75, 1, 1.25, 1.5, 1.75, 2];
@@ -14,6 +18,8 @@ type Props = {
   kind: "file" | "bunny";
   src?: string;
   embedUrl?: string;
+  /** عمر رابط التضمين بالثواني، والمشغل يجدده قبل انتهائه */
+  embedExpiresInSeconds?: number;
   startAt: number;
   trackProgress: boolean;
   watermark?: string;
@@ -30,26 +36,58 @@ function clock(sec: number): string {
   return h ? `${h}:${String(m).padStart(2, "0")}:${String(r).padStart(2, "0")}` : `${m}:${String(r).padStart(2, "0")}`;
 }
 
-/** حفظ تقدم المشاهدة (مخنوق ~10 ثوانٍ، ويُرسل فورًا عند الإيقاف/الانتهاء) */
+/**
+ * حفظ تقدم المشاهدة: نبضة كل 16 ثانية (انظر lib/lesson-beat)، وتتوقف والتبويب مخفي.
+ * عند الإخفاء نبضة أخيرة واحدة إن حان موعدها، والإيقاف داخل الفاصل يؤجل إرسالًا واحدًا إلى موعده.
+ */
 function useProgressSaver(lessonId: string, enabled: boolean) {
-  const last = useRef({ at: 0, pos: -1, completed: false });
-  return useCallback(
-    (position: number, duration: number, force = false) => {
-      if (!enabled || !Number.isFinite(position)) return;
-      const completed = duration > 0 && position / duration >= 0.9;
-      const now = Date.now();
-      const becameCompleted = completed && !last.current.completed;
-      if (!force && !becameCompleted && now - last.current.at < 10_000) return;
-      if (!becameCompleted && Math.abs(position - last.current.pos) < 1 && !force) return;
-      last.current = { at: now, pos: position, completed: last.current.completed || completed };
+  const clockRef = useRef<LessonBeatClock | null>(null);
+  const trailing = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  const clearTrailing = useCallback(() => {
+    if (trailing.current) clearTimeout(trailing.current);
+    trailing.current = null;
+  }, []);
+
+  const clock = useCallback(() => {
+    clockRef.current ??= new LessonBeatClock((position, completed) => {
       void fetch(`/api/lessons/${lessonId}/progress`, {
         method: "POST",
         headers: { "content-type": "application/json" },
-        body: JSON.stringify({ position: Math.floor(position), completed: last.current.completed }),
+        body: JSON.stringify({ position, completed }),
         keepalive: true,
       }).catch(() => {});
+    });
+    return clockRef.current;
+  }, [lessonId]);
+
+  useEffect(() => {
+    if (!enabled) return;
+    const onVisibility = () => {
+      if (!document.hidden) return;
+      clearTrailing();
+      clockRef.current?.settle(Date.now());
+    };
+    document.addEventListener("visibilitychange", onVisibility);
+    return () => {
+      document.removeEventListener("visibilitychange", onVisibility);
+      clearTrailing();
+    };
+  }, [enabled, clearTrailing]);
+
+  return useCallback(
+    (position: number, duration: number, force = false) => {
+      if (!enabled || !Number.isFinite(position)) return;
+      const now = Date.now();
+      if (!force) {
+        if (!document.hidden) clock().tick(position, duration, now);
+        return;
+      }
+      clearTrailing();
+      const wait = clock().flush(position, duration, now);
+      if (wait !== null && !document.hidden) trailing.current = setTimeout(() => clockRef.current?.settle(Date.now()), wait);
     },
-    [lessonId, enabled],
+    [enabled, clock, clearTrailing],
   );
 }
 
@@ -152,6 +190,8 @@ function FilePlayer({ lessonId, src, startAt, trackProgress, watermark, nextHref
   const [showControls, setShowControls] = useState(true);
   const hideTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const save = useProgressSaver(lessonId, trackProgress);
+  const recovery = useRef(NO_RECOVERY);
+  const afterRecovery = useRef<{ at: number; play: boolean } | null>(null);
 
   // تفضيل السرعة محفوظ لكل متصفح
   useEffect(() => {
@@ -280,6 +320,13 @@ function FilePlayer({ lessonId, src, startAt, trackProgress, watermark, nextHref
         onLoadedMetadata={(e) => {
           e.currentTarget.playbackRate = speed;
           applyResume();
+          const back = afterRecovery.current;
+          if (back) {
+            afterRecovery.current = null;
+            e.currentTarget.currentTime = back.at;
+            setWaiting(false);
+            if (back.play) void e.currentTarget.play().catch(() => {});
+          }
         }}
         onTimeUpdate={(e) => {
           const v = e.currentTarget;
@@ -310,7 +357,16 @@ function FilePlayer({ lessonId, src, startAt, trackProgress, watermark, nextHref
           setMuted(e.currentTarget.muted);
           setVolume(e.currentTarget.volume);
         }}
-        onError={() => setError(true)}
+        onError={(e) => {
+          const v = e.currentTarget;
+          const next = nextRecovery({ code: v.error?.code ?? 0, loaded: resumed.current, state: recovery.current, now: Date.now() });
+          if (!next) return setError(true);
+          // انتهى الرابط الموقّع: تحميل جديد عبر مسار البث يفحص الصلاحية ويصدر رابطًا جديدًا
+          recovery.current = next;
+          afterRecovery.current = { at: v.currentTime || time, play: playing };
+          setWaiting(true);
+          v.load();
+        }}
       />
 
       <ViewerWatermark text={watermark} />
@@ -475,11 +531,18 @@ function FilePlayer({ lessonId, src, startAt, trackProgress, watermark, nextHref
 const subscribeNever = () => () => {};
 const supportsElementFullscreen = () => Boolean(document.fullscreenEnabled && document.documentElement.requestFullscreen);
 
-function BunnyPlayer({ lessonId, embedUrl, startAt, trackProgress, watermark, nextHref, nextTitle }: Props & { embedUrl: string }) {
+function BunnyPlayer({ lessonId, embedUrl, embedExpiresInSeconds, startAt, trackProgress, watermark, nextHref, nextTitle }: Props & { embedUrl: string }) {
   const containerRef = useRef<HTMLDivElement>(null);
   const iframeRef = useRef<HTMLIFrameElement>(null);
   const [ended, setEnded] = useState(false);
   const [fullscreen, setFullscreen] = useState(false);
+  // الرابط الحالي ملك المشغل بعد أول رسم: إعادة رسم الصفحة لا تعيد تحميل الفيديو
+  const [src, setSrc] = useState(embedUrl);
+  const [accessEnded, setAccessEnded] = useState<"session-ended" | "access-ended" | null>(null);
+  const playing = useRef(false);
+  const position = useRef(startAt);
+  const resume = useRef({ at: startAt, play: false });
+  const swapIfWaiting = useRef<() => void>(() => {});
   const elementFullscreen = useSyncExternalStore(subscribeNever, supportsElementFullscreen, () => null);
   const save = useProgressSaver(lessonId, trackProgress);
 
@@ -501,16 +564,26 @@ function BunnyPlayer({ lessonId, embedUrl, startAt, trackProgress, watermark, ne
     let lastPos = 0;
     let lastDur = 0;
     bridge.on("ready", () => {
-      if (startAt > 3) bridge.setCurrentTime(startAt);
+      if (resume.current.at > 3) bridge.setCurrentTime(resume.current.at);
+      if (resume.current.play) bridge.play();
     });
     bridge.on("timeupdate", (v) => {
       const val = v as { seconds?: number; duration?: number } | undefined;
       lastPos = Number(val?.seconds ?? 0);
       lastDur = Number(val?.duration ?? 0);
+      position.current = lastPos;
       save(lastPos, lastDur);
     });
-    bridge.on("pause", () => save(lastPos, lastDur, true));
+    bridge.on("play", () => {
+      playing.current = true;
+    });
+    bridge.on("pause", () => {
+      playing.current = false;
+      save(lastPos, lastDur, true);
+      swapIfWaiting.current();
+    });
     bridge.on("ended", () => {
+      playing.current = false;
       save(lastDur || lastPos, lastDur, true);
       setEnded(true);
     });
@@ -518,14 +591,86 @@ function BunnyPlayer({ lessonId, embedUrl, startAt, trackProgress, watermark, ne
       if (lastPos > 0) save(lastPos, lastDur, true);
       bridge.destroy();
     };
-  }, [embedUrl, startAt, save, elementFullscreen]);
+  }, [src, save, elementFullscreen, accessEnded]);
+
+  // تجديد الرابط قبل انتهائه: الخادم يفحص الصلاحية عند كل تجديد
+  useEffect(() => {
+    if (!embedExpiresInSeconds) return;
+    let stopped = false;
+    let timer: ReturnType<typeof setTimeout> | null = null;
+    let attempt = 0;
+    let expiresAt = Date.now() + embedExpiresInSeconds * 1000;
+    let waiting: { url: string; expiresInSeconds: number } | null = null;
+    let deferred = false;
+
+    const after = (ms: number, fn: () => void) => {
+      if (timer) clearTimeout(timer);
+      timer = setTimeout(fn, ms);
+    };
+    const swap = () => {
+      if (stopped || !waiting) return;
+      const next = waiting;
+      waiting = null;
+      resume.current = { at: position.current, play: playing.current };
+      expiresAt = Date.now() + next.expiresInSeconds * 1000;
+      setSrc(resumeUrl(next.url, position.current, playing.current));
+      after(renewDelayMs(next.expiresInSeconds), () => void renew());
+    };
+    const renew = async () => {
+      if (stopped) return;
+      // متوقف وتبويبه مخفي: لا حاجة لرابط جديد حتى يعود
+      if (document.hidden && !playing.current) {
+        deferred = true;
+        return;
+      }
+      const retry = (retryAfter: number | null) => after(retryDelayMs(attempt++, retryAfter), () => void renew());
+      let res: Response;
+      try {
+        res = await fetch(`/api/lessons/${lessonId}/embed`, { method: "POST", cache: "no-store" });
+      } catch {
+        if (!stopped) retry(null);
+        return;
+      }
+      if (stopped) return;
+      const verdict = renewalVerdict(res.status);
+      if (verdict === "retry") return retry(Number(res.headers.get("retry-after")) || null);
+      if (verdict !== "renewed") {
+        playing.current = false;
+        setAccessEnded(verdict);
+        return;
+      }
+      const data = (await res.json().catch(() => null)) as { embedUrl?: string; expiresInSeconds?: number } | null;
+      if (stopped) return;
+      if (!data?.embedUrl || !data.expiresInSeconds) return retry(null);
+      attempt = 0;
+      waiting = { url: data.embedUrl, expiresInSeconds: data.expiresInSeconds };
+      if (playing.current) after(swapDelayMs(expiresAt, Date.now()), swap);
+      else swap();
+    };
+    const onVisibility = () => {
+      if (document.hidden || !deferred) return;
+      deferred = false;
+      void renew();
+    };
+
+    swapIfWaiting.current = swap;
+    document.addEventListener("visibilitychange", onVisibility);
+    after(renewDelayMs(embedExpiresInSeconds), () => void renew());
+    return () => {
+      stopped = true;
+      if (timer) clearTimeout(timer);
+      swapIfWaiting.current = () => {};
+      document.removeEventListener("visibilitychange", onVisibility);
+    };
+  }, [lessonId, embedExpiresInSeconds]);
 
   return (
     <div ref={containerRef} data-testid="watch-player" data-kind="bunny" className={cn("on-dark relative aspect-video w-full overflow-hidden bg-black", fullscreen ? "" : "rounded-[1.1rem] sm:rounded-[1.5rem]")}>
-      {elementFullscreen === null ? null : (
+      {elementFullscreen === null || accessEnded ? null : (
         <iframe
+          key={src}
           ref={iframeRef}
-          src={embedUrl}
+          src={src}
           title="مشغل الدرس"
           className="absolute inset-0 h-full w-full border-0"
           allow={`accelerometer; gyroscope; autoplay; encrypted-media${elementFullscreen ? "" : "; fullscreen"}`}
@@ -546,7 +691,29 @@ function BunnyPlayer({ lessonId, embedUrl, startAt, trackProgress, watermark, ne
           {fullscreen ? <Minimize className="size-4.5" aria-hidden /> : <Maximize className="size-4.5" aria-hidden />}
         </button>
       ) : null}
-      {ended && nextHref ? <NextOverlay nextHref={nextHref} nextTitle={nextTitle ?? null} onCancel={() => setEnded(false)} /> : null}
+      {ended && nextHref && !accessEnded ? <NextOverlay nextHref={nextHref} nextTitle={nextTitle ?? null} onCancel={() => setEnded(false)} /> : null}
+      {accessEnded ? <PlaybackEnded reason={accessEnded} /> : null}
+    </div>
+  );
+}
+
+/** توقفت المشاهدة لأن الخادم رفض تجديد الرابط. لا يظهر إلا بعد تحميل الصفحة في المتصفح، فيقرأ عنوانها بأمان */
+function PlaybackEnded({ reason }: { reason: "session-ended" | "access-ended" }) {
+  const session = reason === "session-ended";
+  const here = `${window.location.pathname}${window.location.search}`;
+  return (
+    <div className="absolute inset-0 z-20 grid place-items-center overflow-y-auto bg-[rgb(4_24_28/0.9)] p-4 text-center text-white sm:p-6" role="alert" data-testid="lesson-access-ended" data-reason={reason}>
+      <div className="max-w-sm">
+        <span className="mx-auto hidden size-14 place-items-center rounded-2xl bg-[#ffc531] text-[#3d2a00] sm:grid" aria-hidden>
+          <LockKeyhole className="size-7" />
+        </span>
+        <p className="font-display text-lg font-black sm:mt-3">{session ? "انتهت جلستك" : "هذا الدرس غير متاح لحسابك الآن"}</p>
+        <p className="mt-1 text-sm text-white/80">{session ? "سجّل الدخول مجددًا لتكمل المشاهدة." : "ارجع إلى مكتبتك، وإن كان هذا خطأ فتواصل معنا."}</p>
+        <Link className="btn btn-3d btn-light btn-sm mt-3" href={session ? `/login?next=${encodeURIComponent(here)}` : "/library"}>
+          {session ? <LogIn aria-hidden /> : null}
+          {session ? "تسجيل الدخول" : "إلى مكتبتي"}
+        </Link>
+      </div>
     </div>
   );
 }
