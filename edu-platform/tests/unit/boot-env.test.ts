@@ -274,6 +274,31 @@ describe("an empty value copied from .env.example means unset", () => {
   });
 });
 
+describe("the public data cache lifetime", () => {
+  it("defaults to 55 seconds, inside the one-minute promise, with nothing for the owner to set", () => {
+    useDeployedEnv();
+    expect(env().PUBLIC_CACHE_SECONDS).toBe(55);
+    expect(configWarnings()).toEqual([]);
+  });
+
+  it("can be shortened, or turned off with 0", () => {
+    useDeployedEnv({ PUBLIC_CACHE_SECONDS: "20" });
+    expect(env().PUBLIC_CACHE_SECONDS).toBe(20);
+    useDeployedEnv({ PUBLIC_CACHE_SECONDS: "0" });
+    expect(env().PUBLIC_CACHE_SECONDS).toBe(0);
+    expect(configWarnings()).toEqual([]);
+  });
+
+  it("a value that would break the one-minute promise keeps the default and is named for the owner, never a crash", async () => {
+    useDeployedEnv({ PUBLIC_CACHE_SECONDS: "3600" });
+    const { exit } = trapExit();
+    await expect(register()).resolves.toBeUndefined();
+    expect(exit).not.toHaveBeenCalled();
+    expect(env().PUBLIC_CACHE_SECONDS).toBe(55);
+    expect(configWarnings()).toEqual(["PUBLIC_CACHE_SECONDS"]);
+  });
+});
+
 describe("the database fail-fast limits", () => {
   it("default to 60 s idle, 10 s per statement and 8 s pool wait", () => {
     useDeployedEnv();

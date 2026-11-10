@@ -22,4 +22,6 @@ export const TEST_ENV: Record<string, string> = {
   MYFATOORAH_WEBHOOK_SECRET: WEBHOOK_SECRET,
   MYFATOORAH_LIVE_CONFIRMED: "false",
   TRUST_PROXY: "true",
+  // بلا ذاكرة بين الطلبات: كل اختبار يرى ما كتبه للتو. مسار الذاكرة له اختباراته التي تضبط العمر بنفسها
+  PUBLIC_CACHE_SECONDS: "0",
 };

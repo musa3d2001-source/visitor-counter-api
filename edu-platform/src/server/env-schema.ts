@@ -32,6 +32,8 @@ const LENIENT_INTS = {
   DATABASE_STATEMENT_TIMEOUT_MS: { min: 1000, max: 120_000, fallback: 10_000 },
   /** أقصى انتظار لاتصال شاغر في الحوض، بالمللي ثانية. بعده يرد الطلب «مشغول» بدل أن يعلق */
   DATABASE_QUEUE_TIMEOUT_MS: { min: 500, max: 60_000, fallback: 8_000 },
+  /** عمر البيانات العامة في ذاكرة الخادم بالثواني. ٥٥ حدًا أعلى ليبقى ظهور تعديل المالك داخل دقيقة شاملًا وقت عرض الصفحة. صفر يوقفها */
+  PUBLIC_CACHE_SECONDS: { min: 0, max: 55, fallback: 55 },
 } as const;
 type LenientKey = keyof typeof LENIENT_INTS;
 
@@ -56,6 +58,7 @@ export const envSchema = z
     DATABASE_IDLE_TIMEOUT_SECONDS: lenientInt("DATABASE_IDLE_TIMEOUT_SECONDS"),
     DATABASE_STATEMENT_TIMEOUT_MS: lenientInt("DATABASE_STATEMENT_TIMEOUT_MS"),
     DATABASE_QUEUE_TIMEOUT_MS: lenientInt("DATABASE_QUEUE_TIMEOUT_MS"),
+    PUBLIC_CACHE_SECONDS: lenientInt("PUBLIC_CACHE_SECONDS"),
     /** سر لتوقيع الروابط المؤقتة (رفع الملفات المحلي) — 32 حرفًا على الأقل */
     APP_SECRET: z.string().min(32, "APP_SECRET يجب أن يكون 32 حرفًا على الأقل"),
 
