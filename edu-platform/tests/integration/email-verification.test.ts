@@ -34,6 +34,7 @@ vi.mock("@/server/commerce/cart", async (original) => ({
 }));
 vi.mock("next/navigation", async (original) => ({
   ...(await original<typeof import("next/navigation")>()),
+  useRouter: () => ({ refresh: () => {} }),
   redirect: (url: string) => {
     throw new Error(`NEXT_REDIRECT ${url}`);
   },

@@ -33,6 +33,9 @@ const MUST_READ_THE_DATABASE = [
   /^server\/admin\//,
 ];
 
+/** عام بلا جلسة: قائمة المواد نفسها التي ترسمها الصفحة الرئيسية من الذاكرة، ولا يقرر وصولًا ولا مالًا ولا تسليمًا */
+const PUBLIC_CATALOGUE_ROUTE = "app/api/grades/[gradeId]/subjects/route.ts";
+
 describe("who may touch the public cache", () => {
   it("only the two public modules call publicCached", () => {
     const callers = ALL.filter((f) => /\bpublicCached\s*[(<]/.test(f.text)).map((f) => f.path).sort();
@@ -40,13 +43,19 @@ describe("who may touch the public cache", () => {
   });
 
   it("nothing that decides access, money or delivery imports it, and the scan really covers those paths", () => {
-    const guarded = ALL.filter((f) => MUST_READ_THE_DATABASE.some((rule) => rule.test(f.path)));
+    const guarded = ALL.filter((f) => f.path !== PUBLIC_CATALOGUE_ROUTE && MUST_READ_THE_DATABASE.some((rule) => rule.test(f.path)));
     expect(guarded.length).toBeGreaterThan(150);
     for (const needle of ["server/access/lessons.ts", "server/commerce/cart.ts", "server/payments/service.ts", "app/(site)/checkout/page.tsx", "app/api/lessons/[lessonId]/stream/route.ts"]) {
       expect(guarded.map((f) => f.path)).toContain(needle);
     }
     const offenders = guarded.filter((f) => IMPORTS_CACHE.test(f.text)).map((f) => f.path);
     expect(offenders).toEqual([]);
+  });
+
+  it("the one catalogue route allowed to use it reads no session and touches no access or money", () => {
+    const route = ALL.find((f) => f.path === PUBLIC_CATALOGUE_ROUTE)!;
+    expect(route.text).toMatch(IMPORTS_CACHE);
+    expect(route.text).not.toMatch(/server\/(auth|access|payments|commerce|video|admin)\b|cookies\(|getCurrentUser/);
   });
 
   it("the owner's settings form compares against a database read, never the cached copy", () => {

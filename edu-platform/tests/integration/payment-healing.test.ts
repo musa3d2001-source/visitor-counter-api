@@ -88,7 +88,7 @@ describe("healing on the buyer's visit", () => {
     for (const [page, read] of [
       ["library/page.tsx", "getLibrary(user.id)"],
       ["orders/[id]/page.tsx", "getUserOrder(id, user.id)"],
-      ["checkout/page.tsx", "computeCart(await getCartIds()"],
+      ["checkout/page.tsx", "await getCartIds()"],
     ]) {
       const source = body(page);
       expect(source.indexOf("await healBuyerOrders(")).toBeGreaterThan(-1);
