@@ -5,6 +5,7 @@ import { getSettings } from "@/server/platform/settings";
 import { count, W } from "@/lib/design";
 import { sellerIdentity } from "@/lib/site-truth";
 import { REFUND_HOLD_DAYS } from "@/lib/teacher-terms";
+import { LEGAL_PAGE_VERSIONS } from "@/lib/consent";
 import { LegalDoc } from "../terms/_components/legal-doc";
 
 export const metadata: Metadata = { title: "سياسة الاسترجاع", alternates: { canonical: "/refund-policy" } };
@@ -15,6 +16,7 @@ export default async function RefundPolicyPage() {
   return (
     <LegalDoc
       page="refund"
+      version={LEGAL_PAGE_VERSIONS.refund_policy}
       updated="2026-11-09"
       seller={sellerIdentity(s)}
       sub="متى يحق لك استرجاع المبلغ، وكيف تقدّم الطلب، وماذا يحدث بعده."

@@ -3,6 +3,7 @@ import { ClipboardList, Hourglass, Send, UserRoundCheck } from "lucide-react";
 import { getSettings } from "@/server/platform/settings";
 import { ContactLinks, realContactLinks } from "@/components/site/payment-unavailable-notice";
 import { sellerIdentity } from "@/lib/site-truth";
+import { LEGAL_PAGE_VERSIONS } from "@/lib/consent";
 import { LegalDoc } from "../terms/_components/legal-doc";
 
 export const metadata: Metadata = {
@@ -18,6 +19,7 @@ export default async function CopyrightPage() {
   return (
     <LegalDoc
       page="copyright"
+      version={LEGAL_PAGE_VERSIONS.copyright}
       updated="2026-11-09"
       seller={sellerIdentity(s)}
       sub="إن نُشر عملك هنا دون إذنك: ما الذي نحتاجه منك، وأين ترسله، وماذا يحدث بعده."

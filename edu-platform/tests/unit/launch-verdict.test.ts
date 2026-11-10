@@ -1,7 +1,7 @@
 import { readdirSync } from "node:fs";
 import { resolve } from "node:path";
 import { describe, expect, it } from "vitest";
-import { CONSENT_VERSIONS } from "@/lib/consent";
+import { CONSENT_VERSIONS, LEGAL_PAGE_VERSIONS } from "@/lib/consent";
 import { MANUAL_KEYS, MANUAL_VERSIONS, REQUIRED_MIGRATIONS, appUrlCheck, isManualKey, launchSteps, launchVerdict, type LaunchFacts, type LaunchStep, type LaunchTicks, type ManualKey } from "@/lib/launch";
 
 /**
@@ -234,7 +234,16 @@ describe("a tick for an older wording", () => {
   });
 
   it("the lawyer review is bound to the current legal document versions", () => {
-    for (const version of Object.values(CONSENT_VERSIONS)) expect(MANUAL_VERSIONS.lawyer_review).toContain(version);
+    for (const [doc, version] of Object.entries(CONSENT_VERSIONS)) expect(MANUAL_VERSIONS.lawyer_review).toContain(`${doc} ${version}`);
+  });
+
+  it("the refund policy and the copyright page are part of what the lawyer reviewed, so a change to either reopens the step", () => {
+    expect(Object.keys(LEGAL_PAGE_VERSIONS).sort()).toEqual(["copyright", "refund_policy"]);
+    for (const [doc, version] of Object.entries(LEGAL_PAGE_VERSIONS)) expect(MANUAL_VERSIONS.lawyer_review).toContain(`${doc} ${version}`);
+  });
+
+  it("every manual version fits the column that stores the tick", () => {
+    for (const version of Object.values(MANUAL_VERSIONS)) expect(version.length).toBeLessThanOrEqual(200);
   });
 });
 

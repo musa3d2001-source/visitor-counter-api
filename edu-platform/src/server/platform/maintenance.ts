@@ -10,6 +10,11 @@ import { sql } from "../db";
 
 /** ٩٠ يومًا تكفي لمراجعة مشاركة الحسابات. الحد الأدنى الفعلي في runDataPruning يحمي مؤشر العناوين الكثيرة */
 export const ACCESS_LOG_RETENTION_DAYS = 90;
+/**
+ * أقصى مدة لنسخ المالك الاحتياطية على جهازه (pg_dump ومجلد storage:backup)، كما تعد بها سياسة الخصوصية.
+ * لا يحذفها النظام: الحذف إجراء المالك في README، فلا تغيّر الرقم دون تغيير الإجراء.
+ */
+export const OWNER_BACKUP_KEEP_DAYS = 90;
 export const ERROR_EVENT_RETENTION_DAYS = 30;
 export const PRUNE_BATCH_SIZE = 2_000;
 const MAX_ROUNDS = 10;

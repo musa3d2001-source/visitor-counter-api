@@ -159,6 +159,9 @@ export async function registerStudent(
 /** الأضيق أولًا بعد الشبكة: ٣ لكل زوج (حساب + IP)، فلا يستطيع من يعرف بريدك استهلاك حد حسابك من عنوان واحد */
 const RESET_LIMITS = { perIp: 100, perPair: 3, perAccount: 20, windowSec: 60 * 60 };
 
+/** مدة رابط الاستعادة الذي يطلبه الطالب لنفسه. سياسة الخصوصية ورسالة البريد تقرآن الرقم من هنا */
+export const PASSWORD_RESET_LINK_HOURS = 1;
+
 /**
  * طلب استعادة كلمة المرور — الرد موحد دائمًا (لا نكشف وجود الحساب).
  * حساب المدير لا يستعيد عبر البريد (انظر سياسة password-policy): يصله تنبيه بلا رابط.
@@ -190,14 +193,14 @@ export async function requestPasswordReset(email: string, ip: string): Promise<v
   const tokenId = hashToken(token);
   await sql`
     insert into password_reset_tokens (id, user_id, expires_at)
-    values (${tokenId}, ${user.id}, now() + interval '1 hour')
+    values (${tokenId}, ${user.id}, now() + make_interval(hours => ${PASSWORD_RESET_LINK_HOURS}))
   `;
   const link = `${env().APP_URL.replace(/\/$/, "")}/reset-password?token=${encodeURIComponent(token)}`;
   const sent = await sendMail({
     to: email,
     template: "password_reset",
     subject: `استعادة كلمة المرور، ${settings.site_name}`,
-    text: `مرحبًا ${user.full_name}،\n\nوصلنا طلب لاستعادة كلمة المرور لحسابك. افتح الرابط التالي خلال ساعة لتعيين كلمة مرور جديدة:\n${link}\n\nإذا لم تطلب ذلك، تجاهل هذه الرسالة وسيبقى حسابك آمنًا.\n\n${settings.site_name}`,
+    text: `مرحبًا ${user.full_name}،\n\nوصلنا طلب لاستعادة كلمة المرور لحسابك. افتح الرابط التالي خلال ${count(PASSWORD_RESET_LINK_HOURS, W.hour)} لتعيين كلمة مرور جديدة:\n${link}\n\nإذا لم تطلب ذلك، تجاهل هذه الرسالة وسيبقى حسابك آمنًا.\n\n${settings.site_name}`,
   });
   // رابط لم يخرج لا يبقى صالحًا في قاعدة البيانات
   if (!sent) await sql`delete from password_reset_tokens where id = ${tokenId}`;

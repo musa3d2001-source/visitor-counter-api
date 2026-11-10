@@ -4,7 +4,9 @@ import { Baby, Clock3, Database, Hand, Network, Workflow } from "lucide-react";
 import { VERIFICATION_LINK_HOURS } from "@/server/auth/email-verification";
 import { SESSION_DAYS } from "@/server/auth/session";
 import { ORDER_LIFETIME_HOURS } from "@/server/payments/limits";
-import { ACCESS_LOG_RETENTION_DAYS } from "@/server/platform/maintenance";
+import { ACCESS_LOG_RETENTION_DAYS, OWNER_BACKUP_KEEP_DAYS } from "@/server/platform/maintenance";
+import { PASSWORD_RESET_LINK_HOURS } from "@/server/auth/service";
+import { OWNER_SECRET_HOURS } from "@/server/admin/student-accounts";
 import { CONSENT_VERSIONS } from "@/lib/consent";
 import { count, W } from "@/lib/design";
 import { sellerIdentity } from "@/lib/site-truth";
@@ -75,7 +77,10 @@ export default async function PrivacyPage() {
           body: (
             <ul>
               <li>جلسة الدخول تنتهي بعد {count(SESSION_DAYS, W.day)}، وتتجدد مع الاستخدام.</li>
-              <li>رابط استعادة كلمة المرور صالح ساعة واحدة، ورابط تأكيد البريد {count(VERIFICATION_LINK_HOURS, W.hour)}.</li>
+              <li>
+                رابط استعادة كلمة المرور الذي تطلبه بنفسك صالح {count(PASSWORD_RESET_LINK_HOURS, W.hour)}. والرابط أو كلمة المرور المؤقتة التي تصدرها لك إدارة المنصة صالحان {count(OWNER_SECRET_HOURS, W.hour)} ولمرة واحدة. ورابط تأكيد البريد{" "}
+                {count(VERIFICATION_LINK_HOURS, W.hour)}.
+              </li>
               <li>الطلب غير المدفوع يُغلق بعد {count(ORDER_LIFETIME_HOURS, W.hour)}، ويبقى في السجل.</li>
               <li>الطلبات والمدفوعات وسجل الموافقات ليس لها حذف تلقائي، لأنها إثبات للعمليات المالية والموافقات. لم تُحدد بعد مدة الاحتفاظ النهائية بها.</li>
               <li>سجلات الوصول إلى الملفات تبقى {count(ACCESS_LOG_RETENTION_DAYS, W.day)} على الأقل، ويحذف النظام الأقدم منها عند تشغيل مهمة التنظيف الدورية، وتُحذف كلها عند حذف بياناتك.</li>
@@ -111,6 +116,7 @@ export default async function PrivacyPage() {
               <li>ونُبقي الطلبات والمدفوعات وسجل موافقاتك بلا اسم أو بريد أو هاتف أو عنوان IP، لأننا نحتاجها لإثبات العمليات المالية والموافقات.</li>
               <li>لا يتم الحذف ما دام لديك طلب أو عملية دفع أو استرجاع لم تكتمل.</li>
               <li>لا يشمل الحذف ما تحتفظ به بوابة الدفع من سجلات عملياتها، ولا النسخ الاحتياطية لدى مزود قاعدة البيانات إلى أن تنتهي مدتها لديه.</li>
+              <li>ولا يشمل النسخ الاحتياطية التي تحفظها إدارة المنصة من قاعدة البيانات والملفات، فتبقى بياناتك فيها حتى تُحذف النسخة. نحذف كل نسخة منها خلال {count(OWNER_BACKUP_KEEP_DAYS, W.day)} من أخذها.</li>
             </ul>
           ),
         },

@@ -9,15 +9,25 @@
  * تغيير جوهري في نص وثيقة = رقم نسخة جديد هنا. من وافق على نسخة أقدم يُسأل عند شرائه التالي ولا يُقفل حسابه.
  * كل رقم يطابق نصًا بعينه: terms ← صفحة /terms و privacy ← صفحة /privacy و teacher_agreement ← lib/teacher-agreement.ts، ويظهر الرقم في الصفحة نفسها.
  * tests/integration/legal-pages.test.ts يفشل إذا تغير نص الصفحة ولم يتغير رقمها.
+ * الشروط والخصوصية تطبعان إعدادات من لوحة الإدارة، فيُسجَّل معهما بصمة تلك الإعدادات (server/platform/consent.ts).
  */
 export const CONSENT_VERSIONS = {
-  terms: "2026-11-draft-2",
-  privacy: "2026-11-draft-4",
+  terms: "2026-11-draft-3",
+  privacy: "2026-11-draft-5",
   guardian_purchase: "2026-11-draft-1",
   teacher_agreement: "2026-11-draft-1",
 } as const;
 
 export type ConsentKind = keyof typeof CONSENT_VERSIONS;
+
+/**
+ * صفحات قانونية بلا موافقة مسجلة لكن المحامي يراجعها. رقم نسختها يظهر في الصفحة ويدخل في خطوة «مراجعة المحامي»،
+ * فتغيير نصها يعيد الخطوة مفتوحة. tests/integration/legal-pages.test.ts يفشل إذا تغير النص ولم يتغير الرقم.
+ */
+export const LEGAL_PAGE_VERSIONS = {
+  refund_policy: "2026-11-draft-1",
+  copyright: "2026-11-draft-1",
+} as const;
 
 /** ما يوافق عليه الحساب مرة واحدة لكل نسخة، بخلاف الإقرار الذي يخص كل طلب */
 export const ACCOUNT_CONSENT_KINDS = ["terms", "privacy"] as const satisfies readonly ConsentKind[];

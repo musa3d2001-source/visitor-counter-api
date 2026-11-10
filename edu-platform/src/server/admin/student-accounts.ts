@@ -20,7 +20,7 @@ import { AdminError } from "./common";
  * واستخدام أحدهما يبطل الآخر. الكلمة المؤقتة لا تفتح إلا صفحة تعيين كلمة جديدة.
  * لا يُخزَّن أي منهما خامًا، لا في قاعدة البيانات ولا في سجل التدقيق: تظهر للمالك مرة واحدة.
  */
-const OWNER_SECRET_HOURS = 24;
+export const OWNER_SECRET_HOURS = 24;
 
 const LIMITS = { perAdmin: 30, perStudent: 5, windowSec: 60 * 60 };
 

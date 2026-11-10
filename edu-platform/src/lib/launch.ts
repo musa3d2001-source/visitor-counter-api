@@ -1,4 +1,4 @@
-import { CONSENT_VERSIONS } from "./consent";
+import { CONSENT_VERSIONS, LEGAL_PAGE_VERSIONS } from "./consent";
 import { ar } from "./design";
 import { formatDateTime } from "./utils";
 
@@ -14,8 +14,10 @@ import { formatDateTime } from "./utils";
 // الخطوات اليدوية
 // ---------------------------------------------------------------------------
 
-/** نسخ الوثائق التي يراجعها المحامي. تغيّر أي نسخة يعيد خطوة المراجعة مفتوحة */
-const LEGAL_VERSION = `terms ${CONSENT_VERSIONS.terms}; privacy ${CONSENT_VERSIONS.privacy}; guardian ${CONSENT_VERSIONS.guardian_purchase}; teacher ${CONSENT_VERSIONS.teacher_agreement}`;
+/** نسخ الوثائق التي يراجعها المحامي، ومنها سياسة الاسترجاع وصفحة البلاغات. تغيّر أي نسخة يعيد خطوة المراجعة مفتوحة */
+const LEGAL_VERSION = Object.entries({ ...CONSENT_VERSIONS, ...LEGAL_PAGE_VERSIONS })
+  .map(([doc, version]) => `${doc} ${version}`)
+  .join("; ");
 
 /**
  * الخطوات التي لا يستطيع النظام كشفها، ونسخة نص كل منها.

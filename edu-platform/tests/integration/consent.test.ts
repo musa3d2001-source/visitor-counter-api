@@ -4,7 +4,8 @@ import { renderToStaticMarkup } from "react-dom/server";
 import { createOrder, OrderError, type OrderRow } from "@/server/commerce/orders";
 import { resetPaymentMethodsCache, startPayment as realStartPayment } from "@/server/payments/service";
 import { registerStudent } from "@/server/auth/service";
-import { ConsentRequiredError, consentMeta, missingAccountConsents, orderConsentNeeds, recordConsent } from "@/server/platform/consent";
+import { ConsentRequiredError, consentMeta, missingAccountConsents, orderConsentNeeds, recordConsent, recordedConsentVersion } from "@/server/platform/consent";
+import { DEFAULT_SETTINGS, readSettings, saveSettings } from "@/server/platform/settings";
 import { resetEnvCache } from "@/server/env";
 import { getStudent } from "@/server/admin/records";
 import { ACCOUNT_CONSENT_KINDS, CONSENT_FIELD_ERRORS, CONSENT_VERSIONS, GUARDIAN_DECLARATION_TEXT } from "@/lib/consent";
@@ -109,10 +110,38 @@ describe("registration records what the student accepted", () => {
     const rows = await consents(res.userId);
     expect(rows.map((r) => r.kind)).toEqual(["privacy", "terms"]);
     for (const r of rows) {
-      expect(r.document_version).toBe(CONSENT_VERSIONS[r.kind as "terms" | "privacy"]);
+      // الرقم ثم بصمة الإعدادات التي يطبعها النص
+      expect(r.document_version).toBe(recordedConsentVersion(r.kind as "terms" | "privacy", await readSettings()));
+      expect(r.document_version.startsWith(`${CONSENT_VERSIONS[r.kind as "terms" | "privacy"]}+`)).toBe(true);
       expect(r).toMatchObject({ order_id: null, ip: META.ip, user_agent: META.userAgent });
     }
     expect(await missingAccountConsents(res.userId)).toEqual([]);
+  });
+
+  it("the record names the exact text: what the owner shows in it from settings changes the recorded version", async () => {
+    const before = await registerStudent(input("consent-text-a@farqad.test", true), META);
+    if (!before.ok) throw new Error(before.error);
+    await saveSettings({ mail_provider_name: "مزود البريد الجديد", seller_legal_name: "شركة البائع" }, before.userId);
+    try {
+      const after = await registerStudent(input("consent-text-b@farqad.test", true), META);
+      if (!after.ok) throw new Error(after.error);
+      const version = async (userId: string) => (await consents(userId)).find((r) => r.kind === "privacy")!.document_version;
+      const [a, b] = [await version(before.userId), await version(after.userId)];
+      expect(a).not.toBe(b);
+      for (const v of [a, b]) {
+        expect(v.startsWith(`${CONSENT_VERSIONS.privacy}+`)).toBe(true);
+        expect(v.length).toBeLessThanOrEqual(40);
+      }
+      // تغيير الإعدادات لا يطلب الموافقة من جديد: ذلك يتبع رقم النسخة
+      expect(await missingAccountConsents(before.userId)).toEqual([]);
+    } finally {
+      await sql`delete from settings`;
+    }
+  });
+
+  it("a fixed-text document is recorded by its number alone", () => {
+    expect(recordedConsentVersion("guardian_purchase", DEFAULT_SETTINGS)).toBe(CONSENT_VERSIONS.guardian_purchase);
+    expect(recordedConsentVersion("teacher_agreement", DEFAULT_SETTINGS)).toBe(CONSENT_VERSIONS.teacher_agreement);
   });
 
   it("the service refuses without acceptance and writes nothing", async () => {

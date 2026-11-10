@@ -1,4 +1,4 @@
-import { readdirSync } from "node:fs";
+import { readdirSync, readFileSync } from "node:fs";
 import { join } from "node:path";
 import { afterAll, beforeAll, beforeEach, describe, expect, it } from "vitest";
 import { renderToStaticMarkup } from "react-dom/server";
@@ -9,7 +9,10 @@ import { VERIFICATION_LINK_HOURS } from "@/server/auth/email-verification";
 import { INVOICE_TTL_MINUTES, ORDER_LIFETIME_HOURS } from "@/server/payments/limits";
 import { SESSION_DAYS, STUDENT_ACTIVE_SESSIONS } from "@/server/auth/session";
 import { saveSettings } from "@/server/platform/settings";
-import { closeDb, resetDb } from "../helpers/db";
+import { OWNER_BACKUP_KEEP_DAYS } from "@/server/platform/maintenance";
+import { PASSWORD_RESET_LINK_HOURS, requestPasswordReset } from "@/server/auth/service";
+import { OWNER_SECRET_HOURS, resetStudentPassword } from "@/server/admin/student-accounts";
+import { closeDb, resetDb, sql } from "../helpers/db";
 import { createUser } from "../helpers/factories";
 
 const { default: TermsPage } = await import("@/app/(site)/terms/page");
@@ -108,6 +111,13 @@ describe("the terms say how long access lasts and what each format carries", () 
     expect(out).toContain(`غير المدفوع بعد ${count(ORDER_LIFETIME_HOURS, W.hour)}`);
   });
 
+  it("says the gateway confirms paid products only, and that free orders and owner grants arrive directly", async () => {
+    const out = await text("terms");
+    expect(out).toContain("المنتج المدفوع لا يُضاف إلى مكتبتك إلا بعد أن تؤكد بوابة الدفع نجاح العملية");
+    expect(out).toContain("يُضاف إلى مكتبتك مباشرة دون بوابة الدفع، وكذلك ما تمنحه لك إدارة المنصة");
+    expect(out).not.toContain("لا يُضاف المنتج إلى المكتبة إلا بعد تأكيد عملية الدفع");
+  });
+
   it("records the guardian declaration without claiming to verify it", async () => {
     expect(await text("terms")).toContain("نسجل هذا الإقرار، ولا نتحقق من العمر أو من حضور ولي الأمر");
   });
@@ -151,7 +161,30 @@ describe("the privacy policy names who holds the data and for how long", () => {
     expect(out).toContain(`تنتهي بعد ${count(SESSION_DAYS, W.day)}`);
     expect(out).toContain(`تأكيد البريد ${count(VERIFICATION_LINK_HOURS, W.hour)}`);
     expect(out).toContain(`يُغلق بعد ${count(ORDER_LIFETIME_HOURS, W.hour)}`);
-    expect(out).toContain("صالح ساعة واحدة");
+  });
+
+  it("gives both reset durations: the link the student asks for, and what the owner issues", async () => {
+    const out = await text("privacy");
+    expect(out).toContain(`الذي تطلبه بنفسك صالح ${count(PASSWORD_RESET_LINK_HOURS, W.hour)}`);
+    expect(out).toContain(`التي تصدرها لك إدارة المنصة صالحان ${count(OWNER_SECRET_HOURS, W.hour)}`);
+  });
+
+  it("the owner-issued link and temporary password really last what the policy says", async () => {
+    const student = await createUser();
+    await resetStudentPassword({ adminId: owner.id, studentId: student.id, reason: "نسي البريد" });
+    const [row] = await sql<{ token_hours: number; temp_hours: number }[]>`
+      select round(extract(epoch from (t.expires_at - now())) / 3600)::int as token_hours,
+             round(extract(epoch from (u.temp_password_expires_at - now())) / 3600)::int as temp_hours
+      from password_reset_tokens t join users u on u.id = t.user_id where t.user_id = ${student.id}
+    `;
+    expect(row).toEqual({ token_hours: OWNER_SECRET_HOURS, temp_hours: OWNER_SECRET_HOURS });
+  });
+
+  it("the link a student asks for really lasts what the policy says", async () => {
+    const student = await createUser();
+    await requestPasswordReset(student.email, "192.0.2.10");
+    const [row] = await sql<{ hours: number }[]>`select round(extract(epoch from (expires_at - now())) / 3600)::int as hours from password_reset_tokens where user_id = ${student.id}`;
+    expect(row.hours).toBe(PASSWORD_RESET_LINK_HOURS);
   });
 
   it("admits what has no automatic deletion", async () => {
@@ -163,7 +196,14 @@ describe("the privacy policy names who holds the data and for how long", () => {
   it("says what deletion leaves outside the platform and when it is blocked", async () => {
     const out = await text("privacy");
     expect(out).toContain("لا يشمل الحذف ما تحتفظ به بوابة الدفع");
-    expect(out).toContain("النسخ الاحتياطية");
+    expect(out).toContain("النسخ الاحتياطية لدى مزود قاعدة البيانات");
+    // نسخ المالك على جهازه (pg_dump ومجلد storage:backup) لا تُحذف مع الحساب، ولها مدة يعد بها الحذف
+    expect(out).toContain("النسخ الاحتياطية التي تحفظها إدارة المنصة من قاعدة البيانات والملفات");
+    expect(out).toContain(`نحذف كل نسخة منها خلال ${count(OWNER_BACKUP_KEEP_DAYS, W.day)} من أخذها`);
+    // النظام لا يحذف نسخ المالك، فالوعد قائم على الإجراء المكتوب له بالمدة نفسها
+    const readme = readFileSync(join(__dirname, "../../README.md"), "utf8");
+    expect(readme).toContain(`احذف كل ملف \`backup-*.dump\` بعد ${count(OWNER_BACKUP_KEEP_DAYS, W.day)} من تاريخه`);
+    expect(readme).toContain(`واحذف كل مجلد بعد ${count(OWNER_BACKUP_KEEP_DAYS, W.day)} من أول يوم في شهره`);
     expect(out).toContain("لا يتم الحذف ما دام لديك طلب أو عملية دفع أو استرجاع لم تكتمل");
   });
 
