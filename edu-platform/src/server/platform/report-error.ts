@@ -8,11 +8,17 @@ import { alertAfterResponse } from "./ops-alerts";
  * تسجيل الأخطاء بلا مزود مدفوع. يُكتب في error_events ويراه المالك في «صحة المنصة».
  *
  * محدود: صف واحد لكل خطأ متكرر، و٥٠٠ صف على الأكثر، و٦٠ كتابة في الدقيقة لكل نسخة خادم.
+ * الخطأ الواحد يُكتب مرة في الدقيقة على الأكثر من كل نسخة، وتكراراته بينها تُعد في الذاكرة وتُضاف إلى عداده في الكتابة التالية.
+ * فخطأ يكرره زائر آلاف المرات لا يستهلك حد الدقيقة، ولا يحجب خطأً مختلفًا أو تنبيهه.
  * لا يرمي أبدًا ولا يعلّق: مسار الفشل لا يصح أن يصنع فشلًا ثانيًا، وعند تعطل قاعدة البيانات يتوقف عن المحاولة ٣٠ ثانية.
  * لا يستقبل إلا الخطأ نفسه: لا بيانات الطلب ولا ترويساته، ورابط الطلب لا يُخزن لأنه قد يحمل رمزًا. نخزن نمط المسار فقط.
  */
 const MAX_ROWS = 500;
 const MAX_WRITES_PER_MINUTE = 60;
+const REPEAT_WRITE_EVERY_MS = 60_000;
+/** بصمات تتذكرها النسخة، والأقدم يُنسى أولًا. ما يُنسى يفقد عدّ تكراراته المعلقة فقط */
+const MAX_TRACKED = 500;
+const MAX_PENDING = 1_000_000;
 const WRITE_TIMEOUT_MS = 3_000;
 const BREAKER_MS = 30_000;
 /** خطأ قديم عاد بعد هذا الهدوء يستحق رسالة جديدة */
@@ -21,11 +27,26 @@ const QUIET_HOURS_BEFORE_NEW_ALERT = 24;
 let windowStartedAt = 0;
 let writesThisWindow = 0;
 let breakerUntil = 0;
+const tracked = new Map<string, { writtenAt: number; pending: number }>();
 
 export function resetErrorReporterForTests() {
   windowStartedAt = 0;
   writesThisWindow = 0;
   breakerUntil = 0;
+  tracked.clear();
+}
+
+function trackedEntry(fingerprint: string): { writtenAt: number; pending: number } {
+  let entry = tracked.get(fingerprint);
+  if (entry) {
+    // الأحدث استعمالًا في آخر الترتيب
+    tracked.delete(fingerprint);
+  } else {
+    entry = { writtenAt: Number.NEGATIVE_INFINITY, pending: 0 };
+    if (tracked.size >= MAX_TRACKED) tracked.delete(tracked.keys().next().value!);
+  }
+  tracked.set(fingerprint, entry);
+  return entry;
 }
 
 function withinBudget(now: number): boolean {
@@ -57,13 +78,13 @@ function fingerprintOf(source: string, route: string | null, message: string): s
 }
 
 /** true إن كان الخطأ جديدًا أو عاد بعد هدوء طويل، أي يستحق تنبيهًا */
-async function write(fingerprint: string, source: string, route: string | null, details: ReturnType<typeof describeError>): Promise<boolean> {
+async function write(fingerprint: string, source: string, route: string | null, details: ReturnType<typeof describeError>, count: number): Promise<boolean> {
   const [row] = await sql<{ previous_seen: Date | null }[]>`
     with prev as (select last_seen_at from error_events where fingerprint = ${fingerprint})
-    insert into error_events as e (fingerprint, source, route, message, digest, stack)
-    values (${fingerprint}, ${source}, ${route}, ${details.message}, ${details.digest}, ${details.stack})
+    insert into error_events as e (fingerprint, source, route, message, digest, stack, occurrences)
+    values (${fingerprint}, ${source}, ${route}, ${details.message}, ${details.digest}, ${details.stack}, ${count})
     on conflict (fingerprint) do update set
-      occurrences = least(e.occurrences, 2000000000) + 1,
+      occurrences = least(e.occurrences, 2000000000) + ${count},
       last_seen_at = now(),
       digest = coalesce(excluded.digest, e.digest),
       stack = coalesce(excluded.stack, e.stack)
@@ -83,13 +104,23 @@ export async function reportError(source: string, err: unknown, ctx: { route?: s
     const label = source.slice(0, 64);
     const route = ctx.route ? scrubForOps(ctx.route, 200) : null;
     console.error(`[ops:${label}]`, route ?? "", details.message);
-    if (!withinBudget(Date.now())) return;
+    const fingerprint = fingerprintOf(label, route, details.message);
+    const now = Date.now();
+    const entry = trackedEntry(fingerprint);
+    // تكرار خلال الدقيقة يُعد ولا يُكتب، فلا يستهلك الحد المشترك. والحد المشترك لا يُفقد العدّ: يُكتب مع أول كتابة تالية
+    if (now - entry.writtenAt < REPEAT_WRITE_EVERY_MS || !withinBudget(now)) {
+      entry.pending = Math.min(entry.pending + 1, MAX_PENDING);
+      return;
+    }
+    const count = entry.pending + 1;
+    entry.writtenAt = now;
+    entry.pending = 0;
     let timer: ReturnType<typeof setTimeout>;
     const timedOut = new Promise<"timeout">((resolve) => {
       timer = setTimeout(() => resolve("timeout"), WRITE_TIMEOUT_MS);
       timer.unref?.();
     });
-    const outcome = await Promise.race([write(fingerprintOf(label, route, details.message), label, route, details), timedOut]).finally(() => clearTimeout(timer));
+    const outcome = await Promise.race([write(fingerprint, label, route, details, count), timedOut]).finally(() => clearTimeout(timer));
     if (outcome === "timeout") {
       breakerUntil = Date.now() + BREAKER_MS;
       return;

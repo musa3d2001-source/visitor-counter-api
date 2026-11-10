@@ -80,12 +80,28 @@ describe("what is stored", () => {
 });
 
 describe("it is bounded", () => {
+  // تكرارات الدقيقة نفسها تُعد في الذاكرة وتصل إلى العداد مع الكتابة التالية، لا مع كل تكرار
   it("the same error is one row with a counter, even when its numbers differ", async () => {
+    const start = Date.now();
     await reportError("db", new Error("timeout after 1000ms on port 5432"));
     await reportError("db", new Error("timeout after 2500ms on port 5433"));
+    expect((await rows())[0].occurrences).toBe(1);
+    vi.spyOn(Date, "now").mockReturnValue(start + 61_000);
+    await reportError("db", new Error("timeout after 3000ms on port 5434"));
     const list = await rows();
     expect(list).toHaveLength(1);
-    expect(list[0].occurrences).toBe(2);
+    expect(list[0].occurrences).toBe(3);
+  });
+
+  it("one error repeated thousands of times does not use up the budget or hide another error and its alert", async () => {
+    const preview = () => reportRequestError(Object.assign(new Error('invalid input syntax for type uuid: "------------------------------------"'), { code: "22P02" }), { routePath: "/preview/[fileId]", routeType: "render" });
+    for (let i = 0; i < 2000; i++) await preview();
+    await reportError("checkout:init", new Error("a different failure"));
+    const list = await rows();
+    expect(list.map((row) => row.source)).toEqual(["request:render", "checkout:init"]);
+    // الأول أرسل رسالة، والخطأ الجديد الثاني وصل إلى مسار التنبيه وعُدّ للرسالة التالية
+    expect(await alertMails()).toHaveLength(1);
+    expect((await sql<{ suppressed: number }[]>`select suppressed from ops_alert_state where kind = 'server_error'`)[0].suppressed).toBe(1);
   });
 
   it("the same message from another place is another row", async () => {
@@ -221,6 +237,8 @@ describe("the owner is told about new problems only", () => {
     await reportError("x", new Error("boom"));
     await sql`update ops_alert_state set last_sent_at = now() - interval '2 days'`;
     await sql`update error_events set last_seen_at = now() - interval '2 days'`;
+    // يومان مرّا على ساعة هذه النسخة أيضًا، لا على قاعدة البيانات وحدها
+    vi.spyOn(Date, "now").mockReturnValue(Date.now() + 2 * 86_400_000);
     await reportError("x", new Error("boom"));
     expect(await alertMails()).toHaveLength(2);
   });
