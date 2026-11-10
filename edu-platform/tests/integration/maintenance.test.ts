@@ -127,6 +127,6 @@ describe("each run is bounded and repeatable", () => {
 
   it("a second run with nothing left does nothing", async () => {
     await runDataPruning();
-    expect(await runDataPruning()).toEqual({ rateLimits: 0, sessions: 0, accessLogs: 0, errorEvents: 0, stampedCopies: 0, unconfirmedUploads: 0, finished: true });
+    expect(await runDataPruning()).toEqual({ rateLimits: 0, sessions: 0, accessLogs: 0, errorEvents: 0, stampedCopies: 0, unconfirmedUploads: 0, videoEvents: 0, videos: { checked: 0, held: 0, failed: 0, finished: true }, finished: true });
   });
 });

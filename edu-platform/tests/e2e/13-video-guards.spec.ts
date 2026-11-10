@@ -102,6 +102,12 @@ test.describe("Bunny player", () => {
   });
 });
 
+/** ساعة الصفحة مزيفة وساعة الخادم حقيقية: رابط يصدر في ثانية الرابط الأول نفسها يطابقه حرفًا، فلا يظهر التبديل */
+async function waitPastIssuingSecond(src: string | null) {
+  const issuedAt = Number(new URL(src!).searchParams.get("expires")) - 3600;
+  await expect.poll(() => Math.floor(Date.now() / 1000), { intervals: [100] }).toBeGreaterThan(issuedAt);
+}
+
 test.describe("the embed link", () => {
   test("is renewed before it runs out, and stops at once when access is withdrawn", async ({ browser }) => {
     const p = await videoProduct({ provider: "bunny" });
@@ -112,6 +118,7 @@ test.describe("the embed link", () => {
     const iframe = player.locator("iframe");
     await expect(page.frameLocator('[data-testid="watch-player"] iframe').getByTestId("sim-embed-ok")).toBeVisible({ timeout: 15_000 });
     const first = await iframe.getAttribute("src");
+    await waitPastIssuingSecond(first);
 
     const isRenewal = (url: string) => url.endsWith(`/api/lessons/${p.lessonId}/embed`);
     const renewed = page.waitForResponse((r) => isRenewal(r.url()));
@@ -141,6 +148,7 @@ test.describe("the embed link", () => {
     const iframe = page.getByTestId("watch-player").locator("iframe");
     await expect(page.frameLocator('[data-testid="watch-player"] iframe').getByTestId("sim-embed-ok")).toBeVisible({ timeout: 15_000 });
     const first = await iframe.getAttribute("src");
+    await waitPastIssuingSecond(first);
     let calls = 0;
     await page.route(`**/api/lessons/${p.lessonId}/embed`, (route) => {
       calls++;
