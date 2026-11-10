@@ -18,7 +18,7 @@ let sim: Simulator;
 
 /** الفواتير المفتوحة من اختبار سابق تُعد ضمن عمل الوظيفة، فنخرجها حتى يقرأ كل اختبار نتيجته فقط */
 async function retireOpenWork() {
-  await sql`update payments set status = 'paid', expires_at = now() - interval '1 day' where status in ('initiated', 'pending', 'failed', 'expired', 'paid', 'refunded')`;
+  await sql`update payments set status = 'paid', expires_at = now() - interval '1 day', last_checked_at = now() where status in ('initiated', 'pending', 'failed', 'expired', 'paid', 'refunded')`;
   await sql`update orders set status = 'refunded' where status in ('pending', 'failed')`;
   await sql`update refunds set status = 'completed' where status = 'requested'`;
   await sql`update payment_extras set state = 'refunded' where state = 'refund_requested'`;
@@ -114,7 +114,7 @@ describe("the runbook", () => {
 
   it("gives the schedule that works on Hobby and the one edit needed before live payments", () => {
     expect(readme).toContain("`0 0 * * *`");
-    expect(readme).toContain("`*/15 * * * *`");
+    expect(readme).toContain("`*/10 * * * *`");
     expect(readme).toContain("قبل الدفع الحقيقي");
   });
 });
@@ -122,11 +122,11 @@ describe("the runbook", () => {
 describe("vercel.json", () => {
   const config = JSON.parse(readFileSync(resolve(__dirname, "../../vercel.json"), "utf8")) as { crons: { path: string; schedule: string }[] };
 
-  // كان */15 ويحتاج Pro. تغيّر عمدًا إلى يومي حتى ينجح النشر على Hobby، والتعديل إلى */15 سطر واحد موثق في README
+  // يومي حتى ينجح النشر على Hobby، والتعديل إلى */10 بعد Pro سطر واحد موثق في README
   const reconcile = config.crons.find((cron) => cron.path === "/api/cron/reconcile-payments");
 
   it("declares the job daily for Hobby, or the one documented schedule after Pro", () => {
-    expect(["0 0 * * *", "*/15 * * * *"]).toContain(reconcile?.schedule);
+    expect(["0 0 * * *", "*/10 * * * *"]).toContain(reconcile?.schedule);
   });
 
   it("points at a route that exists", () => {
@@ -153,13 +153,14 @@ describe("re-checking open invoices", () => {
     expect((await orderRow(order.id)).status).toBe("paid");
   });
 
-  it("works in small batches", async () => {
+  // تغيّر عمدًا (F16): الجولة تعمل حتى ينفد وقتها، فلا يبقى في الطابور ما استحق وهناك وقت
+  it("one run drains everything due, batch after batch", async () => {
     await manyOpenInvoices(RECONCILE_BATCH_SIZE + 3);
     const first = await runPaymentReconciliation();
-    expect(first.claimed).toBe(RECONCILE_BATCH_SIZE);
-    expect(statusCalls(sim)).toBe(RECONCILE_BATCH_SIZE);
+    expect(first.claimed).toBe(RECONCILE_BATCH_SIZE + 3);
+    expect(statusCalls(sim)).toBe(RECONCILE_BATCH_SIZE + 3);
     const second = await runPaymentReconciliation();
-    expect(second.claimed).toBe(3);
+    expect(second.claimed).toBe(0);
   });
 
   it("two runs at once never ask about the same invoice twice", async () => {
@@ -202,14 +203,18 @@ describe("re-checking open invoices", () => {
     expect(await runPaymentReconciliation()).toMatchObject({ claimed: 1 });
   });
 
-  it("finds a second charge on a paid invoice while its link can still be used", async () => {
+  // تغيّر عمدًا (F16): الفاتورة المدفوعة لا تأخذ من وقت الجولة ما دام رابطها حيًا، وتُفحص مرة واحدة بعد موته فتُكتشف الدفعة الثانية
+  it("finds a second charge on a paid invoice with one final check after its link dies", async () => {
     const { order, invoice } = await openInvoice();
     await sim.pay(invoice, "success");
     await runPaymentReconciliation();
     expect((await orderRow(order.id)).status).toBe("paid");
     const second = await sim.pay(invoice, "success");
     await sql`update payments set last_checked_at = now() - interval '11 minutes', reconcile_claimed_at = null where order_id = ${order.id}`;
+    expect(await runPaymentReconciliation()).toMatchObject({ claimed: 0, flagged: 0 });
+    await sql`update payments set expires_at = now() - interval '4 hours', last_checked_at = now() - interval '2 hours', reconcile_claimed_at = null where order_id = ${order.id}`;
     expect(await runPaymentReconciliation()).toMatchObject({ claimed: 1, flagged: 1 });
+    expect(await runPaymentReconciliation()).toMatchObject({ claimed: 0 });
     expect(await sql`select gateway_payment_id, kind from payment_extras where order_id = ${order.id}`).toEqual([{ gateway_payment_id: second.paymentId, kind: "duplicate" }]);
   });
 
@@ -248,7 +253,9 @@ describe("re-checking open invoices", () => {
     await sql`update payments set reconcile_claimed_at = now() - interval '6 minutes' where order_id = ${orders[0].id}`;
     const extra = await manyOpenInvoices(1);
     const report = await runPaymentReconciliation();
-    expect(report.claimed).toBe(RECONCILE_BATCH_SIZE);
+    // الفاتورة التي لم تُجب تبقى بعقدها، فلا تُعاد المطالبة بها في الجولة نفسها مهما تكررت الدفعات
+    expect(report.claimed).toBe(RECONCILE_BATCH_SIZE + 1);
+    expect(report.errors).toBe(1);
     const [fresh] = await paymentRows(extra[0].id);
     expect(fresh.last_checked_at).not.toBeNull();
   });
@@ -258,7 +265,11 @@ describe("re-checking open invoices", () => {
     sim.setFault("/v2/GetPaymentStatus", "down");
     const res = await call(`Bearer ${SECRET}`);
     expect(res.status).toBe(502);
-    expect(await res.json()).toMatchObject({ claimed: 6, checked: 0, errors: 3, skipped: 3, stoppedEarly: true });
+    const body = await res.json();
+    expect(body).toMatchObject({ claimed: 6, checked: 0, stoppedEarly: true });
+    // أربعة نداءات متوازية قد تكون في الطريق لحظة بلوغ الحد
+    expect(body.errors).toBeGreaterThanOrEqual(3);
+    expect(body.errors + body.skipped).toBe(6);
   });
 
   it("one bad invoice among good ones is still a 200", async () => {
@@ -273,7 +284,7 @@ describe("re-checking open invoices", () => {
   it("stops when its time budget runs out", async () => {
     await manyOpenInvoices(6);
     const realNow = Date.now.bind(Date);
-    vi.spyOn(Date, "now").mockImplementation(() => realNow() + (statusCalls(sim) >= 2 ? 50_000 : 0));
+    vi.spyOn(Date, "now").mockImplementation(() => realNow() + (statusCalls(sim) >= 2 ? 200_000 : 0));
     const report = await runPaymentReconciliation();
     expect(report).toMatchObject({ claimed: 6, stoppedEarly: true });
     expect(report.checked).toBeLessThan(6);
@@ -307,11 +318,14 @@ describe("a closed order's link", () => {
     expect(await activeEntitlements(user.id)).toContain(product.id);
   });
 
-  it("is left alone once the link is long dead", async () => {
+  // تغيّر عمدًا (F16): الجولة اليومية قد تفوت نافذة الساعات الثلاث، فلا يُترك رابط مات ولم يُسأل عنه أبدًا
+  it("gets one final check after the link dies, then is left alone", async () => {
     const { order } = await openInvoice();
     await sql.begin((tx) => closeOrder(tx, { orderId: order.id, reason: "student_cancelled", actorId: null }));
     await sql`update payments set expires_at = now() - interval '4 hours' where order_id = ${order.id}`;
     sim.state.requests.length = 0;
+    expect(await runPaymentReconciliation()).toMatchObject({ claimed: 1 });
+    await sql`update payments set last_checked_at = now() - interval '11 minutes', reconcile_claimed_at = null where order_id = ${order.id}`;
     expect(await runPaymentReconciliation()).toMatchObject({ claimed: 0 });
   });
 });

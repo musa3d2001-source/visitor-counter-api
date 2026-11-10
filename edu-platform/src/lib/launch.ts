@@ -654,12 +654,12 @@ function paymentSteps(f: LaunchFacts, ticks: LaunchTicks): Built[] {
 
   steps.push({
     key: "reconcile_cadence",
-    title: "تسوية المدفوعات كل ١٥ دقيقة",
+    title: "تسوية المدفوعات كل ١٠ دقائق",
     state: f.reconcile === "frequent" ? "done" : "open",
     blocking: true,
-    todo: "بعد الترقية إلى Vercel Pro اطلب من المطور تغيير جدول التسوية في vercel.json إلى كل ١٥ دقيقة، ثم النشر.",
+    todo: "بعد الترقية إلى Vercel Pro اطلب من المطور تغيير جدول التسوية في vercel.json إلى كل ١٠ دقائق، ثم النشر.",
     where: { label: "ملف vercel.json، كما في README ← الوظائف المجدولة" },
-    facts: [f.reconcile === "frequent" ? "التسوية تعمل كل بضع دقائق." : "التسوية مرة يوميًا، فالدفعة التي ضاع إشعارها تنتظر حتى اليوم التالي."],
+    facts: [f.reconcile === "frequent" ? "التسوية تعمل كل بضع دقائق." : "التسوية مرة يوميًا: الدفعة التي ضاع إشعارها تُطبق حين يعود صاحبها إلى الموقع، ومن لا يعود ينتظر حتى اليوم التالي."],
   });
 
   const hooksBase = {

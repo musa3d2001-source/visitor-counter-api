@@ -76,3 +76,66 @@ create table if not exists upload_tickets (
   completed_at timestamptz
 );
 create index if not exists upload_tickets_sweep on upload_tickets (created_at) where completed_at is null;
+
+-- =====================================================================
+-- معالجة المدفوعات (مرحلة payments-healing، القرارات F4 و F16 و F17، البنود K003 و K011 و K016 و K071)
+-- إضافي: أعمدة تقبل NULL بلا قيمة افتراضية وجداول جديدة. الكود القديم لا يقرأها فلا يتأثر.
+-- =====================================================================
+
+-- لقطة شروط البيع وقت إنشاء الطلب (K011): تغيير نسبة المعلم أو الرسوم بعد الطلب لا يغيّر ما يستحقه.
+-- earnings_snapshot_at فارغ يعني طلبًا أقدم من هذا الترحيل: يُحسب بالطريقة القديمة (القراءة وقت التأكيد)، فيُسوّى كما كان.
+-- share_bps فارغ في طلب له لقطة يعني أن البند لا نسبة لمعلم عليه، وليس أن اللقطة ناقصة.
+alter table orders add column if not exists earnings_snapshot_at timestamptz;
+alter table orders add column if not exists fee_bps integer check (fee_bps is null or fee_bps between 0 and 10000);
+alter table orders add column if not exists fee_fixed_fils integer check (fee_fixed_fils is null or fee_fixed_fils >= 0);
+alter table order_items add column if not exists share_bps integer check (share_bps is null or share_bps between 0 and 10000);
+alter table order_item_parts add column if not exists share_bps integer check (share_bps is null or share_bps between 0 and 10000);
+
+-- رقم الفاتورة وحده ليس هوية (K016): sandbox و live عدّادان مستقلان لدى البوابة وقد يتطابقان.
+-- الفهرس الجديد أولًا ثم حذف القيد القديم، حتى لا تمر لحظة بلا قيد تفرد. الجدول صغير عند التطبيق، فالقفل قصير.
+create unique index if not exists payments_invoice_per_environment on payments (provider, environment, gateway_invoice_id);
+create unique index if not exists payments_payment_per_environment on payments (provider, environment, gateway_payment_id);
+alter table payments drop constraint if exists payments_provider_gateway_invoice_id_key;
+alter table payments drop constraint if exists payments_provider_gateway_payment_id_key;
+
+-- طابور وظيفة التسوية: الفواتير غير المؤكدة فقط، فلا يكبر مسحها مع تراكم المدفوعات المكتملة
+create index if not exists payments_unverified_idx on payments (last_checked_at nulls first, created_at)
+  where gateway_invoice_id is not null and status in ('initiated', 'pending', 'failed', 'expired');
+
+-- تعليق طلب مدفوع بسبب نزاع أو استرداد جزئي من لوحة البوابة (K003).
+-- التعليق يسحب صلاحيات هذا الطلب فقط ويوقف أرباحه، وتُعاد بالضبط عند قرار المالك: revoked_at و held_at يساويان held_at هنا.
+-- سحب الصلاحية نفسه هو التعليق، فلا يضاف أي فحص جديد على مسار الوصول.
+create table if not exists order_holds (
+  id uuid primary key default gen_random_uuid(),
+  order_id uuid not null references orders(id) on delete restrict,
+  payment_id uuid references payments(id) on delete set null,
+  kind text not null check (kind in ('dispute', 'partial_refund')),
+  source_key text not null unique check (char_length(source_key) <= 128),
+  gateway_status text check (char_length(gateway_status) <= 32),
+  amount_fils integer check (amount_fils is null or amount_fils >= 0),
+  held_at timestamptz not null default now(),
+  released_at timestamptz,
+  released_by uuid references users(id) on delete set null,
+  resolution text check (resolution is null or resolution in ('released', 'money_returned')),
+  check ((released_at is null) = (resolution is null))
+);
+-- تعليق حي واحد لكل طلب: حدث ثانٍ على طلب معلق يصل تنبيهًا ولا يكتب فوق ما سيُعاد
+create unique index if not exists order_holds_one_active on order_holds (order_id) where released_at is null;
+create index if not exists order_holds_open_idx on order_holds (held_at desc) where released_at is null;
+alter table order_holds enable row level security;
+
+alter table teacher_earnings add column if not exists held_at timestamptz;
+
+-- وسائل الدفع المعروضة لكل شريحة مبلغ (K071): نسخة خادم باردة تقرأ من هنا ولا تنتظر البوابة. لا بيانات شخصية فيها.
+create table if not exists payment_method_cache (
+  environment text not null check (environment in ('sandbox', 'live')),
+  band integer not null check (band >= 0),
+  methods jsonb not null,
+  fetched_at timestamptz not null default now(),
+  primary key (environment, band)
+);
+alter table payment_method_cache enable row level security;
+
+-- جدولا مرحلة pdf أعلاه بلا RLS، فكانا ظاهرين لأدوار واجهة REST العامة كسائر ما لا يُفعل عليه
+alter table stamped_copies enable row level security;
+alter table upload_tickets enable row level security;

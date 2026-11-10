@@ -1,8 +1,10 @@
 import "server-only";
 import { sql } from "../db";
 import { closeOrder } from "../commerce/orders";
-import { INVOICE_TTL_MINUTES, ORDER_LIFETIME_HOURS } from "./limits";
+import { ORDER_LIFETIME_HOURS } from "./limits";
+import { isDatabaseBusy } from "../db-busy";
 import { reportError } from "../platform/report-error";
+import { claimDueInvoices, releaseClaims } from "./invoice-queue";
 import { paymentsConfig, recheckExtraPayment, recheckOrderRefund, verifyAndApplyPayment } from "./service";
 
 /**
@@ -11,22 +13,27 @@ import { paymentsConfig, recheckExtraPayment, recheckOrderRefund, verifyAndApply
  *  - المطالبة بالدفعة بقفل SKIP LOCKED مع عقد مؤقت، فلا تعالج نسختان الفاتورة نفسها.
  *  - تطبيق النتيجة محمي أصلًا بقفل الطلب، وإعادة التطبيق لا تغير شيئًا.
  *  - الإغلاق محروس بشرط الحالة، فيُغلق الطلب ويُدقق مرة واحدة.
- * الفشل يتوقف بأمان: انقطاع البوابة يوقف الجولة، وما لم يُفحص يُعاد في الجولة التالية، ولا يُغلق طلب لم تُفحص فواتيره.
+ * الجولة تعمل حتى ينفد وقتها لا حتى عدد ثابت، وما يدخل الطابور معرّف في invoice-queue.ts.
+ * الفشل يتوقف بأمان: انقطاع البوابة يوقف الجولة ويحرر كل ما لم يُفحص، ولا يُغلق طلب لم تُفحص فواتيره.
  */
 
-/** أصغر من أن يقترب من مهلة الدالة حتى لو ردت البوابة ببطء */
-export const RECONCILE_BATCH_SIZE = 25;
-const RECHECK_AFTER_MINUTES = 10;
-const CLAIM_LEASE_MINUTES = 5;
-const TIME_BUDGET_MS = 45_000;
-const CALL_TIMEOUT_MS = 8_000;
+/** حجم كل مطالبة: صغير حتى لا يبقى عند التوقف المبكر إلا القليل، والجولة تطالب من جديد حتى ينفد الطابور أو الوقت */
+export const RECONCILE_BATCH_SIZE = 12;
+/** فحوص متزامنة: البوابة تأخذ نحو ثانية للرد، وعلى جدول يومي يجب أن يفرغ الطابور في جولة واحدة. لا اتصال قاعدة بيانات محجوز أثناء انتظار البوابة */
+const RECONCILE_WORKERS = 4;
+/**
+ * وقت الجولة كله. maxDuration للمسار ١٢٠ ثانية (الحد على Hobby مع Fluid ٣٠٠ ثانية، وثائق Vercel 2026-08):
+ * ما يُبدأ قبل نفاد الوقت قد يأخذ مهلة نداء كاملة بعده، ويبقى هامش لتسجيل النبض.
+ */
+export const RECONCILE_BUDGET_MS = 100_000;
+export const CALL_TIMEOUT_MS = 8_000;
+const INVOICES_SHARE = 0.7;
+const SWEEPS_SHARE = 0.85;
 const STOP_AFTER_FAILURES = 3;
 const CLOSE_BATCH_SIZE = 50;
 const CLOSE_TIME_BUDGET_MS = 45_000;
 const ABANDONED_CLAIM_MINUTES = 60;
 const ABANDONED_CLAIM_BATCH = 200;
-/** فاتورة طلب أُغلق تُتابَع حتى هذه المدة بعد انتهاء رابطها، لالتقاط دفعة تأخر تأكيدها */
-const LINK_STILL_PAYABLE_HOURS = 3;
 /** استرداد قبلته البوابة ولم يُحسم بعد هذه المدة نسأل عنه، ثم مرة كل هذه المدة: نتيجته لا يصح أن تعتمد على Webhook واحد */
 const REFUND_SWEEP_HOURS = 3;
 const REFUND_SWEEP_BATCH = 15;
@@ -39,6 +46,7 @@ export type ReconcileReport = {
   flagged: number;
   invalid: number;
   errors: number;
+  /** مُطالب بها ولم تُفحص، وأُعيدت إلى الطابور */
   skipped: number;
   stoppedEarly: boolean;
   closed: number;
@@ -48,7 +56,70 @@ export type ReconcileReport = {
   refundErrors: number;
 };
 
-export async function runPaymentReconciliation(): Promise<ReconcileReport> {
+/** نص الفشل، أو null: فشل الجولة يعني أن البوابة لم تجب عن شيء مما سُئلت عنه. جولة لا شيء مستحق فيها نجاح */
+export function reconcileFailure(report: ReconcileReport): string | null {
+  const failed = report.errors + report.refundErrors;
+  const answered = report.checked + report.invalid + report.refundsChecked - report.refundErrors;
+  return failed > 0 && answered === 0 ? "لم تجب بوابة الدفع عن أي فاتورة" : null;
+}
+
+type EnabledConfig = Extract<ReturnType<typeof paymentsConfig>, { enabled: true }>;
+
+/**
+ * يطالب ويفحص حتى يفرغ المسار أو ينفد الوقت أو تتعطل البوابة.
+ * عند التوقف المبكر يحرر كل ما لم تُعرف نتيجته، فلا ينتظر بعده خمس دقائق عقدًا لم يُستعمل، والجولة التالية أو زر المالك تبدأ منه.
+ * فاتورة واحدة لم تُجب في جولة مستمرة تبقى بعقدها: لا تُعاد المطالبة بها في الجولة نفسها.
+ * الناتج: هل فرغ المسار فعلًا.
+ */
+async function drainLane(cfg: EnabledConfig, lane: "unverified" | "settled", report: ReconcileReport, deadline: number, failures: { consecutive: number }): Promise<boolean> {
+  const halted = () => Date.now() > deadline || failures.consecutive >= STOP_AFTER_FAILURES;
+  while (!halted()) {
+    const claimed = await claimDueInvoices(cfg.environment, lane, RECONCILE_BATCH_SIZE);
+    if (claimed.length === 0) return true;
+    report.claimed += claimed.length;
+    let next = 0;
+    const unanswered: string[] = [];
+    let busy: unknown = null;
+    const worker = async () => {
+      while (next < claimed.length && !halted() && busy === null) {
+        const row = claimed[next++];
+        try {
+          const result = await verifyAndApplyPayment({ invoiceId: row.gateway_invoice_id }, { timeoutMs: CALL_TIMEOUT_MS });
+          failures.consecutive = 0;
+          if (result.state === "invalid") report.invalid++;
+          else report.checked++;
+          if (result.state === "paid" && result.changed) report.paid++;
+          if (result.state === "flagged") report.flagged++;
+        } catch (err) {
+          unanswered.push(row.id);
+          if (isDatabaseBusy(err)) {
+            busy = err;
+            return;
+          }
+          report.errors++;
+          failures.consecutive++;
+          await reportError("reconcile:invoice", err);
+        }
+      }
+    };
+    await Promise.all(Array.from({ length: RECONCILE_WORKERS }, worker));
+    const unreached = claimed.slice(next).map((row) => row.id);
+    if (busy !== null) {
+      await releaseClaims([...unreached, ...unanswered]).catch(() => undefined);
+      throw busy;
+    }
+    if (unreached.length || halted()) {
+      report.skipped += unreached.length;
+      report.stoppedEarly = true;
+      await releaseClaims([...unreached, ...unanswered]);
+      return false;
+    }
+  }
+  report.stoppedEarly = true;
+  return false;
+}
+
+export async function runPaymentReconciliation(opts: { budgetMs?: number } = {}): Promise<ReconcileReport> {
   const cfg = paymentsConfig();
   const report: ReconcileReport = {
     mode: cfg.enabled ? cfg.environment : "none",
@@ -69,53 +140,15 @@ export async function runPaymentReconciliation(): Promise<ReconcileReport> {
 
   if (cfg.enabled) {
     const started = Date.now();
-    // كل دفعة هنا MATERIALIZED تُحسب مرة واحدة: داخل IN قد يعيد المخطط تنفيذها لكل صف، فيتخطى القفل ما حدّثه الأمر نفسه ويتجاوز الحد
-    const claimed = await sql<{ id: string; gateway_invoice_id: string }[]>`
-      with batch as materialized (
-        select q.id from payments q
-        join orders o on o.id = q.order_id
-        where q.provider = 'myfatoorah' and q.gateway_invoice_id is not null
-          and q.environment = ${cfg.environment}
-          and (
-            (q.status in ('initiated', 'pending', 'failed', 'expired') and o.status in ('pending', 'failed'))
-            -- فاتورة مدفوعة تبقى ضمن المتابعة طوال عمر رابطها: عملية ثانية عليها لا يكشفها غير البوابة إن ضاع Webhook
-            or (q.status in ('initiated', 'pending', 'failed', 'expired', 'paid', 'refunded') and coalesce(q.expires_at, q.created_at + make_interval(mins => ${INVOICE_TTL_MINUTES})) > now() - make_interval(hours => ${LINK_STILL_PAYABLE_HOURS}))
-          )
-          and (q.last_checked_at is null or q.last_checked_at < now() - make_interval(mins => ${RECHECK_AFTER_MINUTES}))
-          and (q.reconcile_claimed_at is null or q.reconcile_claimed_at < now() - make_interval(mins => ${CLAIM_LEASE_MINUTES}))
-        order by (o.status in ('pending', 'failed') and o.created_at <= now() - make_interval(hours => ${ORDER_LIFETIME_HOURS})) desc,
-          greatest(q.last_checked_at, q.reconcile_claimed_at) asc nulls first
-        limit ${RECONCILE_BATCH_SIZE}
-        for update of q skip locked
-      )
-      update payments p set reconcile_claimed_at = now()
-      from batch where p.id = batch.id
-      returning p.id, p.gateway_invoice_id
-    `;
-    report.claimed = claimed.length;
-    let consecutiveFailures = 0;
-    for (const [index, row] of claimed.entries()) {
-      if (Date.now() - started > TIME_BUDGET_MS || consecutiveFailures >= STOP_AFTER_FAILURES) {
-        report.skipped = claimed.length - index;
-        report.stoppedEarly = true;
-        break;
-      }
-      try {
-        const result = await verifyAndApplyPayment({ invoiceId: row.gateway_invoice_id }, { timeoutMs: CALL_TIMEOUT_MS });
-        consecutiveFailures = 0;
-        if (result.state === "invalid") report.invalid++;
-        else report.checked++;
-        if (result.state === "paid" && result.changed) report.paid++;
-        if (result.state === "flagged") report.flagged++;
-      } catch (err) {
-        report.errors++;
-        consecutiveFailures++;
-        await reportError("reconcile:invoice", err);
-      }
-    }
+    const budget = opts.budgetMs ?? RECONCILE_BUDGET_MS;
+    const failures = { consecutive: 0 };
+    const drained = await drainLane(cfg, "unverified", report, started + budget * INVOICES_SHARE, failures);
+
+    let consecutiveFailures = failures.consecutive;
+    const sweepsDeadline = started + budget * SWEEPS_SHARE;
 
     // الاستردادات بعد الفواتير: مال وصل للتو أولى بالوقت. المطالبة بعقد مؤقت حتى لا تكررها نسخة متزامنة، وما لم يُفحص يُعاد في الجولة التالية
-    const budgetLeft = () => Date.now() - started <= TIME_BUDGET_MS && consecutiveFailures < STOP_AFTER_FAILURES;
+    const budgetLeft = () => Date.now() <= sweepsDeadline && consecutiveFailures < STOP_AFTER_FAILURES;
     const sweep = async (ids: string[], release: (ids: string[]) => Promise<unknown>, check: (id: string) => Promise<boolean>) => {
       for (const [index, id] of ids.entries()) {
         if (!budgetLeft()) {
@@ -175,6 +208,11 @@ export async function runPaymentReconciliation(): Promise<ReconcileReport> {
         (ids) => sql`update payment_extras set swept_at = null where id = any(${ids}::uuid[])`,
         async (extraId) => (await recheckExtraPayment({ extraId, adminId: null }, { timeoutMs: CALL_TIMEOUT_MS })).state !== "refund_requested",
       );
+    }
+    // آخر الأولويات: المال الذي لم يصل والاستردادات المعلقة قبل الفحص الأخير لفاتورة مدفوعة
+    if (drained && budgetLeft()) {
+      failures.consecutive = consecutiveFailures;
+      await drainLane(cfg, "settled", report, sweepsDeadline, failures);
     }
   }
 

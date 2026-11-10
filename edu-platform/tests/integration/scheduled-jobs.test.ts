@@ -384,7 +384,7 @@ describe("vercel.json", () => {
 
   it("reconcile is daily on Hobby, or the one documented schedule after upgrading to Pro", () => {
     const reconcile = config.crons.find((c) => c.path.endsWith("reconcile-payments"))!;
-    expect(["0 0 * * *", "*/15 * * * *"]).toContain(reconcile.schedule);
+    expect(["0 0 * * *", "*/10 * * * *"]).toContain(reconcile.schedule);
     expect(reconcileCadence()).toBe(reconcile.schedule === "0 0 * * *" ? "daily" : "frequent");
   });
 
@@ -406,7 +406,7 @@ describe("vercel.json", () => {
 
   it("the README gives the single edit for Pro and the failure mode", () => {
     expect(readme).toContain("`0 0 * * *`");
-    expect(readme).toContain("`*/15 * * * *`");
+    expect(readme).toContain("`*/10 * * * *`");
     expect(readme).toMatch(/سطر واحد|تعديل واحد/);
     expect(readme).toContain("قبل الدفع الحقيقي");
   });
