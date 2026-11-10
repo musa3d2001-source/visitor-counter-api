@@ -8,6 +8,7 @@ import { fileURLToPath } from "node:url";
 import { createClient } from "@supabase/supabase-js";
 import type postgres from "postgres";
 import { scrubForOps } from "../src/lib/redact";
+import { boundedFetch, storageFetch, type StorageFetchLimits } from "../src/server/outbound";
 import { assertSafeKey, type Bucket } from "../src/server/storage/types";
 
 /**
@@ -26,6 +27,11 @@ const HERE = dirname(fileURLToPath(import.meta.url));
 export const REPOSITORY_ROOT = resolve(HERE, "../..");
 
 const LIST_PAGE = 1000;
+/**
+ * النسخ مهمة طويلة صريحة: لا مهلة كلية لنقل ملف (فيديو كبير على اتصال بطيء)، لكن تنزيلًا توقف وصول بايتاته دقيقة يُقطع
+ * ويُبلغ عنه، بدل نسخة احتياطية معلقة إلى الأبد. طلبات القائمة والتوقيع قصيرة.
+ */
+export const BACKUP_LIMITS: StorageFetchLimits = { controlMs: 30_000, transferMs: 0, idleMs: 60_000, maxDownloadBytes: 8 * 1024 * 1024 * 1024 };
 const SIGNED_URL_SECONDS = 3600;
 
 const CONTENT_TYPES: Record<string, string> = {
@@ -107,7 +113,7 @@ export function localStore(dir: string): ObjectStore {
 export type SupabaseStoreConfig = { url: string; serviceRoleKey: string; privateBucket: string; publicBucket: string };
 
 export function supabaseStore(cfg: SupabaseStoreConfig): ObjectStore {
-  const client = createClient(cfg.url, cfg.serviceRoleKey, { auth: { persistSession: false, autoRefreshToken: false } });
+  const client = createClient(cfg.url, cfg.serviceRoleKey, { auth: { persistSession: false, autoRefreshToken: false }, global: { fetch: storageFetch(BACKUP_LIMITS) } });
   const nameOf = (bucket: Bucket) => (bucket === "private" ? cfg.privateBucket : cfg.publicBucket);
   const walk = async (bucket: Bucket, prefix: string): Promise<StoredObject[]> => {
     const out: StoredObject[] = [];
@@ -131,7 +137,7 @@ export function supabaseStore(cfg: SupabaseStoreConfig): ObjectStore {
       assertSafeKey(key);
       const { data, error } = await client.storage.from(nameOf(bucket)).createSignedUrl(key, SIGNED_URL_SECONDS);
       if (error || !data) throw new Error(`could not sign the download: ${error?.message ?? "empty response"}`);
-      const res = await fetch(data.signedUrl);
+      const res = await boundedFetch(data.signedUrl, undefined, { timeoutMs: BACKUP_LIMITS.transferMs, idleMs: BACKUP_LIMITS.idleMs, maxBytes: BACKUP_LIMITS.maxDownloadBytes });
       if (!res.ok || !res.body) throw new Error(`download failed with status ${res.status}`);
       return Readable.fromWeb(res.body as never);
     },

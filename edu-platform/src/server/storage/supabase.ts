@@ -1,12 +1,16 @@
 import "server-only";
 import { createClient, type SupabaseClient } from "@supabase/supabase-js";
 import { env } from "../env";
+import { boundedFetch, STORAGE_LIMITS, storageFetch } from "../outbound";
 import { assertSafeKey, type Bucket, type StorageDriver, type UploadTarget } from "./types";
 
 /**
  * Supabase Storage — يُستخدم من الخادم فقط بمفتاح service role.
  * - private bucket: ملفات PDF والفيديو (غير عام، لا يُكشف رابطه الدائم أبدًا)
  * - public bucket: أغلفة المنتجات والشعار
+ *
+ * كل طلب إلى Storage له مهلة تغطي الجسم أيضًا (outbound.ts): التوقيع والمعلومات قصيرة، والتنزيل والرفع أطول،
+ * والتنزيل يُقطع إن توقف وصول البايتات. فتعثر Storage يصير خطأً سريعًا لا دالة معلقة حتى حد المنصة.
  */
 let client: SupabaseClient | null = null;
 function sb(): SupabaseClient {
@@ -14,9 +18,15 @@ function sb(): SupabaseClient {
     const e = env();
     client = createClient(e.SUPABASE_URL!, e.SUPABASE_SERVICE_ROLE_KEY!, {
       auth: { persistSession: false, autoRefreshToken: false },
+      global: { fetch: storageFetch(STORAGE_LIMITS) },
     });
   }
   return client;
+}
+
+/** للاختبارات: يعيد إنشاء العميل بعد تغيير المتغيرات */
+export function resetSupabaseClientForTests() {
+  client = null;
 }
 
 function bucketName(b: Bucket) {
@@ -49,9 +59,13 @@ export const supabaseDriver: StorageDriver = {
     // نستخدم رابطًا موقّعًا قصيرًا مع Range لتجنب تنزيل الملف كاملًا
     const { data, error } = await sb().storage.from(bucketName(bucket)).createSignedUrl(key, 60);
     if (error || !data) throw new Error(`storage sign failed: ${error?.message}`);
-    const res = await fetch(data.signedUrl, { headers: { range: `bytes=0-${bytes - 1}` } });
-    if (!res.ok) throw new Error(`storage head read failed: ${res.status}`);
-    return new Uint8Array((await res.arrayBuffer()).slice(0, bytes));
+    // أول bytes فقط، بمهلة التحكم: خادم يتجاهل Range لا يجرنا إلى تنزيل الملف كله
+    const res = await boundedFetch(data.signedUrl, { headers: { range: `bytes=0-${bytes - 1}` } }, { timeoutMs: STORAGE_LIMITS.controlMs, maxBytes: bytes, truncate: true });
+    if (!res.ok) {
+      await res.body?.cancel().catch(() => {});
+      throw new Error(`storage head read failed: ${res.status}`);
+    }
+    return new Uint8Array(await res.arrayBuffer());
   },
   async stat(bucket, key) {
     assertSafeKey(key);

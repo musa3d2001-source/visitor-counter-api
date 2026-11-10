@@ -2,6 +2,10 @@ import "server-only";
 import { createHash, createHmac, timingSafeEqual } from "node:crypto";
 import { env } from "../env";
 import { isUuid } from "@/lib/uuid";
+import { fetchText } from "../outbound";
+
+/** حدود طلب API واحد إلى Bunny: مهلة من الاتصال حتى آخر بايت من الرد، وسقف حجم الرد. كائن لتقصّرها الاختبارات */
+export const bunnyLimits = { timeoutMs: 15_000, maxBytes: 1024 * 1024 };
 
 /**
  * عميل Bunny Stream — مبني على الوثائق الرسمية:
@@ -56,23 +60,23 @@ function cfg() {
 
 async function call<T>(method: string, path: string, body?: unknown): Promise<T> {
   const c = cfg();
-  const controller = new AbortController();
-  const timer = setTimeout(() => controller.abort(), 15_000);
-  let res: Response;
+  // مهلة واحدة تغطي الجسم أيضًا، وسقف لحجمه، ولا تحويلات يُرسل إليها مفتاح المكتبة
+  let res: { status: number; ok: boolean; text: string };
   try {
-    res = await fetch(`${c.apiBase}/library/${encodeURIComponent(c.libraryId)}${path}`, {
-      method,
-      headers: { AccessKey: c.apiKey, accept: "application/json", ...(body ? { "content-type": "application/json" } : {}) },
-      body: body ? JSON.stringify(body) : undefined,
-      signal: controller.signal,
-      cache: "no-store",
-    });
+    res = await fetchText(
+      `${c.apiBase}/library/${encodeURIComponent(c.libraryId)}${path}`,
+      {
+        method,
+        headers: { AccessKey: c.apiKey, accept: "application/json", ...(body ? { "content-type": "application/json" } : {}) },
+        body: body ? JSON.stringify(body) : undefined,
+        cache: "no-store",
+      },
+      { timeoutMs: bunnyLimits.timeoutMs, maxBytes: bunnyLimits.maxBytes },
+    );
   } catch (err) {
     throw new BunnyError(`تعذر الاتصال بـ Bunny Stream: ${err instanceof Error ? err.message : String(err)}`);
-  } finally {
-    clearTimeout(timer);
   }
-  const text = await res.text();
+  const text = res.text;
   if (!res.ok) throw new BunnyError(`Bunny Stream ${res.status}: ${text.slice(0, 200)}`, res.status);
   return (text ? JSON.parse(text) : {}) as T;
 }

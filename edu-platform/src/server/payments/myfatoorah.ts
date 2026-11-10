@@ -1,5 +1,6 @@
 import "server-only";
 import { createHmac, timingSafeEqual } from "node:crypto";
+import { fetchText } from "../outbound";
 
 /**
  * عميل MyFatoorah API v2 — مطابق لعقد المكتبة الرسمية (myfatoorah/library 2.2.10):
@@ -93,32 +94,36 @@ function extractError(json: MfEnvelope<unknown> | null, raw: string): string {
   return json.Message || "خطأ غير معروف من بوابة الدفع";
 }
 
+/** أكبر رد معقول من البوابة (حالة فاتورة بكل محاولاتها). ما فوقه ليس ردًا منها */
+const MF_MAX_RESPONSE_BYTES = 2 * 1024 * 1024;
+
 export class MyFatoorahClient {
   constructor(private readonly cfg: MfConfig) {}
 
   private async call<T>(path: string, body: unknown, extraHeaders?: Record<string, string>): Promise<T> {
-    const controller = new AbortController();
-    const timer = setTimeout(() => controller.abort(), this.cfg.timeoutMs ?? 20_000);
-    let res: Response;
+    // المهلة تغطي الجسم أيضًا: رد يرسل ترويساته ثم يتوقف ينتهي هنا ولا يحجز الدالة. ولا تحويلات: المفتاح لا يُرسل إلى غير البوابة
+    let res: { status: number; text: string };
     try {
-      res = await fetch(`${this.cfg.baseUrl.replace(/\/$/, "")}${path}`, {
-        method: "POST",
-        headers: {
-          Authorization: `Bearer ${this.cfg.apiKey}`,
-          "Content-Type": "application/json",
-          Accept: "application/json",
-          ...extraHeaders,
+      res = await fetchText(
+        `${this.cfg.baseUrl.replace(/\/$/, "")}${path}`,
+        {
+          method: "POST",
+          headers: {
+            Authorization: `Bearer ${this.cfg.apiKey}`,
+            "Content-Type": "application/json",
+            Accept: "application/json",
+            ...extraHeaders,
+          },
+          body: JSON.stringify(body),
+          cache: "no-store",
         },
-        body: JSON.stringify(body),
-        signal: controller.signal,
-        cache: "no-store",
-      });
+        { timeoutMs: this.cfg.timeoutMs ?? 20_000, maxBytes: MF_MAX_RESPONSE_BYTES },
+      );
     } catch (err) {
+      // بلا status: النتيجة مجهولة (قد تكون البوابة نفذت الطلب)، كما عند انقطاع الاتصال
       throw new MyFatoorahError(`تعذر الاتصال ببوابة الدفع: ${err instanceof Error ? err.message : String(err)}`);
-    } finally {
-      clearTimeout(timer);
     }
-    const raw = await res.text();
+    const raw = res.text;
     let json: MfEnvelope<T> | null = null;
     try {
       json = JSON.parse(raw) as MfEnvelope<T>;
