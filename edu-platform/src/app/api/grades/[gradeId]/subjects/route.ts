@@ -1,7 +1,7 @@
 import { NextResponse, type NextRequest } from "next/server";
 import { isUuid } from "@/lib/uuid";
 import { withBusyGuard } from "@/server/busy-response";
-import { listSubjects } from "@/server/catalog/queries";
+import { listSubjects } from "@/server/catalog/public-data";
 
 /**
  * مواد صف واحد لتبويبات الصفحة الرئيسية: الصفحة ترسم لوحة واحدة، وتطلب غيرها عند الحاجة.

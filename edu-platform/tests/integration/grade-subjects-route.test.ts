@@ -1,8 +1,12 @@
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
 import { NextRequest } from "next/server";
 import { GET } from "@/app/api/grades/[gradeId]/subjects/route";
+import { getDb } from "@/server/db";
+import { resetEnvCache } from "@/server/env";
+import { resetPublicCacheForTests } from "@/server/platform/public-cache";
 import { closeDb, resetDb, sql } from "../helpers/db";
 import { createProduct, gradeAndSubject } from "../helpers/factories";
+import { TEST_ENV } from "../test-env";
 
 const ask = (gradeId: string) => GET(new NextRequest(`http://localhost/api/grades/${gradeId}/subjects`), { params: Promise.resolve({ gradeId }) });
 
@@ -34,6 +38,30 @@ describe("GET /api/grades/:id/subjects", () => {
   it("answers 400 for something that is not an id, before touching the database", async () => {
     expect((await ask("grade-7")).status).toBe(400);
     expect((await ask("1' or '1'='1")).status).toBe(400);
+  });
+
+  it("comes from the public cache, so tab clicks on a busy home page do not reach the database", async () => {
+    await createProduct({ level: 9, subjectSlug: "math" });
+    const { gradeId } = await gradeAndSubject(9, "math");
+    process.env.PUBLIC_CACHE_SECONDS = "30";
+    resetEnvCache();
+    resetPublicCacheForTests();
+    const db = getDb();
+    const statements: string[] = [];
+    try {
+      await ask(gradeId);
+      (db.options as { debug?: unknown }).debug = (_connection: number, query: string) => {
+        statements.push(query);
+      };
+      const { subjects } = await (await ask(gradeId)).json();
+      expect(subjects).toHaveLength(1);
+      expect(statements).toEqual([]);
+    } finally {
+      (db.options as { debug?: unknown }).debug = undefined;
+      Object.assign(process.env, TEST_ENV);
+      resetEnvCache();
+      resetPublicCacheForTests();
+    }
   });
 
   it("answers an empty list for an unknown grade", async () => {
