@@ -98,7 +98,10 @@ describe("saying nothing was charged", () => {
     ctx.user = user;
     await sql.begin((tx) => markOrderPaid(tx, { orderId: order.id, paidAmountFils: order.total_fils }));
     await sql`insert into order_holds (order_id, kind, source_key) values (${order.id}, 'dispute', ${`dispute:${order.id}`})`;
-    expect(await page(order)).toContain("هذا الطلب قيد المراجعة");
+    const html = await page(order);
+    expect(html).toContain("هذا الطلب قيد المراجعة");
+    // لا تُقال جملة الاكتمال عن طلب وصوله موقوف
+    expect(html).not.toContain("مشترياتك جاهزة الآن في مكتبتك");
   });
 
   it("appears once every invoice has been checked", async () => {

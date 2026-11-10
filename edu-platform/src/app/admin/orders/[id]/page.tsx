@@ -154,8 +154,8 @@ export default async function AdminOrderPage({ params }: { params: Promise<{ id:
 
       {holds.map((h) => (
         <Section key={h.id} id="hold-decision" title={`هذا الطلب موقوف: ${HOLD_KIND_LABELS[h.kind]}`} description="الوصول والأرباح لهذا الطلب متوقفان منذ وصول الإشعار. راجع العملية في لوحة MyFatoorah ثم اختر ما حدث فعلًا." icon={<ShieldAlert />} tone="coral">
-          <div data-testid="hold-decision" className="flex flex-wrap gap-2.5">
-            {stepUp ? null : <StepUpOffNote />}
+          {stepUp ? null : <StepUpOffNote />}
+          <div data-testid="hold-decision" className="mt-3 flex flex-wrap gap-2.5">
             <ConfirmButton
               action={releaseOrderHoldAction}
               hidden={{ holdId: h.id, orderId: order.id }}

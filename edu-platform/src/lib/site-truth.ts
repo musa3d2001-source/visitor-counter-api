@@ -379,3 +379,11 @@ export function sellerIdentity(s: SellerSettings): { key: string; label: string;
     .map((x) => ({ ...x, value: x.value.trim() }))
     .filter((x) => x.value);
 }
+
+/** طلب مدفوع أوقف نزاع أو استرداد جزئي وصوله. لا تَعِد بنتيجة: القرار للمالك بعد مراجعة الدفعة */
+export const ORDER_UNDER_REVIEW = {
+  heroTitle: "الطلب قيد المراجعة",
+  heroBody: "منتجات هذا الطلب متوقفة مؤقتًا حتى ننتهي من المراجعة.",
+  noticeTitle: "هذا الطلب قيد المراجعة",
+  noticeBody: "وصلنا إشعار من جهة الدفع بخصوص هذه الدفعة، فأوقفنا الوصول إلى منتجات هذا الطلب مؤقتًا حتى نراجعها. لا حاجة إلى شرائها من جديد، وسنعيد الوصول أو نوضح لك النتيجة بعد المراجعة.",
+} as const;

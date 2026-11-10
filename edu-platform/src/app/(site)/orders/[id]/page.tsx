@@ -15,7 +15,7 @@ import { openOrderHolds } from "@/server/payments/holds";
 import { canSayNothingWasCharged, hasUnresolvedAttempt, type ExtraPaymentKind } from "@/server/payments/extras";
 import { cancelOrderAction, retryPaymentAction, refreshOrderStatusAction } from "../../checkout/actions";
 import { ContactLinks, PaymentUnavailableNotice, realContactLinks } from "@/components/site/payment-unavailable-notice";
-import { ORDER_PAYMENT_FALLBACK } from "@/lib/site-truth";
+import { ORDER_PAYMENT_FALLBACK, ORDER_UNDER_REVIEW } from "@/lib/site-truth";
 import { Alert } from "@/components/ui/alert";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -142,8 +142,8 @@ export default async function OrderPage({ params, searchParams }: { params: Prom
             <div className="min-w-0 flex-1">
               {order.status === "paid" ? (
                 <>
-                  <h1 className="font-display text-[clamp(1.9rem,1.3rem+2.4vw,3rem)] leading-tight font-black">تم الدفع بنجاح</h1>
-                  <p className="mt-2 text-[1.08rem] leading-8 text-white/90">مشترياتك جاهزة الآن في مكتبتك.</p>
+                  <h1 className="font-display text-[clamp(1.9rem,1.3rem+2.4vw,3rem)] leading-tight font-black">{holds.length ? ORDER_UNDER_REVIEW.heroTitle : "تم الدفع بنجاح"}</h1>
+                  <p className="mt-2 text-[1.08rem] leading-8 text-white/90">{holds.length ? ORDER_UNDER_REVIEW.heroBody : "مشترياتك جاهزة الآن في مكتبتك."}</p>
                   <div className="mt-6 flex flex-wrap justify-center gap-3 sm:justify-start">
                     <Button asChild size="xl" variant="accent">
                       <Link href="/library" data-testid="go-library">
@@ -260,8 +260,8 @@ export default async function OrderPage({ params, searchParams }: { params: Prom
         ) : null}
 
         {holds.length ? (
-          <Alert tone="warning" className="mt-6 no-print" title="هذا الطلب قيد المراجعة" data-testid="order-on-hold">
-            وصلنا إشعار من جهة الدفع بخصوص هذه الدفعة، فأوقفنا الوصول إلى منتجات هذا الطلب مؤقتًا حتى نراجعها. لا حاجة إلى شرائها من جديد، وسنعيد الوصول أو نوضح لك النتيجة بعد المراجعة.
+          <Alert tone="warning" className="mt-6 no-print" title={ORDER_UNDER_REVIEW.noticeTitle} data-testid="order-on-hold">
+            {ORDER_UNDER_REVIEW.noticeBody}
           </Alert>
         ) : null}
 
@@ -450,7 +450,7 @@ export default async function OrderPage({ params, searchParams }: { params: Prom
             </div>
           </section>
 
-          {order.status === "paid" ? (
+          {order.status === "paid" && !holds.length ? (
             <aside className="panel h-fit p-6 no-print" aria-labelledby="next-title">
               <h2 id="next-title" className="font-display text-[1.35rem] font-black">
                 ماذا بعد؟
