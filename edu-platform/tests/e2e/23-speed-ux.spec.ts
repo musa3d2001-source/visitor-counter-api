@@ -392,6 +392,8 @@ test.describe("the subject tabs (K078)", () => {
     desktopOnly(info.project.name);
     const html = await (await request.get("/")).text();
     expect(html.match(/data-testid="subject-panel"/g)).toHaveLength(1);
+    const gradesWithSubjectLinks = new Set([...html.matchAll(/href="\/grades\/([^/"]+)\/[^/"?]+"/g)].map((m) => m[1]));
+    expect(gradesWithSubjectLinks.size, "روابط مواد صف واحد فقط في HTML").toBe(1);
     await page.goto("/");
     const tabs = page.getByRole("tab");
     await expect(tabs).toHaveCount(4);
