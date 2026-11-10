@@ -3,12 +3,14 @@ import { sql, type Db } from "../db";
 import { audit } from "../platform/audit";
 import { readSettings } from "../platform/settings";
 import { looksLikeBankDetails, REFUND_HOLD_DAYS } from "@/lib/teacher-terms";
+import { isContainerType, type ProductType } from "@/lib/labels";
 
 /**
  * السجل المحاسبي لأرباح المعلمين (اختياري لكل معلم — يفعّله المالك بتحديد نسبة):
  *   قيمة البند − حصته من الخصم − حصته من الرسوم المعتمدة = الصافي المؤهل
  *   حصة المعلم = floor(الصافي × النسبة) ، حصة المنصة = الباقي
  * يُسجَّل لحظة تأكيد الدفع داخل نفس المعاملة (لا يتكرر — order_item_id وorder_item_part_id فريدان)،
+ * بنسبة المعلم والرسوم كما كانت وقت إنشاء الطلب (K011): saleTermsFor تلتقطها، وتغييرها بعد ذلك لا يغيّر ما يستحقه عن هذه المبيعة.
  * ويُعكس عند الاسترداد. التسوية يدوية عبر teacher_payouts مع سجل تدقيق.
  * بند الباقة يتوزع أولًا على محتوياتها بسعر القائمة (order_item_parts)، ثم يوزَّع الخصم والرسوم على الأجزاء كأنها بنود.
  */
@@ -140,25 +142,7 @@ type OrderLine = {
   grossFils: number;
 };
 
-/** يحوّل بنود الطلب إلى أسطر محاسبية: بند مباشر أو أجزاء باقة. الأجزاء تُكتب مرة واحدة ولا يعاد حسابها */
-async function orderLines(db: Db, orderId: string): Promise<OrderLine[]> {
-  const items = await db<
-    { id: string; product_id: string | null; title: string; unit_price_fils: number; teacher_id: string | null; teacher_name: string | null; share_bps: number | null }[]
-  >`
-    select oi.id, oi.product_id, oi.title, oi.unit_price_fils, oi.teacher_id, oi.teacher_name, t.revenue_share_bps as share_bps
-    from order_items oi left join teachers t on t.id = oi.teacher_id
-    where oi.order_id = ${orderId}
-    order by oi.created_at, oi.id
-  `;
-  const saved = await db<
-    { id: string; order_item_id: string; product_id: string | null; title: string; teacher_id: string | null; teacher_name: string | null; share_bps: number | null; gross_fils: number }[]
-  >`
-    select p.id, p.order_item_id, p.product_id, p.title, p.teacher_id, p.teacher_name, t.revenue_share_bps as share_bps, p.gross_fils
-    from order_item_parts p left join teachers t on t.id = p.teacher_id
-    where p.order_id = ${orderId}
-    order by p.created_at, p.id
-  `;
-  const roots = items.filter((i) => i.product_id && !saved.some((p) => p.order_item_id === i.id)).map((i) => i.product_id!);
+async function loadTree(db: Db, roots: string[]) {
   const edges = roots.length
     ? await db<{ parent: string; child: string; sort_order: number }[]>`
         with recursive c(parent, child, sort_order, depth) as (
@@ -185,6 +169,52 @@ async function orderLines(db: Db, orderId: string): Promise<OrderLine[]> {
     `;
     for (const r of rows) products.set(r.id, r);
   }
+  return { children, products };
+}
+
+export type SaleTerms = { teacherId: string | null; teacherName: string | null; shareBps: number | null; parts: ExpandedPart[] | null };
+
+/** شروط البيع وقت إنشاء الطلب: معلم كل بند ونسبته، وتوزيع الباقة على محتوياتها. قراءة فقط، خارج المعاملة التي تقفل الكوبون */
+export async function saleTermsFor(db: Db, lines: { id: string; type: string; priceFils: number }[]): Promise<Map<string, SaleTerms>> {
+  const owners = await db<{ id: string; teacher_id: string | null; teacher_name: string | null; share_bps: number | null }[]>`
+    select p.id, p.teacher_id, t.display_name as teacher_name, t.revenue_share_bps as share_bps
+    from products p left join teachers t on t.id = p.teacher_id
+    where p.id = any(${lines.map((l) => l.id)}::uuid[])
+  `;
+  const byId = new Map(owners.map((o) => [o.id, o]));
+  const { children, products } = await loadTree(db, lines.filter((l) => isContainerType(l.type as ProductType)).map((l) => l.id));
+  return new Map(
+    lines.map((line) => {
+      const o = byId.get(line.id);
+      const owner = o?.teacher_id ? { id: o.teacher_id, name: o.teacher_name, shareBps: o.share_bps } : null;
+      return [line.id, { teacherId: o?.teacher_id ?? null, teacherName: o?.teacher_name ?? null, shareBps: o?.teacher_id ? o.share_bps : null, parts: expandLine(line.id, line.priceFils, owner, children, products) }];
+    }),
+  );
+}
+
+/**
+ * يحوّل بنود الطلب إلى أسطر محاسبية: بند مباشر أو أجزاء باقة.
+ * طلب له لقطة (snapshot) يُقرأ كما كُتب ولا يعاد حساب شيء فيه. طلب أقدم من اللقطة يُحسب بما هو قائم الآن، كما كان يُسوّى.
+ */
+async function orderLines(db: Db, orderId: string, snapshot: boolean): Promise<OrderLine[]> {
+  const items = await db<
+    { id: string; product_id: string | null; title: string; unit_price_fils: number; teacher_id: string | null; teacher_name: string | null; share_bps: number | null }[]
+  >`
+    select oi.id, oi.product_id, oi.title, oi.unit_price_fils, oi.teacher_id, oi.teacher_name, case when ${snapshot} then oi.share_bps else t.revenue_share_bps end as share_bps
+    from order_items oi left join teachers t on t.id = oi.teacher_id
+    where oi.order_id = ${orderId}
+    order by oi.created_at, oi.id
+  `;
+  const saved = await db<
+    { id: string; order_item_id: string; product_id: string | null; title: string; teacher_id: string | null; teacher_name: string | null; share_bps: number | null; gross_fils: number }[]
+  >`
+    select p.id, p.order_item_id, p.product_id, p.title, p.teacher_id, p.teacher_name, case when ${snapshot} then p.share_bps else t.revenue_share_bps end as share_bps, p.gross_fils
+    from order_item_parts p left join teachers t on t.id = p.teacher_id
+    where p.order_id = ${orderId}
+    order by p.created_at, p.id
+  `;
+  const roots = snapshot ? [] : items.filter((i) => i.product_id && !saved.some((p) => p.order_item_id === i.id)).map((i) => i.product_id!);
+  const { children, products } = await loadTree(db, roots);
 
   const lines: OrderLine[] = [];
   for (const it of items) {
@@ -214,12 +244,13 @@ async function orderLines(db: Db, orderId: string): Promise<OrderLine[]> {
 }
 
 /** تسجيل أرباح طلب مدفوع (idempotent) — يُستدعى داخل معاملة تأكيد الدفع */
-export async function recordEarnings(db: Db, order: { id: string; total_fils: number; discount_fils: number; is_test: boolean }) {
-  const lines = await orderLines(db, order.id);
+export async function recordEarnings(db: Db, order: { id: string; total_fils: number; discount_fils: number; is_test: boolean; earnings_snapshot_at?: Date | null; fee_bps?: number | null; fee_fixed_fils?: number | null }) {
+  const snapshot = Boolean(order.earnings_snapshot_at);
+  const lines = await orderLines(db, order.id, snapshot);
   const eligible = lines.some((l) => l.teacherId && l.shareBps !== null);
   if (!eligible) return 0;
-  const settings = await readSettings(db);
-  const fee = computeOrderFee(order.total_fils, settings.fee_percent_bps, settings.fee_fixed_fils);
+  const terms = snapshot ? { fee_percent_bps: order.fee_bps ?? 0, fee_fixed_fils: order.fee_fixed_fils ?? 0 } : await readSettings(db);
+  const fee = computeOrderFee(order.total_fils, terms.fee_percent_bps, terms.fee_fixed_fils);
   const computed = computeEarningLines(
     lines.map((l, k) => ({ orderItemId: String(k), grossFils: l.grossFils, shareBps: l.teacherId ? l.shareBps : null })),
     order.discount_fils,
@@ -265,7 +296,7 @@ export async function teacherBalance(teacherId: string, opts: { includeTest?: bo
   const [e] = await db<{ earned: string; held: string; reversed: string; sales: number }[]>`
     select
       coalesce(sum(teacher_fils) filter (where status = 'active'), 0)::bigint as earned,
-      coalesce(sum(teacher_fils) filter (where status = 'active' and created_at > now() - make_interval(days => ${REFUND_HOLD_DAYS})), 0)::bigint as held,
+      coalesce(sum(teacher_fils) filter (where status = 'active' and (held_at is not null or created_at > now() - make_interval(days => ${REFUND_HOLD_DAYS}))), 0)::bigint as held,
       coalesce(sum(teacher_fils) filter (where status = 'reversed'), 0)::bigint as reversed,
       count(*) filter (where status = 'active')::int as sales
     from teacher_earnings where teacher_id = ${teacherId} and (${includeTest} or not is_test)
@@ -296,6 +327,8 @@ export type EarningRow = {
   is_test: boolean;
   created_at: Date;
   reversed_at: Date | null;
+  /** طلبه معلق بسبب نزاع أو استرداد جزئي حتى يقرر المالك. لا يُدفع مهما طال */
+  on_review: boolean;
   /** هل ما زال السطر داخل فترة الاسترداد، ومتى تنتهي */
   is_held: boolean;
   held_until: Date;
@@ -305,7 +338,8 @@ export async function listEarnings(teacherId: string, opts: { includeTest?: bool
   return db<EarningRow[]>`
     select te.id, te.order_id, o.number as order_number, te.product_title, root.title as bundle_title, te.teacher_name, te.gross_fils, te.discount_fils, te.fee_fils,
       te.net_fils, te.share_bps, te.teacher_fils, te.platform_fils, te.status, te.is_test, te.created_at, te.reversed_at,
-      (te.status = 'active' and te.created_at > now() - make_interval(days => ${REFUND_HOLD_DAYS})) as is_held,
+      (te.status = 'active' and te.held_at is not null) as on_review,
+      (te.status = 'active' and (te.held_at is not null or te.created_at > now() - make_interval(days => ${REFUND_HOLD_DAYS}))) as is_held,
       te.created_at + make_interval(days => ${REFUND_HOLD_DAYS}) as held_until
     from teacher_earnings te join orders o on o.id = te.order_id
       left join order_item_parts part on part.id = te.order_item_part_id

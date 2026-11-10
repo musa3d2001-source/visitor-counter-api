@@ -167,8 +167,8 @@ describe("توزيع الباقة على المعلمين", () => {
     expect(await rows(order.id)).toHaveLength(0);
   });
 
-  it("a teacher with no agreed share gets a part but no ledger row", async () => {
-    // نسبة أُلغيت بعد إنشاء الطلب وقبل الدفع
+  // تغيّر عمدًا (K011): النسبة تُلتقط عند إنشاء الطلب. المسار القديم يبقى لطلب فُتح قبل اللقطة وحده
+  it("a share cancelled after the order was created still pays what was agreed", async () => {
     const noShare = await createTeacher({ shareBps: 5000 });
     const a = await createVideoProduct({ teacherId: noShare.id, priceFils: 1000 });
     const b = await createVideoProduct({ teacherId: t1.id, priceFils: 1000 });
@@ -176,6 +176,18 @@ describe("توزيع الباقة على المعلمين", () => {
     const order = await createOrder({ user: await createUser(), productIds: [bundle.id], isTest: false });
     await sql`update teachers set revenue_share_bps = null where id = ${noShare.id}`;
     await pay(order);
+    expect((await rows(order.id)).map((e) => e.teacher_id).sort()).toEqual([noShare.id, t1.id].sort());
+  });
+
+  it("on an order from before the snapshot, a teacher with no agreed share gets a part but no ledger row", async () => {
+    const noShare = await createTeacher({ shareBps: 5000 });
+    const a = await createVideoProduct({ teacherId: noShare.id, priceFils: 1000 });
+    const b = await createVideoProduct({ teacherId: t1.id, priceFils: 1000 });
+    const bundle = await createBundle({ items: [a.id, b.id], priceFils: 1000 });
+    const order = await createOrder({ user: await createUser(), productIds: [bundle.id], isTest: false });
+    await sql`update orders set earnings_snapshot_at = null where id = ${order.id}`;
+    await sql`update teachers set revenue_share_bps = null where id = ${noShare.id}`;
+    await pay({ ...order, earnings_snapshot_at: null });
     expect((await parts(order.id)).find((x) => x.product_id === a.id)).toMatchObject({ teacher_id: noShare.id, gross_fils: 500 });
     const e = await rows(order.id);
     expect(e).toHaveLength(1);

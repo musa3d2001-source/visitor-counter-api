@@ -121,10 +121,9 @@ export async function defectiveProductIds(ids: string[], db: Db, settings: Pick<
  * والمنتجات التي انتهى تاريخ إتاحتها، والمنتجات المضمنة في باقة موجودة في نفس السلة (منع الدفع المكرر).
  */
 export async function computeCart(ids: string[], userId: string | null): Promise<CartView> {
-  const blocked = await unsellableProductIds(ids);
+  const [blocked, published, owned] = await Promise.all([unsellableProductIds(ids), getPublishedProductsByIds(ids), userId ? accessibleProductIds(userId) : Promise.resolve(new Set<string>())]);
   // الممنوع من البيع يأخذ مسار انتهاء البيع نفسه في السلة والدفع
-  const products = (await getPublishedProductsByIds(ids)).map((p) => (blocked.has(p.id) ? { ...p, saleEnded: true } : p));
-  const owned = userId ? await accessibleProductIds(userId) : new Set<string>();
+  const products = published.map((p) => (blocked.has(p.id) ? { ...p, saleEnded: true } : p));
   // باقة انتهى بيعها لا تُحتسب، فلا تغطي ما بداخلها
   const coverage = await containerCoverage(products.filter((p) => isContainerType(p.type) && !p.saleEnded).map((p) => p.id));
   const notices: string[] = [];

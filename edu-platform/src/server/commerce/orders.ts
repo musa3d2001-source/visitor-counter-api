@@ -4,7 +4,8 @@ import { computeCart } from "./cart";
 import { evaluateCoupon } from "./coupons";
 import { grantProduct, revokeProduct } from "../access/entitlements";
 import { audit } from "../platform/audit";
-import { recordEarnings, reverseEarnings } from "./earnings";
+import { recordEarnings, reverseEarnings, saleTermsFor } from "./earnings";
+import { readSettings } from "../platform/settings";
 import { sendOrderConfirmationEmail } from "./order-mail";
 import { INVOICE_TTL_MINUTES, ORDER_LIFETIME_HOURS } from "../payments/limits";
 import type { SessionUser } from "../auth/session";
@@ -33,6 +34,10 @@ export type OrderRow = {
   updated_at: Date;
   closed_at: Date | null;
   closed_reason: OrderClosedReason | null;
+  /** شروط البيع وقت الإنشاء. فارغ في طلب أقدم من هذه اللقطة: تُحسب أرباحه بما هو قائم وقت التأكيد */
+  earnings_snapshot_at: Date | null;
+  fee_bps: number | null;
+  fee_fixed_fils: number | null;
 };
 
 export type OrderClosedReason = "expired" | "student_cancelled" | "already_owned" | "coupon_unavailable" | "product_ended";
@@ -105,6 +110,8 @@ export async function createOrder(input: {
   if (cart.payableLines.length === 0) {
     throw new OrderError(cart.lines.some((l) => l.saleEnded) ? "انتهى بيع ما تبقى في سلتك، فلم ننشئ طلبًا." : cart.lines.length ? "كل المنتجات في سلتك موجودة في مكتبتك مسبقًا." : "سلتك فارغة.");
   }
+  // قراءات لا تعتمد على شيء داخل المعاملة: خارجها وقبل أي قفل
+  const [terms, settings] = await Promise.all([saleTermsFor(sql, cart.payableLines), readSettings()]);
   return sql.begin(async (tx) => {
     if (input.consent || input.refuseOverlappingOpenOrders) {
       // قفل صف الطالب يجعل تبويبين يضغطان الشراء معًا يصطفان، فيرى الثاني طلب الأول. FOR NO KEY UPDATE لا يتعارض مع مفاتيح الجداول المرتبطة
@@ -116,6 +123,13 @@ export async function createOrder(input: {
       const [open] = await findOpenOrdersCovering(tx, { userId: input.user.id, productIds: cart.payableLines.map((l) => l.id), isTest: input.isTest });
       if (open) throw new OpenOrderExistsError(open.id);
     }
+    // منتج موقوف لمراجعة دفعة سابقة يختفي من مكتبته، فلا يُترك يدفع ثمنه مرة ثانية قبل أن يُحسم الأمر
+    const [underReview] = await tx`
+      select 1 from order_holds h join orders o on o.id = h.order_id join order_items oi on oi.order_id = o.id
+      where h.released_at is null and o.user_id = ${input.user.id} and o.status = 'paid' and oi.product_id = any(${cart.payableLines.map((l) => l.id)}::uuid[])
+      limit 1
+    `;
+    if (underReview) throw new OrderError("هذا المنتج موقوف مؤقتًا لمراجعة دفعة سابقة، فلا حاجة إلى شرائه من جديد. تواصل معنا إن طال الأمر.");
     let discountFils = 0;
     let couponId: string | null = null;
     let couponCode: string | null = null;
@@ -140,25 +154,31 @@ export async function createOrder(input: {
     }
     const [order] = await tx<OrderRow[]>`
       insert into orders (user_id, subtotal_fils, discount_fils, total_fils, coupon_id, coupon_code, is_test,
-                          customer_name, customer_email, customer_phone)
+                          customer_name, customer_email, customer_phone, fee_bps, fee_fixed_fils, earnings_snapshot_at)
       values (${input.user.id}, ${cart.subtotalFils}, ${discountFils}, ${total}, ${couponId}, ${couponCode}, ${input.isTest},
-              ${input.user.fullName}, ${input.user.email}, ${input.user.phone})
+              ${input.user.fullName}, ${input.user.email}, ${input.user.phone}, ${settings.fee_percent_bps}, ${settings.fee_fixed_fils}, now())
       returning *
     `;
-    // لقطة هوية المعلم وقت الشراء — لا تتغير بتعديل ملفه لاحقًا
-    const teachers = await tx<{ id: string; teacher_id: string | null; teacher_name: string | null }[]>`
-      select p.id, p.teacher_id, t.display_name as teacher_name
-      from products p left join teachers t on t.id = p.teacher_id
-      where p.id = any(${cart.payableLines.map((l) => l.id)}::uuid[])
-    `;
-    const byId = new Map(teachers.map((t) => [t.id, t]));
-    for (const line of cart.payableLines) {
-      const t = byId.get(line.id);
-      await tx`
-        insert into order_items (order_id, product_id, title, product_type, unit_price_fils, teacher_id, teacher_name)
-        values (${order.id}, ${line.id}, ${line.title}, ${line.type}, ${line.priceFils}, ${t?.teacher_id ?? null}, ${t?.teacher_name ?? null})
-      `;
-    }
+    // لقطة هوية المعلم ونسبته وتوزيع الباقة وقت الشراء — لا تتغير بتعديل ملفه لاحقًا
+    const itemRows = cart.payableLines.map((line) => {
+      const t = terms.get(line.id);
+      return { order_id: order.id, product_id: line.id, title: line.title, product_type: line.type, unit_price_fils: line.priceFils, teacher_id: t?.teacherId ?? null, teacher_name: t?.teacherName ?? null, share_bps: t?.shareBps ?? null };
+    });
+    const items = await tx<{ id: string; product_id: string }[]>`insert into order_items ${tx(itemRows)} returning id, product_id`;
+    const partRows = items.flatMap((item) =>
+      (terms.get(item.product_id)?.parts ?? []).map((p) => ({
+        order_id: order.id,
+        order_item_id: item.id,
+        product_id: p.productId,
+        title: p.title,
+        teacher_id: p.owner?.id ?? null,
+        teacher_name: p.owner?.name ?? null,
+        list_price_fils: p.listPriceFils,
+        gross_fils: p.grossFils,
+        share_bps: p.owner?.shareBps ?? null,
+      })),
+    );
+    if (partRows.length) await tx`insert into order_item_parts ${tx(partRows)}`;
     if (input.consent) {
       for (const kind of missingDocuments) await recordConsent(tx, { userId: input.user.id, kind, orderId: order.id, meta: input.consent.meta });
       if (total > 0) await recordConsent(tx, { userId: input.user.id, kind: "guardian_purchase", orderId: order.id, meta: input.consent.meta });
