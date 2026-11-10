@@ -10,6 +10,7 @@ import {
   hasProductAccess,
   revokeProduct,
 } from "@/server/access/entitlements";
+import { checkLessonAccess } from "@/server/access/lessons";
 import { createOrder, markOrderPaid } from "@/server/commerce/orders";
 import { applyAcceptedRefund } from "../helpers/payment-flow";
 import { closeDb, resetDb, sql } from "../helpers/db";
@@ -155,6 +156,13 @@ describe("checkFileAccess (server-side authorization, IDOR)", () => {
     expect(await checkFileAccess(p.mainFileId!, null)).toEqual({ ok: false, reason: "unauthenticated" });
     expect((await checkFileAccess(p.mainFileId!, admin)).ok).toBe(true);
     // انتحال الدور من العميل غير ممكن لأن الدور يُقرأ من الجلسة — هنا نتحقق أن الدالة تعتمد على role الممرَّر من الخادم فقط
+  });
+
+  it("an id that only looks like a uuid is not found, without reaching the database as an error", async () => {
+    for (const id of ["-".repeat(36), "0".repeat(36), `${"a".repeat(8)}-${"b".repeat(27)}`]) {
+      await expect(checkFileAccess(id, null)).resolves.toEqual({ ok: false, reason: "not_found" });
+      await expect(checkLessonAccess(id, null)).resolves.toEqual({ ok: false, reason: "not_found" });
+    }
   });
 
   it("access via bundle works; revoked access is denied", async () => {

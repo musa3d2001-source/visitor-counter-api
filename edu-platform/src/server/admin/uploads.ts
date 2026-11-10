@@ -18,6 +18,7 @@ import { setTeacherPhoto } from "./teachers";
 import { proposeTeacherPhoto } from "./teacher-profile-review";
 import { isVideoType, PDF_PRODUCT_TYPES, type ProductType } from "@/lib/labels";
 import { maxPreviewPages, PREVIEW_POLICY } from "@/lib/preview-policy";
+import { isUuid } from "@/lib/uuid";
 
 /**
  * رفع الملفات على خطوتين (يعمل على Vercel لأن الملف لا يمر عبر الدوال):
@@ -255,7 +256,7 @@ export async function completeUpload(input: z.infer<typeof completeSchema>, acto
   const productId = input.productId ?? null;
 
   // فيديو Bunny: الملف عند Bunny — نحدّث الحالة ونستعلم عن المعالجة
-  if (input.target === "lesson" && /^[0-9a-f-]{36}$/i.test(input.key) && !input.key.includes("/")) {
+  if (input.target === "lesson" && isUuid(input.key) && !input.key.includes("/")) {
     const rows = await sql<{ id: string; title: string }[]>`
       update lessons set processing_status = 'processing', processing_error = null
       where provider = 'bunny' and video_ref = ${input.key} and product_id = ${productId} and processing_status = 'uploading'

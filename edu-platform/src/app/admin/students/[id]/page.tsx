@@ -47,6 +47,7 @@ import { BandChip, ProfileHero } from "../../_components/people/band";
 import { StudentsArt } from "../../_components/people/art";
 import { Kwd, PersonAvatar, SoftNote, Timeline, TimelineItem, TypeIcon } from "../../_components/people/bits";
 import { formatTime, gradeLevelFromName, orderTone } from "../../_components/people/helpers";
+import { isUuid } from "@/lib/uuid";
 
 export const metadata = { title: "ملف الطالب" };
 
@@ -62,7 +63,7 @@ const ACCESS_STYLE: Record<string, { tone: AdminTone; icon: React.ReactNode }> =
 export default async function StudentPage({ params }: { params: Promise<{ id: string }> }) {
   await requireOwnerPage();
   const { id } = await params;
-  if (!/^[0-9a-f-]{36}$/i.test(id)) notFound();
+  if (!isUuid(id)) notFound();
   const [data, products] = await Promise.all([getStudent(id), grantableProducts()]);
   if (!data) notFound();
   const { user, orders, entitlements, access, auditTrail, consents } = data;

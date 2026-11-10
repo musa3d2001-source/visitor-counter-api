@@ -6,6 +6,7 @@ import { storage } from "../storage";
 import { BunnyError, getVideo, mapBunnyStatus, verifyBunnyWebhookSignature } from "./bunny";
 import { mp4DurationSeconds } from "./mp4";
 import { reportError } from "../platform/report-error";
+import { isUuid } from "@/lib/uuid";
 
 /** المزود المستخدم للرفع الجديد */
 export function activeVideoProvider(): "file" | "bunny" {
@@ -82,7 +83,7 @@ export async function handleBunnyWebhook(rawBody: string, headers: Headers): Pro
   } catch {
     return { status: 400, result: "invalid json" };
   }
-  if (!body.VideoGuid || !/^[0-9a-f-]{36}$/i.test(body.VideoGuid)) return { status: 400, result: "missing video" };
+  if (!body.VideoGuid || !isUuid(body.VideoGuid)) return { status: 400, result: "missing video" };
   if (String(body.VideoLibraryId ?? "") !== String(env().BUNNY_STREAM_LIBRARY_ID ?? "")) return { status: 400, result: "wrong library" };
   const key = createHash("sha256").update(rawBody).digest("hex");
   const inserted = await sql`

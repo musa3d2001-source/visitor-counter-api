@@ -81,6 +81,7 @@ import {
   updateProductAction,
   withdrawReviewAction,
 } from "../actions";
+import { isUuid } from "@/lib/uuid";
 
 export const metadata = { title: "تعديل المحتوى" };
 
@@ -123,7 +124,7 @@ export default async function EditProductPage({
   const owner = actor.kind === "owner";
   const { id } = await params;
   const sp = await searchParams;
-  if (!/^[0-9a-f-]{36}$/i.test(id)) notFound();
+  if (!isUuid(id)) notFound();
   const product = await getAdminProduct(id, actor);
   if (!product) notFound();
 

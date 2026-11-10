@@ -25,6 +25,7 @@ import { PillTabs, type PillTab } from "../_components/catalog/pill-tabs";
 import { AdminThumb } from "../_components/catalog/thumb";
 import { Pager } from "../_components/catalog/pager";
 import { setStatusAction, updateSortAction } from "./actions";
+import { isUuid } from "@/lib/uuid";
 
 export const metadata = { title: "المذكرات والمنتجات" };
 
@@ -62,7 +63,7 @@ export default async function AdminProductsPage({ searchParams }: { searchParams
   const actor = await requireStaff();
   const owner = actor.kind === "owner";
   const sp = await searchParams;
-  const uuid = (v?: string) => (v && /^[0-9a-f-]{36}$/i.test(v) ? v : undefined);
+  const uuid = (v?: string) => (isUuid(v) ? v : undefined);
   const filters = {
     q: sp.q?.slice(0, 80),
     gradeId: uuid(sp.grade),

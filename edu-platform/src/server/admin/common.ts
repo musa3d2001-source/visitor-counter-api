@@ -95,8 +95,4 @@ export function int(fd: FormData, key: string, fallback = 0): number {
   return Number.isFinite(n) ? Math.trunc(n) : fallback;
 }
 
-export const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
-
-export function isUuid(v: string | null | undefined): v is string {
-  return Boolean(v && UUID_RE.test(v));
-}
+export { isUuid, UUID_RE } from "@/lib/uuid";

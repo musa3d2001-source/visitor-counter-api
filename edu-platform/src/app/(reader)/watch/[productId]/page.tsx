@@ -19,6 +19,7 @@ import { ar, count, duration, shortName, toneClass, W } from "@/lib/design";
 import { cn } from "@/lib/utils";
 import { LessonRows } from "./_components/lesson-rows";
 import { LockedStage, StageFrame, StageNotice } from "./_components/stage-parts";
+import { isUuid } from "@/lib/uuid";
 
 export const metadata: Metadata = { title: "مشاهدة الدرس", robots: { index: false, follow: false } };
 
@@ -27,7 +28,7 @@ type Search = { lesson?: string };
 export default async function WatchPage({ params, searchParams }: { params: Promise<{ productId: string }>; searchParams: Promise<Search> }) {
   const { productId } = await params;
   const sp = await searchParams;
-  if (!/^[0-9a-f-]{36}$/i.test(productId)) notFound();
+  if (!isUuid(productId)) notFound();
   const [product] = await sql<{ id: string; slug: string; title: string; status: string }[]>`
     select id, slug, title, status from products where id = ${productId}
   `;

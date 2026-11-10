@@ -5,6 +5,7 @@ import { storage } from "@/server/storage";
 import { logAccess } from "@/server/platform/audit";
 import { ipFromHeaders } from "@/server/http";
 import { hitDeniedStreamLimit, hitStreamLimit } from "@/server/video/stream-limit";
+import { isUuid } from "@/lib/uuid";
 
 /**
  * بث فيديو الدرس (المزود file):
@@ -27,7 +28,7 @@ export async function GET(req: NextRequest, ctx: { params: Promise<{ lessonId: s
     if (!denied.allowed) return tooManyRequests(denied.retryAfterSeconds);
     const status = { unauthenticated: 401, forbidden: 403, not_ready: 409, not_found: 404 }[access.reason];
     if (access.reason === "forbidden") {
-      await logAccess({ userId: user?.id ?? null, lessonId: /^[0-9a-f-]{36}$/i.test(lessonId) ? lessonId : null, action: "denied", ip, userAgent: req.headers.get("user-agent") });
+      await logAccess({ userId: user?.id ?? null, lessonId: isUuid(lessonId) ? lessonId : null, action: "denied", ip, userAgent: req.headers.get("user-agent") });
     }
     return new NextResponse(null, { status, headers: { "cache-control": "private, no-store", "x-robots-tag": "noindex" } });
   }

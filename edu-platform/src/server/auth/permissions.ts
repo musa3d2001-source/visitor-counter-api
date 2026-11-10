@@ -4,6 +4,7 @@ import { notFound } from "next/navigation";
 import { sql } from "../db";
 import { getCurrentUser, type SessionUser } from "./session";
 import { requireUser } from "./guards";
+import { isUuid } from "@/lib/uuid";
 
 /**
  * صلاحيات فريق المحتوى (لوحة واحدة بصلاحيات حسب الدور):
@@ -85,7 +86,7 @@ export type ScopedProduct = { id: string; teacher_id: string | null; status: str
  *  - upload : edit + صلاحية الرفع مفعّلة
  */
 export async function assertProductAccess(actor: Actor, productId: string, need: ProductAccessNeed): Promise<ScopedProduct> {
-  if (!/^[0-9a-f-]{36}$/i.test(productId)) throw new PermissionError("المنتج غير موجود");
+  if (!isUuid(productId)) throw new PermissionError("المنتج غير موجود");
   const [p] = await sql<ScopedProduct[]>`select id, teacher_id, status, type, title from products where id = ${productId}`;
   if (!p) throw new PermissionError("المنتج غير موجود");
   if (actor.kind === "owner") return p;

@@ -52,6 +52,7 @@ import { BandChip, ProfileHero } from "../../_components/people/band";
 import { OrdersArt } from "../../_components/people/art";
 import { Kwd, PersonAvatar, SoftNote, Timeline, TimelineItem, TypeIcon } from "../../_components/people/bits";
 import { orderTone } from "../../_components/people/helpers";
+import { isUuid } from "@/lib/uuid";
 
 export const metadata = { title: "تفاصيل الطلب" };
 
@@ -64,7 +65,7 @@ type Step = { key: string; at: Date; tone: AdminTone; icon: React.ReactNode; tit
 export default async function AdminOrderPage({ params }: { params: Promise<{ id: string }> }) {
   const owner = await requireOwnerPage();
   const { id } = await params;
-  if (!/^[0-9a-f-]{36}$/i.test(id)) notFound();
+  if (!isUuid(id)) notFound();
   const data = await getAdminOrder(id);
   if (!data) notFound();
   const { order, items, payments, events } = data;

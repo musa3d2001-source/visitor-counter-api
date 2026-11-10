@@ -3,6 +3,7 @@ import { sql, type Db } from "../db";
 import { servablePreviewSql } from "./preview-rule";
 import { audit } from "../platform/audit";
 import { isContainerType, isVideoType } from "@/lib/labels";
+import { isUuid } from "@/lib/uuid";
 
 /**
  * صلاحيات الوصول:
@@ -316,7 +317,7 @@ export type FileAccess =
  * - الملف الأصلي: للمدير، أو للطالب الذي يملك المنتج
  */
 export async function checkFileAccess(fileId: string, user: { id: string; role: string } | null): Promise<FileAccess> {
-  if (!/^[0-9a-f-]{36}$/i.test(fileId)) return { ok: false, reason: "not_found" };
+  if (!isUuid(fileId)) return { ok: false, reason: "not_found" };
   const [row] = await sql<
     {
       id: string;

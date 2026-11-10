@@ -4,6 +4,7 @@ import { hasProductAccess, isTeacherOfProduct } from "./entitlements";
 import { signedEmbedUrl } from "../video/bunny";
 import { closedVideoProductIds } from "../video/policy";
 import { getSettings } from "../platform/settings";
+import { isUuid } from "@/lib/uuid";
 
 export type LessonRow = {
   id: string;
@@ -32,7 +33,7 @@ export type LessonAccess =
  * الدرس غير الجاهز (قيد المعالجة) لا يُعرض للطلاب. إغلاق الفيديو لا يمس حق من اشترى.
  */
 export async function checkLessonAccess(lessonId: string, user: { id: string; role: string } | null): Promise<LessonAccess> {
-  if (!/^[0-9a-f-]{36}$/i.test(lessonId)) return { ok: false, reason: "not_found" };
+  if (!isUuid(lessonId)) return { ok: false, reason: "not_found" };
   const [l] = await sql<LessonRow[]>`
     select l.id, l.product_id, l.title, l.provider, l.video_ref, l.mime_type, l.size_bytes, l.duration_seconds,
       l.is_free_preview, l.is_published, l.processing_status, p.status as product_status

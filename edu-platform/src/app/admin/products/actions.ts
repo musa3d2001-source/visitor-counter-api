@@ -459,7 +459,7 @@ export async function addBunnyLessonAction(_prev: ActionState, fd: FormData): Pr
     const parsed = lessonSchema.safeParse({ title: str(fd, "title"), unitTitle: str(fd, "unitTitle"), description: str(fd, "description") });
     if (!parsed.success) throw new AdminError(parsed.error.issues[0]?.message ?? "راجع بيانات الدرس", fieldErrors(parsed.error));
     const videoId = str(fd, "videoRef").toLowerCase();
-    if (!/^[0-9a-f-]{36}$/i.test(videoId)) throw new AdminError("معرّف فيديو Bunny غير صحيح، انسخ Video ID (بصيغة GUID) من لوحة Bunny Stream", { videoRef: "معرّف غير صحيح" });
+    if (!isUuid(videoId)) throw new AdminError("معرّف فيديو Bunny غير صحيح، انسخ Video ID (بصيغة GUID) من لوحة Bunny Stream", { videoRef: "معرّف غير صحيح" });
     const p = await assertProductAccess(actor, productId, "view");
     if (!isVideoType(p.type)) throw new AdminError("الدروس متاحة لمنتجات الفيديو فقط");
     const order = await nextLessonOrder(productId);

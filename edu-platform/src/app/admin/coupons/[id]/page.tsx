@@ -10,6 +10,7 @@ import { formatDate } from "@/lib/utils";
 import { CatalogBand } from "../../_components/catalog/band";
 import { CouponTicket } from "../../_components/catalog/coupon-ticket";
 import { saveCouponAction } from "../actions";
+import { isUuid } from "@/lib/uuid";
 
 export const metadata = { title: "تعديل كوبون" };
 
@@ -28,7 +29,7 @@ function usedLabel(n: number) {
 export default async function EditCouponPage({ params }: { params: Promise<{ id: string }> }) {
   await requireOwnerPage();
   const { id } = await params;
-  if (!/^[0-9a-f-]{36}$/i.test(id)) notFound();
+  if (!isUuid(id)) notFound();
   const c = await getCoupon(id);
   if (!c) notFound();
   return (

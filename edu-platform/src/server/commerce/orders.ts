@@ -11,6 +11,7 @@ import type { SessionUser } from "../auth/session";
 import { EmailVerificationRequiredError, emailVerificationRequired } from "../auth/email-verification";
 import { ConsentRequiredError, missingAccountConsents, recordConsent, type ConsentMeta } from "../platform/consent";
 import type { ConsentField } from "@/lib/consent";
+import { isUuid } from "@/lib/uuid";
 
 export type OrderRow = {
   id: string;
@@ -186,7 +187,7 @@ export async function unpublishedProductsInOrder(db: Db, orderId: string): Promi
 
 /** جلب طلب يخص المستخدم فقط (منع IDOR) */
 export async function getUserOrder(orderId: string, userId: string) {
-  if (!/^[0-9a-f-]{36}$/i.test(orderId)) return null;
+  if (!isUuid(orderId)) return null;
   const [order] = await sql<OrderRow[]>`select * from orders where id = ${orderId} and user_id = ${userId}`;
   if (!order) return null;
   const items = await getOrderItems(order.id);

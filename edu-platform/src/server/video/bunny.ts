@@ -1,6 +1,7 @@
 import "server-only";
 import { createHash, createHmac, timingSafeEqual } from "node:crypto";
 import { env } from "../env";
+import { isUuid } from "@/lib/uuid";
 
 /**
  * عميل Bunny Stream — مبني على الوثائق الرسمية:
@@ -81,12 +82,12 @@ export async function createVideo(title: string): Promise<BunnyVideo> {
 }
 
 export async function getVideo(videoId: string): Promise<BunnyVideo> {
-  if (!/^[0-9a-f-]{36}$/i.test(videoId)) throw new BunnyError("معرف فيديو غير صالح");
+  if (!isUuid(videoId)) throw new BunnyError("معرف فيديو غير صالح");
   return call<BunnyVideo>("GET", `/videos/${videoId}`);
 }
 
 export async function deleteVideo(videoId: string): Promise<void> {
-  if (!/^[0-9a-f-]{36}$/i.test(videoId)) return;
+  if (!isUuid(videoId)) return;
   await call("DELETE", `/videos/${videoId}`);
 }
 

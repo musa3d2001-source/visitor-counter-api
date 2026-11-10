@@ -12,6 +12,7 @@ import { AdminError } from "./common";
 import { enforceOwnerLimits, generateTemporaryPassword } from "./student-accounts";
 import { randomSuffix } from "@/lib/utils";
 import { isExtremeShare, REFUND_HOLD_DAYS } from "@/lib/teacher-terms";
+import { isUuid } from "@/lib/uuid";
 
 /**
  * إدارة المعلمين (للمالك فقط — الاستدعاءات تأتي من إجراءات adminAction):
@@ -60,7 +61,7 @@ export async function listTeachersAdmin(q?: string): Promise<TeacherListRow[]> {
 }
 
 export async function getTeacherAdmin(id: string): Promise<TeacherRow | null> {
-  if (!/^[0-9a-f-]{36}$/i.test(id)) return null;
+  if (!isUuid(id)) return null;
   const [t] = await sql<TeacherRow[]>`
     select t.*, u.email as account_email, u.is_active as account_active, u.last_login_at as account_last_login
     from teachers t left join users u on u.id = t.user_id where t.id = ${id}

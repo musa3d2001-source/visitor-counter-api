@@ -17,6 +17,7 @@ import { CONTAINER_PRODUCT_TYPES, PDF_PRODUCT_TYPES, VIDEO_PRODUCT_TYPES, isCont
 import { randomSuffix } from "@/lib/utils";
 import { previewIssue } from "@/lib/preview-policy";
 import { isExtremeShare } from "@/lib/teacher-terms";
+import { isUuid } from "@/lib/uuid";
 
 /**
  * إدارة المنتجات للمالك والمعلم (لوحة واحدة):
@@ -139,7 +140,7 @@ export type AdminProduct = {
 
 /** جلب منتج مع التحقق من نطاق الفاعل (المعلم لا يرى منتجات غيره) */
 export async function getAdminProduct(id: string, actor?: Actor): Promise<AdminProduct | null> {
-  if (!/^[0-9a-f-]{36}$/i.test(id)) return null;
+  if (!isUuid(id)) return null;
   const [p] = await sql<AdminProduct[]>`
     select p.*, g.name as grade_name, g.level as grade_level, s.name as subject_name, t.display_name as teacher_name,
       ru.full_name as reviewed_by_name

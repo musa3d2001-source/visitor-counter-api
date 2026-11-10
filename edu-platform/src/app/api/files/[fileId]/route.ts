@@ -8,6 +8,7 @@ import { logAccess } from "@/server/platform/audit";
 import { reportError } from "@/server/platform/report-error";
 import { hitRateLimit } from "@/server/auth/rate-limit";
 import { ipFromHeaders } from "@/server/http";
+import { isUuid } from "@/lib/uuid";
 
 /**
  * تسليم ملفات PDF المحمية:
@@ -59,7 +60,7 @@ export async function GET(req: NextRequest, ctx: { params: Promise<{ fileId: str
   const access = await checkFileAccess(fileId, user);
   if (!access.ok) {
     if (access.reason === "forbidden") {
-      await logAccess({ userId: user?.id ?? null, fileId: /^[0-9a-f-]{36}$/i.test(fileId) ? fileId : null, action: "denied", ip, userAgent: ua });
+      await logAccess({ userId: user?.id ?? null, fileId: isUuid(fileId) ? fileId : null, action: "denied", ip, userAgent: ua });
       return refuse(req, 403, "لا تملك صلاحية الوصول لهذا الملف");
     }
     if (access.reason === "unauthenticated") return refuse(req, 401, "يجب تسجيل الدخول");
