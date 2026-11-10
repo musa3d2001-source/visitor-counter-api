@@ -83,13 +83,15 @@ export function PdfReader({ src, title, backHref, backLabel, initialPage = 1, wa
         }
         if (cancelled) return;
         const pdfjs = await import("pdfjs-dist");
-        pdfjs.GlobalWorkerOptions.workerSrc = "/pdfjs/pdf.worker.min.mjs";
+        // الإصدار جزء من المسار: الملفات تُخزَّن سنة كاملة، والعامل يبقى مطابقًا للمكتبة بعد أي ترقية
+        const assets = `/pdfjs/${pdfjs.version}`;
+        pdfjs.GlobalWorkerOptions.workerSrc = `${assets}/pdf.worker.min.mjs`;
         const task = pdfjs.getDocument({
           data: bytes,
-          cMapUrl: "/pdfjs/cmaps/",
+          cMapUrl: `${assets}/cmaps/`,
           cMapPacked: true,
-          standardFontDataUrl: "/pdfjs/standard_fonts/",
-          wasmUrl: "/pdfjs/wasm/",
+          standardFontDataUrl: `${assets}/standard_fonts/`,
+          wasmUrl: `${assets}/wasm/`,
         });
         loadingTask = task;
         const loadedDoc = await task.promise;
