@@ -40,10 +40,10 @@ MAX_STRETCH = 0.06
 
 # ----------------------------------------------------------------------------- mix levels (linear gains)
 G = dict(
-    voice=1.35, voice_stack=1.05,
-    hero808=0.50, hook808=0.46, land808=0.40, hero_kick=0.38, hero_clap=0.95, hook_clap=0.62,
-    kick=0.40, kick_full=0.36, soft_kick=0.30, clap=0.55, dum=0.50, tak=0.66, shaker=0.20,
-    bass=0.20, pad=0.13, ep=0.17, pluck=0.10,
+    voice=1.65, voice_stack=1.30,
+    hero808=0.40, hook808=0.38, land808=0.32, hero_kick=0.30, hero_clap=0.85, hook_clap=0.55,
+    kick=0.28, kick_full=0.26, soft_kick=0.26, clap=0.80, dum=0.36, tak=0.95, shaker=0.30,
+    bass=0.15, pad=0.18, ep=0.30, pluck=0.20,
     tick=0.42, tick_talk=0.30, swarm=0.22, fall_tick=0.46, land_tick=0.46, tap=0.40,
     crack=0.85, splash=0.42, crunch=0.55, clink=0.55, crackle=0.62, breath=0.40, sizzle=0.42, thump=0.55,
     pop=0.42, burst=0.55, shock=0.55, whoosh=0.40, riser=0.30, inflate=0.30, zip=0.22, notepop=0.45, swell=0.55,
@@ -95,17 +95,17 @@ def room_tone(d):
 def bass808(f, d, glide=None, gain=1.0, drive=3.2):
     """Groove 808 (v3): the sub (-8 dB) plus a band-passed saturated copy (250-1500 Hz) so the note reads on phones."""
     x = mono(sub808(f, d, glide_from=glide, drive=drive))
-    mid = bp(sat(x * 4.0, 3.0), 250, 1500) * 0.45
-    return (x * 0.4 + mid) * gain
+    mid = bp(sat(x * 4.0, 3.0), 250, 1500) * 0.7
+    return (x * 0.28 + mid) * gain
 
 
 def hit808(f=A1, d=1.3, gain=1.0):
     """Hero 808: 55 Hz with its 110 / 165 / 220 Hz harmonics written in, saturated, plus a phone-band copy and a click."""
     t = tt(d)
     ph = np.cumsum(f * (1 + 0.6 * np.exp(-t / 0.03))) / SR
-    x = sum(a * np.sin(2 * np.pi * k * ph) for k, a in ((1, 1.0), (2, 0.62), (3, 0.45), (4, 0.32)))
-    body = sat(x * env_exp(d, 0.40, 0.0015) * 1.3, 2.4)
-    mid = bp(sat(body * 2.5, 3.0), 250, 1600) * 0.34
+    x = sum(a * np.sin(2 * np.pi * k * ph) for k, a in ((1, 1.0), (2, 0.9), (3, 0.75), (4, 0.6)))
+    body = sat(x * env_exp(d, 0.30, 0.0015) * 1.1, 2.4)
+    mid = bp(sat(body * 2.5, 3.0), 250, 1600) * 0.6
     click = bp(noise(0.01), 1800, 6000) * env_exp(0.01, 0.0018) * 0.5
     y = lp(body, 3000) * 0.60 + mid
     y[:len(click)] += click
@@ -114,8 +114,8 @@ def hit808(f=A1, d=1.3, gain=1.0):
 
 def gkick(punch=0.9):
     """Groove kick with a 180-900 Hz knock so it reads on a phone."""
-    k = kick(f0=150, f1=50, d=0.36, punch=punch, click=0.45)
-    knock = bp(noise(0.05), 180, 900) * env_exp(0.05, 0.012) * 0.45
+    k = kick(f0=150, f1=52, d=0.26, punch=punch, click=0.6)
+    knock = bp(noise(0.05), 180, 900) * env_exp(0.05, 0.012) * 0.7
     k[:len(knock)] += knock
     return k
 
@@ -706,7 +706,7 @@ def groove(V, put, note, hero_frames):
             if st in SHAKER and s % SHAKER[st][0] == 0:
                 put(shaker(0.09), f, 'music', None, (0.22 if s % 4 == 0 else 0.13) / 0.22 * G['shaker'] * SHAKER[st][1], 0.3, dt=sw)
         # bass line
-        line = [(0, root, 0.85, None), (7, root * 2, 0.22, None), (10, fifth, 0.45, None), (14, root, 0.4, root * 2 ** (-2 / 12))]
+        line = [(0, root, 0.5, None), (7, root * 2, 0.2, None), (10, fifth, 0.35, None), (14, root, 0.3, root * 2 ** (-2 / 12))]
         for s, f0, d, gl in line:
             f = b0 + s * 3.75
             if s >= nb * 4 or f < 0 or f >= F:
@@ -761,10 +761,13 @@ def process(V, m):
         x = drain_filter(x)
         x = x + reverb(hp(x, 250), decay=0.9, mix=1.0, tone=5000)[:len(x)] * 0.10     # the room, high-passed
         x = x * mus_auto[:, None] * sc[:, None]
-        return peak_eq(low_mono(x, 150, -2.5), 2500, 2.0, 0.8)
+        x = low_mono(x, 150, -2.5)
+        x = x - lp(x, 120) * (1 - db(-4.0))                                       # low shelf -4 dB (phones)
+        return peak_eq(peak_eq(x, 2500, 3.0, 0.8), 1000, 2.0, 0.9)
 
     m.process_bus('music', music_fx)
-    m.process_bus('sfx', lambda x: low_mono(x * sfx_auto[:, None] * sc[:, None], 150, 0.0))
+    sc_fx = sc ** (8.0 / 6.0)                                                  # sound beds: -8 dB under a voice
+    m.process_bus('sfx', lambda x: low_mono(x * sfx_auto[:, None] * sc_fx[:, None], 150, 0.0))
     m.process_bus('hit', lambda x: low_mono(x * sfx_auto[:, None], 150, 0.0))
     return sc
 
