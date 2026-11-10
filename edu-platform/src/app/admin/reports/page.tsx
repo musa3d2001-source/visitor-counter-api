@@ -13,11 +13,15 @@ import { Table, TD, TH, THead, TR } from "@/components/ui/table";
 import { ar, count, gradeVars, initial } from "@/lib/design";
 import { PRODUCT_TYPE_LABELS, type ProductType } from "@/lib/labels";
 import { formatDateTime } from "@/lib/utils";
+import { LONG_JOB_STATEMENT_MS, withDbDeadline } from "@/server/db";
 import { PageBand } from "../_components/overview/bands";
 import { ExportCsvButton } from "./_components/export-button";
 import { Kwd, OP, SALE } from "../_components/overview/money";
 
 export const metadata = { title: "التقارير" };
+
+/** مهلة أوامر التقارير ٦٠ ثانية، فالدالة نفسها يجب ألا تقطعها قبل ذلك */
+export const maxDuration = 60;
 
 type SP = {
   from?: string;
@@ -181,7 +185,11 @@ export default async function ReportsPage({ searchParams }: { searchParams: Prom
   }
 
   const range = parseRange(sp);
-  const [summary, byDay, byProduct, byGrade, byTeacher] = await Promise.all([reportSummary(range), reportByDay(range), reportByProduct(range), reportByGrade(range), reportByTeacher(range)]);
+  // مدى سنة كاملة يتجاوز مهلة الطلب العادية بوضوح عند كبر عدد الطلبات، فله مهلة التصدير نفسها، وعلى دفعتين حتى لا يملأ الحوض وحده
+  const [[summary, byDay], [byProduct, byGrade, byTeacher]] = await withDbDeadline(LONG_JOB_STATEMENT_MS, async () => [
+    await Promise.all([reportSummary(range), reportByDay(range)]),
+    await Promise.all([reportByProduct(range), reportByGrade(range), reportByTeacher(range)]),
+  ] as const);
   const exportQs = new URLSearchParams({
     from: range.fromDay,
     to: range.toDay,

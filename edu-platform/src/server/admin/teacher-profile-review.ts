@@ -1,4 +1,5 @@
 import "server-only";
+import { cache } from "react";
 import { sql, type Db } from "../db";
 import { storage } from "../storage";
 import { audit } from "../platform/audit";
@@ -151,7 +152,8 @@ export async function listPendingProfileChanges(db: Db = sql) {
   `;
 }
 
-export async function pendingProfileChangesCount(db: Db = sql): Promise<number> {
-  const [{ n }] = await db<{ n: number }[]>`select count(*)::int as n from teacher_profile_changes where status = 'pending'`;
+/** مرة واحدة لكل طلب: يقرؤه تخطيط اللوحة وصفحتها الرئيسية معًا */
+export const pendingProfileChangesCount = cache(async (): Promise<number> => {
+  const [{ n }] = await sql<{ n: number }[]>`select count(*)::int as n from teacher_profile_changes where status = 'pending'`;
   return n;
-}
+});

@@ -1,5 +1,6 @@
 import "server-only";
 import { randomUUID } from "node:crypto";
+import { cache } from "react";
 import { sql, type Db } from "../db";
 import { storage } from "../storage";
 import { doomFileCopies, sweepDoomedCopies } from "../access/delivery";
@@ -677,10 +678,11 @@ export async function reviewQueue() {
   `;
 }
 
-export async function pendingReviewCount(): Promise<number> {
+/** مرة واحدة لكل طلب: يقرؤه تخطيط اللوحة وصفحتها الرئيسية معًا */
+export const pendingReviewCount = cache(async (): Promise<number> => {
   const [{ n }] = await sql<{ n: number }[]>`select count(*)::int as n from products where status = 'in_review'`;
   return n;
-}
+});
 
 /** حذف نهائي فقط إن لم يرتبط المنتج بطلبات أو صلاحيات؛ وإلا أرشفة */
 export async function deleteOrArchiveProduct(id: string, actor: Actor, ip?: string): Promise<"deleted" | "archived"> {

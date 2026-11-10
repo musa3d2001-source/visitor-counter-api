@@ -66,25 +66,12 @@ export default async function AdminDashboard({ searchParams }: { searchParams: P
   const sp = await searchParams;
   const days = [7, 30, 90].includes(Number(sp.days)) ? Number(sp.days) : 30;
   const includeTest = sp.test === "1";
-  const [contentHealth, totals, latest, top, series, pending, teachersTop, paymentAlerts, extraPayments, refundsWaiting, mail, twoFactor, platform, pendingProfiles, ops, dataRequests] = await Promise.all([
-    contentHealthCounts(),
-    dashboardTotals(includeTest),
-    latestOrders(8, includeTest),
-    topProducts(6, includeTest),
-    salesByDay(days, includeTest),
-    pendingReviewCount(),
-    topTeachers(days, includeTest),
-    openPaymentAlertCount(),
-    extraPaymentsNeedingOwnerCount(),
-    refundsNeedingOwnerCount(),
-    mailHealth(),
-    getTwoFactorStatus(actor.userId),
-    getSettings(),
-    pendingProfileChangesCount(),
-    // صفحة المراقبة لا يصح أن توقف الصفحة الرئيسية
-    opsSummary().catch(() => null),
-    openDataRequestCount(),
-  ]);
+  // مجموعات متتالية بثلاثة أو أربعة أوامر: الحوض خمسة اتصالات، فلا تحجزه صفحة واحدة كله عن طلبات الطلاب والدفع
+  const [contentHealth, pending, pendingProfiles, platform] = await Promise.all([contentHealthCounts(), pendingReviewCount(), pendingProfileChangesCount(), getSettings()]);
+  const [totals, latest, top, series] = await Promise.all([dashboardTotals(includeTest), latestOrders(8, includeTest), topProducts(6, includeTest), salesByDay(days, includeTest)]);
+  const [teachersTop, paymentAlerts, extraPayments, refundsWaiting] = await Promise.all([topTeachers(days, includeTest), openPaymentAlertCount(), extraPaymentsNeedingOwnerCount(), refundsNeedingOwnerCount()]);
+  // صفحة المراقبة لا يصح أن توقف الصفحة الرئيسية
+  const [mail, twoFactor, ops, dataRequests] = await Promise.all([mailHealth(), getTwoFactorStatus(actor.userId), opsSummary().catch(() => null), openDataRequestCount()]);
   const reviewWaiting = pending + pendingProfiles;
   const qs = (patch: Record<string, string | undefined>) => {
     const p = new URLSearchParams({ ...(sp.days ? { days: sp.days } : {}), ...(includeTest ? { test: "1" } : {}) });
