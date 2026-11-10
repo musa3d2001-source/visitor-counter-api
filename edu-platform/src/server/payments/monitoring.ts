@@ -5,14 +5,16 @@ import { audit } from "../platform/audit";
 import { alertAfterResponse } from "../platform/ops-alerts";
 import { reportError } from "../platform/report-error";
 import type { WebhookV2Body } from "./myfatoorah";
+import { kwdNumberToFils } from "@/lib/money";
 import { ipFromHeaders } from "../http";
 import { admitRejectionWrite } from "./webhook-gate";
+import { placeOrderHold } from "./holds";
 
 /**
  * مراقبة Webhook البوابة وتنبيهات الدفع للمالك:
  *  - الإشعارات المرفوضة تُسجَّل في حلقة ثابتة الحجم (٢٠٠ صف) ولا يُخزن جسم الطلب غير الموثق أبدًا
  *  - webhookDeliveryStatus تجيب عن السؤال الأهم: هل تصلنا إشعارات صحيحة من البوابة فعلًا؟
- *  - النزاعات (الحدث 6) تُنشئ تنبيهًا مرئيًا للمالك دون أي تغيير تلقائي على الطلب أو الصلاحيات
+ *  - النزاعات (الحدث 6) تُنشئ تنبيهًا للمالك وتعلّق وصول الطلب وأرباحه حتى يقرر (holds.ts)
  */
 
 export const WEBHOOK_REJECTION_REASONS = [
@@ -167,10 +169,11 @@ export async function raiseRefundAlert(db: Db, input: { orderId: string | null; 
 
 /**
  * تنبيه نزاع على دفعة (الحدث 6 بعد التحقق من توقيعه).
- * نخزن تفاصيل النزاع فقط، دون بيانات العميل أو البطاقة، ولا نلمس الطلب أو الصلاحيات أو الأرباح.
+ * نخزن تفاصيل النزاع فقط، دون بيانات العميل أو البطاقة. طلب مدفوع يُعلَّق وصوله وأرباحه، والقرار للمالك.
+ * الوثائق تذكر الحالات PENDING و RESOLVED و LOST دون تعريف، فلا نعيد وصولًا وحدنا مهما كانت الحالة.
  * إعادة إرسال الحدث نفسه تحدّث التنبيه، وتغيّر حالة النزاع يعيد فتح تنبيه أُغلق.
  */
-export async function raiseDisputeAlert(body: WebhookV2Body, eventKey: string): Promise<string> {
+export async function raiseDisputeAlert(body: WebhookV2Body, eventKey: string, environment: string): Promise<string> {
   const data = body.Data as { Dispute?: Record<string, unknown>; Invoice?: Record<string, unknown>; Transaction?: Record<string, unknown>; Amount?: Record<string, unknown> };
   const details: DisputeDetails = {
     disputeTransactionId: clip(data.Dispute?.DisputeTransactionId, 64),
@@ -183,13 +186,15 @@ export async function raiseDisputeAlert(body: WebhookV2Body, eventKey: string): 
     currency: clip(data.Amount?.BaseCurrency, 8),
   };
   const [payment] = details.invoiceId
-    ? await sql<{ id: string; order_id: string }[]>`select id, order_id from payments where provider = 'myfatoorah' and gateway_invoice_id = ${details.invoiceId} limit 1`
+    ? await sql<{ id: string; order_id: string }[]>`select id, order_id from payments where provider = 'myfatoorah' and environment = ${environment} and gateway_invoice_id = ${details.invoiceId}`
     : [];
   const dedupeKey = `dispute:${details.disputeTransactionId ?? eventKey}`;
-  const [row] = await sql<{ existed: boolean; previous_status: string | null }[]>`
+  const row = await sql.begin(async (db) => {
+    if (payment) await db`select id from orders where id = ${payment.order_id} for update`;
+    const [alert] = await db<{ existed: boolean; previous_status: string | null }[]>`
     with prev as (select details->>'status' as status from payment_alerts where dedupe_key = ${dedupeKey})
     insert into payment_alerts (kind, dedupe_key, order_id, payment_id, details)
-    values ('dispute', ${dedupeKey}, ${payment?.order_id ?? null}, ${payment?.id ?? null}, ${sql.json(details as never)})
+    values ('dispute', ${dedupeKey}, ${payment?.order_id ?? null}, ${payment?.id ?? null}, ${db.json(details as never)})
     on conflict (dedupe_key) do update set
       details = excluded.details,
       order_id = coalesce(payment_alerts.order_id, excluded.order_id),
@@ -198,7 +203,13 @@ export async function raiseDisputeAlert(body: WebhookV2Body, eventKey: string): 
       resolved_at = case when payment_alerts.details->>'status' is distinct from excluded.details->>'status' then null else payment_alerts.resolved_at end,
       resolved_by = case when payment_alerts.details->>'status' is distinct from excluded.details->>'status' then null else payment_alerts.resolved_by end
     returning exists (select 1 from prev) as existed, (select status from prev) as previous_status
-  `;
+    `;
+    if (payment) {
+      const amount = details.amount === null ? NaN : Number(details.amount);
+      await placeOrderHold(db, { orderId: payment.order_id, paymentId: payment.id, kind: "dispute", sourceKey: dedupeKey, status: details.status, amountFils: Number.isFinite(amount) && amount >= 0 && amount < 1_000_000 ? kwdNumberToFils(amount) : null });
+    }
+    return alert;
+  });
   // إعادة إرسال الحدث نفسه لا تصنع رسالة ثانية
   if (!row.existed || row.previous_status !== details.status) await alertAfterResponse("payment_dispute");
   return `dispute ${details.status ?? "UNKNOWN"}`;

@@ -256,9 +256,10 @@ describe("dispute events (code 6)", () => {
     return JSON.stringify({ order, payments, entitlements, earnings, refunds });
   }
 
-  it("verifies, is stored, raises an owner alert, and changes nothing about access or money", async () => {
+  // تغيّر عمدًا (K003): النزاع يوقف وصول الطلب وأرباحه حتى يقرر المالك. الطلب والدفعة لا يتغيران، ولا يُعكس شيء
+  it("verifies, is stored, raises an owner alert, and holds access and earnings without touching the order or payment", async () => {
     const { order, user, product, invoiceId, paymentId } = await paidOrderWithDispute();
-    const before = await snapshot(order.id, user.id);
+    const before = JSON.parse(await snapshot(order.id, user.id));
     const { body, headers } = sim.buildDisputeWebhook(invoiceId, paymentId, { DisputeTransactionId: 112, Status: "PENDING" });
     expect(headers.has("MyFatoorah-Webhook-Version")).toBe(false);
     expect(await handleMyFatoorahWebhook(body, headers)).toEqual({ status: 200, result: "dispute PENDING" });
@@ -273,8 +274,13 @@ describe("dispute events (code 6)", () => {
     expect(JSON.stringify(alert)).not.toContain(user.email);
     expect(await openPaymentAlertCount()).toBe(1);
 
-    expect(await snapshot(order.id, user.id)).toBe(before);
-    expect(await activeEntitlements(user.id)).toEqual([product.id]);
+    const after = JSON.parse(await snapshot(order.id, user.id));
+    expect(after.order).toEqual(before.order);
+    expect(after.payments).toEqual(before.payments);
+    expect(after.earnings).toEqual(before.earnings);
+    expect(after.refunds).toEqual(before.refunds);
+    expect(product.id).toBeTruthy();
+    expect(await activeEntitlements(user.id)).toEqual([]);
   });
 
   it("a forged dispute is rejected: no alert and no stored event", async () => {

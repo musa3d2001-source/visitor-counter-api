@@ -5,7 +5,8 @@ import type { ActionState } from "@/lib/action-state";
 import { sql } from "@/server/db";
 import { ExtraPaymentRefundError, checkOrderInvoices, recheckExtraPayment, recheckOrderRefund, refundExtraPayment, requestOrderRefund } from "@/server/payments/service";
 import { dismissExtraPayment } from "@/server/payments/extras";
-import { RefundError, dismissRefund, type RefundOutcome } from "@/server/payments/refunds";
+import { RefundError, dismissRefund, recordMoneyReturned, type RefundOutcome } from "@/server/payments/refunds";
+import { releaseOrderHold } from "@/server/payments/holds";
 import { assertRefundStepUp } from "@/server/auth/step-up";
 import { resolvePaymentAlert } from "@/server/payments/monitoring";
 import { audit } from "@/server/platform/audit";
@@ -54,6 +55,40 @@ export async function refundOrderAction(_p: ActionState, fd: FormData): Promise<
     const out = await refundCommand(() => requestOrderRefund({ orderId, adminId, reason, ip }));
     revalidateRefund(orderId);
     return refundActionResult(out);
+  });
+}
+
+function holdInput(fd: FormData) {
+  const holdId = str(fd, "holdId");
+  const orderId = str(fd, "orderId");
+  const reason = str(fd, "reason");
+  if (!isUuid(holdId) || !isUuid(orderId)) throw new AdminError("طلب غير صالح");
+  if (reason.length < 3) throw new AdminError("اكتب سبب القرار (٣ أحرف على الأقل)");
+  return { holdId, orderId, reason };
+}
+
+/** المال لم يخرج أو قرر المالك إبقاء الوصول: يعود بالضبط ما أوقفه التعليق */
+export async function releaseOrderHoldAction(_p: ActionState, fd: FormData): Promise<ActionState> {
+  return adminAction(async ({ adminId, ip }) => {
+    const { holdId, orderId, reason } = holdInput(fd);
+    await assertRefundStepUp({ adminId, fd, ip });
+    const out = await releaseOrderHold({ holdId, adminId, reason, ip });
+    revalidateRefund(orderId);
+    if (out === "released") return { ok: true, message: "عاد وصول الطالب وأرباح المعلم لهذا الطلب." };
+    return { error: "حُسم هذا الأمر من قبل. حدّث الصفحة." };
+  });
+}
+
+/** المال عاد كاملًا عبر البوابة: أثر الاسترداد الكامل، دون أي طلب جديد إلى البوابة */
+export async function recordMoneyReturnedAction(_p: ActionState, fd: FormData): Promise<ActionState> {
+  return adminAction(async ({ adminId, ip }) => {
+    const { holdId, orderId, reason } = holdInput(fd);
+    await assertRefundStepUp({ adminId, fd, ip });
+    const out = await recordMoneyReturned({ holdId, adminId, reason, ip });
+    revalidateRefund(orderId);
+    if (out === "recorded") return { ok: true, message: "سُجل الطلب مستردًا، وعُكست الأرباح وأُغلق الوصول نهائيًا. لم نرسل شيئًا إلى البوابة." };
+    if (out === "conflict") return { error: "يوجد استرداد آخر جارٍ على هذا الطلب. أكمله أو أغلقه أولًا." };
+    return { error: "حُسم هذا الأمر من قبل. حدّث الصفحة." };
   });
 }
 

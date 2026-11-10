@@ -10,6 +10,8 @@ import { applyExtraRefundEvent } from "./extras";
 import { raiseRefundAlert, type RefundAlertReason } from "./monitoring";
 import { REFUND_STUCK_HOURS } from "./limits";
 import { REFUND_SENDING_STALE_MINUTES } from "./limits";
+import { closeHold, lockActiveHold, placeOrderHold } from "./holds";
+import { alertAfterResponse } from "../platform/ops-alerts";
 
 /**
  * استرداد الطلب أمر واحد من المالك (D1). البوابة أولًا، ثم الأثر المحلي في معاملة واحدة:
@@ -379,10 +381,9 @@ export async function applyRefundEvent(gateway: RefundGateway, environment: Envi
   if (ev.status !== "REFUNDED" && ev.status !== "CANCELED") return;
   const details = (reason: RefundAlertReason) => ({ refundId: ev.refundId, status: ev.status, invoiceId: ev.invoiceId, amountFils: ev.amountFils, reason });
   const [payment] = await sql<{ id: string; order_id: string; environment: string }[]>`
-    select p.id, p.order_id, p.environment from payments p where p.provider = 'myfatoorah' and p.gateway_invoice_id = ${ev.invoiceId}
+    select p.id, p.order_id, p.environment from payments p where p.provider = 'myfatoorah' and p.environment = ${environment} and p.gateway_invoice_id = ${ev.invoiceId}
   `;
   if (!payment) return raiseRefundAlert(sql, { orderId: null, paymentId: null, details: details("unknown_invoice") });
-  if (payment.environment !== environment) return raiseRefundAlert(sql, { orderId: payment.order_id, paymentId: payment.id, details: details("other_environment") });
 
   const extras = await sql<{ id: string; state: string; gateway_payment_id: string | null; gateway_refund_id: string | null }[]>`
     select id, state, gateway_payment_id, gateway_refund_id from payment_extras where payment_id = ${payment.id}
@@ -396,7 +397,7 @@ export async function applyRefundEvent(gateway: RefundGateway, environment: Envi
   }
   if (transactionExtra) {
     const extraId = transactionExtra.id;
-    await sql.begin((db) => applyExtraRefundEvent(db, { ...ev, extraId, amountMatchAllowed: true }));
+    await sql.begin((db) => applyExtraRefundEvent(db, { ...ev, environment, extraId, amountMatchAllowed: true }));
     return;
   }
 
@@ -410,7 +411,7 @@ export async function applyRefundEvent(gateway: RefundGateway, environment: Envi
       amountMatchAllowed = entry?.ExternalIdentifier === `extra:${wholeInvoice.id}` || (ev.status === "REFUNDED" && entry !== undefined && !entry.ExternalIdentifier);
     }
     await sql.begin(async (db) => {
-      const applied = await applyExtraRefundEvent(db, { ...ev, amountMatchAllowed });
+      const applied = await applyExtraRefundEvent(db, { ...ev, environment, amountMatchAllowed });
       if (applied === 0 && ev.status === "REFUNDED" && wholeInvoice.state !== "refunded") {
         await raiseRefundAlert(db, { orderId: payment.order_id, paymentId: payment.id, details: details("extra_mismatch") });
       }
@@ -456,6 +457,7 @@ export async function applyRefundEvent(gateway: RefundGateway, environment: Envi
     }
   }
 
+  let heldNow = false;
   const t = await sql.begin(async (db): Promise<Transition | null> => {
     const [order] = await db<OrderRow[]>`select * from orders where id = ${payment.order_id} for update`;
     const [row] = await find(db);
@@ -471,7 +473,11 @@ export async function applyRefundEvent(gateway: RefundGateway, environment: Envi
     const [paid] = await db<{ status: string; amount_fils: number }[]>`select status, amount_fils from payments where id = ${payment.id} for update`;
     if (order.status !== "paid" || paid.status !== "paid") return flag("order_not_paid");
     const confirmedFils = kwdNumberToFils(Number(confirmed.RefundAmount ?? confirmed.Amount));
-    if (ev.amountFils !== order.total_fils || ev.amountFils !== paid.amount_fils || confirmedFils !== order.total_fils) return flag("amount_mismatch");
+    if (ev.amountFils !== order.total_fils || ev.amountFils !== paid.amount_fils || confirmedFils !== order.total_fils) {
+      // استرداد جزئي من لوحة البوابة: مال خرج فعلًا، فيتوقف وصول الطلب وأرباحه حتى يقرر المالك. لا نفترض نسبة ولا نعكس شيئًا وحدنا
+      heldNow = await placeOrderHold(db, { orderId: order.id, paymentId: payment.id, kind: "partial_refund", sourceKey: `refund:${ev.refundId}`, status: ev.status, amountFils: confirmedFils });
+      return flag("amount_mismatch");
+    }
 
     const [other] = await db<{ id: string; status: RefundStatus }[]>`select id, status from refunds where order_id = ${order.id} and status <> 'dismissed' for update`;
     if (other && other.status !== "failed" && other.status !== "not_sent") return flag("conflicting_refund");
@@ -497,6 +503,42 @@ export async function applyRefundEvent(gateway: RefundGateway, environment: Envi
     return { state: "completed", mail: "refund_completed", orderId: order.id };
   });
   if (t) await deliver(t);
+  if (heldNow) await alertAfterResponse("payment_dispute");
+}
+
+export type MoneyReturnedOutcome = "recorded" | "gone" | "conflict";
+
+/**
+ * قرار المالك على طلب معلق: المال عاد كاملًا إلى المشتري خارج أمر الاسترداد (خسارة نزاع، أو استرداد من لوحة البوابة).
+ * أثره أثر الاسترداد الكامل تمامًا، بلا أي طلب إلى البوابة: لا يمكن أن يُعاد المال مرتين من هنا.
+ */
+export async function recordMoneyReturned(input: { holdId: string; adminId: string; reason: string; ip?: string }): Promise<MoneyReturnedOutcome> {
+  const reason = input.reason.slice(0, 500);
+  const result = await sql.begin(async (db): Promise<{ outcome: MoneyReturnedOutcome; transition?: Transition }> => {
+    const hold = await lockActiveHold(db, input.holdId);
+    if (!hold) return { outcome: "gone" };
+    const [order] = await db<OrderRow[]>`select * from orders where id = ${hold.order_id}`;
+    if (order.status !== "paid") return { outcome: "conflict" };
+    const [other] = await db<{ id: string; status: RefundStatus }[]>`select id, status from refunds where order_id = ${order.id} and status <> 'dismissed' for update`;
+    if (other && other.status !== "failed" && other.status !== "not_sent") return { outcome: "conflict" };
+    let refundId: string;
+    if (other) {
+      refundId = other.id;
+      await db`update refunds set status = 'completed', source = 'portal', reason = ${reason}, claimed_at = null, error = null, accepted_at = now(), completed_at = now() where id = ${other.id}`;
+    } else {
+      const [created] = await db<{ id: string }[]>`
+        insert into refunds (order_id, payment_id, amount_fils, reason, status, source, created_by, accepted_at, completed_at)
+        values (${order.id}, ${hold.payment_id}, ${order.total_fils}, ${reason}, 'completed', 'portal', ${input.adminId}, now(), now())
+        returning id
+      `;
+      refundId = created.id;
+    }
+    await applyRefundToOrder(db, { order, paymentId: hold.payment_id, refundId, amountFils: order.total_fils, reason, actorId: input.adminId, ip: input.ip ?? null });
+    await closeHold(db, hold, { adminId: input.adminId, resolution: "money_returned" });
+    return { outcome: "recorded", transition: { state: "completed", mail: "refund_completed", orderId: order.id } };
+  });
+  if (result.transition) await deliver(result.transition);
+  return result.outcome;
 }
 
 export type RefundQueueRow = {

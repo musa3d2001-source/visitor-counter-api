@@ -5,6 +5,7 @@ import { listAdminOrders } from "@/server/admin/records";
 import { openPaymentAlerts } from "@/server/payments/monitoring";
 import { openExtraPayments } from "@/server/payments/extras";
 import { openRefunds } from "@/server/payments/refunds";
+import { openOrderHolds } from "@/server/payments/holds";
 import { paymentsConfig } from "@/server/payments/service";
 import { refundStepUpActive } from "@/server/auth/step-up";
 import { ExtraPaymentsList } from "./_components/extra-payments";
@@ -18,7 +19,7 @@ import { STRETCHED_FOCUS } from "@/components/admin/tones";
 import { ToneIcon } from "@/components/admin/icon-tile";
 import { EmptyState } from "@/components/ui/empty-state";
 import { Select } from "@/components/ui/form";
-import { DISPUTE_STATUS_LABELS, DISPUTE_TYPE_LABELS, ORDER_STATUSES, ORDER_STATUS_LABELS, REFUND_ALERT_REASON_LABELS } from "@/lib/labels";
+import { DISPUTE_STATUS_LABELS, DISPUTE_TYPE_LABELS, HOLD_KIND_LABELS, ORDER_STATUSES, ORDER_STATUS_LABELS, REFUND_ALERT_REASON_LABELS } from "@/lib/labels";
 import { filsToKwdString } from "@/lib/money";
 import { count, W } from "@/lib/design";
 import { cn, formatDateTime } from "@/lib/utils";
@@ -35,7 +36,7 @@ export default async function AdminOrdersPage({ searchParams }: { searchParams: 
   const sp = await searchParams;
   const status = ORDER_STATUSES.includes(sp.status as never) ? sp.status : undefined;
   const test = sp.test === "real" || sp.test === "test" ? sp.test : undefined;
-  const [orders, alerts, extras, refunds, stepUp] = await Promise.all([listAdminOrders({ q: sp.q?.slice(0, 80), status, test }), openPaymentAlerts(), openExtraPayments(), openRefunds(), refundStepUpActive(owner.userId)]);
+  const [orders, alerts, extras, refunds, stepUp, holds] = await Promise.all([listAdminOrders({ q: sp.q?.slice(0, 80), status, test }), openPaymentAlerts(), openExtraPayments(), openRefunds(), refundStepUpActive(owner.userId), openOrderHolds()]);
   const filtered = Boolean(sp.q || status || test);
   const paid = orders.filter((o) => o.status === "paid").length;
   const pending = orders.filter((o) => o.status === "pending").length;
@@ -78,8 +79,31 @@ export default async function AdminOrdersPage({ searchParams }: { searchParams: 
         />
       </PeopleBand>
 
+      {holds.length ? (
+        <Section id="payment-holds" title="دفعات موقوفة تحتاج إلى قرارك" description="نزاع أو استرداد جزئي وصل من بوابة الدفع. أوقفنا وصول الطلب وأرباحه، ولن يتغير شيء آخر حتى تقرر." icon={<ShieldAlert />} tone="coral">
+          <ul className="flex flex-col gap-3" aria-label="الدفعات الموقوفة" data-testid="payment-holds">
+            {holds.map((h) => (
+              <li key={h.id} className="flex min-w-0 flex-wrap items-center justify-between gap-x-4 gap-y-3 rounded-[1.4rem] border border-[rgb(23_32_38/0.06)] bg-surface p-3.5 shadow-xs sm:p-4">
+                <div className="min-w-[min(100%,13rem)] flex-1">
+                  <p className="flex flex-wrap items-center gap-1.5 font-display font-extrabold text-ink">
+                    {HOLD_KIND_LABELS[h.kind]}
+                    {h.is_test ? <TestBadge /> : null}
+                  </p>
+                  <p className="text-[0.84rem] leading-6 text-muted">
+                    <span className="num font-bold">{h.order_number}</span> · <span className="whitespace-nowrap">منذ {formatDateTime(h.held_at)}</span>
+                  </p>
+                </div>
+                <Link href={`/admin/orders/${h.order_id}#hold-decision`} className="inline-flex min-h-11 items-center font-bold text-brand-700 hover:underline">
+                  افتح الطلب واتخذ القرار
+                </Link>
+              </li>
+            ))}
+          </ul>
+        </Section>
+      ) : null}
+
       {alerts.length ? (
-        <Section id="payment-alerts" title="تنبيهات الدفع" description="نزاعات واستردادات أبلغت عنها بوابة الدفع ولم تُطبق تلقائيًا. لا يتغير الطلب ولا وصول الطالب، والقرار لك." icon={<ShieldAlert />} tone="coral">
+        <Section id="payment-alerts" title="تنبيهات الدفع" description="نزاعات واستردادات أبلغت عنها بوابة الدفع ولم تُطبق تلقائيًا. النزاع على طلب مدفوع والاسترداد الجزئي يوقفان وصوله حتى تقرر، وما عداهما لا يغيّر شيئًا." icon={<ShieldAlert />} tone="coral">
           <ul className="flex flex-col gap-3" aria-label="تنبيهات الدفع المفتوحة" data-testid="payment-alerts">
             {alerts.map((a) => {
               const status = a.details.status ?? "";
@@ -138,7 +162,7 @@ export default async function AdminOrdersPage({ searchParams }: { searchParams: 
                     icon={<CircleCheck aria-hidden />}
                     variant="outline"
                     title="إغلاق هذا التنبيه؟"
-                    description={isDispute ? "يختفي التنبيه من القائمة ويُسجَّل الإغلاق في سجل التدقيق، ولا يتغير الطلب ولا وصول الطالب. يعود التنبيه إذا غيّرت البوابة حالة النزاع." : "يختفي التنبيه من القائمة ويُسجَّل الإغلاق في سجل التدقيق، ولا يتغير الطلب ولا وصول الطالب."}
+                    description={isDispute ? "يختفي التنبيه من القائمة ويُسجَّل الإغلاق في سجل التدقيق. هذا لا يعيد وصولًا موقوفًا، فالقرار في «دفعات موقوفة». يعود التنبيه إذا غيّرت البوابة حالة النزاع." : "يختفي التنبيه من القائمة ويُسجَّل الإغلاق في سجل التدقيق. هذا لا يعيد وصولًا موقوفًا، فالقرار في «دفعات موقوفة»."}
                     confirmLabel="إغلاق التنبيه"
                   />
                 </li>

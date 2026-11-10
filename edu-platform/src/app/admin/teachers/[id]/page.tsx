@@ -74,8 +74,9 @@ export const metadata = { title: "ملف المعلم" };
 
 const METHOD_LABELS: Record<string, string> = { bank_transfer: "تحويل بنكي", cash: "نقدًا", other: "أخرى" };
 
-function EarningStatus({ status, isHeld, heldUntil }: { status: string; isHeld: boolean; heldUntil: Date }) {
+function EarningStatus({ status, isHeld, onReview, heldUntil }: { status: string; isHeld: boolean; onReview: boolean; heldUntil: Date }) {
   if (status === "reversed") return <StatusPill tone="danger">معكوس (استرداد)</StatusPill>;
+  if (onReview) return <StatusPill tone="warning">موقوف لمراجعة دفعة</StatusPill>;
   if (isHeld) return <StatusPill tone="warning">قيد فترة الاسترداد حتى {formatDate(heldUntil)}</StatusPill>;
   return <StatusPill tone="success">مستحق</StatusPill>;
 }
@@ -445,7 +446,7 @@ export default async function TeacherAdminPage({ params, searchParams }: { param
                   <TD className="num">{filsToKwdString(e.platform_fils)}</TD>
                   <TD>
                     <div className="flex flex-wrap gap-1">
-                      <EarningStatus status={e.status} isHeld={e.is_held} heldUntil={e.held_until} />
+                      <EarningStatus status={e.status} isHeld={e.is_held} onReview={e.on_review} heldUntil={e.held_until} />
                       {e.is_test ? <StatusPill tone="info">تجريبي</StatusPill> : null}
                     </div>
                   </TD>
@@ -480,7 +481,7 @@ export default async function TeacherAdminPage({ params, searchParams }: { param
                 aside={
                   <>
                     <span className="flex flex-wrap gap-1">
-                      <EarningStatus status={e.status} isHeld={e.is_held} heldUntil={e.held_until} />
+                      <EarningStatus status={e.status} isHeld={e.is_held} onReview={e.on_review} heldUntil={e.held_until} />
                       {e.is_test ? <StatusPill tone="info">تجريبي</StatusPill> : null}
                     </span>
                     <span className="text-end">

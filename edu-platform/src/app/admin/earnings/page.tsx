@@ -142,6 +142,8 @@ export default async function TeacherEarningsPage({ searchParams }: { searchPara
                     <TD>
                       {e.status === "reversed" ? (
                         <StatusPill tone="danger">معكوس (استرداد)</StatusPill>
+                      ) : e.on_review ? (
+                        <StatusPill tone="warning">موقوف لمراجعة دفعة</StatusPill>
                       ) : e.is_held ? (
                         <StatusPill tone="warning">قيد فترة الاسترداد حتى {formatDate(e.held_until)}</StatusPill>
                       ) : (

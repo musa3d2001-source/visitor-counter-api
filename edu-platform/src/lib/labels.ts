@@ -297,3 +297,6 @@ export const SUBJECT_ICONS = [
   "landmark",
   "atom",
 ] as const;
+
+/** سبب تعليق طلب مدفوع كما يراه المالك */
+export const HOLD_KIND_LABELS: Record<"dispute" | "partial_refund", string> = { dispute: "نزاع على الدفعة", partial_refund: "استرداد جزئي من لوحة البوابة" };

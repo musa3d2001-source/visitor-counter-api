@@ -319,7 +319,7 @@ describe("each money event reaches the owner", () => {
     const list = await mails();
     expect(list).toHaveLength(1);
     expect(list[0].subject).toContain("نزاع");
-    expect(list[0].body).toContain("/admin/orders#payment-alerts");
+    expect(list[0].body).toContain("/admin/orders#payment-holds");
 
     await makeOld("payment_dispute");
     const again = sim.buildDisputeWebhook(invoice, paymentId, { DisputeTransactionId: 7001, Status: "PENDING" });

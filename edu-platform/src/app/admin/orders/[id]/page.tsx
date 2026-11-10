@@ -28,6 +28,7 @@ import { paymentsConfig } from "@/server/payments/service";
 import { openPaymentAlerts } from "@/server/payments/monitoring";
 import { orderExtraPayments } from "@/server/payments/extras";
 import { orderRefunds } from "@/server/payments/refunds";
+import { openOrderHolds } from "@/server/payments/holds";
 import { refundStepUpActive } from "@/server/auth/step-up";
 import { ExtraPaymentsList } from "../_components/extra-payments";
 import { RefundsList } from "../_components/refunds-list";
@@ -41,11 +42,11 @@ import type { AdminTone } from "@/components/admin/tones";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { filsToKwdString } from "@/lib/money";
-import { DISPUTE_STATUS_LABELS, DISPUTE_TYPE_LABELS, PRODUCT_TYPE_LABELS, PAYMENT_STATUS_LABELS, REFUND_ALERT_REASON_LABELS, REFUND_STATUS_LABELS, paymentMethodLabel, type ProductType } from "@/lib/labels";
+import { DISPUTE_STATUS_LABELS, DISPUTE_TYPE_LABELS, HOLD_KIND_LABELS, PRODUCT_TYPE_LABELS, PAYMENT_STATUS_LABELS, REFUND_ALERT_REASON_LABELS, REFUND_STATUS_LABELS, paymentMethodLabel, type ProductType } from "@/lib/labels";
 import { displayPhone } from "@/lib/phone";
 import { count, W } from "@/lib/design";
 import { formatDateTime } from "@/lib/utils";
-import { refundOrderAction, reverifyPaymentAction } from "../actions";
+import { recordMoneyReturnedAction, refundOrderAction, releaseOrderHoldAction, reverifyPaymentAction } from "../actions";
 import { StepUpOffNote } from "../_components/step-up-off-note";
 import { STEP_UP_CONFIRM_FIELD } from "@/lib/two-factor";
 import { BandChip, ProfileHero } from "../../_components/people/band";
@@ -69,7 +70,7 @@ export default async function AdminOrderPage({ params }: { params: Promise<{ id:
   const data = await getAdminOrder(id);
   if (!data) notFound();
   const { order, items, payments, events } = data;
-  const [alerts, extras, refunds, stepUp] = await Promise.all([openPaymentAlerts({ orderId: order.id }), orderExtraPayments(order.id), orderRefunds(order.id), refundStepUpActive(owner.userId)]);
+  const [alerts, extras, refunds, stepUp, holds] = await Promise.all([openPaymentAlerts({ orderId: order.id }), orderExtraPayments(order.id), orderRefunds(order.id), refundStepUpActive(owner.userId), openOrderHolds({ orderId: order.id })]);
   const cfg = paymentsConfig();
   const hasInvoice = payments.some((p) => p.provider === "myfatoorah" && p.gateway_invoice_id);
   const tone = orderTone(order.status);
@@ -142,14 +143,47 @@ export default async function AdminOrderPage({ params }: { params: Promise<{ id:
       {alerts.map((a) =>
         a.kind === "dispute" ? (
           <Alert key={a.id} tone="danger" title={`نزاع مفتوح على هذا الطلب: ${DISPUTE_TYPE_LABELS[a.details.type ?? ""] ?? "نزاع على دفعة"}`}>
-            الحالة لدى البوابة: {DISPUTE_STATUS_LABELS[a.details.status ?? ""] ?? a.details.status ?? "غير معروفة"}. لم يتغير الطلب ولا وصول الطالب تلقائيًا. <Link href="/admin/orders#payment-alerts">كل تنبيهات الدفع</Link>
+            الحالة لدى البوابة: {DISPUTE_STATUS_LABELS[a.details.status ?? ""] ?? a.details.status ?? "غير معروفة"}. {order.status === "paid" ? "الوصول والأرباح موقوفان حتى تقرر." : "الطلب غير مدفوع، فلا وصول يُوقف."} <Link href="/admin/orders#payment-alerts">كل تنبيهات الدفع</Link>
           </Alert>
         ) : (
           <Alert key={a.id} tone="danger" title="حدث استرداد من البوابة لم يُطبق تلقائيًا">
-            السبب: {REFUND_ALERT_REASON_LABELS[a.details.reason] ?? a.details.reason}. لم يتغير الطلب ولا وصول الطالب. راجعه في لوحة MyFatoorah. <Link href="/admin/orders#payment-alerts">كل تنبيهات الدفع</Link>
+            السبب: {REFUND_ALERT_REASON_LABELS[a.details.reason] ?? a.details.reason}. {a.details.reason === "amount_mismatch" && order.status === "paid" ? "الوصول والأرباح موقوفان حتى تقرر." : "لم يتغير الطلب ولا وصول الطالب."} راجعه في لوحة MyFatoorah. <Link href="/admin/orders#payment-alerts">كل تنبيهات الدفع</Link>
           </Alert>
         ),
       )}
+
+      {holds.map((h) => (
+        <Section key={h.id} id="hold-decision" title={`هذا الطلب موقوف: ${HOLD_KIND_LABELS[h.kind]}`} description="الوصول والأرباح لهذا الطلب متوقفان منذ وصول الإشعار. راجع العملية في لوحة MyFatoorah ثم اختر ما حدث فعلًا." icon={<ShieldAlert />} tone="coral">
+          <div data-testid="hold-decision" className="flex flex-wrap gap-2.5">
+            {stepUp ? null : <StepUpOffNote />}
+            <ConfirmButton
+              action={releaseOrderHoldAction}
+              hidden={{ holdId: h.id, orderId: order.id }}
+              label="المال لم يخرج: أعد الوصول"
+              icon={<CircleCheck aria-hidden />}
+              variant="outline"
+              title="إعادة الوصول والأرباح؟"
+              description="يعود وصول الطالب وأرباح المعلم لهذا الطلب كما كانا. اختر هذا فقط إن تأكدت أن المال بقي لديك، ولا يصل البوابة شيء."
+              requireReason
+              reasonLabel="ماذا وجدت؟ (إلزامي)"
+              confirmLabel="أعد الوصول"
+              fields={stepUp ? [STEP_UP_CONFIRM_FIELD] : undefined}
+            />
+            <ConfirmButton
+              action={recordMoneyReturnedAction}
+              hidden={{ holdId: h.id, orderId: order.id }}
+              label="المال عاد كاملًا: سجّل الاسترداد"
+              icon={<RotateCcw aria-hidden />}
+              title={`تسجيل استرداد ${filsToKwdString(order.total_fils)} د.ك؟`}
+              description="يصبح الطلب مستردًا: يُغلق الوصول نهائيًا وتُعكس أرباح المعلم ويصل الطالب إشعار. لا يُرسل أي طلب إلى البوابة، فلا يُعاد المال مرتين."
+              requireReason
+              reasonLabel="ماذا وجدت؟ (إلزامي)"
+              confirmLabel="سجّل الاسترداد"
+              fields={stepUp ? [STEP_UP_CONFIRM_FIELD] : undefined}
+            />
+          </div>
+        </Section>
+      ))}
 
       <div className="grid items-start gap-6 lg:grid-cols-[minmax(0,1.5fr)_minmax(0,1fr)]">
         <Section title="المنتجات" icon={<ShoppingBag />} tone="sky">

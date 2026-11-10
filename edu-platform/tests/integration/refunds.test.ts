@@ -699,13 +699,15 @@ describe("refund webhooks with an id we do not know (portal refunds)", () => {
     expect(await alertsOf(order.id)).toHaveLength(0);
   });
 
-  it("a partial refund is flagged and changes nothing", async () => {
+  // تغيّر عمدًا (K003): استرداد جزئي من لوحة البوابة يوقف الوصول والأرباح حتى يقرر المالك، والطلب نفسه لا يتغير
+  it("a partial refund is flagged and holds the order without reversing anything", async () => {
     const { order, user, product, invoice } = await paidOrder(3000);
-    const before = await moneySnapshot(order.id);
     const portal = sim.portalRefund(invoice, 1000);
-    await expect(portalEvent(invoice, portal.RefundId)).resolves.toMatchObject({ status: 200 });
-    expect(await moneySnapshot(order.id)).toBe(before);
     expect(await activeEntitlements(user.id)).toEqual([product.id]);
+    await expect(portalEvent(invoice, portal.RefundId)).resolves.toMatchObject({ status: 200 });
+    expect((await orderRow(order.id)).status).toBe("paid");
+    expect(await activeEntitlements(user.id)).toEqual([]);
+    expect(await sql`select kind, amount_fils from order_holds where order_id = ${order.id} and released_at is null`).toEqual([{ kind: "partial_refund", amount_fils: 1000 }]);
     expect((await alertsOf(order.id)).map((a) => [a.kind, a.details.reason])).toEqual([["refund_unmatched", "amount_mismatch"]]);
   });
 

@@ -25,9 +25,9 @@ export const OPS_ALERTS = {
   payment_dispute: {
     periodMinutes: 180,
     counts: true,
-    path: "/admin/orders#payment-alerts",
-    subject: "نزاع جديد على دفعة",
-    body: "وصل من بوابة الدفع إشعار نزاع على دفعة، أو تغيرت حالة نزاع قائم. لم يتغير أي طلب أو وصول تلقائيًا، والقرار لك.",
+    path: "/admin/orders#payment-holds",
+    subject: "نزاع أو استرداد جزئي يحتاج إلى قرارك",
+    body: "وصل من بوابة الدفع إشعار نزاع على دفعة، أو استرداد جزئي من لوحتها، أو تغيرت حالة نزاع قائم. أوقفنا وصول هذا الطلب وأرباحه حتى تقرر: افتح الطلب واختر إعادة الوصول أو تسجيل أن المال عاد.",
   },
   extra_payment: {
     periodMinutes: 180,
