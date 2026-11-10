@@ -2,6 +2,7 @@ import type { NextConfig } from "next";
 import { PHASE_PRODUCTION_BUILD } from "next/constants";
 import { bunnyConfigProblem } from "./src/lib/bunny-keys";
 import { envProblems, normaliseEnv } from "./src/server/env-schema";
+import { API_CSP_SOURCE, SECURITY_HEADERS, STRICT_CSP } from "./src/lib/security-headers";
 
 /**
  * إعدادات Next.js
@@ -47,14 +48,10 @@ const nextConfig: NextConfig = {
     return [
       {
         source: "/:path*",
-        headers: [
-          { key: "X-Content-Type-Options", value: "nosniff" },
-          { key: "Referrer-Policy", value: "strict-origin-when-cross-origin" },
-          { key: "X-Frame-Options", value: "DENY" },
-          { key: "Permissions-Policy", value: "camera=(), microphone=(), geolocation=(), payment=(self)" },
-          { key: "Strict-Transport-Security", value: "max-age=63072000; includeSubDomains" },
-        ],
+        headers: [...SECURITY_HEADERS],
       },
+      // الصفحات تأخذ CSP بـ nonce من proxy.ts؛ ردود API لا يمر عليها proxy فتأخذ سياسة ثابتة صارمة هنا
+      { source: API_CSP_SOURCE, headers: [{ key: "Content-Security-Policy", value: STRICT_CSP }] },
       { source: "/api/:path*", headers: noIndex },
       { source: "/admin/:path*", headers: noIndex },
       { source: "/library/:path*", headers: noIndex },

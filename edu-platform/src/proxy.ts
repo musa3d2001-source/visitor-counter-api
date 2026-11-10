@@ -1,4 +1,5 @@
 import { NextResponse, type NextRequest } from "next/server";
+import { SECURITY_HEADERS, STRICT_CSP } from "@/lib/security-headers";
 
 /**
  * Proxy (بديل middleware في Next.js 16)
@@ -56,7 +57,11 @@ export function proxy(request: NextRequest) {
     const url = request.nextUrl.clone();
     url.pathname = "/login";
     url.search = `?next=${encodeURIComponent(pathname + search)}`;
-    return NextResponse.redirect(url);
+    // رد يصنعه proxy بنفسه: رؤوس الأمان عليه صراحة
+    const redirect = NextResponse.redirect(url);
+    for (const h of SECURITY_HEADERS) redirect.headers.set(h.key, h.value);
+    redirect.headers.set("Content-Security-Policy", STRICT_CSP);
+    return redirect;
   }
 
   const nonce = Buffer.from(crypto.randomUUID()).toString("base64");
@@ -71,14 +76,22 @@ export function proxy(request: NextRequest) {
   return response;
 }
 
+/**
+ * كل استثناء مُثبت بشرطة مائلة أو بنهاية المسار: /apix و/media-x و/brandnew صفحات عادية (404) تمر من هنا وتأخذ CSP،
+ * لا مسارات API أو ملفات ثابتة.
+ * لوحة الإدارة تمر من هنا دائمًا، حتى طلبات التحميل المسبق: x-pathname يكتبه proxy فوق أي قيمة أرسلها المتصفح،
+ * والتخطيط يعتمد عليه لرفض صفحات المالك مبكرًا (كل صفحة مالك تتحقق بنفسها أيضًا بـ requireOwnerPage).
+ * tests/unit/proxy-matcher.test.ts يفحص هذه الأنماط.
+ */
 export const config = {
   matcher: [
     {
-      source: "/((?!api|_next/static|_next/image|media|brand|pdfjs|favicon.ico|robots.txt|sitemap.xml).*)",
+      source: "/((?!api(?:/|$)|_next/static/|_next/image(?:/|$)|media/|brand/|pdfjs/|favicon\\.ico$|robots\\.txt$|sitemap\\.xml$).*)",
       missing: [
         { type: "header", key: "next-router-prefetch" },
         { type: "header", key: "purpose", value: "prefetch" },
       ],
     },
+    "/admin/:path*",
   ],
 };

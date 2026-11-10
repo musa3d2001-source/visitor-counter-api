@@ -8,6 +8,7 @@ import { getSettings } from "@/server/platform/settings";
 import { storage } from "@/server/storage";
 import { AdminMobileNav, AdminSidebar } from "@/components/admin/sidebar";
 import { SandboxBanner } from "@/components/site/sandbox-banner";
+import { isOwnerOnlyPath } from "@/lib/admin-paths";
 
 export const metadata: Metadata = {
   title: { default: "لوحة التحكم", template: "%s | لوحة التحكم" },
@@ -18,14 +19,13 @@ export const metadata: Metadata = {
  * لوحة واحدة للمالك والمعلم — الصلاحيات تُفرض على الخادم في كل صفحة وإجراء.
  * الصفحات الخاصة بالمالك تستدعي requireOwnerPage() (المعلم يحصل على 404).
  */
-/** مسارات المالك فقط — يُرفض المعلم مبكرًا هنا (قبل بث الصفحة) لتعود حالة 404 صحيحة */
-const OWNER_ONLY_PREFIXES = ["/admin/teachers", "/admin/review", "/admin/catalog", "/admin/bundles", "/admin/orders", "/admin/students", "/admin/coupons", "/admin/reports", "/admin/settings", "/admin/mail", "/admin/security", "/admin/ops", "/admin/launch"];
+/** مسارات المالك فقط (lib/admin-paths) — يُرفض المعلم مبكرًا هنا (قبل بث الصفحة) لتعود حالة 404 صحيحة. x-pathname يكتبه proxy دائمًا */
 
 export default async function AdminLayout({ children }: { children: React.ReactNode }) {
   const actor = await requireStaff();
   if (actor.kind !== "owner") {
     const path = (await headers()).get("x-pathname") ?? "";
-    if (OWNER_ONLY_PREFIXES.some((p) => path === p || path.startsWith(`${p}/`))) notFound();
+    if (isOwnerOnlyPath(path)) notFound();
   }
   const [settings, pending, pendingProfiles] = await Promise.all([
     getSettings(),
