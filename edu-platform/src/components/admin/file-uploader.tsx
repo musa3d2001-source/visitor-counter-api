@@ -1,11 +1,12 @@
 "use client";
 
-import { useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { CircleCheck, ImageUp, LoaderCircle, RefreshCw, TriangleAlert, Upload, WifiOff } from "lucide-react";
 import { ar } from "@/lib/design";
 import { runTusUpload } from "@/lib/tus-upload";
 import { classifyPutResponse, isTransientServerStatus, networkFailure, putWithRetry, retryDelayMs, UPLOAD_RETRY, type PutOutcome, type RetryNotice } from "@/lib/upload-retry";
+import { takePickedFiles } from "@/lib/picked-files";
 import { cn } from "@/lib/utils";
 
 export type UploadTargetName = "main" | "preview" | "cover" | "lesson" | "logo" | "teacher_photo" | "lesson_thumb";
@@ -259,6 +260,12 @@ export function FileUploader({
     if (inputRef.current) inputRef.current.value = "";
     if (anyOk) router.refresh();
   }
+
+  // ملف اختير قبل أن ترتبط الصفحة لا يصله حدث change، مرة واحدة عند الربط
+  useEffect(() => {
+    const picked = takePickedFiles(inputRef.current);
+    if (picked.length) void handle(picked);
+  }, []);
 
   const isImage = accept.startsWith("image/");
   return (
