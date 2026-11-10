@@ -135,7 +135,7 @@ describe("pages", () => {
   const otherError = Object.assign(new Error("x"), { digest: "123456" });
 
   it("the site and admin error pages show the busy state without an error code", async () => {
-    for (const path of ["@/app/(site)/error", "@/app/admin/error"]) {
+    for (const path of ["@/app/(site)/error", "@/app/admin/error", "@/app/global-error"]) {
       const { default: ErrorPage } = await import(/* @vite-ignore */ path);
       const busy = renderToStaticMarkup(createElement(ErrorPage, { error: busyError, reset: () => {} }));
       expect(busy, path).toContain(DB_BUSY_TITLE);
@@ -143,7 +143,8 @@ describe("pages", () => {
       expect(busy, path).not.toContain(DB_BUSY_DIGEST);
       const other = renderToStaticMarkup(createElement(ErrorPage, { error: otherError, reset: () => {} }));
       expect(other, path).not.toContain(DB_BUSY_TITLE);
-      expect(other, path).toContain("123456");
+      // صفحة الخطأ العامة لا تعرض رمزًا أصلًا؛ صفحتا الموقع والإدارة تعرضانه لغير الانشغال
+      if (path !== "@/app/global-error") expect(other, path).toContain("123456");
     }
   });
 });
