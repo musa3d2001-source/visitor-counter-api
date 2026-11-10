@@ -1,6 +1,7 @@
 import { afterAll, afterEach, beforeAll, beforeEach, describe, expect, it, vi } from "vitest";
 import { createElement } from "react";
 import { renderToStaticMarkup } from "react-dom/server";
+import { prerender } from "react-dom/static";
 import { resetEnvCache } from "@/server/env";
 import { resetPaymentMethodsCache } from "@/server/payments/service";
 import { AFTER_CONFIRM, DEFAULT_FOOTER_NOTE, EMPTY_HERO, PAYMENT_CLAIM } from "@/lib/site-truth";
@@ -27,8 +28,8 @@ vi.mock("next/navigation", () => ({
   useSearchParams: () => new URLSearchParams(),
 }));
 
-const { default: HomePage } = await import("@/app/(site)/page");
-const { default: TeachersPage } = await import("@/app/(site)/teachers/page");
+const { default: HomePage } = await import("@/app/(site)/(home)/page");
+const { default: TeachersPage } = await import("@/app/(site)/teachers/(index)/page");
 const { default: ProductPage } = await import("@/app/(site)/products/[slug]/page");
 const { default: CartPage } = await import("@/app/(site)/cart/page");
 const { default: CheckoutPage } = await import("@/app/(site)/checkout/page");
@@ -87,7 +88,9 @@ function payments(mode: Mode) {
 const set = (key: string, value: unknown) => sql`insert into settings (key, value) values (${key}, ${sql.json(value as never)}) on conflict (key) do update set value = excluded.value`;
 const videosOff = () => set("videos_enabled", false);
 const html = (node: React.ReactNode) => renderToStaticMarkup(node as React.ReactElement);
-const home = async () => html(await HomePage());
+const streamed = async (node: React.ReactNode) => new Response((await prerender(node as React.ReactElement)).prelude).text();
+/** الأقسام التي تلي الشاشة الأولى تُبث للمسجل في Suspense: تُنتظر كلها كما يراها في النهاية */
+const home = async () => streamed(await HomePage());
 /** أسماء وسائل الدفع وشعاراتها التي ترجعها البوابة خيارات يضغط عليها الطالب، لا ادعاء */
 const withoutMethods = (h: string) => h.replace(/<fieldset[\s\S]*?<\/fieldset>/g, "").replace(/<link rel="preload"[^>]*>/g, "");
 const textOf = (h: string) => h.replace(/<[^>]+>/g, "").replace(/\s+/g, " ");

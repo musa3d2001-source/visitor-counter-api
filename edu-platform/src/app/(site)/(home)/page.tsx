@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import { Suspense, type ReactNode } from "react";
 import { BadgePercent, FileText, GraduationCap, MonitorPlay, Users } from "lucide-react";
 import { getBundleItemsFor, gradeStats, latestVideoProducts, listAllSubjects, listProducts, listStages, listTeachers, teacherTotals } from "@/server/catalog/public-data";
 import type { ProductCard } from "@/server/catalog/queries";
@@ -13,19 +14,35 @@ import { NoteCard } from "@/components/site/note-card";
 import { GradeCard } from "@/components/site/grade-card";
 import { SubjectGrid, SubjectTile } from "@/components/site/subject-tile";
 import { realContactLinks } from "@/components/site/payment-unavailable-notice";
+import { CardsSkeleton, SectionTitleSkeleton } from "@/components/site/page-skeletons";
 import { EmptyState } from "@/components/ui/empty-state";
 import { SectionHead } from "@/components/ui/section-head";
 import { academicYearLabel, ar, savings } from "@/lib/design";
 import { EMPTY_GRADES, gradesHeading, heroTrust, publicFaq, publicHero, publicTagline, teachersCopy } from "@/lib/site-truth";
-import { HomeHero, shortGrade } from "./_home/hero";
-import { Rail } from "./_home/rail";
-import { SubjectExplorer } from "./_home/subject-explorer";
-import { ExamBand } from "./_home/exam-band";
-import { ClosingCta, HomeFaq, HowSteps } from "./_home/sections";
-import s from "./_home/home.module.css";
+import { HomeHero, shortGrade } from "../_home/hero";
+import { Rail } from "../_home/rail";
+import { SubjectExplorer } from "../_home/subject-explorer";
+import { ExamBand } from "../_home/exam-band";
+import { ClosingCta, HomeFaq, HowSteps } from "../_home/sections";
+import s from "../_home/home.module.css";
 
 /** على هذه الصفحة وحدها: في التخطيط الجذري سترثه كل صفحة بلا عنوان خاص بها */
 export const metadata: Metadata = { alternates: { canonical: "/" } };
+
+async function WithOwned({ userId, render }: { userId: string; render: (owned: Set<string>) => ReactNode }) {
+  return render(await accessibleProductIds(userId));
+}
+
+function HomeSectionsSkeleton() {
+  return (
+    <div className={s.section} role="status" aria-label="جاري التحميل">
+      <div className={s.wrap}>
+        <SectionTitleSkeleton />
+        <CardsSkeleton className="mt-6" />
+      </div>
+    </div>
+  );
+}
 
 /** يوزّع العناصر بالتناوب بين مجموعاتها (المواد مثلًا) حتى لا تتجاور ثلاث بطاقات بلون واحد */
 function interleave<T>(items: T[], key: (x: T) => string): T[] {
@@ -90,7 +107,7 @@ export default async function HomePage() {
   const grades = stages.flatMap((st) => st.grades);
   const levelBySlug = new Map(grades.map((g) => [g.slug, g.level]));
   const sortedBundles = [...bundles].sort((a, b) => (levelBySlug.get(a.gradeSlug) ?? 99) - (levelBySlug.get(b.gradeSlug) ?? 99));
-  const [owned, bundleItems] = await Promise.all([user ? accessibleProductIds(user.id) : Promise.resolve(undefined), getBundleItemsFor(sortedBundles.map((b) => b.id))]);
+  const bundleItems = await getBundleItemsFor(sortedBundles.map((b) => b.id));
   const subjectsByGrade = grades.map((g) => allSubjects.filter((x) => x.gradeId === g.id));
   // لوحة واحدة في الصفحة: أول صف فيه مواد. بقية اللوحات يطلبها التبويب عند الحاجة
   const firstPanel = subjectsByGrade.findIndex((list) => list.length > 0);
@@ -114,6 +131,130 @@ export default async function HomePage() {
   const heading = gradesHeading(facts);
   const hasContact = realContactLinks(settings).length > 0;
   const teacherText = teachersCopy(totals.teachers, facts);
+
+  // كل ما يلي الشاشة الأولى. شارات «تملكه» تقرأ قاعدة البيانات، فلا ينتظرها أول ما يراه المسجل
+  const sections = (owned?: Set<string>) => (
+    <>
+        {/* أحدث الدروس المرئية */}
+        {newVideos.length ? (
+          <section className={s.section} aria-labelledby="videos-title" id="videos">
+            <div className={s.wrap}>
+              <SectionHead
+                id="videos-title"
+                icon={<MonitorPlay size={16} />}
+                eyebrow="شروحات بالفيديو"
+                title="أحدث الدروس المرئية"
+                sub="شرح بالفيديو بصوت معلمك. حيث تجد شارة «معاينة مجانية» تشاهد درسًا قبل الشراء."
+                more={{ href: "/teachers", label: "تصفح حسب المعلم" }}
+              />
+              <Rail label="الدروس المرئية">
+                {newVideos.map((p, i) => (
+                  <li key={p.id}>
+                    <VideoCard product={p} owned={owned?.has(p.id)} priority={i < 2} />
+                  </li>
+                ))}
+              </Rail>
+            </div>
+          </section>
+        ) : null}
+
+        {/* قبل الاختبار */}
+        <ExamBand examNight={examReviews} quizzes={quizReviews} ownedIds={owned} />
+
+        {/* المعلمون */}
+        {teachers.length ? (
+          <section className={s.section} aria-labelledby="teachers-title" id="teachers">
+            <div className={s.wrap}>
+              <SectionHead
+                id="teachers-title"
+                icon={<Users size={16} />}
+                eyebrow={teacherText.eyebrow}
+                tone="coral"
+                title={
+                  facts.video ? (
+                    <>
+                      تعلّم مع معلم <span className="text-hl">يشرح لك خطوة بخطوة</span>
+                    </>
+                  ) : (
+                    <>
+                      {teacherText.lead} <span className="text-hl">{teacherText.highlight}</span>
+                    </>
+                  )
+                }
+                sub={teacherText.section}
+                more={{ href: "/teachers", label: totals.teachers > 1 ? "كل المعلمين" : "صفحة المعلم" }}
+              />
+              <Rail label="المعلمين" cols={teacherCols}>
+                {teachers.map((t) => (
+                  <li key={t.id}>
+                    <TeacherCard teacher={t} />
+                  </li>
+                ))}
+              </Rail>
+            </div>
+          </section>
+        ) : null}
+
+        {/* الباقات: مرتبة من الصف السادس إلى التاسع مثل لوح الصفوف */}
+        {sortedBundles.length ? (
+          <section className={s.section} aria-labelledby="bundles-title" id="bundles">
+            <div className={s.wrap}>
+              <SectionHead
+                id="bundles-title"
+                icon={<BadgePercent size={16} />}
+                eyebrow={anySavings ? "وفّر أكثر" : "باقات الصفوف"}
+                tone="gold"
+                title={
+                  anySavings ? (
+                    <>
+                      باقات الصفوف <span className="text-hl">بسعر أقل</span>
+                    </>
+                  ) : (
+                    "باقات الصفوف"
+                  )
+                }
+                sub="محتوى الصف في باقة واحدة. السعر الظاهر هو ما تدفعه، والتوفير محسوب من أسعار محتوياتها منفردة."
+                more={{ href: "/bundles", label: "كل الباقات" }}
+              />
+              <Rail label="الباقات" cols={Math.min(4, Math.max(2, sortedBundles.length))}>
+                {sortedBundles.map((b, i) => (
+                  <li key={b.id}>
+                    <BundleCard product={b} items={bundleItems.get(b.id) ?? []} level={levelBySlug.get(b.gradeSlug) ?? null} owned={owned?.has(b.id)} />
+                  </li>
+                ))}
+              </Rail>
+            </div>
+          </section>
+        ) : null}
+
+        {/* المذكرات */}
+        {notes.length ? (
+          <section className={s.section} aria-labelledby="notes-title" id="notes">
+            <div className={s.wrap}>
+              <SectionHead
+                id="notes-title"
+                icon={<FileText size={16} />}
+                eyebrow="مذكرات مرتبة"
+                tone="violet"
+                title="المذكرات النهائية"
+                sub="ملخصات مرتبة لكل مادة. حيث تجد «أول الصفحات مجانًا» تقرأ قبل أن تشتري."
+              />
+              <ul className={s.noteGrid}>
+                {notes.map((p) => (
+                  <li key={p.id}>
+                    <NoteCard product={p} owned={owned?.has(p.id)} />
+                  </li>
+                ))}
+              </ul>
+            </div>
+          </section>
+        ) : null}
+
+        <HowSteps facts={facts} />
+        <HomeFaq faq={publicFaq(settings.faq, facts)} whatsapp={settings.whatsapp_number} hasContact={hasContact} />
+        <ClosingCta grades={heroGrades} facts={facts} />
+    </>
+  );
 
   return (
     <div className={s.home}>
@@ -185,124 +326,13 @@ export default async function HomePage() {
         </div>
       </div>
 
-      {/* أحدث الدروس المرئية */}
-      {newVideos.length ? (
-        <section className={s.section} aria-labelledby="videos-title" id="videos">
-          <div className={s.wrap}>
-            <SectionHead
-              id="videos-title"
-              icon={<MonitorPlay size={16} />}
-              eyebrow="شروحات بالفيديو"
-              title="أحدث الدروس المرئية"
-              sub="شرح بالفيديو بصوت معلمك. حيث تجد شارة «معاينة مجانية» تشاهد درسًا قبل الشراء."
-              more={{ href: "/teachers", label: "تصفح حسب المعلم" }}
-            />
-            <Rail label="الدروس المرئية">
-              {newVideos.map((p, i) => (
-                <li key={p.id}>
-                  <VideoCard product={p} owned={owned?.has(p.id)} priority={i < 2} />
-                </li>
-              ))}
-            </Rail>
-          </div>
-        </section>
-      ) : null}
-
-      {/* قبل الاختبار */}
-      <ExamBand examNight={examReviews} quizzes={quizReviews} ownedIds={owned} />
-
-      {/* المعلمون */}
-      {teachers.length ? (
-        <section className={s.section} aria-labelledby="teachers-title" id="teachers">
-          <div className={s.wrap}>
-            <SectionHead
-              id="teachers-title"
-              icon={<Users size={16} />}
-              eyebrow={teacherText.eyebrow}
-              tone="coral"
-              title={
-                facts.video ? (
-                  <>
-                    تعلّم مع معلم <span className="text-hl">يشرح لك خطوة بخطوة</span>
-                  </>
-                ) : (
-                  <>
-                    {teacherText.lead} <span className="text-hl">{teacherText.highlight}</span>
-                  </>
-                )
-              }
-              sub={teacherText.section}
-              more={{ href: "/teachers", label: totals.teachers > 1 ? "كل المعلمين" : "صفحة المعلم" }}
-            />
-            <Rail label="المعلمين" cols={teacherCols}>
-              {teachers.map((t) => (
-                <li key={t.id}>
-                  <TeacherCard teacher={t} />
-                </li>
-              ))}
-            </Rail>
-          </div>
-        </section>
-      ) : null}
-
-      {/* الباقات: مرتبة من الصف السادس إلى التاسع مثل لوح الصفوف */}
-      {sortedBundles.length ? (
-        <section className={s.section} aria-labelledby="bundles-title" id="bundles">
-          <div className={s.wrap}>
-            <SectionHead
-              id="bundles-title"
-              icon={<BadgePercent size={16} />}
-              eyebrow={anySavings ? "وفّر أكثر" : "باقات الصفوف"}
-              tone="gold"
-              title={
-                anySavings ? (
-                  <>
-                    باقات الصفوف <span className="text-hl">بسعر أقل</span>
-                  </>
-                ) : (
-                  "باقات الصفوف"
-                )
-              }
-              sub="محتوى الصف في باقة واحدة. السعر الظاهر هو ما تدفعه، والتوفير محسوب من أسعار محتوياتها منفردة."
-              more={{ href: "/bundles", label: "كل الباقات" }}
-            />
-            <Rail label="الباقات" cols={Math.min(4, Math.max(2, sortedBundles.length))}>
-              {sortedBundles.map((b, i) => (
-                <li key={b.id}>
-                  <BundleCard product={b} items={bundleItems.get(b.id) ?? []} level={levelBySlug.get(b.gradeSlug) ?? null} owned={owned?.has(b.id)} />
-                </li>
-              ))}
-            </Rail>
-          </div>
-        </section>
-      ) : null}
-
-      {/* المذكرات */}
-      {notes.length ? (
-        <section className={s.section} aria-labelledby="notes-title" id="notes">
-          <div className={s.wrap}>
-            <SectionHead
-              id="notes-title"
-              icon={<FileText size={16} />}
-              eyebrow="مذكرات مرتبة"
-              tone="violet"
-              title="المذكرات النهائية"
-              sub="ملخصات مرتبة لكل مادة. حيث تجد «أول الصفحات مجانًا» تقرأ قبل أن تشتري."
-            />
-            <ul className={s.noteGrid}>
-              {notes.map((p) => (
-                <li key={p.id}>
-                  <NoteCard product={p} owned={owned?.has(p.id)} />
-                </li>
-              ))}
-            </ul>
-          </div>
-        </section>
-      ) : null}
-
-      <HowSteps facts={facts} />
-      <HomeFaq faq={publicFaq(settings.faq, facts)} whatsapp={settings.whatsapp_number} hasContact={hasContact} />
-      <ClosingCta grades={heroGrades} facts={facts} />
+      {user ? (
+        <Suspense fallback={<HomeSectionsSkeleton />}>
+          <WithOwned userId={user.id} render={sections} />
+        </Suspense>
+      ) : (
+        sections()
+      )}
     </div>
   );
 }

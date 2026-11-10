@@ -18,7 +18,7 @@ import { gradeClass, W } from "@/lib/design";
 import { gradeMeta } from "@/lib/site-truth";
 import { siteFacts } from "@/server/platform/site-facts";
 import { cn } from "@/lib/utils";
-import { balancedGrid, browseStyles as s, GradeWindow, NightPanel, offerPhrase, pillCount, splitByFamily, SubjectCard, ToneHero, typeFamily } from "../_components/browse";
+import { balancedGrid, browseStyles as s, GradeWindow, NightPanel, offerPhrase, pillCount, splitByFamily, SubjectCard, ToneHero, typeFamily } from "../../_components/browse";
 
 export async function generateMetadata({ params }: { params: Promise<{ gradeSlug: string }> }): Promise<Metadata> {
   const grade = await getGradeBySlug((await params).gradeSlug);

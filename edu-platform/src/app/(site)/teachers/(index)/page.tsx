@@ -9,8 +9,8 @@ import { TeacherGrid } from "@/components/site/teacher-card";
 import { count, W } from "@/lib/design";
 import { teachersCopy } from "@/lib/site-truth";
 import { cn } from "@/lib/utils";
-import { pillCount } from "../grades/_components/browse";
-import { FilterPill, TeacherFaces, TeachersCollage, teacherStyles as s } from "./_components/teachers";
+import { pillCount } from "../../grades/_components/browse";
+import { FilterPill, TeacherFaces, TeachersCollage, teacherStyles as s } from "../_components/teachers";
 
 export const metadata: Metadata = {
   title: "المعلمون",

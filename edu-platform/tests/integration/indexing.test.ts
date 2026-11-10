@@ -8,7 +8,7 @@ import { TEST_ENV } from "../test-env";
 const { default: robots } = await import("@/app/robots");
 const { default: sitemap } = await import("@/app/sitemap");
 const { generateMetadata } = await import("@/app/layout");
-const { metadata: homeMetadata } = await import("@/app/(site)/page");
+const { metadata: homeMetadata } = await import("@/app/(site)/(home)/page");
 
 beforeAll(resetDb);
 afterAll(closeDb);
