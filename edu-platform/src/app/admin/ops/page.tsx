@@ -1,9 +1,12 @@
-import { Activity, BellRing, CalendarClock, Send, ServerCrash } from "lucide-react";
+import Link from "next/link";
+import { BellRing, CalendarClock, CircleDollarSign, RefreshCw, Send, ServerCrash } from "lucide-react";
 import { requireOwnerPage } from "@/server/auth/permissions";
 import { alertDelivery, jobViews, lastAlertSendFailed, opsConfig, type AlertDelivery, type JobView } from "@/server/platform/ops-status";
 import { ActionForm } from "@/components/admin/action-form";
 import { SubmitButton } from "@/components/ui/submit-button";
-import { sendTestAlertAction } from "./actions";
+import { reconcileNowAction, sendTestAlertAction } from "./actions";
+import { paymentsConfig } from "@/server/payments/service";
+import { unhealedOrders, type PaidNotGrantedReason, type UnhealedRow } from "@/server/payments/unhealed";
 import { listErrorEvents } from "@/server/platform/report-error";
 import { JOB_LABELS, runOpsWatchdogAfterResponse, type JobName, type JobStatus } from "@/server/platform/scheduled-jobs";
 import { AdminPageHeader, Section, StatGrid, StatTile } from "@/components/admin/page-header";
@@ -14,9 +17,58 @@ import { Alert } from "@/components/ui/alert";
 import { EmptyState } from "@/components/ui/empty-state";
 import { ar, count, type CountWord } from "@/lib/design";
 import { formatDateTime } from "@/lib/utils";
+import { filsToKwdString } from "@/lib/money";
 import { PageBand } from "../_components/overview/bands";
 
 export const metadata = { title: "صحة المنصة" };
+
+/** زر «افحص الآن» يعمل حتى ٤٠ ثانية داخل طلب هذه الصفحة */
+export const maxDuration = 60;
+
+const REASON_TEXT: Record<PaidNotGrantedReason, string> = {
+  payment_not_applied: "دفعة مؤكدة لم تكمل طلبها",
+  needs_decision: "دفعة تنتظر قرارك",
+  no_access: "طلب مدفوع ينقصه وصول",
+};
+
+const MINUTES: CountWord = { one: "دقيقة", two: "دقيقتان", plural: "دقائق", acc: "دقيقة", oneSuffix: "واحدة" };
+const HOURS: CountWord = { one: "ساعة", two: "ساعتان", plural: "ساعات", acc: "ساعة", oneSuffix: "واحدة" };
+const DAYS: CountWord = { one: "يوم", two: "يومان", plural: "أيام", acc: "يومًا", oneSuffix: "واحد" };
+
+function ageText(since: Date, now: number) {
+  const minutes = Math.max(1, Math.floor((now - since.getTime()) / 60_000));
+  if (minutes < 60) return count(minutes, MINUTES);
+  if (minutes < 24 * 60) return count(Math.floor(minutes / 60), HOURS);
+  return count(Math.floor(minutes / (24 * 60)), DAYS);
+}
+
+function UnhealedLine({ row, label, tone, now }: { row: UnhealedRow; label: string; tone: StatusTone; now: number }) {
+  return (
+    <DataRow
+      leading={
+        <ToneIcon tone={tone === "danger" ? "coral" : "gold"} size="sm">
+          <CircleDollarSign />
+        </ToneIcon>
+      }
+      title={
+        <Link href={`/admin/orders/${row.order_id}`} className="num text-brand-700 hover:underline">
+          {row.order_number}
+        </Link>
+      }
+      sub={
+        <>
+          <span className="num">{filsToKwdString(row.amount_fils)}</span> د.ك · العمر: {ageText(row.since, now)}
+          {row.is_test ? " · تجريبي" : ""}
+        </>
+      }
+      aside={
+        <span data-testid="ops-unhealed" data-order={row.order_id}>
+          <StatusPill tone={tone}>{label}</StatusPill>
+        </span>
+      }
+    />
+  );
+}
 
 const JOB_STATUS: Record<JobStatus, { label: string; tone: StatusTone }> = {
   ok: { label: "تعمل", tone: "success" },
@@ -83,7 +135,9 @@ export default async function OpsPage() {
   await requireOwnerPage();
   await runOpsWatchdogAfterResponse();
   const config = opsConfig();
-  const [jobs, errors, alertFailed, delivery] = await Promise.all([jobViews(), listErrorEvents(), lastAlertSendFailed(), alertDelivery()]);
+  const paymentsOn = paymentsConfig().enabled;
+  const [jobs, errors, alertFailed, delivery, unhealed] = await Promise.all([jobViews(), listErrorEvents(), lastAlertSendFailed(), alertDelivery(), unhealedOrders()]);
+  const now = Date.now();
   const alertsWork = config.alertEmailConfigured && config.mailIsReal && !alertFailed;
   const okJobs = jobs.filter((job) => job.status === "ok").length;
   const dayAgo = Date.now() - 24 * 3600_000;
@@ -122,7 +176,7 @@ export default async function OpsPage() {
 
       {config.liveWithDailyReconcile ? (
         <Alert tone="danger" title="الدفع الحقيقي مفعّل والتسوية مرة واحدة في اليوم" data-testid="ops-warning-reconcile">
-          <p>الدفعة التي لا يصلنا إشعارها تنتظر حتى اليوم التالي. بعد الترقية إلى Vercel Pro غيّر جدول التسوية في vercel.json إلى كل ١٥ دقيقة، كما في README.</p>
+          <p>الدفعة التي لا يصلنا إشعارها تُطبق حين يعود صاحبها إلى الموقع، ومن لا يعود ينتظر حتى اليوم التالي. بعد الترقية إلى Vercel Pro غيّر جدول التسوية في vercel.json إلى كل ١٠ دقائق، كما في README.</p>
         </Alert>
       ) : null}
 
@@ -140,6 +194,39 @@ export default async function OpsPage() {
         <StatTile label="أخطاء ظهرت آخر ٢٤ ساعة" tone={errorsToday > 0 ? "coral" : "green"} icon={<ServerCrash />} value={<span className="num">{ar(errorsToday)}</span>} />
         <StatTile label="رسائل التنبيه" tone={alertsWork ? "green" : alertFailed ? "coral" : "gold"} icon={<BellRing />} value={<span className="text-[1.05rem] sm:text-[1.15rem]">{alertsWork ? "مفعّلة" : alertFailed ? "آخرها لم يخرج" : "غير مفعّلة"}</span>} />
       </StatGrid>
+
+      <Section
+        id="payments-unhealed"
+        title="مدفوعات لم يكتمل أثرها"
+        description="مال وصل ولم يتحول إلى وصول، وفواتير لم نتأكد من مصيرها بعد. تُحل وحدها حين يفتح المشتري مكتبته أو طلبه، أو في الجولة اليومية، أو بهذا الزر."
+        icon={<CircleDollarSign />}
+        tone="gold"
+      >
+        <div data-testid="ops-unhealed-section">
+          {unhealed.paidNotGranted.length === 0 && unhealed.unverified.length === 0 ? (
+            <EmptyState art="generic" compact title="لا شيء ينتظر الآن." />
+          ) : (
+            <DataList>
+              {unhealed.paidNotGranted.map((row) => (
+                <UnhealedLine key={`${row.reason}-${row.order_id}`} row={row} label={REASON_TEXT[row.reason]} tone="danger" now={now} />
+              ))}
+              {unhealed.unverified.map((row) => (
+                <UnhealedLine key={`unverified-${row.order_id}-${row.since.getTime()}`} row={row} label={row.last_checked_at ? "لم يتأكد مصيرها بعد" : "لم تُفحص بعد"} tone="warning" now={now} />
+              ))}
+            </DataList>
+          )}
+          {unhealed.unverifiedTotal > unhealed.unverified.length ? <p className="mt-3 text-[0.84rem] leading-6 text-muted">تظهر هنا الأقدم فقط، والعدد الكلي للفواتير غير المؤكدة {ar(unhealed.unverifiedTotal)}.</p> : null}
+          {paymentsOn ? (
+            <ActionForm action={reconcileNowAction} className="mt-4">
+              <SubmitButton variant="outline" pendingText="جارٍ الفحص…">
+                <RefreshCw aria-hidden /> افحص الآن
+              </SubmitButton>
+            </ActionForm>
+          ) : (
+            <p className="mt-3 text-[0.92rem] leading-7 text-ink-soft">الدفع الإلكتروني غير مفعّل على هذا النشر، فلا توجد فواتير لفحصها.</p>
+          )}
+        </div>
+      </Section>
 
       <Section id="test-alert" title="رسالة تجربة" description="تأكد أن رسائل التنبيه تصل إلى بريدك قبل أن تحتاجها." icon={<Send />} tone="violet">
         <p className="text-[0.92rem] leading-7 text-ink-soft" data-testid="ops-alert-delivery" data-delivery={delivery}>

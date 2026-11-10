@@ -15,6 +15,7 @@ import { cn } from "@/lib/utils";
 import { sql } from "@/server/db";
 import { libraryNote } from "@/lib/site-truth";
 import { paymentPublicState } from "@/server/payments/public-state";
+import { healBuyerOrders } from "@/server/payments/heal";
 import { formatClock } from "@/components/site/format";
 import { EmptyStart, TiltedPosters, pillParts } from "../cart/_components/commerce";
 import { NoteLibraryRow, ResumeFeatured, ResumeRow, VideoLibraryCard, type ResumeEntry } from "./_components/library-ui";
@@ -24,6 +25,8 @@ export const metadata: Metadata = { title: "مكتبتي", robots: { index: fals
 export default async function LibraryPage({ searchParams }: { searchParams: Promise<{ type?: string }> }) {
   const user = await requireUser("/library");
   const sp = await searchParams;
+  // قبل قراءة المكتبة: ما يُمنح الآن يظهر في هذه الزيارة نفسها
+  await healBuyerOrders({ userId: user.id });
   const { items, bundles } = await getLibrary(user.id);
   const types = [...new Set(items.map((i) => i.type))] as ProductType[];
   const filter = types.includes(sp.type as ProductType) ? (sp.type as ProductType) : null;
