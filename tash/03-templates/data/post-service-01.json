@@ -1,0 +1,8 @@
+{
+  "theme": "ink",
+  "image": { "src": "/05-concept-ads/02-burger-stakk/still-hero.png", "fx": 50, "fy": 58 },
+  "concept": { "slate": "CONCEPT AD — 02 / BURGER" },
+  "service": "فيديوهات إعلانية",
+  "line": "إعلان كامل لمنتجك أو محلك… من الفكرة لين الملف النهائي.",
+  "includes": ["فكرة", "سكربت", "إنتاج", "ملف جاهز"]
+}

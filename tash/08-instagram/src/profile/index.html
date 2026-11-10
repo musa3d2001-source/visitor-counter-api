@@ -1,0 +1,140 @@
+<!doctype html>
+<!-- PROFILE PREVIEW — a generic phone profile mock-up for approval (not the Instagram app: no logo, no trademarked
+     glyphs, our own simple icons). What a visitor sees after launch day: pins 9 · 3 · 8, then the rest newest-first.
+     The grid uses the real upload files: reel covers and first slides, cropped to 3:4 by object-fit exactly as the
+     profile grid crops them (9:16 → centre 1080×1440, 4:5 → centre 1012×1350).  ?mode=light for the light theme.
+     Stats show only what is true on launch day (9 posts); followers/following are left as «—» (never invented). -->
+<html lang="ar"><head><meta charset="utf-8">
+<link rel="stylesheet" href="/_system/tokens.css">
+<style>
+  :root { --bg: #0B0B0B; --fg: #F5F5E9; --sub: #8E9088; --btn: #26261F; --rule: #2C2C29; --page: #161614; --ring: #3A3B36; }
+  .light { --bg: #FFFFFF; --fg: #0B0B0B; --sub: #6B6D66; --btn: #EFEFEA; --rule: #DADAD3; --page: #D9D8D0; --ring: #CFCFC8; }
+  html, body { margin: 0; background: var(--page); }
+  #page { position: relative; width: 1420px; height: 3640px; background: var(--page); overflow: hidden; }
+  .device { position: absolute; left: 95px; top: 90px; width: 1230px; height: 3380px; border-radius: 150px; background: #050505;
+            box-shadow: inset 0 0 0 3px #2b2b28; }
+  .screen { position: absolute; left: 30px; top: 30px; width: 1170px; height: 3320px; border-radius: 122px; overflow: hidden; background: var(--bg); color: var(--fg);
+            font-family: "IBM Plex Sans Arabic", sans-serif; direction: ltr; }
+  .cam { position: absolute; left: 50%; top: 34px; width: 34px; height: 34px; margin-left: -17px; border-radius: 50%; background: #050505; z-index: 5; }
+  .status { position: absolute; left: 0; right: 0; top: 0; height: 132px; display: flex; align-items: center; justify-content: space-between; padding: 0 84px; font-weight: 600; font-size: 46px; }
+  .status .r { display: flex; gap: 18px; align-items: center; }
+  .nav { position: absolute; left: 0; right: 0; top: 132px; height: 130px; display: flex; align-items: center; justify-content: center; font-weight: 700; font-size: 50px; }
+  .nav .back { position: absolute; left: 48px; top: 30px; } .nav .more { position: absolute; right: 54px; top: 54px; }
+  .head { position: absolute; left: 48px; right: 48px; top: 290px; height: 270px; display: flex; align-items: center; gap: 70px; }
+  .avatar { width: 262px; height: 262px; border-radius: 50%; overflow: hidden; flex: none; box-shadow: 0 0 0 3px var(--ring); }
+  .avatar img { width: 100%; height: 100%; display: block; }
+  .stats { flex: 1; display: flex; justify-content: space-around; text-align: center; }
+  .stats b { display: block; font-size: 54px; font-weight: 700; line-height: 1.2; }
+  .stats span { font-size: 38px; color: var(--fg); font-weight: 400; }
+  .info { position: absolute; left: 54px; right: 54px; top: 600px; }
+  .name { font-size: 46px; font-weight: 700; line-height: 1.45; }
+  .cat { font-size: 40px; color: var(--sub); line-height: 1.45; }
+  .bio { font-size: 42px; line-height: 1.5; font-weight: 400; margin-top: 4px; }
+  .bio div { unicode-bidi: plaintext; text-align: start; }
+  .link { display: flex; gap: 14px; align-items: center; font-size: 42px; font-weight: 600; margin-top: 10px; }
+  .btns { position: absolute; left: 48px; right: 48px; display: flex; gap: 18px; }
+  .btn { flex: 1; height: 100px; border-radius: 26px; background: var(--btn); display: grid; place-items: center; font-weight: 600; font-size: 42px; }
+  .btn.primary { background: var(--fg); color: var(--bg); }
+  .btn.sq { flex: none; width: 100px; }
+  .hl { position: absolute; left: 30px; right: 0; display: flex; gap: 34px; }
+  .hl .it { width: 200px; display: flex; flex-direction: column; align-items: center; gap: 16px; }
+  .hl .c { width: 196px; height: 196px; border-radius: 50%; box-shadow: 0 0 0 4px var(--ring); background-size: 186px auto; background-position: center; border: 5px solid var(--bg); box-sizing: border-box; }
+  .hl .n { font-size: 34px; direction: rtl; white-space: nowrap; }
+  .tabs { position: absolute; left: 0; right: 0; height: 130px; display: flex; border-bottom: 2px solid var(--rule); }
+  .tabs div { flex: 1; display: grid; place-items: center; position: relative; }
+  .tabs .on::after { content: ''; position: absolute; left: 0; right: 0; bottom: -2px; height: 5px; background: var(--fg); }
+  .grid { position: absolute; left: 0; width: 1170px; display: grid; grid-template-columns: repeat(3, 386px); gap: 6px; }
+  .tile { position: relative; width: 386px; height: 515px; overflow: hidden; background: #222; }
+  .tile img.pic { width: 100%; height: 100%; object-fit: cover; object-position: 50% 50%; display: block; }
+  .tile .ic { position: absolute; right: 18px; top: 18px; filter: drop-shadow(0 1px 3px rgba(0,0,0,.55)); }
+  .bottom { position: absolute; left: 0; right: 0; bottom: 0; height: 200px; border-top: 2px solid var(--rule); background: var(--bg); display: flex; justify-content: space-around; padding-top: 34px; box-sizing: border-box; }
+  .bottom .me { width: 70px; height: 70px; border-radius: 50%; overflow: hidden; box-shadow: 0 0 0 4px var(--fg); }
+  .bottom .me img { width: 100%; }
+  .note { position: absolute; left: 60px; right: 60px; bottom: 40px; display: flex; flex-direction: column; align-items: center; gap: 12px; white-space: nowrap; font-family: "JetBrains Mono"; font-weight: 600; font-size: 21px;
+          letter-spacing: .2em; text-transform: uppercase; color: #8E9088; direction: ltr; }
+  .light .note { color: #55574F; }
+</style></head><body><div id="page"><div class="device"><div class="screen" id="scr"><div class="cam"></div></div></div><div class="note"><span>TASH · PROFILE PREVIEW — A GENERIC MOCK-UP, NOT THE INSTAGRAM APP</span><span id="note2">PINNED 9 · 3 · 8 · GRID = THE UPLOAD FILES, CROPPED 3:4</span></div></div>
+<script type="module">
+import { boot } from '/_system/motion/kit.js';
+const q = new URLSearchParams(location.search);
+if (q.get('mode') === 'light') document.body.classList.add('light');
+await Promise.all([document.fonts.load('600 46px "IBM Plex Sans Arabic"'), document.fonts.load('700 46px "IBM Plex Sans Arabic"'),
+  document.fonts.load('400 42px "IBM Plex Sans Arabic"', 'خلّهم'), document.fonts.load('600 22px "JetBrains Mono"')]);
+await document.fonts.ready;
+const scr = document.getElementById('scr');
+const P = '/08-instagram/';
+const fg = () => getComputedStyle(document.body).getPropertyValue('--fg').trim();
+const add = (html) => { scr.insertAdjacentHTML('beforeend', html); return scr.lastElementChild; };
+
+// ---- generic icons (drawn here; simple geometry, no app glyphs)
+const S = (w, h, body, stroke = 'currentColor', sw = 6) => `<svg width="${w}" height="${h}" viewBox="0 0 ${w} ${h}" fill="none" stroke="${stroke}" stroke-width="${sw}" stroke-linecap="round" stroke-linejoin="round">${body}</svg>`;
+const I = {
+  back: S(70, 70, '<path d="M44 12 L20 35 L44 58"/>'),
+  more: S(80, 24, '<circle cx="12" cy="12" r="6" fill="currentColor" stroke="none"/><circle cx="40" cy="12" r="6" fill="currentColor" stroke="none"/><circle cx="68" cy="12" r="6" fill="currentColor" stroke="none"/>'),
+  link: S(46, 46, '<path d="M19 27 l8 -8"/><path d="M21 13 l4 -4 a8 8 0 0 1 12 12 l-4 4"/><path d="M25 33 l-4 4 a8 8 0 0 1 -12 -12 l4 -4"/>', 'currentColor', 4.5),
+  person: S(60, 60, '<circle cx="24" cy="20" r="10"/><path d="M6 50 c2 -12 10 -17 18 -17 s16 5 18 17"/><path d="M48 18 v16 M40 26 h16"/>', 'currentColor', 4.5),
+  grid: S(64, 64, '<rect x="8" y="8" width="48" height="48" rx="6"/><path d="M24 8 v48 M40 8 v48 M8 24 h48 M8 40 h48"/>', 'currentColor', 4.5),
+  play: S(64, 64, '<rect x="8" y="8" width="48" height="48" rx="12"/><path d="M27 22 L43 32 L27 42 Z" fill="currentColor"/>', 'currentColor', 4.5),
+  tag: S(64, 64, '<rect x="8" y="8" width="48" height="48" rx="8"/><circle cx="32" cy="27" r="8"/><path d="M18 50 c3 -8 8 -11 14 -11 s11 3 14 11"/>', 'currentColor', 4.5),
+  pin: S(46, 46, '<path d="M17 6 h14 l-2 12 l7 8 h-24 l7 -8 z" fill="#fff" stroke="#fff" stroke-width="2"/><path d="M24 26 v15" stroke="#fff" stroke-width="4"/>'),
+  multi: S(46, 46, '<rect x="13" y="5" width="28" height="28" rx="5" fill="#fff" stroke="none"/><rect x="5" y="13" width="28" height="28" rx="5" fill="none" stroke="#fff" stroke-width="4"/>'),
+  reel: S(46, 46, '<path d="M15 9 L37 23 L15 37 Z" fill="#fff" stroke="#fff" stroke-width="3"/>'),
+  home: S(70, 70, '<path d="M12 32 L35 12 L58 32 V58 H12 Z"/>'),
+  search: S(70, 70, '<circle cx="31" cy="31" r="18"/><path d="M45 45 L58 58"/>'),
+  plus: S(70, 70, '<rect x="10" y="10" width="50" height="50" rx="14"/><path d="M35 23 v24 M23 35 h24"/>'),
+};
+
+// ---- status bar, nav
+add(`<div class="status"><span>21:00</span><span class="r">${S(56, 34, '<rect x="2" y="22" width="8" height="10" rx="2" fill="currentColor" stroke="none"/><rect x="16" y="15" width="8" height="17" rx="2" fill="currentColor" stroke="none"/><rect x="30" y="8" width="8" height="24" rx="2" fill="currentColor" stroke="none"/><rect x="44" y="1" width="8" height="31" rx="2" fill="currentColor" stroke="none"/>')}${S(80, 38, '<rect x="2" y="3" width="66" height="32" rx="9"/><rect x="8" y="9" width="44" height="20" rx="4" fill="currentColor" stroke="none"/><path d="M74 14 v10" stroke-width="5"/>', 'currentColor', 3.5)}</span></div>`);
+add(`<div class="nav"><span class="back">${I.back}</span><span>tash.creative.kw</span><span class="more">${I.more}</span></div>`);
+
+// ---- header
+add(`<div class="head"><div class="avatar"><img src="/02-logo/avatar/tash-avatar--lime-1080.png"></div>
+  <div class="stats"><div><b>9</b><span>posts</span></div><div><b>—</b><span>followers</span></div><div><b>—</b><span>following</span></div></div></div>`);
+const info = add(`<div class="info">
+  <div class="name" style="text-align:start;unicode-bidi:plaintext">طشّ | صناعة إعلانات 🎬</div>
+  <div class="cat">Video production</div>
+  <div class="bio">
+    <div>خلّهم يسولفون عنك •••</div>
+    <div>نسوي الإعلان نفسه: فكرة وسكربت، فيديو، تصميم، موشن ومونتاج — للريلز والتيك توك والستوري.</div>
+    <div>🇰🇼 الخاص مفتوح — اطلب إعلانك بالخاص ↓</div>
+  </div>
+  <div class="link">${I.link}<span dir="ltr">tiktok.com/@tash.creative</span></div></div>`);
+
+const after = (el, gap) => el.offsetTop + el.offsetHeight + gap;
+const btns = add(`<div class="btns"><div class="btn primary">Follow</div><div class="btn">Message</div><div class="btn">Contact</div><div class="btn sq">${I.person}</div></div>`);
+btns.style.top = after(info, 44) + 'px';
+
+const HL = [['highlight-1-work', 'شغلنا'], ['highlight-2-services', 'خدماتنا'], ['highlight-3-order', 'شلون تطلب؟'], ['highlight-4-prices', 'الأسعار'], ['highlight-5-faq', 'أسئلة']];
+const hl = add(`<div class="hl">${HL.map(([f, n]) => `<div class="it"><div class="c" style="background-image:url(/03-templates/examples/${f}.png)"></div><div class="n">${n}</div></div>`).join('')}</div>`);
+hl.style.top = after(btns, 48) + 'px';
+const tabs = add(`<div class="tabs"><div class="on">${I.grid}</div><div>${I.play}</div><div>${I.tag}</div></div>`);
+tabs.style.top = after(hl, 40) + 'px';
+
+// ---- the grid: pins first (most recently pinned first: pin 8, then 3, then 9 → 9 · 3 · 8), then newest-first
+const POSTS = {
+  9: { src: '09-launch-reel/cover.png', kind: 'reel' }, 8: { src: '08-how-to-order-carousel/slide-01.png', kind: 'multi' },
+  7: { src: '07-services-carousel/slide-01.png', kind: 'multi' }, 6: { src: '06-before-after-post/post.png', kind: 'single' },
+  5: { src: '05-bts-reel/cover.png', kind: 'reel' }, 4: { src: '04-ehna-tash-carousel/slide-01.png', kind: 'multi' },
+  3: { src: '03-layl-concept-reel/cover.png', kind: 'reel' }, 2: { src: '02-stakk-concept-reel/cover.png', kind: 'reel' },
+  1: { src: '01-habba-concept-reel/cover.png', kind: 'reel' },
+};
+const PINS = (q.has('pins') ? q.get('pins') : '9,3,8').split(',').filter(Boolean).map(Number);
+if (!PINS.length) document.getElementById('note2').textContent = 'NO PINS (LAUNCH EVE, POSTS 1–8 ONLY WOULD SHOW 8 TILES) · GRID = THE UPLOAD FILES, CROPPED 3:4';
+const order = [...PINS, ...[9, 8, 7, 6, 5, 4, 3, 2, 1].filter(n => !PINS.includes(n))];
+const grid = add(`<div class="grid">${order.map(n => { const p = POSTS[n]; const ic = PINS.includes(n) ? I.pin : p.kind === 'multi' ? I.multi : p.kind === 'reel' ? I.reel : '';
+  return `<div class="tile" data-n="${n}"><img class="pic" src="${P}${p.src}">${ic ? `<span class="ic">${ic}</span>` : ''}</div>`; }).join('')}</div>`);
+grid.style.top = after(tabs, 6) + 'px';
+add(`<div class="bottom">${I.home}${I.search}${I.plus}${I.play}<div class="me"><img src="/02-logo/avatar/tash-avatar--lime-320.png"></div></div>`);
+
+// size the device to the content: the whole 3×3 grid sits above the bottom bar (a long, scrolled-screenshot view)
+const screenH = grid.offsetTop + grid.offsetHeight + 200 + 8;
+scr.style.height = screenH + 'px';
+document.querySelector('.device').style.height = (screenH + 60) + 'px';
+const pageH = screenH + 60 + 90 + 150;
+document.getElementById('page').style.height = pageH + 'px';
+const imgs = [...document.images].map(im => im.complete ? im.decode().catch(() => {}) : new Promise(r => { im.onload = im.onerror = r; }));
+const ready = Promise.all([document.fonts.load('600 46px "IBM Plex Sans Arabic"'), document.fonts.load('700 46px "IBM Plex Sans Arabic"'), document.fonts.load('400 42px "IBM Plex Sans Arabic"', 'خلّهم'), document.fonts.load('600 22px "JetBrains Mono"'), ...imgs])
+  .then(() => Promise.all([...document.images].map(im => im.decode().catch(() => {}))));
+boot({ width: 1420, height: pageH, fps: 30, duration: 1, seek: () => {}, ready });
+</script></body></html>

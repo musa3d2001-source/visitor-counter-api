@@ -1,0 +1,20 @@
+{
+  "theme": "ink",
+  "before": {
+    "src": "/08-instagram/src/ba/plates/before-wide.png",
+    "label": "صورة عادية"
+  },
+  "after": {
+    "src": "/08-instagram/src/ba/plates/after-still-hero.png",
+    "label": "*إعلان.*"
+  },
+  "beforeW": 1512,
+  "scale": 0.74,
+  "bottleTop": 537,
+  "y": 330,
+  "grip": 1236,
+  "demo": {
+    "slate": "DEMO · CONCEPT AD 01",
+    "ar": "للتوضيح: منتج تجريبي لعلامة خيالية"
+  }
+}

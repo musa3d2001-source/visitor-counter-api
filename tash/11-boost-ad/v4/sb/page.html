@@ -1,0 +1,96 @@
+<!doctype html><html lang="ar"><head><meta charset="utf-8">
+<link rel="stylesheet" href="/_system/tokens.css">
+<style>html,body{margin:0;background:#222}canvas{display:block}</style></head>
+<body><canvas id="c" width="1080" height="1920"></canvas>
+<script type="module">
+import D from '/_system/brand/logo-data.mjs';
+const WORD = await (await fetch('/11-boost-ad/src/assets/word.json')).json();
+const W = 1080, H = 1920, EXPORT = WORD.size || 140;
+const COL = { ink: '#0B0B0B', paper: '#F5F5E9', lime: '#C6FF00', smoke: '#8E9088', char: '#1A1A18' };
+const col = c => COL[c] || c;
+const BODY = {}; for (const [k, w] of Object.entries(WORD.words)) BODY[k] = { path: new Path2D(w.d), ...w };
+const MARK = { body: new Path2D(D.BODY), shadda: new Path2D(D.SHADDA) };
+const IMG = new Map();
+function img(src) { if (!IMG.has(src)) IMG.set(src, new Promise((res, rej) => { const i = new Image(); i.onload = () => i.decode().then(() => res(i), () => res(i)); i.onerror = () => rej(new Error('image failed: ' + src)); i.src = src; })); return IMG.get(src); }
+const ready = (async () => {
+  await Promise.all([['900', 'Alexandria'], ['700', 'Alexandria'], ['500', 'Alexandria'], ['400', '"IBM Plex Sans Arabic"'], ['600', '"IBM Plex Sans Arabic"'], ['700', '"IBM Plex Sans Arabic"'], ['600', '"JetBrains Mono"'], ['800', 'Archivo']].map(([w, f]) => document.fonts.load(`${w} 80px ${f}`, 'مشروعك TASH @')));
+  await document.fonts.ready;
+})();
+function clipTo(ctx, c) { if (!c) return; ctx.beginPath(); if (c.type === 'circle') ctx.arc(c.x, c.y, c.r, 0, Math.PI * 2); else if (c.type === 'rects') for (const r of c.rects) ctx.rect(r[0], r[1], r[2], r[3]); else ctx.rect(c.x, c.y, c.w, c.h); ctx.clip(); }
+function rot(ctx, L, cx, cy) { if (L.rot) { ctx.translate(cx, cy); ctx.rotate(L.rot * Math.PI / 180); ctx.translate(-cx, -cy); } }
+async function layer(ctx, L) {
+  ctx.save(); ctx.globalAlpha = L.alpha ?? 1; if (L.blend) ctx.globalCompositeOperation = L.blend; if (L.filter) ctx.filter = L.filter;
+  if (L.clip && L.t !== 'fill' && L.t !== 'still') clipTo(ctx, L.clip);
+  switch (L.t) {
+    case 'fill': clipTo(ctx, L.clip); ctx.fillStyle = col(L.color); ctx.fillRect(0, 0, W, H); break;
+    case 'still': {            // cover-fit a 9:16 still; scale/cx/cy = punch-in about a normalised centre; dx/dy shift in px
+      const i = await img(L.src); clipTo(ctx, L.clip);
+      const k = Math.max(W / i.naturalWidth, H / i.naturalHeight) * (L.scale ?? 1), w = i.naturalWidth * k, h = i.naturalHeight * k;
+      const cx = L.cx ?? 0.5, cy = L.cy ?? 0.5; const ax = L.ax ?? W * cx, ay = L.ay ?? H * cy;   // source point (cx,cy) lands on (ax,ay)
+      ctx.drawImage(i, ax - w * cx + (L.dx ?? 0), ay - h * cy + (L.dy ?? 0), w, h); break; }
+    case 'rect': { rot(ctx, L, L.x + L.w / 2, L.y + L.h / 2); ctx.beginPath(); if (L.r) ctx.roundRect(L.x, L.y, L.w, L.h, L.r); else ctx.rect(L.x, L.y, L.w, L.h);
+      if (L.shadow) { ctx.save(); ctx.translate(L.shadow.dx, L.shadow.dy); ctx.fillStyle = col(L.shadow.color); ctx.fill(); ctx.restore(); }
+      if (L.fill) { ctx.fillStyle = col(L.fill); ctx.fill(); } if (L.stroke) { ctx.strokeStyle = col(L.stroke); ctx.lineWidth = L.lw ?? 4; ctx.stroke(); } break; }
+    case 'dot': { ctx.beginPath(); ctx.ellipse(L.x, L.y, L.rx ?? L.r, L.ry ?? L.r, 0, 0, Math.PI * 2); if (L.fill !== null) { ctx.fillStyle = col(L.fill ?? 'lime'); ctx.fill(); }
+      if (L.ring) { if (L.ring.dash) ctx.setLineDash(L.ring.dash); ctx.strokeStyle = col(L.ring.color ?? 'ink'); ctx.lineWidth = L.ring.lw ?? 6; ctx.stroke(); } break; }
+    case 'word': {             // dotless word body from word.json; slot = where the middle dot of the ش sits
+      const b = BODY[L.key]; if (!b) throw new Error('no word ' + L.key); const k = L.size / EXPORT;
+      const sx = L.slot ? L.slot[0] : L.x + (b.slot[0] - b.ink[0]) * k, sy = L.slot ? L.slot[1] : L.base + b.slot[1] * k;
+      rot(ctx, L, sx, sy);
+      const body = (dx, dy, fill, stroke, lw) => { ctx.save(); ctx.translate(sx - b.slot[0] * k + dx, sy - b.slot[1] * k + dy); ctx.scale(k, k); if (stroke) { ctx.strokeStyle = col(stroke); ctx.lineWidth = lw / k; ctx.lineJoin = 'round'; ctx.stroke(b.path); } if (fill) { ctx.fillStyle = col(fill); ctx.fill(b.path); } ctx.restore(); };
+      if (L.shadow) body(L.shadow.dx, L.shadow.dy, L.shadow.color, L.shadow.color, L.lw ?? 0);
+      if (L.stroke) body(0, 0, null, L.stroke, L.lw ?? 8);
+      body(0, 0, L.fill ?? 'paper');
+      const dots = L.dots === true ? [1, 1, 1] : (L.dots || [0, 0, 0]); const r = L.dotR ?? 14 * k, p = L.pitch ?? 33 * k;
+      [-1, 0, 1].forEach((n, j) => { if (!dots[j]) return; ctx.beginPath(); ctx.arc(sx + n * p, sy, r, 0, Math.PI * 2);
+        if (L.dotRing) { ctx.strokeStyle = col(L.dotRing.color ?? 'ink'); ctx.lineWidth = L.dotRing.lw ?? 6; ctx.stroke(); } ctx.fillStyle = col(L.dotFill ?? 'lime'); ctx.fill(); });
+      break; }
+    case 'text': {
+      ctx.font = `${L.w ?? 900} ${L.size}px ${L.font ?? 'Alexandria'}`; ctx.direction = L.dir ?? 'rtl'; ctx.textAlign = L.align ?? 'center'; ctx.textBaseline = L.base ?? 'alphabetic'; ctx.lineJoin = 'round';
+      if (L.ls) ctx.letterSpacing = L.ls; rot(ctx, L, L.x, L.y);
+      if (L.shadow) { ctx.fillStyle = ctx.strokeStyle = col(L.shadow.color); ctx.lineWidth = L.lw ?? 0; if (L.lw) ctx.strokeText(L.s, L.x + L.shadow.dx, L.y + L.shadow.dy); ctx.fillText(L.s, L.x + L.shadow.dx, L.y + L.shadow.dy); }
+      if (L.stroke) { ctx.strokeStyle = col(L.stroke); ctx.lineWidth = L.lw ?? 8; ctx.strokeText(L.s, L.x, L.y); }
+      if (L.fill !== null) { ctx.fillStyle = col(L.fill ?? 'paper'); ctx.fillText(L.s, L.x, L.y); } break; }
+    case 'mark': {             // TASH wordmark; (x,y) = centre of its dot row, scale relative to logo units
+      const s = L.scale ?? 0.186, mx = D.DOTS.cx + D.TX, my = D.DOTS.cy + D.TY; ctx.translate(L.x - mx * s, L.y - my * s); ctx.scale(s, s);
+      if (L.dots !== false) { ctx.fillStyle = col(L.dotFill ?? 'lime'); for (const n of [1, 0, -1]) { ctx.beginPath(); ctx.arc(mx + n * (2 * D.DOTS.r + D.DOTS.gap), my, D.DOTS.r, 0, Math.PI * 2); ctx.fill(); } }
+      ctx.fillStyle = col(L.fill ?? 'paper'); ctx.save(); ctx.translate(D.TX, D.TY); ctx.fill(MARK.body); ctx.restore(); ctx.translate(D.TX + D.SHADDA_DX, D.TY + D.SHADDA_DY); ctx.fill(MARK.shadda); break; }
+    default: throw new Error('unknown layer ' + L.t);
+  }
+  ctx.restore();
+}
+function uiGhost(ctx, kind) {   // rough platform chrome + safe-zone guides: a layout proof, not a pixel copy of any app
+  ctx.save();
+  const g1 = ctx.createLinearGradient(0, 0, 0, 270); g1.addColorStop(0, 'rgba(0,0,0,.45)'); g1.addColorStop(1, 'rgba(0,0,0,0)'); ctx.fillStyle = g1; ctx.fillRect(0, 0, W, 270);
+  const g2 = ctx.createLinearGradient(0, 1250, 0, H); g2.addColorStop(0, 'rgba(0,0,0,0)'); g2.addColorStop(1, 'rgba(0,0,0,.6)'); ctx.fillStyle = g2; ctx.fillRect(0, 1250, W, H - 1250);
+  ctx.fillStyle = 'rgba(255,255,255,.85)'; ctx.strokeStyle = 'rgba(255,255,255,.85)'; ctx.lineWidth = 5;
+  const railX = 1004, rail = kind === 'tt' ? [1120, 1260, 1390, 1520, 1650] : [1260, 1390, 1520, 1650];
+  rail.forEach((y, i) => { ctx.beginPath(); ctx.arc(railX, y, i === 0 && kind === 'tt' ? 46 : 34, 0, Math.PI * 2); i === 0 && kind === 'tt' ? ctx.fill() : ctx.stroke(); });
+  ctx.beginPath(); ctx.arc(86, 1610, 40, 0, Math.PI * 2); ctx.fill(); ctx.fillRect(146, 1590, 300, 18); ctx.fillRect(60, 1680, 620, 16); ctx.fillRect(60, 1714, 460, 16);
+  ctx.beginPath(); ctx.roundRect(60, 1770, 760, 78, 14); ctx.stroke(); ctx.fillRect(84, 1800, 220, 18);
+  ctx.setLineDash([18, 12]); ctx.lineWidth = 3; ctx.strokeStyle = 'rgba(198,255,0,.9)'; ctx.strokeRect(120, 270, 840, 570);
+  ctx.strokeStyle = 'rgba(245,245,233,.75)'; ctx.strokeRect(300, 840, 480, 410);
+  ctx.restore();
+}
+async function draw(ctx, F, ui) { ctx.setTransform(1, 0, 0, 1, 0, 0); ctx.clearRect(0, 0, W, H); for (const L of F.layers) await layer(ctx, L); if (ui && ui !== 'none') uiGhost(ctx, ui); }
+window.SB = {
+  ready,
+  async render(F, ui) { await ready; const c = document.getElementById('c'); await draw(c.getContext('2d'), F, ui); return c.toDataURL('image/png').split(',')[1]; },
+  async sheet(frames, { cols = 4, tw = 432, ui = 'none', title = '', bg = '#141412', quality = 0.92 } = {}) {
+    await ready; const th = Math.round(tw * 16 / 9), gap = 28, lab = 150, head = title ? 110 : 30, rows = Math.ceil(frames.length / cols);
+    const S = document.createElement('canvas'); S.width = cols * tw + (cols + 1) * gap; S.height = head + rows * (th + lab + gap) + gap; const s = S.getContext('2d');
+    s.fillStyle = bg; s.fillRect(0, 0, S.width, S.height);
+    if (title) { s.fillStyle = COL.paper; s.font = '700 44px Alexandria'; s.direction = 'rtl'; s.textAlign = 'right'; s.fillText(title, S.width - gap, 72); }
+    const T = document.createElement('canvas'); T.width = W; T.height = H; const t = T.getContext('2d');
+    for (let i = 0; i < frames.length; i++) {
+      const F = frames[i]; await draw(t, F, F.ui ?? ui); const c = cols - 1 - (i % cols), r = Math.floor(i / cols);   // right-to-left reading order
+      const x = gap + c * (tw + gap), y = head + r * (th + lab + gap);
+      s.imageSmoothingQuality = 'high'; s.drawImage(T, x, y, tw, th); s.strokeStyle = 'rgba(245,245,233,.25)'; s.lineWidth = 2; s.strokeRect(x, y, tw, th);
+      s.fillStyle = COL.lime; s.font = '600 22px "JetBrains Mono"'; s.direction = 'ltr'; s.textAlign = 'left'; s.fillText(`${String(F.n ?? i + 1).padStart(2, '0')}  ${F.tc ?? ''}`, x, y + th + 34);
+      s.fillStyle = COL.paper; s.font = '600 26px "IBM Plex Sans Arabic"'; s.direction = 'rtl'; s.textAlign = 'right';
+      const words = (F.note ?? '').split(' '); let line = '', ly = y + th + 74; for (const w of words) { const n = line ? line + ' ' + w : w; if (s.measureText(n).width > tw && line) { s.fillText(line, x + tw, ly); line = w; ly += 36; } else line = n; } if (line) s.fillText(line, x + tw, ly);
+    }
+    return S.toDataURL('image/jpeg', quality).split(',')[1];
+  },
+};
+</script></body></html>

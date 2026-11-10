@@ -1,0 +1,18 @@
+<!doctype html>
+<html lang="ar" dir="rtl"><head><meta charset="utf-8">
+<title>LAYL — concept ad 01 / perfume</title>
+<link rel="stylesheet" href="/_system/tokens.css">
+<link rel="stylesheet" href="./style.css">
+<script type="importmap">{"imports":{"three":"/_system/vendor/three/three.module.min.js","three/addons/":"/_system/vendor/three/addons/"}}</script>
+</head><body>
+<div id="stage">
+  <!-- #gl (WebGL) is inserted first by main.js -->
+  <div id="vignette"></div>
+  <canvas id="grain" width="1080" height="1920"></canvas>
+  <div id="ui"></div>
+</div>
+<script type="module">
+  await new Promise(r => (document.readyState === 'complete' ? r() : addEventListener('load', r)));
+  await import('./main.js');
+</script>
+</body></html>

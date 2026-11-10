@@ -1,0 +1,406 @@
+{
+ "results": [
+  {
+   "lens": "motion",
+   "review": {
+    "findings": [
+     {
+      "id": "M1-coffee-replay",
+      "severity": "major",
+      "variant": "A-20 ig/tt/45 and A-14 ig/tt (shared f0-149)",
+      "frames": "f131-149 against f0-16; crash shown at f3-14, f15-29, f82-89 and f135-149",
+      "claim": "Coffee A is a pixel copy of the opener. The iris lands on the f0 picture (n2) and W re-enters in the same place, so at 4.4 s the ad reads as if it restarted. The ice crash and crown are on screen 4 times in the first 5 s.",
+      "evidence": "Lower frame (y>=880) of f133..f147 compared with f0..f14: mean abs diff 0.00 on every frame. f131-134 = c0-c3 (the iris), f135-149 = c4-c18 = hook f2-f16. Crash/crown showings: f3-14 (n5-16 wide), f15-29 (n6-18 at 1.25x), f82-89 (n11-18 inside the repaint circles), f135-149 (n4-18). There is also a one-frame content swap at f131: the centre porthole shows perfume through f130 and coffee c0 on f131 (seen in the f129-136 strip).",
+      "fix": "Preferred (it also removes the f131 swap): open the run on perfume. In offer() the iris draws full('o', f-131) instead of full('c', ...). Set V.cats (A-20) to: Oud A full o n0 4 @135, Oud B punch o n0 19 s 1.25 tagPop @150, Oud C lens o n0 34 slide @165 (extend prep_all.py 'o' to range(0,49)), burgerA @180, burgerB @195, Burger C lens b54 drop @210, Kunafa A k30 @225, Kunafa B lens k45 @240, Coffee A full c4 @255, Coffee B lens c68 pop @270. Use the same order for A-14 (2 beats per world). Minimal alternative: keep the order but take coffee from the settled tail: iris full('c', 68 + f - 131), cats[0] = {kind:'punch', p:'c', n0:72, s:1.3}, Coffee B lens n0 82. Either way the crash never shows after f89."
+     },
+     {
+      "id": "M2-cta-entrance",
+      "severity": "major",
+      "variant": "A-20 ig/tt (f451-454), A-20 4:5 (f450-454), A-14 ig/tt (f316-319, worst)",
+      "frames": "A-20 f451-454; A-14 f316-319",
+      "claim": "In the CTA entrance, the outgoing wordmark and tagline drop through the new footage band. Ink type lies over the kunafa for 3-4 frames. The 81 burst dots disappear on the cut while M falls, which is inconsistent. In A-14 the 840 px «طشّ» sits directly under the incoming line 1 on f316, which reads «اطلب إعلانك طشّ» (TikTok: «دزّ لنا طشّ»), then covers the dessert on f318.",
+      "evidence": "Contact sheets cta_in.jpg, a14_cta.jpg, a14tt_cta.jpg and r45_cta.jpg. A-20 f452: «خلّهم يسولفون عنك!» over the kunafa. f453: «طشّ» and the tagline over the kunafa. f454: «طشّ» at the band bottom. A-14 f317-319: the 840 px mark crosses the 10 px Ink edge and lies over the plate. Fall: dy = 1920*((d+1)/6)^2 = 53, 213, 480, 853, 1333 px.",
+      "fix": "In cta(), give the fall-out layers (the mark() and both text() calls inside `if (d < 6)`) clip {x:0, y:0, w:1080, h:CTA.panel-10}. They then drop behind the Ink edge and never cross the band. Give burst(f) the same dy and clip for d<6 so the dots fall with M (or let all of them cut on f450). For the A-14 BIG mark, also shorten the fall to 3 frames (t=(d+1)/3 when !V.shrink) so it is gone before ctaIn[0]=316. Apply the same panel clip to fall() in the wind-up: the falling handle '…e.kw' is drawn over the coffee band outside the iris at f589-591."
+     },
+     {
+      "id": "m3-iris-early",
+      "severity": "minor",
+      "variant": "all variants",
+      "frames": "f131-135",
+      "claim": "The centre-porthole iris covers the whole frame by f133, so f133-134 are bare full-frame footage with no W, dots or tag, and the picture change lands 2 frames before the f135 beat. W and the tag then pop on at f135.",
+      "evidence": "r = 110+2190*((f-130)/4)^2 gives 247, 657, 1342, 2300. The farthest corner from (540,1125) is 1248, so f133 is fully covered. Measured: 51% of the field changes at f132 and 43% at f133, and only 11% at f135. Strip iris.jpg.",
+      "fix": "In offer(), fit the end radius: r = 110 + (1260-110)*((f-130)/4)**2 (full on f134). Draw word(1,{clip:C}) and dotsLime(f,{clip:C}) inside the iris, as the wind-up does, so W is already there when the tag slams at f135."
+     },
+     {
+      "id": "m4-porthole-copies-as-nuqat",
+      "severity": "minor",
+      "variant": "all variants",
+      "frames": "f102-110 (f103, f104, f106, f107, f110 visible)",
+      "claim": "The three Ink copies that drop from the wordmark to the portholes cross the static offer lines as dots the size of Arabic nuqat. On f104 a dot sits right above the ع of «علينا», which reads «غلينا». On f107 an extra dot sits over the teeth of «علينا». On f103 and f106 a dot sits between «طشّ» and «خلّ».",
+      "evidence": "portdots.png (full-res crops). Copy path: x linear, y = md.cy + 760*t^2 with t = 0.25/0.5/0.75 → y 412/555/792, r 16-21 px. The y 555 and 792 positions fall in the gaps between the lines.",
+      "fix": "In offer(), shorten the drop so no frame falls inside the text band. On fo-4..fo-2 keep the copy on M's own dot (hidden). On fo-1 draw it once at (lerp(srcX, P.x, 0.9), PORT_Y-70, r 20), which is below «علينا» and above the porthole. Alternative: push the travelling copy after the text layers with a 6 px Lime ring so it reads as an object, not a letter dot."
+     },
+     {
+      "id": "m5-jump-through-line",
+      "severity": "minor",
+      "variant": "all variants (4:5 same geometry, scaled)",
+      "frames": "f73, f76, f79 (A-20/A-14)",
+      "claim": "Each returning lime dot is drawn for one frame inside the «محد يسولف؟» line, half-hidden behind «يسولف» where the two dots of the ي sit. The jump curve also hovers for 2 frames before landing.",
+      "evidence": "Measured dot centres: right dot 1170 → 764 → 514 → 384 → 336 → 334 → land 342 (f72-78). The middle and left dots are at y 770 on f76 and 772 on f79, inside the line ink y about 625-790. Zoom jumpline.png.",
+      "fix": "In dead(), replace lerp(FLOOR_Y, DOT_Y, easeOutBack(t, 0.6)) with a per-frame table JF = [0, 0.32, 0.785, 0.964, 1.005] (y = lerp(FLOOR_Y, DOT_Y, JF[f-start])). 9:16 gives 1170, 905, 520, 372, 338, then 342. 4:5 gives 962, 697, 312, 164, 130, then 134. Neither puts a frame inside the line band."
+     },
+     {
+      "id": "m6-ghost-dims-hero-dots",
+      "severity": "minor",
+      "variant": "all variants",
+      "frames": "f330, f345 (A-14: f270, f275)",
+      "claim": "On the first multiplication beats, the alpha-0.35 ghost rows are drawn at the arc origin (715,342) on d=0. They sit on W's own dots and turn them olive for one frame, right on the cut.",
+      "evidence": "Pixel colour of W's dots: f329 (198,255,0), f330 (137,175,3), f331 (198,255,0). f345 (124,159,3). Visible in mult.jpg f330.",
+      "fix": "In multRows(), draw the ghost row only when d > 0: `if (d > 0) L.push(...row(xp, yp, [0,0,0], r*0.8, pitch, {alpha: 0.35}))`."
+     },
+     {
+      "id": "m7-bun-freeze",
+      "severity": "minor",
+      "variant": "A-20 all (f210-218); A-14 (f195-203)",
+      "frames": "f210-218",
+      "claim": "The top bun hangs frozen in mid-air for 9 frames (0.3 s, zero change in the lower frame), then drops at 2x speed. It reads as a freeze-frame rather than hang time.",
+      "evidence": "The lower frame (y>=880) is unchanged across f210-218 (diff < 0.05). Bun top on screen: 884 held, then 888, 904, 932, 965, 1002, 1052 (f219-224).",
+      "fix": "In cats() burgerA, use `const n = d <= 3 ? 11 : 8 + d` (hold n11 for 4 frames, then n12-n22 at 1:1, still ending on n22 at f224). The fall then follows the clip's own acceleration (4-27 px/frame)."
+     },
+     {
+      "id": "m8-burger-lens-rebound",
+      "severity": "minor",
+      "variant": "A-20 all (f240-244); A-14 has no burger lens",
+      "frames": "f242-243",
+      "claim": "After the Burger C lens lands, it bounces up 8 px on f243, so the burger visibly moves upward. This is the motion the owner mocked. The values follow R3-24, but they are worth changing given his note.",
+      "evidence": "Lens rim top at x=540: 856, 884, 936, 928, 930, 930 on f240-245 (up 8 px, then down 2 px).",
+      "fix": "In cats(), change the 'drop' entrance to a monotonic ease-out: dy = [-74, -46, -12, -3, 0][d] (centre y 1196, 1224, 1258, 1267, 1270; the rim never rises above y 856)."
+     },
+     {
+      "id": "m9-shockwave-unreadable",
+      "severity": "minor",
+      "variant": "all variants",
+      "frames": "f89-91",
+      "claim": "The shockwave never reads as coming from the middle dot. On f90 it already covers 82% of the field and is full by f91, so it looks like a hard cut with a curved remnant in the bottom-left corner for one frame.",
+      "evidence": "shockR = 2300*easeOutCubic((f-89)/4) gives 1330 on f90 and 2012 on f91. The farthest corner from (715,342) is 1732. Diffs: 82% of the field changes on f90, 20% on f91 (shock.jpg).",
+      "fix": "Fit the end radius and soften the curve: shockR = f => 1740*(1-(1-clamp((f-89)/4))**2) gives 761, 1305, 1631, 1740 on f90-93. The front is then visible around the slamming M for 3 frames and still lands on the beat."
+     },
+     {
+      "id": "m10-drain-dot-off-its-third",
+      "severity": "minor",
+      "variant": "all variants",
+      "frames": "f36-44",
+      "claim": "The third dot (x 623) is meant to drag the left third (x 0-360), but it falls over the already-drained middle column. The left strip falls 260+ px away with no dot on it. The middle dot (x 715) straddles its strip edge at 720.",
+      "evidence": "Measured dot centres: x 623 at y 342 → 1832 (f36-44), while the clip of the left strip is x 0-360 (drain2.jpg f39-43).",
+      "fix": "In drain(), slide each falling dot to its strip centre in the first 3 frames: x = lerp(DOT_X[F.j], F.x0+180, easeOutCubic(clamp((f-F.f0)/3))). The drop then continues straight down. The drop is at most 213 px in those frames, so it still reads as a fall."
+     },
+     {
+      "id": "m11-windup-glass-step",
+      "severity": "minor",
+      "variant": "A-20 all (f589-590); A-14 (f414)",
+      "frames": "f589-590",
+      "claim": "The wind-up iris opens on n2 drawn at dy 0, while the coffee band shows the settled glass drawn 105 px higher. As the ring sweeps the glass, it appears to step down about 100 px instead of a clean rewind.",
+      "evidence": "wind_glass.jpg: glass rim at about y 1115 (band, dy -105) outside the iris on f589, and y 1220 inside the iris on f590.",
+      "fix": "Keep the coffee band (V.band[3], and the last A-14 band) at dy 0 for its final frames, or for the whole shot (rim then about 160 px under the panel edge). Alternatively draw the wind-up iris footage with dy equal to the band's dy and accept a cut at f594. The first option keeps the loop intact."
+     }
+    ],
+    "checked": "Watched A-20 IG frame by frame as contact sheets and strips around every transition. Measured consecutive-frame diffs for all 600 frames, plus A-14 IG and 4:5. Every full-field change falls on a multiple of 15, apart from the designed transitions: drain f32-44, repaint f79-87, iris f131-134, 81-row landing f362, flood f378-381, M shrink f401, wind-up f588-593. No category beat is longer than 15 frames.\n\nThings that are fine:\n- Hook: the remap looks natural (n2-16 wide, replay n6-18 in the punch-in on f15, n18 held f28-29). «حلو…» slams on f3 and exits on f32-33.\n- Source footage: phase correlation shows no camera jumps in k30-72, o0-44, c0-18 or c68-96.\n- Burger: the settled bun sways at most 4 px. The backwards index jumps n71→n54 at f120 (porthole) and f240 (lens) are therefore invisible. The bun fall f219-224 is monotonic and accelerating. Burger B's landing across the cut, the bump and the push-in are clean.\n- Lens entrances: the oud slide and the coffee pop are smooth.\n- Holds: the band freezes (burger n72 f495-509, coffee n96 f569-587) are invisible on static products. Band seams are under 1 level.\n- Flood: the luma ramp over f378-381 is smooth, with no step.\n- Snap, burst and tagline timing match the spec.\n- Dots: the typing phase is continuous across sections. The dots read as the same three dots through floor → jump → ش → offer → rows → flood → CTA wordmark → wind-up iris from its middle dot.\n- Loop: f599 to f0 differs only by the typing dots (mean abs diff 0.065, both A-20 and A-14). The MP4 frames align with the PNGs (sampled f0, 15, 90, 135, 225, 450, 599).\n- TikTok: TT differs from IG only on f453-591, and its CTA layout is clean. The A-14 wind-up is fine.\n\nNot reported, as listed build decisions: no ghost dots, the floor drop at f45-50, 57 dots in 4:5, the 4:5 burst flying off the frame, burst dots below the tagline, perfume in the centre porthole.\n\nReview sheets and crops are in /tmp/claude-0/-home-user-visitor-counter-api/1e0f8dbb-d731-5965-a898-07519c7bdbc3/scratchpad/rev_pic/ (ov_*.jpg, cta_in.jpg, a14_cta.jpg, iris.jpg, portdots.png, jumpline.png, mult.jpg, burgA.jpg, wind_glass.jpg, d20ig.txt). Scripts are in its tools/ folder."
+   },
+   "verify": {
+    "verdicts": [
+     {
+      "id": "M1-coffee-replay",
+      "real": true,
+      "severity": "major",
+      "why": "Confirmed by measurement. Lower frame (y>=880) of f133-147 against f0-14: mean abs diff 0.00 in 20ig and 14ig, and 0.02-0.13 in 4:5. Whole-frame diff is only about 4% of pixels (the tag). The sheet /tmp/claude-0/-home-user-visitor-counter-api/1e0f8dbb-d731-5965-a898-07519c7bdbc3/scratchpad/rev_pic/sk/m1_cmp.jpg shows f133-136 looking like f0-3 with a different tag word, so it reads as a restart. R3-21 does specify Coffee A = n4-n18, and R3-24 only moved the porthole, so the root cause is spec-conformant. It is not on the do-not-report list, though, and R3-24 itself calls the repetition a problem. The f131 perfume-to-coffee swap inside the centre porthole is real (m1_iris.jpg), but it is ordinary iris-onto-new-shot grammar and minor on its own. Two problems with the reviewer's preferred fix: its reorder table still puts 'Coffee A full c4 @255', which is the crash again, so 'the crash never shows after f89' is false for that option. It also moves every world SFX cue in the separately built score (ice clink f135, crackle f165, sizzle f210, thump f225, crunch f255).",
+      "fix": "Picture-only change, score cues unchanged, crash never on screen after f92. (1) In offer(), change the iris footage to full('c', 68 + f - 131, {clip: C}), which gives c68-c71. (2) In both V tables, set cats[0] = {f0:135, kind:'full', p:'c', n0:72, tag:'قهوة؟'} (c72-c86, settled wide; same framing as the iris, so the tag clearance verified for the coffee wide still holds; c68-c86 tops checked clean above y 880) and cats[1].n0 = 82 (lens c82-c96). If the coffee world feels too static, use cats[0] = {kind:'punch', p:'c', n0:72, s:1.3}, as the reviewer suggests. Reordering to oud/burger/kunafa/coffee is only worth doing together with a re-cued score, and Coffee A at f255 should still come from c68+."
+     },
+     {
+      "id": "M2-cta-entrance",
+      "real": true,
+      "severity": "major",
+      "why": "Seen. In A-20 9:16 the tagline lies over the kunafa on f452, and «طشّ» plus the tagline on f453 (m2_a20.jpg). 4:5 shows the same on f451-453 (m2_45.jpg). A-14 ig and tt are the worst: the 840 px mark crosses the edge on f317 and covers the plate on f318 while «بالخاص» enters (m2_a14.jpg, m2_a14tt.jpg). The wind-up also shows the falling handle '…e.kw' over the coffee band, outside the iris, on f589-590 (wind20_crop.jpg). Type covering the product goes against checklist 12 'Tags and products'. Two sub-claims do not hold. The burst dots cutting on f450 is an ordinary hard cut of the ground, not a defect. The f316 «اطلب إعلانك / طشّ» stack lasts one frame and reads as the brand, not as a misread. Major is mostly driven by A-14; A-20 alone would be minor.",
+      "fix": "In cta(), inside `if (d < 6)`, add clip {x:0, y:0, w:1080, h:CTA.panel-10} to mark() and to both text() calls. This is 1050 in 9:16 and 790 in 4:5; the compositor applies L.clip to every non-still layer. For A-14 (!V.shrink) use t = (d+1)/3, so the BIG mark is clipped away by f316 when line 1 enters. In the wind-up, give fall() the same panel clip: `{...o, y:..., rot:..., clip:{x:0,y:0,w:1080,h:CTA.panel-10}}`. Leave burst() alone, since the dots cutting on f450 is fine."
+     },
+     {
+      "id": "m3-iris-early",
+      "real": true,
+      "severity": "minor",
+      "why": "Measured changed area per frame: f131 9%, f132 51%, f133 43%, f134 0.3%, f135 12%. In 4:5 it is 10%, 49%, 46%, 0.6%, 15%. f133 r=1342 exceeds the 1248 corner distance, and in 4:5 f133 r=1061 against a 1064 corner. So the visible iris is 2 frames, and f133-134 are bare footage before W and the tag slam on f135 (m1_iris.jpg). That is 67 ms and only polish, but the picture change does land 2 frames ahead of the beat.",
+      "fix": "In offer(), set const IR = Math.hypot(540, Math.max(PORT_Y, HH - PORT_Y)) + 12 (1260 in 9:16, 1076 in 4:5) and r = 110 + (IR - 110) * ((f - 130) / 4) ** 2. This gives 182/397/757/1260 and covers the frame only on f134. Inside the iris, after the footage, push word(1, {clip: C}) and ...dotsLime(f, {clip: C}), as the wind-up does."
+     },
+     {
+      "id": "m4-porthole-copies-as-nuqat",
+      "real": true,
+      "severity": "minor",
+      "why": "Seen at full resolution (m4a.jpg, m4b.jpg). f103, f106 and f109 put a dot right under «طشّ». f104 puts a dot on the ع of «علينا» (reads غ). f107 puts a dot on its teeth, and f110 sits beside its alif. Each lasts one frame, but there are 6 such frames in 9. The reviewer's fix has a flaw: PORT_Y-70 = 1055 for the centre copy (x≈536) sits 55 px under the ي dots of «علينا». The measured ink bottom is y 980 at x 480-560, so that position can read as a third ي dot.",
+      "fix": "In offer(), for f < P.fo: if (f < P.fo - 1) continue (the copy stays merged with M's dot). On f === P.fo - 1 draw {t:'dot', x:P.x, y:PORT_Y - 45, r:20, fill:'ink'}. That is y 1080 in 9:16, 100 px under the «علينا» ink (bottom 980), and y 872 in 4:5, 100 px under 772. No copy frame then falls inside the text block. The three pops at fo still carry the 'copies leave M' beat."
+     },
+     {
+      "id": "m5-jump-through-line",
+      "real": true,
+      "severity": "minor",
+      "why": "Seen in m5z.jpg and m5_45.jpg. On f73, f76 and f79 the jumping dot sits inside «محد يسولف؟» (ink y 629-775), half under the line, and on f76 it replaces the ي dots. Section 7 says 'they pass W, never the line'. The 'hover' sub-claim is not a defect: it is the designed 6-8 px easeOutBack overshoot. The reviewer's fix is broken as written. The jump branch runs 6 frames (f-start = 0..5), but JF has 5 entries, so JF[5] is undefined and the y becomes NaN on f77, f80 and f83.",
+      "fix": "In dead(), use const JF = [0, 0.38, 0.785, 0.964, 1.005, 1.0] and y = lerp(FLOOR_Y, DOT_Y, JF[f - start]); keep x and r on t = (f - start)/6. In 9:16 this gives 1170, 855, 520, 372, 338, 342, all clear of the line band 629-775 with ring and shadow. In 4:5 it gives 962, 647, 312, 164, 130, 134, clear of 421-567. 0.38 rather than 0.32 keeps the launch frame the fastest."
+     },
+     {
+      "id": "m6-ghost-dims-hero-dots",
+      "real": true,
+      "severity": "minor",
+      "why": "Measured W dot colour (198,255,0) dropping to (137,175,3) on f330, (124,159,3) on f345 and (123,158,3) on f360. A-14 shows the same on f270, f275 and f280. The reviewer missed f360 and f280. The m6.jpg crop shows olive dots with dark concentric rings for one frame on each cut: the stacked alpha-0.35 ghost rows at ARC t=0 sit exactly on W's slots.",
+      "fix": "In multRows(), change the d<2 branch to: if (d > 0) L.push(...row(xp, yp, [0,0,0], r*0.8, pitch, {alpha: 0.35})). Keep the real row as it is."
+     },
+     {
+      "id": "m7-bun-freeze",
+      "real": true,
+      "severity": "minor",
+      "why": "Measured zero change in the lower frame for f211-218 (diff 0.00), with the bun top held at 885. It then falls 890, 904, 930, 964, 1002, 1052 on f219-224. This follows R3-23 to the letter (n11 held f210-218, then every second frame), so changing it amends a spec row. Still, 0.3 s of a completely frozen picture, sesame included, after a cut is visible as a freeze, and the owner is the one who reacts to burger physics. A-14 f195-203 is identical.",
+      "fix": "In cats() burgerA, use const n = d <= 3 ? 11 : 8 + d (n11 on f210-213, then n12-n22 at 1:1, still n22 on f224). Note it as an amendment to R3-23."
+     },
+     {
+      "id": "m8-burger-lens-rebound",
+      "real": false,
+      "severity": "minor",
+      "why": "The measurement is right: the rim top is at 856, 884, 936, 928, 930 on f240-244. But it is the designed motion: section 7 says 'Lens L drops in with one bounce', and R3-24 gives exactly these centre values (1196/1224/1276/1268/1270), with the rim never above 856. The whole framed lens settles 8 px as a graphic object (m8.jpg). The burger does not move inside its own shot, which is what the owner mocked («شلون يرفع البرجر عكس» was about footage running backwards).",
+      "fix": "No change needed. If the director wants zero upward motion anyway, set the 'drop' dy to [-74, -46, -12, -3, 0] in cats()."
+     },
+     {
+      "id": "m9-shockwave-unreadable",
+      "real": true,
+      "severity": "minor",
+      "why": "Measured 84% of the field changing on f90 and 19% on f91 (4:5: 82% and 23%). m9.jpg shows f90 as a lime field with a curved Ink edge in the bottom-left corner, then full lime on f91. That is effectively a one-frame wipe, not the 2-frame ramp that section 7 and the flash-limit plan count on. The reviewer's 1740 end radius is unsafe in 4:5: f90 would be r≈761 there, while the old «محد يسولف؟» left end (124,567) is 733 px from (715,134). That is close enough that an easeOutQuad end of 1423 (r 623 on f90) would leave the old line showing next to the new «خلّ إعلانك» at almost the same baseline.",
+      "fix": "In offer(), use shockR = f => (R45 ? 1800 : 1744) * (1 - (1 - clamp((f - 89) / 4)) ** 2). 9:16 gives 763, 1308, 1635, 1744 on f90-93, which covers all old type on f90 (farthest old-ink point is 733) and leaves the front visible for 3 frames. 4:5 gives 787, 1350, 1687, 1800, which covers the old line on f90 and is full on f92."
+     },
+     {
+      "id": "m10-drain-dot-off-its-third",
+      "real": true,
+      "severity": "minor",
+      "why": "By code and in m10.jpg: FALL j=0 drops at DOT_X[0] = 623, while its strip is x 0-360. On f39-44 the left strip falls with no dot on it, and the dot falls over the already-grey middle column. The dot at 715 straddles the 720 edge. This is inherent in R3-3 ('straight down' plus 'third drags the left third' cannot both hold with dots at 623-807), so it is a concept-coherence polish item. At speed it is subtle.",
+      "fix": "In drain(), for both the shadow and the lime disc, use x = lerp(DOT_X[F.j], F.x0 + 180, easeOutCubic(clamp((f - F.f0) / 3))) (shadow at x + 8). The dots fan to 900/540/180 while dropping at most 213 px, then fall straight. Note it as an amendment to R3-3's 'straight down'."
+     },
+     {
+      "id": "m11-windup-glass-step",
+      "real": true,
+      "severity": "minor",
+      "why": "Seen in wind20_crop.jpg and wind14_crop.jpg. On f589 (A-14 f414) the band glass, rim about 1115, sits under an iris showing n2 ice. On f590 (A-14 f415) the n2 glass inside the iris has its rim at about 1220, so the glass steps down about 105 px during the rewind. The cause: the band still uses dy -105 without FD, while full() uses dy FD. In 4:5 the step is -380 against -285, so 95 px. Option 2 from the reviewer (iris at the band dy) would break the f599→f0 loop match.",
+      "fix": "Set the coffee band dy to the footage offset for the whole shot: A-20 V.band[3].dy and the last A-14 band dy = R45 ? -285 : 0, i.e. FD. The glass then stays put through the wind-up and the loop. In 9:16 the rim is 160 px under the panel edge and the body is clear above y 1500. In 4:5 the rim is at about y 935 with the base at about 1304, inside the 1350 frame. The unshifted underlay copy then drops out by itself (it is only drawn when B.dy < 0), so it needs no edit."
+     }
+    ]
+   }
+  },
+  {
+   "lens": "layout",
+   "review": {
+    "findings": [
+     {
+      "id": "T1",
+      "severity": "major",
+      "variant": "A20-ig-45 (4:5 feed)",
+      "frames": "f210-219 (Burger A, bun n11 held f210-218)",
+      "claim": "The 4:5 tag «برجر؟» sits on the floating top bun. Its Ink keyline and block shadow overlap the bun for 10 frames, so the tag looks like it rests on the burger.",
+      "evidence": "I rendered the tag layer alone and the footage alone with the project compositor (rev_pic/typo/iso, rev_pic/typo/foot). On f210-218 the bun top is at y 597 and on f219 at y 603. The tag (170 px, baseline 530) has its keyline and shadow bottom at y 606 and its glyph fill bottom at y 586. That gives 24 overlapping pixels per frame on f210-218 and a 2 px gap on f219. You can see it in the crop rev_pic/typo/c2.jpg: the tail of «ر» and its black shadow touch the bun. In 9:16 the same beat has 39 px of clearance (bun 882, tag 843). Spec section 12 says no tag ink box may intersect the product.",
+      "fix": "In mk_film.mjs cats(), kind 'burgerA', make the shift format-dependent: const sh = R45 ? 60 : 30; then full('b', n, { clip: { x: 0, y: 0, w: 1080, h: sh } }) and full('b', n, { dy: sh }). This puts the 4:5 bun top at y 627, which is 21 px clear of the shadow and 41 px clear of the fill. The board still ends above y 1350. 9:16 does not change."
+     },
+     {
+      "id": "T2",
+      "severity": "major",
+      "variant": "A14-ig-916, A14-tt-916 (major); A20-ig-916, A20-tt-916, A20-ig-45 (same defect, 2-frame flashes)",
+      "frames": "A-14: f270-271, 275-276, 280-281. A-20 and 4:5: f330-331, 345-346, 360-361",
+      "claim": "During the multiplication steps the dots in flight are drawn on top of «مشروعك» and «شنو حسابهم؟!». The semi-transparent trail rows (alpha 0.35, with their Ink shadow) turn the word's own three lime dots, and the letters they cross, a muddy dark olive. This breaks M8 ('no dot over W or the talk boxes before f360').",
+      "evidence": "Layer audit (rev_pic/typo/tools/dotover.mjs) counts loose dot layers that intersect the W box and the talk-line box. A-20: f330 L6, f345 W12/L24, f346 W12/L36, f360 W96/L33, f361 W24/L51. A-14 has the same counts on f270/271/275/276/280/281. In the crops rev_pic/typo/c15.jpg (A-20) and c18.jpg (A-14), «حسابهم» is covered on f345, f361, f275, f276, f280 and f281, and the word's three dots are olive on f330/f345/f360 and f270/f275/f280. In A-14 the talk line is on screen only f255-292, so 6 of its frames are covered, three times inside 0.4 s.",
+      "fix": "In talk(), change the layer order to [{fill}, ...multRows(f), wordInk(...), ...dotsLime(f), ...talkLine(f, ...)] so loose and flying dots pass behind the word, its dots and the line (as dead() already does for the line). In multRows(), draw the alpha 0.35 trail row without its Ink shadow disc: give row()/disc() a noShadow option and use it for the trail, or drop the trail. The settled rows already avoid both boxes (rows81 boxes, ROWS27), so nothing else changes."
+     },
+     {
+      "id": "T3",
+      "severity": "minor",
+      "variant": "all five",
+      "frames": "f131-134 (offer card)",
+      "claim": "The iris starts covering «علينا» at f131, so the 3-word offer line «خلّ إعلانك علينا» is complete and clean for only 1.27 s. The checklist asks for 1.4 s, and section 7 claims 'static f93-134 (1.4 s)'.",
+      "evidence": "In offer() the iris r at f131 is 110 + 2190*(1/4)^2 = 247 around (540,1125), with a 24 px Ink rim. It reaches y 878 and cuts «علينا» (fill y 813-981), as seen in rev_pic/typo/c11.jpg f131. At f132 r = 657 covers the whole offer block. The line is complete f93-130 = 38 f = 1.27 s.",
+      "fix": "In offer(), push the iris layers (the full('c', f-131, {clip}) and its ring) before markK(...) and the two text() layers. The wordmark and offer line then stay on top of the opening coffee through f134 (Ink on tangerine is 7.5:1), giving f93-134 = 1.4 s. The hard cut at f135 is unchanged."
+     },
+     {
+      "id": "T4",
+      "severity": "minor",
+      "variant": "all; «دزّ لنا» only in A20-tt-916 and A14-tt-916",
+      "frames": "f3; f45-46; f402; TT f453-454 (A-14 TT f316-317)",
+      "claim": "The per-word entrance pop (pop() = 1.12, 1.04) pushes the glyph fill out of its zone on entrance frames, including the exact overflow R3-9 moved «دزّ لنا» to avoid.",
+      "evidence": "Glyph-fill boxes measured from isolated renders: «محد يسولف؟» f45 x 74-1001 and f46 x 107-968 (Zone A is x 120-960). «خلّهم» f402 right edge x 990. «دزّ لنا» f453 top y 257 and f454 y 268 (Zone A top is 270; settled 273). «حلو…» f3 (230 px) top y 547, above the slot T top of 560. Settled states all pass.",
+      "fix": "In mk_film.mjs, use a vertical rise instead of the scale pop for lines whose settled box is within 15 px of a zone edge. The talk line's rise(d) (+10, +3, 0 px on y at constant size) works for deadLine(), the TikTok L1 in cta(), and «خلّهم» in snap(). Alternatively, cap those pops at 1.01. For the hook tag, change hookTag f3 from 230 to 220 so the fill stays inside slot T."
+     },
+     {
+      "id": "T5",
+      "severity": "minor",
+      "variant": "all five (worst in A20-ig-45)",
+      "frames": "CTA hold f465-587 (A-14 f323-413), every typing peak, e.g. f468-469, f473-474",
+      "claim": "On the CTA wordmark «طشّ», the typing middle dot rises to within a few pixels of the shadda. At phone size the dot and the shadda merge into one blob, so the shadda stops reading cleanly on every bounce.",
+      "evidence": "Connected-component measurement in rev_pic/typo: in 9:16 the gap from shadda bottom (y 864) to the dot top at its peak is 5 px. In 4:5 the gap is 3 px (shadda 637, dot 640) at f473-474. At rest the gaps are 15 px and 11 px. A 390 pt phone-scale crop (rev_pic/typo/c17phone.png) shows them touching.",
+      "fix": "In cta(), lower the typing amplitude for markTyping from typing(f, R45 ? 8 : 10) to typing(f, R45 ? 4 : 6). This leaves at least 9 px of air under the shadda at the peak. Alternatively, keep 10/8 for the outer dots and halve the middle dot's offset."
+     },
+     {
+      "id": "T6",
+      "severity": "minor",
+      "variant": "all five (A-20 f390, A-14 f300)",
+      "frames": "A-20 f390; A-14 f300",
+      "claim": "On the slam frame all 81 burst dots are stacked on the burst centre (540,538). That centre shows through the open space of the ش, so «طشّ» gets an extra pink and azure dot next to its three dots for one frame, on the hero hit.",
+      "evidence": "In burst(), d = 0 gives e = 0, so every dot sits at C. It is visible in rev_pic/typo/c14.jpg f390 at about (551,554) and in the A-14 f300 tile (rev_pic/typo/s14.jpg).",
+      "fix": "In snap(), skip burst(f) when f === V.snap (start the burst at d = 1), or compute e with clamp((d + 1) / 11) so the dots already sit at least 68 px out along their rays on the first frame."
+     },
+     {
+      "id": "T7",
+      "severity": "minor",
+      "variant": "all five",
+      "frames": "every frame showing W (f0-89, f135-374, f594-599)",
+      "claim": "The word «مشروعك» is drawn from a weight-900 path, while every other line uses Alexandria 800. Its ink box is 26 px wider than spec section 5 / M2 (x 151-929, ±2 px).",
+      "evidence": "11-boost-ad/src/assets/word.json has weight 900, size 140. The measured W fill is x 138-942, y 330-537 (804 x 207). The pulse frames f15/135/165/... reach x 124-948 for the fill and 116-964 for the keyline, which is 4 px outside Zone A and within the 6 px allowance. Zones pass; the M2 numeric check fails.",
+      "fix": "Because the approved storyboard used the same word.json, keep the look and correct section 5 / M2 to x 138-942, y 330-537. Only if the spec number must hold, re-export word.json at weight 800 (word_export.py) and re-check the dot-row centring on the ش."
+     },
+     {
+      "id": "T8",
+      "severity": "minor",
+      "variant": "A20-ig-916 and A20-tt-916 (f590-591), A20-ig-45 (f590), A-14 (f414-415)",
+      "frames": "f590-591 (A-14 f414-415)",
+      "claim": "During the wind-up, the falling CTA lines are drawn outside the iris over the coffee band. Fragments stay readable over the footage for a frame or two: «e.kw» on the 9:16 f590 frame, and the whole rotated «@tash.creative.kw» on 4:5 f590.",
+      "evidence": "rev_pic/typo/c3.jpg f590 (9:16) and the f590 tile of rev_pic/typo/s45.jpg (4:5). In 4:5 the handle box is y 1065-1194 while the iris reaches only about y 1120.",
+      "fix": "In cta(), when tip > 0, give the three falling text layers clip { x: 0, y: 0, w: 1080, h: CTA.panel } so they drop out at the panel edge. Alternatively, add alpha: 1 - tip."
+     }
+    ],
+    "checked": "I reviewed all five renders and found two major defects and six minor ones (T1-T8). Separately, I did not update tash/HANDOFF.md, because the task allowed edits only in my own folder.\n\n**How I checked.** The specs regenerated from mk_film.mjs are byte-identical to the rendered film.json files of all five variants. The A20-ig-45 MP4 matches the top 1350 rows of its PNG frames (mean difference 1.4 levels). I measured glyph boxes by rendering every distinct text, wordmark and word layer (343 in all) alone through sb/compose.mjs: fill only for zone tests (R3-15), and with keyline and shadow for product contact. I rendered the footage under every tag frame (515 frames) to measure product tops. My own work is in /tmp/claude-0/-home-user-visitor-counter-api/1e0f8dbb-d731-5965-a898-07519c7bdbc3/scratchpad/rev_pic/typo/, because other reviewers are also writing into rev_pic/.\n\n**Proofreading (letter by letter, zoomed crops).** All of these are spelled correctly: «مشروعك», «حلو…», «محد يسولف؟», «خلّ إعلانك», «علينا», «قهوة؟», «عطر؟», «برجر؟», «حلويات؟», «شنو حسابهم؟!», «خلّهم يسولفون», «عنك!», «اطلب إعلانك», «بالخاص», «دزّ لنا», and both handles.\n- Shadda is intact on «طشّ» (offer, snap, tagline and CTA wordmarks), «خلّ», «خلّهم» and «دزّ». Hamza is present on «إعلانك».\n- «… ؟ ! ؟!» all sit on the left; «حسابهم؟!» renders as ؟ next to the word, then !.\n- Per-word entrances are clean: «شنو» f285 then «حسابهم؟!» f291; «خلّهم» f402, «يسولفون» f404, «عنك!» f406. The split points fall in measured gaps (x 674-716 and 631-669), so no letter is cut, including at the 1.12 pop.\n- The A-14 snap has no tagline, as specified.\n\n**Zones (settled states).**\n- Measured widths match section 5: «اطلب إعلانك» 745, «بالخاص» 599, handles 608 / 498, «دزّ لنا» 278, and the talk line x 127-952, y 635-783, as in R3-7.\n- Tags sit inside slot T, the W keyline is within the 6 px allowance, and «علينا» and «عنك!» fall inside x 300-780.\n- Nothing readable is below y 1250 except text that is falling out.\n- TikTok rail: no text and no dot centre at x > 960 over y 1100-1750 in any 9:16 variant (checked layer by layer).\n\n**4:5 layout (section 11 and R3-10).**\n- Positions match: W y 122-329, dot top edge exactly 72, tag baseline 530 at 170 / 153 px, dead line baseline 532, offer card M y 82-331 with baselines 512 / 737, portholes at y 917, talk line baseline 532, snap M y 92-568, tagline baselines 492 / 692.\n- The 4:5 ending matches R3-10 (panel 0-800, edge 790-800, baselines 202 / 422 / 562, wordmark 240 px at (420,616)).\n- All settled text has at least 72 px margins (minimum 74).\n- The duplicate glass base from the unshifted band copy sits at y ≈ 1580, so it is cropped out of the 4:5 picture.\n\n**Tags against products (clearance, settled frames).**\n- 9:16: smallest gap is 29 px (Burger C lens drop).\n- 4:5: hook 32 px, Coffee A 25 px, lens beats at least 24 px.\n- Only 4:5 Burger A fails (T1). The oud smoke fades out before the tag in both formats.\n\n**Contrast (WCAG, palette values).**\n- Ink on Lime 16.6:1, on Paper 17.9:1, on Paper-grey 14.2:1, on tangerine 7.55:1, on hot pink 6.41:1, on azure 7.52:1.\n- Lime tags and the Paper word on footage are always backed by an Ink keyline.\n- The handle is Ink on Lime at 16.6:1 and 60 px, and reads at a 390 pt phone width.\n- The Paper shadows on Lime are 1.08:1, which is decorative and as specified.\n\n**CTA.**\n- Instagram has «اطلب إعلانك», «بالخاص», @tash.creative.kw and the wordmark; TikTok has «دزّ لنا» (baseline 414, settled top y 273), «بالخاص», @tash.creative and the wordmark.\n- Nothing is shaped like a button.\n- The lines are static f463/465-587, about 4.1 s (A-14: f322/323-413, about 3.0 s).\n- Band order is kunafa, burger, oud, coffee.\n\n**Holds.**\n- «محد يسولف؟» static f47-89; the talk line is clean f291-329; the tagline is complete f406-449 (1.47 s).\n\n**Known decisions confirmed and not reported.**\n- No ghost triplet.\n- Portholes: right kunafa, centre perfume, left burger.\n- Floor dots at y 1170 (4:5: 962).\n- 57 dots at the 4:5 81 step.\n- 4:5 burst dots leave the frame.\n- Burst dots end below the tagline and never touch it."
+   },
+   "verify": {
+    "verdicts": [
+     {
+      "id": "T1",
+      "real": true,
+      "severity": "major",
+      "why": "Confirmed on the final A20-ig-45 PNGs. I checked each column of f212 for ink or lime tag pixels against orange bun pixels (rev_pic/skeptic/tools/t1gap.py). On f210-218 the smallest gap is 3 px at x 551: the tag's Ink shadow ends at y 599 and the bun's highlight rim starts at y 600-603. f219 has 7 px, f220 has 23 px and f221 has 51 px. In the 4x zoom rev_pic/skeptic/t1_zoom212.png, the shadowed round dot under the middle of «برجر؟» (around x 530-580, not the ر tail as the finding says) sits on the bun's top edge, so the tag looks like it rests on the burger. The same beat in 9:16 keeps at least 52 px of clearance. This breaks section 12 (tag never touches the product), the rule R3-10 was written to protect. One part of the proposed fix is wrong. The claim that the board still ends above y 1350 is false: in 4:5 f212 the board already reaches y about 1345 (warm pixels x 372-575 on row 1340). A further 30 px shift therefore crops the board's front curve by about 25 px for those 15 frames.",
+      "fix": "In mk_film.mjs cats(), kind 'burgerA', make the shift depend on the format: const sh = R45 ? 55 : 30; L = [full('b', n, { clip: { x: 0, y: 0, w: 1080, h: sh } }), full('b', n, { dy: sh })]. In 4:5 the clip layer does nothing because the shifted copy already covers rows 0+, so this is harmless. The smallest column gap becomes about 28 px (60 gives about 33 px). Accept that the board's lowest 20-25 rows are cut by the frame edge in 4:5 f210-224, and check f219-224 while the bun falls. 9:16 does not change."
+     },
+     {
+      "id": "T2",
+      "real": true,
+      "severity": "major",
+      "why": "Confirmed. On the step frames the word's three dots go from Lime (198,255,0) to olive at their centres: (137,175,3) on A-20 f330 and on A-14 f270, (124,159,3) on f345/f275 and (123,158,3) on f360/f280. The 4:5 frames f330 and f345 show the same. The cause is the alpha 0.35 trail row at d=0. It sits exactly on (715,DOT_Y), and its Ink shadow disc is drawn over the word's own dots. Sheets rev_pic/skeptic/t2_a20.jpg and t2_a14.jpg show rows crossing «شنو حسابهم؟!» on f330, f331, f345 and f346, plus the muddy olive cluster on f331 and f346. A-14 is the worst case: on f280-281 a dense brown cluster sits over «حسابهم», and 6 of the 15 frames in f270-284 have dots over the only talk read. f330-331 and f345-346 (A-14 f270-271 and f275-276) break M8 ('no dot over W or the talk boxes before f360'). The f360-361 and A-14 f280-281 frames fall at the 81 step, which M8 does not cover and section 7 calls 'partly covered'. They still show the olive dots. A-20 on its own is closer to minor because each flash lands on a ground-colour cut.",
+      "fix": "In talk(), change the order to [{ t: 'fill', color: g }, ...multRows(f), wordInk(...), ...dotsLime(f), ...talkLine(f, ...)]. The settled rows already avoid both boxes (the rows81 boxes and ROWS27 y≥930), so settled frames do not change. In multRows() step(), draw the trail only when d === 1, because the d=0 trail sits on top of the word's dots. Draw it without its shadow: in disc() return o.noShadow ? [dot] : [shadow, dot], then call row(xp, yp, [0,0,0], r*0.8, pitch, { alpha: 0.35, noShadow: true })."
+     },
+     {
+      "id": "T3",
+      "real": true,
+      "severity": "minor",
+      "why": "Confirmed in rev_pic/skeptic/t3_a20.jpg. On f131 the iris rim cuts through the lower half of «علينا». On f132 the offer line is gone and the wordmark is partly covered. f133-134 show only coffee. The line is complete on f93-130, which is 38 f (1.27 s), against the section 12 minimum of 1.4 s for 3 words. Section 7 also says the 'M + offer line held, static' through f134, so the generator's layer order goes against the spec's own intent. The same code runs in all five variants. In 4:5 the iris r on f131 is about 216 around y 917, which reaches y 701 and cuts «علينا» (fill y 605-773). Side effect of the fix, checked with rev_pic/skeptic/t3_mock.jpg: on f133-134 the ي dots of «علينا» touch the top falling ice cube (cube top about y 950 in 9:16). For 2-3 frames this is acceptable, and the line stays readable.",
+      "fix": "In offer(), push the f>=131 iris layers (full('c', f-131, {clip: C}) and its ring) before markK(...) and before the two text() layers. The simplest way is to compute the iris block before L.push(markK(...)) and append it right after the PORTS loop. The wordmark and offer line then stay on top through f134 (f93-134 = 42 f = 1.4 s). The cut at f135 is unchanged."
+     },
+     {
+      "id": "T4",
+      "real": false,
+      "severity": "minor",
+      "why": "The overflows are real, but they are designed one-frame entrance slams that no viewer would see as a defect. They hit no platform UI and no other element. Section 6 itself specifies «حلو…» 'slams into slot T at f3 (3 f, scale 1.2 to 1.0)'. The build uses 230/200 = 1.15, which is smaller than the spec. rev_pic/skeptic/t4_hook.jpg shows that the f3 tag at 547 still leaves clear air under W. «محد يسولف؟» on f45 (x 74-1001) sits at y about 620-790 on Paper-grey, far from the rail box (y 1100-1750) and from the frame edges. «دزّ لنا» f453 at y 257 is 13 px above Zone A for one frame, below TikTok's top tabs. «خلّهم» on f402 (right edge 990) sits at y about 600-700 with no UI there. All settled states pass. The one caveat is R3-24, which capped the W pulse for a 12 px keyline overflow. That shows the director does count transient frames, so if the M6/M11 per-frame zone test is meant to be strict, this needs a spec note.",
+      "fix": "No change is needed for the viewer. If M11 must pass per frame, change pop() for deadLine(), the TikTok L1 and the «خلّهم» clip in snap() to a 1.015/1.005 cap. «محد يسولف؟» only has 12 px spare inside Zone A at 126 px. Or replace those pops with the talk line's rise(d) (+10, +3, 0 px). Add a sentence to section 12 that entrance slams (1-2 f) are exempt from the zone test."
+     },
+     {
+      "id": "T5",
+      "real": true,
+      "severity": "minor",
+      "why": "Confirmed by per-dot column measurement (rev_pic/skeptic/tools/t5b.py, coverage threshold 0.5 on Lime). Only the middle dot is affected. 9:16: at rest it has 14 clear rows under the shadda, and at its peak (f473-475) 4-5. 4:5: 11 at rest and 3-4 at its peak (f473-475). The left dot's peak keeps 10 rows (9:16) and 7 rows (4:5). The right dot is never under the shadda (24/18). In the 2x zoom rev_pic/skeptic/t5_zoom.png, the 4:5 middle dot nearly touches the shadda. This happens for 3 frames of every 15-frame cycle, across the whole 4 s CTA hold. After phone scaling and platform compression the 3 px gap closes, and the shadda reads as one blob with the dot, which works against M6 'shadda intact on «طشّ»'. Note that the 10 px amplitude itself is written into R3-9, so the spec row needs amending too. The finding's 'at least 9 px' figure is slightly too high: amplitudes 6 and 4 give about 8 px (9:16) and 7 px (4:5).",
+      "fix": "In cta(), change markTyping(X, Y, w2, typing(f, R45 ? 8 : 10)) to typing(f, R45 ? 5 : 7). That leaves about 7 clear rows in both formats and keeps the wave even. Alternatively, keep 8/10 and scale only the middle offset: const o = typing(f, R45 ? 8 : 10); o[1] = Math.round(o[1] * 0.5). Amend R3-9's '(amplitude 10 px)' to match."
+     },
+     {
+      "id": "T6",
+      "real": true,
+      "severity": "minor",
+      "why": "Confirmed in all five variants. On A-20 f390 and A-14 f300, the pixel at the burst centre, (540,538) in 9:16 and (540,330) in 4:5, is azure (30,167,255). The 3x zoom rev_pic/skeptic/t6_zoom.png shows a concentric pink/tangerine/azure disc of about Ø44 between the ش teeth, just under its three dots, on the hero slam frame. On this frame every burst dot is inside the wordmark box. That goes against R3-8 ('none within 70 px of the wordmark box', written so that burst dots never read as letter dots). It lasts one frame and partly reads as the burst's origin, so minor.",
+      "fix": "In snap(), build L as [{ t: 'fill', color: 'lime' }, ...(f > V.snap ? burst(f) : [])]. The slam frame is then the wordmark alone on Lime, and on f391 the dots already sit at e = easeOutCubic(0.1) = 0.27 of their rays. Do not use the clamp((d+1)/11) variant, because it shifts the whole burst curve by a frame."
+     },
+     {
+      "id": "T7",
+      "real": false,
+      "severity": "minor",
+      "why": "The measurement is right. W on Paper (A-20 f300 and f320, and 4:5 f300) has an ink box of x 139-941 with its bottom at y 535, against M2's x 151-929 ±2. word.json was exported at weight 900 (tools/word_export.py: SIZE, WEIGHT = 140, 900). This is a known, documented discrepancy, not a picture defect. tash/HANDOFF.md records it: 'The word comes from the weight-900 export while the spec says Alexandria 800, so its ink box is a few px off the spec.' The owner has seen this word in the first-look and storyboard stills. The fill stays inside Zone A, the pulse frames stay within the 6 px allowance, and no viewer can see the 12 px difference per side.",
+      "fix": "Documentation only: in section 5 (W row) and M2, change the measured box to x 139-941, y about 330-535, and state the weight-900 export. Do not re-export word.json at 800 unless the owner asks, because it would change the approved look and the ش dot-row centring."
+     },
+     {
+      "id": "T8",
+      "real": false,
+      "severity": "minor",
+      "why": "These frames exist, but they are the designed fall. Section 7 says 'CTA lines tip 0 to 14 deg and fall (gone by f593)', and they are gone by f591-592. In 9:16 only an «e.kw» fragment shows below the panel edge on f589-590 (rev_pic/skeptic/t8_916z.jpg). In 4:5 the rotated handle crosses the coffee band on f590 only (rev_pic/skeptic/t8_45_590.png): the iris then reaches y about 1118 and the handle baseline is at about 1151. On f591 it has left the frame. Each case is one frame of text in mid-fall, so at speed it reads as the lines dropping off the card, not as text left over the footage. The A-14 part of the claim is wrong. In t8_a14.jpg, on f414 the handle is still above the panel edge (y about 973 against 1060), and on f415 the iris (r about 1030) covers everything, so no fragment shows over the band.",
+      "fix": "No fix is needed. As optional polish, in cta() add alpha: 1 - tip inside fall(), so the falling lines also fade out. Clipping them at CTA.panel would make them look like they slide behind the band, which is a different style, not a correction."
+     }
+    ]
+   }
+  },
+  {
+   "lens": "tech",
+   "review": {
+    "findings": [
+     {
+      "id": "TQ-1",
+      "severity": "minor",
+      "variant": "all five: A20-ig-916, A20-tt-916, A20-ig-45 (f390); A14-ig-916, A14-tt-916 (f300)",
+      "frames": "A20 f390 (all formats); A14 f300",
+      "claim": "On the first frame of the hero snap, the wordmark M runs off both sides of the frame. In 4:5 it also breaks the 72 px side margin.",
+      "evidence": "Ink bounding box (pixels within 30 levels of #0B0B0B) on f390 9:16: x 0-1079, y 229-846. Column 0 has 117 ink rows and column 1079 has 160, so M is about 1092 px wide (1.3 x 840) and loses about 6 px on each side. f391: x 97-982; f392: x 131-948; f394 settles at x 120-959. 4:5 f390: x 0-1079, y 21-638. A14 f300 is identical to A20 f390. Crop seen in /tmp/claude-0/-home-user-visitor-counter-api/1e0f8dbb-d731-5965-a898-07519c7bdbc3/scratchpad/rev_pic/qc_tech/snap390.png: the right edge of the ط and the tail of the ش are cut by the frame edge. f390 also shows all 81 burst dots stacked at r*0.5 at (540,538) as one blue/pink dot inside the ش.",
+      "fix": "mk_film.mjs, snap(): make the slam amplitude depend on the format, e.g. `const SLAM = R45 ? 0.11 : 0.28;` and use `markK(BIG.x0, BIG.y0, BIG.w, 1 + SLAM * (1 - easeOutBack(d / 4)))`. 1.28 x 840 = 1075 px fits the 1080 frame; 1.11 x 840 = 932 px fits the 4:5 72 px margins. Optionally skip burst dots on d===0 (`if (d === 0) return []` in burst()) so the stacked dot does not sit on the ش."
+     },
+     {
+      "id": "TQ-2",
+      "severity": "minor",
+      "variant": "all five",
+      "frames": "Tangerine fields: f0-29, f78-89, f131-149, f330-344 (A14: f270-284), f540-587 (band), f588-599. Red transitions (A20 9:16): f30-, f82+, f90-, f132+, f133+, f150-, f330+, f345-, f540+, f590+, f591+",
+      "claim": "The section 12 gate 'No saturated-red transitions' fails as written if it is measured the WCAG/PEAT way, on linear RGB. The tangerine backdrop counts as saturated red, but the red-flash rate stays inside the WCAG limit.",
+      "evidence": "In gamma-encoded RGB (the task's check) Tangerine #FF7A1A gives R/(R+G+B) = 0.63, and no frame has a large saturated-red area. The largest is 2.45-2.63% of the frame at f180: amber perfume liquid and mabkhara wood (/tmp/claude-0/-home-user-visitor-counter-api/1e0f8dbb-d731-5965-a898-07519c7bdbc3/scratchpad/rev_pic/qc_tech/red_180.png). The WCAG 2 red-flash note uses the linearised values. In linear light Tangerine is 1.000/0.195/0.010, so R/(R+G+B) = 0.83 (>= 0.8) and (R-G-B)*320 = 254. 80 frames of A20 (81 of A14) are 25% or more saturated red in linear terms (90% at f330). Red transitions (change of at least 20, covering at least 25% of a 10-degree window) are listed in the frames field. The worst 30-frame window has 1 opposing red pair (f82+/f90-, f330+/f345-), so PEAT/WCAG (3 or fewer per second) pass.",
+      "fix": "No generator change is needed for safety. Amend the section 12 'Flash limit' row to 'red flashes 3 or fewer per second, linear RGB (PEAT method); measured max 1'. The tangerine opener footage makes the literal 'no saturated-red transitions' impossible. If the literal gate must hold for the code-drawn fields only, change V.grounds in mk_film.mjs (A20 [TANG, PINK, AZURE], A14 [TANG, TANG, TANG]) so TANG is not a ground. That removes the f330+/f345- pair (A14: f270+/f290-)."
+     },
+     {
+      "id": "TQ-3",
+      "severity": "minor",
+      "variant": "all five",
+      "frames": "n/a (whole-film gate)",
+      "claim": "No M11 report exists. Section 12 requires an M11 report JSON to be attached (Determinism row) and relies on M11 for the tag/product mask test and the TikTok rail proof. The build produces neither.",
+      "evidence": "grep finds 'M11' only in BUILD-SPEC.md under tash/11-boost-ad/v4. There is no M11 script in build/picture or sb/, and the work dirs scratchpad/b/w_* hold only film*.json, frames/ and render logs. I ran part of the rail check myself from the film.json layer lists: no dot centre in x > 960, y 1100-1750 in A20-tt, A14-tt or A20-ig. The only text below y 1100 is falling exit text (A20 f451-455 and f590-593; A14 f415-416).",
+      "fix": "Add an M11 pass that writes w_<len>_<plat>_<fmt>/m11.json, e.g. at the end of mk_film.mjs (it already has every layer's geometry), or as a separate script over film.json. It should cover: dot/lens/porthole centres vs the rail box; tag ink box after the -4 deg tilt vs the hero box (y 930+) on every footage frame, punch-ins included; text boxes vs Zones A/B. Attach it with this QC's numbers."
+     }
+    ],
+    "checked": "I measured every PNG frame of all five variants (600/600/420/420/600). The 4:5 checks use rows 0-1349 only.\n\nLoading 'artifact-design' did not apply. I did not edit tash/HANDOFF.md because the task forbids writes outside my folder; the orchestrating session should record this QC stage there. The shared folder rev_pic/ is also being written by other agents, so all my files are in /tmp/claude-0/-home-user-visitor-counter-api/1e0f8dbb-d731-5965-a898-07519c7bdbc3/scratchpad/rev_pic/qc_tech/ (scan.py, report.py, flash.py, flash_report.py, ssim.py, mp4cmp.py, plus parts/ and fl_*.npz with the data).\n\n1) Mean luma Y' (section 4 formula, gamma-encoded): no frame is below 0.40.\n- A20-ig/tt-916: min 0.446 at f193-194 (Oud B 1.25x punch-in on hot pink). The rest of f186-194 is 0.446-0.448.\n- A14-ig/tt: min 0.456 at f175-177 (Oud A).\n- A20-ig-45: min 0.448 at f191/f193-194.\n- Section means (A20 9:16): hook 0.58, drain 0.59 (min 0.48), dead 0.78, offer 0.82, worlds 0.61, talk 0.72, flood 0.77, snap/tagline 0.81, CTA 0.68, wind-up 0.62.\n\n2) Lime and footage shares: both pass. No Ink, Char or Smoke field anywhere.\n- Lime-coloured area (within 14 levels of #C6FF00) of 40% or more of the frame: A20 9:16 52.0% of frames, A14 50.5%, 4:5 52.0% (plan 53%, gate 40%).\n- Footage layer present: A20 64.7%, A14 74.5%, 4:5 64.7% (gate 45%).\n- Largest Ink-coloured share is 12-14%, from dot rings, shadows and the 840 px wordmark (f362, f390). Char is at most 2.8%, Smoke at most 1.6%.\n\n3) Empty and near-black areas: none.\n- Alpha is 255 on every pixel of every frame, so no canvas is left unfilled.\n- Near-black (Y' < 0.10) peaks at 13-14% at the 81-dot step and at f390; these are Ink elements, not a field.\n- The only flat-only frames are the planned solid-Lime pocket, f387-389 (A14 f297-299).\n\n4) Luma steps (dY' of 0.10 or more over 25% or more of the frame): max 1 opposing pair in any 30-frame window, every variant (limit 3).\n- A20 9:16 steps: f30-, f90+, f132-, f133-, f150+, f165-, f195+, f210-, f240+, f255-, f270+, f330-, f380+, f381+, f450-, f510-, f540+, f590-.\n- A14 steps: f30-, f90+, f132-, f133-, f150+, f165-, f180+, f195-, f240+, f270-, f290+, f291+, f315-, f415-.\n- 4:5 is as A20 without f510, plus f591.\n- The same holds with cumulative k = 1..10 detection (to catch irises and thirds), with WCAG relative luminance, and with the stricter area of 25% of a 10-degree window (771 px; 6.5 cm phone at 30 cm). The worst case is 2 pairs (f195+/f196-/f210-/f210+).\n- Planned ramps: the f90 shockwave still registers as a single-frame step (+77% of the frame), and the flood peaks at f380 (+32%) and f381 (+26%). Both are one sign, so they create no opposing pairs.\n- f45 and f135 are not steps: the thirds and the iris moved the change earlier.\n\n5) Large changes off the 15-frame grid (40 levels or more on 25% or more of pixels, or 25% of a 10-degree window). All are planned transitions; there is no unplanned hard cut.\n- A20 9:16: thirds f38-45, repaint f79-84, shock f91, iris f132-133, oud lens slide f196, 81 dots land f362, flood f379-381, wind-up iris f589-591.\n- A14: as above with oud lens f181-182, f282, flood f289-291, wind-up f414-415.\n- 4:5: thirds f39-43, repaint f80-83, f91, f132-133, f196, flood f379-381, f590-591.\n- Holds with no picture change (3% of pixels or more) in f90-449: f91-131 (offer card), f285-330 (talk), and the tagline from f394/402. Section 12's 'two reading holds' should say three.\n\n6) Saturated red: see TQ-2.\n\n7) Loop, SSIM of the last frame against f0 on Y'. All pass 0.99; the residue is only the typing-dot phase at x 760-860, y 271-377.\n- A20-ig-916 f599 vs f0: 0.9983.\n- A20-tt-916: 0.9983.\n- A20-ig-45: 0.9981.\n- A14-ig/tt f419 vs f0: 0.9983.\n\n8) MP4s (ffprobe -count_frames): all pass.\n- All are H.264 High yuv420p, 30/1 fps, colour range tv, bt709 primaries, transfer and matrix, with a colr atom, moov before mdat, and start time 0.\n- A20-ig-916: 1080x1920, 600 frames, 20.000 s, 9,827,356 B, level 5.0.\n- A20-tt-916: 1080x1920, 600 frames, 9,797,016 B.\n- A14-ig-916: 420 frames, 14.000 s, 7,583,607 B.\n- A14-tt-916: 420 frames, 7,570,309 B.\n- A20-ig-45: 1080x1350, 600 frames, 7,553,129 B, level 4.0.\n- Decoded with bt709/tv to full-range RGB against the PNGs (f0, 137, 300, 392, 460, 560 for A20-ig and 3-5 frames in each other variant): mean signed difference within ±0.9 levels per channel, flat-area p99 of 2 levels or less, PSNR 36-48 dB.\n- A forced bt601 decode would shift colours by up to -22 levels in G (f165), so there is no matrix shift.\n- Frame index alignment is confirmed: f392 matches PNG 392 at 38.1 dB against 15.4 dB for 391/393.\n- Tangerine backdrop gradient: neighbouring steps are 1 level, in both PNG and MP4. No new banding.\n\n9) Determinism: PASS. compose.mjs re-render of 0137, 0392 and 0560 (one from each render chunk) is byte-identical to the shipped PNGs. Regenerating film.json with mk_film.mjs for all five variants is byte-identical to the rendered film.json, so the frames match the current generator. The 4:5 rows81 log reports 10 of 18 rows (57 dots), as the known decision says. All render logs show 0 page or console errors."
+   },
+   "verify": {
+    "verdicts": [
+     {
+      "id": "TQ-1",
+      "real": false,
+      "severity": "minor",
+      "why": "The numbers are right, but a viewer would not notice it, and the beat table asks for exactly this. I measured the same box: 9:16 f390 ink is x 0-1079, y 229-846, with 117 ink rows in column 0 and 160 in column 1079. 4:5 f390 is x 0-1079, y 21-638. A14 f300 and A20-tt f390 are pixel-identical. f391 is x 97-982 and f394 settles at x 120-959. The overflow comes straight from the spec: section 7 says the 840 px M slams from 1.3 to 1.0, and 840 x 1.3 = 1092 px can never fit a 1080 frame. In snap() the scale goes 1.30 / 1.055 / 0.974 / 0.98 / 1.0, so the edge crop lasts one frame (33 ms) and is about 6 px per side, 0.55% of the width. I looked at the full-res crop (/tmp/claude-0/-home-user-visitor-counter-api/1e0f8dbb-d731-5965-a898-07519c7bdbc3/scratchpad/rev_pic/skeptic_tq/f390_full.png and snap_seq.png). It reads as the slam filling the frame, the normal overshoot of a hit, not as a cut letter. The proposed fix makes no visible difference in 9:16: at 1.28 the M is 1075 px, still touching both edges with 2.5 px of air. In 4:5 the fix (1.11) cuts the hero hit by almost two thirds and makes it different between formats, which is worse for an owner who is sensitive to motion. The 72 px text margin and Zone A rules are about reading. On the one overshoot frame there is nothing to read, and on the settled frames f394 onward the M is at x 120-959, which passes. The stacked burst dot on f390 is real but trivial: about a 48 px pink ring with an azure centre at (540,538), sitting in the lime gap at the teeth of the ش. It is the burst's origin for one frame, and the dots fly out from it on f391.",
+      "fix": "No change needed for the slam. Keep `1 + 0.3 * (1 - easeOutBack(d / 4))` in snap(). If the 4:5 margin gate must pass to the letter, amend that gate in the spec to exempt the single slam overshoot frame (A20 f390, A14 f300) instead of shrinking the hit. Optional polish: in burst(), `if (f - V.snap === 0) return [];` removes the one-frame coloured stack on the ش teeth at f390 (A14 f300); the burst still starts on f391."
+     },
+     {
+      "id": "TQ-2",
+      "real": false,
+      "severity": "minor",
+      "why": "Nothing fails, so there is no defect in the picture. The spec defines its own red test: the M11 row in section 8 sets R/(R+G+B) >= 0.8 on gamma-encoded values and says tangerine is 0.63. On that test the largest saturated-red area in any frame is 2.98% of the frame (A20-ig-916 f182), 1.87% (A14-ig-916 f194) and 3.28% (A20-ig-45 f194), so the gate as written passes. I also reran the WCAG 2.2 linear-RGB check myself, with an 864x864 px window. Tangerine does count as saturated red there (linear R share 0.83), and 80 frames of A20 and 81 of A14 are 25% or more saturated red (90.5% at A20 f330, A14 f270). But the worst 30-frame window, loop wrap included, holds 1 opposing red pair in A20-ig-916, A14-ig-916 and A20-ig-45. The limit is 3 per second, so the PEAT/WCAG red-flash limit, the actual safety requirement in section 12, passes. Transitions I found in A20 9:16: f30-, f90-, f132+, f133+, f150-, f330+, f345-, f590+. This is at most a wording note in the spec. Tangerine is one of the three approved world colours (owner decision, section 13), so changing V.grounds to drop TANG would be a design change with no safety gain.",
+      "fix": "No generator change. Do not edit V.grounds. Optional spec wording in the section 12 'Flash limit' row: 'saturated red as defined in the M11 row (gamma-encoded); WCAG 2.2 linear-RGB red flashes 3 or fewer per second, measured max 1'."
+     },
+     {
+      "id": "TQ-3",
+      "real": true,
+      "severity": "minor",
+      "why": "The claim is right, but it is a gap in the acceptance paperwork, not something a viewer sees. Among text files, 'M11' appears only in BUILD-SPEC.md; the other grep hits are binaries and SVG path data. build/picture holds only mk_film.mjs, prep_all.py and render.sh, and each w_* folder holds only film*.json, frames/ and render logs. So the section 12 Determinism row ('report JSON from M11 attached') is not met. I spot-checked the things M11 would test, and none of them fails. Rail: from the film.json layers there are 0 dot, porthole or lens centres in x > 960, y 1100-1750 for A20-tt, A14-tt and A20-ig. Text or mark below y 1100 appears only during the falling exits: A20 f451-455 and f590-593; A14 f318-320 (the falling M, which the tech's list missed) and f415-416. Red flashes: 1 opposing pair per second at most (see TQ-2). Tags vs products, checked in /tmp/claude-0/-home-user-visitor-counter-api/1e0f8dbb-d731-5965-a898-07519c7bdbc3/scratchpad/rev_pic/skeptic_tq/tags.png at f16, 29, 138, 170, 180, 194, 210, 225, 239 and 260, punch-ins included: the tag ink ends at about y 780. The nearest products are the ice at about y 970 (f16), the bun at about y 880 (f210), and the perfume smoke, which only starts below about y 880. So what is missing is the report file, not a passing result. The owner never sees it, so it does not hold up the hand-over.",
+      "fix": "Do not put QC inside mk_film.mjs; keep the generator a pure layer list. Add tash/11-boost-ad/v4/build/picture/m11.py, built on the scripts already in /tmp/claude-0/-home-user-visitor-counter-api/1e0f8dbb-d731-5965-a898-07519c7bdbc3/scratchpad/rev_pic/qc_tech/ (flash.py, scan.py, report.py). It reads w_<len>_<plat>_<fmt>/film.json plus frames/ and writes w_*/m11.json with: (1) luma steps of 0.10 or more over 25% or more of the frame, and opposing pairs per 30 f window including the loop wrap (section 4 gamma Y'); (2) red flashes, both the spec's gamma test and the WCAG 2.2 linear test; (3) mean Y' per frame and Lime share; (4) dot, porthole and lens centres and text boxes against the rail box and Zones A/B, from the layers; (5) the tag ink box after the -4 deg tilt (render the tag layer alone) against a product mask (footage pixels that differ from the backdrop colour) on every footage frame; (6) SHA-256 of a few frames rendered twice. Call it as the last line of render.sh and fail the build on any section 12 break."
+     }
+    ]
+   }
+  }
+ ],
+ "critic": {
+  "findings": [
+   {
+    "id": "C1",
+    "severity": "minor",
+    "variant": "A20-ig-916, A20-tt-916, A20-ig-45 (band and lens); A14-ig-916, A14-tt-916 (band)",
+    "frames": "A-20: f554-587 (band c82-c96, including the n96 hold f569-587), f163-164 (Coffee B lens c81-c82, magnified 1.35x). A-14: f389-413 (band c82-c96). The mark first appears at about f552 (c80).",
+    "claim": "The dark bean in the settled coffee is only partly retouched. A dark blob with a hooked, worm-like tail stays visible in the milk near the left wall of the glass. The bean drifts about 10-15 px to the right during the settled tail and leaves the fixed fill box. From n80 on, the mark grows on screen while the camera is still, and it then sits through the 19-frame n96 hold. The owner has already flagged this kind of mark (R3-22c: 'worms or pearls').",
+    "evidence": "prep_all.py fills only box_fill(a, 390, 1270, 412, 1315). In the prepared frames, I measured the area just right of that box (x 412-430, y 1275-1330) against the median of the milk at x 432-460 on the same rows. n68-n79: 2-5 px darker than that median by 18+ levels (clean). n80: 23 px. n81: 79 px. n82: 157 px. n84: 258 px, up to 77 levels darker. n96: 110 px, 55 levels darker. The 6x crop (rev_pic/complete/bean_box.png, green box = the fill box) shows the blob at about x 412-415, y 1282-1298, then the hook at x 418-425, y 1307-1322 and a tail down to about y 1335. It is visible in the renders: rev_pic/complete/bean_render.png shows 9:16 f580 at about (410-425, 1185-1230) and 4:5 f580 at about (410-425, 915-960). Lens f163 shows it at about (390-401, 1120-1150). rev_pic/complete/cof_prep.png compares the raw and prepared frames.",
+    "fix": "In tash/11-boost-ad/v4/build/picture/prep_all.py, in the 'c' settled loop (n68-n96), widen the bean fill to box_fill(a, 390, 1270, 432, 1340). Alternatively, keep the current box and add `if n >= 78: a = box_fill(a, 410, 1272, 432, 1340)`. Re-run `prep_all.py ... c`. Re-render A-20 f150-164 and f540-587 (all three A-20 variants) and A-14 f375-413 (both). Then check that the deficit at x 412-430, y 1275-1330 stays under 18 levels on n80-n96."
+   }
+  ],
+  "checked": "I found one defect, the coffee bean only partly retouched in the band and lens (C1, minor). The other gaps I checked passed.\n\n**Gaps none of the three reviewers or their skeptics covered:**\n- (a) Two section 12 rows nobody ran:\n  - \"Honesty\": no logos, labels, text, faces, hands or AI watermark in the footage. This also covers section 4's \"no lime-coloured object inside AI footage\".\n  - \"Thumb-stop / Lens test\": name the product at 270x480.\n- (b) The zero-credit retouches in prep_all.py (R3-22c/e, R3-23, R3-24), looked at 100% and under lens magnification. The owner has already complained about marks in the milk.\n- (c) Unnatural motion inside the clips other than the burger: kunafa, oud and settled coffee. Motion review covered camera jumps and the burger only.\n- (d) Whether any frame from the \"never on screen\" ranges reaches the film.\n- (e) That A-14 f0-134 really is identical to A-20.\n- (f) Aliasing or shimmer when footage is shrunk into the portholes and lenses.\n\nNamed but not checked here:\n- sync between picture and score (the score is rendered separately)\n- the muted 10-phone test (needs people)\n- platform re-encode\n- real app overlays (only the rough uiGhost exists)\n\n**Results:**\n1. **Honesty.** Pass.\n   - Source contact sheets of c0/10/18/68/96, k30-72, o0-44 and b11-72 show no labels, text, logos, hands or faces. The perfume bottle has no label.\n   - No watermark: high-frequency energy in all four corners and side strips is at most 0.43 mean (p99.9 at most 3 levels), so they are flat.\n   - The kunafa topping is beige nuts and pink petals; nothing is lime.\n2. **Lens test.** Pass, judged by eye at 25% (270x480) and in 4:5.\n   - Coffee, perfume/oud, burger and kunafa are each nameable in their lens beat (f160/205/250/280, 9:16 and 4:5). Kunafa reads as a round syrup dessert, which fits «حلويات؟».\n   - Full-resolution crops of f202/f247 in both formats: the oud set sits fully inside the rim. Only the ends of the burger board touch the rim.\n   - The Ø220 portholes clearly read as a burger; the perfume and kunafa are less clear there, but they are decoration and no test applies.\n   - The f10 cover frame reads.\n3. **Retouches** (C1 is the only problem).\n   - Coffee floor plate: phase correlation of n2 against n68/80/96 over the glass base gives a (0,0) shift; the difference image shows the splatter gone and no seam.\n   - Burger side seed plate: b11-22 against b72 at the x 270 and 830 seams, mean difference 1.0-2.6 levels; the board is aligned (0,0).\n   - Kunafa squiggle clone: the crack is removed on k30-46. At 2x only, there is a slight stepped syrup edge on k44-46.\n   - Oud fade: the backdrop is flat through y 860-1100, and the top colour stays within ±1-2 levels across o0-44. No band, no flicker.\n   - Opener milk n12-18: 0-15 px left by the speck detector. What remains on n0-11 is rib shadows and condensation.\n4. **Motion inside the clips.** Pass.\n   - Kunafa petal centroids move at most 10 px outward over k30-72, which is a slow push. The syrup pool grows smoothly from 24.3k to 33.1k px.\n   - The oud bottle and box are static; the smoke rises and thins.\n   - The settled coffee is static apart from the ice.\n5. **Source ranges.** Pass. The film.json of all five variants uses only c0-18 + c68-96, b11,12,14…22 + b54-72, k30-72, and o0-44 (A-14: o0-29). Nothing from R3-21/R3-23's never-show lists.\n6. **A-14 f0-134** is byte-identical to A-20 (135 of 135 md5 match).\n7. **Aliasing.** Pass for the portholes, f121-130. Against a Lanczos reference, the render has 1.06-1.6x the high-frequency energy but only 0.88-0.97x the frame-to-frame change, so nothing shimmers.\n\nI did not update tash/HANDOFF.md, because the task allows writes only in my folder. The orchestrating session should record this stage there.\n\nEverything is in /tmp/claude-0/-home-user-visitor-counter-api/1e0f8dbb-d731-5965-a898-07519c7bdbc3/scratchpad/rev_pic/complete/:\n- bean_box.png, bean_render.png, cof_prep.png, cof_lens.png, cof_floor.png\n- src_oud.jpg, src_kun.jpg, src_bur.jpg, src_cof.jpg\n- q_916_a.jpg, q_916_band.jpg, q_45_a.jpg, q_45_band.jpg\n- lens_fit.png, kun_strip.jpg, oud_strip.jpg, kun_squig.png, burger_seams.png, milk_specks.png, ov_a.jpg, ov_b.jpg\n- tools/alias.py"
+ }
+}

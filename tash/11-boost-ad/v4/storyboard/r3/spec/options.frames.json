@@ -1,0 +1,794 @@
+{
+ "title": "طشّ · الإعلان الجديد · اختيارنا والبديل",
+ "frames": [
+  {
+   "n": 1,
+   "id": "o1_opener_pick",
+   "tc": "البداية · اختيارنا",
+   "note": "اختيارنا للبداية: كوب قصير عريض. الكوب والثلج أكبر بالشاشة، وفيه مكان أكثر لطشّة القهوة.",
+   "layers": [
+    {
+     "t": "still",
+     "src": "/_stills/s1alt_fit.png"
+    },
+    {
+     "t": "text",
+     "s": "حلو…",
+     "size": 200,
+     "x": 540,
+     "y": 757,
+     "w": 800,
+     "fill": "lime",
+     "stroke": "ink",
+     "lw": 20,
+     "shadow": {
+      "dx": 10,
+      "dy": 10,
+      "color": "ink"
+     },
+     "rot": -4
+    },
+    {
+     "t": "word",
+     "key": "mashrou3ak",
+     "size": 172,
+     "slot": [
+      715,
+      352
+     ],
+     "fill": "paper",
+     "stroke": "ink",
+     "lw": 16,
+     "shadow": {
+      "dx": 8,
+      "dy": 8,
+      "color": "ink"
+     },
+     "dots": false
+    },
+    {
+     "t": "dot",
+     "x": 629,
+     "y": 348,
+     "r": 44,
+     "fill": "ink"
+    },
+    {
+     "t": "dot",
+     "x": 623,
+     "y": 342,
+     "r": 40,
+     "fill": "lime",
+     "ring": {
+      "color": "ink",
+      "lw": 8
+     }
+    },
+    {
+     "t": "dot",
+     "x": 721,
+     "y": 338,
+     "r": 44,
+     "fill": "ink"
+    },
+    {
+     "t": "dot",
+     "x": 715,
+     "y": 332,
+     "r": 40,
+     "fill": "lime",
+     "ring": {
+      "color": "ink",
+      "lw": 8
+     }
+    },
+    {
+     "t": "dot",
+     "x": 813,
+     "y": 326,
+     "r": 44,
+     "fill": "ink"
+    },
+    {
+     "t": "dot",
+     "x": 807,
+     "y": 320,
+     "r": 40,
+     "fill": "lime",
+     "ring": {
+      "color": "ink",
+      "lw": 8
+     }
+    }
+   ]
+  },
+  {
+   "n": 2,
+   "id": "o2_opener_alt",
+   "tc": "البداية · البديل",
+   "note": "البديل: كوب طويل. أنيق بس أصغر بالشاشة، مثل الصور الأولى.",
+   "layers": [
+    {
+     "t": "still",
+     "src": "/_stills/s1_fit.png"
+    },
+    {
+     "t": "text",
+     "s": "حلو…",
+     "size": 200,
+     "x": 540,
+     "y": 757,
+     "w": 800,
+     "fill": "lime",
+     "stroke": "ink",
+     "lw": 20,
+     "shadow": {
+      "dx": 10,
+      "dy": 10,
+      "color": "ink"
+     },
+     "rot": -4
+    },
+    {
+     "t": "word",
+     "key": "mashrou3ak",
+     "size": 172,
+     "slot": [
+      715,
+      352
+     ],
+     "fill": "paper",
+     "stroke": "ink",
+     "lw": 16,
+     "shadow": {
+      "dx": 8,
+      "dy": 8,
+      "color": "ink"
+     },
+     "dots": false
+    },
+    {
+     "t": "dot",
+     "x": 629,
+     "y": 348,
+     "r": 44,
+     "fill": "ink"
+    },
+    {
+     "t": "dot",
+     "x": 623,
+     "y": 342,
+     "r": 40,
+     "fill": "lime",
+     "ring": {
+      "color": "ink",
+      "lw": 8
+     }
+    },
+    {
+     "t": "dot",
+     "x": 721,
+     "y": 338,
+     "r": 44,
+     "fill": "ink"
+    },
+    {
+     "t": "dot",
+     "x": 715,
+     "y": 332,
+     "r": 40,
+     "fill": "lime",
+     "ring": {
+      "color": "ink",
+      "lw": 8
+     }
+    },
+    {
+     "t": "dot",
+     "x": 813,
+     "y": 326,
+     "r": 44,
+     "fill": "ink"
+    },
+    {
+     "t": "dot",
+     "x": 807,
+     "y": 320,
+     "r": 40,
+     "fill": "lime",
+     "ring": {
+      "color": "ink",
+      "lw": 8
+     }
+    }
+   ]
+  },
+  {
+   "n": 3,
+   "id": "o3_burger_pick",
+   "tc": "البرجر · اختيارنا",
+   "note": "اختيارنا للبرجر: الخبزة بالهوا وتطيح مع ضربة الإيقاع. حركة أقوى.",
+   "layers": [
+    {
+     "t": "still",
+     "src": "/_stills/s3_fit.png"
+    },
+    {
+     "t": "text",
+     "s": "برجر؟",
+     "size": 200,
+     "x": 540,
+     "y": 757,
+     "w": 800,
+     "fill": "lime",
+     "stroke": "ink",
+     "lw": 20,
+     "shadow": {
+      "dx": 10,
+      "dy": 10,
+      "color": "ink"
+     },
+     "rot": -4
+    },
+    {
+     "t": "word",
+     "key": "mashrou3ak",
+     "size": 172,
+     "slot": [
+      715,
+      352
+     ],
+     "fill": "paper",
+     "stroke": "ink",
+     "lw": 16,
+     "shadow": {
+      "dx": 8,
+      "dy": 8,
+      "color": "ink"
+     },
+     "dots": false
+    },
+    {
+     "t": "dot",
+     "x": 629,
+     "y": 348,
+     "r": 44,
+     "fill": "ink"
+    },
+    {
+     "t": "dot",
+     "x": 623,
+     "y": 342,
+     "r": 40,
+     "fill": "lime",
+     "ring": {
+      "color": "ink",
+      "lw": 8
+     }
+    },
+    {
+     "t": "dot",
+     "x": 721,
+     "y": 338,
+     "r": 44,
+     "fill": "ink"
+    },
+    {
+     "t": "dot",
+     "x": 715,
+     "y": 332,
+     "r": 40,
+     "fill": "lime",
+     "ring": {
+      "color": "ink",
+      "lw": 8
+     }
+    },
+    {
+     "t": "dot",
+     "x": 813,
+     "y": 326,
+     "r": 44,
+     "fill": "ink"
+    },
+    {
+     "t": "dot",
+     "x": 807,
+     "y": 320,
+     "r": 40,
+     "fill": "lime",
+     "ring": {
+      "color": "ink",
+      "lw": 8
+     }
+    }
+   ]
+  },
+  {
+   "n": 4,
+   "id": "o4_burger_alt",
+   "tc": "البرجر · البديل",
+   "note": "البديل: برجر جاهز والجبن يسيل. أهدى، ونرجع له إذا طيحة الخبزة ما ضبطت بالفيديو.",
+   "layers": [
+    {
+     "t": "still",
+     "src": "/_stills/s3alt_fit.png"
+    },
+    {
+     "t": "text",
+     "s": "برجر؟",
+     "size": 200,
+     "x": 540,
+     "y": 757,
+     "w": 800,
+     "fill": "lime",
+     "stroke": "ink",
+     "lw": 20,
+     "shadow": {
+      "dx": 10,
+      "dy": 10,
+      "color": "ink"
+     },
+     "rot": -4
+    },
+    {
+     "t": "word",
+     "key": "mashrou3ak",
+     "size": 172,
+     "slot": [
+      715,
+      352
+     ],
+     "fill": "paper",
+     "stroke": "ink",
+     "lw": 16,
+     "shadow": {
+      "dx": 8,
+      "dy": 8,
+      "color": "ink"
+     },
+     "dots": false
+    },
+    {
+     "t": "dot",
+     "x": 629,
+     "y": 348,
+     "r": 44,
+     "fill": "ink"
+    },
+    {
+     "t": "dot",
+     "x": 623,
+     "y": 342,
+     "r": 40,
+     "fill": "lime",
+     "ring": {
+      "color": "ink",
+      "lw": 8
+     }
+    },
+    {
+     "t": "dot",
+     "x": 721,
+     "y": 338,
+     "r": 44,
+     "fill": "ink"
+    },
+    {
+     "t": "dot",
+     "x": 715,
+     "y": 332,
+     "r": 40,
+     "fill": "lime",
+     "ring": {
+      "color": "ink",
+      "lw": 8
+     }
+    },
+    {
+     "t": "dot",
+     "x": 813,
+     "y": 326,
+     "r": 44,
+     "fill": "ink"
+    },
+    {
+     "t": "dot",
+     "x": 807,
+     "y": 320,
+     "r": 40,
+     "fill": "lime",
+     "ring": {
+      "color": "ink",
+      "lw": 8
+     }
+    }
+   ]
+  },
+  {
+   "n": 5,
+   "id": "o5_burger_pick_lens",
+   "tc": "البرجر داخل النقطة · اختيارنا",
+   "note": "اختيارنا داخل النقطة: نصغّر الصورة شوي عشان اللوح يدخل كامل بالدايرة.",
+   "layers": [
+    {
+     "t": "fill",
+     "color": "lime"
+    },
+    {
+     "t": "still",
+     "src": "/_stills/s3_fit.png",
+     "clip": {
+      "type": "circle",
+      "x": 540,
+      "y": 1270,
+      "r": 340
+     },
+     "scale": 0.72,
+     "cx": 0.5,
+     "cy": 0.6614583333333334,
+     "ax": 540,
+     "ay": 1270
+    },
+    {
+     "t": "dot",
+     "x": 540,
+     "y": 1270,
+     "r": 334,
+     "fill": null,
+     "ring": {
+      "color": "ink",
+      "lw": 12
+     }
+    },
+    {
+     "t": "text",
+     "s": "برجر؟",
+     "size": 200,
+     "x": 540,
+     "y": 757,
+     "w": 800,
+     "fill": "ink",
+     "shadow": {
+      "dx": 10,
+      "dy": 10,
+      "color": "paper"
+     },
+     "rot": -4
+    },
+    {
+     "t": "word",
+     "key": "mashrou3ak",
+     "size": 172,
+     "slot": [
+      715,
+      352
+     ],
+     "fill": "ink",
+     "stroke": "paper",
+     "lw": 12,
+     "shadow": null,
+     "dots": false
+    },
+    {
+     "t": "dot",
+     "x": 623,
+     "y": 342,
+     "r": 40,
+     "fill": "ink",
+     "ring": {
+      "color": "paper",
+      "lw": 8
+     }
+    },
+    {
+     "t": "dot",
+     "x": 715,
+     "y": 332,
+     "r": 40,
+     "fill": "ink",
+     "ring": {
+      "color": "paper",
+      "lw": 8
+     }
+    },
+    {
+     "t": "dot",
+     "x": 807,
+     "y": 320,
+     "r": 40,
+     "fill": "ink",
+     "ring": {
+      "color": "paper",
+      "lw": 8
+     }
+    }
+   ]
+  },
+  {
+   "n": 6,
+   "id": "o6_burger_alt_lens",
+   "tc": "البرجر داخل النقطة · البديل",
+   "note": "البديل داخل النقطة.",
+   "layers": [
+    {
+     "t": "fill",
+     "color": "lime"
+    },
+    {
+     "t": "still",
+     "src": "/_stills/s3alt_fit.png",
+     "clip": {
+      "type": "circle",
+      "x": 540,
+      "y": 1270,
+      "r": 340
+     },
+     "scale": 0.8,
+     "cx": 0.5,
+     "cy": 0.6614583333333334,
+     "ax": 540,
+     "ay": 1270
+    },
+    {
+     "t": "dot",
+     "x": 540,
+     "y": 1270,
+     "r": 334,
+     "fill": null,
+     "ring": {
+      "color": "ink",
+      "lw": 12
+     }
+    },
+    {
+     "t": "text",
+     "s": "برجر؟",
+     "size": 200,
+     "x": 540,
+     "y": 757,
+     "w": 800,
+     "fill": "ink",
+     "shadow": {
+      "dx": 10,
+      "dy": 10,
+      "color": "paper"
+     },
+     "rot": -4
+    },
+    {
+     "t": "word",
+     "key": "mashrou3ak",
+     "size": 172,
+     "slot": [
+      715,
+      352
+     ],
+     "fill": "ink",
+     "stroke": "paper",
+     "lw": 12,
+     "shadow": null,
+     "dots": false
+    },
+    {
+     "t": "dot",
+     "x": 623,
+     "y": 342,
+     "r": 40,
+     "fill": "ink",
+     "ring": {
+      "color": "paper",
+      "lw": 8
+     }
+    },
+    {
+     "t": "dot",
+     "x": 715,
+     "y": 332,
+     "r": 40,
+     "fill": "ink",
+     "ring": {
+      "color": "paper",
+      "lw": 8
+     }
+    },
+    {
+     "t": "dot",
+     "x": 807,
+     "y": 320,
+     "r": 40,
+     "fill": "ink",
+     "ring": {
+      "color": "paper",
+      "lw": 8
+     }
+    }
+   ]
+  },
+  {
+   "n": 7,
+   "id": "o7_b_f000",
+   "tc": "النسخة الثانية · البداية",
+   "note": "نسخة ثانية اختيارية (٥٫٢٥ كريدت زيادة): نفس الإعلان بس يبدي بالشاليه، العوّامة تطيح بالماي.",
+   "layers": [
+    {
+     "t": "still",
+     "src": "/_stills/s6_fit.png"
+    },
+    {
+     "t": "word",
+     "key": "mashrou3ak",
+     "size": 172,
+     "slot": [
+      715,
+      352
+     ],
+     "fill": "paper",
+     "stroke": "ink",
+     "lw": 16,
+     "shadow": {
+      "dx": 8,
+      "dy": 8,
+      "color": "ink"
+     },
+     "dots": false
+    },
+    {
+     "t": "dot",
+     "x": 629,
+     "y": 348,
+     "r": 44,
+     "fill": "ink"
+    },
+    {
+     "t": "dot",
+     "x": 623,
+     "y": 342,
+     "r": 40,
+     "fill": "lime",
+     "ring": {
+      "color": "ink",
+      "lw": 8
+     }
+    },
+    {
+     "t": "dot",
+     "x": 721,
+     "y": 338,
+     "r": 44,
+     "fill": "ink"
+    },
+    {
+     "t": "dot",
+     "x": 715,
+     "y": 332,
+     "r": 40,
+     "fill": "lime",
+     "ring": {
+      "color": "ink",
+      "lw": 8
+     }
+    },
+    {
+     "t": "dot",
+     "x": 813,
+     "y": 326,
+     "r": 44,
+     "fill": "ink"
+    },
+    {
+     "t": "dot",
+     "x": 807,
+     "y": 320,
+     "r": 40,
+     "fill": "lime",
+     "ring": {
+      "color": "ink",
+      "lw": 8
+     }
+    }
+   ]
+  },
+  {
+   "n": 8,
+   "id": "o8_b_f010",
+   "tc": "النسخة الثانية · بعد ثلث ثانية",
+   "note": "النسخة الثانية: تطلع «شاليه؟» بدل «حلو…» والماي يطش.",
+   "layers": [
+    {
+     "t": "still",
+     "src": "/_stills/s6_fit.png"
+    },
+    {
+     "t": "text",
+     "s": "شاليه؟",
+     "size": 180,
+     "x": 540,
+     "y": 757,
+     "w": 800,
+     "fill": "lime",
+     "stroke": "ink",
+     "lw": 20,
+     "shadow": {
+      "dx": 10,
+      "dy": 10,
+      "color": "ink"
+     },
+     "rot": -4
+    },
+    {
+     "t": "word",
+     "key": "mashrou3ak",
+     "size": 172,
+     "slot": [
+      715,
+      352
+     ],
+     "fill": "paper",
+     "stroke": "ink",
+     "lw": 16,
+     "shadow": {
+      "dx": 8,
+      "dy": 8,
+      "color": "ink"
+     },
+     "dots": false
+    },
+    {
+     "t": "dot",
+     "x": 629,
+     "y": 336,
+     "r": 44,
+     "fill": "ink"
+    },
+    {
+     "t": "dot",
+     "x": 623,
+     "y": 330,
+     "r": 40,
+     "fill": "lime",
+     "ring": {
+      "color": "ink",
+      "lw": 8
+     }
+    },
+    {
+     "t": "dot",
+     "x": 721,
+     "y": 326,
+     "r": 44,
+     "fill": "ink"
+    },
+    {
+     "t": "dot",
+     "x": 715,
+     "y": 320,
+     "r": 40,
+     "fill": "lime",
+     "ring": {
+      "color": "ink",
+      "lw": 8
+     }
+    },
+    {
+     "t": "dot",
+     "x": 813,
+     "y": 342,
+     "r": 44,
+     "fill": "ink"
+    },
+    {
+     "t": "dot",
+     "x": 807,
+     "y": 336,
+     "r": 40,
+     "fill": "lime",
+     "ring": {
+      "color": "ink",
+      "lw": 8
+     }
+    }
+   ]
+  }
+ ]
+}

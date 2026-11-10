@@ -1,0 +1,429 @@
+{
+ "reviews": [
+  {
+   "clip": "s5",
+   "gates": [
+    {
+     "gate": "Camera static",
+     "result": "pass",
+     "evidence": "Tray mask bounding box is x 308-767 (+/-2), y 1042-1503 (+/-2), diameter 457-461, on all 73 frames; centre about (537.5,1272.5). Phase correlation on four pastry patches against n30 shows shifts of 0.22 px or less. The corners differ from the still by 1.4-2.9 levels. Frame mean luma drifts slowly from 140.6 to 139.1, with a largest frame-to-frame step of 0.66 levels, so there is no flicker."
+    },
+    {
+     "gate": "No cut",
+     "result": "pass",
+     "evidence": "Mean absolute difference between consecutive frames is 0.33-1.94 levels over the whole clip, with no jump."
+    },
+    {
+     "gate": "No new object, hand or text",
+     "result": "pass",
+     "evidence": "No hand, text, jug or spoon appears. The only arrival is the prompted pinch of nuts, and it then vanishes into the syrup (see unnatural list). Syrup also gathers in the tray gap from about n36. Both are judged under naturalness, not here."
+    },
+    {
+     "gate": "Nothing enters y 0-880",
+     "result": "pass with remap or code fix",
+     "evidence": "Fails in the source. On n1 a faint clump edge shows at x 660-703, y 0-28 (965 px over 25 levels, max 43). From n2 to n8 the nut clump crosses the empty zone, centroid y 93→268→417→552→710→830→926 at x about 545-567, bounding box x 423-705. Peak on n3 is 43,907 px over 40 levels, max deviation 152. It passes through the word ink (y 331-533) on n3-n5 and the tag box (y 560-840) on n5-n7. From n9 to n72 the zone stays within 8-12 levels of n0 with 0 px over 20 levels (slow backdrop drift only). Fixed by the remap: only n30-n72 are used. A clean plate is not a fix, because the nuts would then pop into existence at y 900 on n7-n8."
+    },
+    {
+     "gate": "S5: nuts land inside the first 0.4 s",
+     "result": "fail",
+     "evidence": "First contact is on n10 (0.417 s native), at the top edge of the pastry about x 492-585, y 1021-1100, not the centre. The nuts never come to rest. From n11 to n13 they glide inward as a see-through cluster: on n12 it sits at about x 504-582, y 1146-1216 over the upper-right rose petal (555-585, 1167-1205), and the petal shows through it. On n13-n14 the cluster melts into the pool at about (505-565, 1220-1255). No nut remains on the pastry. This cannot be fixed at 0 credits; the remap never shows it."
+    },
+    {
+     "gate": "S5: syrup sheen visibly spreading",
+     "result": "pass",
+     "evidence": "Equivalent radius of the smooth orange pool: about 67 px (n0-n15), 80 (n26), 85.6 (n44), 92 (n70). It is clear and glossy from n30, with a moving highlight arc at the upper left. From about n36 syrup also gathers in the gap between pastry and tray wall: the colour of the ring at r 196-212 goes from RGB 131,51,27 to 113,38,14."
+    },
+    {
+     "gate": "72 native frames present, no duplicate run",
+     "result": "pass",
+     "evidence": "73 frames, n0-n72. No two consecutive frames are identical (minimum whole-frame MAD 0.33; hero MAD 0.67 or more). Default mpdecimate drops only the single near-still frames n31, n33, n69 and n71; none are consecutive, so there is no run."
+    }
+   ],
+   "unnatural": [
+    {
+     "frames": "n1-n9",
+     "what": "The nut pinch enters from the top edge of the frame instead of dropping onto the tray. On n2-n5 it is one large soft cream blob, about 200-270 px wide, that looks like a lump of dough or ginger rather than nuts. On n6-n8 it splits into about 10 separate flakes, which is a morph. It moves straight down the image at x about 545-567 (bounding box x 423-705, y 0→1039), so in a top-down view it is flying sideways along the floor, not falling. It slows as it lands: centroid speed is about 175 px/frame on n3, 120 on n7, 69 on n9 and 37 on n10, an animation ease rather than gravity. It crosses the word (y 331-533) and the tag (y 560-840).",
+     "severity": "blocker",
+     "fix": "Never on screen. Every S5 row is remapped to n30-n72. The sound design drops the nut scatter."
+    },
+    {
+     "frames": "n10-n15",
+     "what": "After touching the top of the pastry at about (492-585, 1021-1100) on n10, the nuts do not bounce or scatter. They slide inward as a semi-transparent cluster. On n12, at about (504-582, 1146-1216), the rose petal shows through solid nuts. On n13-n14 they melt into the syrup pool at about (505-565, 1220-1255) and are gone by n15. Solid nuts dissolve like sugar.",
+     "severity": "blocker",
+     "fix": "Never on screen (remap)."
+    },
+    {
+     "frames": "n14-n29",
+     "what": "The centre syrup pool, centred about (538,1268) with radius about 70-80, turns into a cloudy, milky jelly with white swirls (the dissolved nuts) and wobbling internal refraction. It grows quickly from radius 67 to 80 between n15 and n26, and clears by about n29-n30.",
+     "severity": "major",
+     "fix": "Never on screen. Kunafa A moves from n15-29 to n30-44."
+    },
+    {
+     "frames": "n9-n13",
+     "what": "Faint dark motion-blurred streaks, which look like the shadows of the falling nuts, come in from the lower right and slide up-left into the tray shadow. Positions: n10 x 934-1018, y 1642-1775; n11 x 849-945, y 1503-1805; n12 x 648-847, y 1448-1607; n13 merged by about (603-773, 1463-1540). They are up to 19-31 levels darker than the backdrop. They arrive after the nuts have already touched the pastry, so shadow and object are out of sync.",
+     "severity": "minor",
+     "fix": "Never on screen (remap). On the old drain mapping these frames were already under the falling right third."
+    },
+    {
+     "frames": "n26-n34",
+     "what": "A tiny white crumb of about 10 px stays at about (535,1250) in the clearing pool, fading by n35. It reads as a nut crumb in the syrup.",
+     "severity": "minor",
+     "fix": "Accept. If the owner objects, retouch about 12x12 px at (529-541, 1244-1256) on n30-n34 from n36, which is clear there, or start every S5 range at n32 or later where the beat lengths allow."
+    },
+    {
+     "frames": "n36-n72",
+     "what": "Syrup appears in the gap between the pastry and the copper tray wall, upper left first (about n36-n42) and all around by about n54. The ring darkens to a deep amber band (RGB 131,51,27 → 113,38,14), and the centre pool keeps growing (radius 80 → 92 px) with no visible inflow. At phone size it reads as syrup soaking down into the tray and looks plausible, but the total amount of syrup grows from nothing over about 1.5 s. Within any 15-frame window the change is small.",
+     "severity": "minor",
+     "fix": "Accept. Kunafa A uses n30-n44, where it barely starts. If the owner dislikes it in the band, the kunafa band can use n30-n59 instead of n43-n72 (it then repeats the A/B frames)."
+    },
+    {
+     "frames": "n44-n72",
+     "what": "The lower-right and left rose petals drift 5-8 px as the pool edge reaches them, as if floating on the syrup.",
+     "severity": "minor",
+     "fix": "Accept (physically plausible)."
+    },
+    {
+     "frames": "n49-n51",
+     "what": "Micro-jitter of the tray texture: a vertical shift of 0.10-0.22 px and a 2% drop in sharpness (Laplacian 21.49 → 21.02). It is not visible at 100%.",
+     "severity": "minor",
+     "fix": "None needed."
+    }
+   ],
+   "usable_ranges": "Natural and clean: n30-n72, 43 frames, which is 1.79 s native and 1.43 s on screen at one native frame per 30 fps timeline frame. The pool is clearest from n32 (tiny white crumb n30-n34). Inside this range: camera locked, nothing above y 880 (0 px over 20 levels), no cut, no duplicates, steady glossy syrup spread. n0 on its own is also clean (it equals the start still) but is not needed. Never on screen: n1-n29 (nut clump in the text zone n1-n8; see-through gliding and dissolving nuts n10-n15; milky jelly pool n14-n29; detached shadow streaks n9-n13).",
+   "remap": "One native frame per timeline frame, as BUILD-SPEC section 9 step 3: no fps filter, never reversed, no holds needed. This replaces every S5 row in section 7, the section 9 table, the section 11 A-14 and B-20 tables, and the R3-9 band order.\n\nA-20, with the same frames for A-20 TikTok and the 4:5 versions (4:5 framing per section 11, R3-6 x0.88 and R3-10):\n- f30-44, drain under the falling thirds: n30-n44 (was n0-n14). f30-31 show n30-n31 full frame with «حلو…»; storyboard key frame f31 = n31.\n- f255-269, Kunafa A full frame: n30-n44 (was n15-n29). Pool radius 80.6→85.6 with a moving gloss.\n- f270-284, Kunafa B in lens L at scale 1.0 (R3-6): n45-n59 (was n30-n44), running on from A.\n- CTA band, kunafa slot f450-479 per R3-9 (the old f510-539 'S5 n40-69' row is superseded): n43-n72, footage offset +60. In 4:5: band y 800-1350, offset -216.\n\nB-20: f30-44 drain = n30-n44. After f90 it is A-20, so the kunafa band f450-479 = n43-n72.\n\nA-14: f30-44 = n30-n44; f225-239 Kunafa A = n30-n44; f240-254 Kunafa B lens = n45-n59; band f315-344 (R3-9 kunafa) = n43-n72.\n\nReusing n30-n44 for the drain and Kunafa A, about 7.5 s (A-14: about 6.5 s) apart, is not noticeable because the drain shows the full frame for only 2 frames before the thirds fall.\n\nZero-credit fixes:\n(1) The remap above, so n1-n29 never appear.\n(2) Sound, sections 7 and 10: drop the 'nut scatter' element at f30 (A-20, B-20, A-14), because no nut is ever on screen. Keep a syrup or soft sticky sound, and keep the f255 soft crunch only as a world sound.\n(3) No top clean plate is needed for n30-n72. If the build applies one to every footage frame anyway, take it from n45, not n0: n0's backdrop is 3-4 levels bluer (B 155.7 against about 152.2).\n(4) Optional retouch of the 10 px crumb at about (535,1250) on n30-n34.\n(5) Not covered: the burger fallback ('kunafa takes f210-284' if S3 fails) would need 75 frames and S5 has only 43 natural ones, so repeats would be needed. Moot while S3 holds.",
+   "verdict": "use with zero-credit fixes",
+   "summary": "The nut drop failed and the syrup worked. Gates passed: camera static (tray box fixed to +/-2 px, texture shift 0.22 px or less), no cut, no hand or text, syrup sheen spreading (pool radius 67 → 92 px, clear and glossy from n30), and 73 frames with no duplicate run. Gate failed: nuts land in 0.4 s. First contact is n10 (0.417 s) on the top edge of the pastry, not the centre. The nuts then glide inward see-through (the rose petal shows through them on n12) and melt into the syrup by n14-n15; no nut remains. Gate failed in source but fixed by the remap: nothing enters y 0-880. Between n1 and n8 a soft blob, which splits into flakes, comes in from the top edge and crosses the word and the tag. It slows on landing like an animation ease (175 → 37 px/frame).\n\nBy the owner's standard (\"the coffee as it spills does not look natural\"), all of n1-n29 is unusable: the clump that flies sideways and morphs, the see-through dissolving nuts, the milky jelly pool (n14-n29), and faint shadow streaks that arrive after the nuts (n9-n13). From n30 to n72 the clip is natural and appetising: a locked top-down kunafa with glossy syrup spreading slowly and gathering in the tray. The only minor point is that the syrup volume grows with no visible source; it reads as soaking.\n\nNo beat in BUILD-SPEC sections 7, 11 or 15 actually needed the nut impact on screen. The drain hides f32-44 under the falling thirds, and Kunafa A was already mapped to post-landing frames. Remapping every S5 row to n30-n72 therefore covers the drain (15 frames), Kunafa A and B (30, continuous), and the 30-frame band with no holds, no speed change and no frame repeated inside a beat. The only other fix is dropping the 'nut scatter' sound at f30.\n\nI recommend against the 5.25-credit retake, which section 4 allows because a gate failed: it would buy an action the edit barely shows, and a new roll would again have to show something falling in a top-down frame, which Kling handled poorly here.\n\nI did not touch the repository: HANDOFF.md and BUILD-SPEC were not updated, per the read-only rule, so the orchestrator should record the S5 remap there. My crops and measurements are in /tmp/claude-0/-home-user-visitor-counter-api/1e0f8dbb-d731-5965-a898-07519c7bdbc3/scratchpad/r5/review/s5/out. Most telling: centre100_n8_19.jpg and land200_n8_14.jpg (the nuts dissolving), fall_n0_11.jpg (the clump in the text zone), pool200_n14_48.jpg (jelly to clear), tray50_n30_72.jpg (the usable range), br_n6_17.jpg (the shadow streaks), plus measure.json."
+  },
+  {
+   "clip": "s3",
+   "gates": [
+    {
+     "gate": "Frame 0 matches the start still s3_fit.png",
+     "result": "pass",
+     "evidence": "My own default (BT.601) decode of n0 is identical to qc_s3/frames/0001.png (mean diff 0.0). Mean absolute difference to the still is 2.25 levels, and the backdrop is offset by -1.2/-1.7/-1.6 (RGB)."
+    },
+    {
+     "gate": "Camera static",
+     "result": "pass",
+     "evidence": "Best-shift search against n0 on the board's left edge (x150-300, y1440-1620) and right edge (x800-940) gives dx 0, dy 0 at n12, 24, 36, 48, 60 and 72. Corners vs the still stay at 1.65-2.0 levels for the whole clip. No zoom and no drift."
+    },
+    {
+     "gate": "No cut",
+     "result": "pass",
+     "evidence": "The largest frame-to-frame mean difference is 3.29 (n22 to n23, the impact). The backdrop mean in y0-880 stays between 28.7-30.4 / 163.8-164.7 / 249.2-250.8, and its largest step is 0.46 levels (no flicker)."
+    },
+    {
+     "gate": "No new object, hand or text",
+     "result": "pass",
+     "evidence": "A coarse difference map of n0 against n72 changes only inside x300-960, y900-1500 (the bun, the stack and its shadow on the board). Nothing appears anywhere else. No hand, text or logo. The only odd objects are the existing sesame seeds, which disappear rather than appear (see 'unnatural')."
+    },
+    {
+     "gate": "Nothing enters y 0-880",
+     "result": "pass with remap or code fix",
+     "evidence": "Fails in the raw clip: the top bun rises above y880 in n5-n14. Its top row is 879 at n5, 869 at n6, 855 at n8, 851 at n10 (the peak, 5070 product pixels above 880), 858 at n12 and 874 at n14; from n15 it is back to 885. Fixed in the remap: n1-n10 are never used. The Burger A frames (n11 hold, n12-n22) are scaled 0.95 about (540,1609), which puts the n11 bun top at y891. In the preview no product pixel is above 880 in any A frame. Every other use starts at n25 or later, where the bun top is never higher than 1090."
+    },
+    {
+     "gate": "S3: bun impact between native frames 10 and 20",
+     "result": "pass with remap or code fix",
+     "evidence": "Fails as written: at n22 there is still a 25 px gap (bun bottom y1215, cheese top y1240). First contact falls between n22 and n23, and the deepest squash is at n25-n26 (bun top 1114-1115, 12-14 px below rest 1102). So i = 23. Section 9 allows 'shift A later'. In the remap the screen impact is n25 on f225 (A-14: f210), and the morph frames n23-n24 are skipped under the cut."
+    },
+    {
+     "gate": "S3: bun lands level, sesame side up",
+     "result": "pass with remap or code fix",
+     "evidence": "Sesame side is up in every frame. In the air the bun is level: principal-axis angle -0.2 to +0.5 deg over n5-n18. It tips -0.9 to -2.0 deg in n20-n22. At contact the top contour (x390 vs x690) is 12 px higher on the right at n23 and 18 px at n24 (about 3.4 deg); both frames are skipped. At rest the offset is 4 px over 300 px (0.8 deg) from about n58 to n72."
+    },
+    {
+     "gate": "S3: burger stays a burger",
+     "result": "pass",
+     "evidence": "The stack keeps its order in every frame n0-n72: top bun, cheese, patty, cheese, patty, onions, sauce, bottom bun. The board does not move (0 px), and the settled n40 and n72 look like a normal cooked smash burger at 100%."
+    },
+    {
+     "gate": "72 native frames present, no duplicate run",
+     "result": "pass",
+     "evidence": "ffprobe: 24/1, nb_frames 73 (n0-n72). No two frames are identical; the smallest mean difference is 0.338 (n66 to n67). mpdecimate drops only n67, n68 and n71, which are near-still frames of the settled tail, not identical ones."
+    },
+    {
+     "gate": "Motion matches the prompt ('hangs for a moment, then drops straight down')",
+     "result": "pass with remap or code fix",
+     "evidence": "The raw clip does not match. It first throws the bun UP 77 px (top 928 to 851, centroid 1042 to 944) over n2-n10 and only then drops it. After the remap only the hang (n11 hold) and the drop are on screen."
+    }
+   ],
+   "unnatural": [
+    {
+     "frames": "n1-n10",
+     "what": "The top bun floats UPWARD against gravity with no cause. It hangs still at n0-n1, jumps from -1 to -15 px/frame at n2, then slows to a peak at n10-n11. The top goes from 928 to 851 and the centroid from 1042 to 944. At the same time it pitches from showing its toasted underside to edge-on, and its height shrinks from 213 to 163 px. It reads as an invisible hand tossing the bun.",
+     "severity": "blocker",
+     "fix": "Never on screen. Every remap starts at the peak, n11, or later."
+    },
+    {
+     "frames": "n5-n14",
+     "what": "The bun enters the protected zone y 0-880. Its top reaches y851 at n10, 29 px into the zone and about 10 px under the tag shadow.",
+     "severity": "major",
+     "fix": "In the Burger A frames, scale 0.95 about (540,1609) and fill the margins by edge-extend from the flat backdrop. This gives bun top y891 at n11, with the board base unchanged. 4:5 needs 0.92 (n11 top lands at 4:5 y628). Re-measure against the tag fill at baseline 530."
+    },
+    {
+     "frames": "n0-n27 (seed pixels x105-300 and x790-1080, y1085-1530)",
+     "what": "The loose sesame seeds do not fall. They hover at y1085-1230 through about n8, then drift sideways 250-500 px like dust and leave the frame edges at y1450-1525 (left by n24, right by n27). Several merge into worm-like smears (n2-n6), and some fade out in mid-air (n10, n13-n15).",
+     "severity": "major",
+     "fix": "Clean plate from n0 on every used frame up to n22: x0-270 and x830-1080, y885-1560, excluding the board, with a 4-6 px feather. n0 matches those regions to a median of 2 levels and p95 of 4-6. In the band, also plate x1000-1080, y1490-1530 in n25-n27 from n72."
+    },
+    {
+     "frames": "n15-n30 (board back rim, about x178-288, y1390-1453)",
+     "what": "A seed lands on the back-left rim of the board at n16, turns into a ghostly double blob (n18-n22) and vanishes by n30.",
+     "severity": "minor",
+     "fix": "Patch x150-280, y1385-1460 from n0 (the board is static) in the used frames n16-n29."
+    },
+    {
+     "frames": "n2-n9",
+     "what": "The burger body sinks 2-3 px and comes back up (patty band dy +3 at n3-n5) while nothing touches it.",
+     "severity": "minor",
+     "fix": "Excluded by the remap."
+    },
+    {
+     "frames": "n11-n22",
+     "what": "At 1:1 the fall is in slow motion. The drop of about 225 px from the peak to contact takes about 12 native frames (0.50 s); real gravity for a bun about 11 cm wide (413 px) would take about 0.11 s. Mean acceleration is about 2 px/frame squared, against about 64 for real gravity, so it is about 4.5-5.5x slow. Speed also stalls between n16 and n20 (15-19 px/frame) and then jumps to 25 at n21. At 1:1 on the 30 fps timeline this reads as a floaty 3.6x slow-motion drop.",
+     "severity": "major",
+     "fix": "Speed change: hold the peak frame n11, then play every second frame (n12, n14 ... n22). The drop then takes 6 timeline frames, about 1.8x slow instead of 3.6x."
+    },
+    {
+     "frames": "n21-n22",
+     "what": "The falling bun is heavily smeared (seeds streak, and at n22 its lower edge dissolves into haze). A dark, blocky contact shadow grows on the cheese top (n18-n22, about x420-700, y1235-1260).",
+     "severity": "minor",
+     "fix": "Acceptable as motion blur and a contact shadow. n22 appears only for one frame, the last before the cut."
+    },
+    {
+     "frames": "n23-n24",
+     "what": "Impact morph. The bun becomes a flat streaky slab, tilts 18 px across 300 px and sinks into the cheese. At n25 it snaps into a crisp, taller dome with a different seed pattern.",
+     "severity": "major",
+     "fix": "Never on screen. Cut from n22 (last A frame) straight to n25 on the beat (f225; A-14 f210), under the 1.2x punch-in and the 2-frame camera bump."
+    },
+    {
+     "frames": "n25-n57",
+     "what": "The settle is rubbery. The bun sinks 14 px (n25-n27), rebounds 4-6 px above rest (n30, n39-n40), then slides 14 px right (n31-n36), 6 px left (n44-n46) and 5 px right (n52-n54), tilting up to 17 px across 300 px (n36); the patties lean up to 5 px. Everything is within 2 px only from about n58. At 1:1 it reads as jelly.",
+     "severity": "major",
+     "fix": "Play every second frame (n25, n27 ... n53) so it reads as one quick squash and settle. Then n54-n68 at 1:1, where any drift is 5 px or less."
+    },
+    {
+     "frames": "n10-n22, n44-n66",
+     "what": "Small shimmer in the patty texture: 6-12 levels of residual after alignment, visible only at 200%.",
+     "severity": "minor",
+     "fix": "None needed."
+    },
+    {
+     "frames": "n0-n72",
+     "what": "The bottom bun has diagonal fluted ridges that look like a pie crust. The same pattern is already in the still at n0 and does not change.",
+     "severity": "minor",
+     "fix": "None. This comes from the approved still, not from the video."
+    }
+   ],
+   "usable_ranges": "Natural after the zero-credit fixes:\n- n11: the peak, used as a hold. Needs the scale fix and the seed plate.\n- n12-n22: the drop. Needs the scale fix for n12-n14 and the seed plate. Use every second frame.\n- n25-n53: squash and settle. Use every second frame only.\n- n54-n72: settled. Usable at 1:1; n58-n72 is fully calm (bun within 2 px).\n\nNever on screen:\n- n0: the still pose, underside showing. It is fine as a single frame but not needed.\n- n1-n10: the bun floats up into y 0-880.\n- n23-n24: the impact morph.\n- n25-n57 played at 1:1: it reads as jelly.",
+   "remap": "i = 23 (first contact between n22 and n23); the screen impact is n25. Native frames are played one per 30 fps timeline frame. 'Every second frame' means n, n+2, n+4 (2.5x the native 24 fps speed). Holds are allowed; nothing is reversed.\n\nA-20 (Instagram, TikTok, 4:5; B-20 uses the same rows from f90):\n- f105-119, offer-card left porthole (0.31, source point (540,1275)): n25, 27, 29 ... 53 (15 frames). The squash plays while the porthole pops open.\n- f120-134, porthole: n54-n68. This replaces n0-29.\n  - Optional, if the director wants the drop in the window: f105-113 = n11 held, f114-119 = n12, 14 ... 22, f120 = n25 on the clap. The window circle then clips the top of the high bun.\n- f210-224, Burger A (full frame):\n  - f210-218 = n11 held (9 frames); f219-224 = n12, n14, n16, n18, n20, n22.\n  - Fixes: scale 0.95 about (540,1609) with edge-extend fill (4:5: 0.92); seed plate from n0 at x0-270 and x830-1080, y885-1560, board excluded; board-rim patch x150-280, y1385-1460 from n0 on n16-n22.\n- f225-239, Burger B (1.2x about (540,900), 2-frame 10 px bump on f225): n25, 27 ... 53. The bun lands exactly on f225. Apply the board-rim patch to n25-n29 (n72 also works as the source). The floor seeds at x>1000 fall outside the 1.2x frame.\n- f240-254, Burger C (lens L, scale 0.72 per R3-6): n54-n68.\n- f390-404 snap: no S3 footage (R3-8: the wordmark dots are solid Ink).\n- f480-509, CTA band (R3-9 order: kunafa f450, burger f480):\n  - f480-494 = n25, 27 ... 53; f495-509 = n54-n68.\n  - Plate the floor seeds at x1000-1080, y1490-1530 in n25-n27 from n72, and apply the board-rim patch to n25-n29.\n  - Choose the S3 band offset d at -20 or more, so the highest used bun top (y1090, n31) stays at least 10 px under the panel edge at y1060.\n\nA-14:\n- f105-134 porthole: as in A-20.\n- f195-209, Burger A: n11 held for 9 frames, then n12, 14, 16, 18, 20, 22, with the same scale fix and plates.\n- f210-224, Burger B: n25, 27 ... 53. The bun lands on f210.\n- f300-314 snap: no S3 (R3-8).\n- f345-359, band: n25, 27 ... 53.\n- f360-374, band: n54-n68.\n\nThis replaces the section 9 S3 rows n(i-15)..n(i+29) and the n0-29 / n40-69 rows.\n\nPreview of A-20 f210-254 (lime approximate, not the build):\n- /tmp/claude-0/-home-user-visitor-counter-api/1e0f8dbb-d731-5965-a898-07519c7bdbc3/scratchpad/r5/review/s3/preview2/\n- /tmp/claude-0/-home-user-visitor-counter-api/1e0f8dbb-d731-5965-a898-07519c7bdbc3/scratchpad/r5/review/s3/preview_f210-254.mp4\n\nIn the preview, the Burger A product top is at y 891 or lower and the seed plate leaves no specks.",
+   "verdict": "use with zero-credit fixes",
+   "summary": "I recommend using the S3 clip with zero-credit fixes. No retake is needed; it would cost 5.25 credits and need the owner's approval.\n\n**What is wrong with the raw clip:** Kling did not do 'hang, then drop'. It throws the top bun UP 77 px with no cause (n2-n10), and the bun pokes into the text zone, reaching y851 at n10. The loose sesame seeds drift sideways like dust, smear and fade instead of falling. The drop is about 4-5x slow motion, and contact comes late: i = 23, so impact falls outside the n10-n20 gate. The impact itself is two morph frames (n23-n24), and after landing the burger wobbles like jelly for about 1.4 s. Gate results are in 'gates'.\n\n**What is good:** The camera is locked, there is no cut and no new object, and the frame count is fine. The bun stays sesame-side up and level in the air. The burger stays a convincing cooked smash burger from n25 to n72 and is fully calm from n58.\n\n**How the remap fixes it:**\n- **Burger A:** hold the peak frame n11 as the 'hang' (9 frames), then drop on every second frame (n12-n22).\n- **Burger B:** cut straight to the squash at n25 on the beat (A-20 f225, A-14 f210), hidden by the existing 1.2x punch-in and camera bump. Then play the settle on every second frame (n25-n53).\n- **Burger C:** lens L on n54-n68.\n- **Porthole and CTA band:** squash and settle (n25-n53 on every second frame), then the calm frames.\n\n**Code fixes:**\n- Scale the Burger A frames 0.95 about the board base (540,1609); 0.92 in 4:5. This keeps the bun under y 880.\n- Clean plates from n0 remove the drifting seeds and the morphing seed on the board rim.\n\n**4:5 clearance:** the tag clearance in 4:5 is estimated, not measured, and must be re-checked against the tag fill at baseline 530.\n\n**Slow motion choice:** the opener's slow motion was accepted earlier. If the director prefers the slow look here too, the alternative is Burger A = n8-n22 at 1:1 with the same scale and plate. I advise against it for this owner: the drop reads floaty.\n\nThe repo was read only. tash/HANDOFF.md was not updated; the parent session owns that. The measurement scripts and crops are in /tmp/claude-0/-home-user-visitor-counter-api/1e0f8dbb-d731-5965-a898-07519c7bdbc3/scratchpad/r5/review/s3."
+  },
+  {
+   "clip": "s2",
+   "gates": [
+    {
+     "gate": "Camera static (no pan, zoom or drift)",
+     "result": "pass",
+     "evidence": "I phase-correlated every frame n0-n72 against n0 on six regions. Maximum drift: box 0.03 px, bottle 0.02 px, cap 0.04 px, box left edge 0.07 px, bottle right edge 0.03 px, floor reflection 0.23 px. The left and right regions agree, so there is no zoom."
+    },
+    {
+     "gate": "No cut",
+     "result": "pass",
+     "evidence": "Frame-to-frame mean absolute difference over the whole frame is 0.30 to 0.65 levels (the largest is n1 to n2; median 0.41). In the smoke area (x 360-620, y 900-1240) the change falls smoothly from 2.8 to 0.6 levels. There is no jump."
+    },
+    {
+     "gate": "No new object, hand or text",
+     "result": "pass",
+     "evidence": "Outside the smoke column, the difference against n0 is only edge-level codec noise. Maximum mean absolute levels: wood 1.86, liquid 1.78, cap 2.20, glass base 2.91, floor 1.49. Difference maps amplified 8x at n12, n24, n36, n48, n60 and n72 show only the smoke. Crops at 100%, 200% and 300% of the chip and charcoal, cap, liquid and dip tube, brass corner plates and rivets, glass base and reflections show the same shapes at n0, n24, n48 and n72. Nothing new appears."
+    },
+    {
+     "gate": "Nothing enters y 0-880 (S2 smoke tested after the code fade, ramp y 1010 to 880, R3-12)",
+     "result": "pass with remap or code fix",
+     "evidence": "In the raw clip the smoke crosses y 880 from n5 (498 px at G +3). Its top edge reaches y 805 at n11, 692 at n22, 592 at n36 and 551 at n44, then about y 180-224 from n54. From n42 a wide faint haze rises through the tag box (y 560-840) and the word (y 331-533) at x 224-580; its peak is G +34 over the backdrop. I simulated the R3-12 fade (rows y 880-1010 blended linearly to that frame's own flat backdrop, everything above 880 flat). After it, the maximum deviation above y 880 is 0 levels on all 73 frames full-frame, and at most 1 level (resampling) in the 1.25x punch-in about (540,900). At 100% the smoke thins out through the ramp like real smoke, with no visible ceiling (n8, n15, n22, n29 and punch-in n22 checked)."
+    },
+    {
+     "gate": "S2 puff onset p at native frame 10 or earlier",
+     "result": "pass with remap or code fix",
+     "evidence": "There is no separate fuller puff: the clip does not do what the motion prompt asked. Smoke at the chip (x 400-560, y 1180-1250) is strongest at n0-n4 (mass 88) and then thins: about 65 at n15, 41 at n35 and 25 at n51. A fresh curl forms above the chip at n59-n72. The plume already in the still rises from n0: its leading edge is at y 917 at n0, 894 at n3 and 805 at n11. A denser packet rises from y about 1075 at n14 to 1030 at n16, 980 at n20, 915 at n27 and 840 at n33. Read as 'smoke visibly rising on the cut', p = n0, which is within n10. Read literally ('one fuller puff in the first 0.25 s'), nothing measurable happens."
+    },
+    {
+     "gate": "72 native frames present, no duplicate run",
+     "result": "pass",
+     "evidence": "73 frames n0-n72 decode (nb_frames 73, 3.042 s). No two consecutive frames are identical; the smallest per-pair maximum difference is 17 levels (n65 to n66). mpdecimate marks 25 of 73 frames as near-still because the product is static, but the smoke area changes on every frame (mean 0.64 to 2.8 levels), so there is no frozen run. For reference (not a gate), frame 0 differs from the start still by a mean of 2.12 levels (qc.json, re-checked: backdrop is (252,77,146) at n0 against (255,80,147) in the still)."
+    }
+   ],
+   "unnatural": [
+    {
+     "frames": "n5-n72",
+     "what": "In the raw clip the smoke rises above y 880. From n42 it spreads into a wide faint haze through the tag box and the word zone, reaching y 180-224 by n54-n72 over x 224-580. The motion is natural, but it would sit under the type.",
+     "severity": "major",
+     "fix": "Apply the mandatory R3-12 fade to every S2 frame before any punch-in, lens, porthole or band use: rows y 880-1010 ramp linearly to that frame's own backdrop colour (median of x 900-1080, y 0-800), and everything above y 880 is flat. Simulated result: 0 levels of residue above y 880."
+    },
+    {
+     "frames": "n0-n14 (the whole clip)",
+     "what": "The fuller puff asked for in the motion prompt never happens. The smoke is a calm, continuous curling plume, densest at n0-n24, so the oud beat has no puff to hit the kick at f165.",
+     "severity": "minor",
+     "fix": "Set p = n0. The plume is already curling upward on the cut, and the charcoal crackle in the sound carries the hit. This is not worth a retake."
+    },
+    {
+     "frames": "n32-n58",
+     "what": "Smoke at the oud chip thins to faint strands: G +25 or less at y 1050-1100, and source mass falls from 49 to 25. At small size the burner reads almost smokeless for about 1 s. Smouldering oud does vary like this, so it is natural, but it sells the oud weakly.",
+     "severity": "minor",
+     "fix": "Keep these frames out of the full-frame beats. Only n30-n44 are used, and only inside lens L, where the product carries the read."
+    },
+    {
+     "frames": "n16-n27",
+     "what": "The head of the plume forms a rounded hood that rolls over to the right at about y 960-1060. A rising plume does make a cap like this, so the physics holds, but it looks slightly stylised. Most of it lies inside the fade ramp, and after the fade it looks natural at 100%.",
+     "severity": "minor",
+     "fix": "None needed beyond the R3-12 fade."
+    },
+    {
+     "frames": "n0-n12",
+     "what": "Grain sharpens slightly over the first half second: Laplacian variance on the wood goes from 115 to 136 and on the charcoal from 734 to 920. No shape changes, and there is no visible focus shift at 300%.",
+     "severity": "minor",
+     "fix": "None."
+    },
+    {
+     "frames": "n2, n12, n22, n32, n42, n52, n62, n72",
+     "what": "Every 10 frames the encoder refreshes for one frame: frame-to-frame change rises to about 0.5 levels (against about 0.15 normally) and sharpness rises 3-5% (wood 138 to 142). It is not visible at 100%.",
+     "severity": "minor",
+     "fix": "None. If it ever shows in the build, blend that one frame 50/50 with its neighbours."
+    },
+    {
+     "frames": "n0-n36 (then steady)",
+     "what": "The backdrop drifts slowly and evenly by about 3 levels, from (252,77,146) at n0 to (252,75,143) at n36. There is no flicker.",
+     "severity": "minor",
+     "fix": "Use each frame's own backdrop colour in the fade and in any clean plate, never one fixed colour, so no 2-3 level seam appears."
+    },
+    {
+     "frames": "n0-n72",
+     "what": "The charcoal never glows, although the prompt asked for a gentle glow. It reads as ash-covered charcoal, which is natural. The burner, chip, bottle, cap, liquid, dip tube, brass plates, shadow and floor reflections stay rigid with no texture crawl. Smoke always rises and never sinks: the dense packet climbs about 12 px per native frame, roughly 11 cm/s scaled to the roughly 11 cm burner, or about 14 cm/s at the 1.25x playback. That is calm, not slow-motion.",
+     "severity": "minor",
+     "fix": "None."
+    }
+   ],
+   "usable_ranges": "With the R3-12 fade applied, all 73 frames (n0-n72) look natural. None has to be hidden: no physics fault, morph, flicker, new object or reversal. Best smoke (dense, curling, readable at small size): n0-n31. Thin, weak smoke: n32-n58, fine in the lens or porthole but weak full-frame. A fresh curl just above the chip, entirely below the fade: n59-n72.",
+   "remap": "Rule: one native frame per 30 fps timeline frame (1.25x), never reversed, with no holds and no speed change. Every frame gets the R3-12 fade first, using a per-frame backdrop colour. p = n0.\n\nA-20 (B-20 f90-599, the TikTok A-20 and the 4:5 versions use the same source frames):\n- f105-119, right porthole Ø220 at (810,1125): n0-n14. f120-134: n15-n29. Zero-credit layout fix: the R3-14 source point (532,1250) was set for the old still. In the new still the bottle base corner (768,1597) sits 420 source px from it, which is 130 px on screen at 0.31, so it is cut by the Ø220 window. Use about (540,1375) at 0.30. The farthest product point is then 315 source px, or 95 px on screen.\n- f165-179, Oud A full frame: n0-n14. n0 is the still to within 2 levels; the smoke is already curling.\n- f180-194, Oud B, 1.25x punch-in about (540,900): n15-n29. The product's top is at screen y 1196, so no tag touches it. The fade ramp lands at screen y 875-1037, and 0-1 levels remain above 880.\n- f195-209, Oud C in lens L, scale 0.78 about (540,1270) (R3-6): n30-n44. Measured fit: the farthest product point (768,1597) is 311 px from the lens centre, inside the 328 px inner radius. The box corner (312,1561) is 288 px. Only the shadow tip (871,1560) is clipped by the rim.\n- f390-404, snap: no S2 (R3-8, the wordmark dots are solid Ink).\n- f510-539, CTA band (R3-9 order: kunafa f450, burger f480, oud f510, coffee f540): n0-n29. This replays the most active smoke, as R3-9 prefers (the old row was n40-n69). Band y 1060-1920 with the footage offset −45 px: cap top y 1137 to 1092, chip top 1240 to 1195, bottle base 1602 to 1557. Smoke shows between the panel edge and the chip, and the fade ramp (source 880-1010, screen 835-965) is hidden under the panel. Alternative if variety is wanted: n43-n72 (fresh curl from n59).\n\nA-14:\n- f105-134 porthole: as A-20 (n0-n29, recentred).\n- f165-179, Oud A full frame: n0-n14.\n- f180-194, Oud C in lens L at 0.78: n15-n29.\n- f300-314, snap: no S2 (R3-8).\n- CTA band: no S2 (R3-9 A-14 order is kunafa, burger, coffee).\n\n4:5:\n- The same source frames as above.\n- Lens: r 300 at (540,985), scale 0.69.\n- Band y 800-1350, offset about −300 (R3-10): cap top at 837, base at 1302.\n- The fade is applied before the source rows y 285-1635 are cropped, so the ramp lands at 4:5 y 595-725, above the product and clear of the tag.\n\nMeasured product geometry at n0: body x 308-768, cap top y 1137, chip top about y 1240, box base y 1561, bottle base y 1602, shadow tip x 871 at y 1560. All of it is inside the hero box x 300-780, y 930-1610, except the shadow tip.\n\nZero-credit fixes, all code: (1) the R3-12 fade with a per-frame colour; (2) the porthole recentre to about (540,1375) at 0.30; (3) the band offset of −45 px. No clean plate, retouch, speed change or hold is needed.",
+   "verdict": "use with zero-credit fixes",
+   "summary": "The S2 clip is calm and believable. The camera is locked (drift under 0.1 px on the objects). There is no cut, duplicate or frozen run, and nothing new appears. The burner, oud chip, bottle, cap, liquid, brass plates and reflections hold their shape at 100%, 200% and 300%. The smoke always rises at a natural, calm speed, curls, forms a cap and thins, and a fresh curl appears at the chip near the end. Nothing in it looks AI-made by the owner's standard.\n\nOnly two things matter:\n1. In the raw clip the smoke rises past y 880 into the tag and the word zone. The planned R3-12 code fade, using each frame's own backdrop colour, removes it completely (0 levels above 880 in my simulation), and the smoke thins naturally through the ramp.\n2. The prompted fuller puff never happens. I set p = n0 because the plume is already rising on the cut. That costs a little punch on the f165 kick, and the crackle in the sound can carry it.\n\nThe smoke is weak from n32 to n58, so those frames are used only inside the lens. The rest is a few small layout fixes for the new still: recentre the porthole source point to about (540,1375) at 0.30, offset the band by −45 px, and lens scale 0.78 still fits.\n\nRecommendation: use the clip, no retake. A retake (5.25 credits) would be a new random roll only to chase the puff, at the risk of less natural smoke.\n\nScratch evidence is in /tmp/claude-0/-home-user-visitor-counter-api/1e0f8dbb-d731-5965-a898-07519c7bdbc3/scratchpad/r5/review/s2:\n- smoke.json: per-frame smoke numbers.\n- smoke_enh_grid.jpg: the smoke enhanced 6x.\n- faded_sheet.png and faded_ramp100.png: the fade simulation.\n- faded/: faded full frames and punch-ins.\n- crops/: frame-by-frame 100% smoke crops, plus 200-300% crops of the chip, bottle, box and reflections.\n- diff_vs_n0.png: the difference maps.\n- scripts/: the scripts used."
+  },
+  {
+   "clip": "s6",
+   "gates": [
+    {
+     "gate": "Camera static (no pan, tilt, zoom or drift)",
+     "result": "pass",
+     "evidence": "I phase-correlated the top band y 0-440 between consecutive frames. Every pair from n1 to n11, and every third pair after that, gives a shift of (0,0), with correlation peaks of 0.1 to 0.76. The ring changes size only during the fall: circle-fit outer radius 221.4 at n0, 213.3 at n6. The background never translates or scales."
+    },
+    {
+     "gate": "No cut",
+     "result": "pass",
+     "evidence": "Mean absolute difference between consecutive frames is 2.7 to 5.6 levels, with no spike. The step in mean frame luma between frames is 1.1 or less (whole-frame luma 189.2 to 194.9)."
+    },
+    {
+     "gate": "No new object, hand or text",
+     "result": "pass with remap or code fix",
+     "evidence": "No hand or text appears. From n6, a white cotton-like mass appears out of nothing in the ring hole. It covers 12% of the hole at n6, 25% at n7 and 80% at n14. It is still 26% at n44, 1.6% at n54, and faint traces last to about n57. It reads as a new object, not as water. This is fixed only by never showing n6-n48 and by retouching the faint traces in n49-n57."
+    },
+    {
+     "gate": "Nothing enters y 0-880",
+     "result": "pass with remap or code fix",
+     "evidence": "Fails in the raw clip. The ring drifts upward the whole time: centre y 1240 at n7, 1019 at n72. Its circle-fit top crosses y 880 at n44 (879.9) and reaches y 802.5 at n72, which is inside the tag box y 560-840. Orange pixels above y 880: 128 at n45, 7,928 at n72. Ripple arcs reach the tag box from about n20; tag-box luma std is 3.45 at n0, 7.5 at n29 and 13.4 at n72. From n54, blotchy white glints appear at x 0-230, y 560-880. It passes after the remap: the hook frames are drawn with the source shifted 200 px down, and the band frames sit 300 px lower under the panel. Then the ring's screen top stays at y 1018 or lower, and only water ripples remain above y 880."
+    },
+    {
+     "gate": "S6: ring lands with a visible splash inside the first 0.3 s",
+     "result": "fail",
+     "evidence": "The timing is fine. The ring touches the water at n6 (0.25 s): it stops shrinking there (radius 213.3 at n6, 213.5 at n7), after an accelerating, gravity-like fall over n0-n5. But there is no real splash. In the band 15-140 px outside the rim, white pixels stay at 0.1% or less for n5-n14, so no water or droplets go outward. The only white is a soft cloud that grows inside the hole (n6-n14) and later rolls over the ring. No zero-credit fix can create a natural splash."
+    },
+    {
+     "gate": "72 native frames present, no duplicate run",
+     "result": "pass",
+     "evidence": "ffprobe: H.264, 1080x1920, 24/1, nb_frames 73, nb_read_frames 73, 3.04 s, so frames n0-n72 are all present. ffmpeg mpdecimate drops no frames, and no two consecutive frames are identical. Frame n0 matches the start still s6_fit.png with a mean absolute difference of 2.57 (1.53 in y 0-880), which agrees with qc.json. Note: qc.json's px_above_880 is not useful for water, because caustics already give 5,205 pixels at n0."
+    }
+   ],
+   "unnatural": [
+    {
+     "frames": "n6-n53 (strong n7-n44, faint to n57)",
+     "what": "At contact, a soft white cloud like cotton or smoke appears inside the ring hole (at 200%, the tiles show through its fuzzy edges). There is no spray, no droplets and nothing goes outward. It grows to 80% of the hole by n14, sits there for about 2 s, and fades by about n54. Wisps remain inside the hole (source box about x 415-645, y 945-1190) through n57. It looks AI-made, the same kind of fault as the coffee spill the owner rejected.",
+     "severity": "blocker",
+     "fix": "Never show n6-n48. Retouch the faint wisps in n49-n57: fill the hole interior from frame n+12, moved by the ring-centre offset, and feather 8 px inside the inner rim. A real splash needs a retake."
+    },
+    {
+     "frames": "n14-n26 (stripe streaks visible to about n46)",
+     "what": "The cloud rolls up and over the top-right and bottom of the ring. The visible orange area drops from 47k px at n13 to 32k px at n21. The orange stripes get scratchy white streaks, and the ring's outline becomes ragged: edge residual SD 20-28 px over n15-n24, against 10-14 px elsewhere. The ring looks swallowed and melted.",
+     "severity": "blocker",
+     "fix": "Never show these frames. The remap goes from n5 straight to n49."
+    },
+    {
+     "frames": "n12-n20 (soft shadow back from about n36-n40)",
+     "what": "The ring's shadow on the pool floor slides right and disappears while the sun and the ring stay the same. Dark-shadow area falls from 63k px at n12 to 0.8k px at n20, and its centroid moves from x 684 to x 903. A shadow cannot leave its object like this.",
+     "severity": "major",
+     "fix": "Excluded by the remap."
+    },
+    {
+     "frames": "n14-n24 lurch; n24-n72 steady drift and spin",
+     "what": "Under the foam, the ring jumps up 68 px in 10 frames (centre y 1218 to 1151). After that it glides up at a steady 2.3-3.3 px per frame and spins at a constant 0.75-0.86 deg per frame, about 39 deg in total, without slowing. The prompt asked for a few degrees. This carries the ring into the text zone from n44.",
+     "severity": "major",
+     "fix": "In the hook and return beats, draw the source 200 px lower, and punch in 1.15x or 1.25x about (540,900). In the band, draw it 300 px lower under the lime panel. The steady glide over the short used ranges (15 frames or fewer per beat) is acceptable."
+    },
+    {
+     "frames": "n18-n54",
+     "what": "Around the ring, the pool-floor tile grid fades away (13.6 px tile grid, strength 26-86 at n0-n12, 3-10 at n42-n54) and then partly comes back by n63-n72 (bottom centre 51-73). The floor texture melts instead of wobbling under the ripples.",
+     "severity": "minor",
+     "fix": "Mostly hidden: n0-n5 (crisp tiles) cut straight to n49+. The gradual return of the grid in n49-n72 is subtle."
+    },
+    {
+     "frames": "n7-n29",
+     "what": "After landing, the ring's apparent size grows back from outer radius 213.3 (n6) to 218-219 (n26-n29), then holds at 215.5-217.3 to the end. It looks as if the ring rises back toward the camera by about 60% of its drop.",
+     "severity": "minor",
+     "fix": "Not on screen in the remap: the landing itself is cut out, and n49-n72 stay at a constant size."
+    },
+    {
+     "frames": "n54-n72",
+     "what": "Blotchy white glint patches pop in and out at the left edge inside the tag zone, for example n60 at about x 70-140, y 630-690 and n72 at about x 0-140, y 640-790. They read as foam clumps more than sparkles.",
+     "severity": "minor",
+     "fix": "In the remap they fall off the left edge (screen x 40 or less in the 1.25x punch) or under the CTA panel."
+    },
+    {
+     "frames": "n0 (and anything else showing the raw top band)",
+     "what": "The still's top 440 rows are a copy of the block below them. This was already known and accepted, and it is hidden behind the word.",
+     "severity": "minor",
+     "fix": "Already accepted; no change."
+    }
+   ],
+   "usable_ranges": "Clean and natural: n0-n5. The ring hangs and then falls. Centre-y steps of 1.2 / 3.7 / 5.0 / 4.5 / 5.4 px and radius steps of 0.6 / 0.5 / 1.5 / 0.8 / 2.7 / 2.0 px show a real gravity fall, not a floaty one; the tiles are crisp and the shadow behaves. Also clean: n58-n72. The ring floats in spreading ripples. Its top is above y 880, so it must be drawn lower. Usable after a zero-credit retouch of faint white wisps inside the hole: n49-n57. Never on screen: n6-n48 (the cotton cloud, the foam rolling over the ring, smeared stripes, the shadow leaving, the ring jumping up). The clip contains no natural splash.",
+   "remap": "This is the zero-credit fallback, for use only if the owner declines the retake. Clip frames play one per timeline frame and are never reversed. \"Shift +200\" means the source is drawn 200 px lower before the punch-in, which is about (540,900). Pad the top of the source with 83 rows at 1.15x or 20 rows at 1.25x, either by reflecting the water rows just below or from n0 rows 0-83.\n\nB-20 rows (BUILD-SPEC section 11, with R3-15 «شاليه؟» at 180 px):\n- f0-5 = n0-n5, full frame at 1.0x, no shift. The ring falls; f0 is n0.\n- f6-14 = n49-n57 at 1.15x, shift +200. A hard framing cut on the moment of impact. Ring top on screen 1085 to 1058, bottom 1581 or higher. Retouch the hole wisps in n49-n57. Move the \"water splash\" sound from f0 to f6; the 808 stays on f0.\n- f15-29 = n58-n72 at 1.25x, shift +200, clean. The tag pulses and the clap lands on f15 as in the spec. Ring top on screen 1068 to 1028.\n- f78-89 (repaint circles; was n3-n14) = n61-n72 at 1.15x, shift +200, clean. The ring is floating in fresh ripples. Ring top on screen 1046 to 1018, clear of «محد يسولف؟».\n- CTA band (was f540-587 = n24-71): f540-569 = S1 n68-n96 plus a hold of n96 on f569, the A-20 coffee band from R3-22d. Then f570-587 = S6 n55-n72, drawn 300 px lower, so the ring top on screen goes 1143 to 1103 under the panel edge at y 1060. Retouch the wisps in n55-n57.\n- Wind-up and loop f588-599: frozen n0, unchanged.\nNothing in this plan comes from n6-n48.\n\nAlternative, if the f6 framing cut must sit on the 15-frame grid: hold n0 on f0-8, play n0-n5 on f9-14, and cut on impact at f15 to n49-n63 at 1.25x, shift +200, with the clap. Then f15-29 = n49-n63, and the wisp retouch in n49-n57 is still needed. This breaks the \"lands inside 0.3 s\" rule; impact moves to 0.5 s.",
+   "verdict": "retake recommended",
+   "retake_prompt": "Static top-down tripod shot, the camera does not move, normal real-time speed. At the very start the ring drops flat onto the water and hits it within the first quarter of a second. On impact a low crown of clear, glassy water and sparkling droplets kicks outward all around the outer edge of the ring and falls back into the pool within half a second. The water inside the ring stays clear and transparent the whole time, with no white foam, no mist and no cloud. Clear circular ripples spread outward across the pool, the sun caustics wobble, and the small white floor tiles stay visible through the water. The ring's shadow stays on the pool floor just below and to the lower right of the ring and moves with it. After the splash the ring bobs once and then floats almost still in the centre of the frame, turning only a few degrees; it never slides toward the top of the frame. The upper half of the frame stays calm water with gentle caustics. No foam, no people, no cuts, no new objects, no text.",
+   "summary": "S6 fails its main gate. The ring touches the water on time (n6, 0.25 s) after a fall that looks natural (n0-n5), but there is no real splash. Instead a white cotton-like cloud appears inside the ring (n6), grows to fill it, and rolls over the ring and smears its stripes (n14-n26). The cloud stays for about 2 s (gone by about n54; faint wisps to n57). During this, the floor shadow slides away and disappears (n12-n20), and the ring jumps up 68 px (n14-n24). The ring then glides and spins steadily upward until it enters the text zone at n44 (top at y 802 by n72).\n\nThese pass: camera static, no cut, no hand or text, all 73 frames present with no duplicates, frame n0 matches the still (mean difference 2.57).\n\nThe only natural material is the fall (n0-n5) and the floating ring after the cloud is gone (n58-n72, plus n49-n57 after a retouch). A zero-credit fallback is possible: cut on impact from n5 into a shifted punch-in of n49-n72, with the splash sold by sound, and use n55-n72 in the band. But it gives up the splash that is the whole point of the version B hook, and the owner has already rejected the coffee spill as unnatural.\n\nI recommend one retake (5.25 credits, needs the owner's OK; STORYBOARD section 4 allows one retake from the reserve). The revised prompt asks for a clear water splash with no foam, a shadow that stays under the ring, tiles that stay visible, and a ring that stays centred. If he declines, build B-20 with the fallback remap, or drop B-20 for this round. A-20 does not use this clip and is not affected."
+  }
+ ],
+ "skeptic": {
+  "per_clip": [
+   {
+    "clip": "s5",
+    "agree": "agree",
+    "corrections": "I agree with the verdict (use with zero-credit fixes) and the remap n30-n72. I checked it myself.\n\nConfirmed:\n- The nut clump crosses the empty zone on n1-n8. In y 0-880 I count 965 px over 25 levels on n1 and a peak of 49,527 px on n3 (max deviation 151).\n- The nuts turn see-through and melt into the pool on n10-n14 (seen at 100%).\n- y 0-880 is clean on n28-n72: 0 px over 20 levels against each frame's own median, max deviation 6-8.\n- The pool reads as clear glossy syrup from n30. The small white fleck at about (537,1247) on n30-n34 is real but minor.\n- The tray centre (537.5,1272.5) is 3.5 px from the lens centre (540,1270), so the kunafa does sit centred in lens L at scale 1.0.\n- The beat mapping is consistent: A-20 and B-20 drain f30-44, Kunafa A f255-269 = n30-n44, Kunafa B f270-284 = n45-n59, band f450-479 = n43-n72. A-14 uses the same frames on f225/f240/f315.\n\nMissed item (minor, but a real morph):\n- The still has a dark squiggle on the tray floor, upper left, at about x 395-430, y 1118-1146. It is visible at 100% and looks like a dried drip or a pen stroke.\n- It stays put through n0-n40. It then dissolves on n41-n46 while a bright glossy syrup crescent wells up in the gap between pastry and wall (about x 330-470, y 1060-1160).\n- Region change in x 385-440, y 1110-1150, against n30: 3.2 levels at n40, 14.4 at n44, 20.4 at n46, 24.9 at n48.\n- On screen this falls on:\n  - the last 4 frames of Kunafa A (f266-269, n41-n44, full frame);\n  - the first frames of Kunafa B (n45-n49, inside the lens, about 190 px from the lens centre);\n  - the first frames of the kunafa band (n43-n49).\n- At phone size it is small: the mark is about 12x9 px on a 390 px-wide screen.\n- Zero-credit fix: retouch the squiggle out of the used frames up to about n46. Use copper tray-floor texture sampled along the same radius, so nothing visibly 'melts'. The syrup crescent can stay; it reads as syrup reaching the rim.\n\nOther notes:\n- The 'sheen visibly spreading' gate passes only loosely. Inside Kunafa A (n30-n44) the pool radius grows about 5 px (about 2 px on a phone). The beat reads as a still with a moving highlight. That is natural, not a fault, but don't expect visible spreading on f255-269.\n- The nut gate does fail. Under STORYBOARD section 4 that earns one 5.25-credit retake. Declining it is defensible, because no beat needs nuts on screen (the drain is under the falling thirds). Recording 'fail, no retake' is correct.\n- I agree with dropping the nut-scatter sound."
+   },
+   {
+    "clip": "s3",
+    "agree": "agree",
+    "corrections": "I agree with the verdict (use with zero-credit fixes) and the remap. My own bun tracking confirms the timeline.\n\nMy bun tracking (warm-pixel mask, x 390-690):\n\n| Native frame | Bun top (y) | Note |\n|---|---|---|\n| n0 | 934 | |\n| n5 | 886 | |\n| n9-n11 | 856-858 | Peak. The reviewer's 851 comes from a different threshold. |\n| n12 / n14 / n16 / n18 / n20 / n22 | 862 / 878 / 906 / 938 / 976 / 1026 | |\n| n22 | | Bun bottom at 1214, cheese top 1234-1242: still a 20-28 px gap. |\n| n23 | | First contact. |\n| n25-n26 | 1116-1118 | Deepest squash. |\n| n31 | 1094 | Rebound. |\n| n40 onward | 1102-1108 | Rest. |\n\n- So i = 23, and putting n25 on f225 (A-14: f210) lands the bun on the beat.\n- The every-second-frame drop (n12...n22) gives an accelerating fall of 16, 28, 32, 38, 50 px per timeline frame. It reads as gravity.\n- The n22 smear matches that per-frame speed, so it reads as motion blur.\n- In the reviewer's preview (preview2, f210-f254) Burger A, the f224-to-f225 impact cut and the Burger C lens all look clean at phone size.\n\nSeed plate check, on n11-n29:\n- Isolated seed specks lie only at x 66-240 and x 840-1079, y 1138-1529. The x0-270 / x830-1080, y885-1560 plate covers all of them.\n- In x 270-830 the only isolated warm pixels are static stack-edge detail at about (700-760, 1300-1400) in every frame, n54-n68 included.\n- On n25-n27 the only specks are at x 1066-1079, outside the 1.2x view (x 90-990).\n\nResidual worth noting (minor, accept):\n- Even at every second frame, Burger B (f228-f239) keeps a lateral bun sway.\n- Bun centroid x: 545 (n25), 554 (n35), 541 (n45), 548 (n53). That is 13 px peak to peak, about 16 px at 1.2x and about 6 px on a phone.\n- It reads as a soft brioche settling. It is not the 'jelly' of the 1:1 playback.\n\nThe raw n1-n10 upward float is exactly what the owner mocked on STAKK («شلون يرفع البرجر عكس»). The remap must never let any of n1-n10 through, and as written it doesn't.\n\nThe S3 pick itself is still awaiting the owner's OK (HANDOFF section 7)."
+   },
+   {
+    "clip": "s2",
+    "agree": "agree",
+    "corrections": "I agree with the verdict (use with zero-credit fixes) and the main remap.\n\nI ran my own R3-12 fade (linear ramp y 880-1010 to the median backdrop of x900-1080, y0-800):\n- The backdrop is truly flat: rows y 100, 400, 700, 880, 950, 1010 and 1100 at x 0-200 and x 900-1080 all read (252,77,146) within ±0.3. So flattening above y 880 leaves no seam.\n- At phone size the plume thins out through the ramp with no visible ceiling on n0, n8, n16, n24, n30, n37, n44 and n56.\n- The products are rigid. At 140% the bottle, dip tube, brass plates and rivets match between n0 and n72, and no writing-like marks show on the new still's bottle base or plates.\n\nCorrection, reject the stated band alternative n43-n72:\n- From n44 to n58 the smoke at the chip is faint: 98th-percentile G over the backdrop is +11 to +20 in y 1090-1235.\n- From about n60 a brighter curl forms 100-150 px above the chip, and its stem is fainter than the curl:\n\n| Frame | Curl, y 1090-1120 | Stem below, y 1130-1160 |\n|---|---|---|\n| n64 | G +25 | G +15 |\n| n70 | G +31 | G +14 |\n\n- At 100% that reads as smoke appearing in mid-air: the same kind of AI tell the owner rejects.\n- Keep the band on n0-n29, and keep the 'thin' frames n30-n44 inside the lens only, as proposed.\n\nPuff gate: as the reviewer says, there is no puff at all. p = n0 is a reinterpretation of the gate, not a pass as written. The f165 beat therefore has no visual hit; the crackle in the sound must carry it. This is acceptable because the smoke is natural.\n\nGeometry checks out:\n- 1.25x punch-in: cap top 1137 lands at screen y 1196.\n- Lens L at 0.78: the farthest product point (768,1597) is 311 px from the lens centre, inside the 328 px inner radius.\n- Porthole recentre to (540,1375) at 0.30: the bottle corner lands 95 px from the window centre, inside the roughly 104 px inner radius."
+   },
+   {
+    "clip": "s6",
+    "agree": "agree",
+    "corrections": "I agree: a retake is recommended. My measurements:\n- White pixels inside the hole (r 110 about the orange centroid): 63 at n5, 1,560 at n6, 4,991 at n7, 13,209 at n14, 11,371 at n30, 4,923 at n44, 1,439 at n49, 95 at n52 and 0 from n55.\n- The orange area drops from 48k px to 27.8k px at n20, where the cloud rolls over the ring.\n- The ring top is at y 1036 at n5, 878 at n44, 860 at n49 and 804 at n72. Orange pixels above y 880: 1,402 at n49 and 7,848 at n72.\n- The n0-n5 fall is physically right: the ring shrinks and its centroid moves up toward the image centre (1265 to 1245), as perspective predicts. Contact is at n6.\n\nThe zero-credit fallback is weaker than the review says:\n1. No splash is ever on screen, but the plan moves the 'water splash' sound to f6, over a ring already calmly floating 2 s later. The sound and the picture would disagree, which is the kind of thing the owner calls unnatural.\n2. The 6-frame fall (n0-n5) shrinks the ring only 221 to 213 px radius (about 4%), so at phone size the hook has almost no visible action before the cut.\n3. The plan puts S1 coffee (n68-n96) in the B-20 band at f540-569. That breaks STORYBOARD S1 'Used in: B-20 (from f105 on, not in the B-20 band or loop)' and BUILD-SPEC section 11 'B-20 CTA band f540-587 = S6'.\n4. The 1.15x shift needs 83 synthetic top rows (reflected water or n0 rows 0-83) on a still whose top 440 rows are already a copy.\n\nIf the retake is declined or fails, STORYBOARD section 4's own rule (B-20 not delivered this round, owner decides) is the better fallback than shipping this hook.\n\nRetake prompt:\n- It is sound. It rightly drops the original phrase 'a ring of white water', which most likely seeded the cotton cloud.\n- Two edits:\n  - If the Kling tool has a negative-prompt field, move 'white foam, mist, cloud' there instead of naming them in the positive text.\n  - Replace 'The upper half of the frame stays calm water' (which contradicts 'ripples spread outward across the pool') with 'the ripples fade out before they reach the top third of the frame'.\n- Cost: 5.25 credits (v4 would go from 117 to 122.25 of the 200 cap), inside the earmarked Kling-retake reserve. The HANDOFF rule says to state the cost to the owner before spending, so record whether «سو اللي تنصح فيه و كمل» counts as that approval."
+   }
+  ],
+  "overall": "I opened all four clips myself and tested every verdict. All four verdicts hold.\\n\\n- **S5 kunafa, S3 burger and S2 oud:** usable with zero-credit fixes.\\n- **S6 pool:** needs a retake. The white cotton-like cloud in the ring hole (n6 to about n54) and the missing splash cannot be fixed without credits.\\n\\nNo remap breaks the beat table:\\n- **Burger:** the bun is still 20-28 px above the cheese at n22, first contact is at n23, and the deepest squash is at n25-n26. Playing n25 on f225 (A-14: f210) lands the impact exactly on the beat. The every-second-frame drop accelerates like gravity.\\n- **Kunafa:** the tray centre (537.5,1272.5) is 3.5 px from the lens centre, so it sits centred in the lens at scale 1.0.\\n- **Text zone:** for S5 n28-n72, y 0-880 is clean (0 px over 20 levels against each frame's own median). For S3, every used frame keeps the bun below y 880 after the 0.95 scale. For S2, after the fade the backdrop is truly flat at (252,77,146), so the flattening leaves no seam.\\n\\nCorrections and additions:\\n1. **S5, missed (minor):** a dark squiggle on the tray floor at about x 395-430, y 1118-1146 is part of the still. It dissolves on n41-n46 while a glossy syrup crescent wells up beside it. That falls on the end of Kunafa A (f266-269), the start of Kunafa B in the lens, and the start of the band. Retouch the squiggle out of the used frames up to about n46. Separately, the 'syrup spreading' in Kunafa A is only about 5 px of radius, so the beat reads as a still with a moving highlight.\\n2. **S2:** don't use the band alternative n43-n72. From about n60 a brighter curl forms 100-150 px above the chip over a fainter stem, which looks like smoke appearing in mid-air. The puff gate is not met as written (there is no puff); p = n0 is a reinterpretation, and the sound must carry the f165 hit.\\n3. **S3:** a 13 px side-to-side bun sway remains in Burger B even at every second frame (about 6 px on a phone). Accept it. Isolated seeds in the used frames n11-n29 sit only where the planned seed patches cover them. The raw n1-n10 upward float must never be used: it is the same 'burger rising backwards' the owner mocked on STAKK.\\n4. **S6:** the zero-credit fallback has no splash on screen, puts a splash sound over a calmly floating ring, and puts S1 coffee in the B-20 band, which the storyboard and the spec forbid. If the retake is declined, not delivering B-20 this round (the storyboard's own rule) is better. Two small edits to the retake prompt:\\n   - Put 'foam, mist, cloud' in a negative-prompt field if the tool has one.\\n   - Replace 'upper half stays calm' with 'ripples fade out before the top third'.\\n\\n   The retake costs 5.25 credits (v4 would go from 117 to 122.25 of 200), inside the earmarked reserve. The project rule says to state the cost to the owner before spending.\\n\\nThis was a read-only review: I generated nothing and changed nothing in the repository. My scripts and contact sheets are in /tmp/claude-0/-home-user-visitor-counter-api/1e0f8dbb-d731-5965-a898-07519c7bdbc3/scratchpad/r5/review/skeptic/ (subfolders scripts/ and out/)."
+ }
+}

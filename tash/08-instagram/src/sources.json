@@ -1,0 +1,86 @@
+{
+  "1": {
+    "folder": "01-habba-concept-reel",
+    "video": "05-concept-ads/03-coffee-habba/HABBA-concept-9x16.mp4",
+    "video_sha1": "84b7d460772b7c5696b9ae48276dcd9957134222",
+    "poster": "05-concept-ads/03-coffee-habba/poster.png",
+    "poster_sha1": "1064a9ca6549afa28839d9c748dacd7081142288",
+    "spec": {
+      "w": 1080,
+      "h": 1920,
+      "fps": "30/1",
+      "vcodec": "h264",
+      "profile": "High",
+      "pix": "yuv420p",
+      "acodec": "aac",
+      "ar": "48000",
+      "ch": 2,
+      "dur": 15.6
+    },
+    "cover": "unchanged",
+    "why": "photoreal cut (re-delivered 18:51): its poster keeps the TASH pill at y≈292, inside the grid crop; the old CGI poster needed 30 px"
+  },
+  "2": {
+    "folder": "02-stakk-concept-reel",
+    "video": "05-concept-ads/02-burger-stakk/STAKK-concept-9x16.mp4",
+    "video_sha1": "9075ce331d3c03582c254d5ad9a2dad5dcd47646",
+    "poster": "05-concept-ads/02-burger-stakk/poster.png",
+    "poster_sha1": "4ac7540610fdb553b40f3a35c222d6ee75ea386b",
+    "spec": {
+      "w": 1080,
+      "h": 1920,
+      "fps": "30/1",
+      "vcodec": "h264",
+      "profile": "High",
+      "pix": "yuv420p",
+      "acodec": "aac",
+      "ar": "48000",
+      "ch": 2,
+      "dur": 13.8
+    },
+    "cover": "unchanged",
+    "why": "photoreal one-stage cut, S02 re-cut with the sear shot (7 Nov; poster.png unchanged since the 19:48 S01 retake): the poster slate starts at y≈271, inside the grid crop (240) with 31 px to spare"
+  },
+  "3": {
+    "folder": "03-layl-concept-reel",
+    "video": "05-concept-ads/01-perfume-layl/LAYL-concept-9x16.mp4",
+    "video_sha1": "397363585c557b09655b04d3e118ef0476ed34a6",
+    "poster": "05-concept-ads/01-perfume-layl/poster.png",
+    "poster_sha1": "e7591df957f2698d890ca314020de9da14b835b0",
+    "spec": {
+      "w": 1080,
+      "h": 1920,
+      "fps": "30/1",
+      "vcodec": "h264",
+      "profile": "High",
+      "pix": "yuv420p",
+      "acodec": "aac",
+      "ar": "48000",
+      "ch": 2,
+      "dur": 15.9
+    },
+    "cover": "moved down 30px (empty background above y=215 stretched smoothly to fill the top)",
+    "why": "TASH mark shadda at y≈235 crossed the grid crop (240)"
+  },
+  "9": {
+    "folder": "09-launch-reel",
+    "video": "04-launch-ad/TASH-launch-9x16.mp4",
+    "video_sha1": "05ea276f5b714f9b0171c618ca193808c8a60f85",
+    "poster": "04-launch-ad/poster.png",
+    "poster_sha1": "c302fe9e95455106449cd1903fc58d824eac6eb0",
+    "spec": {
+      "w": 1080,
+      "h": 1920,
+      "fps": "30/1",
+      "vcodec": "h264",
+      "profile": "High",
+      "pix": "yuv420p",
+      "acodec": "aac",
+      "ar": "48000",
+      "ch": 2,
+      "dur": 27.0
+    },
+    "cover": "moved down 24px (empty background above y=244 stretched smoothly to fill the top)",
+    "why": "top line «هذا منتجك.» started 10 px inside the grid crop: the pinned-first tile looked guillotined"
+  }
+}

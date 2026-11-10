@@ -1,0 +1,721 @@
+{
+  "revision": "2 (after red-team), 9 Nov 2026; plan only, nothing approved, no video; 4 credits spent outside this plan on two opener still candidates (see tash/HANDOFF.md section 7); 10 Nov: stills round done (see stills_round), storyboard round 3 in storyboard/r3; BUILD-SPEC section 15 (Revision 3) applied to used_frames: band order kunafa, burger, oud, coffee; no footage in the wordmark dots",
+  "prices": {
+    "still_2k": 2,
+    "kling_pro_per_s": 1.75,
+    "seedance_1080p_per_s": 16,
+    "seedance_draft_4s": 12
+  },
+  "cap": 200,
+  "limits": {
+    "stills_plus_kling_max": 90,
+    "opener_video": 76,
+    "planned_max": 166,
+    "reserve_min": 34
+  },
+  "frame_notation": "s = index on the 30 fps conform of the opener; n = native frame (Kling 24 fps, one native frame per timeline frame). Timeline frames are 30 fps.",
+  "frame0": "source frame 0 of the approved opener still (S1-alt is recommended, owner approval pending; S1 is the alternative). B-20: S6 native frame 0",
+  "shots": [
+    {
+      "id": "S1",
+      "world": "iced coffee, ice crash, on tangerine #FF7A1A (opener; its start still is frame 0)",
+      "video_model": "seedance_2_5",
+      "still_model": "nano_banana_pro",
+      "still_resolution": "2K",
+      "aspect": "9:16",
+      "still_prompt": "A tall clear ribbed glass of iced latte, milk and coffee softly layered, filled to two centimetres below the rim, standing on a flat seamless tangerine-orange (#FF7A1A) surface in front of a backdrop of the same colour. Five clear ice cubes hang in the air in a loose cluster directly above the glass, between 48% and 60% of the frame height, the lowest cube just above the rim, no cube touching the glass, no cube cropped. The rim of the glass is at 61% of the frame height and the base at 84%. Fine condensation on the glass. Slightly high eye-level camera, 85 mm lens look, f/8. No steam, no straw, no garnish, no carafe, no jug, no pouring liquid, no spilled liquid. Photoreal commercial product photograph, vertical 9:16. One hard key light from the upper left, crisp hard shadow falling to the lower right, everything in sharp focus. Flat seamless single-colour background with no horizon line and no gradient. The top 46% of the frame is completely empty background. The subject stays inside the middle 45% of the frame width and between 48% and 84% of the frame height. No text, no letters, no numbers, no logos, no labels, no packaging print, no watermark, no hands, no people, no faces, no lime-green or yellow-green objects.",
+      "motion_prompt": "Static locked-off tripod shot, the camera does not move at all. At the very start the five ice cubes drop straight down into the iced latte and hit the surface within the first quarter of a second. A real splash crown of milky coffee rises above the rim and is at its highest before half a second, droplets fly up and fall back, the ice bobs, milk and coffee swirl and marble inside the glass. By two seconds the splash has settled; the ice bobs gently and the glass stands still with a few drops on the orange surface until the end. Nothing rises into the empty upper half of the frame. Natural real-time physics, continuous motion, no slow motion, no cuts, no new objects, no hands, no straw, no text.",
+      "clip_seconds": 4,
+      "video_resolution": "1080p final after one 480p draft",
+      "native_fps": "probe on the 480p draft (30 = column A, 24 = column B)",
+      "sound": false,
+      "credits": {
+        "still": 2,
+        "video_draft_480p": 12,
+        "video_final_1080p": 64,
+        "total": 78
+      },
+      "hero_box": {
+        "x": [
+          300,
+          780
+        ],
+        "y": [
+          930,
+          1610
+        ],
+        "empty_above_y": 880
+      },
+      "variants": [
+        "A-20",
+        "A-14",
+        "B-20 (from f105 on, not in the B-20 band or loop)",
+        "TikTok and 4:5 versions of each"
+      ],
+      "used_frames": [
+        {
+          "variant": "A-20, A-14",
+          "timeline": "0-14",
+          "source": "s0-14",
+          "source_if_native_24fps": "n0-14",
+          "framing": "full",
+          "use": "hook; frame 0 = source frame 0; ice impact inside 0.30 s"
+        },
+        {
+          "variant": "A-20, A-14",
+          "timeline": "15-29",
+          "source": "s15-29",
+          "source_if_native_24fps": "n15-29",
+          "framing": "1.25x about (540,900)",
+          "use": "punch-in on the voiced «حلو»"
+        },
+        {
+          "variant": "A-20, A-14",
+          "timeline": "78-89",
+          "source": "s6-17",
+          "source_if_native_24fps": "n5-16",
+          "framing": "full, inside repaint circles",
+          "use": "return: splash crown again"
+        },
+        {
+          "variant": "all",
+          "timeline": "105-134",
+          "source": "s18-47",
+          "source_if_native_24fps": "n14-43",
+          "framing": "400 px, centre porthole",
+          "use": "offer card"
+        },
+        {
+          "variant": "all",
+          "timeline": "135-149",
+          "source": "s4-18",
+          "source_if_native_24fps": "n3-17",
+          "framing": "full",
+          "use": "Coffee A, tag «قهوة؟»"
+        },
+        {
+          "variant": "all",
+          "timeline": "150-164",
+          "source": "s30-44",
+          "source_if_native_24fps": "n24-38",
+          "framing": "lens L",
+          "use": "Coffee B on Lime"
+        },
+        {
+          "variant": "A-20",
+          "timeline": "540-587",
+          "source": "s72-119",
+          "source_if_native_24fps": "n48-95",
+          "framing": "CTA band",
+          "use": "settled coffee"
+        },
+        {
+          "variant": "A-20",
+          "timeline": "588-599",
+          "source": "s0 frozen",
+          "source_if_native_24fps": "n0 frozen",
+          "framing": "full, behind iris",
+          "use": "loop back to frame 0"
+        },
+        {
+          "variant": "A-14",
+          "timeline": "375-413",
+          "source": "s72-110",
+          "source_if_native_24fps": "n57-95",
+          "framing": "CTA band",
+          "use": "settled coffee"
+        },
+        {
+          "variant": "A-14",
+          "timeline": "414-419",
+          "source": "s0 frozen",
+          "source_if_native_24fps": "n0 frozen",
+          "framing": "full, behind iris",
+          "use": "loop back to frame 0"
+        }
+      ],
+      "storyboard": true,
+      "overlay_plan": "f0: word «مشروعك» 172 px Paper with Ink keyline (ink x 151-929, y 331-533) and three Lime dots Ø80 on the ش; nothing else. From f3 tag «حلو…» 200 px Lime in slot T (baseline 757, box inside y 560-840). Later: tag «قهوة؟» 200 px; lens L (r 340 at 540,1270) on Lime; porthole Ø220; CTA band.",
+      "still_gate": "This still IS frame 0. y 0-880 flat tangerine with nothing in it; ice only in y 930-1150 and not touching the glass; rim y 1170 (+/- 25); base at or above y 1610; glass and ice inside x 300-780. No carafe, spout, pour, straw, garnish, steam, hand, text. With the overlay at 270x480: word readable, three Lime dots countable and the largest lime shape, cold drink named, tag box (y 560-840) not touching the ice. Owner approved. Then the 480p draft gate (STORYBOARD.md section 4) before the 1080p final."
+    },
+    {
+      "id": "S1-alt",
+      "world": "iced coffee on tangerine, second still candidate (wide tumbler)",
+      "video_model": "none",
+      "still_model": "nano_banana_pro",
+      "still_resolution": "2K",
+      "aspect": "9:16",
+      "still_prompt": "A short wide clear ribbed tumbler of iced latte, milk and coffee softly layered, filled to two centimetres below the rim, standing on a flat seamless tangerine-orange (#FF7A1A) surface in front of a backdrop of the same colour. Four large clear ice cubes hang in the air in a loose cluster directly above the glass, between 48% and 60% of the frame height, the lowest cube just above the rim, no cube touching the glass, no cube cropped. The rim of the glass is at 61% of the frame height and the base at 84%. Fine condensation on the glass. Slightly high eye-level camera, 85 mm lens look, f/8. No steam, no straw, no garnish, no carafe, no jug, no pouring liquid, no spilled liquid. Photoreal commercial product photograph, vertical 9:16. One hard key light from the upper left, crisp hard shadow falling to the lower right, everything in sharp focus. Flat seamless single-colour background with no horizon line and no gradient. The top 46% of the frame is completely empty background. The subject stays inside the middle 45% of the frame width and between 48% and 84% of the frame height. No text, no letters, no numbers, no logos, no labels, no packaging print, no watermark, no hands, no people, no faces, no lime-green or yellow-green objects.",
+      "motion_prompt": "",
+      "clip_seconds": 0,
+      "credits": {
+        "still": 2,
+        "total": 2
+      },
+      "hero_box": {
+        "x": [
+          300,
+          780
+        ],
+        "y": [
+          930,
+          1610
+        ],
+        "empty_above_y": 880
+      },
+      "variants": [],
+      "used_frames": [],
+      "storyboard": true,
+      "overlay_plan": "Same overlay as S1. Generated with S1 so the owner picks the opener from two.",
+      "still_gate": "Same gate as S1. Only one of S1 / S1-alt goes to video.",
+      "motion_prompt_if_selected": "Static locked-off tripod shot, the camera does not move at all. At the very start the four ice cubes drop straight down into the iced latte; the lowest cube is already at the rim and goes in first, and all four hit the surface within the first quarter of a second. A real splash crown of milky coffee rises above the rim and is at its highest before half a second, droplets fly up and fall back, the ice bobs, milk and coffee swirl and marble inside the glass. By two seconds the splash has settled; the ice bobs gently and the glass stands still with a few drops on the orange surface until the end. Nothing rises into the empty upper half of the frame. Natural real-time physics, continuous motion, no slow motion, no cuts, no new objects, no extra ice cubes, no hands, no straw, no text.",
+      "r3_note": "10 Nov: recommended opener (BUILD-SPEC R3-1); the round-3 storyboard is built on it; owner approval pending."
+    },
+    {
+      "id": "S5",
+      "world": "kunafa, top-down round tray on hot pink #FF4F9A (second world at f30, category «حلويات؟»)",
+      "video_model": "kling3_0",
+      "still_model": "nano_banana_pro",
+      "still_resolution": "2K",
+      "aspect": "9:16",
+      "still_prompt": "Top-down view, camera looking straight down. A perfectly round golden kunafa in a shallow plain round copper tray. The tray is a clean circle centred horizontally, its centre at 66% of the frame height, its diameter 44% of the frame width. Fine crisp golden shredded pastry glistening with syrup, a small glossy pool of clear golden syrup in the centre, a ring of pale crushed nuts around it and three dried rose petals. The whole frame is a flat seamless hot-pink (#FF4F9A) surface. No bright green pistachio, no jug, no spoon, no plate, no cloth. Photoreal commercial product photograph, vertical 9:16. One hard key light from the upper left, crisp hard shadow falling to the lower right, everything in sharp focus. Flat seamless single-colour background with no horizon line and no gradient. The top 46% of the frame is completely empty background. The subject stays inside the middle 45% of the frame width and between 48% and 84% of the frame height. No text, no letters, no numbers, no logos, no labels, no packaging print, no watermark, no hands, no people, no faces, no lime-green or yellow-green objects.",
+      "motion_prompt": "Static top-down tripod shot, the camera does not move. Within the first third of a second a small pinch of pale crushed nuts falls straight down onto the centre of the kunafa, bounces and scatters across the pastry. Then the pool of golden syrup spreads slowly outward from the centre in a glistening sheen. The tray does not move. Nothing enters the empty pink area. No cuts, no new objects, no hands, no jug, no spoon, no text.",
+      "clip_seconds": 3,
+      "video_resolution": "1080p (about 1080x1912)",
+      "native_fps": 24,
+      "sound": false,
+      "credits": {
+        "still": 2,
+        "video": 5.25,
+        "total": 7.25
+      },
+      "hero_box": {
+        "x": [
+          300,
+          780
+        ],
+        "y": [
+          930,
+          1610
+        ],
+        "empty_above_y": 880
+      },
+      "variants": [
+        "A-20",
+        "A-14",
+        "B-20"
+      ],
+      "used_frames": [
+        {
+          "variant": "all",
+          "timeline": "30-44",
+          "source": "n0-14",
+          "framing": "full, inside the three falling thirds",
+          "use": "drain; second world inside 1.5 s"
+        },
+        {
+          "variant": "A-20, B-20",
+          "timeline": "255-269",
+          "source": "n15-29",
+          "framing": "full",
+          "use": "Kunafa A, tag «حلويات؟»"
+        },
+        {
+          "variant": "A-20, B-20",
+          "timeline": "270-284",
+          "source": "n30-44",
+          "framing": "lens L",
+          "use": "Kunafa B on Lime"
+        },
+        {
+          "variant": "A-20, B-20",
+          "timeline": "450-479",
+          "source": "n40-69",
+          "framing": "CTA band",
+          "use": "CTA"
+        },
+        {
+          "variant": "A-14",
+          "timeline": "225-239",
+          "source": "n15-29",
+          "framing": "full",
+          "use": "Kunafa A"
+        },
+        {
+          "variant": "A-14",
+          "timeline": "240-254",
+          "source": "n30-44",
+          "framing": "lens L",
+          "use": "Kunafa B"
+        },
+        {
+          "variant": "fallback only, if S3 and S3-alt are both rejected",
+          "timeline": "210-284",
+          "source": "n0-14 / n15-29 / n30-44 / n45-59 / n57-71",
+          "framing": "full / 1.2x / lens L / full / lens L",
+          "use": "kunafa takes the burger beats, tag «حلويات؟»"
+        },
+        {
+          "variant": "A-14",
+          "timeline": "315-344",
+          "source": "n40-69",
+          "framing": "CTA band",
+          "use": "CTA (A-14 band: kunafa, burger, coffee)"
+        }
+      ],
+      "storyboard": true,
+      "overlay_plan": "Word turning hollow while the three dots (Ø80 to Ø260) drag the picture down in thirds; later tag «حلويات؟» 180 px Lime and lens L concentric with the tray.",
+      "still_gate": "True top-down. Tray a clean circle, centre within 20 px of (540,1270), diameter 440-480 px, wholly inside x 300-780, y 930-1610. Golden and appetising. No jug, spoon, bright green pistachio, text or hands. y 0-880 flat pink. Owner approved."
+    },
+    {
+      "id": "S2",
+      "world": "oud: plain brass mabkhara, bakhoor smoke, plain amber bottle on hot pink #FF4F9A (category «عطر؟»)",
+      "video_model": "kling3_0",
+      "still_model": "nano_banana_pro",
+      "still_resolution": "2K",
+      "aspect": "9:16",
+      "still_prompt": "A smooth polished plain brass mabkhara incense burner with no engraving and no pattern, standing slightly left of centre, its top at 60% of the frame height and its base at 84%. A glowing charcoal and one dark oud chip sit in its bowl. A thick soft ribbon of white bakhoor smoke rises from it and thins out completely before it reaches 47% of the frame height. To its right stands a plain faceted clear glass perfume bottle with amber liquid and a plain gold cap. Flat seamless hot-pink (#FF4F9A) surface and backdrop, a faint reflection under the objects. Slightly high eye-level camera, 85 mm lens look, f/8. No flame, no engraving, no ornament, no tray. Photoreal commercial product photograph, vertical 9:16. One hard key light from the upper left, crisp hard shadow falling to the lower right, everything in sharp focus. Flat seamless single-colour background with no horizon line and no gradient. The top 46% of the frame is completely empty background. The subject stays inside the middle 45% of the frame width and between 48% and 84% of the frame height. No text, no letters, no numbers, no logos, no labels, no packaging print, no watermark, no hands, no people, no faces, no lime-green or yellow-green objects.",
+      "motion_prompt": "Static tripod shot, the camera does not move. In the first quarter of a second one fuller puff of white smoke rolls up from the charcoal, then the smoke keeps curling upward slowly and continuously and thins out before it reaches the empty upper half of the frame. The charcoal glows gently. The burner and the bottle do not move. No cuts, no new objects, no hands, no flames, no text.",
+      "clip_seconds": 3,
+      "video_resolution": "1080p (about 1080x1912)",
+      "native_fps": 24,
+      "sound": false,
+      "credits": {
+        "still": 2,
+        "video": 5.25,
+        "total": 7.25
+      },
+      "hero_box": {
+        "x": [
+          300,
+          780
+        ],
+        "y": [
+          930,
+          1610
+        ],
+        "empty_above_y": 880
+      },
+      "variants": [
+        "A-20",
+        "A-14",
+        "B-20"
+      ],
+      "used_frames": [
+        {
+          "variant": "all",
+          "timeline": "105-134",
+          "source": "n0-29",
+          "framing": "400 px, right porthole",
+          "use": "offer card"
+        },
+        {
+          "variant": "A-20, B-20",
+          "timeline": "165-179",
+          "source": "n(p)..n(p+14)",
+          "framing": "full",
+          "use": "Oud A, tag «عطر؟»; p = puff onset, target 0-4"
+        },
+        {
+          "variant": "A-20, B-20",
+          "timeline": "180-194",
+          "source": "n(p+15)..n(p+29)",
+          "framing": "1.25x about (540,900)",
+          "use": "Oud B"
+        },
+        {
+          "variant": "A-20, B-20",
+          "timeline": "195-209",
+          "source": "n(p+30)..n(p+44)",
+          "framing": "lens L",
+          "use": "Oud C on Lime"
+        },
+        {
+          "variant": "A-20, B-20",
+          "timeline": "510-539",
+          "source": "n40-69",
+          "framing": "CTA band",
+          "use": "CTA"
+        },
+        {
+          "variant": "A-14",
+          "timeline": "165-179",
+          "source": "n(p)..n(p+14)",
+          "framing": "full",
+          "use": "Oud A"
+        },
+        {
+          "variant": "A-14",
+          "timeline": "180-194",
+          "source": "n(p+15)..n(p+29)",
+          "framing": "lens L",
+          "use": "Oud C"
+        }
+      ],
+      "storyboard": true,
+      "overlay_plan": "Word in Paper; tag «عطر؟» 200 px Lime with Ink keyline in slot T; lens L on Lime; right porthole on the offer card; CTA band.",
+      "still_gate": "Brass smooth: any engraving, pattern or pseudo-writing = reject. No smoke above y 880. Bottle without label or embossing. No flame. Objects inside x 300-780, y 930-1610. Owner approved."
+    },
+    {
+      "id": "S3",
+      "world": "beef smash burger, top bun dropping, on azure #1EA7FF (category «برجر؟»)",
+      "video_model": "kling3_0",
+      "still_model": "nano_banana_pro",
+      "still_resolution": "2K",
+      "aspect": "9:16",
+      "still_prompt": "A finished beef smash burger on a plain round wooden board. Toasted glossy brioche bottom bun, two thin beef patties with deep-brown seared lacy crisp edges, two slices of melted orange cheddar draping over the edges, caramelised onions and a little pale sauce. The sesame top bun hovers perfectly level in the air six centimetres above the burger, with a few sesame seeds in the air beside it. The board sits between 66% and 84% of the frame height and the top bun is no higher than 50%. Flat seamless azure-blue (#1EA7FF) surface and backdrop. Slightly high eye-level camera, 85 mm lens look, f/8. Clean, appetising and fully cooked: no raw meat, no pink mince, no lettuce, no tomato, no wrapper, no skewer, no smoke. Photoreal commercial product photograph, vertical 9:16. One hard key light from the upper left, crisp hard shadow falling to the lower right, everything in sharp focus. Flat seamless single-colour background with no horizon line and no gradient. The top 46% of the frame is completely empty background. The subject stays inside the middle 45% of the frame width and between 48% and 84% of the frame height. No text, no letters, no numbers, no logos, no labels, no packaging print, no watermark, no hands, no people, no faces, no lime-green or yellow-green objects.",
+      "motion_prompt": "Static tripod shot, the camera does not move. The top bun hangs for a moment, then drops straight down and lands on the burger at about six tenths of a second; the burger squashes slightly and springs back, the cheese wobbles and a few sesame seeds bounce off. Then everything is still. No cuts, no new objects, no hands, no text.",
+      "clip_seconds": 3,
+      "video_resolution": "1080p (about 1080x1912)",
+      "native_fps": 24,
+      "sound": false,
+      "credits": {
+        "still": 2,
+        "video": 5.25,
+        "total": 7.25
+      },
+      "hero_box": {
+        "x": [
+          300,
+          780
+        ],
+        "y": [
+          930,
+          1610
+        ],
+        "empty_above_y": 880
+      },
+      "variants": [
+        "A-20",
+        "A-14",
+        "B-20"
+      ],
+      "used_frames": [
+        {
+          "variant": "all",
+          "timeline": "105-134",
+          "source": "n0-29",
+          "framing": "400 px, left porthole",
+          "use": "offer card"
+        },
+        {
+          "variant": "A-20, B-20",
+          "timeline": "210-224",
+          "source": "n(i-15)..n(i-1)",
+          "framing": "full",
+          "use": "Burger A, tag «برجر؟»; i = bun impact frame, target 15"
+        },
+        {
+          "variant": "A-20, B-20",
+          "timeline": "225-239",
+          "source": "n(i)..n(i+14)",
+          "framing": "1.2x about (540,900)",
+          "use": "Burger B, impact exactly on f225"
+        },
+        {
+          "variant": "A-20, B-20",
+          "timeline": "240-254",
+          "source": "n(i+15)..n(i+29)",
+          "framing": "lens L",
+          "use": "Burger C on Lime"
+        },
+        {
+          "variant": "A-20, B-20",
+          "timeline": "480-509",
+          "source": "n40-69",
+          "framing": "CTA band",
+          "use": "CTA"
+        },
+        {
+          "variant": "A-14",
+          "timeline": "195-209",
+          "source": "n(i-15)..n(i-1)",
+          "framing": "full",
+          "use": "Burger A"
+        },
+        {
+          "variant": "A-14",
+          "timeline": "210-224",
+          "source": "n(i)..n(i+14)",
+          "framing": "1.2x about (540,900)",
+          "use": "Burger B, impact on f210"
+        },
+        {
+          "variant": "A-14",
+          "timeline": "345-374",
+          "source": "n40-69",
+          "framing": "CTA band",
+          "use": "CTA"
+        }
+      ],
+      "storyboard": true,
+      "overlay_plan": "Word in Paper; tag «برجر؟» 200 px Lime with Ink keyline; bun impact on the beat; lens L on Lime; left porthole; CTA band. No on-screen sizzle word.",
+      "still_gate": "Reads as a finished, cooked, appetising beef burger at 25% size; lacy seared edge visible; no raw or grey meat, no lettuce; top bun level and not above y 930; board inside x 300-780, base at or above y 1610. Owner picks S3, S3-alt or neither; neither = no Kling credit and kunafa takes f210-284 (see S5 fallback row)."
+    },
+    {
+      "id": "S3-alt",
+      "world": "beef smash burger, bun on, cheese drip, on azure (second still candidate)",
+      "video_model": "none",
+      "still_model": "nano_banana_pro",
+      "still_resolution": "2K",
+      "aspect": "9:16",
+      "still_prompt": "A finished beef smash burger on a plain round wooden board. Toasted glossy brioche bottom bun, two thin beef patties with deep-brown seared lacy crisp edges, two slices of melted orange cheddar draping over the edges, caramelised onions and a little pale sauce. The sesame top bun already sits on the burger, slightly tilted, and one thick ribbon of melted cheese is mid-drip over the crisp patty edge. The board sits between 66% and 84% of the frame height and the top of the bun is no higher than 50%. Flat seamless azure-blue (#1EA7FF) surface and backdrop. Slightly high eye-level camera, 85 mm lens look, f/8. Clean, appetising and fully cooked: no raw meat, no pink mince, no lettuce, no tomato, no wrapper, no skewer, no smoke. Photoreal commercial product photograph, vertical 9:16. One hard key light from the upper left, crisp hard shadow falling to the lower right, everything in sharp focus. Flat seamless single-colour background with no horizon line and no gradient. The top 46% of the frame is completely empty background. The subject stays inside the middle 45% of the frame width and between 48% and 84% of the frame height. No text, no letters, no numbers, no logos, no labels, no packaging print, no watermark, no hands, no people, no faces, no lime-green or yellow-green objects.",
+      "motion_prompt": "",
+      "clip_seconds": 0,
+      "motion_prompt_if_selected": "Static tripod shot, the camera does not move. The ribbon of melted cheese stretches and its drop lands on the board at about six tenths of a second; the burger settles slightly, then everything is still. No cuts, no new objects, no hands, no text.",
+      "credits": {
+        "still": 2,
+        "total": 2
+      },
+      "hero_box": {
+        "x": [
+          300,
+          780
+        ],
+        "y": [
+          930,
+          1610
+        ],
+        "empty_above_y": 880
+      },
+      "variants": [],
+      "used_frames": [],
+      "storyboard": true,
+      "overlay_plan": "Same overlay as S3. If the owner picks it, it takes the S3 Kling slot and the beat lands on the cheese drop.",
+      "still_gate": "Same gate as S3. Only one of S3 / S3-alt goes to video."
+    },
+    {
+      "id": "S6",
+      "world": "chalet pool, top-down, plain striped ring landing with a splash (B-20 hook only, never in A-20 or A-14)",
+      "video_model": "kling3_0",
+      "still_model": "nano_banana_pro",
+      "still_resolution": "2K",
+      "aspect": "9:16",
+      "still_prompt": "Top-down view straight down onto a chalet swimming pool. Clear turquoise water with soft sun caustics over small white square tiles, filling the whole frame. One plain inflatable swim ring in wide orange and white stripes with no print hangs level a hand's width above the water as a clean circle centred horizontally, its centre at 66% of the frame height, its diameter 44% of the frame width, its crisp shadow on the water slightly offset to the lower right. The top 46% of the frame is calm low-contrast water with only faint caustics and nothing else in it. Bright midday sun from the upper left. No people, no swimwear, no toys, no ladder, no pool edge. Photoreal commercial product photograph, vertical 9:16. One hard key light from the upper left, crisp hard shadow falling to the lower right, everything in sharp focus. The subject stays inside the middle 45% of the frame width and between 48% and 84% of the frame height. No text, no letters, no numbers, no logos, no labels, no packaging print, no watermark, no hands, no people, no faces, no lime-green or yellow-green objects.",
+      "motion_prompt": "Static top-down tripod shot, the camera does not move. At the very start the ring drops flat onto the water and lands within the first quarter of a second with a real splash: a ring of white water and droplets jumps outward, ripples spread across the pool and the sun caustics shake. By two seconds the water is calming and the ring drifts and turns a few degrees. No people, no cuts, no new objects, no text.",
+      "clip_seconds": 3,
+      "video_resolution": "1080p (about 1080x1912)",
+      "native_fps": 24,
+      "sound": false,
+      "credits": {
+        "still": 2,
+        "video": 5.25,
+        "total": 7.25
+      },
+      "hero_box": {
+        "x": [
+          300,
+          780
+        ],
+        "y": [
+          930,
+          1610
+        ],
+        "empty_above_y": 880
+      },
+      "variants": [
+        "B-20"
+      ],
+      "used_frames": [
+        {
+          "variant": "B-20",
+          "timeline": "0-14",
+          "source": "n0-14",
+          "framing": "full",
+          "use": "Hook B; frame 0 of B-20 = native frame 0; ring lands inside 0.30 s"
+        },
+        {
+          "variant": "B-20",
+          "timeline": "15-29",
+          "source": "n15-29",
+          "framing": "1.25x about (540,900)",
+          "use": "punch-in on the beat"
+        },
+        {
+          "variant": "B-20",
+          "timeline": "78-89",
+          "source": "n3-14",
+          "framing": "full, inside repaint circles",
+          "use": "return: splash again"
+        },
+        {
+          "variant": "B-20",
+          "timeline": "540-587",
+          "source": "n24-71",
+          "framing": "CTA band",
+          "use": "water settling"
+        },
+        {
+          "variant": "B-20",
+          "timeline": "588-599",
+          "source": "n0 frozen",
+          "framing": "full, behind iris",
+          "use": "loop back to B-20 frame 0"
+        }
+      ],
+      "storyboard": true,
+      "overlay_plan": "B-20 f0: word with three Lime dots, and from f3 tag «شاليه؟» 200 px Lime with Ink keyline in slot T. Later only in the B-20 CTA band.",
+      "still_gate": "True top-down. Ring a clean circle with plain two-colour stripes and no print, centre within 20 px of (540,1270), diameter 440-480 px. No people, swimwear, ladder or pool edge. y 0-880 calm enough for the word and «شاليه؟» to read at 25%. Owner approved."
+    }
+  ],
+  "credits": {
+    "stills": 14,
+    "video_kling": 21,
+    "video_seedance": 76,
+    "planned": 111,
+    "reserve": 89
+  },
+  "reserve_rules": {
+    "earmarked": {
+      "one_extra_seedance_480p_draft": 12,
+      "still_retries_x4": 8,
+      "kling_retakes_x2": 10.5
+    },
+    "not_in_reserve": "a second 1080p Seedance take (64) needs the owner's OK first",
+    "floor": "the reserve never goes under 34 without the owner"
+  },
+  "stills_round": {
+    "date": "2026-11-09",
+    "approved_by_owner": "«كمل» = the seven plan stills for 14 credits + the full storyboard; nothing else",
+    "model": "nano_banana_pro 2k 9:16, 2 credits each, use_unlim false",
+    "jobs": [
+      {
+        "shot": "S1",
+        "job_id": "b81dafa2-5968-47d5-82a6-56f24147af0c",
+        "status": "completed",
+        "fit": "sb/stills/s1_fit.png"
+      },
+      {
+        "shot": "S1-alt",
+        "job_id": "93047b7d-204c-43db-8ec9-7526a52c9707",
+        "status": "completed",
+        "fit": "sb/stills/s1alt_fit.png"
+      },
+      {
+        "shot": "S5",
+        "job_id": "35864966-2417-43e0-ae92-f47a3afe3e41",
+        "status": "completed",
+        "fit": "sb/stills/s5_fit.png"
+      },
+      {
+        "shot": "S2",
+        "job_id": "a821c8e0-b7f2-4815-a3c5-ac6e9b834e66",
+        "status": "completed",
+        "fit": "sb/stills/s2_fit.png"
+      },
+      {
+        "shot": "S3",
+        "job_id": "17123f38-6bd7-4c69-9cba-0a9051d0d272",
+        "status": "nsfw (filter false positive; no image; not charged)"
+      },
+      {
+        "shot": "S3-alt",
+        "job_id": "1be96824-a25e-4c52-aeb9-1e72ec5ffef3",
+        "status": "completed",
+        "fit": "sb/stills/s3alt_fit.png"
+      },
+      {
+        "shot": "S6",
+        "job_id": "0462a3e3-6e66-497a-af2e-eddde0712148",
+        "status": "completed",
+        "fit": "sb/stills/s6_fit.png"
+      },
+      {
+        "shot": "S3 re-run",
+        "job_id": "795a5015-579a-4227-a356-96252aec9347",
+        "status": "completed",
+        "fit": "sb/stills/s3_fit.png (backdrop graded locally to #1EA7FF)"
+      }
+    ],
+    "credits": {
+      "this_round": 14,
+      "v4_total": 18,
+      "balance_after": 521.5,
+      "left_under_cap_200": 182
+    },
+    "local_fit": "All seven stills ignored the layout percentages. sb/fit_stills.py scales each picture down, puts the product in the hero box and continues the backdrop (0 credits, no product pixel repainted). The per-still transforms are the CFG table in that file. Extra: S2 smoke faded above y 880; S3 backdrop graded; S6 backdrop extended by tile repetition.",
+    "s3_rerun_note": "The first S3 prompt was blocked by the content filter. Re-run prompt (changes: 'Toasted glossy brioche bottom bun' -> 'Toasted brioche bottom bun'; the hovering-bun sentence reworded; 'the top bun is no higher than 50%' -> 'the floating bun top is no higher than 50%'): A finished beef smash burger on a plain round wooden board. Toasted brioche bottom bun, two thin beef patties with deep-brown seared lacy crisp edges, two slices of melted orange cheddar draping over the edges, caramelised onions and a little pale sauce. The top half of the bun, toasted golden-brown and densely covered with white sesame seeds, floats level a short distance above the burger as if about to land, with a few sesame seeds in the air beside it. The board sits between 66% and 84% of the frame height and the floating bun top is no higher than 50%. Flat seamless azure-blue (#1EA7FF) surface and backdrop. Slightly high eye-level camera, 85 mm lens look, f/8. Clean, appetising and fully cooked: no raw meat, no pink mince, no lettuce, no tomato, no wrapper, no skewer, no smoke. Photoreal commercial product photograph, vertical 9:16. One hard key light from the upper left, crisp hard shadow falling to the lower right, everything in sharp focus. Flat seamless single-colour background with no horizon line and no gradient. The top 46% of the frame is completely empty background. The subject stays inside the middle 45% of the frame width and between 48% and 84% of the frame height. No text, no letters, no numbers, no logos, no labels, no packaging print, no watermark, no hands, no people, no faces, no lime-green or yellow-green objects."
+  },
+  "opener_draft_round": {
+    "date": "2026-11-10",
+    "approved_by_owner": "«كمل» = the Seedance 480p draft of the opener, 12 credits only",
+    "start_image": "sb/stills/s1alt_fit.png uploaded to Higgsfield as media b81e6e2b-956b-4ef2-90fb-23b41d395c40 (sha256 ddc9facf83673a5392a451714a13aa7fc2de96be65065c4a4c17164cc9e64bf8)",
+    "call": "seedance_2_5, mode omni_reference, start_image, duration 4, resolution 480p, aspect 9:16, generate_audio false, draft true, use_unlim false; prompt = S1-alt motion_prompt_if_selected",
+    "job_id": "840a3b5a-eaf0-4971-a083-2180dc48dfe8",
+    "quote_before": 12,
+    "balance_before": 521.5,
+    "balance_after": 509.5,
+    "result": "video/draft1/s1alt-draft-480p.mp4 (480x854, 24 fps, 97 frames, 4.04 s)",
+    "finalise_quote_1080p": "64 (get_cost with draft_job_id, 10 Nov; not spent)",
+    "final": {
+      "approved_by_owner": "«موافق» on 10 Nov (~04:45 UTC) to finalise this draft at 1080p for 64, accepting that the gates the draft missed are fixed in the edit",
+      "first_call": "rejected by validation (422: empty prompt); no job, no charge (balance stayed 509.5)",
+      "call": "seedance_2_5 with draft_job_id 840a3b5a-eaf0-4971-a083-2180dc48dfe8 and the draft's own prompt, mode, start image and settings, resolution 1080p",
+      "job_id": "8fc9ad29-ffcb-490f-ac8d-714901dbdf78",
+      "quote_before": 64,
+      "balance_before": 509.5,
+      "balance_after": 445.5,
+      "result": "video/final/s1alt-final-1080p-hevc.mp4 (as delivered: HEVC 10-bit, 1080x1920, 24 fps, 97 frames, 4.04 s); video/final/s1alt-final-1080p.mp4 is an H.264 copy for phones",
+      "same_take_as_draft": "yes: per-frame SSIM against the draft 0.963-0.978 (whole frame), 0.85-0.91 (hero box); same 97 frames, same motion"
+    }
+  },
+  "kling_round": {
+    "date": "2026-11-10",
+    "approved_by_owner": "«سو اللي تنصح فيه و كمل» (~05:30 UTC) = Claude's recommendations: S2 still retake (2), three Kling clips for the main ad (15.75), the version-B pool clip (5.25), burger pick S3",
+    "quotes": {
+      "still": 2,
+      "kling_pro_3s_sound_off": 5.25
+    },
+    "s2_retake": {
+      "job_id": "7056ea27-0401-43e2-a1ca-2babb6ab0dd9",
+      "model_reported": "nano_banana_2 (requested nano_banana_pro 2k; charged 2)",
+      "prompt": "A plain faceted clear glass perfume bottle full of deep amber oud perfume with a plain polished gold cap stands just right of centre and is the hero of the picture, its base at 84% of the frame height and its cap at 58%. Behind it on the left stands a traditional Kuwaiti square wooden mabkhara incense burner, smaller than the bottle, plain dark polished wood with plain flat brass corner plates and no carving, no mirrors and no studs. A glowing charcoal and one dark oud chip sit on its top, and a thin soft ribbon of white bakhoor smoke rises from it and thins out completely before it reaches 47% of the frame height. Flat seamless hot-pink (#FF4F9A) surface and backdrop, a faint reflection under the objects. Slightly high eye-level camera, 85 mm lens look, f/8. No flame, no engraving, no ornament, no tray, no label and no embossing on the bottle. [COMMON]",
+      "fit": "sb/stills/s2_fit.png (fit_stills.py s2 with override {\"s\":0.74,\"src\":[498,1399],\"dst\":[540,1600],\"shadow_side\":\"right\",\"target\":\"#FF4F9A\",\"fade_above\":[880,1010]}); the old still is kept as sb/stills/s2_v1_fit.png"
+    },
+    "clips": [
+      {
+        "shot": "S5 kunafa",
+        "job_id": "bf759f9b-94df-44be-b3c9-8090f75f56d8",
+        "start_media": "5633fa48-afce-4f58-9534-e451b44c2cf3",
+        "file": "video/kling/s5-kling-3s.mp4"
+      },
+      {
+        "shot": "S3 burger",
+        "job_id": "4442c35e-f7a2-4943-bb46-275e9dc79f86",
+        "start_media": "3ba3c6e2-5562-4e45-9ee6-d0ab8ca43a39",
+        "file": "video/kling/s3-kling-3s.mp4"
+      },
+      {
+        "shot": "S6 pool (version B)",
+        "job_id": "b76b9705-76d6-444c-8ad6-874094c3ba3a",
+        "start_media": "66b1ae36-f80e-4d54-b379-4607f12b5333",
+        "file": "video/kling/s6-kling-3s.mp4"
+      },
+      {
+        "shot": "S2 perfume and oud",
+        "job_id": "d6bd7c61-a862-42dc-9c55-55a4d5f5b86a",
+        "start_media": "6cfeece3-6fe6-4e5a-95f3-82acba9ad974",
+        "file": "video/kling/s2-kling-3s.mp4",
+        "motion_prompt": "Static tripod shot, the camera does not move. In the first quarter of a second one fuller puff of white smoke rolls up from the charcoal on the square wooden mabkhara, then the smoke keeps curling upward slowly and continuously and thins out before it reaches the empty upper half of the frame. The charcoal glows gently. The mabkhara and the perfume bottle do not move; soft light glints on the glass bottle. No cuts, no new objects, no hands, no flames, no text."
+      }
+    ],
+    "format": "all four: H.264 1080x1920, 24 fps, 73 frames, 3.04 s, untagged and encoded as BT.601 (decode with the default matrix)",
+    "credits": {
+      "this_round": 23,
+      "balance_before": 445.5,
+      "balance_after": 422.5,
+      "v4_total": 122.25,
+      "balance_after_s6_retake": 417.25
+    },
+    "s6_retake": {
+      "approved": "owner «1» (10 Nov ~07:45 UTC): redo the pool once for 5.25; if it fails again, drop version B",
+      "job_id": "758bcb6b-24df-4d4d-a7af-1affc195d881",
+      "quote": 5.25,
+      "balance_before": 422.5,
+      "balance_after": 417.25,
+      "file": "video/kling/s6-retake-kling-3s.mp4",
+      "prompt": "Static top-down tripod shot, the camera does not move, normal real-time speed. At the very start the ring drops flat onto the water and hits it within the first quarter of a second. On impact a low crown of clear, glassy water and sparkling droplets kicks outward all around the outer edge of the ring and falls back into the pool within half a second. The water inside the ring stays perfectly clear and transparent the whole time, and the small white floor tiles stay visible through it. Clear circular ripples spread outward across the pool and the sun caustics wobble; the ripples fade out before they reach the top third of the frame. The ring's shadow stays on the pool floor just below and to the lower right of the ring and moves with it. After the splash the ring bobs once and then floats almost still in the centre of the frame, turning only a few degrees; it never slides toward the top of the frame. No people, no cuts, no new objects, no text.",
+      "result": "FAILED again: the same white cloud fills the ring (about n12-n60) and rolls over its stripes (orange area 49.9k px at n0, 26.0k at n28); the ring drifts up from centre y 1266 (n0) to 956 (n72), its top crossing y 880 at about n36 and reaching y 736. Per the owner's rule, version B is dropped in this round."
+    }
+  }
+}

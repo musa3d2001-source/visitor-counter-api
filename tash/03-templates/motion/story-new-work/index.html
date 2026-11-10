@@ -1,0 +1,180 @@
+<!doctype html>
+<!-- ANIMATED STORY 1080×1920 · 7 s · «شغل جديد» — template: same data file as templates/story-new-work.html.
+     A (0–1.8): typing bubble + «شغل جديد» → the three dots grow into the brand dots-wipe (full lime cover, cut hidden)
+     B (1.8–7): the dots shrink and fly into the headline as its ellipsis, revealing the new piece on its plate →
+     line resolves word by word → label → one light sweep over the piece → TASH signature → the dots type once more (people are talking).
+     Pure function of t. Timing: cues.json (shared with audio.py). Data: ?data=/03-templates/data/story-new-work-01.json -->
+<html lang="ar" dir="rtl"><head><meta charset="utf-8">
+<link rel="stylesheet" href="/_system/tokens.css"><link rel="stylesheet" href="/03-templates/src/base.css">
+<style>
+  #stage { width: 1080px; height: 1920px; background: var(--ink); color: var(--paper); --bg: #0B0B0B; --fg: #F5F5E9; --sub: #8E9088; --dot: #C6FF00; }
+  .abs { position: absolute; }
+  #bubble { left: 0; top: 0; z-index: 8; }
+  #head { right: 96px; left: 96px; top: 262px; z-index: 12; font-size: 150px; color: var(--paper); white-space: nowrap; }
+  #head .w { display: inline-block; }
+  #line { right: 96px; left: 96px; top: 478px; z-index: 12; font-size: 44px; line-height: 1.45; color: var(--smoke); }
+  #line .w { display: inline-block; }
+  #plate { left: 96px; top: 600px; width: 888px; height: 790px; overflow: hidden; z-index: 5; background: #0D0C0A; }
+  #plate img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; transform-origin: 50% 0%; }
+  #plate .sweep { position: absolute; top: -10%; bottom: -10%; left: 0; width: 100%; mix-blend-mode: overlay; pointer-events: none;
+                  background: linear-gradient(104deg, rgba(255,238,210,0) 42%, rgba(255,238,210,.42) 47.5%, rgba(255,240,215,.78) 50%, rgba(255,238,210,.42) 52.5%, rgba(255,238,210,0) 58%); }
+  #plate .shade { position: absolute; left: 0; right: 0; bottom: 0; height: 220px; background: linear-gradient(to top, rgba(8,7,6,.7), rgba(8,7,6,0)); }
+  #concept { left: 96px; right: 96px; top: 1562px; z-index: 9; display: flex; justify-content: flex-end; gap: 22px; align-items: baseline; direction: ltr; }
+  #concept .slate { color: var(--smoke); font-size: 20px; }
+  #concept .concept-ar { color: var(--smoke); font-size: 24px; }
+  #title { right: 96px; top: 1418px; z-index: 12; display: grid; gap: 0; }
+  #title .name { font-family: var(--f-display-ar); font-weight: 800; font-size: 60px; line-height: 1.32; }
+  #title .kind { font-family: var(--f-text-ar); font-weight: 500; font-size: 30px; line-height: 1.3; color: var(--smoke); }
+  #sig { left: 96px; top: 1444px; width: 128px; z-index: 12; }
+  #wipe { left: 0; top: 0; z-index: 30; pointer-events: none; }
+  #vig { position: absolute; inset: 0; z-index: 40; pointer-events: none; background: radial-gradient(ellipse 85% 75% at 50% 46%, rgba(0,0,0,0) 58%, rgba(0,0,0,.34) 100%); }
+  #grain { position: absolute; inset: 0; z-index: 41; mix-blend-mode: overlay; opacity: .045; pointer-events: none; }
+  #light { position: absolute; inset: 0; z-index: 0; background: radial-gradient(ellipse 95% 70% at 80% 8%, rgba(245,245,233,.05), rgba(0,0,0,0) 70%); }
+</style></head><body><div id="stage"></div>
+<script type="module">
+import { boot, tw, E, clamp, lerp, typing, spring, css, grain } from '/_system/motion/kit.js';
+import * as L from '/_system/brand/logo.mjs';
+import { bubblePath, CONCEPT_AR } from '/03-templates/src/tpl.js';
+
+const q = new URLSearchParams(location.search);
+const C = await (await fetch('/03-templates/motion/story-new-work/cues.json')).json();
+const D = await (await fetch(q.get('data') || '/03-templates/data/story-new-work-01.json')).json();
+const W = 1080, H = 1920, LIME = L.COLORS.lime;
+const stage = document.getElementById('stage');
+const el = (tag, attrs = {}, html = '') => { const e = document.createElement(tag); for (const k in attrs) e.setAttribute(k, attrs[k]); if (html) e.innerHTML = html; return e; };
+const esc = s => String(s).replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
+
+// ---------------------------------------------------------------- build
+stage.append(el('div', { id: 'light' }));
+// B · the plate (the new piece) + its concept label
+const plate = el('div', { id: 'plate', class: 'abs' });
+const img = el('img', { src: D.image.src, alt: '' });
+img.style.objectPosition = `${D.image.fx ?? 50}% ${D.image.fy ?? 50}%`;
+const sweep = el('div', { class: 'sweep' });                 // ONE light sweep across the piece (the hold stays alive)
+plate.append(img, sweep, el('div', { class: 'shade' }));
+stage.append(plate);
+const conc = el('div', { id: 'concept', class: 'abs' }, `<div class="slate">${esc(D.concept?.slate || 'CONCEPT AD')}</div><div class="concept-ar">${esc(D.concept?.ar || CONCEPT_AR)}</div>`);
+stage.append(conc);
+const title = el('div', { id: 'title', class: 'abs' }, `<div class="name">${esc(D.title)}</div>${D.kind ? `<div class="kind">${esc(D.kind).replace(/([A-Za-z0-9.]+)/g, '<bdi dir="ltr">$1</bdi>')}</div>` : ''}`);
+stage.append(title);
+const sig = el('div', { id: 'sig', class: 'abs wm' }, L.wordmarkSVG({ body: L.COLORS.paper, dot: L.COLORS.lime }));
+stage.append(sig);
+
+// A · the typing bubble (sting geometry, scaled)
+const BS = 1.6, BW = 300 * BS, BH = 150 * BS, BCX = 540, BCY = 995;
+// (SVG must be created in the SVG namespace — markup strings do that for us)
+stage.insertAdjacentHTML('beforeend', `<svg id="bubble" class="abs" width="${W}" height="${H}" viewBox="0 0 ${W} ${H}"><g id="bgrp"><path id="bpath" fill="${L.COLORS.char}"/></g></svg>`);
+const bubbleSvg = stage.querySelector('#bubble');
+const bpath = bubbleSvg.querySelector('#bpath'), bgrp = bubbleSvg.querySelector('#bgrp');
+
+// headline: whole words + the brand ellipsis (an inline svg that keeps its space; the flying dots land on it)
+const [headText, hasDots] = [(D.headline || 'شغل جديد•••').replace('•••', ''), (D.headline || '•••').includes('•••')];
+const head = el('div', { id: 'head', class: 'abs disp' });
+const hw = headText.trim().split(/\s+/).map((w, i, a) => { const s = el('span', { class: 'w' }); s.textContent = w; head.append(s); if (i < a.length - 1) head.append(' '); return s; });
+const dd = 160, dg = dd * 0.178, dwid = 3 * dd + 2 * dg;
+const tdots = el('span', { class: 'tdots' }, `<svg viewBox="0 0 ${dwid} ${dd}" style="width:${dwid / 1000}em;height:${dd / 1000}em;opacity:0">${[0, 1, 2].map(i => `<circle cx="${dwid - dd / 2 - i * (dd + dg)}" cy="${dd / 2}" r="${dd / 2}" fill="${LIME}"/>`).join('')}</svg>`);
+if (hasDots) head.append(tdots);
+stage.append(head);
+
+// line: word spans for the blur-resolve
+const line = el('div', { id: 'line', class: 'abs txt' });
+const lw = (D.line || '').split(/\s+/).filter(Boolean).map((w, i, a) => { const s = el('span', { class: 'w' }); s.textContent = w; line.append(s); if (i < a.length - 1) line.append(' '); return s; });
+stage.append(line);
+
+// the three dots (typing → wipe → ellipsis), drawn above everything
+stage.insertAdjacentHTML('beforeend', `<svg id="wipe" class="abs" width="${W}" height="${H}" viewBox="0 0 ${W} ${H}">${[0, 1, 2].map(i => `<circle id="d${i}" fill="${LIME}"/>`).join('')}</svg>`);
+const wipe = stage.querySelector('#wipe');
+const dots = [0, 1, 2].map(i => wipe.querySelector('#d' + i));
+const vig = el('div', { id: 'vig' }); stage.append(vig);
+const gc = el('canvas', { id: 'grain', width: W, height: H }); stage.append(gc);
+
+// geometry: typing positions in the bubble (right → left) and landing spots in the headline ellipsis
+const TD = [1, 0, -1].map(k => ({ x: BCX + k * 82 * BS, y: BCY, r: 26 * BS }));
+let LAND = TD;
+const R_COVER = 1300;
+async function measure() {
+  await document.fonts.ready;
+  const S = stage.getBoundingClientRect();
+  if (hasDots) LAND = [...tdots.querySelectorAll('circle')].map(c => { const b = c.getBoundingClientRect(); return { x: b.left - S.left + b.width / 2, y: b.top - S.top + b.height / 2, r: b.width / 2 }; });
+}
+
+// ---------------------------------------------------------------- render(t)
+const logLerp = (a, b, k) => Math.exp(lerp(Math.log(a), Math.log(b), k));
+function seek(t) {
+  const f = Math.round(t * C.fps);
+  // --- A: bubble (alive from frame 0, slow 3 % breathe), collapses before the wipe
+  const breathe = 1 + 0.03 * clamp(t / C.bubbleOut);
+  const out = tw(t, C.bubbleOut, 0.2, E.inBack);
+  const k = Math.max(0, breathe * (1 - out));
+  if (t < C.cut && k > 0.001) {
+    bgrp.setAttribute('transform', `translate(${(BCX - BW * k / 2).toFixed(2)} ${(BCY - BH * k / 2).toFixed(2)})`);
+    bpath.setAttribute('d', bubblePath(BW * k, BH * k, 75 * BS * k, 'right', BS * k));
+  } else bpath.setAttribute('d', '');
+
+  // --- headline: rise + unblur per word, right → left (stays for the whole piece; the cut happens under the wipe)
+  hw.forEach((s, i) => {
+    const e = tw(t, C.headlineIn + i * 0.1, 0.6, E.outExpo);
+    css(s, { transform: `translateY(${((1 - e) * 70).toFixed(1)}px)`, opacity: String(clamp(e * 1.6)), filter: e < 0.999 ? `blur(${((1 - e) * 10).toFixed(2)}px)` : 'none' });
+  });
+
+  // --- the three dots
+  const g = C.grow, fl = C.fly;
+  dots.forEach((c, i) => {
+    let x, y, r;
+    const a = TD[i];
+    if (t < g.start) {                                    // typing in the bubble
+      const pre = tw(t, g.start - 0.14, 0.12, E.outCubic);  // anticipation: a small squeeze before the push
+      const bob = typing(t, i, { period: C.typing.period, phase: C.typing.phase, amp: C.typing.amp }) * (1 - tw(t, C.bubbleOut - 0.05, 0.15, E.outCubic));
+      const appear = t < 0 ? 0 : 1;
+      x = a.x; y = a.y + bob; r = a.r * appear * (1 - 0.1 * pre) * breathe;
+    } else {
+      const ge = E.inCubic(clamp((t - g.start - i * g.stagger) / g.dur));      // grow: accelerate into the cover
+      const fe = E.inOutCubic(clamp((t - fl.start - i * fl.stagger) / fl.dur)); // fly: shrink + travel into the ellipsis
+      const rGrow = logLerp(a.r * 0.9, R_COVER, ge);
+      const b = LAND[i];
+      r = fe > 0 ? logLerp(rGrow, b.r, fe) : rGrow;
+      const hop = Math.sin(fe * Math.PI) * -90 * (1 + i * 0.2);             // the sting's arc
+      x = lerp(a.x, b.x, fe); y = lerp(a.y, b.y, fe) + hop;
+      // after landing: one typing wave (people are talking) at the end
+      if (t >= C.pulse) y += typing(t - C.pulse, i, { period: 0.62, phase: 0.12, amp: 14 }) * (t < C.pulse + 0.62 + 0.26 ? 1 : 0);
+    }
+    c.setAttribute('cx', x.toFixed(2)); c.setAttribute('cy', y.toFixed(2)); c.setAttribute('r', Math.max(0, r).toFixed(2));
+  });
+
+  // --- B is only shown after the cut (hidden under the full cover)
+  const B = t >= C.cut;
+  for (const n of [plate, conc, title, sig, line]) n.style.visibility = B ? 'visible' : 'hidden';
+  bubbleSvg.style.visibility = B ? 'hidden' : 'visible';
+  // plate: already moving at the cut, slow creep
+  const creep = 1.0 + 0.055 * clamp((t - C.cut) / (C.duration - C.cut));
+  css(img, { transform: `scale(${creep.toFixed(4)})` });
+  // light sweep: right → left (forward in Arabic), S-curve, once — brightens the glass and liquid, leaves the black alone
+  const sw = E.inOutSine(clamp((t - C.sweep.start) / C.sweep.dur));
+  css(sweep, { transform: `translateX(${lerp(105, -105, sw).toFixed(2)}%)`, opacity: sw > 0 && sw < 1 ? '1' : '0' });
+  // line: blur-resolve per word, back to back (4 f each)
+  lw.forEach((s, i) => {
+    const p = clamp((t - C.line - i * 0.12) / 0.2);
+    const e = E.outCubic(p);
+    css(s, { opacity: String(lerp(0.0, 1, Math.min(1, p * 1.4))), filter: p < 1 ? `blur(${((1 - e) * 8).toFixed(2)}px)` : 'none' });
+  });
+  // concept label on the plate, title, signature (mask wipe right → left, the way Arabic is written)
+  const ce = tw(t, C.concept, 0.5, E.outCubic);
+  css(conc, { opacity: String(ce), transform: `translateY(${((1 - ce) * 16).toFixed(1)}px)` });
+  const te = tw(t, C.label, 0.6, E.outExpo);
+  css(title, { opacity: String(clamp(te * 1.5)), transform: `translateY(${((1 - te) * 40).toFixed(1)}px)` });
+  const se = tw(t, C.signature, 0.5, E.outExpo);
+  css(sig, { clipPath: `inset(-20% 0 -20% ${((1 - se) * 100).toFixed(2)}%)`, transform: `translateX(${((1 - se) * 10).toFixed(1)}px)` });
+
+  // the vignette is a film finish for pictures; on the full lime cover it would read as a glow, so it steps aside
+  const cover = clamp((t - (C.grow.start + 0.2)) / 0.16) * (1 - clamp((t - (C.fly.start + 0.15)) / 0.16));
+  vig.style.opacity = String(1 - cover);
+  grain(gc, f, { amount: 30, scale: 2 });
+}
+const ready = (async () => {
+  await Promise.all(['800 150px Alexandria', '500 44px "IBM Plex Sans Arabic"', '600 20px "JetBrains Mono"'].map(f => document.fonts.load(f, 'شغل جديد ABC')));
+  await document.fonts.ready;
+  await (img.complete ? img.decode().catch(() => {}) : new Promise(r => { img.onload = r; }));
+  await measure();
+})();
+boot({ width: W, height: H, fps: C.fps, duration: C.duration, ready, seek: async t => { await ready; seek(t); } });
+</script></body></html>
