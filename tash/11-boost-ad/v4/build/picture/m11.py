@@ -444,7 +444,11 @@ def main():
 
     # ---- G1 luma
     low = [f for f in range(N) if Y[f] < 0.40]
-    low_acc = [f for f in low if accepted(f)]; low_bad = [f for f in low if not accepted(f)]
+    # director decision (BUILD-SPEC R3-25): natural footage of the HABBA pour (hp) and the STAKK open stack (sa) may sit up to
+    # 0.015 under the gate (measured 0.389-0.400); they are listed, not failed
+    natural = lambda f: Y[f] >= 0.385 and any(L['t'] == 'still' and prefix_of(L['src']) in ('hp', 'sa') for L in FR[f]['layers'])
+    low_nat = [f for f in low if not accepted(f) and natural(f)]
+    low_acc = [f for f in low if accepted(f)]; low_bad = [f for f in low if not accepted(f) and not natural(f)]
     bysec = {}
     for f in low_bad: bysec.setdefault(labels[f], []).append(f)
     gate('G1_luma', not low_bad,
@@ -452,7 +456,7 @@ def main():
          f"(accepted LAYL night beat f{ACC[0]}-{ACC[1]}: {len(low_acc)}, Y' {min([Y[f] for f in low_acc], default=float('nan')):.3f}-{max([Y[f] for f in low_acc], default=float('nan')):.3f}; "
          f"outside it: {len(low_bad)})",
          below_040_outside_accepted={k: {'frames': rs(v), 'Y_min': round(float(min(Y[f] for f in v)), 4), 'Y_max': round(float(max(Y[f] for f in v)), 4)} for k, v in bysec.items()},
-         accepted_range=f'f{ACC[0]}-{ACC[1]}', accepted_below=rs(low_acc))
+         accepted_range=f'f{ACC[0]}-{ACC[1]}', accepted_below=rs(low_acc), accepted_natural_footage_0385=rs(low_nat))
 
     # ---- G2 colour shares
     cov = [coverage(F, HH) for F in FR]
@@ -635,7 +639,11 @@ def main():
                          'fill_box_x_product_px': fbox_px, 'ink_x_product_px': ink_px, 'clearance_px': None if clear is None else round(clear, 1),
                          'overlap_box': None if ob is None else [ob[0] + b[0], ob[1] + b[1], ob[2] + b[0], ob[3] + b[1]],
                          'ink_x_thin_px': thin_px, 'thin_box': tb})
-    fails = [r for r in rows if r['box_x_product_px'] > 0]
+    # director decision (BUILD-SPEC R3-25, director-plan.json): in 9:16 the hook tag «حلو…» may rest on the HABBA saucer rim
+    # (f3-29); the cup stays clear. Listed, not failed.
+    rim_ok = lambda r: FMT == '916' and r['f'] <= 29 and r['tag'] == 'حلو…'
+    accepted_rows = [r for r in rows if r['box_x_product_px'] > 0 and rim_ok(r)]
+    fails = [r for r in rows if r['box_x_product_px'] > 0 and not rim_ok(r)]
     beats = {}
     for r in rows: beats.setdefault((r['section'], r['tag']), []).append(r)
     summ = []
@@ -652,7 +660,7 @@ def main():
          f"tag frames over footage: {len(rows)}; tag ink box intersects the product mask on {len(fails)} "
          f"(ink pixels on the product: {sum(1 for r in rows if r['ink_x_product_px'])}; fill-only box: {sum(1 for r in rows if r['fill_box_x_product_px'])}); "
          f"tag ink over a thin element (stream/filament, not gated): {sum(1 for r in rows if r['ink_x_thin_px'])} frames",
-         beats=summ, frames=rows,
+         beats=summ, frames=rows, accepted_saucer_rim=rs([r['f'] for r in accepted_rows]),
          mask=MASK_DOC)
 
     # ---- G10 determinism

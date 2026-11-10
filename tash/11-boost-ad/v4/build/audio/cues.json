@@ -70,10 +70,10 @@
   "checks": {
    "lufs": -14.0,
    "true_peak_dbtp": -2.87,
-   "true_peak_ffmpeg_dbtp": -3.19,
+   "true_peak_ffmpeg_dbtp": -3.01,
    "aac320_true_peak_dbtp": -2.9,
-   "share_below_150": 0.3321,
-   "share_500_6k": 0.2627,
+   "share_below_150": 0.3416,
+   "share_500_6k": 0.2601,
    "room_tone_dbfs": -40.0,
    "voice_over_bed_db": {
     "V1 «مشروعك حلو…»": 11.1,
@@ -89,7 +89,7 @@
    "f1_hilu_xcorr_peak": 0.486,
    "f1_hilu_peak_vs_next": 3.04,
    "f2_mush_first150ms_voice_over_bed_db": {
-    "300-1000": 5.8,
+    "300-1000": 5.7,
     "1000-2000": -0.3,
     "1000-4000": 9.1,
     "2000-6000": 18.0,
@@ -110,10 +110,10 @@
     "drizzle (drain)": {
      "frames": "30-45",
      "band_hz": "1800-4500",
-     "best_window_db": 9.8,
+     "best_window_db": 10.0,
      "best_window_frame": 37.8,
-     "whole_moment_db": -0.7,
-     "band_lift_db": 2.7,
+     "whole_moment_db": -0.1,
+     "band_lift_db": 3.0,
      "share_in_band": 0.34,
      "passed": true
     },
@@ -130,29 +130,29 @@
     "bean tap": {
      "frames": "138-144",
      "band_hz": "1000-4000",
-     "best_window_db": 8.1,
+     "best_window_db": 6.4,
      "best_window_frame": 138.0,
-     "whole_moment_db": 5.7,
-     "band_lift_db": 6.7,
+     "whole_moment_db": 3.0,
+     "band_lift_db": 4.9,
      "share_in_band": 0.59,
      "passed": true
     },
     "atomiser spray": {
      "frames": "165-180",
      "band_hz": "2000-9000",
-     "best_window_db": 14.1,
+     "best_window_db": 14.7,
      "best_window_frame": 168.6,
-     "whole_moment_db": 9.0,
-     "band_lift_db": 9.5,
+     "whole_moment_db": 9.2,
+     "band_lift_db": 9.6,
      "share_in_band": 0.65,
      "passed": true
     },
     "mist bloom": {
      "frames": "180-195",
      "band_hz": "1400-5600",
-     "best_window_db": 5.6,
+     "best_window_db": 5.4,
      "best_window_frame": 183.0,
-     "whole_moment_db": -2.0,
+     "whole_moment_db": -2.5,
      "band_lift_db": 2.1,
      "share_in_band": 0.7,
      "passed": true
@@ -160,29 +160,29 @@
     "bottle glass tone": {
      "frames": "195-210",
      "band_hz": "1700-2050",
-     "best_window_db": 9.6,
-     "best_window_frame": 195.3,
-     "whole_moment_db": 5.6,
-     "band_lift_db": 7.1,
+     "best_window_db": 12.6,
+     "best_window_frame": 198.0,
+     "whole_moment_db": 2.5,
+     "band_lift_db": 4.1,
      "share_in_band": 0.89,
      "passed": true
     },
     "sizzle bed": {
      "frames": "210-240",
      "band_hz": "2000-9000",
-     "best_window_db": 9.3,
+     "best_window_db": 9.1,
      "best_window_frame": 216.6,
-     "whole_moment_db": -1.2,
-     "band_lift_db": 2.5,
+     "whole_moment_db": -0.7,
+     "band_lift_db": 2.7,
      "share_in_band": 0.86,
      "passed": true
     },
     "bun landing (808 + thump)": {
      "frames": "225-231",
      "band_hz": "250-800",
-     "best_window_db": 21.3,
+     "best_window_db": 21.4,
      "best_window_frame": 226.5,
-     "whole_moment_db": 20.4,
+     "whole_moment_db": 20.5,
      "band_lift_db": 20.4,
      "share_in_band": 0.88,
      "passed": true
@@ -190,15 +190,15 @@
     "drizzle (sweet)": {
      "frames": "255-285",
      "band_hz": "1800-4500",
-     "best_window_db": 8.8,
+     "best_window_db": 9.3,
      "best_window_frame": 257.4,
-     "whole_moment_db": -3.0,
-     "band_lift_db": 1.7,
+     "whole_moment_db": -3.5,
+     "band_lift_db": 1.6,
      "share_in_band": 0.28,
      "passed": true
     }
    },
-   "seam_jump": 0.00258,
+   "seam_jump": 0.00266,
    "seam_ref": 0.00792,
    "passed": true
   },
@@ -804,6 +804,12 @@
     "what": "soft kick: band cuts to burger"
    },
    {
+    "frame": 495.0,
+    "t": 16.5,
+    "bus": "sfx",
+    "what": "soft crown landing in the CTA burger band (on the beat; final review CC2)"
+   },
+   {
     "frame": 510.0,
     "t": 17.0,
     "bus": "music",
@@ -849,10 +855,10 @@
   "checks": {
    "lufs": -14.0,
    "true_peak_dbtp": -2.87,
-   "true_peak_ffmpeg_dbtp": -3.14,
-   "aac320_true_peak_dbtp": -3.1,
-   "share_below_150": 0.3066,
-   "share_500_6k": 0.2763,
+   "true_peak_ffmpeg_dbtp": -3.06,
+   "aac320_true_peak_dbtp": -3.0,
+   "share_below_150": 0.3192,
+   "share_500_6k": 0.2722,
    "room_tone_dbfs": -40.0,
    "voice_over_bed_db": {
     "V1 «مشروعك حلو…»": 11.2,
@@ -871,7 +877,7 @@
     "300-1000": 5.9,
     "1000-2000": -0.2,
     "1000-4000": 9.2,
-    "2000-6000": 18.1,
+    "2000-6000": 18.0,
     "300-4000": 6.8
    },
    "c3_f0_hit_1_4k_change_db": -1.35,
@@ -889,9 +895,9 @@
     "drizzle (drain)": {
      "frames": "30-45",
      "band_hz": "1800-4500",
-     "best_window_db": 6.6,
+     "best_window_db": 6.5,
      "best_window_frame": 38.1,
-     "whole_moment_db": -2.8,
+     "whole_moment_db": -2.7,
      "band_lift_db": 1.9,
      "share_in_band": 0.29,
      "passed": true
@@ -909,65 +915,65 @@
     "bean tap": {
      "frames": "138-144",
      "band_hz": "1000-4000",
-     "best_window_db": 7.3,
+     "best_window_db": 7.0,
      "best_window_frame": 138.0,
-     "whole_moment_db": 5.0,
-     "band_lift_db": 6.3,
+     "whole_moment_db": 3.6,
+     "band_lift_db": 5.1,
      "share_in_band": 0.61,
      "passed": true
     },
     "atomiser spray": {
      "frames": "165-180",
      "band_hz": "2000-9000",
-     "best_window_db": 14.3,
+     "best_window_db": 14.6,
      "best_window_frame": 168.6,
-     "whole_moment_db": 9.3,
-     "band_lift_db": 9.7,
+     "whole_moment_db": 9.6,
+     "band_lift_db": 10.0,
      "share_in_band": 0.65,
      "passed": true
     },
     "bottle glass tone": {
      "frames": "180-195",
      "band_hz": "1700-2050",
-     "best_window_db": 10.2,
-     "best_window_frame": 183.0,
-     "whole_moment_db": 4.0,
-     "band_lift_db": 5.9,
+     "best_window_db": 11.4,
+     "best_window_frame": 184.5,
+     "whole_moment_db": 6.4,
+     "band_lift_db": 7.3,
      "share_in_band": 0.89,
      "passed": true
     },
     "sizzle bed": {
      "frames": "195-225",
      "band_hz": "2000-9000",
-     "best_window_db": 11.0,
-     "best_window_frame": 198.3,
-     "whole_moment_db": -1.2,
-     "band_lift_db": 2.4,
+     "best_window_db": 10.0,
+     "best_window_frame": 198.6,
+     "whole_moment_db": -1.4,
+     "band_lift_db": 2.3,
      "share_in_band": 0.86,
      "passed": true
     },
     "bun landing (808 + thump)": {
      "frames": "210-216",
      "band_hz": "250-800",
-     "best_window_db": 9.9,
+     "best_window_db": 8.4,
      "best_window_frame": 210.0,
-     "whole_moment_db": 9.9,
-     "band_lift_db": 10.4,
+     "whole_moment_db": 8.4,
+     "band_lift_db": 9.0,
      "share_in_band": 0.9,
      "passed": true
     },
     "drizzle (sweet)": {
      "frames": "225-255",
      "band_hz": "1800-4500",
-     "best_window_db": 13.8,
+     "best_window_db": 13.7,
      "best_window_frame": 228.6,
      "whole_moment_db": -3.3,
-     "band_lift_db": 1.7,
+     "band_lift_db": 1.6,
      "share_in_band": 0.43,
      "passed": true
     }
    },
-   "seam_jump": 0.00115,
+   "seam_jump": 0.00118,
    "seam_ref": 0.00768,
    "passed": true
   },
@@ -1517,6 +1523,12 @@
     "t": 12.0,
     "bus": "music",
     "what": "chord D (calm) f360-375"
+   },
+   {
+    "frame": 360.0,
+    "t": 12.0,
+    "bus": "sfx",
+    "what": "soft crown landing in the CTA burger band (on the beat; final review CC2)"
    },
    {
     "frame": 375.0,

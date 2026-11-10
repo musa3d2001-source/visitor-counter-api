@@ -77,7 +77,7 @@ function nat(id, f, i = null) {
 const geo = id => USES.get(id)[FMT];
 // one footage layer of a use: full (final canvas dy), punch, band; lens and porthole are built by their own helpers
 function useLayer(id, f, o = {}, i = null) {
-  const u = USES.get(id), g = geo(id), n = nat(id, f, i), s = src(u.prefix, n);
+  const u = USES.get(id), g = geo(id), n = nat(id, f, i), s = src(g.prefix ?? u.prefix, n);   // a format may use its own prepared frames
   if (u.kind === 'full') return { t: 'still', src: s, ...o, dy: (g.dy ?? 0) + (o.dy ?? 0) };
   if (u.kind === 'punch') return { t: 'still', src: s, scale: g.scale * (o.push ?? 1), cx: g.sx / 1080, cy: g.sy / 1920, ax: g.ax, ay: g.ay, dy: o.dy ?? 0 };
   if (u.kind === 'band') return { t: 'still', src: s, ...o, dy: g.dy };
@@ -90,7 +90,7 @@ const SH = {
   ret: (f, o) => useLayer('return', f, o),           // f78-89, inside the repaint circles
   hold: () => useLayer('hold', 90),                  // f90-92, outside the shockwave
   iris: f => useLayer('iris', f),                    // f131-134, the centre porthole opens onto the first world
-  loop: (o = {}) => useLayer('loop', null, o, 0),    // wind-up iris and the end = the f0 picture frozen
+  loop: (f, o = {}) => useLayer('loop', f, o),       // wind-up iris and the end: the pour plays into f0 (final review R2)
 };
 
 // ---------------- TASH wordmark M: box top-left (x0,y0), width w; k scales it about the box centre ----------------
@@ -170,7 +170,7 @@ const V = LEN === 20 ? {
   talk: 255, talk2: 260, mult: [270, 275, 280], grounds: [TANG, TANG, TANG], flood: 285,
   snap: 300, shrink: false, tagline: null, cta: 315, ctaIn: [316, 318, 320, 321],
   band: [{ f0: 315, f1: 344, use: 'sweet-band' }, { f0: 345, f1: 374, use: 'burger-band' }, { f0: 375, f1: 413, use: 'coffee-band' }],
-  wind: 414, irisLen: 3,
+  wind: 414, irisLen: 6,        // same 6-frame iris as A-20: no hard cut off the grid (final review QT4)
 };
 const CATS_END = V.talk, CUTS = [15, 30, ...V.cats.map(c => c.f0), V.talk, ...new Set(V.mult)];
 
@@ -363,10 +363,10 @@ function cta(f) {
     if (V.tagline) L.push(text('خلّهم يسولفون', 104, 700 + T + dy, { rot: 6 * t, clip: PANEL }), text('عنك!', 170, 900 + T + dy * 1.1, { rot: -8 * t, clip: PANEL })); }
   // wind-up: iris from the wordmark's middle dot onto the frozen opener frame n2, with W and its dots
   if (wd >= 0) { const md = markDots(...CTA.m), r = 15 + (RMAX - 15) * ((wd + 1) / V.irisLen) ** 2, C = { type: 'circle', x: md.cx, y: md.cy, r };
-    L.push(SH.loop({ clip: C }), word(1, { clip: C }), ...dotsLime(f, { clip: C }), { t: 'dot', x: md.cx, y: md.cy, r: r + 6, fill: null, ring: { color: 'ink', lw: 16 } }); }
+    L.push(SH.loop(f, { clip: C }), word(1, { clip: C }), ...dotsLime(f, { clip: C }), { t: 'dot', x: md.cx, y: md.cy, r: r + 6, fill: null, ring: { color: 'ink', lw: 16 } }); }
   return L;
 }
-const loopEnd = f => [SH.loop(), word(), ...dotsLime(f)];
+const loopEnd = f => [SH.loop(f), word(), ...dotsLime(f)];
 
 for (let f = 0; f < N; f++) {
   let L, s;

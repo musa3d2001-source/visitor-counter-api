@@ -114,10 +114,11 @@
      "dy": 0
     },
     "45": {
-     "dy": -285
+     "dy": -150
     },
     "rule": "n = f + 40",
-    "tag": "حلو… (from f3)"
+    "tag": "حلو… (from f3)",
+    "note_45_final": "4:5 dy -150 (final review L1): the saucer top clears the tag box; the cup bottom loses about 60-85 px at the frame edge"
    },
    {
     "id": "opener-punch",
@@ -165,7 +166,7 @@
      "sx": 561,
      "sy": 1259,
      "ax": 561,
-     "ay": 980
+     "ay": 1185
     },
     "rule": "n = f + 40",
     "tag": "حلو…",
@@ -206,7 +207,7 @@
      "dy": 0
     },
     "45": {
-     "dy": -285
+     "dy": -150
     },
     "rule": "n = f - 8"
    },
@@ -236,7 +237,7 @@
      "dy": 0
     },
     "45": {
-     "dy": -285
+     "dy": -150
     },
     "rule": "n = 81"
    },
@@ -258,32 +259,32 @@
      ]
     },
     "n": [
-     60,
-     61,
-     62,
-     63,
-     64,
-     65,
-     66,
-     67,
-     68,
-     69,
-     70,
-     71,
-     72,
-     73,
-     74,
-     107,
-     108,
-     109,
-     110,
-     111,
-     112,
-     113,
-     114,
-     115,
-     116,
-     117
+     82,
+     83,
+     84,
+     85,
+     86,
+     87,
+     88,
+     89,
+     90,
+     91,
+     92,
+     93,
+     94,
+     95,
+     96,
+     97,
+     98,
+     99,
+     100,
+     101,
+     102,
+     103,
+     104,
+     105,
+     106,
+     107
     ],
     "916": {
      "x": 540,
@@ -301,7 +302,7 @@
      "sx": 561,
      "sy": 1259
     },
-    "rule": "f105-119 n = f - 45; f120-130 n = f - 13"
+    "rule": "n = f - 23 (continuous; final review R4)"
    },
    {
     "id": "iris",
@@ -540,7 +541,8 @@
      ]
     },
     "916": {
-     "dy": 829
+     "dy": 740,
+     "note": "final review CC1: cup y about 1096-1694, the heart core above the caption rows"
     },
     "45": {
      "dy": 376
@@ -558,27 +560,27 @@
      "dy": 0
     },
     "45": {
-     "dy": -285
+     "dy": -150
     },
-    "rule": "n = 40 frozen (A-20 f588-599, A-14 f414-419)",
+    "rule": "A-20 n = f - 560, A-14 n = f - 380: the pour plays into f0 = n40 (final review R2: a frozen frame read as a stall)",
     "A20": {
      "f": [
       588,
       599
      ],
      "n": [
-      40,
-      40,
-      40,
-      40,
-      40,
-      40,
-      40,
-      40,
-      40,
-      40,
-      40,
-      40
+      28,
+      29,
+      30,
+      31,
+      32,
+      33,
+      34,
+      35,
+      36,
+      37,
+      38,
+      39
      ]
     },
     "A14": {
@@ -587,12 +589,12 @@
       419
      ],
      "n": [
-      40,
-      40,
-      40,
-      40,
-      40,
-      40
+      34,
+      35,
+      36,
+      37,
+      38,
+      39
      ]
     }
    }
@@ -851,7 +853,9 @@
      344
     ],
     "916": {
-     "dy": 280
+     "prefix": "lp",
+     "dy": 0,
+     "note": "lp = LAYL bottle shrunk 0.8, cap at y 1075 (final review CC1)"
     },
     "45": {
      "dy": -20
@@ -1103,6 +1107,7 @@
     },
     "n": [
      4,
+     4,
      5,
      6,
      7,
@@ -1130,16 +1135,17 @@
      30,
      31,
      32,
-     33,
-     34
+     33
     ],
     "916": {
-     "dy": 460
+     "prefix": "sd",
+     "dy": 0,
+     "note": "sd = b7 shrunk 0.6, settled bun top at y 1075 (final review CC1: the whole burger above the caption rows)"
     },
     "45": {
      "dy": 187
     },
-    "rule": "n4-n17, then n19-n34 (n18 skipped)",
+    "rule": "n4 held one frame, n5-n17, n19-n33: the crown lands on n19 = f495 (A-14 f360), on the beat (final review QT6)",
     "note_45": "crown top lands at y 810, just under the panel edge, as in 9:16"
    }
   ]
@@ -1557,7 +1563,8 @@
   "LAYL S4 (ls): the top 400 rows are the frame's own top rows averaged, smoothed horizontally and dithered (plan: row 0 replicated), so no vertical streaks.",
   "Grade: the plan's lift is baked in: k3 x + 0.28 x(1-x), b7 x + 0.22 x(1-x) (plan: about +0.04 / small lift).",
   "All 4:5 values are new (the plan gives 9:16 only).",
-  "Portholes (checker fix): right/perfume 0.27 about (540,1170) and left/burger 0.20 about (540,1112) instead of the plan's 0.31 about (540,1175) / (540,1060), so each product sits whole inside its Ø220 window like the coffee cup (at 0.31 the bottle cap and the burger crown/base were cut by the ring). Centre/coffee stays 0.31 about (561,1259)."
+  "Portholes (checker fix): right/perfume 0.27 about (540,1170) and left/burger 0.20 about (540,1112) instead of the plan's 0.31 about (540,1175) / (540,1060), so each product sits whole inside its Ø220 window like the coffee cup (at 0.31 the bottle cap and the burger crown/base were cut by the ring). Centre/coffee stays 0.31 about (561,1259).",
+  "Final review wf_0d526e23-b2a (10 Nov): loop plays hp n28-n39 into f0 (R2); centre porthole n82-n107 continuous (R4); 4:5 opener dy -150 and punch 1.15 at ay 1185 (L1); 9:16 CTA bands: burger sd 0.6, perfume lp 0.8, coffee dy 740 (CC1); burger band crown lands on f495 / A-14 f360 (QT6); Coffee A middle bean held from n102 in prep (R1)."
  ],
  "for_the_generator": [
   "Portholes move: right (x 810) = lb perfume 0.27 about (540,1170), centre (x 540) = hp coffee 0.31 about (561,1259), left (x 270) = su burger 0.20 about (540,1112) (mk_film PORTS today: k / o / b at 0.4 / 0.3 / 0.3).",

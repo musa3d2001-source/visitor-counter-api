@@ -636,7 +636,7 @@ A20 = dict(
     pour_return=(78, 90), bean=138, spray=165, bloom=180, glass=195, sizzle=(210, 240), bun=225, drizzle=(255, 284),
     beds=[(210, 240), (255, 285)],                # world beds: the groove makes room (no shaker, the riff plays dull)
     talk=285, mult=[330, 345, 360], build8=360, flood=375, duck=381, pocket=(386, 390), hero3=390,
-    cta=450, band=[(450, 'sweet'), (480, 'burger'), (510, 'perfume'), (540, 'coffee')], pop2=457, thin=540,
+    cta=450, band=[(450, 'sweet'), (480, 'burger'), (510, 'perfume'), (540, 'coffee')], band_land=495, pop2=457, thin=540,
     swell=(588, 598), windup=588, room_window=(56, 71), swarm=1.0,
 )
 A14 = dict(
@@ -652,7 +652,7 @@ A14 = dict(
     pour_return=(78, 90), bean=138, spray=165, bloom=None, glass=180, sizzle=(195, 225), bun=210, drizzle=(225, 254),
     beds=[(195, 225), (225, 255)],
     talk=255, mult=[270, 275, 280], build8=280, flood=285, duck=291, pocket=(296, 300), hero3=300,
-    cta=315, band=[(315, 'sweet'), (345, 'burger'), (375, 'coffee')], pop2=318, thin=375,
+    cta=315, band=[(315, 'sweet'), (345, 'burger'), (375, 'coffee')], band_land=360, pop2=318, thin=375,
     swell=(408, 418), windup=414, room_window=(56, 71), swarm=2.0,   # ticks run under V2 here: +6 dB before the duck
 )
 
@@ -851,6 +851,7 @@ def score(V, VO):
     # --- CTA: soft kick on each band cut, two-note pop on «بالخاص»
     for f, world in V['band']:
         put(soft_kick(), f, 'music', f'soft kick: band cuts to {world}', G['soft_kick'])
+    put(bun_thump(), V['band_land'], 'sfx', 'soft crown landing in the CTA burger band (on the beat; final review CC2)', G['thump'] * 0.45)
     put(note_pop(nf('A5')), V['pop2'], 'hit', 'two-note pop, note 1 A5 (synthesised)', G['notepop'], 0.1)
     put(note_pop(nf('D6')), V['pop2'] + 3, 'hit', 'two-note pop, note 2 D6', G['notepop'], -0.1)
 

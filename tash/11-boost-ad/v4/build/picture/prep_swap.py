@@ -8,16 +8,18 @@ usage: python3 -I prep_swap.py <out dir> [--kunafa <dir with k0030-k0072.png>] [
                 frame); missing frames are rendered into it first. Without it the label is painted out in code (fallback).
 
 Output: 1080x1920 RGB PNGs <prefix><NNNN>.png, NNNN = native frame index of the source clip (LAYL: film frame number).
-  hp  HABBA k3_pour ROTATED 180 deg, cover 1084x1920 crop 2 px a side: n40-n81, n106-n120   opener, return, hold, porthole, Coffee B lens, loop
+  hp  HABBA k3_pour ROTATED 180 deg, cover 1084x1920 crop 2 px a side: n28-n120            opener, return, hold, porthole (n82-n107), Coffee B lens, loop (n28-n39 play into f0)
   hu  HABBA k3_pour unrotated n45-n92 (cup centre about (519,661))                            coffee CTA band
-  hb  HABBA k4_beans n95-n113                                                                  iris f131-134, Coffee A
+  hb  HABBA k4_beans n95-n113; the middle bean that sinks into the table in n103-n113 is held from n102   iris f131-134, Coffee A
   ls  LAYL film f180-230 (S4 spray) drawn 400 px lower; rows above are a smooth fill of the frame's own top rows, dithered     Oud A, Oud B
   lb  LAYL film f315-344 (S6 bottle), unshifted, plinth label and its floor reflection removed   Oud C lens, right porthole, perfume band
   sa  STAKK b7_crown n0-n9 drawn 100 px lower, top rows from n0 (40 px feather)                Burger A (n10-n12 dropped)
   sb  STAKK b7_crown n19-n33 drawn 250 px lower, rows 0-480 from n0 (80 px feather)           Burger B (punch-in)
   su  STAKK b7_crown n4-n48 unshifted (never n18)                                               left porthole, burger band
   sl  STAKK b7_crown n34-n48 shrunk x958/1080 about (540,1112), red backdrop continued sideways  Burger C lens (lens scale 0.62 = 0.55 effective)
-  dc  DOSE d4_cake n0-n35 unshifted (the plan shows only n2-n31)                                sweet, cake option (owner's yes needed)
+  lp  LAYL f315-344 bottle (as lb) shrunk 0.8 into a 1080x1920 canvas, cap at y 1075, edges continued   9:16 perfume CTA band
+  sd  STAKK b7 n4-n17, n19-n33 shrunk 0.6 into a 1080x1920 canvas, settled bun top at y 1075, backdrop continued   9:16 burger CTA band
+  dc  DOSE d4_cake n0-n35 unshifted (the plan shows only n2-n31)                                sweet (owner's yes, 10 Nov: «كيكة دوز خوش»)
   k   kunafa k0030-k0072 copied unchanged from --kunafa                                         sweet, kunafa option
 Grade: k3 (hp, hu) and b7 (sa, sb, su) get the plan's small mid-tone lift (LIFT below); nothing else is graded.
 Colour: every clip is decoded the way its own project did: BT.709 matrix, tv range in, full-range RGB out
@@ -49,7 +51,7 @@ if not A or A[0].startswith('--'):
     sys.exit(__doc__)
 OUT = A[0]
 opt = lambda k: A[A.index(k) + 1] if k in A else None
-ONLY = set(opt('--only').split(',')) if opt('--only') else {'hp', 'hu', 'hb', 'ls', 'lb', 'sa', 'sb', 'su', 'sl', 'dc', 'k'}
+ONLY = set(opt('--only').split(',')) if opt('--only') else {'hp', 'hu', 'hb', 'ls', 'lb', 'lp', 'sa', 'sb', 'su', 'sl', 'sd', 'dc', 'k'}
 os.makedirs(OUT, exist_ok=True)
 LOG = {}
 
@@ -94,11 +96,29 @@ def shift_down(a, dy, plate, feather, cover=None):
     return o
 
 
+def shrink_into(a, k, sx, sy, ax, ay, seed):
+    """the frame scaled by k so that its source point (sx,sy) lands on (ax,ay) of a 1080x1920 canvas; the uncovered canvas is the
+    frame's own edge rows / columns continued (per row / column, smoothed along the edge, dithered): CTA bands that keep the whole
+    product above the app's caption rows (final review CC1)"""
+    rng = np.random.default_rng(seed); a = np.asarray(a, np.float64)
+    w, h = round(W * k), round(H * k); x0, y0 = round(ax - sx * k), round(ay - sy * k)
+    s = np.stack([np.asarray(Image.fromarray(np.ascontiguousarray(a[..., c]).astype(np.float32)).resize((w, h), Image.LANCZOS)) for c in range(3)], -1).astype(np.float64)
+    o = np.zeros((H, W, 3)); X0, Y0, X1, Y1 = max(0, x0), max(0, y0), min(W, x0 + w), min(H, y0 + h)
+    o[Y0:Y1, X0:X1] = s[Y0 - y0:Y1 - y0, X0 - x0:X1 - x0]
+    g = np.exp(-0.5 * (np.arange(-30, 31) / 10.0) ** 2); g /= g.sum()
+    sm = lambda prof: np.stack([np.convolve(np.pad(prof[:, c], 30, mode='edge'), g, mode='valid') for c in range(3)], -1)
+    if X0 > 0: o[Y0:Y1, :X0] = sm(o[Y0:Y1, X0:X0 + 12].mean(1))[:, None, :] + rng.normal(0, 1.0, (Y1 - Y0, X0, 3))
+    if X1 < W: o[Y0:Y1, X1:] = sm(o[Y0:Y1, X1 - 12:X1].mean(1))[:, None, :] + rng.normal(0, 1.0, (Y1 - Y0, W - X1, 3))
+    if Y0 > 0: o[:Y0] = sm(o[Y0:Y0 + 12].mean(0))[None] + rng.normal(0, 1.0, (Y0, W, 3))
+    if Y1 < H: o[Y1:] = sm(o[Y1 - 12:Y1].mean(0))[None] + rng.normal(0, 1.0, (H - Y1, W, 3))
+    return np.clip(o, 0, 255)
+
+
 # ---------------- HABBA k3_pour ----------------
 if {'hp', 'hu'} & ONLY:
-    k3 = decode('k3', 40, 120)
+    k3 = decode('k3', 28, 120)
     if 'hp' in ONLY:     # rotated 180 deg (barista's view): cup centre about (561,1259), pitcher enters from the bottom edge
-        for n in list(range(40, 82)) + list(range(106, 121)):
+        for n in range(28, 121):   # n28-n39 play into the loop (final review R2); n82-n107 only in the 220 px porthole (R4)
             save('hp', n, lift(np.ascontiguousarray(k3[n][::-1, ::-1]), LIFT['k3']))
     if 'hu' in ONLY:     # unrotated, for the band. Cup centre stays at (519,661): moving it 21 px to x 540 needs 21 new columns,
         for n in range(45, 93):    # and a mirrored fill showed a visible chevron in the sun bars at 100%, so the cup sits 21 px left
@@ -107,8 +127,28 @@ if {'hp', 'hu'} & ONLY:
 
 # ---------------- HABBA k4_beans ----------------
 if 'hb' in ONLY:
-    for n, a in decode('k4', 95, 113).items():
+    # final review R1: from n103 the bean lying behind the big front-left bean sinks straight down into the table (AI morph).
+    # It is held from n102: inside the region x 262-575, y 1245-1510 (8 px feather) the picture comes from n102, except where
+    # the landing bean D of each frame is (its dark component at (680,1420), x >= 525, opened by 16 px so thin bridges into
+    # the sinking bean drop out, dilated back 19 px, 2.5 px feather). Checked at 100% on n102-n113 (c/bean_patch3.png).
+    from scipy import ndimage
+    from PIL import ImageFilter
+    k4 = decode('k4', 95, 113)
+    luma = lambda a: 0.2126 * a[..., 0] + 0.7152 * a[..., 1] + 0.0722 * a[..., 2]
+    soft = lambda m, r: np.asarray(Image.fromarray((m * 255).astype(np.uint8)).filter(ImageFilter.GaussianBlur(r))).astype(np.float64) / 255
+    def bean_d(a, thr=100, er=16):
+        m = luma(a.astype(np.float64)) < thr; m[:1150] = False; m[:, :525] = False
+        m = ndimage.binary_erosion(m, iterations=er); lab, _ = ndimage.label(m); l = lab[1420, 680]
+        return ndimage.binary_dilation(lab == l, iterations=er + 3) if l else np.zeros_like(m)
+    yy, xx = np.mgrid[0:H, 0:W]
+    S0 = soft(((xx >= 262) & (xx <= 575) & (yy >= 1245) & (yy <= 1510)), 8)
+    P = k4[102].astype(np.float64)
+    for n, a in k4.items():
+        if n >= 103:
+            S = (S0 * (1 - soft(bean_d(a), 2.5)))[..., None]
+            a = a.astype(np.float64) * (1 - S) + P * S
         save('hb', n, a)
+    del k4
 
 # ---------------- LAYL S4 spray: +400 with a smooth top ----------------
 if 'ls' in ONLY:
@@ -151,8 +191,14 @@ if 'lb' in ONLY:
             save('lb', n, a)
         LOG['lb_method'] = 'paint-out (row-wise lerp)'
 
+# ---------------- LAYL bottle for the 9:16 CTA band: 0.8 with the cap just under the panel (final review CC1) ----------------
+if 'lp' in ONLY:
+    for n in range(315, 345):
+        a = np.asarray(Image.open(os.path.join(OUT, f'lb{n:04d}.png')).convert('RGB'))   # the prepared lb frame (label already off)
+        save('lp', n, shrink_into(a, 0.8, 540, 827, 540, 1075, 20261112 + n))
+
 # ---------------- STAKK b7_crown ----------------
-if {'sa', 'sb', 'su', 'sl'} & ONLY:
+if {'sa', 'sb', 'su', 'sl', 'sd'} & ONLY:
     b7 = decode('b7', 0, 48)
     if 'sa' in ONLY:     # Burger A: +100, top rows from n0. Only n0-n9: in n10-n12 the falling crown is a flat blurred bar cut
         for n in range(0, 10):     # straight at y 100 (checked at 100%), so the plan's fallback is taken: hold n0 longer, end on n9
@@ -180,6 +226,9 @@ if {'sa', 'sb', 'su', 'sl'} & ONLY:
                 o[OY:OY + SHh, x0:x1] = prof[:, None, :] + rng.normal(0, 1.0, (SHh, x1 - x0, 3))
             o[:OY] = o[OY]; o[OY + SHh:] = o[OY + SHh - 1]                              # rows outside the lens: edge rows
             save('sl', n, np.clip(o, 0, 255))
+    if 'sd' in ONLY:     # burger CTA band (9:16): 0.6, settled bun top (source y 623) at y 1075; the crown falls behind the panel
+        for n in list(range(4, 18)) + list(range(19, 34)):
+            save('sd', n, shrink_into(lift(b7[n], LIFT['b7']), 0.6, 540, 623, 540, 1075, 20261113 + n))
     del b7
 
 # ---------------- DOSE d4_cake ----------------
