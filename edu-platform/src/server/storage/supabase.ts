@@ -114,7 +114,8 @@ export const supabaseDriver: StorageDriver = {
     return {
       method: "PUT",
       url: data.signedUrl,
-      headers: { "content-type": contentType, "x-upsert": "false", "cache-control": "max-age=3600" },
+      // الملف العام لا يتغير تحت رابطه: كل رفع مفتاح جديد و x-upsert=false، فلا يضر أن يُخزَّن سنة. الخاص يبقى قصيرًا
+      headers: { "content-type": contentType, "x-upsert": "false", "cache-control": bucket === "public" ? "public, max-age=31536000, immutable" : "max-age=3600" },
     };
   },
   publicUrl(key) {

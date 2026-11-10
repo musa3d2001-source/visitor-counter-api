@@ -47,7 +47,13 @@ const nextConfig: NextConfig = {
     remotePatterns: supabaseHost
       ? [{ protocol: "https", hostname: supabaseHost, pathname: "/storage/v1/object/public/**" }]
       : [],
-    formats: ["image/avif", "image/webp"],
+    // صيغة واحدة: كل صيغة إضافية تضاعف عدد التحويلات المحسوبة على الخطة، و WebP يعمل في كل متصفح يصل إليه الموقع
+    formats: ["image/webp"],
+    // كل غلاف يُرفع بمفتاح جديد ولا يُكتب فوق ملف موجود (newStorageKey و x-upsert)، فنسخته المحوّلة صالحة ما بقي رابطه
+    minimumCacheTTL: 2678400,
+    // أقل قائمة تغطي التخطيط (صور صغيرة من 52 حتى 184 بكسل، وبطاقات حتى 480) على شاشات كثافتها حتى 3. كل عرض هنا تحويل محتمل لكل غلاف
+    imageSizes: [64, 96, 128, 256, 384],
+    deviceSizes: [640, 828, 1080],
   },
   async headers() {
     const noIndex = [{ key: "X-Robots-Tag", value: "noindex, nofollow, noarchive" }];
