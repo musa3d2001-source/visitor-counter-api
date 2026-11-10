@@ -119,6 +119,8 @@ export async function correctStudentEmail(input: { studentId: string; newEmail: 
       // رابط صدر للعنوان القديم لا يعمل بعد التصحيح
       await tx`update password_reset_tokens set used_at = now() where user_id = ${input.studentId} and used_at is null`;
       await revokeEmailLinks(tx, input.studentId);
+      // البريد هو هوية الدخول: من فتح الحساب بالعنوان القديم لا يبقى داخله
+      await tx`delete from sessions where user_id = ${input.studentId}`;
       await audit({ actorId: input.adminId, action: "student.email_corrected", entityType: "user", entityId: input.studentId, reason: input.reason, metadata: { from: u!.email, to: email }, ip: input.ip }, tx);
       return u!.email;
     });

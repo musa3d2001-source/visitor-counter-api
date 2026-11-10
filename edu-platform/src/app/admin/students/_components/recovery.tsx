@@ -139,7 +139,7 @@ export function StudentEmailCorrection({ userId, currentEmail }: { userId: strin
           <div>
             <CardTitle icon={<Mail />}>تصحيح البريد الإلكتروني</CardTitle>
             <p className="text-[0.9rem] leading-7 text-ink-soft">
-              البريد الحالي: <bdi dir="ltr" className="font-bold break-all">{currentEmail}</bdi>. يصبح البريد الجديد غير مؤكد حتى يفتح الطالب رابط التأكيد.
+              البريد الحالي: <bdi dir="ltr" className="font-bold break-all">{currentEmail}</bdi>. يصبح البريد الجديد غير مؤكد حتى يفتح الطالب رابط التأكيد، ويُسجَّل خروجه من كل الأجهزة.
             </p>
           </div>
           <Field label="البريد الصحيح" htmlFor="correct-email" required error={state?.fieldErrors?.email}>

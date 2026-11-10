@@ -416,7 +416,7 @@ describe("owner correction of a student's email", () => {
       realMail();
       const student = await createUser();
       const r = await viaAction("both-ok@farqad.test", student);
-      expect(r).toEqual({ ok: true, message: "تم تصحيح البريد وإرسال رابط تأكيد إلى العنوان الجديد وتنبيه إلى القديم." });
+      expect(r).toEqual({ ok: true, message: "تم تصحيح البريد وتسجيل خروج الطالب من كل الأجهزة، وإرسال رابط تأكيد إلى العنوان الجديد وتنبيه إلى القديم." });
     });
 
     it("the link refused: the owner is not told it went out, and is told what to do", async () => {

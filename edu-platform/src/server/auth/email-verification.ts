@@ -196,7 +196,8 @@ export async function requestEmailCorrection(userId: string, email: string, curr
 
 const CONFIRM_FAILED = "انتهت صلاحية الرابط أو سبق استخدامه. اطلب رابطًا جديدًا من صفحة تأكيد البريد.";
 
-export async function confirmEmailToken(token: string, ip: string): Promise<{ ok: true } | { ok: false; error: string }> {
+/** keepSessionId: جلسة المتصفح الذي فتح الرابط، إن كانت لصاحب الحساب. تبقى وحدها حين يتغير العنوان */
+export async function confirmEmailToken(token: string, ip: string, keepSessionId?: string): Promise<{ ok: true } | { ok: false; error: string }> {
   if (!token || token.length > 100) return { ok: false, error: CONFIRM_FAILED };
   const id = hashToken(token);
   let outcome: { ok: true; previousEmail: string | null } | { ok: false; error: string };
@@ -218,6 +219,7 @@ export async function confirmEmailToken(token: string, ip: string): Promise<{ ok
         await tx`update password_reset_tokens set used_at = now() where user_id = ${row.user_id} and used_at is null`;
         // النسخ المختومة تحمل البريد القديم: تُحذف ويُختم الملف من جديد عند الفتح التالي
         await tx`update stamped_copies set state = 'doomed' where user_id = ${row.user_id} and state <> 'doomed'`;
+        await tx`delete from sessions where user_id = ${row.user_id} and id <> ${keepSessionId ?? ""}`;
         await audit({ actorId: row.user_id, action: "user.email_corrected_by_student", entityType: "user", entityId: row.user_id, metadata: { from: row.current_email, to: row.email }, ip }, tx);
       }
       return { ok: true as const, previousEmail: changesAddress ? row.current_email : null };

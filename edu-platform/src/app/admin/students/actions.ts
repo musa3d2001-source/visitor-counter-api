@@ -80,13 +80,13 @@ export async function correctStudentEmailAction(_p: ActionState, fd: FormData): 
 
 /** المالك يبلغ ولي الأمر بما يُقال هنا، فلا نذكر رسالة رفضها خادم البريد */
 function emailCorrectionResult({ linkSent, oldNotified }: { linkSent: boolean; oldNotified: boolean }): ActionState {
-  if (!mailIsReal()) return { ok: true, message: "تم تصحيح البريد. سيبقى غير مؤكد إلى أن يُفعَّل إرسال البريد." };
-  if (linkSent && oldNotified) return { ok: true, message: "تم تصحيح البريد وإرسال رابط تأكيد إلى العنوان الجديد وتنبيه إلى القديم." };
-  if (linkSent) return { ok: true, partial: true, message: "تم تصحيح البريد وإرسال رابط تأكيد إلى العنوان الجديد، لكن تعذر إرسال التنبيه إلى العنوان القديم." };
+  if (!mailIsReal()) return { ok: true, message: "تم تصحيح البريد وتسجيل خروج الطالب من كل الأجهزة. سيبقى البريد غير مؤكد إلى أن يُفعَّل إرسال البريد." };
+  if (linkSent && oldNotified) return { ok: true, message: "تم تصحيح البريد وتسجيل خروج الطالب من كل الأجهزة، وإرسال رابط تأكيد إلى العنوان الجديد وتنبيه إلى القديم." };
+  if (linkSent) return { ok: true, partial: true, message: "تم تصحيح البريد وتسجيل خروج الطالب من كل الأجهزة وإرسال رابط تأكيد إلى العنوان الجديد، لكن تعذر إرسال التنبيه إلى العنوان القديم." };
   return {
     ok: true,
     partial: true,
-    message: `تم تصحيح البريد، لكن تعذر إرسال رابط التأكيد إلى العنوان الجديد${oldNotified ? "" : " والتنبيه إلى القديم"}. يستطيع الطالب طلب رابط جديد من صفحة تأكيد البريد، أو أكّد بريده من هذه الصفحة بعد التحقق منه.`,
+    message: `تم تصحيح البريد وتسجيل خروج الطالب من كل الأجهزة، لكن تعذر إرسال رابط التأكيد إلى العنوان الجديد${oldNotified ? "" : " والتنبيه إلى القديم"}. يستطيع الطالب طلب رابط جديد من صفحة تأكيد البريد، أو أكّد بريده من هذه الصفحة بعد التحقق منه.`,
   };
 }
 

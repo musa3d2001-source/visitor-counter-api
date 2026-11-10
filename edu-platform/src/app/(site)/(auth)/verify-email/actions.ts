@@ -4,7 +4,7 @@ import { revalidatePath } from "next/cache";
 import { emailSchema } from "@/lib/validation";
 import { formValues, type ActionState } from "@/lib/action-state";
 import { clientIp } from "@/server/http";
-import { getCurrentUser } from "@/server/auth/session";
+import { getCurrentSession, getCurrentUser } from "@/server/auth/session";
 import { confirmEmailToken, requestEmailCorrection, resendEmailVerification } from "@/server/auth/email-verification";
 
 const SESSION_OVER = "انتهت الجلسة، سجّل الدخول مرة أخرى";
@@ -33,6 +33,6 @@ export async function correctEmailAction(_prev: ActionState, fd: FormData): Prom
 
 /** لا يتطلب جلسة: الرمز هو الإثبات، وقد يُفتح الرابط من جهاز آخر */
 export async function confirmEmailAction(_prev: ActionState, fd: FormData): Promise<ActionState> {
-  const res = await confirmEmailToken(String(fd.get("token") ?? ""), await clientIp());
+  const res = await confirmEmailToken(String(fd.get("token") ?? ""), await clientIp(), (await getCurrentSession())?.sessionId);
   return res.ok ? { ok: true, message: "تم تأكيد بريدك الإلكتروني." } : { error: res.error };
 }
