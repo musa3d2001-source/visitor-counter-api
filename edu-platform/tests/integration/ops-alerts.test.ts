@@ -17,7 +17,7 @@ const state = async (kind: string) => (await sql<{ suppressed: number; last_sent
 const makeOld = (kind: string, hours = 25) => sql`update ops_alert_state set last_sent_at = now() - make_interval(hours => ${hours}) where kind = ${kind}`;
 
 const OWNER = "owner@darb.school";
-const CHANGED = ["OPS_ALERT_EMAIL", "VERCEL_ENV", "MAIL_DRIVER", "SMTP_HOST", "SMTP_PORT", "MAIL_FROM"];
+const CHANGED = ["OPS_ALERT_EMAIL", "VERCEL_ENV", "MAIL_DRIVER", "SMTP_HOST", "SMTP_PORT", "MAIL_FROM", "APP_URL", "STORAGE_DRIVER", "SUPABASE_URL", "SUPABASE_SERVICE_ROLE_KEY"];
 const saved = new Map(CHANGED.map((name) => [name, process.env[name]]));
 
 function restoreEnv() {
@@ -271,7 +271,8 @@ describe("when no message should go out", () => {
   });
 
   it("a preview deployment never wakes the owner", async () => {
-    process.env.VERCEL_ENV = "preview";
+    // نشر Vercel حقيقي: عنوان https وتخزين Supabase، وإلا لا يبدأ الخادم أصلًا (env-schema: deploymentProblems)
+    Object.assign(process.env, { VERCEL_ENV: "preview", APP_URL: "https://darb-preview.vercel.app", STORAGE_DRIVER: "supabase", SUPABASE_URL: "https://example-project.supabase.co", SUPABASE_SERVICE_ROLE_KEY: "service-role-test" });
     resetEnvCache();
     expect(await sendOpsAlert("payment_dispute")).toBe(false);
     expect(await mails()).toHaveLength(0);

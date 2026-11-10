@@ -43,11 +43,18 @@ afterEach(() => {
   for (const [k, v] of Object.entries(TEST_ENV)) process.env[k] = v;
   delete process.env.ALLOW_SANDBOX_ON_PRODUCTION;
   delete process.env.VERCEL_ENV;
+  delete process.env.SUPABASE_URL;
+  delete process.env.SUPABASE_SERVICE_ROLE_KEY;
   resetEnvCache();
   ctx.redirected.length = 0;
 });
 
-function setEnv(values: Record<string, string | undefined>) {
+/** نشر Vercel لا يبدأ بتخزين محلي (env-schema: deploymentProblems)، فمحاكاته تستعمل Supabase كما في النشر الحقيقي */
+const VERCEL_STORAGE = { STORAGE_DRIVER: "supabase", SUPABASE_URL: "https://example-project.supabase.co", SUPABASE_SERVICE_ROLE_KEY: "service-role-test" };
+
+function setEnv(input: Record<string, string | undefined>) {
+  const onVercel = input.VERCEL_ENV === "production" || input.VERCEL_ENV === "preview";
+  const values = onVercel ? { ...VERCEL_STORAGE, ...input } : input;
   for (const [k, v] of Object.entries(values)) {
     if (k === "NODE_ENV") vi.stubEnv("NODE_ENV", v as "production");
     else if (v === undefined) delete process.env[k];
@@ -64,12 +71,16 @@ describe("sandbox on a production deployment", () => {
     ["a real domain on Vercel Production", "https://farqad.com", "production"],
     ["the current production host (the word preview is not a test signal)", "https://darb-preview.vercel.app", "production"],
     ["the same host without VERCEL_ENV", "https://darb-preview.vercel.app", undefined],
-    ["the default localhost APP_URL on Vercel Production", "http://localhost:3000", "production"],
     ["a word that only contains a test word", "https://devices.farqad.com", undefined],
     ["a test word deeper in the domain", "https://shop.staging.farqad.com", undefined],
   ])("blocked on %s", (_label, APP_URL, VERCEL_ENV) => {
     setEnv({ NODE_ENV: "production", APP_URL, VERCEL_ENV });
     expect(paymentsConfig()).toMatchObject({ enabled: false, reason: expect.stringMatching(BLOCK_REASON) });
+  });
+
+  it("the default localhost APP_URL on Vercel Production does not even start", () => {
+    setEnv({ NODE_ENV: "production", APP_URL: "http://localhost:3000", VERCEL_ENV: "production" });
+    expect(() => paymentsConfig()).toThrow(/APP_URL/);
   });
 
   it.each([
