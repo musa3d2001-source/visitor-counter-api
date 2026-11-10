@@ -8,8 +8,10 @@ import { ensureProductFilesChecked, FILE_PROBLEM_LABELS, FLAGGED_STATUSES, recor
 import { audit } from "../platform/audit";
 import { reportError } from "../platform/report-error";
 import { assertProductAccess, PermissionError, type Actor } from "../auth/permissions";
-import { deleteVideo } from "../video/bunny";
+import { deleteVideo, getVideo, mapBunnyStatus, type BunnyVideo } from "../video/bunny";
+import { fingerprintOf, sameVideo, type VideoFingerprint } from "../video/fingerprint";
 import { closedVideoProductIds } from "../video/policy";
+import { verifyBunnyLessonsForPublish } from "../video/service";
 import { getSettings } from "../platform/settings";
 import type { ConsentMeta } from "../platform/consent";
 import { hasCurrentAgreement, recordRightsAttestation } from "./teacher-agreement";
@@ -434,15 +436,17 @@ export async function publishBlockers(productId: string, opts: PublishCheckOptio
   const [{ items }] = await sql<{ items: number }[]>`select count(*)::int as items from bundle_items where bundle_id = ${productId}`;
   if (p.type === "bundle" && items === 0) issues.push("أضف منتجًا واحدًا على الأقل إلى الباقة قبل النشر");
   if (VIDEO_PRODUCT_TYPES.includes(p.type)) {
-    const [l] = await sql<{ published: number; not_ready: number; failed: number; uploading: number }[]>`
+    const [l] = await sql<{ published: number; not_ready: number; failed: number; uploading: number; held: number }[]>`
       select count(*) filter (where is_published)::int as published,
         count(*) filter (where is_published and processing_status = 'processing')::int as not_ready,
         count(*) filter (where is_published and processing_status = 'failed')::int as failed,
+        count(*) filter (where is_published and processing_status = 'held')::int as held,
         count(*) filter (where processing_status = 'uploading')::int as uploading
       from lessons where product_id = ${productId}
     `;
     if (l.published === 0 && items === 0) issues.push("أضف درس فيديو منشورًا واحدًا على الأقل (أو محتوى مضمّنًا) قبل النشر");
     if (l.uploading > 0) issues.push("يوجد درس لم يكتمل رفعه ولن يكتمل وحده. احذفه من قائمة الدروس ثم ارفعه من جديد");
+    if (l.held > 0) issues.push("تغيّر ملف فيديو درس بعد اعتماده. شاهده ثم اقبله أو احذفه من قائمة الدروس");
     if (l.failed > 0) issues.push("يوجد درس فشلت معالجته، احذفه أو ارفعه من جديد");
     else if (l.not_ready > 0) issues.push("لا يمكن النشر قبل اكتمال معالجة الفيديو");
   }
@@ -496,6 +500,16 @@ async function ensureFilesCheckedForPublish(id: string) {
   }
 }
 
+/** ما سيُنشر هو ما في Bunny الآن: يكشف ملفًا تغير وضاع إشعاره. تعذر التحقق يوقف النشر ولا يفترض سلامة الفيديو */
+async function verifyVideosForPublish(id: string) {
+  try {
+    await verifyBunnyLessonsForPublish(id);
+  } catch (err) {
+    await reportError("publish:video-verify", err);
+    throw new AdminError("تعذر التحقق من الفيديو لدى Bunny الآن. حاول مرة أخرى بعد قليل");
+  }
+}
+
 /** تغيير الحالة — للمالك فقط (المعلم يرسل للمراجعة عبر submitForReview) */
 export async function setProductStatus(id: string, status: ProductStatus, actor: Actor, ip?: string, opts: { confirmShare?: boolean } = {}) {
   if (actor.kind !== "owner") throw new PermissionError("تغيير حالة النشر متاح لإدارة المنصة فقط");
@@ -504,6 +518,7 @@ export async function setProductStatus(id: string, status: ProductStatus, actor:
   let confirmedShares: { display_name: string; share_bps: number | null }[] = [];
   if (status === "published") {
     await ensureFilesCheckedForPublish(id);
+    await verifyVideosForPublish(id);
     const issues = await publishBlockers(id);
     if (issues.length) throw new AdminError(issues.join("، "));
     confirmedShares = current.is_free ? [] : await extremeShareTeachers(id);
@@ -566,6 +581,7 @@ export async function approveAndPublish(
   assertOwnerFields({ ...input, isFree, isDownloadable: false, isFeatured: false, sortOrder: 0, teacherId: null });
   if (!isFree && input.priceFils <= 0) throw new AdminError("حدد سعرًا أكبر من صفر، أو اختر «مجاني» صراحة", { price: "السعر مطلوب" });
   await ensureFilesCheckedForPublish(id);
+  await verifyVideosForPublish(id);
   // assertOwnerFields فحصت التاريخ الجديد الذي سيُحفظ، والتاريخ المحفوظ حاليًا سيُستبدل
   // السعر فحصناه من المدخلات لا من السعر المحفوظ، ونسبة المعلم لا تلزم إن كان القرار مجانيًا
   const issues = await publishBlockers(id, { ignoreAccessDate: true, ignorePrice: true, ignoreShare: isFree });
@@ -951,7 +967,7 @@ export type AdminLesson = {
   duration_seconds: number | null;
   is_free_preview: boolean;
   is_published: boolean;
-  processing_status: "uploading" | "processing" | "ready" | "failed";
+  processing_status: "uploading" | "processing" | "ready" | "failed" | "held";
   processing_error: string | null;
   thumbnail_key: string | null;
   status_checked_at: Date | null;
@@ -1002,6 +1018,42 @@ export async function deleteLesson(productId: string, lessonId: string, actor: A
   if (l.provider === "bunny") await deleteVideo(l.video_ref).catch(() => {});
   if (l.thumbnail_key) await storage().remove("public", l.thumbnail_key).catch(() => {});
   await audit({ actorId: actor.userId, action: "lesson.delete", entityType: "product", entityId: productId, metadata: { lessonId, title: l.title } });
+}
+
+/**
+ * المالك يقبل فيديو تغيّر بعد اعتماده، بعد أن يشاهده. يعيد الدرس للطلاب ويعتمد بصمته الجديدة.
+ * يُقبل ما حُجب فقط: إن تغير الملف مرة أخرى منذ الحجب تُحدَّث البصمة ويُطلب من المالك مشاهدته من جديد.
+ */
+export async function acceptHeldVideo(productId: string, lessonId: string, actor: Actor, ip?: string) {
+  if (actor.kind !== "owner") throw new PermissionError("قبول الفيديو متاح لإدارة المنصة فقط");
+  const [l] = await sql<{ video_ref: string; processing_status: string; video_hold_fingerprint: VideoFingerprint | null; duration_seconds: number | null }[]>`
+    select video_ref, processing_status, video_hold_fingerprint, duration_seconds from lessons where id = ${lessonId} and product_id = ${productId} and provider = 'bunny'
+  `;
+  if (!l || l.processing_status !== "held") throw new AdminError("لا يوجد فيديو بانتظار قرارك في هذا الدرس");
+  let video: BunnyVideo;
+  try {
+    video = await getVideo(l.video_ref);
+  } catch (err) {
+    await reportError("video:accept", err);
+    throw new AdminError("تعذر الوصول إلى Bunny الآن. حاول مرة أخرى بعد قليل");
+  }
+  if (mapBunnyStatus(video) !== "ready") throw new AdminError("لم تكتمل معالجة الفيديو الحالي بعد. حاول بعد قليل");
+  const seen = fingerprintOf(video);
+  if (l.video_hold_fingerprint && !sameVideo(l.video_hold_fingerprint, seen)) {
+    await sql`update lessons set video_hold_fingerprint = ${sql.json(seen as never)} where id = ${lessonId} and processing_status = 'held'`;
+    throw new AdminError("تغيّر الفيديو مرة أخرى منذ حجبه. شاهده من جديد ثم اقبله");
+  }
+  const duration = video.length > 0 ? Math.round(video.length) : l.duration_seconds;
+  await sql.begin(async (tx) => {
+    const rows = await tx`
+      update lessons set processing_status = 'ready', video_fingerprint = ${tx.json(seen as never)}, video_hold_fingerprint = null,
+        duration_seconds = ${duration}, processing_error = null, status_checked_at = now()
+      where id = ${lessonId} and processing_status = 'held'
+      returning id
+    `;
+    if (!rows.length) throw new AdminError("لا يوجد فيديو بانتظار قرارك في هذا الدرس");
+    await audit({ actorId: actor.userId, action: "lesson.video_accepted", entityType: "product", entityId: productId, metadata: { lessonId }, ip }, tx);
+  });
 }
 
 export async function moveLesson(productId: string, lessonId: string, dir: "up" | "down", actor: Actor) {

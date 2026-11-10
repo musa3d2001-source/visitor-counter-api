@@ -17,6 +17,7 @@ import { AdminError, bool, int, isUuid, staffAction, str } from "@/server/admin/
 import { PREVIEW_POLICY } from "@/lib/preview-policy";
 import { isVideoType } from "@/lib/labels";
 import {
+  acceptHeldVideo,
   addBundleItem,
   approveAndPublish,
   createProduct,
@@ -516,6 +517,19 @@ export async function moveLessonAction(_prev: ActionState, fd: FormData): Promis
     await moveLesson(productId, lessonId, str(fd, "dir") === "up" ? "up" : "down", actor);
     revalidatePath(`/admin/products/${productId}`);
     return { ok: true };
+  });
+}
+
+/** المالك يقبل فيديو تغيّر بعد اعتماده، فيعود الدرس للطلاب */
+export async function acceptHeldVideoAction(_prev: ActionState, fd: FormData): Promise<ActionState> {
+  return staffAction(async ({ actor, ip }) => {
+    const productId = str(fd, "productId");
+    const lessonId = str(fd, "lessonId");
+    if (!isUuid(productId) || !isUuid(lessonId)) throw new AdminError("طلب غير صالح");
+    await acceptHeldVideo(productId, lessonId, actor, ip);
+    revalidatePath(`/admin/products/${productId}`);
+    revalidatePath("/admin/ops");
+    return { ok: true, message: "قبلنا الفيديو الحالي وعاد الدرس للطلاب" };
   });
 }
 

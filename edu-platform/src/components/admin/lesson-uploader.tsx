@@ -89,7 +89,7 @@ export function LessonUploader({ productId, provider = "file", maxLabel = "2 ج�
         htmlFor="l-file"
         className="sm:col-span-2"
         required
-        hint={provider === "bunny" ? "يُرفع مباشرة إلى Bunny Stream ويُعالَج بجودات متعددة تلقائيًا" : undefined}
+        hint={provider === "bunny" ? "يُرفع مباشرة إلى Bunny Stream ويُعالَج بجودات متعددة تلقائيًا. أكمل الرفع خلال ساعتين، فبعدها يبدأ من جديد" : undefined}
       >
         {/* الحقل الأصلي مخفي بصريًا (يبقى للنموذج والاختبارات)، ومنطقة الإفلات بالعربية مثل FileUploader */}
         <input

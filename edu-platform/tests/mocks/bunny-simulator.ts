@@ -59,6 +59,8 @@ export type SimVideo = {
   width: number;
   height: number;
   storageSize: number;
+  /** الوثائق: «Original uploaded file SHA256 hash»، وقد يكون فارغًا */
+  originalHash: string | null;
   bytes: Buffer | null;
 };
 
@@ -84,6 +86,8 @@ export type BunnySimulator = {
   setStatus(guid: string, status: number, length?: number): void;
   /** الرفع المكتمل التالي يفشل في المعالجة (status 5) */
   failNext(): void;
+  /** كل طلبات API ترد بهذه الحالة حتى تُلغى بـ null */
+  failApi(status: number | null): void;
   /** يرسل webhook موقّعًا يدويًا */
   sendWebhook(guid: string, status: number, opts?: { secret?: string }): Promise<number | null>;
   /** بناء جسم webhook وتوقيعه (للاختبارات المباشرة) */
@@ -163,6 +167,7 @@ export async function startBunnySimulator(opts: BunnySimOptions = {}): Promise<B
   const delay = opts.processingDelayMs ?? 300;
   const state: BunnySimState = { videos: new Map(), uploads: new Map(), requests: [], webhookDeliveries: [] };
   let failNextUpload = false;
+  let apiFailure: number | null = null;
   let baseUrl = "";
   const timers = new Set<NodeJS.Timeout>();
 
@@ -219,6 +224,8 @@ export async function startBunnySimulator(opts: BunnySimOptions = {}): Promise<B
     const bytes = Buffer.concat(upload.chunks);
     v.bytes = bytes;
     v.storageSize = bytes.length;
+    v.originalHash = createHash("sha256").update(bytes).digest("hex");
+    v.dateUploaded = new Date().toISOString();
     v.status = 1; // Uploaded
     const shouldFail = failNextUpload;
     failNextUpload = false;
@@ -267,7 +274,8 @@ export async function startBunnySimulator(opts: BunnySimOptions = {}): Promise<B
     const lib = String(req.headers["libraryid"] ?? "");
     if (!sig || !Number.isFinite(expire) || !videoId || !lib) return { ok: false, status: 401, msg: "Missing authorization headers" };
     if (lib !== libraryId) return { ok: false, status: 401, msg: "Invalid library" };
-    if (expire < Math.floor(Date.now() / 1000)) return { ok: false, status: 401, msg: "Authorization expired" };
+    // الوثائق: تاريخ منتهٍ يرد 400 وتوقيع خاطئ يرد 401
+    if (expire < Math.floor(Date.now() / 1000)) return { ok: false, status: 400, msg: "Authorization expired" };
     if (sig !== sha256Hex(`${libraryId}${apiKey}${expire}${videoId}`)) return { ok: false, status: 401, msg: "Invalid signature" };
     if (!state.videos.has(videoId)) return { ok: false, status: 404, msg: "Video not found" };
     return { ok: true, guid: videoId, expire };
@@ -329,7 +337,8 @@ export async function startBunnySimulator(opts: BunnySimOptions = {}): Promise<B
       }
       const uploadId = path.split("/")[2];
       const upload = uploadId ? state.uploads.get(uploadId) : undefined;
-      if (!upload || upload.guid !== auth.guid) {
+      // الوثائق: الرفع غير المكتمل يُستكمل حتى انتهاء توقيعه الأصلي، وإعادة التوقيع لا تمدده
+      if (!upload || upload.guid !== auth.guid || upload.expire < Math.floor(Date.now() / 1000)) {
         record(404);
         res.writeHead(404, headers);
         return res.end("Upload not found");
@@ -442,6 +451,10 @@ ${ready ? `<video data-testid="sim-video" src="${src}" playsinline controls prel
     const api = path.match(/^\/library\/([^/]+)\/videos(?:\/([^/]+))?$/);
     if (api) {
       const [, lib, guid] = api;
+      if (apiFailure !== null) {
+        record(apiFailure);
+        return json(res, apiFailure, { success: false, message: "Simulated failure", statusCode: apiFailure });
+      }
       if (req.headers["accesskey"] !== apiKey || lib !== libraryId) {
         record(401);
         return json(res, 401, { success: false, message: "Unauthorized", statusCode: 401 });
@@ -472,6 +485,7 @@ ${ready ? `<video data-testid="sim-video" src="${src}" playsinline controls prel
           width: 0,
           height: 0,
           storageSize: 0,
+          originalHash: null,
           bytes: null,
         };
         state.videos.set(v.guid, v);
@@ -539,6 +553,9 @@ ${ready ? `<video data-testid="sim-video" src="${src}" playsinline controls prel
     },
     failNext() {
       failNextUpload = true;
+    },
+    failApi(status) {
+      apiFailure = status;
     },
     sendWebhook,
     buildWebhook,

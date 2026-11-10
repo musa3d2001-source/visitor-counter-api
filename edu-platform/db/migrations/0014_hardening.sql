@@ -184,3 +184,18 @@ alter table launch_checks drop constraint if exists launch_checks_version_check;
 alter table launch_checks add constraint launch_checks_version_check check (char_length(version) between 1 and 400) not valid;
 alter table launch_checks validate constraint launch_checks_version_check;
 set local lock_timeout = default;
+
+-- =====================================================================
+-- الفيديو (مرحلة video، القرار F9، البند K025)
+-- حالة جديدة للدرس held: تغيّر ملف الفيديو بعد اعتماده، فيُحجب عن الطلاب حتى يقرر المالك.
+-- القيمة الجديدة لا يكتبها إلا الكود الجديد، والكود القديم يقرأ processing_status = 'ready' فقط، فلا يتأثر.
+--   video_fingerprint: بصمة الفيديو الذي اعتُمد (originalHash من Bunny، وإلا تاريخ الرفع والأبعاد والمدة)
+--   video_hold_fingerprint: بصمة ما وُجد بعد التغيير. لا يقبل المالك إلا ما شاهده: تغيّر آخر يرفض القبول
+-- =====================================================================
+set local lock_timeout = '5s';
+alter table lessons drop constraint if exists lessons_processing_status_check;
+alter table lessons add constraint lessons_processing_status_check check (processing_status in ('uploading', 'processing', 'ready', 'failed', 'held')) not valid;
+alter table lessons validate constraint lessons_processing_status_check;
+alter table lessons add column if not exists video_fingerprint jsonb;
+alter table lessons add column if not exists video_hold_fingerprint jsonb;
+set local lock_timeout = default;

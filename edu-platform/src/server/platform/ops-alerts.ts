@@ -64,12 +64,19 @@ export const OPS_ALERTS = {
     subject: "طلب حذف حساب أو نسخة بيانات",
     body: "طلب طالب حذف حسابه أو نسخة من بياناته. لن ينفذ النظام شيئًا وحده، فالطلب ينتظر قرارك في صفحة الطلاب.",
   },
+  video_changed: {
+    periodMinutes: 1440,
+    counts: true,
+    path: "/admin/ops#video-held",
+    subject: "تغيّر فيديو درس بعد اعتماده",
+    body: "تغيّر ملف فيديو درس بعد اعتماده، فأخفيناه عن الطلاب وأوقفنا بيع محتواه حتى تقرر. شاهد الفيديو الحالي، ثم اقبله أو احذف الدرس.",
+  },
 } as const;
 
 export type OpsAlertKind = keyof typeof OPS_ALERTS;
 
 /** أقصى عدد رسائل في اليوم لو تحققت أسوأ حالة في كل الأنواع معًا طوال اليوم، وهو أقل بكثير من حصص البريد المجانية */
-export const MAX_ALERTS_PER_DAY = 31;
+export const MAX_ALERTS_PER_DAY = 32;
 
 const SEND_TIMEOUT_MS = 15_000;
 

@@ -5,6 +5,7 @@ import { LONG_JOB_STATEMENT_MS, sql, withDbDeadline } from "../db";
 import { env } from "../env";
 import { STAMPED_CACHE_BUDGET_BYTES, STAMPED_COPY_IDLE_DAYS, sweepDoomedCopies } from "../access/delivery";
 import { sweepUploadTickets } from "../admin/uploads";
+import { dailyVideoCheck, type DailyVideoReport } from "../video/service";
 import { reportError } from "./report-error";
 
 /**
@@ -20,6 +21,8 @@ export const ACCESS_LOG_RETENTION_DAYS = 90;
  */
 export const OWNER_BACKUP_KEEP_DAYS = 90;
 export const ERROR_EVENT_RETENTION_DAYS = 30;
+/** Bunny يتوقف عن إعادة الإرسال بعد نحو 4 ساعات، فبصمة الإشعار لا حاجة لها بعد ذلك بكثير */
+export const VIDEO_EVENT_RETENTION_DAYS = 30;
 export const PRUNE_BATCH_SIZE = 2_000;
 const MAX_ROUNDS = 10;
 const TIME_BUDGET_MS = 30_000;
@@ -35,6 +38,9 @@ export type PruneReport = {
   stampedCopies: number;
   /** كائنات رُفعت ولم يُؤكد رفعها خلال يوم */
   unconfirmedUploads: number;
+  videoEvents: number;
+  /** جولة الفيديو: الدروس المعلقة وفحص الدروس الجاهزة */
+  videos: DailyVideoReport;
   finished: boolean;
 };
 
@@ -97,6 +103,15 @@ async function prune(): Promise<PruneReport> {
       delete from error_events e using batch where e.id = batch.id
     `),
   );
+  const videoEvents = await inBatches(
+    () => deleted(sql`
+      with batch as materialized (
+        select id from video_events where received_at < now() - make_interval(days => ${VIDEO_EVENT_RETENTION_DAYS})
+        limit ${PRUNE_BATCH_SIZE} for update skip locked
+      )
+      delete from video_events e using batch where e.id = batch.id
+    `),
+  );
   // التخزين قد يتعثر: يُسجل للمالك ويكمل التنظيف غدًا، ولا يُفشل ما سبق من حذف
   const stampedCopies = await pruneStampedCopies(() => Date.now() - started > TIME_BUDGET_MS).catch(async (err) => {
     await reportError("prune:stamped-copies", err);
@@ -110,7 +125,14 @@ async function prune(): Promise<PruneReport> {
   });
   if (!uploads.finished) finished = false;
 
-  return { rateLimits, sessions, accessLogs, errorEvents, stampedCopies: stampedCopies.removed, unconfirmedUploads: uploads.removed, finished };
+  // في الآخر بميزانية وقتها: تعطل Bunny لا يأخذ من وقت التنظيف، ولا يُفشل ما سبق
+  const videos = await dailyVideoCheck().catch(async (err): Promise<DailyVideoReport> => {
+    await reportError("prune:videos", err);
+    return { checked: 0, failed: 0, held: 0, finished: false };
+  });
+  if (!videos.finished) finished = false;
+
+  return { rateLimits, sessions, accessLogs, errorEvents, stampedCopies: stampedCopies.removed, unconfirmedUploads: uploads.removed, videoEvents, videos, finished };
 }
 
 /**

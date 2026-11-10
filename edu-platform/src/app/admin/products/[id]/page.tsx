@@ -80,6 +80,7 @@ import {
   updateLessonAction,
   updateProductAction,
   withdrawReviewAction,
+  acceptHeldVideoAction,
 } from "../actions";
 import { isUuid } from "@/lib/uuid";
 
@@ -101,6 +102,7 @@ const STATUS_TONE = {
   processing: "warning",
   uploading: "neutral",
   failed: "danger",
+  held: "danger",
 } as const;
 const FILE_WORD: CountWord = {
   one: "ملف",
@@ -643,6 +645,26 @@ export default async function EditProductPage({
                                 </Alert>
                               ) : null}
                               {l.processing_status === "uploading" ? <Alert tone="warning">لم يكتمل رفع هذا الفيديو. إن توقف الرفع، احذف الدرس وارفعه من جديد.</Alert> : null}
+                              {l.processing_status === "held" ? (
+                                <Alert tone="danger" title="تغيّر ملف هذا الفيديو بعد اعتماده" data-testid="lesson-held">
+                                  <p>الدرس مخفي عن الطلاب، وبيع هذا المحتوى متوقف حتى يصدر القرار.</p>
+                                  {owner ? (
+                                    <div className="mt-2">
+                                      <ConfirmButton
+                                        action={acceptHeldVideoAction}
+                                        hidden={{ productId: id, lessonId: l.id }}
+                                        label="قبول الفيديو الحالي"
+                                        variant="primary"
+                                        title="قبول الفيديو الحالي؟"
+                                        description="شاهد الفيديو أولًا. بعد القبول يعود الدرس للطلاب بهذا الملف."
+                                        confirmLabel="نعم، أقبله"
+                                      />
+                                    </div>
+                                  ) : (
+                                    <p>إدارة المنصة تراجعه الآن.</p>
+                                  )}
+                                </Alert>
+                              ) : null}
                               <div className="flex flex-wrap items-center gap-2">
                                 <Button asChild variant="soft" size="sm">
                                   <Link href={`/watch/${id}?lesson=${l.id}`} target="_blank">

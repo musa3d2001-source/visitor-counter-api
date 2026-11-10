@@ -112,6 +112,7 @@ export async function defectiveProductIds(ids: string[], db: Db, settings: Pick<
     where (root.price_fils = 0 and not root.is_free)
       or (t.id is not null and not item.is_free and not root.is_free and (t.revenue_share_bps is null or not ${feeRulesConfirmed}::boolean))
       or exists (select 1 from product_files f where f.product_id = c.id and f.kind = 'main' and f.check_status = any(${FLAGGED_STATUSES}::text[]))
+      or ((c.id = c.root or item.status in ('published', 'hidden')) and exists (select 1 from lessons l where l.product_id = c.id and l.is_published and l.processing_status = 'held'))
   `;
   return new Set(rows.map((r) => r.root));
 }

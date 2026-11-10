@@ -128,7 +128,7 @@ describe("Bunny Stream: الإنشاء والرفع المباشر (TUS) وال�
     const bad = { ...good, headers: { ...good.headers, AuthorizationSignature: "0".repeat(64) } };
     await expect(tusUpload(clip, bad)).rejects.toThrow(/401/);
     const expired = tusUploadCredentials(v.guid, -60);
-    await expect(tusUpload(clip, expired)).rejects.toThrow(/401/);
+    await expect(tusUpload(clip, expired)).rejects.toThrow(/400/);
     expect((await getVideo(v.guid)).status).toBe(0);
   });
 
@@ -390,7 +390,8 @@ describe("التضمين الموقّع وصلاحية المشاهدة", () => 
       if (pb.kind === "bunny") {
         const u = new URL(pb.embedUrl);
         expect(u.pathname).toBe(`/embed/${sim.libraryId}/${v.guid}`);
-        expect(Number(u.searchParams.get("expires"))).toBeLessThanOrEqual(Math.floor(Date.now() / 1000) + 3 * 3600 + 5);
+        expect(Number(u.searchParams.get("expires"))).toBeLessThanOrEqual(Math.floor(Date.now() / 1000) + 3600 + 5);
+        expect(pb.expiresInSeconds).toBe(3600);
         expect(u.searchParams.get("t")).toBe("12");
       }
     }

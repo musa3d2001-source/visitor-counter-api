@@ -125,6 +125,7 @@ export const PROCESSING_STATUS_LABELS: Record<string, string> = {
   processing: "قيد المعالجة",
   ready: "جاهز",
   failed: "فشلت المعالجة",
+  held: "بانتظار قرار المالك",
 };
 
 export const ORDER_STATUSES = ["pending", "paid", "failed", "cancelled", "refunded"] as const;
