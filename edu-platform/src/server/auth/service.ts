@@ -9,10 +9,10 @@ import { completeLoginChallenge, startLoginChallenge, twoFactorIsActive, type Co
 import { revokeEmailLinks } from "./email-verification";
 import { issueDeviceProof, verifyDeviceProof } from "./device-proof";
 import { mailIsReal, sendMail } from "../platform/mailer";
-import { getSettings } from "../platform/settings";
+import { getSettings, readSettings } from "../platform/settings";
 import { audit } from "../platform/audit";
-import { consentMeta, recordConsent } from "../platform/consent";
-import { ACCOUNT_CONSENT_KINDS } from "@/lib/consent";
+import { consentMeta, recordedConsentVersion } from "../platform/consent";
+import { ACCOUNT_CONSENT_KINDS, GUARDIAN_ACCOUNT_ERROR, type ConsentKind } from "@/lib/consent";
 import { passwordPolicyError, type PasswordRole } from "@/lib/password-policy";
 import { count, W } from "@/lib/design";
 
@@ -145,38 +145,44 @@ export async function completeTwoFactorLogin(token: string | undefined, code: un
   return completeLoginChallenge({ token, code, ip: meta.ip, userAgent: meta.userAgent, mustChangeTtlMs: MUST_CHANGE_SESSION_MS });
 }
 
+/** userId فارغ يعني أن البريد مسجل من قبل. يبقى هذا داخل الخادم: الجواب الذي يصل الزائر واحد في الحالتين */
+export type RegisterResult = { ok: true; userId: string | null } | { ok: false; error: string; field?: "password" };
+
+/**
+ * إنشاء حساب طالب. لا يكشف هل البريد مسجل (K029): الخطوات نفسها في الحالتين (تجزئة كلمة المرور ثم أمر واحد)،
+ * ولا جلسة ولا كوكي ولا رسالة تختلف، فالدخول خطوة تالية بكلمة المرور كأي دخول.
+ * الحساب وموافقاته في أمر SQL واحد: لا حساب بلا ما وافق عليه، ولا موافقة بلا حساب أنشأه هذا الطلب.
+ */
 export async function registerStudent(
-  input: { fullName: string; email: string; password: string; phone: string | null; gradeId?: string; acceptedDocuments: boolean },
+  input: { fullName: string; email: string; password: string; phone: string | null; gradeId?: string; acceptedDocuments: boolean; acceptedGuardian: boolean },
   meta: { ip: string; userAgent: string },
-): Promise<AuthResult> {
+): Promise<RegisterResult> {
   if (!input.acceptedDocuments) return { ok: false, error: "يجب الموافقة على الشروط والأحكام وسياسة الخصوصية." };
+  if (!input.acceptedGuardian) return { ok: false, error: GUARDIAN_ACCOUNT_ERROR };
+  const problem = passwordPolicyError("student", input.password, input.email);
+  if (problem) return { ok: false, error: problem, field: "password" };
   // عنوان واحد قد يكون مدرسة كاملة: الحد يوقف الإغراق ولا يوقف صفًا يسجّل معًا
   const limit = await hitRateLimit(`register:ip:${meta.ip}`, 200, 60 * 60);
   if (!limit.allowed) return { ok: false, error: "محاولات تسجيل كثيرة من هذه الشبكة. حاول لاحقًا." };
-  const exists = await sql`select 1 from users where email = ${input.email}`;
-  if (exists.length) return { ok: false, error: "هذا البريد مسجل مسبقًا. جرّب تسجيل الدخول أو استعادة كلمة المرور." };
   const hash = await hashPassword(input.password);
-  let gradeId: string | null = null;
-  if (input.gradeId) {
-    const g = await sql<{ id: string }[]>`select id from grades where id = ${input.gradeId} and is_published`;
-    gradeId = g[0]?.id ?? null;
-  }
-  try {
-    // الحساب وموافقته وجلسته معًا: لا يوجد حساب بلا ما وافق عليه
-    return await sql.begin(async (tx): Promise<AuthResult> => {
-      const [user] = await tx<{ id: string }[]>`
-        insert into users (email, password_hash, full_name, phone, grade_id, role)
-        values (${input.email}, ${hash}, ${input.fullName}, ${input.phone}, ${gradeId}, 'student')
-        returning id
-      `;
-      for (const kind of ACCOUNT_CONSENT_KINDS) await recordConsent(tx, { userId: user.id, kind, meta: consentMeta(meta) });
-      const s = await createSessionIn(tx, user.id, meta);
-      return { ok: true, userId: user.id, token: s.token, expiresAt: s.expiresAt, deviceProof: issueDeviceProof(input.email, env().APP_SECRET) };
-    });
-  } catch (err) {
-    if (String((err as { code?: string }).code) === "23505") return { ok: false, error: "هذا البريد مسجل مسبقًا." };
-    throw err;
-  }
+  const [settings, grades] = await Promise.all([readSettings(), input.gradeId ? sql<{ id: string }[]>`select id from grades where id = ${input.gradeId} and is_published` : Promise.resolve([] as { id: string }[])]);
+  const kinds: ConsentKind[] = [...ACCOUNT_CONSENT_KINDS, "guardian_account"];
+  const versions = kinds.map((kind) => recordedConsentVersion(kind, settings));
+  const consent = consentMeta(meta);
+  const [created] = await sql<{ id: string }[]>`
+    with created as (
+      insert into users (email, password_hash, full_name, phone, grade_id, role)
+      values (${input.email}, ${hash}, ${input.fullName}, ${input.phone}, ${grades[0]?.id ?? null}, 'student')
+      on conflict (email) do nothing
+      returning id
+    ), consents as (
+      insert into consent_records (user_id, kind, document_version, ip, user_agent)
+      select created.id, signed.kind, signed.version, ${consent.ip}::text, ${consent.userAgent}::text
+      from created cross join unnest(${kinds}::text[], ${versions}::text[]) as signed(kind, version)
+    )
+    select id from created
+  `;
+  return { ok: true, userId: created?.id ?? null };
 }
 
 /**

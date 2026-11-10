@@ -96,7 +96,7 @@ describe("password reset requests", () => {
 });
 
 describe("registration from one network", () => {
-  const input = (email: string) => ({ fullName: "طالب جديد", email, password: "Student-Pass-1", phone: null, acceptedDocuments: true });
+  const input = (email: string) => ({ fullName: "طالب جديد", email, password: "Student-Pass-1", phone: null, acceptedDocuments: true, acceptedGuardian: true });
 
   it("a school registering together is not stopped", async () => {
     await seed("register:ip:203.0.113.30", 199);
@@ -132,9 +132,11 @@ describe("a device that has proved itself", () => {
     expect((await loginWithPassword(u.email, "wrong-password", meta("198.51.100.41"))).deviceProof).toBeUndefined();
   });
 
-  it("registering earns one too", async () => {
-    const r = await registerStudent({ fullName: "طالب", email: "proof-at-signup@farqad.test", password: "Student-Pass-1", phone: null, acceptedDocuments: true }, meta("198.51.100.42"));
-    expect(verifyDeviceProof(r.deviceProof, "proof-at-signup@farqad.test", SECRET)).toBe(true);
+  it("registering earns none, since it proves nothing about the address: the first sign-in earns it", async () => {
+    const r = await registerStudent({ fullName: "طالب", email: "proof-at-signup@farqad.test", password: "Student-Pass-1", phone: null, acceptedDocuments: true, acceptedGuardian: true }, meta("198.51.100.42"));
+    expect(r).not.toHaveProperty("deviceProof");
+    const first = await loginWithPassword("proof-at-signup@farqad.test", "Student-Pass-1", meta("198.51.100.42"));
+    expect(verifyDeviceProof(first.deviceProof, "proof-at-signup@farqad.test", SECRET)).toBe(true);
   });
 
   it("a proof for one account does not open another", async () => {

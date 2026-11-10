@@ -17,17 +17,21 @@ test.describe("الحسابات", () => {
     await expect(page.getByRole("heading", { name: "مكتبتي" })).toBeVisible();
   });
 
-  test("رسائل الأخطاء: بريد مكرر وكلمة مرور خاطئة", async ({ page }) => {
+  test("بريد مكرر لا يكشف شيئًا، وكلمة مرور خاطئة", async ({ page }) => {
     const email = await registerStudent(page);
     await page.context().clearCookies();
     await page.goto("/register");
     await page.fill("#fullName", "طالب");
     await page.fill("#email", email);
-    await page.fill("#password", STUDENT_PASSWORD);
-    await page.fill("#passwordConfirm", STUDENT_PASSWORD);
+    await page.fill("#password", "Another-Pass-77");
+    await page.fill("#passwordConfirm", "Another-Pass-77");
     await page.check("input[name=terms]");
+    await page.check("input[name=guardianAccount]");
     await page.getByRole("button", { name: "إنشاء الحساب" }).click();
-    await expect(page.getByText("هذا البريد مسجل مسبقًا")).toBeVisible();
+    // لا يكشف أن البريد مسجل: الجواب نفسه، ولا جلسة تُفتح
+    await expect(page.getByTestId("register-done")).toBeVisible();
+    await expect(page.getByText("هذا البريد مسجل مسبقًا")).toHaveCount(0);
+    expect((await page.context().cookies()).some((c) => c.name === "session")).toBe(false);
 
     await page.goto("/login");
     await page.fill("#email", email);

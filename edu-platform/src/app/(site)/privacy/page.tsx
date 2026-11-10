@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { Baby, Clock3, Database, Hand, Network, Workflow } from "lucide-react";
 import { VERIFICATION_LINK_HOURS } from "@/server/auth/email-verification";
-import { SESSION_DAYS } from "@/server/auth/session";
+import { SESSION_DAYS, TEACHER_SESSION_MS } from "@/server/auth/session";
 import { ORDER_LIFETIME_HOURS } from "@/server/payments/limits";
 import { ACCESS_LOG_RETENTION_DAYS, OWNER_BACKUP_KEEP_DAYS } from "@/server/platform/maintenance";
 import { STAMPED_COPY_IDLE_DAYS } from "@/server/access/delivery";
@@ -39,7 +39,8 @@ export default async function PrivacyPage() {
               <li>تقدّمك في مشاهدة الدروس وآخر صفحة قرأتها، لنعيدك إلى حيث توقفت.</li>
               <li>سجلات الوصول إلى الملفات المدفوعة لحماية المحتوى ومنع إساءة الاستخدام.</li>
               <li>نسختك المختومة من كل مذكرة تفتحها، وعليها بريدك ورقم طلبك، نحفظها في تخزين خاص لا يصل إليه غيرك لتفتح أسرع في المرة التالية.</li>
-              <li>عنوان IP ونوع المتصفح والجهاز، عند تسجيل الدخول وفتح المحتوى المدفوع والموافقة على الشروط وإقرار الدفع.</li>
+              <li>عنوان IP ونوع المتصفح والجهاز، عند تسجيل الدخول وفتح المحتوى المدفوع والموافقة على الشروط وإقرار إنشاء الحساب وإقرار الدفع.</li>
+              <li>طلباتك لحذف حسابك أو الحصول على نسخة من بياناتك، وما تقرره إدارة المنصة فيها.</li>
               <li>ملفات تعريف الارتباط (Cookies) اللازمة للخدمة فقط: جلستك، وسلة مشترياتك، وتذكّر جهاز سبق أن دخل إلى حسابك. لا نستخدم ملفات للإعلانات أو التتبع.</li>
             </ul>
           ),
@@ -78,7 +79,7 @@ export default async function PrivacyPage() {
           Icon: Clock3,
           body: (
             <ul>
-              <li>جلسة الدخول تنتهي بعد {count(SESSION_DAYS, W.day)}، وتتجدد مع الاستخدام.</li>
+              <li>جلسة الدخول تنتهي بعد {count(SESSION_DAYS, W.day)}، وتتجدد مع الاستخدام. وجلسة حساب المعلم تنتهي بعد {count(TEACHER_SESSION_MS / 86400_000, W.day)} ولا تتجدد.</li>
               <li>
                 رابط استعادة كلمة المرور الذي تطلبه بنفسك صالح {count(PASSWORD_RESET_LINK_HOURS, W.hour)}. والرابط أو كلمة المرور المؤقتة التي تصدرها لك إدارة المنصة صالحان {count(OWNER_SECRET_HOURS, W.hour)} ولمرة واحدة. ورابط تأكيد البريد{" "}
                 {count(VERIFICATION_LINK_HOURS, W.hour)}.
@@ -98,9 +99,10 @@ export default async function PrivacyPage() {
           body: (
             <ul>
               <li>أغلب طلاب المنصة دون ١٨ سنة. لا نطلب تاريخ الميلاد ولا وثيقة هوية، ولا نتحقق من العمر.</li>
+              <li>عند إنشاء الحساب نسجل إقرارًا بأن عمر صاحبه ١٨ سنة أو أكثر، أو بأن ولي أمره يعلم بإنشاء الحساب ووافق عليه. لا نطلب لذلك أي بيانات عن ولي الأمر، ولا نتحقق من هذا الإقرار.</li>
               <li>قبل الدفع نسجل إقرارًا بأن عمر من يدفع ١٨ سنة أو أكثر، أو بأن ولي أمره معه ووافق على الشراء.</li>
               <li>
-                لولي الأمر أن يطلب تعديل بيانات طالبه أو حذفها <Link href="/contact">بالتواصل معنا</Link>.
+                لولي الأمر أن يطلب تعديل بيانات طالبه أو حذفها <Link href="/contact">بالتواصل معنا</Link>، أو من صفحة <Link href="/account">«حسابي»</Link> حين يكون داخل حساب طالبه.
               </li>
               <li>لا تعرض المنصة أسماء المشترين أو بياناتهم على المعلمين.</li>
             </ul>
@@ -113,8 +115,9 @@ export default async function PrivacyPage() {
           body: (
             <ul>
               <li>
-                يمكنك تعديل بياناتك من صفحة <Link href="/account">«حسابي»</Link>، أو طلب حذف بياناتك <Link href="/contact">بالتواصل معنا</Link>.
+                يمكنك تعديل بياناتك من صفحة <Link href="/account">«حسابي»</Link>، ومن الصفحة نفسها تطلب حذف حسابك أو نسخة من بياناتك، أو تطلب ذلك <Link href="/contact">بالتواصل معنا</Link>.
               </li>
+              <li>تراجع إدارة المنصة هذه الطلبات بنفسها ولا يتم شيء تلقائيًا، وتُعد النسخة يدويًا وتُرسل إلى بريد حسابك. لم تُحدد بعد مدة ملزمة للرد.</li>
               <li>عند الحذف نزيل اسمك وبريدك وهاتفك وصفك الدراسي وتقدّمك في الدروس وسجلات الوصول ونسخك المختومة من المذكرات، ولا يعود بالإمكان الدخول إلى الحساب أو المكتبة.</li>
               <li>ونُبقي الطلبات والمدفوعات وسجل موافقاتك بلا اسم أو بريد أو هاتف أو عنوان IP، لأننا نحتاجها لإثبات العمليات المالية والموافقات.</li>
               <li>لا يتم الحذف ما دام لديك طلب أو عملية دفع أو استرجاع لم تكتمل.</li>

@@ -54,12 +54,13 @@ test.describe("الموافقات", () => {
   test("خانة الموافقة في التسجيل غير مؤشرة", async ({ page }) => {
     await page.goto("/register");
     await expect(page.locator("input[name=terms]")).not.toBeChecked();
+    await expect(page.locator("input[name=guardianAccount]")).not.toBeChecked();
   });
 
   test("التسجيل يسجل الموافقة، والإقرار غير مؤشر ولا دفع بدونه، ويُحفظ للطلب", async ({ page }) => {
     const email = await registerStudent(page);
     const id = await userId(email);
-    expect(await consentKinds(id)).toEqual(["privacy", "terms"]);
+    expect(await consentKinds(id)).toEqual(["guardian_account", "privacy", "terms"]);
 
     await addToCart(page);
     await page.goto("/checkout");

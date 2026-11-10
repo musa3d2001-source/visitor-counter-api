@@ -448,7 +448,7 @@ function legalSteps(f: LaunchFacts, ticks: LaunchTicks): Built[] {
       todo: "اطلب من محامٍ مراجعة الشروط والخصوصية وسياسة الاسترداد وحقوق النشر وإقرار ولي الأمر واتفاقية المعلم، وطبّق ملاحظاته قبل التأشير.",
       where: { label: "صفحات الموقع /terms و /privacy و /refund-policy و /copyright، واتفاقية المعلم في لوحته" },
       facts: [
-        `النسخ الحالية: الشروط ${CONSENT_VERSIONS.terms}، الخصوصية ${CONSENT_VERSIONS.privacy}، إقرار ولي الأمر ${CONSENT_VERSIONS.guardian_purchase}، اتفاقية المعلم ${CONSENT_VERSIONS.teacher_agreement}.`,
+        `النسخ الحالية: الشروط ${CONSENT_VERSIONS.terms}، الخصوصية ${CONSENT_VERSIONS.privacy}، إقرار ولي الأمر عند الدفع ${CONSENT_VERSIONS.guardian_purchase}، وعند إنشاء الحساب ${CONSENT_VERSIONS.guardian_account}، اتفاقية المعلم ${CONSENT_VERSIONS.teacher_agreement}.`,
         "تعود هذه الخطوة مفتوحة وحدها إذا تغيرت نسخة أي من هذه الوثائق في المنصة.",
       ],
     }),

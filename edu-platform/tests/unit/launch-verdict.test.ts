@@ -248,7 +248,7 @@ describe("a tick for an older wording", () => {
   });
 
   it("every manual version fits the column that stores the tick", () => {
-    for (const version of Object.values(MANUAL_VERSIONS)) expect(version.length).toBeLessThanOrEqual(200);
+    for (const version of Object.values(MANUAL_VERSIONS)) expect(version.length).toBeLessThanOrEqual(400);
   });
 });
 

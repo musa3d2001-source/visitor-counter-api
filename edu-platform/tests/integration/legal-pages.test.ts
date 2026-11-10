@@ -23,8 +23,8 @@ const sha256 = (text: string) => createHash("sha256").update(text).digest("hex")
  * إذا فشل هذا الاختبار بعد تعديل الصفحة: ارفع رقم النسخة في src/lib/consent.ts، ثم حدّث الرقم والبصمة هنا.
  */
 const PINNED = {
-  terms: { version: "2026-11-draft-3", sha256: "939b35ef850604683dd0c8491fb2bbee21dca70de720b897c1aef1447c16ef3b" },
-  privacy: { version: "2026-11-draft-6", sha256: "aeca9fd1449175c862feea0fab5777ab9fb1a293ac3bf48d115a5babd7632805" },
+  terms: { version: "2026-11-draft-4", sha256: "861d1253c2faecd556d4bc9833f617be28c0ef1299678ff87a6942e9c1cc81d6" },
+  privacy: { version: "2026-11-draft-7", sha256: "e541b847f3addfed1349aab0b07980fd4f5029e5e6df14b99250bf0d043b84d8" },
   refund_policy: { version: "2026-11-draft-1", sha256: "d68a8ad9f99496253ed097e27bcf00c7f42e7f89a48e05cd336c40a96fb54617" },
   copyright: { version: "2026-11-draft-1", sha256: "91ea4aabe1ccb8a90a5aa29f9b13b8d5c2982afa17cd7b90db3f4b9c468f4c1a" },
 };

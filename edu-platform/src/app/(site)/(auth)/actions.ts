@@ -12,7 +12,8 @@ import { clearSessionCookie, getCurrentSession, invalidateSession, setSessionCoo
 import { setLoginChallengeCookie } from "@/server/auth/challenge-cookie";
 import { readLoginDeviceCookie, setLoginDeviceCookie } from "@/server/auth/device-cookie";
 import { TWO_FACTOR_LOGIN_PATH, TWO_FACTOR_SETUP_PATH } from "@/lib/two-factor";
-import { sendRegistrationVerification } from "@/server/auth/email-verification";
+import { sendExistingAccountNotice, sendRegistrationVerification } from "@/server/auth/email-verification";
+import { GUARDIAN_ACCOUNT_ERROR } from "@/lib/consent";
 import { mailIsReal, redactSecrets } from "@/server/platform/mailer";
 
 export async function loginAction(_prev: ActionState, fd: FormData): Promise<ActionState> {
@@ -45,16 +46,26 @@ export async function registerAction(_prev: ActionState, fd: FormData): Promise<
   if (fd.get("password") !== fd.get("passwordConfirm")) {
     return { fieldErrors: { passwordConfirm: "كلمتا المرور غير متطابقتين" }, values };
   }
-  if (fd.get("terms") !== "on") return { fieldErrors: { terms: "يجب الموافقة على الشروط والأحكام" }, values };
-  // لا يصل هنا إلا بعد فحص خانة الموافقة أعلاه، والخدمة ترفض بدونها
-  const res = await registerStudent({ ...parsed.data, acceptedDocuments: true }, { ip: await clientIp(), userAgent: await userAgent() });
-  if (!res.ok) return { error: res.error, values };
-  await setSessionCookie(res.token, res.expiresAt);
-  if (res.deviceProof) await setLoginDeviceCookie(res.deviceProof);
-  // التسجيل فوري: الرابط يخرج بعد الرد، وفشله لا يعطل الحساب ويمكن إعادة طلبه
+  const missing: Record<string, string> = {};
+  if (fd.get("terms") !== "on") missing.terms = "يجب الموافقة على الشروط والأحكام";
+  if (fd.get("guardianAccount") !== "on") missing.guardianAccount = GUARDIAN_ACCOUNT_ERROR;
+  if (Object.keys(missing).length) return { fieldErrors: missing, values };
+  // لا يصل هنا إلا بعد فحص الخانتين أعلاه، والخدمة ترفض بدونهما
+  const res = await registerStudent({ ...parsed.data, acceptedDocuments: true, acceptedGuardian: true }, { ip: await clientIp(), userAgent: await userAgent() });
+  if (!res.ok) return res.field ? { fieldErrors: { [res.field]: res.error }, values } : { error: res.error, values };
+  const email = parsed.data.email;
   const newUserId = res.userId;
-  if (mailIsReal()) after(() => sendRegistrationVerification(newUserId).catch((err) => console.error("[auth] verification mail failed", redactSecrets(err instanceof Error ? err.message : String(err)))));
-  redirect(safeNextPath(fd.get("next") as string | null, "/library"));
+  // بعد الرد: زمن الاستجابة لا يعتمد على خادم البريد ولا يختلف بين بريد جديد ومسجل، وفشل الإرسال لا يعطل الحساب
+  if (mailIsReal()) {
+    after(() => (newUserId ? sendRegistrationVerification(newUserId) : sendExistingAccountNotice(email)).catch((err) => console.error("[auth] registration mail failed", redactSecrets(err instanceof Error ? err.message : String(err)))));
+  }
+  // الجواب نفسه حرفيًا لبريد جديد ومسجل (K029). الدخول خطوة تالية بكلمة المرور
+  return { ok: true, message: registerDoneMessage(), values: { email } };
+}
+
+function registerDoneMessage() {
+  const base = "إذا كان هذا البريد جديدًا فحسابك جاهز بكلمة المرور التي اخترتها. وإذا كان مسجلًا من قبل فلم يتغير شيء في حسابه، وادخل بكلمة مروره المعتادة.";
+  return mailIsReal() ? `${base} ستصلك رسالة على هذا البريد خلال دقائق.` : base;
 }
 
 export async function logoutAction() {

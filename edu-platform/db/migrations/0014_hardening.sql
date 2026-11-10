@@ -149,3 +149,38 @@ alter table upload_tickets enable row level security;
 set local lock_timeout = '5s';
 alter table sessions add column if not exists step_up_at timestamptz;
 set local lock_timeout = default;
+
+
+-- =====================================================================
+-- الطلاب وأولياء الأمور (مرحلة access-accounts، القرار F8 و K039)
+-- =====================================================================
+-- إقرار خطوة التسجيل: ولي الأمر يعلم بالحساب. إقرار معلن لا تحقق، وسجله ملحق فقط كبقية الموافقات.
+-- NOT VALID ثم VALIDATE: لا يمسك قفلًا طويلًا على جدول تكتب فيه كل عملية دفع.
+set local lock_timeout = '5s';
+alter table consent_records drop constraint if exists consent_records_kind_check;
+alter table consent_records add constraint consent_records_kind_check check (kind in ('terms', 'privacy', 'guardian_purchase', 'teacher_agreement', 'guardian_account')) not valid;
+alter table consent_records validate constraint consent_records_kind_check;
+set local lock_timeout = default;
+
+-- طلب الطالب حذف حسابه أو نسخة من بياناته (K039): المالك يراه ويقرر، ولا ينفذه النظام وحده.
+create table if not exists account_data_requests (
+  id uuid primary key default gen_random_uuid(),
+  user_id uuid not null references users(id) on delete cascade,
+  kind text not null check (kind in ('delete', 'copy')),
+  status text not null default 'open' check (status in ('open', 'done', 'declined', 'withdrawn')),
+  created_at timestamptz not null default now(),
+  closed_at timestamptz,
+  closed_by uuid references users(id) on delete set null,
+  close_note text check (close_note is null or char_length(close_note) <= 500)
+);
+-- طلب مفتوح واحد من كل نوع: إعادة الضغط لا تملأ قائمة المالك
+create unique index if not exists account_data_requests_one_open on account_data_requests (user_id, kind) where status = 'open';
+create index if not exists account_data_requests_open_idx on account_data_requests (created_at) where status = 'open';
+alter table account_data_requests enable row level security;
+
+-- رقم خطوة «مراجعة المحامي» يجمع أرقام كل الوثائق، وقد زادت وثيقة فتجاوز ٢٠٠ حرف
+set local lock_timeout = '5s';
+alter table launch_checks drop constraint if exists launch_checks_version_check;
+alter table launch_checks add constraint launch_checks_version_check check (char_length(version) between 1 and 400) not valid;
+alter table launch_checks validate constraint launch_checks_version_check;
+set local lock_timeout = default;

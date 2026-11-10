@@ -30,7 +30,11 @@ export async function registerStudent(page: Page, opts: { email?: string; name?:
   await page.fill("#password", STUDENT_PASSWORD);
   await page.fill("#passwordConfirm", STUDENT_PASSWORD);
   await page.check("input[name=terms]");
+  await page.check("input[name=guardianAccount]");
   await page.getByRole("button", { name: "إنشاء الحساب" }).click();
+  // الجواب نفسه لبريد جديد ومسجل، والدخول خطوة تالية بكلمة المرور
+  await expect(page.getByTestId("register-done")).toBeVisible({ timeout: 15_000 });
+  await page.getByRole("button", { name: "ادخل إلى حسابك" }).click();
   await page.waitForURL((u) => !u.pathname.startsWith("/register"));
   return email;
 }

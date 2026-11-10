@@ -371,6 +371,9 @@ describe("C2 المعاينة لا تغطي الملف", () => {
     await sql`update product_files set created_at = now() - interval '2 days' where id = ${old.id}`;
     await sql`update product_files set created_at = now() - interval '1 day' where id = ${main.id}`;
     await sql.file(resolve(__dirname, "../../db/migrations/0012_content_teachers.sql"));
+    // 0012 يضبط قيد أنواع الموافقة على ما كان وقتها، و0014 وسّعه: إعادة تشغيله هنا لا تعيد قاعدة بقية الاختبارات إلى الخلف
+    await sql`alter table consent_records drop constraint consent_records_kind_check`;
+    await sql`alter table consent_records add constraint consent_records_kind_check check (kind in ('terms', 'privacy', 'guardian_purchase', 'teacher_agreement', 'guardian_account'))`;
     await expect(fileRow(old.id)).resolves.toMatchObject({ source_file_id: null });
     await expect(fileRow(recent.id)).resolves.toMatchObject({ source_file_id: main.id });
   });

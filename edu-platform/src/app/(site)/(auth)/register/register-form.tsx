@@ -1,20 +1,58 @@
 "use client";
 
 import Link from "next/link";
-import { useActionState } from "react";
+import { startTransition, useActionState, useState, type FormEvent } from "react";
 import { GraduationCap, KeyRound, LockKeyhole, LogIn, Mail, Phone, Sparkles, UserRound } from "lucide-react";
-import { registerAction } from "../actions";
+import { loginAction, registerAction } from "../actions";
 import { Checkbox, Field, Input, Select } from "@/components/ui/form";
 import { Alert } from "@/components/ui/alert";
 import { SubmitButton } from "@/components/ui/submit-button";
 import { BIG_INPUT, FieldIcon, IconInput, PasswordInput } from "../_components/auth-fields";
 import { OrDivider, SwitchCard } from "../_components/auth-bits";
+import { GUARDIAN_ACCOUNT_HINT, GUARDIAN_ACCOUNT_TEXT } from "@/lib/consent";
+import { STUDENT_PASSWORD_HINT } from "@/lib/password-policy";
+
+/**
+ * بعد الإرسال: الجواب نفسه لبريد جديد ومسجل (K029)، والدخول بضغطة واحدة بكلمة المرور التي كتبها الطالب للتو.
+ * الكلمة تبقى في ذاكرة هذه الصفحة، ولا تعود من الخادم. بلا JavaScript يبقى رابط صفحة الدخول.
+ */
+function RegisterDone({ email, password, next, message }: { email: string; password: string; next: string; message: string }) {
+  const [state, action] = useActionState(loginAction, null);
+  const loginHref = `/login${next !== "/library" ? `?next=${encodeURIComponent(next)}` : ""}`;
+  return (
+    <div className="flex flex-col gap-5" data-testid="register-done">
+      <Alert tone="success">{message}</Alert>
+      {state?.error ? <Alert tone="danger">{state.error}</Alert> : null}
+      {password ? (
+        <form action={action}>
+          <input type="hidden" name="next" value={next} />
+          <input type="hidden" name="email" value={email} />
+          <input type="hidden" name="password" value={password} />
+          <SubmitButton size="xl" pendingText="جارٍ الدخول…" className="w-full">
+            ادخل إلى حسابك
+            <LogIn aria-hidden />
+          </SubmitButton>
+        </form>
+      ) : null}
+      <SwitchCard question="نسيت كلمة المرور أو تريد بريدًا آخر؟" href={loginHref} label="صفحة الدخول" icon={<LogIn />} />
+    </div>
+  );
+}
 
 export function RegisterForm({ next, grades }: { next: string; grades: { id: string; name: string }[] }) {
   const [state, action] = useActionState(registerAction, null);
+  const [password, setPassword] = useState("");
   const fe = state?.fieldErrors ?? {};
+  // React يفرّغ النموذج بعد كل action حتى عند الخطأ: من نسي مربعًا لا يعيد كتابة كلمته. بلا JavaScript يبقى الإرسال العادي
+  const submit = (e: FormEvent<HTMLFormElement>) => {
+    e.preventDefault();
+    const fd = new FormData(e.currentTarget);
+    setPassword(String(fd.get("password") ?? ""));
+    startTransition(() => action(fd));
+  };
+  if (state?.ok) return <RegisterDone email={state.values?.email ?? ""} password={password} next={next} message={state.message ?? ""} />;
   return (
-    <form action={action} className="flex flex-col gap-5" noValidate>
+    <form action={action} onSubmit={submit} className="flex flex-col gap-5" noValidate>
       <input type="hidden" name="next" value={next} />
       {state?.error ? <Alert tone="danger">{state.error}</Alert> : null}
       <Field label="الاسم" htmlFor="fullName" error={fe.fullName} required>
@@ -28,7 +66,7 @@ export function RegisterForm({ next, grades }: { next: string; grades: { id: str
         </IconInput>
       </Field>
       <div className="grid gap-5 sm:grid-cols-2 sm:gap-4">
-        <Field label="كلمة المرور" htmlFor="password" error={fe.password} hint="٨ أحرف على الأقل" required>
+        <Field label="كلمة المرور" htmlFor="password" error={fe.password} hint={STUDENT_PASSWORD_HINT} required>
           <PasswordInput id="password" name="password" icon={<KeyRound />} autoComplete="new-password" dir="ltr" required minLength={8} aria-invalid={Boolean(fe.password)} />
         </Field>
         <Field label="تأكيد كلمة المرور" htmlFor="passwordConfirm" error={fe.passwordConfirm} required>
@@ -84,6 +122,13 @@ export function RegisterForm({ next, grades }: { next: string; grades: { id: str
         {fe.terms ? (
           <p className="mb-1.5 text-sm font-medium text-danger" role="alert">
             {fe.terms}
+          </p>
+        ) : null}
+        <Checkbox name="guardianAccount" required label={GUARDIAN_ACCOUNT_TEXT} />
+        <p className="mb-1.5 text-[0.88rem] leading-6 text-muted">{GUARDIAN_ACCOUNT_HINT}</p>
+        {fe.guardianAccount ? (
+          <p className="mb-1.5 text-sm font-medium text-danger" role="alert">
+            {fe.guardianAccount}
           </p>
         ) : null}
       </div>

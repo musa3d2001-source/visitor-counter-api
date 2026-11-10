@@ -143,10 +143,10 @@ describe("who must verify", () => {
 
 describe("registration stays instant", () => {
   it("the account opens with no mail step, and the link is a separate later send", async () => {
-    const r = await registerStudent({ fullName: "طالب جديد", email: "fresh@farqad.test", password: "Student-Pass-1", phone: null, acceptedDocuments: true }, { ip: IP, userAgent: "t" });
+    const r = await registerStudent({ fullName: "طالب جديد", email: "fresh@farqad.test", password: "Student-Pass-1", phone: null, acceptedDocuments: true, acceptedGuardian: true }, { ip: IP, userAgent: "t" });
     expect(r.ok).toBe(true);
     expect(mailsTo("fresh@farqad.test")).toHaveLength(0);
-    if (!r.ok) throw new Error("register");
+    if (!r.ok || !r.userId) throw new Error("register");
     await sendRegistrationVerification(r.userId);
     expect(mailsTo("fresh@farqad.test")).toHaveLength(1);
     expect(await verifiedAt(r.userId)).toBeNull();

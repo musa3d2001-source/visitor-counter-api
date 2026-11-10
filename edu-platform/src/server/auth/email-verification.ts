@@ -122,6 +122,23 @@ export async function sendRegistrationVerification(userId: string): Promise<void
   if (u) await sendEmailVerificationLink(userId, u.email);
 }
 
+/**
+ * حاول أحد إنشاء حساب ببريد مسجل: تنبيه بلا رابط، لأن زر التسجيل يجيب الجواب نفسه ولن يخبره أحد بذلك.
+ * رسالة واحدة في اليوم لكل عنوان، فلا يصبح التسجيل وسيلة لإغراق صندوق أحد.
+ */
+export async function sendExistingAccountNotice(email: string): Promise<void> {
+  if (!mailIsReal()) return;
+  const limit = await hitRateLimit(`register:notice:${email}`, 1, 24 * 60 * 60);
+  if (!limit.allowed) return;
+  const settings = await getSettings();
+  await sendMail({
+    to: email,
+    template: "registration_existing_notice",
+    subject: `محاولة إنشاء حساب ببريدك، ${settings.site_name}`,
+    text: `حاول شخص إنشاء حساب جديد بهذا البريد، ولك حساب مسجل به فلم يتغير شيء.\n\nإذا كنت أنت فادخل بكلمة مرورك المعتادة، أو استعدها من صفحة الدخول. وإذا لم تكن أنت فلا حاجة لأي إجراء.\n\n${settings.site_name}`,
+  });
+}
+
 export type VerifyResult = { ok: true; message: string } | { ok: false; error: string };
 
 const RESEND = { cooldownSec: 60, perUser: 6, perIp: 200, windowSec: 60 * 60 };

@@ -12,10 +12,11 @@
  * الشروط والخصوصية تطبعان إعدادات من لوحة الإدارة، فيُسجَّل معهما بصمة تلك الإعدادات (server/platform/consent.ts).
  */
 export const CONSENT_VERSIONS = {
-  terms: "2026-11-draft-3",
-  privacy: "2026-11-draft-6",
+  terms: "2026-11-draft-4",
+  privacy: "2026-11-draft-7",
   guardian_purchase: "2026-11-draft-1",
   teacher_agreement: "2026-11-draft-1",
+  guardian_account: "2026-11-draft-1",
 } as const;
 
 export type ConsentKind = keyof typeof CONSENT_VERSIONS;
@@ -37,10 +38,19 @@ export const CONSENT_KIND_LABELS: Record<ConsentKind, string> = {
   privacy: "سياسة الخصوصية",
   guardian_purchase: "إقرار البالغ أو ولي الأمر قبل الدفع",
   teacher_agreement: "اتفاقية المعلم",
+  guardian_account: "إقرار البالغ أو علم ولي الأمر عند إنشاء الحساب",
 };
 
 export const GUARDIAN_DECLARATION_TEXT = "أقرّ بأن عمري ١٨ سنة أو أكثر، أو أن ولي أمري معي الآن ووافق على هذا الشراء.";
 export const GUARDIAN_DECLARATION_HINT = "عمرك أقل من ١٨ سنة؟ اطلب من ولي أمرك أن يكون معك قبل الدفع.";
+
+/**
+ * إقرار خطوة التسجيل (القرار F8): يسجل ما أعلنه من ينشئ الحساب، ولا يطلب بيانات ولي الأمر ولا يتحقق من شيء.
+ * يبقى إقرار الدفع أعلاه كما هو لكل طلب. والتحقق من ولي الأمر نفسه بند للمحامي في GO_LIVE.
+ */
+export const GUARDIAN_ACCOUNT_TEXT = "أقرّ بأن عمري ١٨ سنة أو أكثر، أو بأن ولي أمري يعلم بإنشاء هذا الحساب ووافق عليه.";
+export const GUARDIAN_ACCOUNT_HINT = "نسجّل إقرارك هذا ولا نتحقق من عمرك. ويمكن لولي الأمر طلب حذف الحساب في أي وقت.";
+export const GUARDIAN_ACCOUNT_ERROR = "أكّد هذا الإقرار لتكمل";
 
 /** أسماء حقول النموذج، وهي نفسها مفاتيح أخطاء الحقول */
 export type ConsentField = "termsAccepted" | "guardianDeclaration";

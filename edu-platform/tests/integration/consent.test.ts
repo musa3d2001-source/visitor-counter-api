@@ -102,38 +102,41 @@ async function orderWithoutDeclaration(user: Awaited<ReturnType<typeof createUse
 }
 
 describe("registration records what the student accepted", () => {
-  const input = (email: string, acceptedDocuments: boolean) => ({ fullName: "طالب جديد", email, password: "Student-Pass-1", phone: null, acceptedDocuments });
+  const input = (email: string, acceptedDocuments: boolean) => ({ fullName: "طالب جديد", email, password: "Student-Pass-1", phone: null, acceptedDocuments, acceptedGuardian: true });
+  const created = async (email: string) => {
+    const res = await registerStudent(input(email, true), META);
+    if (!res.ok || !res.userId) throw new Error("not created");
+    return res.userId;
+  };
 
-  it("stores terms and privacy at the current versions with the request details, in one go with the account", async () => {
-    const res = await registerStudent(input("consent-new@farqad.test", true), META);
-    if (!res.ok) throw new Error(res.error);
-    const rows = await consents(res.userId);
-    expect(rows.map((r) => r.kind)).toEqual(["privacy", "terms"]);
-    for (const r of rows) {
+  it("stores terms, privacy and the guardian step at the current versions with the request details, in one go with the account", async () => {
+    const userId = await created("consent-new@farqad.test");
+    const rows = await consents(userId);
+    expect(rows.map((r) => r.kind)).toEqual(["guardian_account", "privacy", "terms"]);
+    expect(rows[0]).toMatchObject({ document_version: CONSENT_VERSIONS.guardian_account, order_id: null, ip: META.ip, user_agent: META.userAgent });
+    for (const r of rows.slice(1)) {
       // الرقم ثم بصمة الإعدادات التي يطبعها النص
       expect(r.document_version).toBe(recordedConsentVersion(r.kind as "terms" | "privacy", await readSettings()));
       expect(r.document_version.startsWith(`${CONSENT_VERSIONS[r.kind as "terms" | "privacy"]}+`)).toBe(true);
       expect(r).toMatchObject({ order_id: null, ip: META.ip, user_agent: META.userAgent });
     }
-    expect(await missingAccountConsents(res.userId)).toEqual([]);
+    expect(await missingAccountConsents(userId)).toEqual([]);
   });
 
   it("the record names the exact text: what the owner shows in it from settings changes the recorded version", async () => {
-    const before = await registerStudent(input("consent-text-a@farqad.test", true), META);
-    if (!before.ok) throw new Error(before.error);
-    await saveSettings({ mail_provider_name: "مزود البريد الجديد", seller_legal_name: "شركة البائع" }, before.userId);
+    const before = await created("consent-text-a@farqad.test");
+    await saveSettings({ mail_provider_name: "مزود البريد الجديد", seller_legal_name: "شركة البائع" }, before);
     try {
-      const after = await registerStudent(input("consent-text-b@farqad.test", true), META);
-      if (!after.ok) throw new Error(after.error);
+      const after = await created("consent-text-b@farqad.test");
       const version = async (userId: string) => (await consents(userId)).find((r) => r.kind === "privacy")!.document_version;
-      const [a, b] = [await version(before.userId), await version(after.userId)];
+      const [a, b] = [await version(before), await version(after)];
       expect(a).not.toBe(b);
       for (const v of [a, b]) {
         expect(v.startsWith(`${CONSENT_VERSIONS.privacy}+`)).toBe(true);
         expect(v.length).toBeLessThanOrEqual(40);
       }
       // تغيير الإعدادات لا يطلب الموافقة من جديد: ذلك يتبع رقم النسخة
-      expect(await missingAccountConsents(before.userId)).toEqual([]);
+      expect(await missingAccountConsents(before)).toEqual([]);
     } finally {
       await sql`delete from settings`;
     }
@@ -156,12 +159,11 @@ describe("registration records what the student accepted", () => {
     expect(await sql`select 1 from users where email = 'consent-action@farqad.test'`).toHaveLength(0);
   });
 
-  it("a failed registration leaves no orphan consent", async () => {
-    const first = await registerStudent(input("consent-dup@farqad.test", true), META);
-    expect(first.ok).toBe(true);
+  it("registering a taken address records nothing against the account that already has it", async () => {
+    await created("consent-dup@farqad.test");
     const before = (await sql<{ n: number }[]>`select count(*)::int as n from consent_records`)[0].n;
     const again = await registerStudent(input("consent-dup@farqad.test", true), META);
-    expect(again.ok).toBe(false);
+    expect(again).toEqual({ ok: true, userId: null });
     expect((await sql<{ n: number }[]>`select count(*)::int as n from consent_records`)[0].n).toBe(before);
   });
 });
