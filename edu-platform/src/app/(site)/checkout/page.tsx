@@ -28,6 +28,9 @@ import { CheckoutForm } from "./checkout-form";
 
 export const metadata: Metadata = { title: "إتمام الشراء", robots: { index: false } };
 
+/** إجراءات هذه الصفحة تنتظر البوابة، وقد تأخذ ٢٠ ثانية لكل فاتورة تُفحص قبل إنشاء أخرى */
+export const maxDuration = 60;
+
 export default async function CheckoutPage({ searchParams }: { searchParams: Promise<{ coupon?: string }> }) {
   const user = await requireUser("/checkout");
   const sp = await searchParams;

@@ -31,6 +31,11 @@ export default async function LoginPage({ searchParams }: { searchParams: Promis
           انتهت مهلة إدخال رمز التحقق. سجّل دخولك من جديد.
         </Alert>
       ) : null}
+      {sp.next === "/account?payment=checked" ? (
+        <Alert tone="info" className="mb-4" data-testid="login-payment-note">
+          وصلتنا عودتك من صفحة الدفع. سجّل دخولك لترى حالة طلبك.
+        </Alert>
+      ) : null}
       {sp.next?.startsWith("/checkout") ? (
         <Alert tone="info" className="mb-4">
           سجّل دخولك أو أنشئ حسابًا لإتمام الشراء. سلتك محفوظة.
