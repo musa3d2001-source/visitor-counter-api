@@ -1,6 +1,7 @@
 import "server-only";
-import { PDFDocument, PDFName, ParseSpeeds, StandardFonts, degrees, rgb, type PDFPage } from "pdf-lib";
+import { PDFDocument, PDFName, PDFParser, PDFStreamWriter, ParseSpeeds, StandardFonts, degrees, rgb, type PDFContext, type PDFPage } from "pdf-lib";
 import { maxPreviewPages } from "@/lib/preview-policy";
+import { STAMP_MAX_PAGES } from "@/lib/pdf-limits";
 import { assertIsolated, isolatePages, PreviewNotIsolatedError } from "./pdf-isolate";
 import { openInReader } from "./pdf-reader-engine";
 import { reportError } from "../platform/report-error";
@@ -16,7 +17,8 @@ export { PreviewNotIsolatedError };
  * ملاحظة: العلامة بأحرف لاتينية لأن خطوط PDF القياسية لا تدعم تشكيل العربية.
  */
 
-export type PdfProblem = "not_pdf" | "encrypted" | "corrupt" | "too_complex";
+/** over_limit: أكبر من حد الختم (الحجم أو عدد الصفحات في lib/pdf-limits.ts) */
+export type PdfProblem = "not_pdf" | "encrypted" | "corrupt" | "too_complex" | "over_limit";
 
 /** ملف لا يمكن تسليمه لمشترٍ: محمي أو تالف. يختلف عن تعطل التخزين أو الشبكة */
 export class PdfUnusableError extends Error {
@@ -28,27 +30,86 @@ export class PdfUnusableError extends Error {
 
 /** مهلة الختم التجريبي عند الرفع. انظر قياسات docs/PDF_STAMPING.md */
 export const TRIAL_STAMP_BUDGET_MS = 30_000;
-/** مهلة الختم عند التسليم: ملف قديم لم يُفحص يتوقف هنا برسالة صادقة بدل أن تقطعه مهلة الدالة */
-export const DELIVERY_STAMP_BUDGET_MS = 180_000;
+/**
+ * مهلة الختم عند التسليم: ثلاثة أضعاف التجربة عند الرفع، والتجربة تشمل فوقها فتح الملف بمحرك القارئ مرتين،
+ * فما نجح عند الرفع ينتهي هنا ولو كان الخادم أبطأ تحت الضغط. ملف قديم لم يُفحص يتوقف عندها برسالة صادقة.
+ */
+export const DELIVERY_STAMP_BUDGET_MS = 90_000;
 
-/** pdf-lib يعطي الدور للمؤقتات بين دفعات الكائنات، فتصل المهلة في وقتها */
-function withDeadline<T>(work: Promise<T>, ms: number): Promise<T> {
-  let timer: ReturnType<typeof setTimeout> | undefined;
-  const deadline = new Promise<never>((_, reject) => {
-    timer = setTimeout(() => reject(new PdfUnusableError("too_complex")), ms);
-  });
-  return Promise.race([work, deadline]).finally(() => clearTimeout(timer));
+/** الختم تجاوز مهلته فتوقف فعلًا. نوعه too_complex كما كان، فيُعامل ملف لم يُفحص كما سبق */
+export class StampDeadlineError extends PdfUnusableError {
+  constructor() {
+    super("too_complex");
+    this.name = "StampDeadlineError";
+  }
+}
+
+export type Deadline = { readonly at: number; check(): void };
+
+export function deadlineIn(ms: number): Deadline {
+  const at = Date.now() + ms;
+  return {
+    at,
+    check() {
+      if (Date.now() > at) throw new StampDeadlineError();
+    },
+  };
+}
+
+/**
+ * pdf-lib لا يُلغى: سباق مع مؤقت يعيد الجواب للطلب ويترك العمل يأكل المعالج والذاكرة حتى ينتهي (K107).
+ * لذلك يوضع فحص المهلة في النقطة التي يستدعيها pdf-lib نفسه بعد كل كائن يقرؤه أو يكتبه (shouldWaitForTick)،
+ * فيُرمى الخطأ من داخل الحلقة ويتوقف العمل فعلًا. هذه نقطة داخلية في pdf-lib 1.17.1 (النسخة مثبتة في package.json)،
+ * واختبار tests/unit/pdf-deadline.test.ts يفشل إن تغيرت فلم يعد الفحص يُستدعى.
+ */
+type Ticking = { shouldWaitForTick: (...args: number[]) => boolean };
+
+function guardTicks(target: unknown, deadline: Deadline) {
+  const ticking = target as Ticking;
+  const original = ticking.shouldWaitForTick;
+  if (typeof original !== "function") throw new Error("pdf-lib internals changed: shouldWaitForTick is missing");
+  ticking.shouldWaitForTick = (...args: number[]) => {
+    deadline.check();
+    return original(...args);
+  };
+}
+
+type DocumentConstructor = new (context: PDFContext, ignoreEncryption: boolean, updateMetadata: boolean) => PDFDocument;
+
+/** مثل PDFDocument.load بخيارات الختم نفسها، والمهلة تُفحص بعد كل كائن يُقرأ */
+async function loadWithDeadline(bytes: Uint8Array, deadline: Deadline): Promise<PDFDocument> {
+  const parser = PDFParser.forBytesWithOptions(bytes, ParseSpeeds.Fast, false, false);
+  guardTicks(parser, deadline);
+  const context = await parser.parseDocument();
+  deadline.check();
+  // ما يفعله load بعد القراءة. المُنشئ «خاص» في الأنواع فقط
+  return new (PDFDocument as unknown as DocumentConstructor)(context, true, false);
+}
+
+/**
+ * مثل doc.save({ objectsPerTick }) بباقي الخيارات الافتراضية، والمهلة تُفحص بعد كل كائن يُكتب:
+ * - addDefaultPage لا يلزم: الملف المفتوح له صفحة على الأقل (openForEditing يرفض غير ذلك).
+ * - updateFieldAppearances في save يعمل فقط على نموذج سبق فتحه بـ getForm، ولا نفتحه هنا.
+ * tests/unit/pdf-deadline.test.ts يقارن الناتج بايتًا ببايت مع save.
+ */
+export async function saveWithDeadline(doc: PDFDocument, deadline: Deadline, objectsPerTick = 500): Promise<Uint8Array> {
+  await doc.flush();
+  deadline.check();
+  const writer = PDFStreamWriter.forContext(doc.context, objectsPerTick);
+  guardTicks(writer, deadline);
+  return writer.serializeToBuffer();
 }
 
 /**
  * يفتح الملف كما يفتحه الختم. نترك ignoreEncryption حتى نقرأ الملف المحمي بكلمة مالك ونصنّفه،
  * ثم نرفضه: pdf-lib لا يفك التشفير، فنسخته المختومة تتلف عند القارئ.
  */
-async function openForEditing(bytes: Uint8Array): Promise<PDFDocument> {
+async function openForEditing(bytes: Uint8Array, deadline?: Deadline): Promise<PDFDocument> {
   let doc: PDFDocument;
   try {
-    doc = await PDFDocument.load(bytes, { ignoreEncryption: true, updateMetadata: false, parseSpeed: ParseSpeeds.Fast });
-  } catch {
+    doc = deadline ? await loadWithDeadline(bytes, deadline) : await PDFDocument.load(bytes, { ignoreEncryption: true, updateMetadata: false, parseSpeed: ParseSpeeds.Fast });
+  } catch (err) {
+    if (err instanceof StampDeadlineError) throw err;
     throw new PdfUnusableError("corrupt");
   }
   if (doc.isEncrypted) throw new PdfUnusableError("encrypted");
@@ -151,12 +212,13 @@ export async function rebuildCustomPreview(bytes: Uint8Array): Promise<{ bytes: 
 }
 
 /** الختم نفسه يستخدمه التسليم والفحص عند الرفع، فلا يختلف ما نجرّبه عما يصل للطالب */
-async function stampDocument(doc: PDFDocument, lines: { primary: string; secondary: string }): Promise<Uint8Array> {
+async function stampDocument(doc: PDFDocument, lines: { primary: string; secondary: string }, deadline: Deadline): Promise<Uint8Array> {
   const font = await doc.embedFont(StandardFonts.Helvetica);
   const safe = (s: string) => s.replace(/[^\x20-\x7E]/g, "").slice(0, 90);
   const primary = safe(lines.primary);
   const secondary = safe(lines.secondary);
   for (const page of doc.getPages()) {
+    deadline.check();
     // المواضع تُحسب على ما يراه القارئ، فلا تقع العلامة خارج صفحة أصلها ليس الصفر أو مدوّرة
     const box = visibleBox(page);
     const size = Math.max(10, Math.min(box.viewWidth, box.viewHeight) / 32);
@@ -177,19 +239,29 @@ async function stampDocument(doc: PDFDocument, lines: { primary: string; seconda
   doc.setProducer("edu-platform");
   doc.setSubject(`Licensed copy - ${secondary}`);
   // الدور للمؤقتات كل 500 كائن: الإعداد الافتراضي (كل 50) يضيّع في الانتظار أكثر مما يعمل
-  return doc.save({ objectsPerTick: 500 });
+  return saveWithDeadline(doc, deadline, 500);
 }
 
-export async function watermarkPdf(bytes: Uint8Array, lines: { primary: string; secondary: string }): Promise<Uint8Array> {
-  return withDeadline(
-    openForEditing(bytes).then((doc) =>
-      // الختم يعمل على بايتات في الذاكرة، فأي تعثر فيه سببه بنية الملف وليس الشبكة أو التخزين
-      stampDocument(doc, lines).catch(() => {
-        throw new PdfUnusableError("corrupt");
-      }),
-    ),
-    DELIVERY_STAMP_BUDGET_MS,
-  );
+/** صفحات أكثر من حد الختم: لا يُختم الملف أصلًا، فلا يحمل الخادم ما لا يتسع له */
+function assertWithinPageLimit(doc: PDFDocument) {
+  if (doc.getPageCount() > STAMP_MAX_PAGES) throw new PdfUnusableError("over_limit");
+}
+
+/**
+ * يختم نسخة المشتري. لا يعود قبل أن يتوقف العمل نفسه: عند المهلة يرمي StampDeadlineError من داخل الحلقة،
+ * فمن يعدّ الختمات الجارية (stamp-gate.ts) لا يحرر مكانًا لعمل ما زال يجري.
+ */
+export async function watermarkPdf(bytes: Uint8Array, lines: { primary: string; secondary: string }, budgetMs = DELIVERY_STAMP_BUDGET_MS): Promise<Uint8Array> {
+  const deadline = deadlineIn(budgetMs);
+  const doc = await openForEditing(bytes, deadline);
+  assertWithinPageLimit(doc);
+  try {
+    return await stampDocument(doc, lines, deadline);
+  } catch (err) {
+    if (err instanceof PdfUnusableError) throw err;
+    // الختم يعمل على بايتات في الذاكرة، فأي تعثر فيه سببه بنية الملف وليس الشبكة أو التخزين
+    throw new PdfUnusableError("corrupt");
+  }
 }
 
 /** أطول هوية يقبلها الختم، حتى تكون التجربة عند الرفع أثقل مما يصل للطالب فعلًا */
@@ -221,12 +293,12 @@ export async function inspectPdf(bytes: Uint8Array): Promise<PdfInspection> {
   let stamped: Uint8Array;
   let pageCount: number;
   try {
-    const trial = await withDeadline(
-      openForEditing(bytes).then(async (doc) => ({ pages: doc.getPageCount(), out: await stampDocument(doc, TRIAL_STAMP) })),
-      TRIAL_STAMP_BUDGET_MS,
-    );
-    pageCount = trial.pages;
-    stamped = trial.out;
+    const deadline = deadlineIn(TRIAL_STAMP_BUDGET_MS);
+    const doc = await openForEditing(bytes, deadline);
+    // أكثر من حد الختم: يُرفض قبل أن تُصرف ذاكرة الختم التجريبي عليه
+    assertWithinPageLimit(doc);
+    pageCount = doc.getPageCount();
+    stamped = await stampDocument(doc, TRIAL_STAMP, deadline);
   } catch (err) {
     return { ok: false, problem: err instanceof PdfUnusableError ? err.problem : "corrupt" };
   }

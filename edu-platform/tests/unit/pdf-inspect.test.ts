@@ -108,24 +108,21 @@ describe("التسليم لا يصنع نسخة تالفة", () => {
 });
 
 describe("مهلة الختم", () => {
-  const hang = () => vi.spyOn(PDFDocument, "load").mockReturnValue(new Promise<PDFDocument>(() => {}));
+  /** الساعة تقفز مع كل قراءة: تجاوز المهلة يقع داخل حلقة pdf-lib نفسها، وهي التي يجب أن تتوقف */
+  const clockRacesPast = (budgetMs: number) => {
+    let now = 1_800_000_000_000;
+    vi.spyOn(Date, "now").mockImplementation(() => (now += budgetMs + 1));
+  };
 
   it("the upload refuses a file that cannot be stamped in the trial budget", async () => {
     vi.spyOn(engine, "openInReader").mockResolvedValue({ status: "ok", pages: 6, encrypted: false });
-    hang();
-    vi.useFakeTimers();
-    const result = inspectPdf(fixture("plain.pdf"));
-    await vi.advanceTimersByTimeAsync(TRIAL_STAMP_BUDGET_MS);
-    await expect(result).resolves.toEqual({ ok: false, problem: "too_complex" });
+    clockRacesPast(TRIAL_STAMP_BUDGET_MS);
+    await expect(inspectPdf(fixture("plain.pdf"))).resolves.toEqual({ ok: false, problem: "too_complex" });
   });
 
   it("delivery stops at its budget with an honest error instead of being cut by the host", async () => {
-    hang();
-    vi.useFakeTimers();
-    const result = watermarkPdf(fixture("plain.pdf"), LINES);
-    const assertion = expect(result).rejects.toMatchObject({ name: "PdfUnusableError", problem: "too_complex" });
-    await vi.advanceTimersByTimeAsync(DELIVERY_STAMP_BUDGET_MS);
-    await assertion;
+    clockRacesPast(DELIVERY_STAMP_BUDGET_MS);
+    await expect(watermarkPdf(fixture("plain.pdf"), LINES)).rejects.toMatchObject({ name: "StampDeadlineError", problem: "too_complex" });
   });
 });
 

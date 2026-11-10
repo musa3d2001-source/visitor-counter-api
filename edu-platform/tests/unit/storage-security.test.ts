@@ -22,7 +22,7 @@ describe("sniffMime (magic bytes — never trust extension/declared type)", () =
     expect(sniffMime(new Uint8Array())).toBeNull();
   });
   it("upload rules are bounded", () => {
-    expect(UPLOAD_RULES.pdf.maxBytes).toBe(100 * 1024 * 1024);
+    expect(UPLOAD_RULES.pdf.maxBytes).toBe(50 * 1024 * 1024);
     expect(UPLOAD_RULES.image.mime).not.toContain("image/svg+xml");
     expect(UPLOAD_RULES.pdf.bucket).toBe("private");
   });

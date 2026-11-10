@@ -1,11 +1,13 @@
 import "server-only";
 import { randomUUID } from "node:crypto";
 import { env } from "../env";
+import { STAMP_MAX_BYTES } from "@/lib/pdf-limits";
 import { localDriver } from "./local";
 import { supabaseDriver } from "./supabase";
 import type { StorageDriver } from "./types";
 
 export type { Bucket, StorageDriver, UploadTarget } from "./types";
+export { StorageNotFoundError } from "./types";
 
 export function storage(): StorageDriver {
   return env().STORAGE_DRIVER === "supabase" ? supabaseDriver : localDriver;
@@ -13,7 +15,7 @@ export function storage(): StorageDriver {
 
 /** أنواع الملفات المسموح رفعها وحدودها */
 export const UPLOAD_RULES = {
-  pdf: { mime: ["application/pdf"], maxBytes: 100 * 1024 * 1024, ext: "pdf", bucket: "private" as const },
+  pdf: { mime: ["application/pdf"], maxBytes: STAMP_MAX_BYTES, ext: "pdf", bucket: "private" as const },
   image: { mime: ["image/jpeg", "image/png", "image/webp"], maxBytes: 5 * 1024 * 1024, ext: "", bucket: "public" as const },
   video: { mime: ["video/mp4"], maxBytes: 2 * 1024 * 1024 * 1024, ext: "mp4", bucket: "private" as const },
 } as const;
