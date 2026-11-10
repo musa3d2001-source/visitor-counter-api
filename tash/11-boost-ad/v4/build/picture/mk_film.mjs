@@ -58,6 +58,16 @@ const lens = (p, n, scale, sx, sy, { dx = 0, dy = 0, k = 1, push = 1 } = {}) => 
     { t: 'dot', x, y, r: r - 6, fill: null, ring: { color: 'ink', lw: 12 } }]; };
 const pushIn = (f, f0) => 1 + 0.04 * (f - f0) / 14;
 
+// ---------------- footage per use (one place to swap worlds) ----------------
+const SH = {
+  hook: f => f < 15 ? full('c', f + 2) : punch('c', Math.min(f - 9, 18), 1.25),   // f0-14 wide, f15-29 punch-in (R3-22b)
+  drain: (f, o) => full('k', f, o),                  // f30-44, the thirds
+  ret: (f, o) => full('c', f - 71, o),               // f78-89, inside the repaint circles
+  hold: () => full('c', 18),                         // f90-92, outside the shockwave
+  iris: f => full('c', f - 131),                     // f131-134, the centre porthole opens onto the first world
+  loop: (o = {}) => full('c', 2, o),                 // wind-up iris and f594-599 = the f0 picture
+};
+
 // ---------------- TASH wordmark M: box top-left (x0,y0), width w; k scales it about the box centre ----------------
 const MH = 1461 / 2579;
 const mark = (x0, y0, w, o = {}) => { const s = w / 2579; return { t: 'mark', x: x0 + 1080 * s, y: y0 + 437 * s, scale: s, fill: 'ink', dotFill: 'ink', ...o }; };
@@ -148,7 +158,7 @@ const add = (f, sec, layers) => frames.push({ id: String(f).padStart(4, '0'), tc
 // f0-29 hook: n2-n16 wide; f15-27 n6-n18 in the 1.25x punch-in, n18 held f28-29 (R3-22b). «حلو…» slams in at f3, pulses on f15.
 const hookTag = f => f < 3 ? 0 : f === 3 ? 230 : f === 4 ? 212 : f >= 15 && f <= 17 ? [216, 208, 202][f - 15] : 200;
 function hook(f) {
-  const n = f < 15 ? f + 2 : Math.min(f - 9, 18), L = [f < 15 ? full('c', n) : punch('c', n, 1.25)];
+  const L = [SH.hook(f)];
   if (hookTag(f)) L.push(tagLime('حلو…', hookTag(f)));
   return [...L, word(pulseAt(f, [15])), ...dotsLime(f)];
 }
@@ -157,14 +167,15 @@ const FALL = [{ j: 2, f0: 32, x0: 720 }, { j: 1, f0: 34, x0: 360 }, { j: 0, f0: 
 const drop = (f, f0) => f < f0 ? 0 : Math.round(DROP * clamp((f - f0) / 9) ** 2);
 function drain(f) {
   const L = [{ t: 'fill', color: GREY }];
-  for (const F of FALL) if (drop(f, F.f0) < DROP) L.push(full('k', f, { clip: { x: F.x0, y: 0, w: 360, h: 1920 }, dy: drop(f, F.f0) }));
+  for (const F of FALL) if (drop(f, F.f0) < DROP) L.push(SH.drain(f, { clip: { x: F.x0, y: 0, w: 360, h: 1920 }, dy: drop(f, F.f0) }));
   if (f <= 33) L.push(tagLime('حلو…', 200, f === 32 ? 0.84 : f === 33 ? 0.62 : 1, { alpha: f === 32 ? 0.6 : f === 33 ? 0.22 : 1 }));   // own 2-frame exit
   for (const F of FALL) L.push(f >= F.f0 ? wordHollow({ clip: { x: F.x0, y: 0, w: 360, h: 1920 } }) : word(pulseAt(f, [30]), { clip: { x: F.x0, y: 0, w: 360, h: 1920 } }));
   L.push(...dashed(FALL.filter(F => f >= F.f0).map(F => F.j)));
   const ty = typing(f);
   for (const F of FALL) if (f < F.f0) L.push(...disc(DOT_X[F.j], DOT_Y + ty[F.j]));
   for (const F of FALL) if (f >= F.f0) { const t = clamp((f - F.f0) / 9), y = DOT_Y + drop(f, F.f0), r = 40 + 90 * t;
-    if (y - r < HH) L.push({ t: 'dot', x: DOT_X[F.j] + 8, y: y + 8, r: r + 4, fill: 'ink' }, { t: 'dot', x: DOT_X[F.j], y, r, fill: 'lime', ring: { color: 'ink', lw: 8 } }); }
+    const x = lerp(DOT_X[F.j], F.x0 + 180, easeOutCubic(clamp((f - F.f0) / 3)));   // each dot moves over the third it drags (review m10)
+    if (y - r < HH) L.push({ t: 'dot', x: x + 8, y: y + 8, r: r + 4, fill: 'ink' }, { t: 'dot', x, y, r, fill: 'lime', ring: { color: 'ink', lw: 8 } }); }
   return L;
 }
 // f45-89 dead beat and return (R3-4, R3-14): drained Smoke dots drop onto the floor f45-50, turn Lime f72, jump and land right to left f78/81/84
@@ -175,7 +186,7 @@ function dead(f) {
   const L = [{ t: 'fill', color: GREY }, wordHollow()];
   const landed = FLOOR.filter(D => f >= D.land);
   for (const D of landed) { const r = (f - D.land) * 260; if (r <= 0) continue; const C = { type: 'circle', x: DOT_X[D.j], y: DOT_Y, r };
-    L.push(full('c', f - 71, { clip: C }), word(1, { clip: C })); }
+    L.push(SH.ret(f, { clip: C }), word(1, { clip: C })); }
   for (const D of landed) { const r = (f - D.land) * 260; if (r <= 0) continue;
     L.push({ t: 'dot', x: DOT_X[D.j], y: DOT_Y, r: r - 5, fill: null, ring: { color: 'lime', lw: 10 } }, { t: 'dot', x: DOT_X[D.j], y: DOT_Y, r: r + 3, fill: null, ring: { color: 'ink', lw: 6 } }); }
   L.push(...dashed(FLOOR.filter(D => f < D.land).map(D => D.j)));
@@ -185,8 +196,9 @@ function dead(f) {
     if (f < start) {                                             // on the floor: Smoke until f72, then Lime
       const y = FLOOR_Y + (f - 45 < FLOOR_IN.length ? FLOOR_IN[f - 45] : 0);
       if (f < 72) L.push({ t: 'dot', x: D.x, y, r: 50, fill: 'smoke', ring: { color: 'ink', lw: 8 } }); else L.push(...disc(D.x, y, 50));
-    } else if (f < D.land) { const t = (f - start) / 6;                         // the jump: a short arc that settles onto the ش (overshoot about 10 px)
-      L.push(...disc(lerp(D.x, DOT_X[D.j], t), lerp(FLOOR_Y, DOT_Y, easeOutBack(t, 0.6)), lerp(50, 40, t)));
+    } else if (f < D.land) { const t = (f - start) / 6;                         // the jump onto the ش (overshoot 2 px)
+      const JF = [0, 0.38, 0.785, 0.964, 1.005, 1.0];                    // no frame inside the line band (review m5)
+      L.push(...disc(lerp(D.x, DOT_X[D.j], t), lerp(FLOOR_Y, DOT_Y, JF[f - start]), lerp(50, 40, t)));
     } else { const k = clamp((f - D.land) / 3); L.push(...disc(DOT_X[D.j], DOT_Y + Math.round(ty[D.j] * k))); }
   }
   L.push(deadLine(f));                                            // the line stays on top: the jumping dots pass behind it, never over it
@@ -194,7 +206,8 @@ function dead(f) {
 }
 // f90-134 offer card: shockwave from the middle dot, M slams, offer line; three copies of M's dots drop and open as portholes; centre iris onto the coffee
 const OM = { x0: 320, y0: 290 + T, w: 440 };
-const shockR = f => RMAX * easeOutCubic(clamp((f - 89) / 4));
+const IR = Math.hypot(540, Math.max(PORT_Y, HH - PORT_Y)) + 12;    // the iris covers the frame exactly on f134
+const shockR = f => (R45 ? 1800 : 1744) * (1 - (1 - clamp((f - 89) / 4)) ** 2);   // front visible for 3 frames (review m9)
 const PORTS = [   // right to left; R3-24 (centre porthole = perfume, so the coffee crash is not repeated here)
   { x: 810, fo: 105, from: 1, p: 'k', n: f => f < 120 ? 30 + f - 105 : 45 + f - 120, sc: 0.4, sx: 538, sy: 1272 },
   { x: 540, fo: 108, from: 0, p: 'o', n: f => f < 120 ? f - 105 : 15 + f - 120, sc: 0.3, sx: 540, sy: 1375 },
@@ -202,26 +215,27 @@ const PORTS = [   // right to left; R3-24 (centre porthole = perfume, so the cof
 function offer(f) {
   const L = [];
   if (f < 93) {                                                   // outside the wave: the f89 picture held
-    L.push(full('c', 18), word(), ...dotsLime(89), deadLine(89));
+    L.push(SH.hold(), word(), ...dotsLime(89), deadLine(89));
     const r = shockR(f); L.push({ t: 'fill', color: 'lime', clip: { type: 'circle', x: 715, y: DOT_Y, r } }, { t: 'dot', x: 715, y: DOT_Y, r: r + 12, fill: null, ring: { color: 'ink', lw: 24 } });
   } else L.push({ t: 'fill', color: 'lime' });
+  if (f >= 134) return [SH.iris(f), word(), ...dotsLime(f)];        // iris complete: the world, W and its dots (review m3)
   const k = f < 94 ? 1 + 0.3 * (1 - easeOutBack((f - 90) / 4)) : 1;
-  L.push(markK(OM.x0, OM.y0, OM.w, k));
   const md = markDots(OM.x0, OM.y0, OM.w);
   for (const P of PORTS) {                                        // drop f(fo-4)..fo, open fo..fo+6 (easeOutBack)
-    if (f < P.fo - 4) continue;
+    if (f < P.fo - 1) continue;
     const y = PORT_Y;
-    if (f < P.fo) { const t = (f - (P.fo - 4)) / 4; L.push({ t: 'dot', x: lerp(md.cx + P.from * md.pitch, P.x, t), y: lerp(md.cy, y, t * t), r: lerp(md.r, 22, t), fill: 'ink' }); continue; }
+    if (f < P.fo) { if (f === P.fo - 1) L.push({ t: 'dot', x: P.x, y: y - 45, r: 20, fill: 'ink' }); continue; }   // never inside the text block (review m4)
     if (P.x === 540 && f >= 131) continue;                         // the centre porthole becomes the iris
     const r = 22 + 88 * easeOutBack(clamp((f - P.fo) / 6));
     if (r < 34) { L.push({ t: 'dot', x: P.x, y, r, fill: 'ink' }); continue; }
     L.push({ t: 'still', src: src(P.p, P.n(f)), clip: { type: 'circle', x: P.x, y, r }, scale: P.sc, cx: P.sx / 1080, cy: P.sy / 1920, ax: P.x, ay: y },
       { t: 'dot', x: P.x, y, r: r - 6, fill: null, ring: { color: 'ink', lw: 12 } });
   }
+  if (f >= 131) { const r = 110 + (IR - 110) * ((f - 130) / 4) ** 2, C = { type: 'circle', x: 540, y: PORT_Y, r };   // under the offer line: it stays clean to f133 (review T3)
+    L.push({ ...SH.iris(f), clip: C }, { t: 'dot', x: 540, y: PORT_Y, r: r - 12, fill: null, ring: { color: 'ink', lw: 24 } }); }
+  L.push(markK(OM.x0, OM.y0, OM.w, k));                           // M and the offer line stay on top of the iris to f133
   L.push(text('خلّ إعلانك', 120 * pop(f - 90), 720 + T));
   if (f >= 93) L.push(text('علينا', 150 * pop(f - 93), 945 + T));
-  if (f >= 131) { const r = 110 + (RMAX - 110) * ((f - 130) / 4) ** 2, C = { type: 'circle', x: 540, y: PORT_Y, r };
-    L.push(full('c', f - 131, { clip: C }), { t: 'dot', x: 540, y: PORT_Y, r: r - 12, fill: null, ring: { color: 'ink', lw: 24 } }); }
   return L;
 }
 // categories (R3-23, R3-24): worlds on the beat, lens beats on Lime
@@ -260,7 +274,8 @@ function multRows(f) {                                           // all loose ro
     const d = f - f0, id = idx0 + i, ph = typing(f + 5 * (id % 3) + 3 * id, r === 40 ? AMP : 16);
     if (d < 0) return;
     if (d < 2) { const t = (d + 1) / 3, [x, y] = ARC(715, DOT_Y, cx, cy, t), [xp, yp] = ARC(715, DOT_Y, cx, cy, d / 3);
-      L.push(...row(xp, yp, [0, 0, 0], r * 0.8, pitch, { alpha: 0.35 }), ...row(x, y, [0, 0, 0], r * lerp(0.7, 1, t), pitch)); }
+      if (d === 1) [-1, 0, 1].forEach(n => L.push({ t: 'dot', x: xp + n * pitch, y: yp, r: r * 0.8, fill: 'lime', alpha: 0.35 }));   // trail: no shadow, never on W's own dots (review m6/T2)
+      L.push(...row(x, y, [0, 0, 0], r * lerp(0.7, 1, t), pitch)); }
     else L.push(...row(cx, cy, ph, r, pitch));
   });
   const big = f >= m3;
@@ -272,7 +287,7 @@ function multRows(f) {                                           // all loose ro
 function talk(f) {
   const g = f < V.mult[0] ? 'paper' : V.grounds[f < V.mult[1] ? 0 : f < V.mult[2] ? 1 : 2];
   const onColour = f >= V.mult[0];
-  return [{ t: 'fill', color: g }, wordInk(pulseAt(f, [V.talk, ...V.mult])), ...dotsLime(f), ...talkLine(f, onColour ? { stroke: 'paper', lw: 12 } : {}), ...multRows(f)];
+  return [{ t: 'fill', color: g }, ...multRows(f), wordInk(pulseAt(f, [V.talk, ...V.mult])), ...dotsLime(f), ...talkLine(f, onColour ? { stroke: 'paper', lw: 12 } : {})];   // rows under the word and the line (review T2)
 }
 function flood(f) {
   const t = clamp((f - V.flood) / 12), e = easeInOut(t), ring = 1 - clamp((f - V.flood) / 6);
@@ -293,7 +308,7 @@ function burst(f) {
   return BURST.flatMap(b => b.pts.map(p => ({ t: 'dot', x: +(C.x + b.ux * (p.d * e + drift)).toFixed(1), y: +(C.y + b.uy * (p.d * e + drift)).toFixed(1), r: +(p.r * lerp(0.5, 1, e)).toFixed(1), fill: b.c })));
 }
 function snap(f) {
-  const d = f - V.snap, L = [{ t: 'fill', color: 'lime' }, ...burst(f)];
+  const d = f - V.snap, L = [{ t: 'fill', color: 'lime' }, ...(d > 0 ? burst(f) : [])];   // the slam frame is the wordmark alone (review T6)
   if (d < 4) L.push(markK(BIG.x0, BIG.y0, BIG.w, 1 + 0.3 * (1 - easeOutBack(d / 4))));
   else if (!V.shrink || d < 10) L.push(mark(BIG.x0, BIG.y0, BIG.w));
   else { const t = easeInOut(clamp((d - 9) / 3)); L.push(mark(lerp(BIG.x0, SMALL.x0, t), lerp(BIG.y0, SMALL.y0, t), lerp(BIG.w, SMALL.w, t))); }
@@ -317,21 +332,22 @@ function cta(f) {
     { t: 'still', src: src(B.p, B.n(i)), clip: band, dy: B.dy },
     { t: 'rect', x: 0, y: 0, w: 1080, h: CTA.panel, fill: 'lime' }, { t: 'rect', x: 0, y: CTA.panel - 10, w: 1080, h: 10, fill: 'ink' }];
   const [a, b, c, m] = V.ctaIn, wd = f - V.wind, tip = wd >= 0 ? clamp((wd + 1) / (V.irisLen === 6 ? 5 : 3)) : 0;
-  const fall = o => tip > 0 ? { ...o, y: o.y + DROP * tip * tip, rot: 14 * tip } : o;
+  const PANEL = { x: 0, y: 0, w: 1080, h: CTA.panel - 10 };
+  const fall = o => tip > 0 ? { ...o, y: o.y + DROP * tip * tip, rot: 14 * tip, clip: PANEL } : o;   // the lines drop behind the Ink edge (review M2)
   if (f >= a) L.push(fall(text(L1, 120 * pop(f - a), CTA.b[0])));
   if (f >= b) L.push(fall(text('بالخاص', 160 * pop(f - b), CTA.b[1], { shadow: { dx: 8, dy: 8, color: 'paper' } })));
   if (f >= c) L.push(fall(handle(HANDLE, CTA.b[2], { size: 60 * pop(f - c) })));
-  if (f >= m) { const [x0, y0, w] = CTA.m, k = pop(f - m); const w2 = w * k, X = x0 + (w - w2) / 2, Y = y0 + (w - w2) * MH / 2; L.push(...markTyping(X, Y, w2, typing(f, R45 ? 8 : 10))); }
+  if (f >= m) { const [x0, y0, w] = CTA.m, k = pop(f - m); const w2 = w * k, X = x0 + (w - w2) / 2, Y = y0 + (w - w2) * MH / 2; L.push(...markTyping(X, Y, w2, typing(f, R45 ? 5 : 7))); }   // keeps the middle dot off the shadda (review T5)
   // M (and the tagline) fall out over the first 6 frames
-  const d = f - V.cta; if (d < 6) { const t = (d + 1) / 6, dy = DROP * t * t;
-    const M = V.shrink ? SMALL : BIG; L.push(mark(M.x0, M.y0 + dy, M.w));
-    if (V.tagline) L.push(text('خلّهم يسولفون', 104, 700 + T + dy, { rot: 6 * t }), text('عنك!', 170, 900 + T + dy * 1.1, { rot: -8 * t })); }
+  const d = f - V.cta, FO = V.shrink ? 6 : 3; if (d < FO) { const t = (d + 1) / FO, dy = DROP * t * t;   // M and the tagline fall out behind the panel edge, never over the band (review M2)
+    const M = V.shrink ? SMALL : BIG; L.push(mark(M.x0, M.y0 + dy, M.w, { clip: PANEL }));
+    if (V.tagline) L.push(text('خلّهم يسولفون', 104, 700 + T + dy, { rot: 6 * t, clip: PANEL }), text('عنك!', 170, 900 + T + dy * 1.1, { rot: -8 * t, clip: PANEL })); }
   // wind-up: iris from the wordmark's middle dot onto the frozen opener frame n2, with W and its dots
   if (wd >= 0) { const md = markDots(...CTA.m), r = 15 + (RMAX - 15) * ((wd + 1) / V.irisLen) ** 2, C = { type: 'circle', x: md.cx, y: md.cy, r };
-    L.push(full('c', 2, { clip: C }), word(1, { clip: C }), ...dotsLime(f, { clip: C }), { t: 'dot', x: md.cx, y: md.cy, r: r + 6, fill: null, ring: { color: 'ink', lw: 16 } }); }
+    L.push(SH.loop({ clip: C }), word(1, { clip: C }), ...dotsLime(f, { clip: C }), { t: 'dot', x: md.cx, y: md.cy, r: r + 6, fill: null, ring: { color: 'ink', lw: 16 } }); }
   return L;
 }
-const loopEnd = f => [full('c', 2), word(), ...dotsLime(f)];
+const loopEnd = f => [SH.loop(), word(), ...dotsLime(f)];
 
 for (let f = 0; f < N; f++) {
   let L, s;
