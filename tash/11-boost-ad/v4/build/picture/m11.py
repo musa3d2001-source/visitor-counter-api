@@ -23,7 +23,8 @@ Gates (spec section 12 rows that can be measured on the frames and the layer lis
                  transition is listed (the spec row "no saturated-red transitions" is reported, not gated: the STAKK red
                  ground is an owner decision).
   G6 canvas      no transparent pixel in the picture, no single-colour (blank) frame, frame count and size.
-  G7 loop        SSIM(Y') of f(N-1) against f0 >= 0.99.
+  G7 loop        SSIM(Y') of f(N-1) against f0 >= 0.99, or (R3-25: the pour plays through the loop, so f(N-1) and f0 are
+                 consecutive native frames) >= the lowest SSIM of the 6 frame steps on either side of the seam.
   G8 rail        9:16 only: no text/word/wordmark ink (rendered from the layer list), no dot centre and no lens or
                  porthole in x > 960 over y 1100-1750.
   G9 tags        no tag ink box (each tag layer rendered alone by sb/compose.mjs after its -4 deg tilt: fill + keyline +
@@ -49,14 +50,16 @@ WY = np.array([0.2126, 0.7152, 0.0722], np.float32)
 COLS = {'lime': (198, 255, 0), 'ink': (11, 11, 11), 'char': (26, 26, 24), 'smoke': (142, 144, 136), 'paper': (245, 245, 233)}
 NAMED = {'ink': '#0B0B0B', 'paper': '#F5F5E9', 'lime': '#C6FF00', 'smoke': '#8E9088', 'char': '#1A1A18'}
 WORLD = {'hp': 'HABBA pour', 'hu': 'HABBA pour (band)', 'hb': 'HABBA beans', 'ls': 'LAYL spray', 'lb': 'LAYL bottle',
-         'sa': 'STAKK open stack', 'sb': 'STAKK crown', 'su': 'STAKK', 'sl': 'STAKK (lens)', 'dc': 'cake', 'k': 'kunafa'}
+         'sa': 'STAKK open stack', 'sb': 'STAKK crown', 'su': 'STAKK', 'sl': 'STAKK (lens)', 'sd': 'STAKK (9:16 band)', 'se': 'STAKK (4:5 band)',
+         'lp': 'LAYL bottle (9:16 band)', 'lq': 'LAYL bottle (4:5 band)', 'dc': 'cake', 'k': 'kunafa'}
 # empty-backdrop rectangles (x0, y0, x1, y1) in prepared-frame (source) pixels, per prefix, for the product-mask colour model
 BACKDROP = {'hp': [(0, 0, 1080, 650)], 'hu': [(0, 1500, 1080, 1920)], 'hb': [(0, 0, 1080, 900)], 'ls': [(0, 0, 900, 900)],
             'lb': [(0, 0, 1080, 600)], 'sa': [(0, 0, 1080, 750)], 'sb': [(0, 0, 1080, 750)], 'su': [(0, 0, 1080, 750)],
-            'sl': [(0, 0, 1080, 750)], 'dc': [(0, 120, 450, 850), (740, 120, 1080, 850)], 'k': [(0, 0, 1080, 800)]}
+            'sl': [(0, 0, 1080, 750)], 'sd': [(0, 0, 1080, 1040)], 'se': [(0, 0, 1080, 780)], 'lp': [(0, 0, 1080, 1040)], 'lq': [(0, 0, 1080, 780)],
+            'dc': [(0, 120, 450, 850), (740, 120, 1080, 850)], 'k': [(0, 0, 1080, 800)]}
 HULL = {'hu': True, 'hb': True}                  # convex products (cup + saucer seen from the side, beans + table edge)
 SAUCER = {'hp': (561, 1259)}                       # top-view cup: saucer disc fitted around this centre guess (manifest cup centre)
-STAKK, LAYL = ('sa', 'sb', 'su', 'sl'), ('ls', 'lb')
+STAKK, LAYL = ('sa', 'sb', 'su', 'sl', 'sd', 'se'), ('ls', 'lb', 'lp', 'lq')
 K_LAG, WIN_Q = 6, 193          # transition lag (frames); 10-degree window at quarter resolution (771 px)
 MASK_DOC = ("Product mask per prepared source frame, then mapped onto the canvas through each still layer (scale, cx, cy, ax, ay, dx, dy, clip); "
             "later opaque fills, rects, dots and stills erase it. STAKK (sa/sb/su/sl): not STAKK red (R>150, G<125, B<125, R-G>80; this also "
@@ -563,8 +566,10 @@ def main():
         return np.asarray(Image.open(os.path.join(fdir, want[f])).convert('RGB'))[:HH].astype(np.float64) / 255 @ WY.astype(np.float64)
     s_loop, m_loop = ssim_y(Yfull(N - 1), Yfull(0))
     bad = m_loop < 0.9; bb = bbox(bad)
-    gate('G7_loop', s_loop >= 0.99, f"SSIM(Y') f{N-1} vs f0 = {s_loop:.4f} (gate 0.99); local SSIM < 0.9 on {bad.mean()*100:.2f}% of pixels" + (f" in x {bb[0]}-{bb[2]} y {bb[1]}-{bb[3]}" if bb else ''),
-         ssim=round(s_loop, 5))
+    steps = [ssim_y(Yfull(f), Yfull(f + 1))[0] for f in list(range(N - 7, N - 1)) + list(range(0, 6))]   # the motion around the seam
+    base = min(steps)
+    gate('G7_loop', s_loop >= 0.99 or s_loop >= base, f"SSIM(Y') f{N-1} vs f0 = {s_loop:.4f} (gate 0.99, or the lowest of the 12 neighbouring frame steps {base:.4f}); local SSIM < 0.9 on {bad.mean()*100:.2f}% of pixels" + (f" in x {bb[0]}-{bb[2]} y {bb[1]}-{bb[3]}" if bb else ''),
+         ssim=round(s_loop, 5), neighbour_steps=[round(x, 5) for x in steps])
 
     # ---- layer renders: tags (full and fill-only) and, for 9:16, every text/word/mark layer
     tag_layers = []

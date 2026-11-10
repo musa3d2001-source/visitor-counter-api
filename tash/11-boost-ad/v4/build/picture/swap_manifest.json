@@ -367,7 +367,7 @@
      110,
      111,
      112,
-     113
+     112
     ],
     "916": {
      "dy": 0
@@ -375,7 +375,7 @@
     "45": {
      "dy": -335
     },
-    "rule": "n = f - 36",
+    "rule": "n = f - 36, but f149 holds n112 (delivery check OE-1: n113 showed a fin at the landed bean)",
     "tag": "قهوة؟",
     "note_45": "-335 (not -285) lifts the beans clear of the frame bottom; the wall above stays empty"
    },
@@ -858,7 +858,9 @@
      "note": "lp = LAYL bottle shrunk 0.8, cap at y 1075 (final review CC1)"
     },
     "45": {
-     "dy": -20
+     "prefix": "lq",
+     "dy": 0,
+     "note": "lq = LAYL bottle at 0.65, cap at y 815 (delivery check OE-6)"
     },
     "rule": "n = f - 195",
     "note_45": "the bottle (cap top y 849-828 with the push, amber to y 1408) is taller than the 550 px band: cap top y 829-808, clear of the panel edge; the bottom 40 px of the body run off the frame"
@@ -1143,7 +1145,9 @@
      "note": "sd = b7 shrunk 0.6, settled bun top at y 1075 (final review CC1: the whole burger above the caption rows)"
     },
     "45": {
-     "dy": 187
+     "prefix": "se",
+     "dy": 0,
+     "note": "se = b7 at 0.5, bun top at y 815: the whole burger in the 550 px band (delivery check OE-6)"
     },
     "rule": "n4 held one frame, n5-n17, n19-n33: the crown lands on n19 = f495 (A-14 f360), on the beat (final review QT6)",
     "note_45": "crown top lands at y 810, just under the panel edge, as in 9:16"
@@ -1564,7 +1568,8 @@
   "Grade: the plan's lift is baked in: k3 x + 0.28 x(1-x), b7 x + 0.22 x(1-x) (plan: about +0.04 / small lift).",
   "All 4:5 values are new (the plan gives 9:16 only).",
   "Portholes (checker fix): right/perfume 0.27 about (540,1170) and left/burger 0.20 about (540,1112) instead of the plan's 0.31 about (540,1175) / (540,1060), so each product sits whole inside its Ø220 window like the coffee cup (at 0.31 the bottle cap and the burger crown/base were cut by the ring). Centre/coffee stays 0.31 about (561,1259).",
-  "Final review wf_0d526e23-b2a (10 Nov): loop plays hp n28-n39 into f0 (R2); centre porthole n82-n107 continuous (R4); 4:5 opener dy -150 and punch 1.15 at ay 1185 (L1); 9:16 CTA bands: burger sd 0.6, perfume lp 0.8, coffee dy 740 (CC1); burger band crown lands on f495 / A-14 f360 (QT6); Coffee A middle bean held from n102 in prep (R1)."
+  "Final review wf_0d526e23-b2a (10 Nov): loop plays hp n28-n39 into f0 (R2); centre porthole n82-n107 continuous (R4); 4:5 opener dy -150 and punch 1.15 at ay 1185 (L1); 9:16 CTA bands: burger sd 0.6, perfume lp 0.8, coffee dy 740 (CC1); burger band crown lands on f495 / A-14 f360 (QT6); Coffee A middle bean held from n102 in prep (R1).",
+  "Delivery check wf_f2104987-118: Coffee A f149 holds n112 (OE-1); sd margins from n30 (OE-2); 4:5 bands burger se 0.5 and perfume lq 0.65 (OE-6)."
  ],
  "for_the_generator": [
   "Portholes move: right (x 810) = lb perfume 0.27 about (540,1170), centre (x 540) = hp coffee 0.31 about (561,1259), left (x 270) = su burger 0.20 about (540,1112) (mk_film PORTS today: k / o / b at 0.4 / 0.3 / 0.3).",

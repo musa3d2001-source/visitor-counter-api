@@ -18,7 +18,9 @@ Output: 1080x1920 RGB PNGs <prefix><NNNN>.png, NNNN = native frame index of the 
   su  STAKK b7_crown n4-n48 unshifted (never n18)                                               left porthole, burger band
   sl  STAKK b7_crown n34-n48 shrunk x958/1080 about (540,1112), red backdrop continued sideways  Burger C lens (lens scale 0.62 = 0.55 effective)
   lp  LAYL f315-344 bottle (as lb) shrunk 0.8 into a 1080x1920 canvas, cap at y 1075, edges continued   9:16 perfume CTA band
-  sd  STAKK b7 n4-n17, n19-n33 shrunk 0.6 into a 1080x1920 canvas, settled bun top at y 1075, backdrop continued   9:16 burger CTA band
+  sd  STAKK b7 n4-n17, n19-n33 shrunk 0.6 into a 1080x1920 canvas, settled bun top at y 1075, margins from n30   9:16 burger CTA band
+  se  the same at 0.5, bun top at y 815                                                       4:5 burger CTA band
+  lq  LAYL bottle (as lp) at 0.65, cap at y 815                                               4:5 perfume CTA band
   dc  DOSE d4_cake n0-n35 unshifted (the plan shows only n2-n31)                                sweet (owner's yes, 10 Nov: «كيكة دوز خوش»)
   k   kunafa k0030-k0072 copied unchanged from --kunafa                                         sweet, kunafa option
 Grade: k3 (hp, hu) and b7 (sa, sb, su) get the plan's small mid-tone lift (LIFT below); nothing else is graded.
@@ -51,7 +53,7 @@ if not A or A[0].startswith('--'):
     sys.exit(__doc__)
 OUT = A[0]
 opt = lambda k: A[A.index(k) + 1] if k in A else None
-ONLY = set(opt('--only').split(',')) if opt('--only') else {'hp', 'hu', 'hb', 'ls', 'lb', 'lp', 'sa', 'sb', 'su', 'sl', 'sd', 'dc', 'k'}
+ONLY = set(opt('--only').split(',')) if opt('--only') else {'hp', 'hu', 'hb', 'ls', 'lb', 'lp', 'lq', 'sa', 'sb', 'su', 'sl', 'sd', 'se', 'dc', 'k'}
 os.makedirs(OUT, exist_ok=True)
 LOG = {}
 
@@ -96,19 +98,25 @@ def shift_down(a, dy, plate, feather, cover=None):
     return o
 
 
-def shrink_into(a, k, sx, sy, ax, ay, seed):
+def shrink_into(a, k, sx, sy, ax, ay, seed, ref=None):
     """the frame scaled by k so that its source point (sx,sy) lands on (ax,ay) of a 1080x1920 canvas; the uncovered canvas is the
     frame's own edge rows / columns continued (per row / column, smoothed along the edge, dithered): CTA bands that keep the whole
-    product above the app's caption rows (final review CC1)"""
+    product above the app's caption rows (final review CC1). ref = a clean frame of the same shot: the margins are taken from it
+    for every frame, so a highlight passing the frame edge cannot streak across the margin (delivery check OE-2)"""
     rng = np.random.default_rng(seed); a = np.asarray(a, np.float64)
     w, h = round(W * k), round(H * k); x0, y0 = round(ax - sx * k), round(ay - sy * k)
     s = np.stack([np.asarray(Image.fromarray(np.ascontiguousarray(a[..., c]).astype(np.float32)).resize((w, h), Image.LANCZOS)) for c in range(3)], -1).astype(np.float64)
     o = np.zeros((H, W, 3)); X0, Y0, X1, Y1 = max(0, x0), max(0, y0), min(W, x0 + w), min(H, y0 + h)
     o[Y0:Y1, X0:X1] = s[Y0 - y0:Y1 - y0, X0 - x0:X1 - x0]
+    e = o
+    if ref is not None:
+        r = np.asarray(ref, np.float64)
+        rs_ = np.stack([np.asarray(Image.fromarray(np.ascontiguousarray(r[..., c]).astype(np.float32)).resize((w, h), Image.LANCZOS)) for c in range(3)], -1).astype(np.float64)
+        e = np.zeros((H, W, 3)); e[Y0:Y1, X0:X1] = rs_[Y0 - y0:Y1 - y0, X0 - x0:X1 - x0]
     g = np.exp(-0.5 * (np.arange(-30, 31) / 10.0) ** 2); g /= g.sum()
     sm = lambda prof: np.stack([np.convolve(np.pad(prof[:, c], 30, mode='edge'), g, mode='valid') for c in range(3)], -1)
-    if X0 > 0: o[Y0:Y1, :X0] = sm(o[Y0:Y1, X0:X0 + 12].mean(1))[:, None, :] + rng.normal(0, 1.0, (Y1 - Y0, X0, 3))
-    if X1 < W: o[Y0:Y1, X1:] = sm(o[Y0:Y1, X1 - 12:X1].mean(1))[:, None, :] + rng.normal(0, 1.0, (Y1 - Y0, W - X1, 3))
+    if X0 > 0: o[Y0:Y1, :X0] = sm(e[Y0:Y1, X0:X0 + 12].mean(1))[:, None, :] + rng.normal(0, 1.0, (Y1 - Y0, X0, 3))
+    if X1 < W: o[Y0:Y1, X1:] = sm(e[Y0:Y1, X1 - 12:X1].mean(1))[:, None, :] + rng.normal(0, 1.0, (Y1 - Y0, W - X1, 3))
     if Y0 > 0: o[:Y0] = sm(o[Y0:Y0 + 12].mean(0))[None] + rng.normal(0, 1.0, (Y0, W, 3))
     if Y1 < H: o[Y1:] = sm(o[Y1 - 12:Y1].mean(0))[None] + rng.normal(0, 1.0, (H - Y1, W, 3))
     return np.clip(o, 0, 255)
@@ -196,9 +204,13 @@ if 'lp' in ONLY:
     for n in range(315, 345):
         a = np.asarray(Image.open(os.path.join(OUT, f'lb{n:04d}.png')).convert('RGB'))   # the prepared lb frame (label already off)
         save('lp', n, shrink_into(a, 0.8, 540, 827, 540, 1075, 20261112 + n))
+if 'lq' in ONLY:     # 4:5 perfume band (delivery check OE-6): 0.65, cap at y 815 on the canvas, so the whole bottle sits in the 550 px band
+    for n in range(315, 345):
+        a = np.asarray(Image.open(os.path.join(OUT, f'lb{n:04d}.png')).convert('RGB'))
+        save('lq', n, shrink_into(a, 0.65, 540, 827, 540, 815, 20261114 + n))
 
 # ---------------- STAKK b7_crown ----------------
-if {'sa', 'sb', 'su', 'sl', 'sd'} & ONLY:
+if {'sa', 'sb', 'su', 'sl', 'sd', 'se'} & ONLY:
     b7 = decode('b7', 0, 48)
     if 'sa' in ONLY:     # Burger A: +100, top rows from n0. Only n0-n9: in n10-n12 the falling crown is a flat blurred bar cut
         for n in range(0, 10):     # straight at y 100 (checked at 100%), so the plan's fallback is taken: hold n0 longer, end on n9
@@ -228,7 +240,10 @@ if {'sa', 'sb', 'su', 'sl', 'sd'} & ONLY:
             save('sl', n, np.clip(o, 0, 255))
     if 'sd' in ONLY:     # burger CTA band (9:16): 0.6, settled bun top (source y 623) at y 1075; the crown falls behind the panel
         for n in list(range(4, 18)) + list(range(19, 34)):
-            save('sd', n, shrink_into(lift(b7[n], LIFT['b7']), 0.6, 540, 623, 540, 1075, 20261113 + n))
+            save('sd', n, shrink_into(lift(b7[n], LIFT['b7']), 0.6, 540, 623, 540, 1075, 20261113 + n, ref=lift(b7[30], LIFT['b7'])))
+    if 'se' in ONLY:     # 4:5 burger band (delivery check OE-6): 0.5, settled bun top at y 815, margins from n30
+        for n in list(range(4, 18)) + list(range(19, 34)):
+            save('se', n, shrink_into(lift(b7[n], LIFT['b7']), 0.5, 540, 623, 540, 815, 20261115 + n, ref=lift(b7[30], LIFT['b7'])))
     del b7
 
 # ---------------- DOSE d4_cake ----------------
