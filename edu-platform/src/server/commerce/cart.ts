@@ -34,9 +34,14 @@ export function parseCartCookie(raw: string): string[] {
   }
 }
 
+/** ما يُكتب في الكوكي فعلًا: بلا تكرار وضمن الحد */
+export function normalizeCartIds(ids: string[]): string[] {
+  return [...new Set(ids)].slice(0, MAX_ITEMS);
+}
+
 export async function writeCartIds(ids: string[]) {
   const jar = await cookies();
-  const unique = [...new Set(ids)].slice(0, MAX_ITEMS);
+  const unique = normalizeCartIds(ids);
   jar.set(CART_COOKIE, encodeURIComponent(JSON.stringify(unique)), {
     httpOnly: true,
     sameSite: "lax",

@@ -24,6 +24,8 @@ import { filsToKwdString } from "@/lib/money";
 import { ar, count, initial, savings, W } from "@/lib/design";
 import { cn } from "@/lib/utils";
 import { Kwd, SumRow, TiltedPosters, pillParts } from "../cart/_components/commerce";
+import { CartFreshness } from "@/components/site/cart-freshness";
+import { cartSignature } from "@/lib/cart-signature";
 import { CheckoutForm } from "./checkout-form";
 
 export const metadata: Metadata = { title: "إتمام الشراء", robots: { index: false } };
@@ -36,7 +38,8 @@ export default async function CheckoutPage({ searchParams }: { searchParams: Pro
   const sp = await searchParams;
   // قبل حساب السلة: منتج اكتمل دفعه الآن لا يُعرض للشراء مرة ثانية
   await healBuyerOrders({ userId: user.id });
-  const cart = await computeCart(await getCartIds(), user.id);
+  const cartIds = await getCartIds();
+  const cart = await computeCart(cartIds, user.id);
   if (cart.payableLines.length === 0) redirect("/cart");
 
   const couponCode = (sp.coupon ?? "").trim().slice(0, 32);
@@ -64,6 +67,7 @@ export default async function CheckoutPage({ searchParams }: { searchParams: Pro
 
   return (
     <>
+      <CartFreshness signature={cartSignature(cartIds)} />
       <PageHeader
         breadcrumbs={[{ label: "السلة", href: "/cart" }, { label: "إتمام الشراء" }]}
         eyebrow={{ icon: <Lock />, label: total > 0 ? claims.checkoutEyebrow : "طلب مجاني", tone: "teal" }}

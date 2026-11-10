@@ -1,13 +1,15 @@
 import Link from "next/link";
-import { ArrowLeft, LayoutDashboard, LogIn, ShoppingCart, UserRound } from "lucide-react";
+import { randomUUID } from "node:crypto";
+import { ArrowLeft, LayoutDashboard, LogIn, UserRound } from "lucide-react";
 import { Sparkle } from "@/components/art";
-import { academicYearLabel, ar } from "@/lib/design";
+import { academicYearLabel } from "@/lib/design";
 import { cn } from "@/lib/utils";
 import { getCurrentUser } from "@/server/auth/session";
 import { getCartIds } from "@/server/commerce/cart";
 import { firstPreviewLesson, listGrades } from "@/server/catalog/public-data";
 import { getPublicSettings } from "@/server/platform/public-settings";
 import { storage } from "@/server/storage";
+import { CartLink } from "./cart-link";
 import { Logo } from "./logo";
 import { MobileNav } from "./mobile-nav";
 
@@ -94,21 +96,7 @@ export async function SiteHeader() {
                 <LayoutDashboard className="size-4.5" aria-hidden /> لوحة التحكم
               </Link>
             ) : null}
-            <Link
-              href="/cart"
-              className="relative grid size-11 place-items-center rounded-[15px] border border-[rgb(23_32_38/0.07)] bg-white text-ink shadow-card transition-[transform,box-shadow] hover:-translate-y-px hover:shadow-lift sm:size-12"
-              aria-label={`السلة (${ar(cartCount)})`}
-            >
-              <ShoppingCart className="size-5.5" aria-hidden />
-              {cartCount ? (
-                <span
-                  className="num absolute -end-1.5 -top-1.5 grid h-5.5 min-w-5.5 place-items-center rounded-full bg-coral px-1 font-display text-[0.75rem] leading-none font-black text-white shadow-[0_0_0_3px_#fff8ec]"
-                  data-testid="cart-count"
-                >
-                  {ar(cartCount)}
-                </span>
-              ) : null}
-            </Link>
+            <CartLink count={cartCount} stamp={randomUUID()} />
             {user ? (
               <Link href="/account" className={cn("btn btn-3d btn-primary btn-icon sm:size-12 sm:rounded-[15px] md:w-auto md:px-4")} aria-label="حسابي">
                 <UserRound aria-hidden />

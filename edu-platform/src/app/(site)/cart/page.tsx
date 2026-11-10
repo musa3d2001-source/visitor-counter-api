@@ -16,6 +16,8 @@ import { PRODUCT_TYPE_LABELS } from "@/lib/labels";
 import { filsToKwdString } from "@/lib/money";
 import { ar, count, savings, toneClass, W } from "@/lib/design";
 import { cn } from "@/lib/utils";
+import { CartFreshness } from "@/components/site/cart-freshness";
+import { cartSignature } from "@/lib/cart-signature";
 import { EmptyStart, Kwd, OwnedNote, SavedChip, SumRow, TiltedPosters, TrustList, pillParts } from "./_components/commerce";
 import { MobileCheckoutBar } from "./_components/mobile-checkout-bar";
 
@@ -32,6 +34,7 @@ export default async function CartPage() {
 
   return (
     <>
+      <CartFreshness signature={cartSignature(ids)} />
       <PageHeader
         breadcrumbs={[{ label: "الرئيسية", href: "/" }, { label: "السلة" }]}
         eyebrow={{ icon: <ShoppingCart />, label: "سلة المشتريات", tone: "gold" }}
