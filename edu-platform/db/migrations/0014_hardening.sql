@@ -199,3 +199,16 @@ alter table lessons validate constraint lessons_processing_status_check;
 alter table lessons add column if not exists video_fingerprint jsonb;
 alter table lessons add column if not exists video_hold_fingerprint jsonb;
 set local lock_timeout = default;
+
+-- =====================================================================
+-- عدّادات الضغط (مرحلة load، البند K099)
+-- كم مرة امتلأ شيء فرفضنا طلبًا أو انتهت مهلته، لكل نوع في كل ساعة. أعداد فقط: لا حساب ولا عنوان ولا مسار.
+-- جدول جديد لا يلمسه الكود القديم، ويُنظف بعد ١٤ يومًا.
+-- =====================================================================
+create table if not exists saturation_counters (
+  hour timestamptz not null,
+  kind text not null check (kind in ('login_shed', 'stamp_shed', 'stamp_deadline', 'db_pool_wait', 'db_deadline')),
+  count bigint not null default 0 check (count >= 0),
+  primary key (hour, kind)
+);
+alter table saturation_counters enable row level security;

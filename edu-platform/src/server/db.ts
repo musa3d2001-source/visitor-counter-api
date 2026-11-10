@@ -3,6 +3,8 @@ import { AsyncLocalStorage } from "node:async_hooks";
 import postgres, { type ISql, type Sql } from "postgres";
 import { DatabaseBusyError, toBusyError } from "./db-busy";
 import { env } from "./env";
+// يسجل مراقب الانشغال: كل أمر يمر من هنا يُعد في عدّادات الضغط
+import "./platform/saturation";
 
 export { DatabaseBusyError, isDatabaseBusy } from "./db-busy";
 

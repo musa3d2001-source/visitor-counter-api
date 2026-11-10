@@ -1,4 +1,5 @@
 import "server-only";
+import { noteSaturation } from "../platform/saturation";
 
 /**
  * حد أعمال PDF الثقيلة الجارية على نسخة الخادم الواحدة: ختم نسخة مشترٍ، فحص ملف مرفوع، بناء معاينة.
@@ -35,12 +36,17 @@ export function configureStampGateForTests(next: Partial<typeof limits> | null) 
   limits = { ...STAMP_GATE_DEFAULTS, ...(next ?? {}) };
 }
 
+function refusal() {
+  noteSaturation("stamp_shed");
+  return new StampBusyError(limits.retryAfterSeconds);
+}
+
 function acquire(): Promise<void> {
   if (active < limits.slots && waiting.length === 0) {
     active++;
     return Promise.resolve();
   }
-  if (waiting.length >= limits.queue) return Promise.reject(new StampBusyError(limits.retryAfterSeconds));
+  if (waiting.length >= limits.queue) return Promise.reject(refusal());
   return new Promise<void>((resolve, reject) => {
     const waiter: Waiter = {
       grant: () => {
@@ -50,7 +56,7 @@ function acquire(): Promise<void> {
       timer: setTimeout(() => {
         const at = waiting.indexOf(waiter);
         if (at >= 0) waiting.splice(at, 1);
-        reject(new StampBusyError(limits.retryAfterSeconds));
+        reject(refusal());
       }, limits.waitMs),
     };
     waiting.push(waiter);

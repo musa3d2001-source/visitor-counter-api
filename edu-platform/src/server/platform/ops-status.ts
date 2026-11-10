@@ -4,6 +4,7 @@ import { configWarnings, env, opsAlertEmail } from "../env";
 import { paymentsConfig } from "../payments/service";
 import { bunnyConfigured } from "../video/bunny";
 import { paidVideoWithoutStreaming } from "../video/policy";
+import { SATURATION_KINDS, type SaturationKind } from "./saturation";
 import { jobStatusOf, listJobHeartbeats, reconcileCadence, type JobHeartbeat, type JobStatus } from "./scheduled-jobs";
 
 /**
@@ -79,6 +80,22 @@ export async function heldVideoLessons(): Promise<HeldVideo[]> {
 /** منتجات مدفوعة منشورة يُشاهَد فيديوها بلا مزود بث */
 export function paidRawVideoCount(): Promise<number> {
   return paidVideoWithoutStreaming(sql, env().VIDEO_PROVIDER === "bunny" && bunnyConfigured());
+}
+
+export type SaturationView = { kind: SaturationKind; lastDay: number; lastWeek: number };
+
+/** كم مرة امتلأ كل شيء في آخر ٢٤ ساعة وآخر ٧ أيام، بترتيب ثابت. نوع لم يحدث يظهر بصفر */
+export async function saturationViews(): Promise<SaturationView[]> {
+  const rows = await sql<{ kind: SaturationKind; last_day: number; last_week: number }[]>`
+    select kind,
+      least(coalesce(sum(count) filter (where hour > date_trunc('hour', now()) - interval '24 hours'), 0), 2000000000)::int as last_day,
+      least(sum(count), 2000000000)::int as last_week
+    from saturation_counters
+    where hour > date_trunc('hour', now()) - interval '7 days'
+    group by kind
+  `;
+  const byKind = new Map(rows.map((row) => [row.kind, row]));
+  return SATURATION_KINDS.map((kind) => ({ kind, lastDay: byKind.get(kind)?.last_day ?? 0, lastWeek: byKind.get(kind)?.last_week ?? 0 }));
 }
 
 export type OpsSummary = OpsConfig & { jobsNeedingAttention: number; errorsLast24h: number };

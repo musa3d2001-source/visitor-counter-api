@@ -8,6 +8,7 @@ import { StampBusyError, STAMP_GATE_DEFAULTS } from "@/server/access/stamp-gate"
 import { recordFileCheck, statusForProblem } from "@/server/access/file-check";
 import { logAccess } from "@/server/platform/audit";
 import { reportError } from "@/server/platform/report-error";
+import { noteSaturation } from "@/server/platform/saturation";
 import { hitRateLimit } from "@/server/auth/rate-limit";
 import { ipFromHeaders } from "@/server/http";
 import { isUuid } from "@/lib/uuid";
@@ -129,6 +130,7 @@ async function handleGET(req: NextRequest, ctx: { params: Promise<{ fileId: stri
     // انشغال مؤقت على هذه النسخة أو ختم جارٍ للنسخة نفسها: لا خطأ يُسجل، والقارئ يعيد المحاولة
     if (err instanceof StampBusyError) return retryLater(req, 503, err.retryAfterSeconds, FILE_BUSY_MESSAGE, true);
     if (err instanceof StampInProgressError) return retryLater(req, 429, err.retryAfterSeconds, FILE_PREPARING_MESSAGE, true);
+    if (err instanceof StampDeadlineError) noteSaturation("stamp_deadline");
     await reportError("files:delivery", err);
     // فوق حد الختم: لا يُسلَّم أصله أبدًا. يُعلَّم ليظهر للمالك في «سلامة المحتوى»
     if (err instanceof OverStampLimitError || (err instanceof PdfUnusableError && err.problem === "over_limit")) {

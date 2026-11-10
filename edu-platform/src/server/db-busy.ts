@@ -7,7 +7,14 @@ import { DB_BUSY_DIGEST } from "@/lib/busy";
  * الرسالة ثابتة وبلا أي تفصيل من الخطأ الأصلي (نص الأمر، عنوان الخادم، القيم)، والأصل في cause لمن يحقق محليًا فقط.
  * digest ثابت: Next يحترم digest موجودًا على الخطأ، فيعرفه حد الخطأ في المتصفح ولا يرى غيره.
  */
-export type BusyReason = "queue" | "statement" | "connect" | "idle_in_transaction" | "unavailable";
+export type BusyReason = "queue" | "statement" | "connect" | "idle_in_transaction" | "unavailable" | "hash";
+
+/** عدّادات الضغط في «صحة المنصة». الخطأ يولد مرة واحدة لكل حدث، فلا يتكرر العد مهما عبر من طبقات */
+let busyObserver: ((reason: BusyReason) => void) | null = null;
+
+export function observeDatabaseBusy(observer: ((reason: BusyReason) => void) | null) {
+  busyObserver = observer;
+}
 
 export class DatabaseBusyError extends Error {
   readonly digest = DB_BUSY_DIGEST;
@@ -19,6 +26,7 @@ export class DatabaseBusyError extends Error {
   ) {
     super(`database busy: ${reason}`, options);
     this.name = "DatabaseBusyError";
+    busyObserver?.(reason);
   }
 }
 

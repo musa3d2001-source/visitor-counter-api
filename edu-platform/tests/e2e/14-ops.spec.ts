@@ -67,6 +67,25 @@ test.describe("the live server", () => {
     await expectNoHorizontalOverflow(page);
   });
 
+  test("the owner reads how often the site was full, by kind, last day and last week", async ({ page }) => {
+    await db()`delete from saturation_counters`;
+    await db()`
+      insert into saturation_counters (hour, kind, count) values
+        (date_trunc('hour', now()), 'login_shed', 12),
+        (date_trunc('hour', now()) - interval '3 days', 'login_shed', 30),
+        (date_trunc('hour', now()), 'stamp_shed', 4)
+    `;
+    await loginAdmin(page);
+    await page.goto("/admin/ops#saturation");
+    const rows = page.getByTestId("ops-saturation-row");
+    await expect(rows).toHaveCount(5);
+    const login = page.locator('[data-testid="ops-saturation-row"][data-kind="login_shed"]');
+    await expect(login).toHaveAttribute("data-day", "12");
+    await expect(login).toHaveAttribute("data-week", "42");
+    await expect(page.locator('[data-testid="ops-saturation-row"][data-kind="db_deadline"]')).toHaveAttribute("data-week", "0");
+    await expectNoHorizontalOverflow(page);
+  });
+
   test("the owner sends a test alert and is told it was only logged, since this server's mail is not real", async ({ page }) => {
     await db()`delete from email_log where template = 'ops_alert_test'`;
     await db()`delete from rate_limits where key like 'ops_test_alert:%'`;

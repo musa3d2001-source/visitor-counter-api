@@ -1,7 +1,9 @@
 import Link from "next/link";
-import { BellRing, CalendarClock, CircleDollarSign, RefreshCw, Send, ServerCrash, Video } from "lucide-react";
+import type * as React from "react";
+import { BellRing, CalendarClock, CircleDollarSign, FileWarning, Gauge, KeyRound, RefreshCw, Send, ServerCrash, Timer, Unplug, Video } from "lucide-react";
 import { requireOwnerPage } from "@/server/auth/permissions";
-import { alertDelivery, heldVideoLessons, jobViews, lastAlertSendFailed, opsConfig, paidRawVideoCount, type AlertDelivery, type JobView } from "@/server/platform/ops-status";
+import { alertDelivery, heldVideoLessons, jobViews, lastAlertSendFailed, opsConfig, paidRawVideoCount, saturationViews, type AlertDelivery, type JobView, type SaturationView } from "@/server/platform/ops-status";
+import type { SaturationKind } from "@/server/platform/saturation";
 import { ActionForm } from "@/components/admin/action-form";
 import { SubmitButton } from "@/components/ui/submit-button";
 import { reconcileNowAction, sendTestAlertAction } from "./actions";
@@ -35,6 +37,39 @@ const MINUTES: CountWord = { one: "دقيقة", two: "دقيقتان", plural: "
 const HOURS: CountWord = { one: "ساعة", two: "ساعتان", plural: "ساعات", acc: "ساعة", oneSuffix: "واحدة" };
 const DAYS: CountWord = { one: "يوم", two: "يومان", plural: "أيام", acc: "يومًا", oneSuffix: "واحد" };
 const PRODUCTS: CountWord = { one: "منتج", two: "منتجان", plural: "منتجات", acc: "منتجًا", oneSuffix: "واحد" };
+
+const SATURATION_TEXT: Record<SaturationKind, { title: string; sub: string; icon: React.ReactNode }> = {
+  login_shed: { title: "دخول طُلب من صاحبه أن يعيد المحاولة", sub: "فحوص كلمات المرور امتلأت على نسخة من الخادم. لا يُحتسب ذلك على الطالب.", icon: <KeyRound /> },
+  stamp_shed: { title: "ملفات PDF أُجّل تجهيزها", sub: "طابور ختم الملفات امتلأ، والقارئ يعيد المحاولة وحده.", icon: <FileWarning /> },
+  stamp_deadline: { title: "ختم ملف تجاوز مهلته", sub: "ملف كبير تحت ضغط كبير، ولا يُسلَّم دون ختم.", icon: <Timer /> },
+  db_pool_wait: { title: "طلبات لم تجد اتصالًا بقاعدة البيانات", sub: "إن تكرر كثيرًا فعدد الاتصالات لا يكفي الزوار.", icon: <Unplug /> },
+  db_deadline: { title: "أوامر تجاوزت مهلتها في قاعدة البيانات", sub: "إن تكرر كثيرًا فقاعدة البيانات بطيئة أو تحتاج إلى خطة أكبر.", icon: <Gauge /> },
+};
+
+function SaturationRow({ row }: { row: SaturationView }) {
+  const text = SATURATION_TEXT[row.kind];
+  return (
+    <DataRow
+      leading={
+        <ToneIcon tone={row.lastDay > 0 ? "gold" : "teal"} size="sm">
+          {text.icon}
+        </ToneIcon>
+      }
+      title={text.title}
+      sub={text.sub}
+      aside={
+        <span className="flex flex-col items-end text-[0.82rem] leading-6 text-muted" data-testid="ops-saturation-row" data-kind={row.kind} data-day={row.lastDay} data-week={row.lastWeek}>
+          <span>
+            آخر ٢٤ ساعة: <span className="num font-extrabold text-ink">{ar(row.lastDay)}</span>
+          </span>
+          <span>
+            آخر ٧ أيام: <span className="num font-extrabold text-ink">{ar(row.lastWeek)}</span>
+          </span>
+        </span>
+      }
+    />
+  );
+}
 
 function ageText(since: Date, now: number) {
   const minutes = Math.max(1, Math.floor((now - since.getTime()) / 60_000));
@@ -137,7 +172,7 @@ export default async function OpsPage() {
   await runOpsWatchdogAfterResponse();
   const config = opsConfig();
   const paymentsOn = paymentsConfig().enabled;
-  const [jobs, errors, alertFailed, delivery, unhealed, heldVideos, paidRawVideo] = await Promise.all([jobViews(), listErrorEvents(), lastAlertSendFailed(), alertDelivery(), unhealedOrders(), heldVideoLessons(), paidRawVideoCount()]);
+  const [jobs, errors, alertFailed, delivery, unhealed, heldVideos, paidRawVideo, saturation] = await Promise.all([jobViews(), listErrorEvents(), lastAlertSendFailed(), alertDelivery(), unhealedOrders(), heldVideoLessons(), paidRawVideoCount(), saturationViews()]);
   const now = Date.now();
   const alertsWork = config.alertEmailConfigured && config.mailIsReal && !alertFailed;
   const okJobs = jobs.filter((job) => job.status === "ok").length;
@@ -271,6 +306,16 @@ export default async function OpsPage() {
             <Send aria-hidden /> أرسل رسالة تجربة
           </SubmitButton>
         </ActionForm>
+      </Section>
+
+      <Section id="saturation" title="ضغط الموقع" description="كم مرة امتلأ شيء فرفضنا طلبًا مؤقتًا أو انتهت مهلته. أعداد تقريبية من كل نسخة من الخادم، ولا تحوي بيانات أي طالب. زيادتها وقت الامتحانات تعني أن الوقت حان للترقية." icon={<Gauge />} tone="gold">
+        <div data-testid="ops-saturation">
+          <DataList>
+            {saturation.map((row) => (
+              <SaturationRow key={row.kind} row={row} />
+            ))}
+          </DataList>
+        </div>
       </Section>
 
       <Section title="الوظائف المجدولة" description="كل وظيفة تسجل هنا آخر مرة بدأت ونجحت وفشلت. الموعد اليومي قد يتأخر حتى ساعة." icon={<CalendarClock />} tone="sky">
