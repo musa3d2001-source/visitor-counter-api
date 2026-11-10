@@ -41,6 +41,27 @@ export async function userAgent(): Promise<string> {
   return (h.get("user-agent") ?? "").slice(0, 300);
 }
 
+/** القراءة تتوقف عند الحد، فجسم ضخم لا يدخل الذاكرة ولو لم يذكر طوله في Content-Length. null: تجاوز الحد */
+export async function readBodyCapped(req: Request, maxBytes: number): Promise<string | null> {
+  const declared = Number(req.headers.get("content-length") ?? 0);
+  if (Number.isFinite(declared) && declared > maxBytes) return null;
+  if (!req.body) return "";
+  const reader = req.body.getReader();
+  const chunks: Uint8Array[] = [];
+  let total = 0;
+  for (;;) {
+    const { done, value } = await reader.read();
+    if (done) break;
+    total += value.byteLength;
+    if (total > maxBytes) {
+      await reader.cancel().catch(() => undefined);
+      return null;
+    }
+    chunks.push(value);
+  }
+  return Buffer.concat(chunks).toString("utf8");
+}
+
 /**
  * حماية CSRF لمسارات API التي تعدّل البيانات وتعتمد على الكوكي:
  * يجب أن يطابق Origin (أو Referer) نطاق التطبيق.
