@@ -5,13 +5,14 @@ set -euo pipefail
 HERE="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 WORK="${1:-$(mktemp -d)}"
 OUT="$HERE/../storyboard/r3"
-rm -rf "$OUT" "$WORK"/{spec,key,part1,part2,part3,options,tiktok,r45}
+rm -rf "$OUT" "$WORK"/{spec,key,part1,part2,part3,options,options1,options2,tiktok,r45}
 mkdir -p "$WORK" "$OUT"/{frames,options,tiktok,r45,spec,phone}
 
 node "$HERE/mk_storyboard.mjs" "$WORK/spec"
 node "$HERE/compose.mjs" --frames "$WORK/spec/key.frames.json"     --out "$WORK/key"     --cols 4
 for p in 1 2 3; do node "$HERE/compose.mjs" --frames "$WORK/spec/part$p.frames.json" --out "$WORK/part$p" --cols 2; done
 node "$HERE/compose.mjs" --frames "$WORK/spec/options.frames.json" --out "$WORK/options" --cols 4
+for p in 1 2; do node "$HERE/compose.mjs" --frames "$WORK/spec/options$p.frames.json" --out "$WORK/options$p" --cols 2; done
 node "$HERE/compose.mjs" --frames "$WORK/spec/tiktok.frames.json"  --out "$WORK/tiktok"  --cols 3 --ui tt
 node "$HERE/compose.mjs" --frames "$WORK/spec/r45.frames.json"     --out "$WORK/r45"     --cols 3
 
@@ -27,6 +28,7 @@ cp "$WORK/options/sheet.jpg"    "$OUT/03-options.jpg"                    # our p
 cp "$WORK/tiktok/sheet-ui.jpg"  "$OUT/04-tiktok.jpg"                     # TikTok chrome check + TikTok ending
 cp "$WORK/r45/sheet.jpg"        "$OUT/05-4x5.jpg"                        # 4:5 layouts
 for p in 1 2 3; do cp "$WORK/part$p/sheet.jpg" "$OUT/phone/storyboard-$p-of-3.jpg"; done   # phone-readable: 6 frames each, 2 across
+for p in 1 2; do cp "$WORK/options$p/sheet.jpg" "$OUT/phone/options-$p-of-2.jpg"; done              # phone-readable picks: pick beside alternative
 cp "$WORK/spec/"*.frames.json   "$OUT/spec/"
 
 # QC sheet: the 18 frames at 25% (270x480), 9 x 2, first frame top right: how the ad reads on a small tile

@@ -1,5 +1,5 @@
 {
-  "revision": "2 (after red-team), 9 Nov 2026; plan only, nothing approved, no video; 4 credits spent outside this plan on two opener still candidates (see tash/HANDOFF.md section 7); 10 Nov: stills round done (see stills_round), storyboard round 3 in storyboard/r3",
+  "revision": "2 (after red-team), 9 Nov 2026; plan only, nothing approved, no video; 4 credits spent outside this plan on two opener still candidates (see tash/HANDOFF.md section 7); 10 Nov: stills round done (see stills_round), storyboard round 3 in storyboard/r3; BUILD-SPEC section 15 (Revision 3) applied to used_frames: band order kunafa, burger, oud, coffee; no footage in the wordmark dots",
   "prices": {
     "still_2k": 2,
     "kling_pro_per_s": 1.75,
@@ -14,7 +14,7 @@
     "reserve_min": 34
   },
   "frame_notation": "s = index on the 30 fps conform of the opener; n = native frame (Kling 24 fps, one native frame per timeline frame). Timeline frames are 30 fps.",
-  "frame0": "S1 source frame 0 = the approved S1 start still (B-20: S6 native frame 0)",
+  "frame0": "source frame 0 of the approved opener still (S1-alt is recommended, owner approval pending; S1 is the alternative). B-20: S6 native frame 0",
   "shots": [
     {
       "id": "S1",
@@ -102,14 +102,6 @@
           "use": "Coffee B on Lime"
         },
         {
-          "variant": "A-20, B-20",
-          "timeline": "390-404",
-          "source": "s48-62",
-          "source_if_native_24fps": "n38-52",
-          "framing": "400 px, wordmark dot",
-          "use": "snap"
-        },
-        {
           "variant": "A-20",
           "timeline": "540-587",
           "source": "s72-119",
@@ -124,14 +116,6 @@
           "source_if_native_24fps": "n0 frozen",
           "framing": "full, behind iris",
           "use": "loop back to frame 0"
-        },
-        {
-          "variant": "A-14",
-          "timeline": "300-314",
-          "source": "s48-62",
-          "source_if_native_24fps": "n38-52",
-          "framing": "400 px, wordmark dot",
-          "use": "snap"
         },
         {
           "variant": "A-14",
@@ -183,7 +167,9 @@
       "used_frames": [],
       "storyboard": true,
       "overlay_plan": "Same overlay as S1. Generated with S1 so the owner picks the opener from two.",
-      "still_gate": "Same gate as S1. Only one of S1 / S1-alt goes to video."
+      "still_gate": "Same gate as S1. Only one of S1 / S1-alt goes to video.",
+      "motion_prompt_if_selected": "Static locked-off tripod shot, the camera does not move at all. At the very start the four ice cubes drop straight down into the iced latte; the lowest cube is already at the rim and goes in first, and all four hit the surface within the first quarter of a second. A real splash crown of milky coffee rises above the rim and is at its highest before half a second, droplets fly up and fall back, the ice bobs, milk and coffee swirl and marble inside the glass. By two seconds the splash has settled; the ice bobs gently and the glass stands still with a few drops on the orange surface until the end. Nothing rises into the empty upper half of the frame. Natural real-time physics, continuous motion, no slow motion, no cuts, no new objects, no extra ice cubes, no hands, no straw, no text.",
+      "r3_note": "10 Nov: recommended opener (BUILD-SPEC R3-1); the round-3 storyboard is built on it; owner approval pending."
     },
     {
       "id": "S5",
@@ -243,7 +229,7 @@
         },
         {
           "variant": "A-20, B-20",
-          "timeline": "510-539",
+          "timeline": "450-479",
           "source": "n40-69",
           "framing": "CTA band",
           "use": "CTA"
@@ -268,6 +254,13 @@
           "source": "n0-14 / n15-29 / n30-44 / n45-59 / n57-71",
           "framing": "full / 1.2x / lens L / full / lens L",
           "use": "kunafa takes the burger beats, tag «حلويات؟»"
+        },
+        {
+          "variant": "A-14",
+          "timeline": "315-344",
+          "source": "n40-69",
+          "framing": "CTA band",
+          "use": "CTA (A-14 band: kunafa, burger, coffee)"
         }
       ],
       "storyboard": true,
@@ -339,14 +332,7 @@
         },
         {
           "variant": "A-20, B-20",
-          "timeline": "390-404",
-          "source": "n20-34",
-          "framing": "400 px, wordmark dot",
-          "use": "snap"
-        },
-        {
-          "variant": "A-20, B-20",
-          "timeline": "450-479",
+          "timeline": "510-539",
           "source": "n40-69",
           "framing": "CTA band",
           "use": "CTA"
@@ -364,20 +350,6 @@
           "source": "n(p+15)..n(p+29)",
           "framing": "lens L",
           "use": "Oud C"
-        },
-        {
-          "variant": "A-14",
-          "timeline": "300-314",
-          "source": "n20-34",
-          "framing": "400 px, wordmark dot",
-          "use": "snap"
-        },
-        {
-          "variant": "A-14",
-          "timeline": "315-344",
-          "source": "n40-69",
-          "framing": "CTA band",
-          "use": "CTA"
         }
       ],
       "storyboard": true,
@@ -449,13 +421,6 @@
         },
         {
           "variant": "A-20, B-20",
-          "timeline": "390-404",
-          "source": "n(i+15)..n(i+29)",
-          "framing": "400 px, wordmark dot",
-          "use": "snap"
-        },
-        {
-          "variant": "A-20, B-20",
           "timeline": "480-509",
           "source": "n40-69",
           "framing": "CTA band",
@@ -474,13 +439,6 @@
           "source": "n(i)..n(i+14)",
           "framing": "1.2x about (540,900)",
           "use": "Burger B, impact on f210"
-        },
-        {
-          "variant": "A-14",
-          "timeline": "300-314",
-          "source": "n(i+15)..n(i+29)",
-          "framing": "400 px, wordmark dot",
-          "use": "snap"
         },
         {
           "variant": "A-14",

@@ -1,17 +1,18 @@
 # TASH boost ad v4 «نقاط مشروعك»: STORYBOARD PLAN (for the owner, revision 2)
 
-Status, 10 Nov 2026: **stills generated, storyboard composed, waiting for the owner.** The seven plan stills cost 14 credits (approved by the owner with «كمل»); v4 has spent 18 in total; no video exists; nothing is approved yet. **Section 7 holds the results of this round and supersedes the 16-frame list of section 1 with 18 frames.** Earlier: 4 credits were spent on two candidate stills of the opening shot (job IDs in `tash/HANDOFF.md` §7); the owner saw a first look of frame 0 made from them (`v4/storyboard/firstlook-r2/`).
+Status, 10 Nov 2026: **stills generated, storyboard composed, waiting for the owner.** The seven plan stills cost 14 credits (approved by the owner with «كمل»); v4 has spent 18 in total; no video exists; nothing is approved yet. **Section 7 holds the results of this round and supersedes the 16-frame list of section 1 with 18 frames.** Earlier: 4 credits were spent on two candidate stills of the opening shot (job IDs in `tash/HANDOFF.md` §7); the owner saw a first look of frame 0 made from them (`v4/storyboard/firstlook-r2/`). **Where sections 1 to 6 disagree with section 7 or with `BUILD-SPEC.md` section 15, those two win.**
 Build detail lives in `BUILD-SPEC.md`; the same shots in machine form are in `shots.json`. All three files were revised together after the red-team review.
 
-## للمالك (الخلاصة)
+## للمالك (الخلاصة، محدّثة ١٠ نوفمبر)
 
-- نفس الفكرة «نقاط مشروعك»، بس انفجار ألوان: أول لقطة ثلج يطيح بقهوة مثلّجة على خلفية برتقالية، والكلمة «مشروعك» كبيرة وثابتة، وفوق الشين ثلاث نقاط ليمونية كبيرة هي أوضح شي بالكادر (شلنا دائرة الشعار الصغيرة عشان ما تزاحمها).
-- بأول ثانية ونص تشوف عالمين (قهوة وبعدها كنافة)، وبعدها تطيح النقاط ويروح اللون: «محد يسولف؟». ترجع النقاط وتنفجر الشاشة ليموني: «طشّ».
-- أربع مشاريع ورا بعض على البيت: «قهوة؟»، «عطر؟»، «برجر؟»، «حلويات؟». كل مشروع يطلع مرة بالكادر كامل ومرة داخل دائرة كبيرة على خلفية ليمونية.
-- الختام: «اطلب إعلانك بالخاص» مكتوبة كبيرة على ليموني فوق، وتحتها المشاريع تتبدّل وهي تتحرك.
-- لقطة البداية بس على Seedance 2.5، والباقي Kling. المخطط **١١١ كريدت** من ٢٠٠، والاحتياط **٨٩**.
-- الترتيب: أول شي صور ثابتة (١٤ كريدت) وتوافق عليها. ما يصير أي فيديو قبل موافقتك، وكل صرف ينقال لك سعره قبل.
-- المطلوب منك الحين: توافق على خطة الصور، وبعدها تختار صورة البداية وصورة البرجر، كل وحدة من ثنتين.
+- نفس الفكرة «نقاط مشروعك»، بس انفجار ألوان: أول لقطة ثلج يطيح بقهوة مثلّجة على خلفية برتقالية، والكلمة «مشروعك» كبيرة وثابتة، وفوق الشين ثلاث نقاط ليمونية كبيرة هي أوضح شي بالشاشة.
+- بأول ثانية ونص تشوف مشروعين (قهوة وبعدها كنافة)، وبعدها تطيح النقاط ويروح اللون: «محد يسولف؟». ترجع النقاط وتنفجر الشاشة ليموني: «طشّ».
+- أربع مشاريع ورا بعض مع الإيقاع: «قهوة؟»، «عطر؟»، «برجر؟»، «حلويات؟». كل مشروع يطلع مرة بالشاشة كاملة ومرة داخل نقطة كبيرة على خلفية ليمونية.
+- بعدها الناس تسأل «شنو حسابهم؟!» والنقاط تزيد، وشعار طشّ يملى الشاشة، و«خلّهم يسولفون عنك!».
+- الختام: «اطلب إعلانك بالخاص» والحساب وشعار طشّ على ليموني فوق، وتحتها صور المشاريع تتبدّل.
+- الصور السبع جاهزة (١٤ كريدت) والستوري بورد ١٨ لقطة: `storyboard/r3/phone/`. اختيارنا: كوب البداية القصير العريض، والبرجر اللي خبزته بالهوا.
+- المصروف على الإعلان للحين **١٨ كريدت** من سقف ٢٠٠. الباقي إذا وافقت: تجربة حركة البداية ١٢، ثلاث فيديوهات للمشاريع ١٥٫٧٥، لقطة البداية النهائية ٦٤ (السعر يتأكد قبل الصرف)، والنسخة الثانية «شاليه؟» اختيارية ٥٫٢٥.
+- المطلوب منك الحين: توافق على الشكل والصور، وتقول نعيد صورة العطر بـ ٢ كريدت أو لا. ما يصير أي فيديو قبل موافقتك، وكل صرف ينقال لك سعره قبل.
 
 ## 1. Key frames in order of appearance
 
@@ -64,7 +65,8 @@ In pixels: product inside x 300-780, y 930-1610; y 0-880 empty. The word (y 331-
 
 - Model and credits: Still only: 2. No video unless the owner picks it over its twin.
 - Still prompt: A short wide clear ribbed tumbler of iced latte, milk and coffee softly layered, filled to two centimetres below the rim, standing on a flat seamless tangerine-orange (#FF7A1A) surface in front of a backdrop of the same colour. Four large clear ice cubes hang in the air in a loose cluster directly above the glass, between 48% and 60% of the frame height, the lowest cube just above the rim, no cube touching the glass, no cube cropped. The rim of the glass is at 61% of the frame height and the base at 84%. Fine condensation on the glass. Slightly high eye-level camera, 85 mm lens look, f/8. No steam, no straw, no garnish, no carafe, no jug, no pouring liquid, no spilled liquid. **[COMMON]**
-- Used in: storyboard only, until picked.
+- Motion prompt (if selected; the round-3 storyboard recommends this still as the opener): Static locked-off tripod shot, the camera does not move at all. At the very start the four ice cubes drop straight down into the iced latte; the lowest cube is already at the rim and goes in first, and all four hit the surface within the first quarter of a second. A real splash crown of milky coffee rises above the rim and is at its highest before half a second, droplets fly up and fall back, the ice bobs, milk and coffee swirl and marble inside the glass. By two seconds the splash has settled; the ice bobs gently and the glass stands still with a few drops on the orange surface until the end. Nothing rises into the empty upper half of the frame. Natural real-time physics, continuous motion, no slow motion, no cuts, no new objects, no extra ice cubes, no hands, no straw, no text.
+- Used in: storyboard only, until picked. If the owner approves it, it takes the S1 row in every table (Seedance 2.5, 4 s: draft 12, then final 64) and S1 becomes the fallback.
 - Overlay: Same overlay as S1. Generated with S1 so the owner picks the opener from two.
 - Still gate: Same gate as S1. Only one of S1 / S1-alt goes to video.
 
@@ -143,8 +145,8 @@ If the draft fails: one more draft (12, earmarked in the reserve) with a correct
 After the 1080p final: the same eight checks, plus frame 0 SSIM 0.95 or more against the approved still (else the still itself is drawn at f0). A second 1080p take (64) is never ordered without the owner's OK.
 
 **Kling shots (3 s each, 5.25 credits, sound off).** Each clip passes only if:
-- camera static, no cut, no new object, hand or text, nothing enters y 0-880;
-- S5: the nuts land inside the first 0.4 s and the syrup sheen is visibly spreading; S2: puff onset p at native frame 10 or earlier, smoke below y 880; S3: bun impact i between native frames 10 and 20, burger stays a burger; S6: the ring lands with a visible splash inside the first 0.3 s;
+- camera static, no cut, no new object, hand or text, nothing enters y 0-880 (S2 smoke is tested after the code fade, see the next line);
+- S5: the nuts land inside the first 0.4 s and the syrup sheen is visibly spreading; S2: puff onset p at native frame 10 or earlier; smoke height in the raw clip is not a reject reason: after the code fade (ramp y 1010 to y 880, BUILD-SPEC R3-12) nothing is visible above y 880; S3: bun impact i between native frames 10 and 20, the bun lands level with the sesame side up, burger stays a burger; S6: the ring lands with a visible splash inside the first 0.3 s;
 - 72 native frames present, no duplicate run.
 A failed clip gets one retake from the reserve (5.25). S6 failing twice means B-20 is not delivered in this round (owner decides); A-20 is not affected.
 
@@ -209,7 +211,7 @@ Voices and music cost nothing here: the three approved voice stems are reused an
 | 18 | f470 | Lime panel over a kunafa band | «اطلب إعلانك» / «بالخاص» / `@tash.creative.kw` / wordmark 320 px |
 
 ### 7.3 Still gates, honest results (section 3)
-All seven: empty top (0 product pixels above y 880 after the fit), no lime object, no text or logo found at 200%, frame luma 0.46 to 0.91 with the overlay (gate 0.40).
+All seven: empty top (0 product pixels above y 880 after the fit), no lime object, no text or logo found at 200% except three writing-like marks on the S2 bottle base, frame luma 0.46 to 0.91 on the 18 frames with the overlay (gate 0.40).
 
 | Still | Passes | Misses (accepted unless the owner wants a 2-credit retake) |
 |---|---|---|
@@ -230,5 +232,9 @@ A multi-agent review (Arabic proof, spec conformance, platform safe zones, direc
 - **Open copy question for the owner:** the oud picture is led by the burner; the tag says «عطر؟». Keep it, or retake S2 for 2 credits with a Kuwaiti square mabkhara and the bottle as the hero.
 
 ### 7.6 Credits
-Spent on v4: 18 (4 on 9 Nov + 14 in this round). Balance checked: 521.5. Cap 200, so 182 are left under the cap. Still to come if approved: Seedance 480p draft 12, four Kling clips 21, Seedance 1080p final 64 (97 in total; v4 would then stand at 115). An S2 retake would add 2.
+Spent on v4: 18 (4 on 9 Nov + 14 in this round). Balance checked: 521.5. Cap 200, so 182 are left under the cap.
+Still to come if approved: Seedance 480p draft of the opener 12; three Kling clips for the main ad (kunafa, oud, burger) 15.75; Seedance 1080p final 64 (assumed: this is the quote for a new 4 s 1080p run; the finalise-from-draft price is not quoted yet and is confirmed before spending). That is 91.75, and v4 would stand at 109.75.
+Optional, the owner decides: the Kling clip for version B (the chalet opener) 5.25, which makes it 97 and 115; an S2 retake 2.
 
+### 7.7 Second pass (verification of the rebuilt output)
+Five agents re-checked the rebuilt sheets (Arabic proof, layout against Revision 3, regression audit of the first review, the owner's eye, one skeptic): no blocker, nothing the owner was sent had to be recalled; 24 of 31 findings confirmed, all zero-credit. Applied: the picks sheet was rebuilt for a phone (`phone/options-1-of-2.jpg`, `-2-of-2.jpg`); three notes reworded (9, 13, 14); the TikTok ending line moved down so the shadda of «دزّ» is inside the text zone; «شاليه؟» stepped down to 180 px; the 4:5 ending re-spaced; the S1-alt motion prompt written out; the Kling gate text, `shots.json` and BUILD-SPEC rows R3-14 to R3-16 brought in line. Accepted and recorded, not changed: the picked burger is shown only with the bun in the air (the landed state is the alternative's look); the «…» of «حلو…» keeps its font shape; six tiles reuse the same coffee still because the motion exists only in video.

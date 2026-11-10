@@ -73,9 +73,9 @@ const talkDots = () => { const P = [[290, 930], [720, 970], [400, 1100], [800, 1
   return P.flatMap(([cx, cy], i) => row(cx, cy, offs[i % 4])); };
 
 // ---- the ending card: two lines + handle + wordmark signature on Lime, footage band below ----
-const cta = ({ l1, h, band = 's5' }) => [still(band, { clip: { x: 0, y: 1060, w: 1080, h: 860 }, dy: 60 }),
+const cta = ({ l1, h, band = 's5', y1 = 400 }) => [still(band, { clip: { x: 0, y: 1060, w: 1080, h: 860 }, dy: 60 }),
   { t: 'rect', x: 0, y: 0, w: 1080, h: 1060, fill: 'lime' }, { t: 'rect', x: 0, y: 1050, w: 1080, h: 10, fill: 'ink' },
-  line(l1, 120, 400), line('بالخاص', 160, 620, { shadow: { dx: 8, dy: 8, color: 'paper' } }), handle(h, 760), ...markTyping(380, 836, 320)];
+  line(l1, 120, y1), line('بالخاص', 160, 620, { shadow: { dx: 8, dy: 8, color: 'paper' } }), handle(h, 760), ...markTyping(380, 836, 320)];
 
 // ================= the 18 key frames (A-20, Instagram layout) =================
 const easeIn = t => t * t;                                    // BUILD-SPEC names easeIn without defining it: quadratic
@@ -109,7 +109,7 @@ const key = [
   { id: '08_f125', tc: tc(125), note: 'ثلاث نقاط تطلع من الشعار وتنفتح دواير، من اليمين: عطر، قهوة، برجر. والشعار يتم بنقاطه.',
     layers: [{ t: 'fill', color: 'lime' }, mark(320, 290, 440), line('خلّ إعلانك', 120, 720), line('علينا', 150, 945),
       ...port('s3', 270, 1125, 110, 0.31, 540, 1275), ...port(OP, 540, 1125, 110, 0.31, 540, 1265), ...port('s2', 810, 1125, 110, 0.31, 532, 1250)] },
-  { id: '09_f140', tc: tc(140), note: 'أول مشروع: «قهوة؟». الصورة كاملة والقهوة تطش.',
+  { id: '09_f140', tc: tc(140), note: 'أول مشروع: «قهوة؟». الصورة كاملة، والقهوة تطش بالفيديو.',
     layers: [still(OP), tag('قهوة؟'), word(), ...dots([-6, -22, -12])] },
   { id: '10_f155', tc: tc(155), note: 'نفس القهوة داخل نقطة كبيرة على خلفية ليمونية، والكلمة تقلب أسود. والصورة تتبدل كل نص ثانية.',
     layers: [{ t: 'fill', color: 'lime' }, ...lens(OP), tagInk('قهوة؟'), wordInk(), ...dotsInk([-22, -10, 0])] },
@@ -117,9 +117,9 @@ const key = [
     layers: [still('s2'), tag('عطر؟'), word(), ...dots([0, -12, -22])] },
   { id: '12_f225', tc: tc(225), note: 'ثالث مشروع: «برجر؟». الخبزة تطيح على البرجر مع ضربة الإيقاع وزووم على اللقطة (الطيحة بالفيديو).',
     layers: [punch('s3', 1.2), tag('برجر؟'), word(), ...dots([-14, -22, -4])] },
-  { id: '13_f275', tc: tc(275), note: 'رابع مشروع: «حلويات؟». صينية الكنافة دايرة داخل النقطة.',
+  { id: '13_f275', tc: tc(275), note: 'رابع مشروع: «حلويات؟». الكنافة وسط النقطة: دايرة داخل دايرة.',
     layers: [{ t: 'fill', color: 'lime' }, ...lens('s5'), tagInk('حلويات؟', 180), wordInk(), ...dotsInk([0, -14, -22])] },
-  { id: '14_f300', tc: tc(300), note: 'الناس تبدي تسأل: «شنو حسابهم؟!» بنفس مكان «محد يسولف؟». خلفية فاتحة ثانية ونص والنقاط بس تتحرك.',
+  { id: '14_f300', tc: tc(300), note: 'الناس تبدي تسأل: «شنو حسابهم؟!» بنفس مكان «محد يسولف؟». ثانية ونص على خلفية فاتحة، وبس النقاط تتحرك.',
     layers: [{ t: 'fill', color: 'paper' }, wordInk(), ...dots([-8, -22, 0]), talk()] },
   { id: '15_f350', tc: tc(350), note: 'والنقاط تزيد مع كل ضربة: ٣، ٩، ٢٧، ٨١. كل ثلاث نقاط = واحد قاعد يكتب عن مشروعك.',
     layers: [{ t: 'fill', color: PINK }, wordInk(), ...dots([-8, -22, 0]), talk({ stroke: 'paper', lw: 12 }), ...talkDots()] },
@@ -146,11 +146,11 @@ const options = [
     layers: [{ t: 'fill', color: 'lime' }, ...lens('s3'), tagInk('برجر؟'), wordInk(), ...dotsInk()] },
   { id: 'o6_burger_alt_lens', tc: 'البرجر داخل النقطة · البديل', note: 'البديل داخل النقطة.',
     layers: [{ t: 'fill', color: 'lime' }, ...lens('s3alt'), tagInk('برجر؟'), wordInk(), ...dotsInk()] },
-  { id: 'o7_b_f000', tc: 'النسخة الثانية · البداية', note: 'النسخة الثانية للتجربة: نفس الإعلان بس يبدي بالشاليه (العوّامة تطيح بالماي).',
+  { id: 'o7_b_f000', tc: 'النسخة الثانية · البداية', note: 'نسخة ثانية اختيارية (٥٫٢٥ كريدت زيادة): نفس الإعلان بس يبدي بالشاليه، العوّامة تطيح بالماي.',
     layers: [still('s6'), word(), ...dots()] },
   { id: 'o8_b_f010', tc: 'النسخة الثانية · بعد ثلث ثانية', note: 'النسخة الثانية: تطلع «شاليه؟» بدل «حلو…» والماي يطش.',
-    layers: [still('s6'), tag('شاليه؟'), word(), ...dots([-12, -22, -6])] },
-];
+    layers: [still('s6'), tag('شاليه؟', 180), word(), ...dots([-12, -22, -6])] },
+].map((f, i) => ({ n: i + 1, ...f }));
 
 // ================= TikTok: the same frames under the TikTok chrome, and the TikTok ending =================
 const pick = id => key.find(f => f.id === id);
@@ -159,7 +159,7 @@ const tiktok = [
   { ...pick('10_f155'), id: 't2_f155', note: 'على التيك توك: النقطة الكبيرة ما توصل للأزرار اللي على اليمين.' },
   { ...pick('15_f350'), id: 't3_f350', note: 'على التيك توك: ولا نقطة تحت الأزرار اللي على اليمين.' },
   { ...pick('16_f392'), id: 't4_f392', note: 'على التيك توك: الانفجار بعيد عن الأزرار اللي على اليمين.' },
-  { id: 't5_cta', tc: tc(470), note: 'ختام التيك توك: «دزّ لنا بالخاص» + حساب التيك توك.', layers: cta({ l1: 'دزّ لنا', h: '@tash.creative' }) },
+  { id: 't5_cta', tc: tc(470), note: 'ختام التيك توك: «دزّ لنا بالخاص» + حساب التيك توك.', layers: cta({ l1: 'دزّ لنا', h: '@tash.creative', y1: 414 }) },   // the shadda of «دزّ» is taller: 400 would put it above y 270
   { ...pick('18_f470'), id: 't6_ig_cta', note: 'للمقارنة: ختام الإنستقرام.' },
 ].map((f, i) => ({ ...f, n: i + 1 }));
 
@@ -174,8 +174,8 @@ const r45 = [
   { id: 'r45_18_f470', tc: tc(470), note: 'مقاس البوست 4:5، الختام.',
     layers: [still('s5', { clip: { x: 0, y: 800, w: 1080, h: 550 }, dy: -216 }),
       { t: 'rect', x: 0, y: 0, w: 1080, h: 800, fill: 'lime' }, { t: 'rect', x: 0, y: 790, w: 1080, h: 10, fill: 'ink' },
-      line('اطلب إعلانك', 120, 232), line('بالخاص', 160, 452, { shadow: { dx: 8, dy: 8, color: 'paper' } }), handle('@tash.creative.kw', 592),
-      ...markTyping(420, 636, 240, [0, -4, -8]), ...mask45] },
+      line('اطلب إعلانك', 120, 202), line('بالخاص', 160, 422, { shadow: { dx: 8, dy: 8, color: 'paper' } }), handle('@tash.creative.kw', 562),
+      ...markTyping(420, 616, 240, [0, -4, -8]), ...mask45] },
 ].map((f, i) => ({ ...f, n: i + 1 }));
 
 const write = (name, spec) => { writeFileSync(join(out, name), JSON.stringify(spec, null, 1)); console.log(name, spec.frames.length, 'frames'); };
@@ -184,5 +184,7 @@ write('key.frames.json', { title: HEAD + 'ستوري بورد من ١٨ لقطة
 [['الجزء الأول · البداية والمشكلة', 0], ['الجزء الثاني · طشّ والمشاريع', 6], ['الجزء الثالث · الناس تسولف والختام', 12]].forEach(([name, a], i) =>
   write(`part${i + 1}.frames.json`, { title: name, frames: key.slice(a, a + 6) }));
 write('options.frames.json', { title: HEAD + 'اختيارنا والبديل', frames: options });
+write('options1.frames.json', { title: 'اختيارنا والبديل · البداية والبرجر', frames: options.slice(0, 4) });       // phone sheets, two across:
+write('options2.frames.json', { title: 'البرجر داخل النقطة · والنسخة الثانية', frames: options.slice(4) });      // our pick on the right, the alternative beside it
 write('tiktok.frames.json', { title: HEAD + 'شكله على التيك توك', frames: tiktok });
 write('r45.frames.json', { title: HEAD + 'مقاس البوست 4:5', frames: r45 });
