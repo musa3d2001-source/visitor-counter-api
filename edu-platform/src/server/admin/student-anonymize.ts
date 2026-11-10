@@ -114,6 +114,13 @@ export async function anonymizeStudent(input: { studentId: string; adminId: stri
     };
     await tx`delete from user_totp where user_id = ${id}`;
     await tx`delete from user_recovery_codes where user_id = ${id}`;
+    // الحذف الذي طلبه تم الآن. والنسخة لم يعد ممكنًا إعدادها بعد الحذف. ما كتبه المالك في الملاحظات قد يحوي بياناته
+    await tx`
+      update account_data_requests
+      set status = case when status <> 'open' then status when kind = 'delete' then 'done' else 'declined' end,
+        closed_at = coalesce(closed_at, now()), closed_by = coalesce(closed_by, ${input.adminId}), close_note = null
+      where user_id = ${id}
+    `;
     await tx`delete from rate_limits where exists (select 1 from unnest(${[...lowerEmails, id]}::text[]) as needle where position(needle in lower(key)) > 0)`;
 
     // لا أحد يدخل بعد الآن. الصف يبقى لأنه يربط البيع بالمنتج، وأرباح المعلم لا تتغير: البيع نفسه لم يُلغَ

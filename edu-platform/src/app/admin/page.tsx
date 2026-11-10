@@ -34,6 +34,7 @@ import { extraPaymentsNeedingOwnerCount } from "@/server/payments/extras";
 import { refundsNeedingOwnerCount } from "@/server/payments/refunds";
 import { mailHealth } from "@/server/platform/mail-status";
 import { opsSummary } from "@/server/platform/ops-status";
+import { openDataRequestCount } from "@/server/platform/data-requests";
 import { runOpsWatchdogAfterResponse } from "@/server/platform/scheduled-jobs";
 import { getTwoFactorStatus } from "@/server/auth/two-factor";
 import { RECOVERY_CODE_WORD, recoveryCodesAreLow } from "@/lib/two-factor";
@@ -65,7 +66,7 @@ export default async function AdminDashboard({ searchParams }: { searchParams: P
   const sp = await searchParams;
   const days = [7, 30, 90].includes(Number(sp.days)) ? Number(sp.days) : 30;
   const includeTest = sp.test === "1";
-  const [contentHealth, totals, latest, top, series, pending, teachersTop, paymentAlerts, extraPayments, refundsWaiting, mail, twoFactor, platform, pendingProfiles, ops] = await Promise.all([
+  const [contentHealth, totals, latest, top, series, pending, teachersTop, paymentAlerts, extraPayments, refundsWaiting, mail, twoFactor, platform, pendingProfiles, ops, dataRequests] = await Promise.all([
     contentHealthCounts(),
     dashboardTotals(includeTest),
     latestOrders(8, includeTest),
@@ -82,6 +83,7 @@ export default async function AdminDashboard({ searchParams }: { searchParams: P
     pendingProfileChangesCount(),
     // صفحة المراقبة لا يصح أن توقف الصفحة الرئيسية
     opsSummary().catch(() => null),
+    openDataRequestCount(),
   ]);
   const reviewWaiting = pending + pendingProfiles;
   const qs = (patch: Record<string, string | undefined>) => {
@@ -132,6 +134,12 @@ export default async function AdminDashboard({ searchParams }: { searchParams: P
           </>
         }
       />
+
+      {dataRequests > 0 ? (
+        <AdminNotice href="/admin/students#data-requests" icon={<ShieldAlert />} tone="coral" action="القرار">
+          <b>طلبات من الطلاب على بياناتهم تنتظر قرارك: {ar(dataRequests)}.</b> حذف حساب أو نسخة من البيانات، ولن ينفذ النظام شيئًا وحده.
+        </AdminNotice>
+      ) : null}
 
       {platform.fee_rules_confirmed_at === null ? (
         <AdminNotice href="/admin/settings" icon={<ShieldAlert />} tone="coral" action="اعتماد الرسوم">

@@ -13,6 +13,7 @@ import {
   Eraser,
   Eye,
   FileClock,
+  FileLock2,
   FileSignature,
   KeyRound,
   Library,
@@ -26,6 +27,7 @@ import {
 } from "lucide-react";
 import { getStudent, grantableProducts } from "@/server/admin/records";
 import { anonymizationBlockers } from "@/server/admin/student-anonymize";
+import { studentOpenDataRequests } from "@/server/platform/data-requests";
 import { Section, StatGrid, StatTile } from "@/components/admin/page-header";
 import { ActionForm } from "@/components/admin/action-form";
 import { ConfirmButton } from "@/components/admin/confirm-button";
@@ -38,9 +40,10 @@ import { SubmitButton } from "@/components/ui/submit-button";
 import { displayPhone } from "@/lib/phone";
 import { ENTITLEMENT_SOURCE_LABELS, PRODUCT_TYPE_LABELS, type ProductType } from "@/lib/labels";
 import { CONSENT_KIND_LABELS } from "@/lib/consent";
+import { DATA_REQUEST_LABELS } from "@/lib/data-requests";
 import { ar, gradeVars } from "@/lib/design";
 import { formatDate, formatDateTime } from "@/lib/utils";
-import { grantAction, revokeAction, setActiveAction } from "../actions";
+import { closeDataRequestAction, grantAction, revokeAction, setActiveAction } from "../actions";
 import { StudentEmailCorrection, StudentEmailMarkVerified, StudentPasswordReset } from "../_components/recovery";
 import { StudentAnonymize } from "../_components/anonymize";
 import { BandChip, ProfileHero } from "../../_components/people/band";
@@ -68,7 +71,7 @@ export default async function StudentPage({ params }: { params: Promise<{ id: st
   if (!data) notFound();
   const { user, orders, entitlements, access, auditTrail, consents } = data;
   const anonymized = Boolean(user.anonymized_at);
-  const blockers = user.role === "student" && !anonymized ? await anonymizationBlockers(user.id) : [];
+  const [blockers, dataRequests] = user.role === "student" && !anonymized ? await Promise.all([anonymizationBlockers(user.id), studentOpenDataRequests(user.id)]) : [[], []];
   const active = entitlements.filter((e) => !e.revoked_at);
   const revoked = entitlements.filter((e) => e.revoked_at);
   const level = gradeLevelFromName(user.grade_name);
@@ -143,6 +146,28 @@ export default async function StudentPage({ params }: { params: Promise<{ id: st
         <SoftNote icon={<Eraser aria-hidden />} data-testid="student-anonymized-note">
           حُذفت بيانات هذا الطالب الشخصية في {formatDateTime(user.anonymized_at)}. تبقى طلباته وموافقاته بلا هوية، ولا يمكن فتح الحساب أو تعديله.
         </SoftNote>
+      ) : null}
+
+      {dataRequests.length ? (
+        <Section id="data-requests" title="طلبات الطالب على بياناته" icon={<FileLock2 />} tone="coral" description="لن ينفذ النظام شيئًا وحده. طلب الحذف يُغلق حين تنفذ الحذف من قسم «حذف بيانات الطالب» في هذه الصفحة.">
+          <DataList data-testid="student-data-requests">
+            {dataRequests.map((r) => (
+              <DataRow
+                key={r.id}
+                title={DATA_REQUEST_LABELS[r.kind]}
+                sub={`طلبه في ${formatDateTime(r.created_at)}`}
+                aside={
+                  <div className="flex flex-wrap gap-2">
+                    {r.kind === "copy" ? (
+                      <ConfirmButton action={closeDataRequestAction} hidden={{ requestId: r.id, userId: user.id, outcome: "done" }} label="أُرسلت النسخة" variant="primary" title="سجّل أن النسخة أُرسلت؟" description="يظهر للطالب أن طلبه نُفّذ. أرسل النسخة إلى بريد حسابه قبل هذا." confirmLabel="تسجيل" />
+                    ) : null}
+                    <ConfirmButton action={closeDataRequestAction} hidden={{ requestId: r.id, userId: user.id, outcome: "declined" }} label="رفض" title="رفض هذا الطلب؟" description="يظهر السبب للطالب في صفحة حسابه، ويبقى في سجل التدقيق." requireReason reasonLabel="السبب (إلزامي، يراه الطالب)" confirmLabel="رفض الطلب" />
+                  </div>
+                }
+              />
+            ))}
+          </DataList>
+        </Section>
       ) : null}
 
       {user.role === "student" && !anonymized ? (

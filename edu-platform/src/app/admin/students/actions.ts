@@ -11,6 +11,7 @@ import { AdminError, adminAction, isUuid, str } from "@/server/admin/common";
 import { assertFreshProof } from "@/server/auth/step-up";
 import { correctStudentEmail, markStudentEmailVerified, resetStudentPassword } from "@/server/admin/student-accounts";
 import { anonymizeStudent } from "@/server/admin/student-anonymize";
+import { closeDataRequest } from "@/server/platform/data-requests";
 
 const ANONYMIZED_ACCOUNT_ERROR = "حُذفت بيانات هذا الحساب، فلا يمكن تعديله.";
 
@@ -135,5 +136,20 @@ export async function setActiveAction(_p: ActionState, fd: FormData): Promise<Ac
     revalidatePath(`/admin/students/${userId}`);
     revalidatePath("/admin/students");
     return { ok: true, message: active ? "تم تفعيل الحساب" : "تم إيقاف الحساب وتسجيل خروجه من كل الأجهزة" };
+  });
+}
+
+/** قرار المالك في طلب حذف أو نسخة. السبب إلزامي عند الرفض لأن الطالب يراه */
+export async function closeDataRequestAction(_p: ActionState, fd: FormData): Promise<ActionState> {
+  return adminAction(async ({ adminId, ip }) => {
+    const requestId = str(fd, "requestId");
+    const userId = str(fd, "userId");
+    const outcome = str(fd, "outcome");
+    if (!isUuid(requestId) || !isUuid(userId) || (outcome !== "done" && outcome !== "declined")) throw new AdminError("طلب غير صالح");
+    await closeDataRequest({ requestId, adminId, outcome, note: str(fd, "reason"), ip });
+    revalidatePath(`/admin/students/${userId}`);
+    revalidatePath("/admin/students");
+    revalidatePath("/admin");
+    return { ok: true, message: outcome === "done" ? "سُجّل الطلب منفذًا" : "رُفض الطلب، وسيرى الطالب السبب في حسابه" };
   });
 }

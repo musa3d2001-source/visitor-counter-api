@@ -1,10 +1,11 @@
 import type { Metadata } from "next";
 import Link from "next/link";
-import { ChevronLeft, CircleCheck, Clock, GraduationCap, KeyRound, Library, LogOut, Mail, Receipt, UserRound, XCircle } from "lucide-react";
+import { ChevronLeft, CircleCheck, Clock, FileLock2, GraduationCap, KeyRound, Library, LogOut, Mail, Receipt, UserRound, XCircle } from "lucide-react";
 import { requireUser } from "@/server/auth/guards";
 import { listUserOrders } from "@/server/commerce/orders";
 import { emailVerificationRequired } from "@/server/auth/email-verification";
 import { listGrades } from "@/server/catalog/queries";
+import { myDataRequests } from "@/server/platform/data-requests";
 import { logoutAction } from "../(auth)/actions";
 import { Alert } from "@/components/ui/alert";
 import { Badge } from "@/components/ui/badge";
@@ -18,7 +19,7 @@ import { ar, count, gradeClass, initial, W } from "@/lib/design";
 import { Eyebrow } from "@/components/ui/section-head";
 import { cn, formatDate } from "@/lib/utils";
 import { EmptyStart, pillParts } from "../cart/_components/commerce";
-import { ProfileForm, PasswordForm } from "./forms";
+import { DataRequests, ProfileForm, PasswordForm } from "./forms";
 
 export const metadata: Metadata = { title: "حسابي", robots: { index: false } };
 
@@ -40,7 +41,7 @@ const STATUS_LOOK = {
 export default async function AccountPage({ searchParams }: { searchParams: Promise<{ payment?: string }> }) {
   const user = await requireUser("/account");
   const sp = await searchParams;
-  const [orders, grades, mustVerify] = await Promise.all([listUserOrders(user.id), listGrades(), emailVerificationRequired(user.id)]);
+  const [orders, grades, mustVerify, dataRequests] = await Promise.all([listUserOrders(user.id), listGrades(), emailVerificationRequired(user.id), user.role === "student" ? myDataRequests(user.id) : Promise.resolve([])]);
   const myGrade = grades.find((g) => g.id === user.gradeId) ?? null;
 
   return (
@@ -212,6 +213,19 @@ export default async function AccountPage({ searchParams }: { searchParams: Prom
             </div>
             <PasswordForm staff={user.role !== "student"} />
           </section>
+          {user.role === "student" ? (
+            <section className="panel p-5 sm:p-8" aria-labelledby="data-title" id="my-data">
+              <div className="mb-6 flex items-center gap-3.5">
+                <span className="icon-tile tone-default size-12 rounded-[0.95rem] [&_svg]:size-6" aria-hidden>
+                  <FileLock2 />
+                </span>
+                <h2 id="data-title" className="font-display text-[1.4rem] font-black">
+                  بياناتي وحذف حسابي
+                </h2>
+              </div>
+              <DataRequests requests={dataRequests.map((r) => ({ id: r.id, kind: r.kind, status: r.status, createdLabel: formatDate(r.created_at), closedLabel: r.closed_at ? formatDate(r.closed_at) : null, note: r.close_note }))} />
+            </section>
+          ) : null}
         </div>
       </div>
     </>

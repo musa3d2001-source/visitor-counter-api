@@ -3,10 +3,13 @@
 import { revalidatePath } from "next/cache";
 import { z } from "zod";
 import { assertUser } from "@/server/auth/guards";
-import { getCurrentSession } from "@/server/auth/session";
+import { getCurrentSession, getCurrentUser } from "@/server/auth/session";
 import { changePassword } from "@/server/auth/service";
 import { sql } from "@/server/db";
+import { clientIp } from "@/server/http";
+import { requestAccountData, withdrawAccountData } from "@/server/platform/data-requests";
 import { fieldErrors, fullNameSchema, optionalPhoneSchema, passwordSchema } from "@/lib/validation";
+import { isUuid } from "@/lib/uuid";
 import type { ActionState } from "@/lib/action-state";
 
 const profileSchema = z.object({
@@ -41,4 +44,28 @@ export async function changePasswordAction(_prev: ActionState, fd: FormData): Pr
   const res = await changePassword(session.user.id, String(fd.get("currentPassword") ?? ""), next.data, session.sessionId);
   if (!res.ok) return { fieldErrors: { [res.field]: res.error } };
   return { ok: true, message: "تم تغيير كلمة المرور وتسجيل الخروج من الأجهزة الأخرى" };
+}
+
+const SESSION_OVER = "انتهت الجلسة، سجّل الدخول مرة أخرى";
+
+export async function requestDataAction(_prev: ActionState, fd: FormData): Promise<ActionState> {
+  const user = await getCurrentUser();
+  if (!user) return { error: SESSION_OVER };
+  const kind = fd.get("kind");
+  if (kind !== "delete" && kind !== "copy") return { error: "طلب غير صالح" };
+  const res = await requestAccountData({ userId: user.id, kind, ip: await clientIp().catch(() => null) });
+  if (!res.ok) return { error: res.error };
+  revalidatePath("/account");
+  return { ok: true, message: res.message };
+}
+
+export async function withdrawDataRequestAction(_prev: ActionState, fd: FormData): Promise<ActionState> {
+  const user = await getCurrentUser();
+  if (!user) return { error: SESSION_OVER };
+  const requestId = String(fd.get("requestId") ?? "");
+  if (!isUuid(requestId)) return { error: "طلب غير صالح" };
+  const res = await withdrawAccountData({ userId: user.id, requestId, ip: await clientIp().catch(() => null) });
+  if (!res.ok) return { error: res.error };
+  revalidatePath("/account");
+  return { ok: true, message: res.message };
 }

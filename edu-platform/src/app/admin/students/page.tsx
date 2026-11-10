@@ -1,8 +1,11 @@
 import { requireOwnerPage } from "@/server/auth/permissions";
 import Link from "next/link";
-import { CalendarDays, MapPin, Phone, Receipt, UserX, Users } from "lucide-react";
+import { CalendarDays, FileLock2, MapPin, Phone, Receipt, UserX, Users } from "lucide-react";
 import { listStudents } from "@/server/admin/records";
-import { AdminPageHeader } from "@/components/admin/page-header";
+import { listOpenDataRequests } from "@/server/platform/data-requests";
+import { AdminPageHeader, Section } from "@/components/admin/page-header";
+import { DataList, DataRow } from "@/components/admin/data-list";
+import { DATA_REQUEST_LABELS } from "@/lib/data-requests";
 import { FilterBar, FilterSearch, FilterSubmit, ResultCount, Toolbar } from "@/components/admin/filter-bar";
 import { StatusPill } from "@/components/admin/status-badge";
 import { Button } from "@/components/ui/button";
@@ -21,7 +24,7 @@ export const metadata = { title: "الطلاب" };
 export default async function StudentsPage({ searchParams }: { searchParams: Promise<{ q?: string }> }) {
   await requireOwnerPage();
   const sp = await searchParams;
-  const students = await listStudents(sp.q?.slice(0, 80));
+  const [students, dataRequests] = await Promise.all([listStudents(sp.q?.slice(0, 80)), listOpenDataRequests()]);
   const active = students.filter((s) => s.is_active).length;
   // الحساب المحذوف ليس موقوفًا: لا يوجد قرار يمكن التراجع عنه
   const suspended = students.filter((s) => !s.is_active && !s.anonymized_at).length;
@@ -65,6 +68,29 @@ export default async function StudentsPage({ searchParams }: { searchParams: Pro
           }
         />
       </PeopleBand>
+
+      {dataRequests.length ? (
+        <Section id="data-requests" title="طلبات تنتظر قرارك" icon={<FileLock2 />} tone="coral" description="حذف حساب أو نسخة من البيانات. افتح الطالب لتنفذ الطلب أو ترفضه. الأقدم أولًا.">
+          <DataList data-testid="open-data-requests">
+            {dataRequests.map((r) => (
+              <DataRow
+                key={r.id}
+                href={`/admin/students/${r.user_id}#data-requests`}
+                title={`${DATA_REQUEST_LABELS[r.kind]}: ${r.full_name}`}
+                sub={
+                  <>
+                    <bdi dir="ltr" className="break-all">
+                      {r.email}
+                    </bdi>
+                    {" · "}
+                    {formatDate(r.created_at)}
+                  </>
+                }
+              />
+            ))}
+          </DataList>
+        </Section>
+      ) : null}
 
       <div>
         <FilterBar label="البحث في الطلاب" className="lg:grid-cols-[minmax(0,1fr)_12rem]">

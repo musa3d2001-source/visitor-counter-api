@@ -57,12 +57,19 @@ export const OPS_ALERTS = {
     subject: "وظيفة مجدولة لم تعمل في موعدها",
     body: "لم تنجح إحدى الوظائف المجدولة منذ أكثر من يوم. تأكد من ضبط CRON_SECRET في بيئة Production، ومن تبويب Cron Jobs في Vercel.",
   },
+  data_request: {
+    periodMinutes: 1440,
+    counts: true,
+    path: "/admin/students#data-requests",
+    subject: "طلب حذف حساب أو نسخة بيانات",
+    body: "طلب طالب حذف حسابه أو نسخة من بياناته. لن ينفذ النظام شيئًا وحده، فالطلب ينتظر قرارك في صفحة الطلاب.",
+  },
 } as const;
 
 export type OpsAlertKind = keyof typeof OPS_ALERTS;
 
 /** أقصى عدد رسائل في اليوم لو تحققت أسوأ حالة في كل الأنواع معًا طوال اليوم، وهو أقل بكثير من حصص البريد المجانية */
-export const MAX_ALERTS_PER_DAY = 30;
+export const MAX_ALERTS_PER_DAY = 31;
 
 const SEND_TIMEOUT_MS = 15_000;
 
