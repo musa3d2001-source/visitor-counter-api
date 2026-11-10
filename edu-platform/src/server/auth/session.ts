@@ -181,6 +181,11 @@ export async function invalidateAllUserSessions(userId: string, exceptSessionId?
   }
 }
 
+/** وجود كوكي الجلسة بلا قراءة قاعدة البيانات، لاختيار شكل الصفحة فقط. وجوده لا يعني جلسة صالحة ولا يصلح لقرار صلاحية */
+export async function hasSessionCookie(): Promise<boolean> {
+  return Boolean((await cookies()).get(SESSION_COOKIE)?.value);
+}
+
 /** الجلسة الحالية (مخزنة مؤقتًا لكل طلب) */
 export const getCurrentSession = cache(async () => {
   const jar = await cookies();
