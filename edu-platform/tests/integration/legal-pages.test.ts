@@ -24,7 +24,7 @@ const sha256 = (text: string) => createHash("sha256").update(text).digest("hex")
  */
 const PINNED = {
   terms: { version: "2026-11-draft-3", sha256: "939b35ef850604683dd0c8491fb2bbee21dca70de720b897c1aef1447c16ef3b" },
-  privacy: { version: "2026-11-draft-5", sha256: "7e1ff77b07e78533707c7388e9a06c699945a466a5542e6a99a6bff8c6c39617" },
+  privacy: { version: "2026-11-draft-6", sha256: "aeca9fd1449175c862feea0fab5777ab9fb1a293ac3bf48d115a5babd7632805" },
   refund_policy: { version: "2026-11-draft-1", sha256: "d68a8ad9f99496253ed097e27bcf00c7f42e7f89a48e05cd336c40a96fb54617" },
   copyright: { version: "2026-11-draft-1", sha256: "91ea4aabe1ccb8a90a5aa29f9b13b8d5c2982afa17cd7b90db3f4b9c468f4c1a" },
 };
