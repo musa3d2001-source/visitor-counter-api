@@ -34,6 +34,7 @@ import { extraPaymentsNeedingOwnerCount } from "@/server/payments/extras";
 import { refundsNeedingOwnerCount } from "@/server/payments/refunds";
 import { mailHealth } from "@/server/platform/mail-status";
 import { opsSummary } from "@/server/platform/ops-status";
+import { runOpsWatchdogAfterResponse } from "@/server/platform/scheduled-jobs";
 import { getTwoFactorStatus } from "@/server/auth/two-factor";
 import { RECOVERY_CODE_WORD, recoveryCodesAreLow } from "@/lib/two-factor";
 import { Button } from "@/components/ui/button";
@@ -59,6 +60,8 @@ export const metadata = { title: "الرئيسية" };
 export default async function AdminDashboard({ searchParams }: { searchParams: Promise<{ days?: string; test?: string }> }) {
   const actor = await requireStaff();
   if (actor.kind === "teacher") return <TeacherHome actor={actor} />;
+  // بعد إرسال الصفحة: يكشف توقف الوظائف المجدولة كلها ولو لم يكن هناك مراقب خارجي
+  await runOpsWatchdogAfterResponse();
   const sp = await searchParams;
   const days = [7, 30, 90].includes(Number(sp.days)) ? Number(sp.days) : 30;
   const includeTest = sp.test === "1";

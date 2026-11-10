@@ -66,6 +66,9 @@ export const MAX_ALERTS_PER_DAY = 30;
 
 const SEND_TIMEOUT_MS = 15_000;
 
+/** بعد رسالة لم تخرج: محاولة جديدة بعد هذه المدة لا بعد الفترة كاملة، ولا محاولات متلاحقة على خادم بريد متعطل */
+export const RETRY_FAILED_SEND_MINUTES = 30;
+
 function within<T>(promise: Promise<T>, ms: number, fallback: T): Promise<T> {
   let timer: ReturnType<typeof setTimeout>;
   const timeout = new Promise<T>((resolve) => {
@@ -92,11 +95,28 @@ async function claimSend(kind: OpsAlertKind, followUp: boolean): Promise<{ claim
 function compose(kind: OpsAlertKind, earlier: number, followUp: boolean) {
   const spec = OPS_ALERTS[kind];
   const more = earlier > 0 ? `\n\nومنذ آخر رسالة من هذا النوع: ${ar(earlier)} من الأحداث المشابهة لم نرسل عنها رسالة.` : "";
-  const lead = followUp ? `${spec.subject}: متابعة لتنبيه سابق.` : spec.body;
+  // المتابعة قد تأتي بعد رسالة لم تخرج، فتحمل وصف الحدث كاملًا ولا تفترض أن المالك قرأ ما قبلها
+  const lead = followUp ? `متابعة: ${spec.body}` : spec.body;
   return {
     subject: `تنبيه تشغيل: ${spec.subject}`,
     text: `${lead}${more}\n\nالتفاصيل في لوحة المالك:\n${env().APP_URL}${spec.path}\n\nهذه الرسالة لا تحوي بيانات أي طالب أو دفعة.`,
   };
+}
+
+/**
+ * رسالة لم تخرج (خادم البريد رفض أو لم يرد) لا تستهلك الحدث: يعود إلى العدد المؤجل مع ما كان قبله،
+ * وتنتهي الفترة بعد RETRY_FAILED_SEND_MINUTES، فترسله المتابعة في أول فحص بعدها.
+ * المهلة قد تنقضي ثم تخرج الرسالة متأخرة، فتصل رسالتان: تكرار نادر أهون من تنبيه نزاع ضائع.
+ */
+async function keepForRetry(kind: OpsAlertKind, earlier: number): Promise<void> {
+  const holdMinutes = Math.max(OPS_ALERTS[kind].periodMinutes - RETRY_FAILED_SEND_MINUTES, 0);
+  await sql`
+    update ops_alert_state
+    set last_sent_at = now() - make_interval(mins => ${holdMinutes}),
+        suppressed = suppressed + ${earlier + 1},
+        last_suppressed_at = now()
+    where kind = ${kind}
+  `;
 }
 
 /** إرسال تنبيه إن حان وقته. لا يرمي أبدًا، ويعيد true فقط إن خرجت رسالة */
@@ -115,7 +135,9 @@ export async function sendOpsAlert(kind: OpsAlertKind, opts: { followUp?: boolea
       return false;
     }
     const message = compose(kind, earlier, followUp);
-    return await within(sendMail({ to, subject: message.subject, text: message.text, template: "ops_alert" }), SEND_TIMEOUT_MS, false);
+    const sent = await within(sendMail({ to, subject: message.subject, text: message.text, template: "ops_alert" }), SEND_TIMEOUT_MS, false);
+    if (!sent) await keepForRetry(kind, earlier);
+    return sent;
   } catch (err) {
     // لا نستدعي reportError هنا: هذا ما يمنع التنبيه من أن يتغذى على فشله
     console.error("[ops-alert] not sent", kind, err instanceof Error ? err.name : "unknown");

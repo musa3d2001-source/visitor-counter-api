@@ -7,7 +7,7 @@ import { GET as reconcilePayments } from "@/app/api/cron/reconcile-payments/rout
 import { resetEnvCache } from "@/server/env";
 import { closeExpiredOrders } from "@/server/payments/reconcile";
 import { resetErrorReporterForTests } from "@/server/platform/report-error";
-import { JOB_STALE_AFTER_HOURS, jobStatusOf, listJobHeartbeats, reconcileCadence, resetOpsWatchdogForTests, runOpsWatchdog, runScheduledJob, SCHEDULED_JOBS, serveCron } from "@/server/platform/scheduled-jobs";
+import { JOB_STALE_AFTER_HOURS, jobStatusOf, listJobHeartbeats, reconcileCadence, resetOpsWatchdogForTests, runOpsWatchdog, runOpsWatchdogAfterResponse, runScheduledJob, SCHEDULED_JOBS, serveCron } from "@/server/platform/scheduled-jobs";
 import { opsConfig, opsSummary } from "@/server/platform/ops-status";
 import { closeDb, resetDb, sql } from "../helpers/db";
 import { makeStale, newOrder, orderRow } from "../helpers/payment-flow";
@@ -46,14 +46,15 @@ afterEach(() => {
 });
 
 describe.each(ROUTES)("%s", (path, handler) => {
+  // الرفض يوقظ فحص التنبيهات (الذي ينشئ صفوف النبض الفارغة)، لكن الوظيفة نفسها لا تبدأ
   it("refuses with no secret, and does no work", async () => {
     expect((await handler(request(path))).status).toBe(401);
-    expect(await beat(path.split("/").pop()!)).toBeUndefined();
+    expect((await beat(path.split("/").pop()!))?.last_started_at ?? null).toBeNull();
   });
 
   it("refuses the wrong secret, and does no work", async () => {
     expect((await handler(request(path, "Bearer wrong-secret-0123456789abcdef"))).status).toBe(401);
-    expect(await beat(path.split("/").pop()!)).toBeUndefined();
+    expect((await beat(path.split("/").pop()!))?.last_started_at ?? null).toBeNull();
   });
 
   it("refuses everyone when CRON_SECRET is not configured, without crashing", async () => {
@@ -309,6 +310,24 @@ describe("the watchdog", () => {
     await sql`update job_heartbeats set created_at = now() - interval '2 days'`;
     await runOpsWatchdog({ force: true });
     expect(await alerts()).toHaveLength(1);
+  });
+
+  it("a refused cron call still reports jobs that stopped, which is when the secret is missing", async () => {
+    await sql`insert into job_heartbeats (job, last_success_at) values ('prune-data', now() - interval '3 days')`;
+    delete process.env.CRON_SECRET;
+    resetEnvCache();
+    expect((await pruneData(request("/api/cron/prune-data"))).status).toBe(401);
+    expect((await alerts())[0]?.subject).toContain("لم تعمل في موعدها");
+  });
+
+  it("an owner page load runs it, so a full cron stop is noticed without an outside monitor", async () => {
+    await sql`insert into job_heartbeats (job, last_success_at) values ('expire-orders', now() - interval '3 days')`;
+    await runOpsWatchdogAfterResponse();
+    expect((await alerts())[0]?.subject).toContain("لم تعمل في موعدها");
+    const root = resolve(__dirname, "../..");
+    for (const page of ["src/app/admin/page.tsx", "src/app/admin/ops/page.tsx"]) {
+      expect(readFileSync(resolve(root, page), "utf8"), page).toContain("await runOpsWatchdogAfterResponse();");
+    }
   });
 
   it("checks at most every five minutes unless asked", async () => {

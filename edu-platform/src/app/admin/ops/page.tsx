@@ -1,8 +1,8 @@
 import { Activity, BellRing, CalendarClock, ServerCrash } from "lucide-react";
 import { requireOwnerPage } from "@/server/auth/permissions";
-import { jobViews, opsConfig, type JobView } from "@/server/platform/ops-status";
+import { jobViews, lastAlertSendFailed, opsConfig, type JobView } from "@/server/platform/ops-status";
 import { listErrorEvents } from "@/server/platform/report-error";
-import { JOB_LABELS, type JobName, type JobStatus } from "@/server/platform/scheduled-jobs";
+import { JOB_LABELS, runOpsWatchdogAfterResponse, type JobName, type JobStatus } from "@/server/platform/scheduled-jobs";
 import { AdminPageHeader, Section, StatGrid, StatTile } from "@/components/admin/page-header";
 import { DataList, DataRow } from "@/components/admin/data-list";
 import { ToneIcon } from "@/components/admin/icon-tile";
@@ -71,8 +71,10 @@ function JobRow({ job }: { job: JobView }) {
 /** صفحة المالك: هل تعمل الوظائف المجدولة وما الأخطاء التي سجلها الخادم. لا تعرض بيانات طالب أو رابط طلب أو سرًا */
 export default async function OpsPage() {
   await requireOwnerPage();
+  await runOpsWatchdogAfterResponse();
   const config = opsConfig();
-  const [jobs, errors] = await Promise.all([jobViews(), listErrorEvents()]);
+  const [jobs, errors, alertFailed] = await Promise.all([jobViews(), listErrorEvents(), lastAlertSendFailed()]);
+  const alertsWork = config.alertEmailConfigured && config.mailIsReal && !alertFailed;
   const okJobs = jobs.filter((job) => job.status === "ok").length;
   const dayAgo = Date.now() - 24 * 3600_000;
   const errorsToday = errors.filter((event) => event.last_seen_at.getTime() > dayAgo).length;
@@ -102,6 +104,12 @@ export default async function OpsPage() {
         </Alert>
       ) : null}
 
+      {alertFailed ? (
+        <Alert tone="danger" title="آخر رسالة تنبيه لم تخرج" data-testid="ops-warning-alert-failed">
+          <p>رفضها خادم البريد أو لم يرد. لم يضع الحدث: تُعاد المحاولة في أول فحص بعد نصف ساعة. السبب في صفحة «البريد الصادر»، فتأكد من إعدادات SMTP في Vercel.</p>
+        </Alert>
+      ) : null}
+
       {config.liveWithDailyReconcile ? (
         <Alert tone="danger" title="الدفع الحقيقي مفعّل والتسوية مرة واحدة في اليوم" data-testid="ops-warning-reconcile">
           <p>الدفعة التي لا يصلنا إشعارها تنتظر حتى اليوم التالي. بعد الترقية إلى Vercel Pro غيّر جدول التسوية في vercel.json إلى كل ١٥ دقيقة، كما في README.</p>
@@ -111,7 +119,7 @@ export default async function OpsPage() {
       <StatGrid cols={3}>
         <StatTile label="وظائف تعمل كما يجب" tone={okJobs === jobs.length ? "green" : "gold"} icon={<CalendarClock />} value={<span className="num">{`${ar(okJobs)} من ${ar(jobs.length)}`}</span>} />
         <StatTile label="أخطاء ظهرت آخر ٢٤ ساعة" tone={errorsToday > 0 ? "coral" : "green"} icon={<ServerCrash />} value={<span className="num">{ar(errorsToday)}</span>} />
-        <StatTile label="رسائل التنبيه" tone={config.alertEmailConfigured && config.mailIsReal ? "green" : "gold"} icon={<BellRing />} value={<span className="text-[1.05rem] sm:text-[1.15rem]">{config.alertEmailConfigured && config.mailIsReal ? "مفعّلة" : "غير مفعّلة"}</span>} />
+        <StatTile label="رسائل التنبيه" tone={alertsWork ? "green" : alertFailed ? "coral" : "gold"} icon={<BellRing />} value={<span className="text-[1.05rem] sm:text-[1.15rem]">{alertsWork ? "مفعّلة" : alertFailed ? "آخرها لم يخرج" : "غير مفعّلة"}</span>} />
       </StatGrid>
 
       <Section title="الوظائف المجدولة" description="كل وظيفة تسجل هنا آخر مرة بدأت ونجحت وفشلت. الموعد اليومي قد يتأخر حتى ساعة." icon={<CalendarClock />} tone="sky">

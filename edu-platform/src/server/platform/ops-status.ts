@@ -29,6 +29,12 @@ export function opsConfig(): OpsConfig {
   };
 }
 
+/** هل فشلت آخر رسالة تنبيه حاول الخادم إرسالها؟ عنوان صحيح وSMTP مضبوط لا يثبتان أن الرسائل تصل */
+export async function lastAlertSendFailed(): Promise<boolean> {
+  const [last] = await sql<{ status: string }[]>`select status from email_log where template = 'ops_alert' order by id desc limit 1`;
+  return last?.status === "failed";
+}
+
 export type JobView = JobHeartbeat & { status: JobStatus };
 
 export async function jobViews(): Promise<JobView[]> {

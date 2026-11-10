@@ -1,5 +1,5 @@
 import "server-only";
-import { NextResponse } from "next/server";
+import { after, NextResponse } from "next/server";
 import { scrubForOps } from "@/lib/redact";
 import vercelConfig from "../../../vercel.json";
 import { sql } from "../db";
@@ -91,7 +91,12 @@ export async function runScheduledJob<R>(job: JobName, work: () => Promise<R>, f
 
 /** صلب كل مسار /api/cron/*: التحقق أولًا، والرد لا يحمل غير أرقام التقرير */
 export async function serveCron<R>(req: Request, job: JobName, work: () => Promise<R>, failedWhen?: (report: R) => string | null): Promise<NextResponse> {
-  if (!isCronAuthorized(req.headers.get("authorization"))) return NextResponse.json({ error: "unauthorized" }, { status: 401 });
+  if (!isCronAuthorized(req.headers.get("authorization"))) {
+    // استدعاء Vercel المرفوض (CRON_SECRET ناقص أو تغير) هو بالضبط حين يجب أن يصل تنبيه «لم تعمل في موعدها».
+    // الفحص محدود بمرة كل ٥ دقائق في كل نسخة، و/api/health يتيحه أصلًا لأي أحد، فلا يفتح هذا شيئًا جديدًا
+    await runOpsWatchdog();
+    return NextResponse.json({ error: "unauthorized" }, { status: 401 });
+  }
   const run = await runScheduledJob(job, work, failedWhen);
   await runOpsWatchdog({ force: true });
   if (run.state === "overlapped") return NextResponse.json({ skipped: "already_running" });
@@ -129,7 +134,8 @@ export function resetOpsWatchdogForTests() {
 
 /**
  * يبحث عما لا يُبلغ عن نفسه: وظيفة لم تعمل، أو استرداد علق بلا نتيجة.
- * يعمل بعد كل وظيفة مجدولة، ومن /api/health حتى يكشف أيضًا توقف الوظائف كلها معًا إن كان هناك من يفحص الموقع دوريًا.
+ * يعمل بعد كل وظيفة مجدولة، وعند رفض استدعاء مجدول، ومن /api/health ولوحة المالك وصفحة صحة المنصة،
+ * حتى يكشف توقف الوظائف كلها معًا: فورًا مع مراقب خارجي يفحص /api/health، أو حين يفتح المالك لوحته.
  * لا يرمي أبدًا، وكل رسالة خلفها حد نوعها في قاعدة البيانات.
  */
 export async function runOpsWatchdog(opts: { force?: boolean } = {}): Promise<void> {
@@ -152,6 +158,18 @@ export async function runOpsWatchdog(opts: { force?: boolean } = {}): Promise<vo
     await flushSuppressedAlerts();
   } catch (err) {
     console.error("[ops-watchdog] failed", err instanceof Error ? err.name : "unknown");
+  }
+}
+
+/**
+ * الفحص بعد إرسال صفحة المالك: إن توقفت الوظائف كلها ولا مراقب خارجي، يصل التنبيه حين يفتح المالك لوحته.
+ * محدود كبقية الاستدعاءات، ولا يؤخر الصفحة. خارج سياق الطلب (الاختبارات) يعمل مباشرة
+ */
+export async function runOpsWatchdogAfterResponse(): Promise<void> {
+  try {
+    after(() => runOpsWatchdog());
+  } catch {
+    await runOpsWatchdog();
   }
 }
 

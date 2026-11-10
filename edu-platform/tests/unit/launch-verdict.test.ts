@@ -68,6 +68,13 @@ describe("a complete deployment", () => {
     }
   });
 
+  it("asks for an outside monitor on this site's health address, because nothing inside notices a full stop", () => {
+    const { step } = evaluate();
+    expect(step("uptime_monitor")).toMatchObject({ group: "hosting", kind: "manual", blocking: true });
+    expect(step("uptime_monitor").facts.join(" ")).toContain("https://www.farqad-edu.com/api/health");
+    expect(step("uptime_monitor").todo).toMatch(/UptimeRobot.*٥ دقائق/);
+  });
+
   it("gives every step one sentence to act on and a place to do it", () => {
     for (const s of evaluate().steps) {
       expect(s.todo.trim().length, s.key).toBeGreaterThan(10);

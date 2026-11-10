@@ -2,7 +2,8 @@ import { afterAll, afterEach, beforeAll, beforeEach, describe, expect, it, vi } 
 import { resetEnvCache } from "@/server/env";
 import { handleMyFatoorahWebhook, requestOrderRefund, resetPaymentMethodsCache, verifyAndApplyPayment } from "@/server/payments/service";
 import * as mailer from "@/server/platform/mailer";
-import { flushSuppressedAlerts, MAX_ALERTS_PER_DAY, OPS_ALERTS, sendOpsAlert } from "@/server/platform/ops-alerts";
+import { flushSuppressedAlerts, MAX_ALERTS_PER_DAY, OPS_ALERTS, RETRY_FAILED_SEND_MINUTES, sendOpsAlert } from "@/server/platform/ops-alerts";
+import { lastAlertSendFailed } from "@/server/platform/ops-status";
 import { resetOpsWatchdogForTests, runOpsWatchdog } from "@/server/platform/scheduled-jobs";
 import { startSimulator, type Simulator } from "../mocks/myfatoorah-simulator";
 import { closeDb, resetDb, sql } from "../helpers/db";
@@ -24,6 +25,21 @@ function restoreEnv() {
     if (value === undefined) delete process.env[name];
     else process.env[name] = value;
   }
+}
+
+/** خادم بريد لا يقبل الاتصال: كل إرسال يفشل */
+function smtpDown() {
+  process.env.MAIL_DRIVER = "smtp";
+  process.env.SMTP_HOST = "127.0.0.1";
+  process.env.SMTP_PORT = "1";
+  process.env.MAIL_FROM = "منصة درب <no-reply@darb.school>";
+  resetEnvCache();
+}
+
+function smtpBack() {
+  restoreEnv();
+  process.env.OPS_ALERT_EMAIL = OWNER;
+  resetEnvCache();
 }
 
 let sim: Simulator;
@@ -153,15 +169,50 @@ describe("the alert path cannot feed on itself", () => {
     expect(await sql`select 1 from email_log where template = 'ops_alert' and status = 'failed'`).toHaveLength(1);
   });
 
-  it("a failed send still uses the period, so an outage sends no repeated attempts", async () => {
-    process.env.MAIL_DRIVER = "smtp";
-    process.env.SMTP_HOST = "127.0.0.1";
-    process.env.SMTP_PORT = "1";
-    process.env.MAIL_FROM = "منصة درب <no-reply@darb.school>";
-    resetEnvCache();
+  it("a failed send is not retried at once, so an outage sends no rapid attempts", async () => {
+    smtpDown();
     await sendOpsAlert("server_error");
     await sendOpsAlert("server_error");
+    await flushSuppressedAlerts();
     expect(await sql`select 1 from email_log where template = 'ops_alert'`).toHaveLength(1);
+  });
+
+  it("a failed send is not lost: the follow-up after the retry delay carries it", async () => {
+    smtpDown();
+    expect(await sendOpsAlert("payment_dispute")).toBe(false);
+    expect((await state("payment_dispute")).suppressed).toBe(1);
+    smtpBack();
+    await sql`update ops_alert_state set last_sent_at = last_sent_at - make_interval(mins => ${RETRY_FAILED_SEND_MINUTES + 1}) where kind = 'payment_dispute'`;
+    await flushSuppressedAlerts();
+    const list = await mails();
+    expect(list.map((mail) => mail.status)).toEqual(["failed", "logged"]);
+    expect(list[1].body).toContain(OPS_ALERTS.payment_dispute.body);
+    expect((await state("payment_dispute")).suppressed).toBe(0);
+  });
+
+  it("a failed send keeps the count held back before it", async () => {
+    await sendOpsAlert("server_error");
+    await sendOpsAlert("server_error");
+    await sendOpsAlert("server_error");
+    await makeOld("server_error");
+    smtpDown();
+    expect(await sendOpsAlert("server_error")).toBe(false);
+    expect((await state("server_error")).suppressed).toBe(3);
+    smtpBack();
+    await makeOld("server_error");
+    await flushSuppressedAlerts();
+    expect((await mails()).at(-1)?.body).toContain("٣");
+  });
+
+  it("the owner page learns that the last alert did not go out", async () => {
+    expect(await lastAlertSendFailed()).toBe(false);
+    smtpDown();
+    await sendOpsAlert("job_failed");
+    expect(await lastAlertSendFailed()).toBe(true);
+    smtpBack();
+    await makeOld("job_failed");
+    await flushSuppressedAlerts();
+    expect(await lastAlertSendFailed()).toBe(false);
   });
 
   it("a mail server that never answers cannot hold the caller", async () => {

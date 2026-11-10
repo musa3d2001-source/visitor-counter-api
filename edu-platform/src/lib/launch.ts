@@ -25,6 +25,7 @@ export const MANUAL_VERSIONS = {
   vercel_pro: "1",
   supabase_pro: "1",
   restore_drill: "1",
+  uptime_monitor: "1",
   commercial_license: "1",
   lawyer_review: LEGAL_VERSION,
   bunny_cdn_token: "1",
@@ -368,6 +369,19 @@ function hostingSteps(f: LaunchFacts, ticks: LaunchTicks): Built[] {
       facts: f.jobs.map((job) => `${job.title}: ${label[job.status]}، آخر نجاح ${when(job.lastSuccessAt)}`),
     });
   }
+
+  const health = appUrlCheck(f.appUrl);
+  steps.push(
+    manualStep("uptime_monitor", ticks, {
+      title: "مراقب خارجي للموقع",
+      todo: "أنشئ حسابًا مجانيًا في UptimeRobot، وأضف مراقب HTTP(s) على رابط الفحص أدناه بفاصل ٥ دقائق وتنبيه إلى بريدك، ثم أشّر.",
+      where: { label: "uptimerobot.com ← Add New Monitor" },
+      facts: [
+        `رابط الفحص: https://${health.problem === "invalid" || !health.host ? "<نطاقك>" : health.host}/api/health`,
+        "بدونه لا تصلك رسالة إن توقف الموقع أو قاعدة البيانات، ورسالة توقف الوظائف المجدولة كلها لا تصل حتى تفتح لوحة الإدارة.",
+      ],
+    }),
+  );
 
   steps.push(
     manualStep("restore_drill", ticks, {
