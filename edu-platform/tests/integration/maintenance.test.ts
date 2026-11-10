@@ -1,9 +1,11 @@
 import { randomBytes } from "node:crypto";
 import { afterAll, afterEach, beforeAll, beforeEach, describe, expect, it, vi } from "vitest";
 import { IP_SIGNAL, listAccountIpSignals } from "@/server/admin/access-signals";
-import { ACCESS_LOG_RETENTION_DAYS, ERROR_EVENT_RETENTION_DAYS, PRUNE_BATCH_SIZE, runDataPruning } from "@/server/platform/maintenance";
+import { ACCESS_LOG_RETENTION_DAYS, ERROR_EVENT_RETENTION_DAYS, EXPIRED_TOKEN_GRACE_DAYS, PRUNE_BATCH_SIZE, runDataPruning } from "@/server/platform/maintenance";
+import { SATURATION_RETENTION_DAYS } from "@/server/platform/saturation";
+import { STAMPED_CACHE_BUDGET_BYTES } from "@/server/access/delivery";
 import { closeDb, resetDb, sql } from "../helpers/db";
-import { createUser } from "../helpers/factories";
+import { createProduct, createUser } from "../helpers/factories";
 
 const count = async (table: "rate_limits" | "sessions" | "access_logs" | "error_events") => (await sql<{ n: number }[]>`select count(*)::int as n from ${sql(table)}`)[0].n;
 
@@ -24,7 +26,7 @@ beforeAll(resetDb);
 afterAll(closeDb);
 
 beforeEach(async () => {
-  await sql`truncate rate_limits, sessions, access_logs, error_events restart identity cascade`;
+  await sql`truncate rate_limits, sessions, access_logs, error_events, saturation_counters, password_reset_tokens, email_verification_tokens, login_challenges, stamped_copies restart identity cascade`;
 });
 
 afterEach(() => {
@@ -111,6 +113,86 @@ describe("error events", () => {
   });
 });
 
+describe("expired links and login steps", () => {
+  const stale = EXPIRED_TOKEN_GRACE_DAYS + 1;
+
+  it("removes those that ended more than a day ago and keeps the rest", async () => {
+    const user = await createUser();
+    const id = (label: string) => label.padEnd(64, "0");
+    await sql`
+      insert into password_reset_tokens (id, user_id, expires_at) values
+        (${id("a")}, ${user.id}, now() - make_interval(days => ${stale})),
+        (${id("b")}, ${user.id}, now() + interval '1 hour')
+    `;
+    await sql`
+      insert into email_verification_tokens (id, user_id, email, expires_at) values
+        (${id("c")}, ${user.id}, 'old@farqad.test', now() - make_interval(days => ${stale})),
+        (${id("d")}, ${user.id}, 'new@farqad.test', now() - interval '1 hour')
+    `;
+    await sql`
+      insert into login_challenges (id, user_id, expires_at) values
+        (${id("e")}, ${user.id}, now() - make_interval(days => ${stale})),
+        (${id("f")}, ${user.id}, now() + interval '5 minutes')
+    `;
+    expect(await runDataPruning()).toMatchObject({ expiredTokens: 3 });
+    expect((await sql<{ id: string }[]>`select id from password_reset_tokens union all select id from email_verification_tokens union all select id from login_challenges order by 1`).map((r) => r.id[0])).toEqual(["b", "d", "f"]);
+  });
+});
+
+describe("saturation counters", () => {
+  it("are kept for two weeks, not longer", async () => {
+    await sql`
+      insert into saturation_counters (hour, kind, count) values
+        (now() - make_interval(days => ${SATURATION_RETENTION_DAYS + 1}), 'login_shed', 1),
+        (now() - make_interval(days => ${SATURATION_RETENTION_DAYS - 1}), 'login_shed', 1)
+    `;
+    expect(await runDataPruning()).toMatchObject({ saturationCounters: 1 });
+    expect(await sql`select 1 from saturation_counters`).toHaveLength(1);
+  });
+});
+
+describe("stamped copies are condemned in bounded batches", () => {
+  async function addIdleCopies(howMany: number) {
+    const user = await createUser();
+    await sql`
+      insert into stamped_copies (cache_key, user_id, file_id, file_version, object_key, size_bytes, state, last_used_at)
+      select md5(g::text) || md5(g::text), ${user.id}, gen_random_uuid(), 'v1', 'stamped/' || gen_random_uuid() || '.pdf', 100, 'ready', now() - interval '60 days'
+      from generate_series(1, ${howMany}) g
+    `;
+  }
+
+  it("marks at most its ceiling in one run, then says it did not finish", async () => {
+    await addIdleCopies(PRUNE_BATCH_SIZE * 10 + 700);
+    const report = await runDataPruning();
+    expect(report.finished).toBe(false);
+    const [{ alive }] = await sql<{ alive: number }[]>`select count(*)::int as alive from stamped_copies where state = 'ready'`;
+    expect(alive).toBe(700);
+  });
+
+  it("the next run finishes what is left", async () => {
+    await addIdleCopies(PRUNE_BATCH_SIZE + 5);
+    await runDataPruning();
+    await runDataPruning();
+    expect(await sql`select 1 from stamped_copies where state = 'ready'`).toHaveLength(0);
+  });
+
+  it("copies over the storage budget go oldest first, and the newest stay", async () => {
+    const user = await createUser();
+    const product = await createProduct({ title: "ميزانية النسخ" });
+    const [file] = await sql<{ id: string; storage_key: string }[]>`select id, storage_key from product_files where id = ${product.previewFileId}`;
+    const half = Math.ceil(STAMPED_CACHE_BUDGET_BYTES.free / 2);
+    await sql`
+      insert into stamped_copies (cache_key, user_id, file_id, file_version, object_key, size_bytes, state, last_used_at)
+      select md5(g::text) || md5(g::text), ${user.id}, ${file.id}, ${file.storage_key}, 'stamped/' || gen_random_uuid() || '.pdf', ${half}, 'ready', now() - make_interval(hours => g)
+      from generate_series(1, 5) g
+    `;
+    const newestTwo = await sql<{ id: string }[]>`select id from stamped_copies order by last_used_at desc limit 2`;
+    await runDataPruning();
+    const left = await sql<{ id: string }[]>`select id from stamped_copies where state = 'ready' order by last_used_at desc`;
+    expect(left.map((r) => r.id)).toEqual(newestTwo.map((r) => r.id));
+  });
+});
+
 describe("each run is bounded and repeatable", () => {
   it("stops at its ceiling and the next run finishes", async () => {
     await sql`insert into rate_limits (key, count, reset_at) select 'k' || g, 1, now() - interval '3 days' from generate_series(1, ${PRUNE_BATCH_SIZE * 10 + 500}) g`;
@@ -127,6 +209,6 @@ describe("each run is bounded and repeatable", () => {
 
   it("a second run with nothing left does nothing", async () => {
     await runDataPruning();
-    expect(await runDataPruning()).toEqual({ rateLimits: 0, sessions: 0, accessLogs: 0, errorEvents: 0, stampedCopies: 0, unconfirmedUploads: 0, videoEvents: 0, videos: { checked: 0, held: 0, failed: 0, finished: true }, finished: true });
+    expect(await runDataPruning()).toEqual({ rateLimits: 0, sessions: 0, accessLogs: 0, errorEvents: 0, stampedCopies: 0, unconfirmedUploads: 0, videoEvents: 0, expiredTokens: 0, saturationCounters: 0, videos: { checked: 0, held: 0, failed: 0, finished: true }, finished: true });
   });
 });

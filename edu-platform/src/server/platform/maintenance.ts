@@ -7,6 +7,7 @@ import { STAMPED_CACHE_BUDGET_BYTES, STAMPED_COPY_IDLE_DAYS, sweepDoomedCopies }
 import { sweepUploadTickets } from "../admin/uploads";
 import { dailyVideoCheck, type DailyVideoReport } from "../video/service";
 import { reportError } from "./report-error";
+import { SATURATION_RETENTION_DAYS } from "./saturation";
 
 /**
  * تنظيف يومي للجداول التي تكبر مع الزيارات، بدفعات صغيرة حتى لا يطول قفل أو تتجاوز الدالة مهلتها.
@@ -23,6 +24,8 @@ export const OWNER_BACKUP_KEEP_DAYS = 90;
 export const ERROR_EVENT_RETENTION_DAYS = 30;
 /** Bunny يتوقف عن إعادة الإرسال بعد نحو 4 ساعات، فبصمة الإشعار لا حاجة لها بعد ذلك بكثير */
 export const VIDEO_EVENT_RETENTION_DAYS = 30;
+/** روابط ورموز انتهت: وجودها كغيابها عند الفتح، فلا سبب لبقائها بعد يوم */
+export const EXPIRED_TOKEN_GRACE_DAYS = 1;
 export const PRUNE_BATCH_SIZE = 2_000;
 const MAX_ROUNDS = 10;
 const TIME_BUDGET_MS = 30_000;
@@ -39,6 +42,9 @@ export type PruneReport = {
   /** كائنات رُفعت ولم يُؤكد رفعها خلال يوم */
   unconfirmedUploads: number;
   videoEvents: number;
+  /** روابط استعادة وتأكيد بريد وخطوات دخول انتهت */
+  expiredTokens: number;
+  saturationCounters: number;
   /** جولة الفيديو: الدروس المعلقة وفحص الدروس الجاهزة */
   videos: DailyVideoReport;
   finished: boolean;
@@ -112,8 +118,30 @@ async function prune(): Promise<PruneReport> {
       delete from video_events e using batch where e.id = batch.id
     `),
   );
+  // جداول صغيرة، وأسماؤها من هذه القائمة الثابتة وحدها
+  let expiredTokens = 0;
+  for (const table of ["password_reset_tokens", "email_verification_tokens", "login_challenges"] as const) {
+    expiredTokens += await inBatches(
+      () => deleted(sql`
+        with batch as materialized (
+          select id from ${sql(table)} where expires_at < now() - make_interval(days => ${EXPIRED_TOKEN_GRACE_DAYS})
+          limit ${PRUNE_BATCH_SIZE} for update skip locked
+        )
+        delete from ${sql(table)} t using batch where t.id = batch.id
+      `),
+    );
+  }
+  const saturationCounters = await inBatches(
+    () => deleted(sql`
+      with batch as materialized (
+        select hour, kind from saturation_counters where hour < now() - make_interval(days => ${SATURATION_RETENTION_DAYS})
+        limit ${PRUNE_BATCH_SIZE} for update skip locked
+      )
+      delete from saturation_counters c using batch where c.hour = batch.hour and c.kind = batch.kind
+    `),
+  );
   // التخزين قد يتعثر: يُسجل للمالك ويكمل التنظيف غدًا، ولا يُفشل ما سبق من حذف
-  const stampedCopies = await pruneStampedCopies(() => Date.now() - started > TIME_BUDGET_MS).catch(async (err) => {
+  const stampedCopies = await pruneStampedCopies(inBatches, () => Date.now() - started > TIME_BUDGET_MS).catch(async (err) => {
     await reportError("prune:stamped-copies", err);
     return { removed: 0, finished: false };
   });
@@ -132,7 +160,7 @@ async function prune(): Promise<PruneReport> {
   });
   if (!videos.finished) finished = false;
 
-  return { rateLimits, sessions, accessLogs, errorEvents, stampedCopies: stampedCopies.removed, unconfirmedUploads: uploads.removed, videoEvents, videos, finished };
+  return { rateLimits, sessions, accessLogs, errorEvents, stampedCopies: stampedCopies.removed, unconfirmedUploads: uploads.removed, videoEvents, expiredTokens, saturationCounters, videos, finished };
 }
 
 /**
@@ -140,24 +168,37 @@ async function prune(): Promise<PruneReport> {
  * تُعلَّم: ما لم يُفتح منذ STAMPED_COPY_IDLE_DAYS، وما يخص ملفًا حُذف أو تغير مفتاحه، وما يخص حسابًا معطلًا أو محذوف البيانات،
  * وختمًا مات قبل أن يكتمل، وما زاد على ميزانية التخزين (الأقدم استعمالًا أولًا).
  */
-async function pruneStampedCopies(outOfTime: () => boolean): Promise<{ removed: number; finished: boolean }> {
-  await sql`
-    update stamped_copies c set state = 'doomed'
-    where c.state <> 'doomed' and (
-      (c.state = 'ready' and c.last_used_at < now() - make_interval(days => ${STAMPED_COPY_IDLE_DAYS}))
-      or (c.state = 'stamping' and c.lease_until < now() - interval '1 hour')
-      or not exists (select 1 from product_files f where f.id = c.file_id and f.storage_key = c.file_version)
-      or not exists (select 1 from users u where u.id = c.user_id and u.is_active and u.anonymized_at is null)
-    )
-  `;
+async function pruneStampedCopies(inBatches: (statement: () => PromiseLike<number>) => Promise<number>, outOfTime: () => boolean): Promise<{ removed: number; finished: boolean }> {
+  await inBatches(
+    () => deleted(sql`
+      with batch as materialized (
+        select c.id from stamped_copies c
+        where c.state <> 'doomed' and (
+          (c.state = 'ready' and c.last_used_at < now() - make_interval(days => ${STAMPED_COPY_IDLE_DAYS}))
+          or (c.state = 'stamping' and c.lease_until < now() - interval '1 hour')
+          or not exists (select 1 from product_files f where f.id = c.file_id and f.storage_key = c.file_version)
+          or not exists (select 1 from users u where u.id = c.user_id and u.is_active and u.anonymized_at is null)
+        )
+        limit ${PRUNE_BATCH_SIZE} for update of c skip locked
+      )
+      update stamped_copies c set state = 'doomed' from batch where c.id = batch.id
+    `),
+  );
   const budget = env().STORAGE_PLAN === "paid" ? STAMPED_CACHE_BUDGET_BYTES.paid : STAMPED_CACHE_BUDGET_BYTES.free;
-  await sql`
-    update stamped_copies set state = 'doomed' where id in (
-      select id from (
-        select id, sum(size_bytes) over (order by last_used_at desc, id) as running from stamped_copies where state = 'ready'
-      ) ranked where running > ${budget}
-    )
-  `;
+  await inBatches(
+    () => deleted(sql`
+      with batch as materialized (
+        select c.id from stamped_copies c
+        where c.state = 'ready' and c.id in (
+          select id from (
+            select id, sum(size_bytes) over (order by last_used_at desc, id) as running from stamped_copies where state = 'ready'
+          ) ranked where running > ${budget}
+        )
+        limit ${PRUNE_BATCH_SIZE} for update of c skip locked
+      )
+      update stamped_copies c set state = 'doomed' from batch where c.id = batch.id
+    `),
+  );
   let removed = 0;
   for (let round = 0; round < MAX_ROUNDS * 5; round++) {
     if (outOfTime()) return { removed, finished: false };

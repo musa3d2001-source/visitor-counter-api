@@ -18,7 +18,7 @@ export type JobName = (typeof SCHEDULED_JOBS)[number];
 export const JOB_LABELS: Record<JobName, { title: string; description: string }> = {
   "reconcile-payments": { title: "تسوية المدفوعات", description: "تسأل بوابة الدفع عن الفواتير المفتوحة والاستردادات التي لم تُحسم." },
   "expire-orders": { title: "إغلاق الطلبات المنتهية", description: "تغلق الطلبات غير المدفوعة بعد انتهاء مدتها، ولا تغلق طلبًا لم تُفحص فواتيره." },
-  "prune-data": { title: "تنظيف البيانات القديمة", description: "تحذف حدود المحاولات والجلسات المنتهية وسجلات الوصول القديمة." },
+  "prune-data": { title: "تنظيف البيانات القديمة", description: "تحذف حدود المحاولات والجلسات والروابط المنتهية وسجلات الوصول القديمة والنسخ المختومة غير المستعملة والرفع الذي لم يكتمل." },
 };
 
 /** ليست عقد الدالة وحدها: أطول من maxDuration بهامش، فموت الدالة يحرر الوظيفة في الجولة التالية */
