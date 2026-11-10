@@ -511,6 +511,61 @@ describe("the gateway's refund events", () => {
     await expect(refundExtraPayment({ extraId: extra.id, adminId: admin.id, reason: "دفعة مكررة" })).resolves.toEqual({ state: "refund_requested" });
   });
 
+  describe("a refund event is not matched on amount alone when a reference is available", () => {
+    const deliver = async (invoice: number, refundId: number, status: "REFUNDED" | "CANCELED") => {
+      const { body, headers } = sim.buildRefundWebhook(invoice, refundId, status);
+      return handleMyFatoorahWebhook(body, headers);
+    };
+
+    it("a cancelled refund from the portal for the same amount cannot fail the refund we sent", async () => {
+      const { order, second, extra } = await flaggedOrder();
+      sim.setFault("/v2/MakeRefund", "drop-after");
+      await refundExtraPayment({ extraId: extra.id, adminId: admin.id, reason: "دفعة مكررة" });
+      sim.clearFaults();
+      const portal = sim.portalRefund(second, extra.amount_fils, "Canceled");
+      await deliver(second, portal.RefundId, "CANCELED");
+      expect((await extraOf(order.id)).state).toBe("refund_unknown");
+    });
+
+    it("a completed refund carrying another record's reference does not close this one", async () => {
+      const { order, second, extra } = await flaggedOrder();
+      const other = sim.portalRefund(second, extra.amount_fils);
+      other.ExternalIdentifier = "refund:11111111-1111-4111-8111-111111111111:1";
+      await deliver(second, other.RefundId, "REFUNDED");
+      expect(await extraOf(order.id)).toMatchObject({ state: "open", gateway_refund_id: null });
+      expect((await sql<{ details: { reason: string } }[]>`select details from payment_alerts where order_id = ${order.id}`).map((a) => a.details.reason)).toEqual(["extra_mismatch"]);
+    });
+
+    it("our own reference closes the record before the reply arrives", async () => {
+      const { order, second, extra } = await flaggedOrder();
+      sim.setFault("/v2/MakeRefund", "drop-after");
+      await refundExtraPayment({ extraId: extra.id, adminId: admin.id, reason: "دفعة مكررة" });
+      sim.clearFaults();
+      const sent = sim.state.invoices.get(second)!.Refunds[0];
+      sim.setRefundStatus(sent.RefundId, "Refunded");
+      await deliver(second, sent.RefundId, "REFUNDED");
+      expect((await extraOf(order.id)).state).toBe("refunded");
+    });
+
+    it("a full refund the owner made in the portal, with no reference, still closes it", async () => {
+      const { order, second, extra } = await flaggedOrder();
+      const portal = sim.portalRefund(second, extra.amount_fils);
+      await deliver(second, portal.RefundId, "REFUNDED");
+      expect((await extraOf(order.id)).state).toBe("refunded");
+    });
+
+    it("a gateway outage leaves the record open and the event is retried", async () => {
+      const { order, second, extra } = await flaggedOrder();
+      const portal = sim.portalRefund(second, extra.amount_fils);
+      sim.setFault("/v2/GetRefundStatus", "down");
+      expect((await deliver(second, portal.RefundId, "REFUNDED")).status).toBe(500);
+      sim.clearFaults();
+      expect((await extraOf(order.id)).state).toBe("open");
+      expect((await deliver(second, portal.RefundId, "REFUNDED")).status).toBe(200);
+      expect((await extraOf(order.id)).state).toBe("refunded");
+    });
+  });
+
   it("a partial refund made from the portal does not close a full extra payment", async () => {
     const { order, second } = await flaggedOrder();
     const portal = sim.portalRefund(second, 1000);
