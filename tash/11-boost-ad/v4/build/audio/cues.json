@@ -1,0 +1,1306 @@
+{
+ "spec": "v4/BUILD-SPEC.md §10, §7, §11 A-14, §15 R3-1..R3-24 (R3 wins; no version B)",
+ "fps": 30,
+ "bpm": 120,
+ "beat_frames": 15,
+ "sample_rate": 48000,
+ "script": "v4/build/audio_v4.py",
+ "voices": {
+  "V1": {
+   "file": "src/assets/rec/voice1.wav",
+   "source_seconds": 1.0117,
+   "measured_closure_s": 0.5525,
+   "measured_hilu_frication_s": 0.6225,
+   "stretch_percent": 6.0,
+   "rubberband_tempo": 1.06383,
+   "head_trim_ms": 12.5,
+   "head_pad_ms": 0.0,
+   "placed_closure_s": 0.5,
+   "placed_hilu_frication_s": 0.5725,
+   "placed_seconds": 0.9385
+  },
+  "V2": {
+   "file": "src/assets/rec/voice2.wav",
+   "seconds": 1.1,
+   "onset_s": 0.017
+  },
+  "V3": {
+   "file": "src/assets/rec/voice3_tash.wav",
+   "seconds": 0.8,
+   "onset_s": 0.072
+  },
+  "V3_stack": {
+   "layers": [
+    {
+     "delay_ms": 0,
+     "semitones": 0,
+     "pan": 0.0,
+     "gain": 1.0
+    },
+    {
+     "delay_ms": 35,
+     "semitones": 2,
+     "pan": -0.75,
+     "gain": 0.78
+    },
+    {
+     "delay_ms": 70,
+     "semitones": -3,
+     "pan": 0.75,
+     "gain": 0.78
+    }
+   ],
+   "pitch_engine": "rubberband (ffmpeg), formant shifted",
+   "align_ms": {
+    "2": 9,
+    "-3": -4
+   }
+  }
+ },
+ "A20": {
+  "file": "audio/A20.wav",
+  "frames": 600,
+  "seconds": 20.0,
+  "samples": 960000,
+  "checks": {
+   "lufs": -14.0,
+   "true_peak_dbtp": -2.3,
+   "share_below_150": 0.7079,
+   "share_500_6k": 0.0995,
+   "room_tone_dbfs": -40.0,
+   "voice_over_bed_db": {
+    "V1 «مشروعك حلو…»": 4.2,
+    "V3 «طشّ!» f90": 5.9,
+    "V2 «شنو حسابهم؟!»": 9.4,
+    "V3 x3 «طشّ!»": 5.2
+   },
+   "seam_jump": 0.00181,
+   "passed": false
+  },
+  "cues": [
+   {
+    "frame": 0.0,
+    "t": 0.0,
+    "bus": "hit",
+    "what": "ice-on-glass crack (ice hits the latte)"
+   },
+   {
+    "frame": 0.0,
+    "t": 0.0,
+    "bus": "music",
+    "what": "808 A1 55 Hz (+110/165/220 Hz) on frame 0"
+   },
+   {
+    "frame": 0.0,
+    "t": 0.0,
+    "bus": "sfx",
+    "what": "typing tick right dot (1174.7 Hz)"
+   },
+   {
+    "frame": 0.0,
+    "t": 0.0,
+    "bus": "voice",
+    "what": "V1 «مشروعك حلو…» from 0.00 s; «حلو» starts 0.500 s"
+   },
+   {
+    "frame": 5.0,
+    "t": 0.1667,
+    "bus": "sfx",
+    "what": "ice enters the coffee: splash (n7 entry)"
+   },
+   {
+    "frame": 5.0,
+    "t": 0.1667,
+    "bus": "sfx",
+    "what": "typing tick middle dot (1244.5 Hz)"
+   },
+   {
+    "frame": 10.0,
+    "t": 0.3333,
+    "bus": "sfx",
+    "what": "typing tick left dot (1480.0 Hz)"
+   },
+   {
+    "frame": 15.0,
+    "t": 0.5,
+    "bus": "music",
+    "what": "group clap on the voiced «حلو» (punch-in)"
+   },
+   {
+    "frame": 16.0,
+    "t": 0.5333,
+    "bus": "sfx",
+    "what": "closer replay of the ice touching the coffee (dark plop)"
+   },
+   {
+    "frame": 30,
+    "t": 1.0,
+    "bus": "music",
+    "what": "music low-pass closes 8 kHz -> 400 Hz over f30-44; music out from f45 (fade f44.5-46)"
+   },
+   {
+    "frame": 30.0,
+    "t": 1.0,
+    "bus": "music",
+    "what": "kick (drain)"
+   },
+   {
+    "frame": 30.0,
+    "t": 1.0,
+    "bus": "music",
+    "what": "group clap (drain)"
+   },
+   {
+    "frame": 30.0,
+    "t": 1.0,
+    "bus": "music",
+    "what": "chord D (drain) f30-45"
+   },
+   {
+    "frame": 30.0,
+    "t": 1.0,
+    "bus": "sfx",
+    "what": "soft syrup / pastry crunch (kunafa, no nut scatter)"
+   },
+   {
+    "frame": 32.0,
+    "t": 1.0667,
+    "bus": "sfx",
+    "what": "falling tick 1480.0 Hz (right dot drops, drags its third)"
+   },
+   {
+    "frame": 34.0,
+    "t": 1.1333,
+    "bus": "sfx",
+    "what": "falling tick 1244.5 Hz (middle dot drops, drags its third)"
+   },
+   {
+    "frame": 36.0,
+    "t": 1.2,
+    "bus": "sfx",
+    "what": "falling tick 1174.7 Hz (left dot drops, drags its third)"
+   },
+   {
+    "frame": 45,
+    "t": 1.5,
+    "bus": "room",
+    "what": "dead beat f45-71: room tone only (no ghost clicks, R3-4)"
+   },
+   {
+    "frame": 45.0,
+    "t": 1.5,
+    "bus": "sfx",
+    "what": "soft tap: drained dot 1 lands on the floor"
+   },
+   {
+    "frame": 47.0,
+    "t": 1.5667,
+    "bus": "sfx",
+    "what": "soft tap: drained dot 2 lands on the floor"
+   },
+   {
+    "frame": 49.0,
+    "t": 1.6333,
+    "bus": "sfx",
+    "what": "soft tap: drained dot 3 lands on the floor"
+   },
+   {
+    "frame": 72,
+    "t": 2.4,
+    "bus": "music",
+    "what": "music filter opens 400 Hz -> 12 kHz over f72-89"
+   },
+   {
+    "frame": 72.0,
+    "t": 2.4,
+    "bus": "sfx",
+    "what": "jump whoosh (dots turn lime and jump)"
+   },
+   {
+    "frame": 72.0,
+    "t": 2.4,
+    "bus": "sfx",
+    "what": "riser f72-89"
+   },
+   {
+    "frame": 75.0,
+    "t": 2.5,
+    "bus": "music",
+    "what": "low dum under the opening filter"
+   },
+   {
+    "frame": 78.0,
+    "t": 2.6,
+    "bus": "sfx",
+    "what": "rising landing tick 1174.7 Hz (dot lands on the ش, x 807)"
+   },
+   {
+    "frame": 81.0,
+    "t": 2.7,
+    "bus": "sfx",
+    "what": "rising landing tick 1244.5 Hz (dot lands on the ش, x 715)"
+   },
+   {
+    "frame": 84.0,
+    "t": 2.8,
+    "bus": "sfx",
+    "what": "rising landing tick 1480.0 Hz (dot lands on the ش, x 623)"
+   },
+   {
+    "frame": 87.84,
+    "t": 2.928,
+    "bus": "voice",
+    "what": "«طشّ!» V3 dry single take, onset on f90"
+   },
+   {
+    "frame": 90.0,
+    "t": 3.0,
+    "bus": "hit",
+    "what": "shockwave from the ش (r 0 to 2300 in 4 f), wordmark slam"
+   },
+   {
+    "frame": 90.0,
+    "t": 3.0,
+    "bus": "music",
+    "what": "HERO 1: 808 A1 55 Hz (+110/165/220 Hz)"
+   },
+   {
+    "frame": 90.0,
+    "t": 3.0,
+    "bus": "music",
+    "what": "HERO 1: kick"
+   },
+   {
+    "frame": 90.0,
+    "t": 3.0,
+    "bus": "music",
+    "what": "HERO 1: group clap (10 hands)"
+   },
+   {
+    "frame": 90.0,
+    "t": 3.0,
+    "bus": "music",
+    "what": "chord D (full) f90-135"
+   },
+   {
+    "frame": 105.0,
+    "t": 3.5,
+    "bus": "sfx",
+    "what": "porthole pop 1 (x 270)"
+   },
+   {
+    "frame": 108.0,
+    "t": 3.6,
+    "bus": "sfx",
+    "what": "porthole pop 2 (x 540)"
+   },
+   {
+    "frame": 111.0,
+    "t": 3.7,
+    "bus": "sfx",
+    "what": "porthole pop 3 (x 810)"
+   },
+   {
+    "frame": 120,
+    "t": 4.0,
+    "bus": "music",
+    "what": "clap f120 = groove clap (portholes cut to their next 15 frames)"
+   },
+   {
+    "frame": 120.0,
+    "t": 4.0,
+    "bus": "music",
+    "what": "kick (full)"
+   },
+   {
+    "frame": 120.0,
+    "t": 4.0,
+    "bus": "music",
+    "what": "group clap (full)"
+   },
+   {
+    "frame": 127.5,
+    "t": 4.25,
+    "bus": "music",
+    "what": "mirwas fill into f135"
+   },
+   {
+    "frame": 135,
+    "t": 4.5,
+    "bus": "music",
+    "what": "kick: Coffee A full frame"
+   },
+   {
+    "frame": 135.0,
+    "t": 4.5,
+    "bus": "music",
+    "what": "kick (peak)"
+   },
+   {
+    "frame": 135.0,
+    "t": 4.5,
+    "bus": "music",
+    "what": "chord D (peak) f135-150"
+   },
+   {
+    "frame": 138.0,
+    "t": 4.6,
+    "bus": "sfx",
+    "what": "ice clink + small splash (Coffee A; ice impact about f138)"
+   },
+   {
+    "frame": 150,
+    "t": 5.0,
+    "bus": "music",
+    "what": "group clap: Coffee B lens"
+   },
+   {
+    "frame": 150.0,
+    "t": 5.0,
+    "bus": "music",
+    "what": "kick (peak)"
+   },
+   {
+    "frame": 150.0,
+    "t": 5.0,
+    "bus": "music",
+    "what": "group clap (peak)"
+   },
+   {
+    "frame": 150.0,
+    "t": 5.0,
+    "bus": "music",
+    "what": "chord Eb (peak) f150-210"
+   },
+   {
+    "frame": 165,
+    "t": 5.5,
+    "bus": "music",
+    "what": "kick: Oud A full frame"
+   },
+   {
+    "frame": 165.0,
+    "t": 5.5,
+    "bus": "music",
+    "what": "kick (peak)"
+   },
+   {
+    "frame": 165.0,
+    "t": 5.5,
+    "bus": "sfx",
+    "what": "charcoal crackle + smoke puff (Oud A; no puff on screen, the sound carries it)"
+   },
+   {
+    "frame": 180,
+    "t": 6.0,
+    "bus": "music",
+    "what": "group clap: Oud B punch-in"
+   },
+   {
+    "frame": 180.0,
+    "t": 6.0,
+    "bus": "music",
+    "what": "kick (peak)"
+   },
+   {
+    "frame": 180.0,
+    "t": 6.0,
+    "bus": "music",
+    "what": "group clap (peak)"
+   },
+   {
+    "frame": 180.0,
+    "t": 6.0,
+    "bus": "sfx",
+    "what": "breath of smoke (Oud B punch-in)"
+   },
+   {
+    "frame": 195,
+    "t": 6.5,
+    "bus": "music",
+    "what": "kick: Oud C lens"
+   },
+   {
+    "frame": 195.0,
+    "t": 6.5,
+    "bus": "music",
+    "what": "kick (peak)"
+   },
+   {
+    "frame": 210,
+    "t": 7.0,
+    "bus": "music",
+    "what": "kick: Burger A full frame"
+   },
+   {
+    "frame": 210.0,
+    "t": 7.0,
+    "bus": "music",
+    "what": "kick (peak)"
+   },
+   {
+    "frame": 210.0,
+    "t": 7.0,
+    "bus": "music",
+    "what": "group clap (peak)"
+   },
+   {
+    "frame": 210.0,
+    "t": 7.0,
+    "bus": "music",
+    "what": "chord D (peak) f210-270"
+   },
+   {
+    "frame": 210.0,
+    "t": 7.0,
+    "bus": "sfx",
+    "what": "sizzle bed f210-225 (Burger A, sound only)"
+   },
+   {
+    "frame": 225.0,
+    "t": 7.5,
+    "bus": "music",
+    "what": "808 A1 on the bun landing (Burger B, exactly on the cut)"
+   },
+   {
+    "frame": 225.0,
+    "t": 7.5,
+    "bus": "sfx",
+    "what": "bun thump (Burger B)"
+   },
+   {
+    "frame": 240,
+    "t": 8.0,
+    "bus": "music",
+    "what": "kick: Burger C lens"
+   },
+   {
+    "frame": 240.0,
+    "t": 8.0,
+    "bus": "music",
+    "what": "kick (peak)"
+   },
+   {
+    "frame": 240.0,
+    "t": 8.0,
+    "bus": "music",
+    "what": "group clap (peak)"
+   },
+   {
+    "frame": 255,
+    "t": 8.5,
+    "bus": "music",
+    "what": "kick: Kunafa A full frame"
+   },
+   {
+    "frame": 255.0,
+    "t": 8.5,
+    "bus": "music",
+    "what": "kick (peak)"
+   },
+   {
+    "frame": 255.0,
+    "t": 8.5,
+    "bus": "sfx",
+    "what": "soft crunch (Kunafa A)"
+   },
+   {
+    "frame": 270,
+    "t": 9.0,
+    "bus": "music",
+    "what": "group clap: Kunafa B lens"
+   },
+   {
+    "frame": 270.0,
+    "t": 9.0,
+    "bus": "music",
+    "what": "kick (peak)"
+   },
+   {
+    "frame": 270.0,
+    "t": 9.0,
+    "bus": "music",
+    "what": "group clap (peak)"
+   },
+   {
+    "frame": 270.0,
+    "t": 9.0,
+    "bus": "music",
+    "what": "chord Eb (peak) f270-285"
+   },
+   {
+    "frame": 284.49,
+    "t": 9.483,
+    "bus": "voice",
+    "what": "«شنو حسابهم؟!» V2 (1.10 s)"
+   },
+   {
+    "frame": 285,
+    "t": 9.5,
+    "bus": "sfx",
+    "what": "typing ticks every 5 frames f285-325 (9 ticks, D6/Eb6/F#6 right to left, period 15 f)"
+   },
+   {
+    "frame": 330.0,
+    "t": 11.0,
+    "bus": "music",
+    "what": "kick (build)"
+   },
+   {
+    "frame": 330.0,
+    "t": 11.0,
+    "bus": "sfx",
+    "what": "multiplication step 1: 9 dots, 3 typing ticks at 3 per 15 f, pitch x1.000 (+0 st)"
+   },
+   {
+    "frame": 330.0,
+    "t": 11.0,
+    "bus": "sfx",
+    "what": "riser f330-386 (peaks into the flood)"
+   },
+   {
+    "frame": 345.0,
+    "t": 11.5,
+    "bus": "music",
+    "what": "kick (build)"
+   },
+   {
+    "frame": 345.0,
+    "t": 11.5,
+    "bus": "sfx",
+    "what": "multiplication step 2: 27 dots, 9 typing ticks at 9 per 15 f, pitch x1.335 (+5 st)"
+   },
+   {
+    "frame": 360.0,
+    "t": 12.0,
+    "bus": "music",
+    "what": "kick (build)"
+   },
+   {
+    "frame": 360.0,
+    "t": 12.0,
+    "bus": "sfx",
+    "what": "multiplication step 3: 81 dots, 27 typing ticks at 27 per 15 f, pitch x1.782 (+10 st)"
+   },
+   {
+    "frame": 375,
+    "t": 12.5,
+    "bus": "music",
+    "what": "mirwas roll (32nds, crescendo) into the duck"
+   },
+   {
+    "frame": 375.0,
+    "t": 12.5,
+    "bus": "sfx",
+    "what": "flood: 81 dots inflate (swell)"
+   },
+   {
+    "frame": 381,
+    "t": 12.7,
+    "bus": "music",
+    "what": "duck -9 dB (music and sound design)"
+   },
+   {
+    "frame": 386,
+    "t": 12.8667,
+    "bus": "music",
+    "what": "silence pocket f386-389 (room tone only)"
+   },
+   {
+    "frame": 387.84,
+    "t": 12.928,
+    "bus": "voice",
+    "what": "«طشّ!» V3 stacked x3 (0/+35/+70 ms, 0/+2/-3 st, centre/left/right), onset on the hit"
+   },
+   {
+    "frame": 390.0,
+    "t": 13.0,
+    "bus": "hit",
+    "what": "burst pop (81 dots fly out, slowing)"
+   },
+   {
+    "frame": 390.0,
+    "t": 13.0,
+    "bus": "music",
+    "what": "HERO 3: 808 A1 55 Hz (+110/165/220 Hz)"
+   },
+   {
+    "frame": 390.0,
+    "t": 13.0,
+    "bus": "music",
+    "what": "HERO 3: kick"
+   },
+   {
+    "frame": 390.0,
+    "t": 13.0,
+    "bus": "music",
+    "what": "HERO 3: group clap (12 hands)"
+   },
+   {
+    "frame": 390.0,
+    "t": 13.0,
+    "bus": "music",
+    "what": "chord D (half) f390-450"
+   },
+   {
+    "frame": 420.0,
+    "t": 14.0,
+    "bus": "music",
+    "what": "group clap (half)"
+   },
+   {
+    "frame": 450.0,
+    "t": 15.0,
+    "bus": "music",
+    "what": "soft kick: band cuts to kunafa"
+   },
+   {
+    "frame": 450.0,
+    "t": 15.0,
+    "bus": "music",
+    "what": "chord Gm (calm) f450-510"
+   },
+   {
+    "frame": 457.0,
+    "t": 15.2333,
+    "bus": "sfx",
+    "what": "two-note pop, note 1 A5 (synthesised)"
+   },
+   {
+    "frame": 460.0,
+    "t": 15.3333,
+    "bus": "sfx",
+    "what": "two-note pop, note 2 D6"
+   },
+   {
+    "frame": 480.0,
+    "t": 16.0,
+    "bus": "music",
+    "what": "soft kick: band cuts to burger"
+   },
+   {
+    "frame": 510.0,
+    "t": 17.0,
+    "bus": "music",
+    "what": "soft kick: band cuts to oud"
+   },
+   {
+    "frame": 510.0,
+    "t": 17.0,
+    "bus": "music",
+    "what": "chord Eb (calm) f510-540"
+   },
+   {
+    "frame": 540.0,
+    "t": 18.0,
+    "bus": "music",
+    "what": "soft kick: band cuts to coffee"
+   },
+   {
+    "frame": 540.0,
+    "t": 18.0,
+    "bus": "music",
+    "what": "chord Eb (thin) f540-570"
+   },
+   {
+    "frame": 570.0,
+    "t": 19.0,
+    "bus": "music",
+    "what": "chord D (thin) f570-588"
+   },
+   {
+    "frame": 588.0,
+    "t": 19.6,
+    "bus": "sfx",
+    "what": "reverse swell f588-597, hard stop, then 2 frames of air into f0"
+   }
+  ]
+ },
+ "A14": {
+  "file": "audio/A14.wav",
+  "frames": 420,
+  "seconds": 14.0,
+  "samples": 672000,
+  "checks": {
+   "lufs": -14.0,
+   "true_peak_dbtp": -2.3,
+   "share_below_150": 0.6666,
+   "share_500_6k": 0.1172,
+   "room_tone_dbfs": -40.0,
+   "voice_over_bed_db": {
+    "V1 «مشروعك حلو…»": 4.1,
+    "V3 «طشّ!» f90": 5.9,
+    "V2 «شنو حسابهم؟!»": 9.3,
+    "V3 x3 «طشّ!»": 4.9
+   },
+   "seam_jump": 0.0008,
+   "passed": false
+  },
+  "cues": [
+   {
+    "frame": 0.0,
+    "t": 0.0,
+    "bus": "hit",
+    "what": "ice-on-glass crack (ice hits the latte)"
+   },
+   {
+    "frame": 0.0,
+    "t": 0.0,
+    "bus": "music",
+    "what": "808 A1 55 Hz (+110/165/220 Hz) on frame 0"
+   },
+   {
+    "frame": 0.0,
+    "t": 0.0,
+    "bus": "sfx",
+    "what": "typing tick right dot (1174.7 Hz)"
+   },
+   {
+    "frame": 0.0,
+    "t": 0.0,
+    "bus": "voice",
+    "what": "V1 «مشروعك حلو…» from 0.00 s; «حلو» starts 0.500 s"
+   },
+   {
+    "frame": 5.0,
+    "t": 0.1667,
+    "bus": "sfx",
+    "what": "ice enters the coffee: splash (n7 entry)"
+   },
+   {
+    "frame": 5.0,
+    "t": 0.1667,
+    "bus": "sfx",
+    "what": "typing tick middle dot (1244.5 Hz)"
+   },
+   {
+    "frame": 10.0,
+    "t": 0.3333,
+    "bus": "sfx",
+    "what": "typing tick left dot (1480.0 Hz)"
+   },
+   {
+    "frame": 15.0,
+    "t": 0.5,
+    "bus": "music",
+    "what": "group clap on the voiced «حلو» (punch-in)"
+   },
+   {
+    "frame": 16.0,
+    "t": 0.5333,
+    "bus": "sfx",
+    "what": "closer replay of the ice touching the coffee (dark plop)"
+   },
+   {
+    "frame": 30,
+    "t": 1.0,
+    "bus": "music",
+    "what": "music low-pass closes 8 kHz -> 400 Hz over f30-44; music out from f45 (fade f44.5-46)"
+   },
+   {
+    "frame": 30.0,
+    "t": 1.0,
+    "bus": "music",
+    "what": "kick (drain)"
+   },
+   {
+    "frame": 30.0,
+    "t": 1.0,
+    "bus": "music",
+    "what": "group clap (drain)"
+   },
+   {
+    "frame": 30.0,
+    "t": 1.0,
+    "bus": "music",
+    "what": "chord D (drain) f30-45"
+   },
+   {
+    "frame": 30.0,
+    "t": 1.0,
+    "bus": "sfx",
+    "what": "soft syrup / pastry crunch (kunafa, no nut scatter)"
+   },
+   {
+    "frame": 32.0,
+    "t": 1.0667,
+    "bus": "sfx",
+    "what": "falling tick 1480.0 Hz (right dot drops, drags its third)"
+   },
+   {
+    "frame": 34.0,
+    "t": 1.1333,
+    "bus": "sfx",
+    "what": "falling tick 1244.5 Hz (middle dot drops, drags its third)"
+   },
+   {
+    "frame": 36.0,
+    "t": 1.2,
+    "bus": "sfx",
+    "what": "falling tick 1174.7 Hz (left dot drops, drags its third)"
+   },
+   {
+    "frame": 45,
+    "t": 1.5,
+    "bus": "room",
+    "what": "dead beat f45-71: room tone only (no ghost clicks, R3-4)"
+   },
+   {
+    "frame": 45.0,
+    "t": 1.5,
+    "bus": "sfx",
+    "what": "soft tap: drained dot 1 lands on the floor"
+   },
+   {
+    "frame": 47.0,
+    "t": 1.5667,
+    "bus": "sfx",
+    "what": "soft tap: drained dot 2 lands on the floor"
+   },
+   {
+    "frame": 49.0,
+    "t": 1.6333,
+    "bus": "sfx",
+    "what": "soft tap: drained dot 3 lands on the floor"
+   },
+   {
+    "frame": 72,
+    "t": 2.4,
+    "bus": "music",
+    "what": "music filter opens 400 Hz -> 12 kHz over f72-89"
+   },
+   {
+    "frame": 72.0,
+    "t": 2.4,
+    "bus": "sfx",
+    "what": "jump whoosh (dots turn lime and jump)"
+   },
+   {
+    "frame": 72.0,
+    "t": 2.4,
+    "bus": "sfx",
+    "what": "riser f72-89"
+   },
+   {
+    "frame": 75.0,
+    "t": 2.5,
+    "bus": "music",
+    "what": "low dum under the opening filter"
+   },
+   {
+    "frame": 78.0,
+    "t": 2.6,
+    "bus": "sfx",
+    "what": "rising landing tick 1174.7 Hz (dot lands on the ش, x 807)"
+   },
+   {
+    "frame": 81.0,
+    "t": 2.7,
+    "bus": "sfx",
+    "what": "rising landing tick 1244.5 Hz (dot lands on the ش, x 715)"
+   },
+   {
+    "frame": 84.0,
+    "t": 2.8,
+    "bus": "sfx",
+    "what": "rising landing tick 1480.0 Hz (dot lands on the ش, x 623)"
+   },
+   {
+    "frame": 87.84,
+    "t": 2.928,
+    "bus": "voice",
+    "what": "«طشّ!» V3 dry single take, onset on f90"
+   },
+   {
+    "frame": 90.0,
+    "t": 3.0,
+    "bus": "hit",
+    "what": "shockwave from the ش (r 0 to 2300 in 4 f), wordmark slam"
+   },
+   {
+    "frame": 90.0,
+    "t": 3.0,
+    "bus": "music",
+    "what": "HERO 1: 808 A1 55 Hz (+110/165/220 Hz)"
+   },
+   {
+    "frame": 90.0,
+    "t": 3.0,
+    "bus": "music",
+    "what": "HERO 1: kick"
+   },
+   {
+    "frame": 90.0,
+    "t": 3.0,
+    "bus": "music",
+    "what": "HERO 1: group clap (10 hands)"
+   },
+   {
+    "frame": 90.0,
+    "t": 3.0,
+    "bus": "music",
+    "what": "chord D (full) f90-135"
+   },
+   {
+    "frame": 105.0,
+    "t": 3.5,
+    "bus": "sfx",
+    "what": "porthole pop 1 (x 270)"
+   },
+   {
+    "frame": 108.0,
+    "t": 3.6,
+    "bus": "sfx",
+    "what": "porthole pop 2 (x 540)"
+   },
+   {
+    "frame": 111.0,
+    "t": 3.7,
+    "bus": "sfx",
+    "what": "porthole pop 3 (x 810)"
+   },
+   {
+    "frame": 120,
+    "t": 4.0,
+    "bus": "music",
+    "what": "clap f120 = groove clap (portholes cut to their next 15 frames)"
+   },
+   {
+    "frame": 120.0,
+    "t": 4.0,
+    "bus": "music",
+    "what": "kick (full)"
+   },
+   {
+    "frame": 120.0,
+    "t": 4.0,
+    "bus": "music",
+    "what": "group clap (full)"
+   },
+   {
+    "frame": 127.5,
+    "t": 4.25,
+    "bus": "music",
+    "what": "mirwas fill into f135"
+   },
+   {
+    "frame": 135,
+    "t": 4.5,
+    "bus": "music",
+    "what": "kick: Coffee A full frame"
+   },
+   {
+    "frame": 135.0,
+    "t": 4.5,
+    "bus": "music",
+    "what": "kick (peak)"
+   },
+   {
+    "frame": 135.0,
+    "t": 4.5,
+    "bus": "music",
+    "what": "chord D (peak) f135-150"
+   },
+   {
+    "frame": 138.0,
+    "t": 4.6,
+    "bus": "sfx",
+    "what": "ice clink + small splash (Coffee A; ice impact about f138)"
+   },
+   {
+    "frame": 150,
+    "t": 5.0,
+    "bus": "music",
+    "what": "group clap: Coffee B lens"
+   },
+   {
+    "frame": 150.0,
+    "t": 5.0,
+    "bus": "music",
+    "what": "kick (peak)"
+   },
+   {
+    "frame": 150.0,
+    "t": 5.0,
+    "bus": "music",
+    "what": "group clap (peak)"
+   },
+   {
+    "frame": 150.0,
+    "t": 5.0,
+    "bus": "music",
+    "what": "chord Eb (peak) f150-210"
+   },
+   {
+    "frame": 165,
+    "t": 5.5,
+    "bus": "music",
+    "what": "kick: Oud A full frame"
+   },
+   {
+    "frame": 165.0,
+    "t": 5.5,
+    "bus": "music",
+    "what": "kick (peak)"
+   },
+   {
+    "frame": 165.0,
+    "t": 5.5,
+    "bus": "sfx",
+    "what": "charcoal crackle + smoke puff (Oud A; no puff on screen, the sound carries it)"
+   },
+   {
+    "frame": 180,
+    "t": 6.0,
+    "bus": "music",
+    "what": "group clap: Oud C lens"
+   },
+   {
+    "frame": 180.0,
+    "t": 6.0,
+    "bus": "music",
+    "what": "kick (peak)"
+   },
+   {
+    "frame": 180.0,
+    "t": 6.0,
+    "bus": "music",
+    "what": "group clap (peak)"
+   },
+   {
+    "frame": 195,
+    "t": 6.5,
+    "bus": "music",
+    "what": "kick: Burger A full frame"
+   },
+   {
+    "frame": 195.0,
+    "t": 6.5,
+    "bus": "music",
+    "what": "kick (peak)"
+   },
+   {
+    "frame": 195.0,
+    "t": 6.5,
+    "bus": "sfx",
+    "what": "sizzle bed f195-210 (Burger A, sound only)"
+   },
+   {
+    "frame": 210.0,
+    "t": 7.0,
+    "bus": "music",
+    "what": "808 A1 on the bun landing (Burger B, exactly on the cut)"
+   },
+   {
+    "frame": 210.0,
+    "t": 7.0,
+    "bus": "music",
+    "what": "group clap (peak)"
+   },
+   {
+    "frame": 210.0,
+    "t": 7.0,
+    "bus": "music",
+    "what": "chord D (peak) f210-255"
+   },
+   {
+    "frame": 210.0,
+    "t": 7.0,
+    "bus": "sfx",
+    "what": "bun thump (Burger B)"
+   },
+   {
+    "frame": 225,
+    "t": 7.5,
+    "bus": "music",
+    "what": "kick: Kunafa A full frame"
+   },
+   {
+    "frame": 225.0,
+    "t": 7.5,
+    "bus": "music",
+    "what": "kick (peak)"
+   },
+   {
+    "frame": 225.0,
+    "t": 7.5,
+    "bus": "sfx",
+    "what": "soft crunch (Kunafa A)"
+   },
+   {
+    "frame": 240,
+    "t": 8.0,
+    "bus": "music",
+    "what": "group clap: Kunafa B lens"
+   },
+   {
+    "frame": 240.0,
+    "t": 8.0,
+    "bus": "music",
+    "what": "kick (peak)"
+   },
+   {
+    "frame": 240.0,
+    "t": 8.0,
+    "bus": "music",
+    "what": "group clap (peak)"
+   },
+   {
+    "frame": 254.49,
+    "t": 8.483,
+    "bus": "voice",
+    "what": "«شنو حسابهم؟!» V2 (1.10 s)"
+   },
+   {
+    "frame": 255,
+    "t": 8.5,
+    "bus": "sfx",
+    "what": "typing ticks every 5 frames f255-265 (3 ticks, D6/Eb6/F#6 right to left, period 15 f)"
+   },
+   {
+    "frame": 270.0,
+    "t": 9.0,
+    "bus": "music",
+    "what": "kick (build)"
+   },
+   {
+    "frame": 270.0,
+    "t": 9.0,
+    "bus": "sfx",
+    "what": "multiplication step 1: 9 dots, 1 typing ticks at 3 per 15 f, pitch x1.000 (+0 st)"
+   },
+   {
+    "frame": 270.0,
+    "t": 9.0,
+    "bus": "sfx",
+    "what": "riser f270-296 (peaks into the flood)"
+   },
+   {
+    "frame": 275.0,
+    "t": 9.1667,
+    "bus": "sfx",
+    "what": "multiplication step 2: 27 dots, 3 typing ticks at 9 per 15 f, pitch x1.335 (+5 st)"
+   },
+   {
+    "frame": 280.0,
+    "t": 9.3333,
+    "bus": "sfx",
+    "what": "multiplication step 3: 81 dots, 9 typing ticks at 27 per 15 f, pitch x1.782 (+10 st)"
+   },
+   {
+    "frame": 285,
+    "t": 9.5,
+    "bus": "music",
+    "what": "mirwas roll (32nds, crescendo) into the duck"
+   },
+   {
+    "frame": 285.0,
+    "t": 9.5,
+    "bus": "sfx",
+    "what": "flood: 81 dots inflate (swell)"
+   },
+   {
+    "frame": 291,
+    "t": 9.7,
+    "bus": "music",
+    "what": "duck -9 dB (music and sound design)"
+   },
+   {
+    "frame": 296,
+    "t": 9.8667,
+    "bus": "music",
+    "what": "silence pocket f296-299 (room tone only)"
+   },
+   {
+    "frame": 297.84,
+    "t": 9.928,
+    "bus": "voice",
+    "what": "«طشّ!» V3 stacked x3 (0/+35/+70 ms, 0/+2/-3 st, centre/left/right), onset on the hit"
+   },
+   {
+    "frame": 300.0,
+    "t": 10.0,
+    "bus": "hit",
+    "what": "burst pop (81 dots fly out, slowing)"
+   },
+   {
+    "frame": 300.0,
+    "t": 10.0,
+    "bus": "music",
+    "what": "HERO 3: 808 A1 55 Hz (+110/165/220 Hz)"
+   },
+   {
+    "frame": 300.0,
+    "t": 10.0,
+    "bus": "music",
+    "what": "HERO 3: kick"
+   },
+   {
+    "frame": 300.0,
+    "t": 10.0,
+    "bus": "music",
+    "what": "HERO 3: group clap (12 hands)"
+   },
+   {
+    "frame": 300.0,
+    "t": 10.0,
+    "bus": "music",
+    "what": "chord D (half) f300-315"
+   },
+   {
+    "frame": 315.0,
+    "t": 10.5,
+    "bus": "music",
+    "what": "soft kick: band cuts to kunafa"
+   },
+   {
+    "frame": 315.0,
+    "t": 10.5,
+    "bus": "music",
+    "what": "chord D (calm) f315-360"
+   },
+   {
+    "frame": 318.0,
+    "t": 10.6,
+    "bus": "sfx",
+    "what": "two-note pop, note 1 A5 (synthesised)"
+   },
+   {
+    "frame": 321.0,
+    "t": 10.7,
+    "bus": "sfx",
+    "what": "two-note pop, note 2 D6"
+   },
+   {
+    "frame": 345.0,
+    "t": 11.5,
+    "bus": "music",
+    "what": "soft kick: band cuts to burger"
+   },
+   {
+    "frame": 360.0,
+    "t": 12.0,
+    "bus": "music",
+    "what": "chord D (calm) f360-375"
+   },
+   {
+    "frame": 375.0,
+    "t": 12.5,
+    "bus": "music",
+    "what": "soft kick: band cuts to coffee"
+   },
+   {
+    "frame": 375.0,
+    "t": 12.5,
+    "bus": "music",
+    "what": "chord D (thin) f375-414"
+   },
+   {
+    "frame": 408.0,
+    "t": 13.6,
+    "bus": "sfx",
+    "what": "reverse swell f408-417, hard stop, then 2 frames of air into f0"
+   }
+  ]
+ }
+}
