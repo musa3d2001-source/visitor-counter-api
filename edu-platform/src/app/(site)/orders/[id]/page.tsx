@@ -5,6 +5,7 @@ import { notFound } from "next/navigation";
 import { BookOpen, CircleCheck, Clock, FileText, Headset, Library, Package, PlayCircle, Receipt, RotateCcw, XCircle } from "lucide-react";
 import { requireUser } from "@/server/auth/guards";
 import { getUserOrder } from "@/server/commerce/orders";
+import { paymentFailureMessage } from "@/lib/payment-failure";
 import { sql } from "@/server/db";
 import { getSettings } from "@/server/platform/settings";
 import { paymentsConfig } from "@/server/payments/service";
@@ -59,6 +60,9 @@ function itemLook(type: string) {
   return { icon: <FileText />, tone: "tone-social" };
 }
 
+/** أزرار التحديث وإعادة الدفع تنتظر البوابة، وقد تأخذ ٢٠ ثانية للرد */
+export const maxDuration = 60;
+
 export default async function OrderPage({ params, searchParams }: { params: Promise<{ id: string }>; searchParams: Promise<{ from?: string; error?: string }> }) {
   const user = await requireUser();
   const { id } = await params;
@@ -67,8 +71,8 @@ export default async function OrderPage({ params, searchParams }: { params: Prom
   if (!found) notFound();
   const { order, items } = found;
   const settings = await getSettings();
-  const [payment] = await sql<{ payment_method: string | null; status: string; error_message: string | null; provider: string }[]>`
-    select payment_method, status, error_message, provider from payments where order_id = ${order.id} order by created_at desc limit 1
+  const [payment] = await sql<{ payment_method: string | null; status: string; provider: string; gateway_invoice_id: string | null }[]>`
+    select payment_method, status, provider, gateway_invoice_id from payments where order_id = ${order.id} order by created_at desc limit 1
   `;
   // الدفعة التي أكملت الطلب، لا آخر محاولة ولا دفعة زائدة
   const [settled] = await sql<{ gateway_payment_id: string | null; gateway_invoice_id: string | null; payment_method: string | null }[]>`
@@ -88,6 +92,7 @@ export default async function OrderPage({ params, searchParams }: { params: Prom
   const hero = HERO[heroKey];
   // الدفع متوقف: لا نعرض أزرارًا لا تعمل
   const paymentsOn = paymentsConfig().enabled;
+  const failureMessage = paymentFailureMessage(payment);
   const unpaid = order.status === "pending" || order.status === "failed";
   const hasContact = realContactLinks(settings).length > 0;
   const showHelp = unpaid && hasContact;
@@ -172,7 +177,7 @@ export default async function OrderPage({ params, searchParams }: { params: Prom
                     لم تكتمل عملية الدفع
                   </h1>
                   <p className="mt-2 max-w-2xl text-[1.05rem] leading-8 text-white/90">
-                    {payment?.error_message ? `السبب: ${payment.error_message}. ` : ""}
+                    {failureMessage ? `${failureMessage} ` : ""}
                     {nothingCharged
                       ? `لم يتم خصم أي مبلغ مقابل هذا الطلب.${paymentsOn ? " يمكنك المحاولة مرة أخرى." : ""}`
                       : paymentsOn
