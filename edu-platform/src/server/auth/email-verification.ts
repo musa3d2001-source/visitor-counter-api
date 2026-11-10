@@ -144,7 +144,8 @@ export async function resendEmailVerification(userId: string, ip: string): Promi
   return { ok: false, error: SEND_FAILED };
 }
 
-const CORRECTION = { perUser: 5, perIp: 20, perTarget: 3, windowSec: 60 * 60 };
+/** perIp واسع لأن فصلًا كاملًا قد يصحح بريده معًا من عنوان واحد، والحد لكل طالب وكل عنوان مستهدف هو الذي يوقف العبث */
+const CORRECTION = { perUser: 5, perIp: 100, perTarget: 3, windowSec: 60 * 60 };
 const CORRECTION_ACCEPTED = "إذا كان هذا البريد متاحًا فستصلك عليه رسالة تأكيد. لن يتغير بريد حسابك قبل فتح الرابط.";
 
 export type CorrectionResult = { ok: true; message: string } | { ok: false; error: string; field?: "email" | "currentPassword" };

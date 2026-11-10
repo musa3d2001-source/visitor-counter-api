@@ -30,6 +30,9 @@ export type AuthResult =
  *    تُنسى بعد ساعة بلا محاولات، وتُمسح عند أول كلمة مرور صحيحة.
  *    المفتاح يجمع الاثنين عن قصد: زميل في شبكة المدرسة نفسها لا يقفل حسابك،
  *    ومهاجم يعرف بريدك لا يستطيع قفله من شبكة أخرى.
+ *  - لكل حساب من كل الشبكات: ٢٠ محاولة بلا تأخير، ثم انتظار دقيقة يتضاعف حتى ٥ دقائق، أي ٢٨٨ تخمينًا في اليوم على الأكثر.
+ *    تُنسى بعد ساعة بلا محاولات. يبطئ التخمين الموزع على عناوين كثيرة، ولا يقفل أحدًا طويلًا: ٥ دقائق بعد آخر محاولة،
+ *    ومتصفح سبق أن دخل هذا الحساب (device-proof.ts) لا يقف عنده ولا يُحتسب عليه. الاستعادة بالرابط وإعادة التعيين من المالك تمسحانه.
  *  - لكل IP: ١٠٠ حساب مختلف فشل الدخول إليها خلال ١٥ دقيقة. يوقف تجربة كلمة واحدة على قائمة حسابات،
  *    ويُحتسب الحساب مرة واحدة، فأخطاء طلاب فصل كامل في كلماتهم لا تكاد تقترب منه.
  *    متصفح سبق أن أثبت كلمة مرور هذا الحساب لا يقف عند هذا الحظر (device-proof.ts). الكلمة الصحيحة وحدها لا تتجاوزه.
@@ -38,6 +41,7 @@ export type AuthResult =
  *  يعتمد هذا على عنوان IP لا يزوّره العميل: انظر TRUST_PROXY و clientIp، وعلى Vercel تضبطه المنصة نفسها.
  */
 const LOGIN_FAILURES: FailurePolicy = { freeFailures: 5, firstDelaySeconds: 30, maxDelaySeconds: 15 * 60, forgetAfterSeconds: 60 * 60 };
+const LOGIN_ACCOUNT_CEILING: FailurePolicy = { freeFailures: 20, firstDelaySeconds: 60, maxDelaySeconds: 5 * 60, forgetAfterSeconds: 60 * 60 };
 const LOGIN_IP = { failingAccounts: 100, windowSec: 15 * 60 };
 
 /** جلسة تغيير كلمة المرور المؤقتة قصيرة، ولا تفتح أي صفحة أخرى */
@@ -54,8 +58,11 @@ function lockoutMessage(retryAfterSeconds: number) {
 
 export async function loginWithPassword(email: string, password: string, meta: { ip: string; userAgent: string; deviceProof?: string }): Promise<AuthResult> {
   const failureKey = `${loginFailurePrefix(email)}${meta.ip}`;
+  // تحت بادئة الحساب: الاستعادة وإعادة التعيين من المالك تمسحانه مع حدود الأزواج. لا عنوان اسمه «*»
+  const accountKey = `${loginFailurePrefix(email)}*`;
   const ipKey = `login:ipfail:${meta.ip}`;
-  if (!verifyDeviceProof(meta.deviceProof, email, env().APP_SECRET)) {
+  const provedDevice = verifyDeviceProof(meta.deviceProof, email, env().APP_SECRET);
+  if (!provedDevice) {
     const ipState = await peekRateLimit(ipKey, LOGIN_IP.failingAccounts);
     if (ipState.blocked) return { ok: false, error: "محاولات كثيرة. حاول مرة أخرى بعد قليل.", retryAfter: ipState.retryAfterSeconds };
   }
@@ -63,6 +70,15 @@ export async function loginWithPassword(email: string, password: string, meta: {
   // السلوك واحد لبريد مسجل وغير مسجل: لا تأخير ولا رسالة تكشف وجود الحساب
   const slot = await reserveFailureSlot(failureKey, LOGIN_FAILURES);
   if (!slot.allowed) return { ok: false, error: lockoutMessage(slot.retryAfterSeconds), retryAfter: slot.retryAfterSeconds };
+
+  // بعد الزوج عن قصد: عنوان محجوب وحده لا يلمس عدّاد الحساب، فلا يطيل انتظار صاحبه من شبكة أخرى
+  if (!provedDevice) {
+    const ceiling = await reserveFailureSlot(accountKey, LOGIN_ACCOUNT_CEILING);
+    if (!ceiling.allowed) {
+      await releaseFailureSlot(failureKey);
+      return { ok: false, error: lockoutMessage(ceiling.retryAfterSeconds), retryAfter: ceiling.retryAfterSeconds };
+    }
+  }
 
   const failed = async (): Promise<AuthResult> => {
     if (slot.failures === 1) await hitRateLimit(ipKey, LOGIN_IP.failingAccounts, LOGIN_IP.windowSec);
@@ -79,8 +95,8 @@ export async function loginWithPassword(email: string, password: string, meta: {
   if (!(await verifyPassword(password, user.password_hash))) return failed();
 
   // كلمة صحيحة: ليست إخفاقًا مهما كانت حالة الحساب بعدها
-  await clearRateLimit(failureKey);
-  if (!user.is_active) return { ok: false, error: "هذا الحساب موقوف. تواصل مع الدعم." };
+  await settleCorrectPassword(failureKey, provedDevice ? null : accountKey);
+  if (!user.is_active) return ACCOUNT_SUSPENDED;
   const deviceProof = issueDeviceProof(email, env().APP_SECRET);
 
   // مدير فعّل التحقق بخطوتين: لا جلسة من كلمة المرور وحدها
@@ -163,7 +179,10 @@ export async function registerStudent(
   }
 }
 
-/** الأضيق أولًا بعد الشبكة: ٣ لكل زوج (حساب + IP)، فلا يستطيع من يعرف بريدك استهلاك حد حسابك من عنوان واحد */
+/**
+ * الأضيق أولًا بعد الشبكة: ٣ لكل زوج (حساب + IP)، فلا يستطيع من يعرف بريدك استهلاك حد حسابك من عنوان واحد.
+ * حد الشبكة يعدّ الحسابات لا الطلبات، فصف نسي طلابه كلماتهم معًا وأعادوا الطلب لا يصل إليه.
+ */
 const RESET_LIMITS = { perIp: 100, perPair: 3, perAccount: 20, windowSec: 60 * 60 };
 
 /** مدة رابط الاستعادة الذي يطلبه الطالب لنفسه. سياسة الخصوصية ورسالة البريد تقرآن الرقم من هنا */
@@ -176,10 +195,15 @@ export const PASSWORD_RESET_LINK_HOURS = 1;
  */
 export async function requestPasswordReset(email: string, ip: string): Promise<void> {
   // ما تجاوز حد الشبكة لا يُحتسب على الحساب، فلا يستهلك مهاجم من عنوان محجوب حد ضحيته
-  const ipLimit = await hitRateLimit(`reset:ip:${ip}`, RESET_LIMITS.perIp, RESET_LIMITS.windowSec);
-  if (!ipLimit.allowed) return;
+  const ipKey = `reset:ip:${ip}`;
+  const ipState = await peekRateLimit(ipKey, RESET_LIMITS.perIp);
+  if (ipState.blocked) return;
   const pairLimit = await hitRateLimit(`reset:acct:${email}|${ip}`, RESET_LIMITS.perPair, RESET_LIMITS.windowSec);
   if (!pairLimit.allowed) return;
+  if (pairLimit.remaining === RESET_LIMITS.perPair - 1) {
+    const ipLimit = await hitRateLimit(ipKey, RESET_LIMITS.perIp, RESET_LIMITS.windowSec);
+    if (!ipLimit.allowed) return;
+  }
   const acctLimit = await hitRateLimit(`reset:acct:${email}`, RESET_LIMITS.perAccount, RESET_LIMITS.windowSec);
   if (!acctLimit.allowed) return;
   const [user] = await sql<{ id: string; full_name: string; is_active: boolean; role: PasswordRole }[]>`
