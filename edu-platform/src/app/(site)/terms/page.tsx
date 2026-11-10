@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { Ban, CalendarClock, Copyright, CreditCard, Fingerprint, GraduationCap, MonitorPlay, PenLine, RotateCcw, Scale, Users, UserRound } from "lucide-react";
-import { getSettings } from "@/server/platform/settings";
+import { getPublicSettings } from "@/server/platform/public-settings";
 import { STUDENT_ACTIVE_SESSIONS } from "@/server/auth/session";
 import { INVOICE_TTL_MINUTES, ORDER_LIFETIME_HOURS } from "@/server/payments/limits";
 import { CONSENT_VERSIONS } from "@/lib/consent";
@@ -13,7 +13,7 @@ export const metadata: Metadata = { title: "الشروط والأحكام", alte
 
 /** مسودة لمراجعة المحامي. لا تُذكر هنا إلا ما يفعله النظام فعلًا، وتغيير جوهري في النص يتطلب رقم نسخة جديدًا في lib/consent.ts */
 export default async function TermsPage() {
-  const s = await getSettings();
+  const s = await getPublicSettings();
   return (
     <LegalDoc
       page="terms"

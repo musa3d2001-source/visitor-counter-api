@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { GraduationCap, Layers, Sparkles } from "lucide-react";
-import { getBundleItems, listGrades, listProducts } from "@/server/catalog/queries";
+import { getBundleItemsFor, listGrades, listProducts } from "@/server/catalog/public-data";
 import { getCurrentUser } from "@/server/auth/session";
 import { accessibleProductIds } from "@/server/access/entitlements";
 import { EmptyState } from "@/components/ui/empty-state";
@@ -22,8 +22,7 @@ export const metadata: Metadata = {
 
 export default async function BundlesPage() {
   const [bundles, grades, user] = await Promise.all([listProducts({ type: "bundle" }), listGrades(), getCurrentUser()]);
-  const [owned, itemLists] = await Promise.all([user ? accessibleProductIds(user.id) : Promise.resolve(undefined), Promise.all(bundles.map((b) => getBundleItems(b.id)))]);
-  const itemsById = new Map(bundles.map((b, i) => [b.id, itemLists[i]]));
+  const [owned, itemsById] = await Promise.all([user ? accessibleProductIds(user.id) : Promise.resolve(undefined), getBundleItemsFor(bundles.map((b) => b.id))]);
   const byGrade = grades
     .map((g) => ({ grade: g, items: bundles.filter((b) => b.gradeSlug === g.slug) }))
     .filter((x) => x.items.length);

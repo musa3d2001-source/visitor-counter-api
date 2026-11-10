@@ -4,7 +4,7 @@ import { ChevronLeft, CircleCheck, Clock, FileLock2, GraduationCap, KeyRound, Li
 import { requireUser } from "@/server/auth/guards";
 import { listUserOrders } from "@/server/commerce/orders";
 import { emailVerificationRequired } from "@/server/auth/email-verification";
-import { listGrades } from "@/server/catalog/queries";
+import { listGrades } from "@/server/catalog/public-data";
 import { myDataRequests } from "@/server/platform/data-requests";
 import { logoutAction } from "../(auth)/actions";
 import { Alert } from "@/components/ui/alert";

@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 import { BookOpen, GraduationCap, Layers } from "lucide-react";
-import { getStageBySlug, gradeStats, listSubjects } from "@/server/catalog/queries";
+import { getStageBySlug, gradeStats, listSubjects } from "@/server/catalog/public-data";
 import { PageHeader, StatPill } from "@/components/ui/page-header";
 import { GradeCard, GradeGrid } from "@/components/site/grade-card";
 import { W } from "@/lib/design";

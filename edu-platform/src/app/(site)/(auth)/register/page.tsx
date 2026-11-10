@@ -3,7 +3,7 @@ import { redirect } from "next/navigation";
 import { AuthCard } from "@/components/site/auth-card";
 import { getCurrentUser } from "@/server/auth/session";
 import { authPagePerks } from "@/server/platform/site-facts";
-import { listGrades } from "@/server/catalog/queries";
+import { listGrades } from "@/server/catalog/public-data";
 import { safeNextPath } from "@/lib/utils";
 import { RegisterForm } from "./register-form";
 import { MobilePerks } from "../_components/mobile-perks";

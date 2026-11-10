@@ -1,5 +1,5 @@
 import type { MetadataRoute } from "next";
-import { sitemapEntries } from "@/server/catalog/queries";
+import { sitemapEntries } from "@/server/catalog/public-data";
 import { env } from "@/server/env";
 import { siteIndexable } from "@/server/platform/indexing";
 

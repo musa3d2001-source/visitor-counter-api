@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
 import { ClipboardList, Hourglass, Send, UserRoundCheck } from "lucide-react";
-import { getSettings } from "@/server/platform/settings";
+import { getPublicSettings } from "@/server/platform/public-settings";
 import { ContactLinks, realContactLinks } from "@/components/site/payment-unavailable-notice";
 import { sellerIdentity } from "@/lib/site-truth";
 import { LEGAL_PAGE_VERSIONS } from "@/lib/consent";
@@ -14,7 +14,7 @@ export const metadata: Metadata = {
 
 /** مسودة لمراجعة المحامي. البلاغات تُستقبل عبر قنوات التواصل الحقيقية ويراجعها المالك يدويًا، فلا تعد هذه الصفحة بغير ذلك */
 export default async function CopyrightPage() {
-  const s = await getSettings();
+  const s = await getPublicSettings();
   const hasChannel = realContactLinks(s).length > 0;
   return (
     <LegalDoc

@@ -1,23 +1,16 @@
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 import { BookOpen, BookOpenText, CalendarDays, Download, Eye, FileText, GraduationCap, Layers, Library, ListChecks, Lock, ShieldCheck, Sparkles, Shapes, Files } from "lucide-react";
-import {
-  getBundleItems,
-  getBundlesContaining,
-  getPlaylist,
-  getProductBySlug,
-  getProductFilesInfo,
-  type ProductCard,
-} from "@/server/catalog/queries";
+import * as live from "@/server/catalog/queries";
+import type { ProductCard } from "@/server/catalog/queries";
+import * as cached from "@/server/catalog/public-data";
 import { getCurrentUser } from "@/server/auth/session";
 import { accessExpiry, accessibleProductIds, isTeacherOfProduct } from "@/server/access/entitlements";
 import { sql } from "@/server/db";
 import { VideoProductView, accessPeriodText } from "./video-view";
-import { getSettings } from "@/server/platform/settings";
 import { paymentPublicState } from "@/server/payments/public-state";
 import { libraryNote, paymentClaims, productLibraryLine } from "@/lib/site-truth";
-import { closedVideoProductIds } from "@/server/video/policy";
-import { unsellableProductIds } from "@/server/commerce/cart";
+import { readProductSaleState, type ProductSaleState } from "@/server/commerce/sale-state";
 import { env } from "@/server/env";
 import { Alert } from "@/components/ui/alert";
 import { ProductGrid } from "@/components/site/product-card";
@@ -35,7 +28,7 @@ import { aboutTitle, includesLabel, previewLabel, shortTermLabel } from "./_comp
 type Params = { slug: string };
 
 export async function generateMetadata({ params }: { params: Promise<Params> }): Promise<Metadata> {
-  const p = await getProductBySlug((await params).slug);
+  const p = await cached.getProductBySlug((await params).slug);
   if (!p) return { title: "المنتج غير متاح" };
   const description = p.summary || `${PRODUCT_TYPE_LABELS[p.type]} ${p.subjectName ?? ""} لطلاب ${p.gradeName}`;
   return {
@@ -48,14 +41,34 @@ export async function generateMetadata({ params }: { params: Promise<Params> }):
 
 /** محتويات الباقات التي تضم المنتج: لتلوين أوراقها بموادها الحقيقية */
 async function itemsOf(bundles: ProductCard[]) {
-  const lists = await Promise.all(bundles.map((b) => getBundleItems(b.id)));
-  return new Map(bundles.map((b, i) => [b.id, lists[i]]));
+  return cached.getBundleItemsFor(bundles.map((b) => b.id));
+}
+
+/** المنشور للجميع يأتي من الذاكرة، وغير المنشور لا يراه إلا المالك والمعلم فيُقرأ حيًا ولا يدخلها أبدًا */
+const cachedReads = {
+  playlist: cached.getPlaylist,
+  items: cached.getBundleItems,
+  containers: cached.getBundlesContaining,
+  files: cached.getProductFilesInfo,
+  saleState: cached.getProductSaleState,
+};
+const liveReads: typeof cachedReads = {
+  playlist: (id) => live.getPlaylist(id),
+  items: (id) => live.getBundleItems(id),
+  containers: (id) => live.getBundlesContaining(id),
+  files: (id) => live.getProductFilesInfo(id),
+  saleState: (id) => readProductSaleState(sql, id),
+};
+
+/** الفحوص نفسها التي تمنع السلة والدفع: الصفحة لا تعرض زر شراء سيرفضه الخادم */
+function saleFlags(product: { status: string; saleEnded?: boolean }, sale: ProductSaleState) {
+  return { videoClosed: sale.videoClosed, unavailable: !sale.videoClosed && !product.saleEnded && product.status === "published" && sale.defective };
 }
 
 export default async function ProductPage({ params }: { params: Promise<Params> }) {
   const { slug } = await params;
   const user = await getCurrentUser();
-  let product = await getProductBySlug(slug, { includeUnpublished: user?.role === "admin" || user?.role === "teacher" });
+  let product = user?.role === "admin" || user?.role === "teacher" ? await live.getProductBySlug(slug, { includeUnpublished: true }) : await cached.getProductBySlug(slug);
   // المعلم يعاين محتواه غير المنشور فقط
   if (product && product.status !== "published" && user?.role === "teacher" && !(await isTeacherOfProduct(user.id, product.id))) product = null;
   if (!product) notFound();
@@ -66,32 +79,36 @@ export default async function ProductPage({ params }: { params: Promise<Params> 
     ...(product.subjectName && product.subjectSlug ? [{ label: product.subjectName, href: `/grades/${product.gradeSlug}/${product.subjectSlug}` }] : []),
     { label: product.title },
   ];
-  // فحص واحد لكل أنواع الفيديو والباقات التي تضم فيديو، وهو نفسه ما يمنع السلة والدفع
-  const settings = await getSettings();
-  const videoClosed = (await closedVideoProductIds(sql, [product.id], settings)).has(product.id);
-  // الفحص نفسه الذي يمنع السلة والدفع: الصفحة لا تعرض زر شراء سيرفضه الخادم
-  const unavailable = !videoClosed && !product.saleEnded && product.status === "published" && (await unsellableProductIds([product.id], sql, settings)).has(product.id);
+  const read = product.status === "published" ? cachedReads : liveReads;
+  const owns = user ? accessibleProductIds(user.id) : Promise.resolve(new Set<string>());
 
   if (product.isVideo) {
-    const [playlist, included, bundlesV, filesV, ownedV] = await Promise.all([
-      getPlaylist(product.id),
-      getBundleItems(product.id),
-      getBundlesContaining(product.id),
-      getProductFilesInfo(product.id),
-      user ? accessibleProductIds(user.id) : Promise.resolve(new Set<string>()),
+    const [sale, playlist, included, bundlesV, filesV, ownedV] = await Promise.all([
+      read.saleState(product.id),
+      read.playlist(product.id),
+      read.items(product.id),
+      read.containers(product.id),
+      read.files(product.id),
+      owns,
     ]);
-    const bundleItemsV = await itemsOf(bundlesV);
+    const { videoClosed, unavailable } = saleFlags(product, sale);
     const lessonIds = playlist.flatMap((g) => g.lessons.map((l) => l.id));
     const ownedNow = ownedV.has(product.id);
     let resumeLessonId: string | null = null;
     let watchedIds = new Set<string>();
     let ownedUntil: Date | null = null;
+    const [bundleItemsV, prog, expiry] = await Promise.all([
+      itemsOf(bundlesV),
+      user && lessonIds.length
+        ? sql<{ lesson_id: string; completed: boolean; updated_at: Date }[]>`
+            select lesson_id, completed, updated_at from lesson_progress
+            where user_id = ${user.id} and lesson_id = any(${lessonIds}::uuid[])
+            order by updated_at desc
+          `
+        : Promise.resolve([]),
+      user && ownedNow ? accessExpiry(user.id, product.id) : Promise.resolve(null),
+    ]);
     if (user && lessonIds.length) {
-      const prog = await sql<{ lesson_id: string; completed: boolean; updated_at: Date }[]>`
-        select lesson_id, completed, updated_at from lesson_progress
-        where user_id = ${user.id} and lesson_id = any(${lessonIds}::uuid[])
-        order by updated_at desc
-      `;
       watchedIds = new Set(prog.filter((p) => p.completed).map((p) => p.lesson_id));
       if (ownedNow && prog.length) {
         const last = prog[0];
@@ -100,7 +117,7 @@ export default async function ProductPage({ params }: { params: Promise<Params> 
         resumeLessonId = last.completed && idx >= 0 && idx < lessonIds.length - 1 ? lessonIds[idx + 1] : last.lesson_id;
       }
     }
-    if (user && ownedNow) ownedUntil = (await accessExpiry(user.id, product.id)).expiresAt;
+    if (expiry) ownedUntil = expiry.expiresAt;
     return (
       <div className="mx-auto max-w-7xl px-3 pt-4 pb-36 sm:px-6 lg:pb-16">
         {product.status !== "published" ? (
@@ -130,12 +147,15 @@ export default async function ProductPage({ params }: { params: Promise<Params> 
     );
   }
 
-  const [files, bundleItems, bundles] = await Promise.all([
-    getProductFilesInfo(product.id),
-    product.type === "bundle" ? getBundleItems(product.id) : Promise.resolve([]),
-    product.type !== "bundle" ? getBundlesContaining(product.id) : Promise.resolve([]),
+  const [sale, files, bundleItems, bundles, owned] = await Promise.all([
+    read.saleState(product.id),
+    read.files(product.id),
+    product.type === "bundle" ? read.items(product.id) : Promise.resolve([]),
+    product.type !== "bundle" ? read.containers(product.id) : Promise.resolve([]),
+    owns,
   ]);
-  const [owned, bundleItemsById] = await Promise.all([user ? accessibleProductIds(user.id) : Promise.resolve(new Set<string>()), itemsOf(bundles)]);
+  const { videoClosed, unavailable } = saleFlags(product, sale);
+  const bundleItemsById = await itemsOf(bundles);
   const isOwned = owned.has(product.id);
   const mainFiles = files.filter((f) => f.kind === "main");
   const preview = files.find((f) => f.kind === "preview");

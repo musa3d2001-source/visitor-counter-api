@@ -6,7 +6,7 @@ import { QrCode } from "@/components/ui/qr-code";
 import { getCurrentSession } from "@/server/auth/session";
 import { authPagePerks } from "@/server/platform/site-facts";
 import { beginTwoFactorEnrolment } from "@/server/auth/two-factor";
-import { getSettings } from "@/server/platform/settings";
+import { getPublicSettings } from "@/server/platform/public-settings";
 import { TWO_FACTOR_SETUP_PATH } from "@/lib/two-factor";
 import { logoutAction } from "../../actions";
 import { TwoFactorSetupForm } from "./setup-form";
@@ -23,7 +23,7 @@ export default async function TwoFactorSetupPage() {
   if (!session) redirect(`/login?next=${encodeURIComponent(TWO_FACTOR_SETUP_PATH)}`);
   if (session.mustChangePassword) redirect("/change-password");
   if (session.user.role !== "admin") notFound();
-  const settings = await getSettings();
+  const settings = await getPublicSettings();
   const details = await beginTwoFactorEnrolment({ userId: session.user.id, sessionId: session.sessionId, account: session.user.email, issuer: settings.site_name });
   if (!details) redirect("/admin/security");
   return (

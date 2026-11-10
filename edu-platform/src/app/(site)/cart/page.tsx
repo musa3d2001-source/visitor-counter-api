@@ -8,7 +8,7 @@ import { Button } from "@/components/ui/button";
 import { Alert } from "@/components/ui/alert";
 import { PageHeader, StatPill } from "@/components/ui/page-header";
 import { ProductCover } from "@/components/site/product-cover";
-import { listGrades } from "@/server/catalog/queries";
+import { listGrades } from "@/server/catalog/public-data";
 import { paymentPublicState } from "@/server/payments/public-state";
 import { libraryNote } from "@/lib/site-truth";
 import { CompactPrice, Kicker, SaleEndedChip, contentChips, shortTerm } from "@/components/site/card-parts";

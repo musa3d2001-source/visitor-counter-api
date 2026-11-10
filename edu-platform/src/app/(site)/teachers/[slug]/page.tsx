@@ -3,7 +3,8 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { ArrowLeft, Clock3, Layers, MonitorPlay, PlayCircle, Quote } from "lucide-react";
-import { getTeacherBySlug, teacherContent } from "@/server/catalog/queries";
+import { getTeacherBySlug as getLiveTeacherBySlug } from "@/server/catalog/queries";
+import { getTeacherBySlug, teacherContent } from "@/server/catalog/public-data";
 import { getCurrentUser } from "@/server/auth/session";
 import { accessibleProductIds } from "@/server/access/entitlements";
 import { Breadcrumbs } from "@/components/ui/breadcrumbs";
@@ -47,7 +48,7 @@ export async function generateMetadata({ params }: { params: Promise<Params> }):
 export default async function TeacherPage({ params }: { params: Promise<Params> }) {
   const { slug } = await params;
   const user = await getCurrentUser();
-  const teacher = await getTeacherBySlug(slug, { includeUnpublished: user?.role === "admin" });
+  const teacher = user?.role === "admin" ? await getLiveTeacherBySlug(slug, { includeUnpublished: true }) : await getTeacherBySlug(slug);
   if (!teacher) notFound();
   const [groups, owned] = await Promise.all([teacherContent(teacher.id), user ? accessibleProductIds(user.id) : Promise.resolve(undefined)]);
   const subjects = [...new Map(teacher.subjects.map((x) => [x.slug ?? x.name, x])).values()];

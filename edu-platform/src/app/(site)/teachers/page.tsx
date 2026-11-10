@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { GraduationCap, MonitorPlay, Users, X } from "lucide-react";
-import { listGrades, listSubjects, listTeachers } from "@/server/catalog/queries";
+import { listGrades, listSubjects, listTeachers } from "@/server/catalog/public-data";
 import { siteFacts } from "@/server/platform/site-facts";
 import { EmptyState } from "@/components/ui/empty-state";
 import { PageHeader, StatPill } from "@/components/ui/page-header";

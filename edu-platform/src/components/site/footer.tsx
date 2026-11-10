@@ -2,16 +2,16 @@ import Link from "next/link";
 import { CreditCard } from "lucide-react";
 import { Sparkle } from "@/components/art";
 import { ar } from "@/lib/design";
-import { getSettings } from "@/server/platform/settings";
+import { getPublicSettings } from "@/server/platform/public-settings";
 import { siteFacts } from "@/server/platform/site-facts";
 import { paymentClaims, publicFooterNote, publicTagline, sellerIdentity } from "@/lib/site-truth";
-import { listGrades } from "@/server/catalog/queries";
+import { listGrades } from "@/server/catalog/public-data";
 import { storage } from "@/server/storage";
 import { Logo } from "./logo";
 
 /** التذييل: فيروزي داكن بشريط قوس قزح المواد، روابط حقيقية، وسنة بالأرقام الهندية العربية */
 export async function SiteFooter() {
-  const [settings, grades, facts] = await Promise.all([getSettings(), listGrades(), siteFacts()]);
+  const [settings, grades, facts] = await Promise.all([getPublicSettings(), listGrades(), siteFacts()]);
   const tagline = publicTagline(settings.tagline, facts);
   const footerNote = publicFooterNote(settings.footer_note, facts);
   const paymentLine = paymentClaims(facts.payment).footer;

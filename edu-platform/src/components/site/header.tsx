@@ -5,8 +5,8 @@ import { academicYearLabel, ar } from "@/lib/design";
 import { cn } from "@/lib/utils";
 import { getCurrentUser } from "@/server/auth/session";
 import { getCartIds } from "@/server/commerce/cart";
-import { latestVideoProducts, listGrades } from "@/server/catalog/queries";
-import { getSettings } from "@/server/platform/settings";
+import { firstPreviewLesson, listGrades } from "@/server/catalog/public-data";
+import { getPublicSettings } from "@/server/platform/public-settings";
 import { storage } from "@/server/storage";
 import { Logo } from "./logo";
 import { MobileNav } from "./mobile-nav";
@@ -16,12 +16,12 @@ const navLink =
 
 /** رأس الموقع: شريط الإعلان (العام الدراسي الحقيقي) + رأس زجاجي كريمي لاصق */
 export async function SiteHeader() {
-  const [user, cartIds, grades, settings, videos] = await Promise.all([
+  const [user, cartIds, grades, settings, preview] = await Promise.all([
     getCurrentUser(),
     getCartIds(),
     listGrades(),
-    getSettings(),
-    latestVideoProducts(8).catch(() => []),
+    getPublicSettings(),
+    firstPreviewLesson().catch(() => null),
   ]);
   const logoUrl = settings.logo_key ? storage().publicUrl(settings.logo_key) : null;
   const staff = user?.role === "admin" || user?.role === "teacher";
@@ -39,8 +39,7 @@ export async function SiteHeader() {
   // المدى لا يُقال إلا إن كانت كل الصفوف بين طرفيه فيها محتوى فعلًا
   const contiguous = grades.every((g, i) => i === 0 || g.level === grades[i - 1].level + 1);
   const range = first && last && first.id !== last.id && contiguous ? `المحتوى من ${first.name} إلى ${last.name} متاح الآن` : "";
-  const preview = videos.find((v) => v.previewLessonId);
-  const previewHref = preview ? `/watch/${preview.id}?lesson=${preview.previewLessonId}` : null;
+  const previewHref = preview ? `/watch/${preview.productId}?lesson=${preview.lessonId}` : null;
   const cartCount = cartIds.length;
 
   return (

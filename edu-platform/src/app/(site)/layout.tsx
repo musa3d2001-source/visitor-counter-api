@@ -2,10 +2,10 @@ import { SiteHeader } from "@/components/site/header";
 import { SiteFooter } from "@/components/site/footer";
 import { WhatsAppButton } from "@/components/site/whatsapp-button";
 import { SandboxBanner } from "@/components/site/sandbox-banner";
-import { getSettings } from "@/server/platform/settings";
+import { getPublicSettings } from "@/server/platform/public-settings";
 
 export default async function SiteLayout({ children }: { children: React.ReactNode }) {
-  const settings = await getSettings();
+  const settings = await getPublicSettings();
   return (
     <>
       <SandboxBanner />

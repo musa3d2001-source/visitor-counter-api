@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { BadgeCheck, ClipboardList, Layers, Scale, Undo2 } from "lucide-react";
-import { getSettings } from "@/server/platform/settings";
+import { getPublicSettings } from "@/server/platform/public-settings";
 import { count, W } from "@/lib/design";
 import { sellerIdentity } from "@/lib/site-truth";
 import { REFUND_HOLD_DAYS } from "@/lib/teacher-terms";
@@ -12,7 +12,7 @@ export const metadata: Metadata = { title: "سياسة الاسترجاع", alte
 
 /** مسودة لمراجعة المحامي. لا تُذكر هنا إلا ما تفعله خدمة الاسترداد فعلًا: طلب كامل فقط، والبوابة أولًا ثم سحب الوصول */
 export default async function RefundPolicyPage() {
-  const s = await getSettings();
+  const s = await getPublicSettings();
   return (
     <LegalDoc
       page="refund"

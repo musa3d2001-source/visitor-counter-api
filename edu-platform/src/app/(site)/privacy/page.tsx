@@ -11,14 +11,14 @@ import { OWNER_SECRET_HOURS } from "@/server/admin/student-accounts";
 import { CONSENT_VERSIONS } from "@/lib/consent";
 import { count, W } from "@/lib/design";
 import { sellerIdentity } from "@/lib/site-truth";
-import { getSettings } from "@/server/platform/settings";
+import { getPublicSettings } from "@/server/platform/public-settings";
 import { LegalDoc } from "../terms/_components/legal-doc";
 
 export const metadata: Metadata = { title: "سياسة الخصوصية", alternates: { canonical: "/privacy" } };
 
 /** مسودة لمراجعة المحامي. تغيير جوهري في النص يتطلب رقم نسخة جديدًا في lib/consent.ts. لا تُذكر هنا إلا ما يفعله النظام فعلًا */
 export default async function PrivacyPage() {
-  const s = await getSettings();
+  const s = await getPublicSettings();
   return (
     <LegalDoc
       page="privacy"

@@ -6,7 +6,7 @@ import { ContactLinks, realContactLinks } from "@/components/site/payment-unavai
 import { requireUser } from "@/server/auth/guards";
 import { authPagePerks } from "@/server/platform/site-facts";
 import { verificationState } from "@/server/auth/email-verification";
-import { getSettings } from "@/server/platform/settings";
+import { getPublicSettings } from "@/server/platform/public-settings";
 import { safeNextPath } from "@/lib/utils";
 import { CorrectEmailForm, ResendForm } from "./verify-forms";
 
@@ -20,7 +20,7 @@ export default async function VerifyEmailPage({ searchParams }: { searchParams: 
   const state = await verificationState(user.id);
   // لا شيء مطلوب: البريد غير مفعّل على النشر، أو مؤكد، أو للحساب طلب مدفوع سابق
   if (!state.required) redirect(next);
-  const settings = await getSettings();
+  const settings = await getPublicSettings();
   const target = state.pendingEmail ?? state.email;
 
   return (

@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { FileText, GraduationCap, Layers, MonitorPlay, Package, Play, Printer, Users } from "lucide-react";
-import { getBundleItems, getGradeBySlug, getSubject, listProducts, teachersForSubject, type ProductCard as ProductCardData } from "@/server/catalog/queries";
+import { getBundleItemsFor, getGradeBySlug, getSubject, listProducts, teachersForSubject } from "@/server/catalog/public-data";
 import { getCurrentUser } from "@/server/auth/session";
 import { accessibleProductIds } from "@/server/access/entitlements";
 import { EmptyState } from "@/components/ui/empty-state";
@@ -41,17 +41,15 @@ export default async function SubjectPage({ params, searchParams }: { params: Pr
   const subject = await getSubject(grade.id, p.subjectSlug);
   if (!subject) notFound();
 
-  const [all, teachers] = await Promise.all([listProducts({ gradeId: grade.id, subjectId: subject.id }), teachersForSubject(subject.id)]);
+  const [all, teachers, user] = await Promise.all([listProducts({ gradeId: grade.id, subjectId: subject.id }), teachersForSubject(subject.id), getCurrentUser()]);
   const terms = [...new Set(all.map((x) => x.term).filter((t): t is number => t !== null))].sort();
   const term = sp.term === "1" || sp.term === "2" ? Number(sp.term) : null;
   const products = term ? all.filter((x) => x.term === term || x.term === null) : all;
-  const user = await getCurrentUser();
-  const owned = user ? await accessibleProductIds(user.id) : undefined;
   const groups = PRODUCT_TYPE_ORDER.map((type) => ({ type, items: products.filter((x) => x.type === type) }))
     .filter((g) => g.items.length)
     .sort((a, b) => FAMILY_ORDER.indexOf(typeFamily(a.type)) - FAMILY_ORDER.indexOf(typeFamily(b.type)));
   const bundles = groups.find((g) => g.type === "bundle")?.items ?? [];
-  const itemsById = new Map<string, ProductCardData[]>(await Promise.all(bundles.map(async (b) => [b.id, await getBundleItems(b.id)] as const)));
+  const [owned, itemsById] = await Promise.all([user ? accessibleProductIds(user.id) : Promise.resolve(undefined), getBundleItemsFor(bundles.map((b) => b.id))]);
   const base = `/grades/${grade.slug}/${subject.slug}`;
 
   const videoCount = all.filter((x) => typeFamily(x.type) === "video" || typeFamily(x.type) === "review").length;

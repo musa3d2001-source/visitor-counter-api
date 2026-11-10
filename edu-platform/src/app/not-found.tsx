@@ -6,7 +6,7 @@ import { SiteHeader } from "@/components/site/header";
 import { SiteFooter } from "@/components/site/footer";
 import { Sparkle } from "@/components/art";
 import { ar, gradeClass } from "@/lib/design";
-import { listGrades } from "@/server/catalog/queries";
+import { listGrades } from "@/server/catalog/public-data";
 
 /** عنوان التبويب والسجل: «الصفحة غير موجودة | منصة فرقد» عبر قالب العنوان في التخطيط الجذري */
 export const metadata: Metadata = { title: "الصفحة غير موجودة", robots: { index: false } };

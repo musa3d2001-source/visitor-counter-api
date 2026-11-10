@@ -1,16 +1,8 @@
 import type { Metadata } from "next";
 import { BadgePercent, FileText, GraduationCap, MonitorPlay, Users } from "lucide-react";
-import {
-  getBundleItems,
-  gradeStats,
-  latestVideoProducts,
-  listProducts,
-  listStages,
-  listSubjects,
-  listTeachers,
-  type ProductCard,
-} from "@/server/catalog/queries";
-import { getSettings } from "@/server/platform/settings";
+import { getBundleItemsFor, gradeStats, latestVideoProducts, listAllSubjects, listProducts, listStages, listTeachers, teacherTotals } from "@/server/catalog/public-data";
+import type { ProductCard } from "@/server/catalog/queries";
+import { getPublicSettings } from "@/server/platform/public-settings";
 import { siteFacts } from "@/server/platform/site-facts";
 import { getCurrentUser } from "@/server/auth/session";
 import { accessibleProductIds } from "@/server/access/entitlements";
@@ -80,15 +72,16 @@ function pickNotes(notes: ProductCard[], levelBySlug: Map<string, number>, limit
  * كل الأرقام والأسعار من قاعدة البيانات.
  */
 export default async function HomePage() {
-  const [facts, stages, stats, settings, user, videos, teachers, allTeachers, bundles, examReviews, quizReviews, finalNotes] = await Promise.all([
+  const [facts, stages, stats, settings, user, videos, teachers, totals, allSubjects, bundles, examReviews, quizReviews, finalNotes] = await Promise.all([
     siteFacts(),
     listStages(),
     gradeStats(),
-    getSettings(),
+    getPublicSettings(),
     getCurrentUser(),
     latestVideoProducts(12),
     listTeachers({ limit: 6 }),
-    listTeachers(),
+    teacherTotals(),
+    listAllSubjects(),
     listProducts({ type: "bundle", limit: 4 }),
     listProducts({ type: "exam_review", limit: 3 }),
     listProducts({ type: "quiz_review", limit: 3 }),
@@ -97,11 +90,8 @@ export default async function HomePage() {
   const grades = stages.flatMap((st) => st.grades);
   const levelBySlug = new Map(grades.map((g) => [g.slug, g.level]));
   const sortedBundles = [...bundles].sort((a, b) => (levelBySlug.get(a.gradeSlug) ?? 99) - (levelBySlug.get(b.gradeSlug) ?? 99));
-  const [owned, subjectsByGrade, bundleItems] = await Promise.all([
-    user ? accessibleProductIds(user.id) : Promise.resolve(undefined),
-    Promise.all(grades.map((g) => listSubjects(g.id))),
-    Promise.all(sortedBundles.map((b) => getBundleItems(b.id))),
-  ]);
+  const [owned, bundleItems] = await Promise.all([user ? accessibleProductIds(user.id) : Promise.resolve(undefined), getBundleItemsFor(sortedBundles.map((b) => b.id))]);
+  const subjectsByGrade = grades.map((g) => allSubjects.filter((x) => x.gradeId === g.id));
 
   const reviewIds = new Set([...examReviews, ...quizReviews].map((r) => r.id));
   const courses = videos.filter((v) => v.type === "video_course");
@@ -114,14 +104,14 @@ export default async function HomePage() {
   ).slice(0, 8);
   const notes = pickNotes(finalNotes, levelBySlug, 5);
   const anySavings = sortedBundles.some((b) => savings(b.priceFils, b.compareAtPriceFils));
-  const totalLessons = allTeachers.reduce((n, t) => n + t.videoCount, 0);
+  const totalLessons = totals.lessons;
   const stageName = grades[0]?.stageName ?? "";
   const heroGrades = grades.map((g) => ({ id: g.id, slug: g.slug, name: g.name, level: g.level }));
   const teacherCols = teachers.length % 4 === 0 || teachers.length === 7 ? 4 : 3;
   const hero = publicHero({ title: settings.hero_title, subtitle: settings.hero_subtitle }, facts);
   const heading = gradesHeading(facts);
   const hasContact = realContactLinks(settings).length > 0;
-  const teacherText = teachersCopy(allTeachers.length, facts);
+  const teacherText = teachersCopy(totals.teachers, facts);
 
   return (
     <div className={s.home}>
@@ -133,7 +123,7 @@ export default async function HomePage() {
         fan={fan}
         previewHref={previewHref}
         nightReview={examReviews[0] ?? null}
-        stats={{ lessons: totalLessons, teachers: allTeachers.length, grades: grades.length }}
+        stats={{ lessons: totalLessons, teachers: totals.teachers, grades: grades.length }}
         signedIn={Boolean(user)}
         trust={facts.content ? heroTrust(facts) : []}
         hasContact={hasContact}
@@ -243,7 +233,7 @@ export default async function HomePage() {
                 )
               }
               sub={teacherText.section}
-              more={{ href: "/teachers", label: allTeachers.length > 1 ? "كل المعلمين" : "صفحة المعلم" }}
+              more={{ href: "/teachers", label: totals.teachers > 1 ? "كل المعلمين" : "صفحة المعلم" }}
             />
             <Rail label="المعلمين" cols={teacherCols}>
               {teachers.map((t) => (
@@ -280,7 +270,7 @@ export default async function HomePage() {
             <Rail label="الباقات" cols={Math.min(4, Math.max(2, sortedBundles.length))}>
               {sortedBundles.map((b, i) => (
                 <li key={b.id}>
-                  <BundleCard product={b} items={bundleItems[i] ?? []} level={levelBySlug.get(b.gradeSlug) ?? null} owned={owned?.has(b.id)} />
+                  <BundleCard product={b} items={bundleItems.get(b.id) ?? []} level={levelBySlug.get(b.gradeSlug) ?? null} owned={owned?.has(b.id)} />
                 </li>
               ))}
             </Rail>

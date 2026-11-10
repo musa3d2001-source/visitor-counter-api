@@ -6,7 +6,7 @@ import { Alert } from "@/components/ui/alert";
 import { ContactLinks, realContactLinks } from "@/components/site/payment-unavailable-notice";
 import { mailIsReal } from "@/server/platform/mailer";
 import { authPagePerks } from "@/server/platform/site-facts";
-import { getSettings } from "@/server/platform/settings";
+import { getPublicSettings } from "@/server/platform/public-settings";
 import { ForgotForm } from "./forgot-form";
 
 export const metadata: Metadata = { title: "استعادة كلمة المرور", robots: { index: false } };
@@ -21,7 +21,7 @@ export default async function ForgotPasswordPage() {
     );
   }
   // البريد لا يخرج: لا نعرض نموذجًا يَعِد برسالة لن تصل. إدارة المنصة تصدر الرابط من صفحة الطالب
-  const settings = await getSettings();
+  const settings = await getPublicSettings();
   return (
     <AuthCard perks={perks} title="نسيت كلمة المرور؟" subtitle="إدارة المنصة تساعدك في استعادة حسابك">
       <div className="flex flex-col gap-5" data-testid="recovery-mail-off">

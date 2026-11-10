@@ -1,5 +1,5 @@
 import type { Metadata, Viewport } from "next";
-import { getSettings } from "@/server/platform/settings";
+import { getPublicSettings } from "@/server/platform/public-settings";
 import { siteFacts } from "@/server/platform/site-facts";
 import { publicHero, publicTagline } from "@/lib/site-truth";
 import { env } from "@/server/env";
@@ -10,7 +10,7 @@ import "./globals.css";
 export const dynamic = "force-dynamic";
 
 export async function generateMetadata(): Promise<Metadata> {
-  const [s, facts] = await Promise.all([getSettings(), siteFacts()]);
+  const [s, facts] = await Promise.all([getPublicSettings(), siteFacts()]);
   const base = new URL(env().APP_URL);
   const tagline = publicTagline(s.tagline, facts);
   const title = tagline ? `${s.site_name} | ${tagline}` : s.site_name;
@@ -42,7 +42,7 @@ export const viewport: Viewport = {
 };
 
 export default async function RootLayout({ children }: { children: React.ReactNode }) {
-  const s = await getSettings();
+  const s = await getPublicSettings();
   const style = { "--brand": s.primary_color, "--accent": s.accent_color } as React.CSSProperties;
   return (
     <html lang="ar" dir="rtl" style={style} data-scroll-behavior="smooth">

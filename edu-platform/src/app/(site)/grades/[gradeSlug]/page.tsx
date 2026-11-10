@@ -2,7 +2,10 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { ArrowLeft, BookOpen, Flame, GraduationCap, Layers, MonitorPlay, Package, Play, Printer, Users } from "lucide-react";
-import { bestSellers, getBundleItems, getGradeBySlug, listProducts, listSubjects, teachersForSubject, type ProductCard as ProductCardData, type TeacherCard } from "@/server/catalog/queries";
+import { bestSellers } from "@/server/catalog/queries";
+import { getBundleItemsFor, getGradeBySlug, listProducts, listSubjects, teachersForSubjects } from "@/server/catalog/public-data";
+import { getPublicSettings } from "@/server/platform/public-settings";
+import { videoCloseFlags } from "@/server/video/policy";
 import { getCurrentUser } from "@/server/auth/session";
 import { accessibleProductIds } from "@/server/access/entitlements";
 import { EmptyState } from "@/components/ui/empty-state";
@@ -34,21 +37,21 @@ const NOTE_ORDER = ["final_notes", "exam_night", "review_notes", "exam_model", "
 export default async function GradePage({ params }: { params: Promise<{ gradeSlug: string }> }) {
   const grade = await getGradeBySlug((await params).gradeSlug);
   if (!grade) notFound();
+  const settings = await getPublicSettings();
   const [subjects, bundles, popular, all, user] = await Promise.all([
     listSubjects(grade.id),
     listProducts({ gradeId: grade.id, type: "bundle", limit: 6 }),
-    bestSellers({ gradeId: grade.id, limit: 4 }),
+    // مشتق من الطلبات، فلا يُخزن بين الطلبات أبدًا
+    bestSellers({ gradeId: grade.id, limit: 4, closed: videoCloseFlags(settings) }),
     listProducts({ gradeId: grade.id, excludeType: "bundle" }),
     getCurrentUser(),
   ]);
-  const [owned, teacherLists, bundleItems] = await Promise.all([
+  const [owned, teachersBySubject, itemsById] = await Promise.all([
     user ? accessibleProductIds(user.id) : Promise.resolve(undefined),
-    Promise.all(subjects.map(async (x) => [x.id, await teachersForSubject(x.id)] as const)),
-    Promise.all(bundles.map(async (b) => [b.id, await getBundleItems(b.id)] as const)),
+    teachersForSubjects(subjects.map((x) => x.id)),
+    getBundleItemsFor(bundles.map((b) => b.id)),
   ]);
-  const teachersBySubject = new Map<string, TeacherCard[]>(teacherLists);
-  const itemsById = new Map<string, ProductCardData[]>(bundleItems);
-  const teacherIds = new Set(teacherLists.flatMap(([, ts]) => ts.map((t) => t.id)));
+  const teacherIds = new Set([...teachersBySubject.values()].flatMap((ts) => ts.map((t) => t.id)));
 
   const { videos, night, quiz, notes: rawNotes } = splitByFamily(all);
   const notes = [...rawNotes].sort((a, b) => NOTE_ORDER.indexOf(a.type) - NOTE_ORDER.indexOf(b.type));

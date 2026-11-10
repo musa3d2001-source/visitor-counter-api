@@ -17,7 +17,7 @@ import {
   RotateCcw,
   ScrollText,
 } from "lucide-react";
-import { getSettings } from "@/server/platform/settings";
+import { getPublicSettings } from "@/server/platform/public-settings";
 import { mailIsReal } from "@/server/platform/mailer";
 import { PageHeader } from "@/components/ui/page-header";
 import { SectionHead } from "@/components/ui/section-head";
@@ -41,7 +41,7 @@ const helpTiles = (mailWorks: boolean, payment: PaymentPublicState) => [
 ];
 
 export default async function ContactPage() {
-  const s = await getSettings();
+  const s = await getPublicSettings();
   const channels = [
     s.whatsapp_number && {
       key: "wa",
