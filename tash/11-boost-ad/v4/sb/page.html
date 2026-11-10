@@ -86,7 +86,7 @@ window.SB = {
       const F = frames[i]; await draw(t, F, F.ui ?? ui); const c = cols - 1 - (i % cols), r = Math.floor(i / cols);   // right-to-left reading order
       const x = gap + c * (tw + gap), y = head + r * (th + lab + gap);
       s.imageSmoothingQuality = 'high'; s.drawImage(T, x, y, tw, th); s.strokeStyle = 'rgba(245,245,233,.25)'; s.lineWidth = 2; s.strokeRect(x, y, tw, th);
-      s.fillStyle = COL.lime; s.font = '600 22px "JetBrains Mono"'; s.direction = 'ltr'; s.textAlign = 'left'; s.fillText(`${String(i + 1).padStart(2, '0')}  ${F.tc ?? ''}`, x, y + th + 34);
+      s.fillStyle = COL.lime; s.font = '600 22px "JetBrains Mono"'; s.direction = 'ltr'; s.textAlign = 'left'; s.fillText(`${String(F.n ?? i + 1).padStart(2, '0')}  ${F.tc ?? ''}`, x, y + th + 34);
       s.fillStyle = COL.paper; s.font = '600 26px "IBM Plex Sans Arabic"'; s.direction = 'rtl'; s.textAlign = 'right';
       const words = (F.note ?? '').split(' '); let line = '', ly = y + th + 74; for (const w of words) { const n = line ? line + ' ' + w : w; if (s.measureText(n).width > tw && line) { s.fillText(line, x + tw, ly); line = w; ly += 36; } else line = n; } if (line) s.fillText(line, x + tw, ly);
     }

@@ -1,5 +1,6 @@
 // Storyboard compositor: frames.json (stills + code-drawn overlays) -> PNG per frame + contact sheets.
 // usage: node compose.mjs --frames frames.json --out outdir [--ui ig|tt|none] [--cols 4] [--only id,id]
+// spec: { title, titleUi?, frames: [{ id, n?, tc, note, ui?, layers }] }  (titleUi = title of the sheet drawn under the platform chrome; n = number shown under the tile)
 import { createServer } from 'node:http';
 import { readFile, writeFile, mkdir } from 'node:fs/promises';
 import { join, extname, dirname, resolve } from 'node:path';
@@ -20,5 +21,5 @@ const page = await browser.newPage({ viewport: { width: 1080, height: 1920 }, de
 let bad = 0; page.on('pageerror', e => { bad++; console.error('[page error]', e.message); }); page.on('console', m => { if (m.type() === 'error') { bad++; console.error('[console]', m.text()); } });
 await page.goto(`http://127.0.0.1:${srv.address().port}/_sb/page.html`, { waitUntil: 'load' }); await page.waitForFunction(() => window.SB); await page.evaluate(() => window.SB.ready);
 for (const F of frames) { const b64 = await page.evaluate(([F, ui]) => window.SB.render(F, ui), [F, F.ui ?? ui]); await writeFile(join(out, `${F.id}.png`), Buffer.from(b64, 'base64')); console.log('frame', F.id); }
-for (const [name, u] of [['sheet', 'none'], ['sheet-ui', ui === 'none' ? 'ig' : ui]]) { const b64 = await page.evaluate(([fr, o]) => window.SB.sheet(fr, o), [frames, { cols, ui: u, title: spec.title ?? '' }]); await writeFile(join(out, `${name}.jpg`), Buffer.from(b64, 'base64')); console.log(name); }
+for (const [name, u] of [['sheet', 'none'], ['sheet-ui', ui === 'none' ? 'ig' : ui]]) { const b64 = await page.evaluate(([fr, o]) => window.SB.sheet(fr, o), [frames, { cols, ui: u, title: (u === 'none' ? spec.title : spec.titleUi ?? spec.title) ?? '' }]); await writeFile(join(out, `${name}.jpg`), Buffer.from(b64, 'base64')); console.log(name); }
 await browser.close(); srv.close(); if (bad) process.exit(1);

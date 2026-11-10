@@ -1,6 +1,6 @@
 # TASH boost ad v4 «نقاط مشروعك»: STORYBOARD PLAN (for the owner, revision 2)
 
-Status, 9 Nov 2026: **plan only.** No video exists and nothing here is approved. Outside this plan, 4 credits were spent on two candidate stills of the opening shot (job IDs in `tash/HANDOFF.md` §7; both are tall glasses, neither is the wide-tumbler S1-alt, and neither passes the §3 gates as generated). The owner saw a first look of frame 0 made from them (`v4/storyboard/firstlook-r2/`). The 14 credits for stills in §5 do not include those 4.
+Status, 10 Nov 2026: **stills generated, storyboard composed, waiting for the owner.** The seven plan stills cost 14 credits (approved by the owner with «كمل»); v4 has spent 18 in total; no video exists; nothing is approved yet. **Section 7 holds the results of this round and supersedes the 16-frame list of section 1 with 18 frames.** Earlier: 4 credits were spent on two candidate stills of the opening shot (job IDs in `tash/HANDOFF.md` §7); the owner saw a first look of frame 0 made from them (`v4/storyboard/firstlook-r2/`).
 Build detail lives in `BUILD-SPEC.md`; the same shots in machine form are in `shots.json`. All three files were revised together after the red-team review.
 
 ## للمالك (الخلاصة)
@@ -173,3 +173,62 @@ Voices and music cost nothing here: the three approved voice stems are reused an
 5. Kling: state the price, order the four 3 s clips, run the clip gates.
 6. Build from `BUILD-SPEC.md`; render A-20 first; run the acceptance checklist; then the TikTok, B-20, A-14 and 4:5 versions.
 7. Owner review of the renders. Nothing is published by this plan; AI label ON and the caption line are part of the delivery notes.
+
+## 7. Round 3 results (9-10 Nov 2026)
+
+### 7.1 What exists
+- **Stills:** seven Nano Banana Pro 2K stills, 2 credits each (S1, S1-alt, S5, S2, S3, S3-alt, S6). The first S3 was blocked by the content filter (no image, not charged) and re-run once with a reworded bun sentence. Job IDs, the re-run prompt and the ledger are in `shots.json` under `stills_round`.
+- **Local fit, 0 credits:** every still ignored the layout percentages in the prompt, so `sb/fit_stills.py` scales each picture down, puts the product in the hero box and continues the backdrop around it. No product pixel is repainted. Extra local edits: S2 smoke faded above y 880; S3 backdrop graded to `#1EA7FF`; S6 backdrop extended by tile repetition. Output: `sb/stills/*_fit.png` (1080x1920).
+- **Storyboard, 0 credits:** `bash tash/11-boost-ad/v4/sb/export_storyboard.sh` rebuilds `storyboard/r3/`:
+  - `phone/storyboard-1-of-3.jpg`, `-2-of-3.jpg`, `-3-of-3.jpg`: the 18 frames, six per sheet, two across, readable on a phone (this is what the owner is sent).
+  - `01-storyboard.jpg`: all 18 frames, four across. `02-storyboard-instagram.jpg`: the same under a rough Instagram chrome with the safe-zone guides.
+  - `03-options.jpg`: our pick and the alternative for the opener and the burger (full frame and inside the lens), and the version-B pool opener.
+  - `04-tiktok.jpg`: TikTok chrome check and the TikTok ending. `05-4x5.jpg`: the 4:5 layouts. `qc-small-25pct.jpg`: the 18 frames at 270x480.
+  - `frames/`, `options/`, `tiktok/`, `r45/`: full-size JPEGs. `spec/`: the frame specs.
+
+### 7.2 The 18 key frames (supersedes section 1)
+| # | Frame | Picture | On screen |
+|---|---|---|---|
+| 1 | f0 | S1-alt full frame | «مشروعك» + three lime dots, nothing else |
+| 2 | f10 | S1-alt (cover frame) | + «حلو…» 200 px lime. The punch-in on f15 is described in the note |
+| 3 | f31 | S5 kunafa full frame | word, dots, «حلو…» (حلو = sweet) |
+| 4 | f40 | Paper-grey with the kunafa picture dropping away in three columns | hollow word, three dashed empty circles, three lime dots falling (Ø160, Ø200, Ø240) |
+| 5 | f60 | Paper-grey | hollow «مسروعك», dashed empty circles, «محد يسولف؟», three drained grey dots at y 1170 |
+| 6 | f84 | S1-alt returning inside two lime-rimmed circles | word Paper again, dots back on the ش, the line still on top |
+| 7 | f100 | Lime | wordmark 440 px, «خلّ إعلانك» / «علينا» |
+| 8 | f125 | Lime | the same card + three round windows Ø220 (burger, coffee, oud); the wordmark keeps its dots |
+| 9 | f140 | S1-alt full frame | tag «قهوة؟» |
+| 10 | f155 | Lime + lens Ø680 with the coffee (footage at 0.86) | word and tag Ink, dots Ink with Paper ring |
+| 11 | f170 | S2 full frame | tag «عطر؟» |
+| 12 | f225 | S3 punched in 1.2x | tag «برجر؟» (the bun lands on this frame in the film) |
+| 13 | f275 | Lime + lens with the kunafa | tag «حلويات؟» 180 px Ink |
+| 14 | f300 | flat Paper | word Ink, three lime dots, «شنو حسابهم؟!» on one line |
+| 15 | f350 | flat hot pink | the same + eight copies of the dot row (27 dots) |
+| 16 | f392 | Lime | wordmark 840 px with solid Ink dots, 81 burst dots in the three world colours |
+| 17 | f420 | Lime | wordmark 440 px, «خلّهم يسولفون» / «عنك!», drifting burst dots |
+| 18 | f470 | Lime panel over a kunafa band | «اطلب إعلانك» / «بالخاص» / `@tash.creative.kw` / wordmark 320 px |
+
+### 7.3 Still gates, honest results (section 3)
+All seven: empty top (0 product pixels above y 880 after the fit), no lime object, no text or logo found at 200%, frame luma 0.46 to 0.91 with the overlay (gate 0.40).
+
+| Still | Passes | Misses (accepted unless the owner wants a 2-credit retake) |
+|---|---|---|
+| S1 tall glass | rim y 1168, base y 1613, clean at 200% | ice top y 899 (gate 930) and the lowest cube is already in the mouth; glass only 206 px wide; backdrop gradient, delta 30.9 from tangerine; horizon line about y 1465; the shadow end was cut by the fit |
+| S1-alt tumbler (our opener) | glass 282 px wide, cubes 119-127 px, clean at 200%, backdrop delta 16.9 | rim y 1250 (gate 1170 +/- 25); lowest cube in the rim; horizon about y 1428; a faint shadow smudge near (856,1524), 8 levels |
+| S5 kunafa | tray centred on (540,1270), about Ø470, true top-down, backdrop delta 7.4 | nuts are pale (no green pistachio cue); two burnt threads visible only at 500% |
+| S2 oud | brass plain, smoke natural after the fade, backdrop delta 10.4 | the burner is a stemmed bowl and reads as a goblet at small size; a floor band at y 1493-1579 runs to both frame edges; three tiny writing-like marks on the bottle base (under 20 px, seen at 500%); shadows of the two objects fall in opposite directions. **The one still where a retake is worth 2 credits** |
+| S3 burger, bun in the air (our burger) | cooked, seared edges, no lettuce, bun top y 936 | board spans x 174-919 (wider than the hero box; fits the lens at 0.72); the bun is not perfectly level; backdrop is on target only because of the local grade; horizon about y 1336 |
+| S3-alt burger, bun on | clean, cheese drip | board x 216-846; backdrop duller blue (delta 37.5) with the hardest wall-floor step; 300 px of empty azure above it |
+| S6 pool ring (version B) | ring centred, about Ø460, no people, no pool edge | the top 440 rows are a copy of the block below (hidden behind the word); the ring can read as a lifebuoy |
+
+### 7.4 Review of the composed storyboard
+A multi-agent review (Arabic proof, spec conformance, platform safe zones, director and stills QC; every finding re-checked by a second reviewer; then a completeness critic) raised 55 findings, 48 confirmed. Fixed in this round: the dead-state word had three grey dots in the ش slot; the tagline «خلّهم يسولفون عنك!» was on no frame; the floor dots lay under the platform chrome; the lens cut the product; the talk line was the smallest text in the film; the ending had no brand name and its product sat under the caption rows; the 4:5 ending cut the product; the logo dots with footage did not read; Ink burst dots read as letter dots; notes used «لايم», «قطعة» and other stiff wording; two sheets had no titles; the sheets were not readable on a phone; the picks had no recommendation. The decisions are `BUILD-SPEC.md` section 15.
+
+### 7.5 Our picks (the owner can overrule either)
+- **Opener: S1-alt**, the short tumbler. S1 stays as the fallback (a second Seedance draft is 12 credits, from the reserve).
+- **Burger: S3**, bun in the air. S3-alt is the fallback if the bun landing fails its video gate (another Kling clip, 5.25 credits, needs the owner's OK). "Neither" = kunafa takes f210-284 and 5.25 credits are saved.
+- **Open copy question for the owner:** the oud picture is led by the burner; the tag says «عطر؟». Keep it, or retake S2 for 2 credits with a Kuwaiti square mabkhara and the bottle as the hero.
+
+### 7.6 Credits
+Spent on v4: 18 (4 on 9 Nov + 14 in this round). Balance checked: 521.5. Cap 200, so 182 are left under the cap. Still to come if approved: Seedance 480p draft 12, four Kling clips 21, Seedance 1080p final 64 (97 in total; v4 would then stand at 115). An S2 retake would add 2.
+
