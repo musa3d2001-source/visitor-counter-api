@@ -2,7 +2,8 @@ import { requireOwnerPage } from "@/server/auth/permissions";
 import { storageFileCap, uploadLimitLabel } from "@/server/storage";
 import Image from "next/image";
 import { CircleCheck, CreditCard, Database, Image as ImageIcon, TriangleAlert, Video } from "lucide-react";
-import { getSettings } from "@/server/platform/settings";
+import { getSettingsReport, SETTINGS_LABELS } from "@/server/platform/settings";
+import { SettingsInvalidAlert } from "@/components/admin/settings-invalid-alert";
 import { paymentsConfig } from "@/server/payments/service";
 import { webhookDeliveryStatus } from "@/server/payments/monitoring";
 import { bunnyConfigured } from "@/server/video/bunny";
@@ -50,7 +51,7 @@ function Url({ label, url }: { label: string; url: string }) {
 
 export default async function SettingsPage() {
   await requireOwnerPage();
-  const s = await getSettings();
+  const { settings: s, invalid } = await getSettingsReport();
   const e = env();
   const storageCap = storageFileCap();
   const cfg = paymentsConfig();
@@ -65,6 +66,8 @@ export default async function SettingsPage() {
       <PageBand tone="slate" art="settings">
         <AdminPageHeader title="إعدادات المنصة" description="الاسم والشعار والألوان والتواصل والأسئلة الشائعة، تُطبق فورًا دون تعديل الكود." className="mb-0" />
       </PageBand>
+
+      <SettingsInvalidAlert labels={invalid.map((k) => SETTINGS_LABELS[k])} />
 
       <div className="grid items-start gap-6 xl:grid-cols-[minmax(0,1fr)_340px]">
         <SettingsForm

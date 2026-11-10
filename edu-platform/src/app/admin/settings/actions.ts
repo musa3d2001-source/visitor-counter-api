@@ -2,34 +2,14 @@
 
 import { revalidatePath } from "next/cache";
 import type { ActionState } from "@/lib/action-state";
-import { saveSettings, settingsSchema, type PlatformSettings } from "@/server/platform/settings";
+import { saveSettings, settingsSchema, SETTINGS_LABELS, type PlatformSettings } from "@/server/platform/settings";
 import { audit } from "@/server/platform/audit";
 import { storage } from "@/server/storage";
 import { getSettings } from "@/server/platform/settings";
 import { AdminError, adminAction, bool, str } from "@/server/admin/common";
 import { parseKwdToFils } from "@/lib/money";
 
-const FIELD_LABELS: Record<string, string> = {
-  site_name: "اسم المنصة",
-  tagline: "الشعار النصي",
-  hero_title: "عنوان الصفحة الرئيسية",
-  hero_subtitle: "النص التعريفي",
-  primary_color: "اللون الأساسي",
-  accent_color: "اللون المساعد",
-  whatsapp_number: "رقم واتساب",
-  contact_email: "البريد",
-  contact_phone: "الهاتف",
-  instagram_url: "رابط إنستغرام",
-  academic_year: "العام الدراسي",
-  faq: "الأسئلة الشائعة",
-  footer_note: "نص التذييل",
-  fee_percent_bps: "نسبة الرسوم",
-  fee_fixed_fils: "الرسوم الثابتة",
-  seller_legal_name: "الاسم النظامي للبائع",
-  seller_license_number: "رقم الرخصة التجارية",
-  seller_address: "عنوان البائع",
-  mail_provider_name: "اسم مزود البريد",
-};
+const FIELD_LABELS: Record<string, string> = SETTINGS_LABELS;
 
 export async function saveSettingsAction(_p: ActionState, fd: FormData): Promise<ActionState> {
   return adminAction(async ({ adminId, ip }) => {
@@ -78,7 +58,7 @@ export async function saveSettingsAction(_p: ActionState, fd: FormData): Promise
       const errs: Record<string, string> = {};
       for (const i of parsed.error.issues) {
         const k = String(i.path[0]);
-        if (!errs[k]) errs[k] = `قيمة غير صحيحة في «${FIELD_LABELS[k] ?? k}»`;
+        if (!errs[k]) errs[k] = k === "instagram_url" ? `«${FIELD_LABELS[k]}» يجب أن يبدأ بـ https://` : `قيمة غير صحيحة في «${FIELD_LABELS[k] ?? k}»`;
       }
       throw new AdminError(Object.values(errs).join("، "), errs);
     }

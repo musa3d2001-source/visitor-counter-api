@@ -21,7 +21,18 @@ export const settingsSchema = z.object({
   whatsapp_number: z.string().regex(/^\+?\d{8,15}$/).or(z.literal("")),
   contact_email: z.string().email().or(z.literal("")),
   contact_phone: z.string().max(30),
-  instagram_url: z.string().url().or(z.literal("")),
+  /** يظهر رابطًا في تذييل كل صفحة: https فقط (لا javascript: ولا data: ولا http) */
+  instagram_url: z
+    .string()
+    .url()
+    .refine((u) => {
+      try {
+        return new URL(u).protocol === "https:";
+      } catch {
+        return false;
+      }
+    }, "الرابط يجب أن يبدأ بـ https://")
+    .or(z.literal("")),
   academic_year: z.string().regex(/^\d{4}-\d{4}$/),
   videos_enabled: z.boolean(),
   watermark_enabled: z.boolean(),
@@ -68,21 +79,66 @@ export const DEFAULT_SETTINGS: PlatformSettings = {
   mail_provider_name: "",
 };
 
+/** أسماء الحقول كما يراها المالك في صفحة الإعدادات */
+export const SETTINGS_LABELS: Record<keyof PlatformSettings, string> = {
+  site_name: "اسم المنصة",
+  tagline: "الشعار النصي",
+  hero_title: "عنوان الصفحة الرئيسية",
+  hero_subtitle: "النص التعريفي",
+  logo_key: "الشعار",
+  primary_color: "اللون الأساسي",
+  accent_color: "اللون المساعد",
+  whatsapp_number: "رقم واتساب",
+  contact_email: "البريد",
+  contact_phone: "الهاتف",
+  instagram_url: "رابط إنستغرام",
+  academic_year: "العام الدراسي",
+  videos_enabled: "تفعيل الفيديو",
+  watermark_enabled: "العلامة المائية",
+  faq: "الأسئلة الشائعة",
+  footer_note: "نص التذييل",
+  fee_percent_bps: "نسبة الرسوم",
+  fee_fixed_fils: "الرسوم الثابتة",
+  fee_rules_confirmed_at: "اعتماد قواعد الرسوم",
+  seller_legal_name: "الاسم النظامي للبائع",
+  seller_license_number: "رقم الرخصة التجارية",
+  seller_address: "عنوان البائع",
+  mail_provider_name: "اسم مزود البريد",
+};
+
+export type SettingsReport = {
+  settings: PlatformSettings;
+  /** مفاتيح محفوظة لم تعد قيمتها مقبولة (بعد تغيير قاعدة مثلًا)، فاستُعملت قيمتها الافتراضية وحدها */
+  invalid: (keyof PlatformSettings)[];
+};
+
 /**
- * قراءة الإعدادات عبر اتصال محدد. داخل معاملة مرّر tx: طلب اتصال ثانٍ من الحوض
- * أثناء حجز المعاملة لاتصالها قد يعلّق تأكيد الدفع عندما يمتلئ الحوض.
+ * قراءة الإعدادات مع ما تعذر قبوله. كل مفتاح يُفحص وحده: قيمة واحدة مرفوضة تعود إلى افتراضيها هي فقط،
+ * ولا تمحو اسم المنصة ووسائل التواصل واعتماد الرسوم معها.
+ * داخل معاملة مرّر tx: طلب اتصال ثانٍ من الحوض أثناء حجز المعاملة لاتصالها قد يعلّق تأكيد الدفع عندما يمتلئ الحوض.
  */
-export async function readSettings(db: Db = sql): Promise<PlatformSettings> {
+export async function readSettingsReport(db: Db = sql): Promise<SettingsReport> {
   const rows = await db<{ key: string; value: unknown }[]>`select key, value from settings`;
-  const merged: Record<string, unknown> = { ...DEFAULT_SETTINGS };
+  const settings: Record<string, unknown> = { ...DEFAULT_SETTINGS };
+  const invalid: (keyof PlatformSettings)[] = [];
+  const shape = settingsSchema.shape;
   for (const r of rows) {
-    if (r.key in DEFAULT_SETTINGS) merged[r.key] = r.value;
+    if (!Object.hasOwn(shape, r.key)) continue;
+    const key = r.key as keyof PlatformSettings;
+    const parsed = shape[key].safeParse(r.value);
+    if (parsed.success) settings[key] = parsed.data;
+    else invalid.push(key);
   }
-  const parsed = settingsSchema.safeParse(merged);
-  return parsed.success ? parsed.data : DEFAULT_SETTINGS;
+  return { settings: settings as PlatformSettings, invalid };
 }
 
-export const getSettings = cache((): Promise<PlatformSettings> => readSettings());
+export async function readSettings(db: Db = sql): Promise<PlatformSettings> {
+  return (await readSettingsReport(db)).settings;
+}
+
+export const getSettingsReport = cache((): Promise<SettingsReport> => readSettingsReport());
+
+export const getSettings = cache(async (): Promise<PlatformSettings> => (await getSettingsReport()).settings);
 
 export async function saveSettings(patch: Partial<PlatformSettings>, actorId: string, db: Db = sql) {
   const current = await getSettings();
