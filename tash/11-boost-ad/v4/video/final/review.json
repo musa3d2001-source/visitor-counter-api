@@ -1,0 +1,478 @@
+{
+ "audit": {
+  "same_take": "Yes, the final is the same take, frame for frame. Both files are 97 frames at 24/1 fps and 4.041667 s. The final is HEVC Main 10, 1080x1920, tagged bt709 tv, about 973 kbps. Phase correlation between the final (box-scaled to 480x854) and the draft gives a (0,0) px shift at n0, n2, n12, n50 and n96. Every event lands on the same native frame (layout px):\n- **Ice fall.** Top-of-ice y in the final at n0-n11 is 900,900,900,902,908,917,931,946,964,985,1009,1033. The draft reads 899,899,899,900,908,918,935,950,970,989,1012,1038.\n- **Contact, entry, crown.** Contact is n5-n6 and entry (cube half under) is n7, the same in both at 100% crops. Crown arms are above the rim from n11, and the crown is clearly up at n12, where the attached body top is y 1097 in the final against 1096 in the draft.\n- **Saucer drape (n27-n30).** The left drape reaches y 1245/1259/1275/1293 in the final against 1260/1270/1280/1296 in the draft.\n- **Second surge.** The legs run n35-n41 and vanish at n41-n42 in both. The central jet collapses by n45 in the final, against n47-n51 in the draft. This is inside the n30-n42 window or unused frames.\n- **Jet droplet.** The track n42-n77 matches within 5 px: apex y 651 at n51-n52 against 647. The last droplet lands in the glass at n78 in both.\n- **Calm.** The foam hump above the rim fades over n60-n67 in both. In the final it is taller: 14-16 px at n62-n64 against 9-12 px. It is calm from n68 in the final, about 2 frames later than the draft (about n66).\n- **Settled tail.** Surface frame change is under 1.2 levels per frame from n85.\n\nPer-frame best match (hero box, grade-corrected) is the same frame with a clear margin for n3-n14, n16, n18-n40, n42, n45-n46 and n48-n55. All other frames differ by under 0.15 levels and are ambiguous (n0-n2, n15, n17, n41, n43-n44, n47 and the near-static n56-n59, n64-n96). The only motion differences are fine detail the 480p draft could not show: faint spray streaks above y 880 from n15/n16 (draft: n21) and small droplets up to y 596 at n36 (draft highest: 647). The remap of R3-17 stays valid frame for frame: no frame must move because of motion.",
+  "gates": [
+   {
+    "gate": "1. Frame 0 (n2 as used, R3-18c)",
+    "result": "pass with remap",
+    "evidence": "Final n2 against the approved still sb/stills/s1alt_fit.png, my Gaussian SSIM (11, sigma 1.5) on luma: 0.9154 at 480x854 (rows above 880: 0.994; rows from 880: 0.849; hero box: 0.566), and 0.9339 at 1080x1920. That is under the 0.95 rule for the 1080p final, so the still-swap rule would trigger. R3-18c already replaces it: f0 and the loop use n2. Best fit of the still onto n2 is scale 0.985 with a shift of (-8,-7) draft px, about (-18,-16) layout px, NCC 0.975. This is the same reframing as the draft. Final n2 against draft n2: SSIM 0.978 whole frame, 0.898 hero box. The loop freeze (n2 at f588-599) and f0 (n2) are the same frame, so the seam is clean."
+   },
+   {
+    "gate": "2. Native rate and frame count",
+    "result": "pass",
+    "evidence": "ffprobe -count_frames: hevc Main 10, yuv420p10le, 1080x1920, r_frame_rate and avg_frame_rate 24/1, nb_frames 97, nb_read_frames 97, duration 4.041667 s, PTS step 3750/90000. This is column B: one native frame per 30 fps timeline frame, n0-n96. All 97 decoded frames have distinct framemd5."
+   },
+   {
+    "gate": "3. Impact on the timeline",
+    "result": "pass",
+    "evidence": "At 100% crops (x 400-660, y 1100-1290), the lowest cube reaches the coffee at n5-n6, is partly under at n7 and half under at n8, the same as the draft. With f0 = n2, contact plays at f3-f4 (0.100-0.133 s) and entry at f5 (0.167 s), inside 0.30 s. The hook preview mapping is verified: f0-14 = n2-n16 with zero error."
+   },
+   {
+    "gate": "4a. Crown clearly above the rim by 0.45 s",
+    "result": "pass",
+    "evidence": "Crown arms clear the rim (about y 1222) at n11. At n12 the crown is clearly up (arm tips about y 1120-1130, spray to about y 1030), which plays at f10 = 0.333 s, the cover frame. The arms reach about y 1070 (about 150 px above the rim) at n14-n16, which play at f12-f14."
+   },
+   {
+    "gate": "4b. Nothing above y 880 after the clean plate",
+    "result": "pass with remap",
+    "evidence": "In hookF/src, rows above 880 equal plate n96 exactly (max diff 0) for n0-n31. Rows from 900 down equal cmp/full exactly. Plate n96 has nothing above y 900 except what n0 also has (n0 only adds the ice tip at y 900-904). In the raw final, droplets are above 880 from n15/n16 (faint streaks at x 720-790, y 891 to 730 in n15-n19; the draft started at n21) through n67, highest y 596 at n36. Used frames n2-n29 only need the plate. Caveats: (1) In the 1.25x punch-in the source ramp (880-900) lands at screen y 875-900. Faded remnants (15-35% contrast) therefore reach screen y 875-879 in f20 (x 360-366) and f21 (x 390-398). (2) Return f85-89 (n15-n19) and Coffee A f143-149 (n15-n21) now also need the plate. R3-18a's wording ('every full-frame use') already covers them."
+   },
+   {
+    "gate": "5. Calm in the band ranges (band n63-n96, lens n63-n77, porthole n70-n80)",
+    "result": "pass with remap",
+    "evidence": "Surface profile against n96 in columns x 400-650: a foam hump stands above the calm level, measured as columns rising more than 5 px and the maximum rise. n60: 63 columns. n62: 72 columns, 14 px. n63: 64 columns, 15 px at x 487. n64: 62 columns, 16 px at x 477. Then 59, 45 and 25 columns at n65-n67, and 0-2 columns from n68. The draft at n63-n64 was 12 and 9 px. A droplet still falls back through source y 892-1193 at x about 400-410 in n68-n77 and lands at n78, as in the draft. Surface frame change is 1.3-2.7 levels per frame in n63-n84 and under 1.2 from n85. So R3-17's band and lens open on a visible 15-16 px hump for 5 frames (n63-n67). The surface is calm from n68 and settled from n78. Passes if the band and lens start at n68."
+   },
+   {
+    "gate": "6. Camera lock",
+    "result": "pass",
+    "evidence": "Horizon (G-channel step, sub-pixel) is between y 1411.49 and 1411.83 in all 97 frames, on both sides of the glass. Glass outer edges are x 384/663 at y 1300 and x 387/659-661 at y 1400 in every frame except where spill passes. Phase correlation of the base patch (y 1500-1640, x 300-800) against n2: dx -0.28 to +0.09 px, dy -0.06 to +0.17 px. No cut. The largest per-frame changes are the action frames n3-n40."
+   },
+   {
+    "gate": "7. Objects and ice",
+    "result": "fail",
+    "evidence": "No hand, straw, text or new object. Glass outline is stable, and the cubes stay rigid ice (n0-n13 falling, cube tops floating at the surface n64-n96). The fail is the dark marks in the milk, which the 1080p final renders as sharp, near-black curls (luma 43-60). Main track: n12 (521,1403) 10x12 px; n14 (536,1442) 40x14 (h x w); n16 (547,1462) 48x16; n19 (549,1419) 16x19 plus (572,1465) 10x17; n22 (580,1481) 48x16; n23-n24 (582-584,1476-1480) 46x21 and 40x25; gone at n28. They read as worm- or hair-like squiggles, and the 1.25x punch-in (f15-f27) enlarges them; seen at 100% in hook f16-f22. Smaller dark specks: (414,1357) about 10x6 and (628,1300) in n2-n11, so in f0 and the 12-frame loop freeze; and a dark oval at (397-405,1279-1300) about 10x22 in n63-n96, in the band and lens. Not retouched anywhere: hookF/src equals the final below y 900 (glass-body diff 0), so R3-18b was not applied in the preview."
+   },
+   {
+    "gate": "8. True duplicates or freezes within used ranges",
+    "result": "pass",
+    "evidence": "All 97 decoded frames have distinct framemd5. The smallest consecutive change is n95 to n96 (26 px over 8 levels, max 16). In the used range n3-n29 the smallest is n18 (29,645 px over 8 levels). mpdecimate (defaults) drops 9: n1, n2, n85, n87, n89, n91, n93, n94, n96. The draft dropped 18; gates.json's count of 9 is confirmed. n2 is dropped only against the unused n1. n85-n96 is the settled tail that R3-19 exempts. The only holds on the timeline are the designed ones: n29 on f27-29, n96 at the band end, and n2 for the loop."
+   },
+   {
+    "gate": "Clean plate in the hook preview, y 880-900, f00-29 (task 3)",
+    "result": "pass",
+    "evidence": "Mapping verified: f0-14 = n2-n16 (identity, error 0.00); f15-27 = n17-n29 at 1.25x about (540,900) (error 0.24-0.25, resampling only); f28-29 = n29. There is no seam or colour step. Row-mean luma in clean columns (x 20-180 and 900-1060) is smooth over rows 850-930 in all 30 frames (max absolute second difference 0.46-0.63 levels). The level the ramp has to blend (frame minus n96 at rows 900-915, per 90-px block) is at most 1.07 levels. Texture: the plate area is frozen (temporal std 0.000 against 0.39-0.46 at rows 905-945) and slightly smoother (high-pass 0.032-0.038 against 0.049-0.060). Neither shows at 200% in my sheets. The overlay ends at row 850 or above (f3) and 840 (f5-f14). The ice tip in f0-f2 (y 900-929) is intact (100% contrast) but sits exactly at the ramp foot. Faded and vanishing droplets are listed as a finding."
+   }
+  ],
+  "findings": [
+   {
+    "id": "A1",
+    "severity": "major",
+    "claim": "The dark marks in the milk are worse at 1080p. They are sharp near-black curls that read as worms or hair, larger than R3-18b allows for, and present outside its n12-n29 range. The hook preview shows them unretouched at 1.25x.",
+    "evidence": "Detected with my specks.py (luma under 95 and 40 below the 41x41 local mean) and checked at 100-400%. The central curl is listed under gate 7: 40-48 px tall by 14-25 px wide at n14-n16 and n22-n24, centre x 536-588, y 1403-1481. R3-18b planned 'about 5x9 draft px' (about 11x20 layout px). Smaller specks: (414,1357) and (628,1300) in n2-n11, so in f0 and the loop freeze; a dark oval at (397-405,1279-1300) about 10x22 in n63-n96 (band and lens), with a thin dark drip line under it from n80. hookF/src is identical to the final below y 900, so no retouch was applied.",
+    "fix": "Zero credits: widen R3-18b to a tracked retouch (clone from the same milk area of neighbouring frames, or blur-fill) of every dark mark in n2-n29 and n63-n96, sized for curls up to about 50x25 px. Check it at 100% in the punch-in (f15-f27), in Return f82-89 and Coffee A f140-149. If the owner judges the curls unacceptable after retouch, use the fallback in R3-20."
+   },
+   {
+    "id": "A2",
+    "severity": "major",
+    "claim": "The frame extraction reads the bt709 HEVC final as BT.601, so the cmp/full JPEGs, the clean plate and the whole hook preview have the wrong colours. BUILD-SPEC section 9 step 4 (JPEG with -q:v 2) would repeat the error in the build.",
+    "evidence": "n12, backdrop rows 0-860. Correct bt709 decode (my PNGs; ffmpeg 6.1 honours the tag): RGB (250.1,133.5,46.8). cmp/full/0013.jpg: (241.5,129.0,53.5). Mean absolute difference across the frame is 6.4 levels, max 25. A forced BT.601 decode matches the JPEG within 1.39. hook.mp4 is h264 with no colour tags, and an ffmpeg default decode of its frame 0 gives a backdrop of (241.1,122.7,45.7).",
+    "fix": "Zero credits: extract S1 with an explicit matrix, e.g. -vf \"scale=1080:1920:in_color_matrix=bt709:in_range=tv:out_range=pc,format=rgb24\" to PNG, or convert with out_color_matrix=bt601 for JPEG. Check that the backdrop comes out near (250,133,47). Rebuild the plate and the hook preview from those frames, and tag the export bt709."
+   },
+   {
+    "id": "A3",
+    "severity": "minor",
+    "claim": "The coffee band and Coffee B lens in R3-17 start at n63, where the final still shows a 15-16 px foam hump above the rim. The surface is calm only from n68, about 2 frames later than in the draft.",
+    "evidence": "Surface profile against n96: n63 at 15 px (64 columns), n64 at 16 px (62 columns), then 59, 45 and 25 columns at n65-n67, and 0-2 columns from n68. The draft at n63-n64 was 12 and 9 px. At 130% (rim_calm2.jpg) it reads as a rounded foam bump at x about 440-540, y about 1205-1220.",
+    "fix": "For a strict gate 5: A-20 band f540-568 = n68-n96, hold n96 on f569-587; A-14 band f375-403 = n68-n96, hold n96 on f404-413; Coffee B lens f150-164 = n68-n82 (the last droplet falling in and landing at n78 is natural). Otherwise keep n63 under the tolerance R3-17 accepted for the draft."
+   },
+   {
+    "id": "A4",
+    "severity": "minor",
+    "claim": "In the 1.25x punch-in the clean-plate ramp lands at screen y 875-900, so faded droplet remnants stay above screen y 880.",
+    "evidence": "cutdrops.py: f20 (n22) remnant at screen x 360-366, y 875-881, 15% of the original contrast. f21 (n23) at x 390-398, y 879-886, 35%. f22 (n24) at x 364-366, y 880-884, 35%.",
+    "fix": "For punch-in frames, ramp the plate over source y 900 to 884 (screen 900 to 880), or apply the plate in screen space after scaling."
+   },
+   {
+    "id": "A5",
+    "severity": "minor",
+    "claim": "Droplets that rise through the ramp fade and disappear in mid-air in the hook.",
+    "evidence": "Remnant contrast against the uncleaned frame: f13 (n15) x 720-723, y 885-895, 67%. f17 (n19) screen x 820-824, y 888-894, 59%. f19 (n21) x 318-329, y 870-885, 18%. f22 (n24) x 5-11, y 885-889, 52%. f23 (n25) x 125-134, y 881-891, 40%. A droplet at screen (329-340, 898-912) is intact in f18, a ghost in f19 and gone in f20. Faint at 100%; visible at 200-400% (viz/cut_left.jpg).",
+    "fix": "Accept, or lower the ramp top for frames with droplets in the band. Keep the ramp foot at or above y 900 for n2-n4 (see A6)."
+   },
+   {
+    "id": "A6",
+    "severity": "minor",
+    "claim": "In n2 (f0 and the loop) the top of the ice sits exactly at the ramp foot. There is no margin if the ramp or framing moves.",
+    "evidence": "Ice tip at y 900-901, x about 528, in n0-n2, then 902 (n3) and 908 (n4). It is intact in hook f00-f02 (100% contrast, viz/f00_icetop.jpg).",
+    "fix": "Do not move the ramp below y 900 and do not shift S1 upward in f0-f2, Return f78-89 or Coffee A f135-149."
+   },
+   {
+    "id": "A7",
+    "severity": "minor",
+    "claim": "The gates.json and compare.json numbers mostly hold, but gates.json understates the droplets above y 880.",
+    "evidence": "Confirmed: probe, 97/97 frames, mpdecimate 9 dropped, compare.json SSIM at n2 0.978 (mine 0.9776). gates.json has 0 px above 880 in n15-n20 and the first droplet at n21; I find faint spray from n15/n16. gates.json gives the highest point as 795-812 in n30-n41; I find droplets at y 596-625 in those frames. Its ssim_f0_vs_still 0.9285 is for n0, not n2 (n2 at 1080: 0.9339).",
+    "fix": "Use the ranges in this audit when the build applies R3-18a."
+   },
+   {
+    "id": "A8",
+    "severity": "minor",
+    "claim": "Some R3-18d geometry needs a second look before layout.",
+    "evidence": "Matches: ice top y 900-901 (spec 899); calm liquid top median y 1228 at x 400-650 (spec rim 1220-1227); glass x 387-659/661 at y 1400 (spec 387-659); horizon y 1411.5-1411.8 (spec 1410). Differs: the glass bottom contact line at x 470-580 is at y 1588-1590, with floor from 1592, in both final and draft (spec base 1576).",
+    "fix": "Re-measure the base edge that the band offset and lens scale depend on."
+   },
+   {
+    "id": "A9",
+    "severity": "minor",
+    "claim": "The hold frame n29 (f27-29) already shows the drape starting over the rim, the same as in the draft.",
+    "evidence": "The left saucer edge hangs to y 1275 at n29 (draft 1280), and to y 1293 at the forbidden n30 (draft 1296). At 90% (viz/n27_30.jpg) the right lobe starts to sag at n29.",
+    "fix": "Optional: hold n28 on f27-29 (f15-26 = n17-n28) to show less drape. Not required: R3-17 accepted n29 on the draft."
+   },
+   {
+    "id": "A10",
+    "severity": "minor",
+    "claim": "Floor splatter in the tail is crisper at 1080p.",
+    "evidence": "n2 to n96 floor change: left x 211-379, y 1548-1619, max diff 188 (draft 65); right x 660-830, y 1530-1659, max diff 142 (draft 125). It shows in the band and lens (viz/puddles.jpg).",
+    "fix": "Owner's eye (draft finding F5, already waived), or a zero-credit floor clean-up from n2 in the band."
+   }
+  ],
+  "remap_still_valid": "Yes: R3-17 stays valid frame for frame, and no frame number must move because of motion. Checks:\n- **Verified in the preview.** The hook preview mapping is exact: f0-14 = n2-n16, f15-27 = n17-n29 at 1.25x about (540,900), f28-29 = n29.\n- **n30-n42 still covers the surge.** The legs run n35-n41, and the drape onset at n27-n30 matches the draft within 5-15 px.\n\nRecommended moves:\n1. **Band and lens start (gate 5).** Start the coffee band and Coffee B lens at n68, not n63, because the final shows a 15-16 px foam hump in n63-n67:\n   - A-20 band f540-568 = n68-n96, hold n96 on f569-587.\n   - A-14 band f375-403 = n68-n96, hold n96 on f404-413.\n   - Coffee B lens f150-164 = n68-n82.\n2. **Optional hold change.** Hold n28 instead of n29 on f27-29.\n\nRange changes needed in the zero-credit fixes, not in the remap:\n- **Clean plate.** It must also cover n15-n21 in Return f85-89 and Coffee A f143-149, since spray now crosses y 880 from n15/n16.\n- **Spot retouch.** It must cover n2-n11 and n63-n96 as well as n12-n29.",
+  "verdict": "use with listed fixes",
+  "summary": "The 1080p final is the same take as the 480p draft, frame for frame: 97 frames at 24 fps, no shift, and contact, crown, surge, calm and settle all land on the same native frames. The remap in R3-17 still holds, and no frame has to move because of motion.\n\n**Gates on the remapped frames** (my own code):\n- **Pass:** 2 (rate and count), 3 (contact f3-f4, entry f5 = 0.167 s), 4a (crown up at n12 = f10), 6 (camera lock) and 8 (no true duplicates).\n- **Pass with remap:**\n  - Gate 1: f0 must be n2, not the still; n2 against the still scores 0.934 at 1080p.\n  - Gate 4b: needs the clean plate, and spray now crosses y 880 from n15, not n21.\n  - Gate 5: the surface is calm only from n68. I recommend starting the band and the Coffee B lens at n68 instead of n63.\n- **Fail as delivered:** gate 7. The dark marks in the milk at n12-n27 now look like sharp black curls, up to about 48x25 px, that read as worms or hair. The 1.25x punch-in makes them bigger. Smaller specks also sit in n2-n11 (frame 0 and the loop) and in n63-n96 (band and lens). The hook preview has no retouch at all. This is a zero-credit fix: widen the R3-18b retouch in size and frame range.\n\n**Clean plate in the hook preview:** no seam, no colour step and no texture mismatch is visible at 200% at y 880-900 in f00-f29. The level difference under the ramp is at most 1.07 luma levels, and the ice tip in f0-f2 is intact.\n\n**Small clean-plate problems:**\n- A few droplets fade and vanish as they rise through the ramp (f13, f17, f19-f23).\n- In the punch-in the ramp sits at screen y 875-900, so faint remnants stay above 880 in f20-f21. Fix: ramp over source y 884-900 for punch-in frames, or apply the plate after scaling.\n\n**Colour pipeline:** the frames used for the comparison and the hook preview decode the bt709 HEVC as BT.601. Every frame is off by about 6 levels on average (backdrop R 241 instead of 250). The extract command in BUILD-SPEC §9 would repeat this, so extract with an explicit bt709 matrix.\n\nVerdict: use with the listed fixes; no new generation is needed. I did not update tash/HANDOFF.md, because this step was read-only on the repo.\n\nAll evidence is under /tmp/claude-0/-home-user-visitor-counter-api/1e0f8dbb-d731-5965-a898-07519c7bdbc3/scratchpad/r4/review2/audit, in scripts/, work/ and viz/. The key images are viz/worm.jpg, viz/hook_worm.jpg, viz/rim_calm2.jpg, viz/cut_left.jpg, viz/ramp_f15_22.jpg and viz/f00_icetop.jpg."
+ },
+ "qc": {
+  "same_take": "Yes. The final keeps the draft's motion frame for frame, so it is the same take at 1080p.\n\n- **Format:** both clips are 97 frames at 24/1, 4.041667 s. The final is HEVC Main 10, yuv420p10le, 1080x1920, bt709 tv range, 973 kb/s, one video stream only. It has a single I-frame at n0 and a P-frame every 4 frames.\n- **Per-frame SSIM:** I downscaled the final to 480x854 and measured SSIM on the hero region (layout x 280-800, y 880-1650) against draft frames n-2..n+2.\n  - n2-n15 and n18-n40: the best match is always the same index, with a margin of 0.003-0.08.\n  - Near-still stretches (n0-n2, n16-n17, n41-n47, n68-n96): neighbouring frames tie within 0.005. That is expected, not a time shift.\n  - compare.json is consistent with this (whole frame 0.9626-0.9806, hero 0.848-0.933).\n- **Event trajectory:** I tracked the highest non-backdrop point in x 300-780, in layout px, on both clips. It agrees within 0-7 px in every active frame:\n  - ice top 902 vs 899 at n0-n2;\n  - n12 1099 vs 1097;\n  - droplet apex 652 at n51-n53 vs 647 at n50-n53;\n  - droplets above y 880 from n21/n22 to n67 in both;\n  - calm rim y 1221 from n74 in both.\n- **Camera:** horizon at y 1411.3-1411.8 in all 97 frames; glass left edge at x 391.6-392.4; rib profile shift 0 px.\n- **Conclusion:** the R3-17 remap frame numbers transfer unchanged, and so does the newer R3-21 remap now in the repo.",
+  "gates": [
+   {
+    "gate": "1. Frame 0 matches the approved still (1080p rule: SSIM 0.95 or more, else draw the still at f0)",
+    "result": "pass with remap",
+    "evidence": "I compared luma 7x7 SSIM of n0 (and n2) against sb/stills/s1alt_fit.png at 1080x1920:\n- whole frame 0.930 (gates.json 0.9285);\n- rows 880-1920: 0.878;\n- hero x 300-780, y 880-1650: 0.667.\n\nThis fails 0.95 as written. The clip reframed the still: the best integer shift is (-16,-20) px, which still only reaches 0.768.\n\nUnder R3-18c, f0 and the loop use the clip's own n2. n2 against n0 scores SSIM 0.997, with a mean absolute difference of 0.33 levels."
+   },
+   {
+    "gate": "2. Native frame rate and frame count recorded",
+    "result": "pass",
+    "evidence": "ffprobe -count_frames reads:\n- HEVC Main 10, yuv420p10le, 1080x1920;\n- r_frame_rate and avg_frame_rate 24/1;\n- nb_frames and nb_read_frames 97;\n- duration 4.041667 s;\n- one stream, no audio.\n\nNative 24 fps means column B: one native frame per 30 fps timeline frame, n0-n96."
+   },
+   {
+    "gate": "3. Ice hits the surface inside 0.30 s",
+    "result": "pass",
+    "evidence": "The final follows the draft frame for frame (see same_take): the ice top is at 903/909/920/933/949 in the final against 904/911/922/935/953 in the draft for n3-n7.\n\nFrame-to-frame change in the glass mouth (y 1200-1260, x 400-660) rises: 3.3 (n3), 7.8 (n5), 10.6 (n7), 21.7 (n9), peak 29.9 (n10).\n\nAt 200% the lowest cube dips into the liquid at n6-n8. Entry is at n7 (0.292 s), as in the draft. With the hook starting at n2, that lands on f5 = 0.167 s."
+   },
+   {
+    "gate": "4a. Crown clearly above the rim by 0.45 s",
+    "result": "pass with remap",
+    "evidence": "Seen at 200%:\n- n12: a crown wall and arms stand clearly above the rim (y 1221-1227);\n- n12-n14: the arm tips are about 120-170 px above the rim;\n- n15-n20: the crown is at its fullest.\n\nIn source time this is 0.500 s, which misses 0.45 s. On the timeline it passes: n12 plays at f10 = 0.333 s in both R3-17 and R3-21."
+   },
+   {
+    "gate": "4b. Nothing above layout y 880",
+    "result": "pass with remap",
+    "evidence": "Fails in source, with the plate fixing it.\n\nMeasured at 1080p against n96 with a threshold of 20 levels. The faint first spray is earlier than gates.json reports (gates.json starts at n21):\n- n16: 3 px at (735, 845-847);\n- n17: 34 px at x 750-754, y 800-809;\n- n18: 7 px at x 767-769, y 764-771;\n- n19-n30: 26-198 px per frame;\n- highest point y 652 at n51-n53; nothing above 880 from n68.\n\nThe R3-18a top plate works: in hookF/src n0-n31 the residual above y 880 against n96 is 0 (no pixel above 12 levels). The ice top (y 900-902 in n0-n2) is untouched apart from 2-3 px on row 900.\n\nThe n16-n18 spray sits inside R3-21's used range (n2-n18). In the 1.25x punch-in it lands at layout x 784-826, y 730-834, just right of «حلو…». So the plate is still required under R3-21."
+   },
+   {
+    "gate": "5. Calm by 2.0 s and calm to the end",
+    "result": "pass with remap",
+    "evidence": "Fails in source, passes with the remap and its conditions.\n- The highest point above the rim stays up through n73 (y 771 at n63, 1048 at n73).\n- The rim is calm at y 1221 from n74.\n- Spray is above y 880 until n67.\n\nThe settled tail used by R3-17 and R3-21 (n63-n96, held n96) therefore still has drops falling back in n63-n73. In the CTA band they stay hidden only if source y up to about 1190 sits under the Lime panel (the rim no more than about 130 px below the panel edge).\n\nIn the Coffee B lens (n63-n77, 0.86, r 340) the falling drops below source y 875 are visible inside the circle. That is acceptable: they fall back into the glass and touch no type."
+   },
+   {
+    "gate": "6. Camera does not move",
+    "result": "pass",
+    "evidence": "Over all 97 frames:\n- horizon (x 60-330 and 800-1040) at y 1411.34-1411.75;\n- glass left edge (y 1480-1540) at x 391.6-392.4;\n- rib profile at y 1490-1540: shift 0 px against n2, correlation 0.98-1.00.\n\nNo cut. Backdrop patch means vary with a standard deviation of 0.36 levels or less. There is one global step of about 1 level at n8 to n9 (wall R 243.9 to 245.0, floor R 246.3 to 247.0)."
+   },
+   {
+    "gate": "7. No new object, hand, straw, text or morphing glass; ice stays ice",
+    "result": "pass with remap",
+    "evidence": "Pass with remap, plus the retouch in the findings.\n- No hand, straw or text.\n- The four cubes are crisp and rigid at 200% in n3-n12. They do not double, though they look acrylic-perfect.\n- The ribs are static.\n\nWhat the 1080p shows:\n- Dark pearl-like blobs and an S-shaped streak in the milk in n10-n29, with smaller dark specks from n0 (tracks in F1).\n- A static dark bean in the coffee layer in n60-n96 (F3).\n- The flat crown sheet and the legs running down the outside of the glass in n24-n48. These are excluded by R3-21; R3-17 still shows n24-n29.\n\nAt 300% the glass base facets carry 1-3 px dark refraction marks along y about 1547-1577 that resemble a dashed scribble. They cannot be seen at 100%."
+   },
+   {
+    "gate": "8. No duplicate or frozen frames (mpdecimate 2 or fewer)",
+    "result": "pass with remap",
+    "evidence": "mpdecimate (defaults) drops 9 frames: n1, n2, n85, n87, n89, n91, n93, n94, n96. This matches gates.json (9). The draft dropped 18.\n\nframemd5 shows no two decoded frames are identical (97 unique).\n- n1 and n2 are the still start. n2 is the chosen f0 and loop freeze, and the ice moves from n3.\n- The other drops are inside the settled tail, which is exempt under R3-19."
+   },
+   {
+    "gate": "Extra 1080p QC: compression, banding, colour",
+    "result": "pass with remap",
+    "evidence": "**Compression.** At 973 kb/s, the B-frames in n62-n95 are only 0.2-1.7 KB.\n- At 200% the crown and droplets show no blocking, only a slightly waxy smoothing.\n- With luma contrast at 12x, the wall shows 16-32 px HEVC blocks and a faint band at y 640-690, x 780-1080. These are about ±1.5 levels, cannot be seen at 1x, and the still has the same band amplitude.\n\n**Banding.** The backdrop is nearly noise-free: 10-bit high-pass std is 0.8-0.9 codes (about 0.2 of an 8-bit level). In the 8-bit JPEGs the wall falls by 3-4 levels in y 600-880, so it steps in 1-level bands.\n\n**Colour.**\n- Wall top-left (244,143,71) and mid (242,130,55) against #FF7A1A (255,122,26); floor (246,153,59).\n- The top-right corner x 1064-1079, y 0-19 is up to 9 levels darker in n0-n4 only. The plate replaces it.\n- No other colour pumping."
+   }
+  ],
+  "findings": [
+   {
+    "id": "F1",
+    "severity": "major",
+    "claim": "The dark pearl-like specks are in more used frames than R3-18b says (n12-n29). They start at n0, they are in the cover frame n12, and the punch-in magnifies them. The retouch range must be n2-n18 for R3-21 (n0-n18 if the iris n0-n3 is used), or n2-n29 if the R3-17 rows are kept.",
+    "evidence": "Found with a detector (black top-hat, 31 px, depth over 35, B/G over 0.68, L under 120) and checked by eye on 200% crops.\n\nFormat: centre (x,y), box w x h in 1080x1920 px, soft edge included. The dark core is smaller.\n\n**A: left-wall dot at the coffee/milk boundary.**\n- n0-n4 (415,1356) 5x10, core near-black.\n- n6 (414,1355) 6x14; n7 (415,1352) 4x18; n8 (412,1349) 4x14; n9 (409,1341) 9x9; n10 (402,1344) 5x7. Gone by n11.\n\n**A2: second left-wall dot, sinking.**\n- n10 (404,1380) 8x13; n11 (404,1386) 8x11; n12 (401,1398) 7x14; n13 (400,1405) 9x13; n14 (401,1413) 13x14; n15 (404,1420) 7x6.\n- n16 (415,1429) 6x10; n17 (416,1441) 5x11; n18 (417,1453) 7x11.\n- n19 (421,1464) 15x10, a soft grey-blue smudge.\n- Faint after that: n23-n25 at (441-443,1497-1500), 6-10 x 10-15.\n\n**A3: left wall.** n25-n28 (408-410,1378-1381), 4-6 x 7-10.\n\n**B: dark oval with a light halo in the coffee layer, right side.**\n- n0-n8 (629,1298), core 9x15, halo about 20x30.\n- n9 (627,1304) 7x20; n10 (624,1315) 7x16; n11 (622,1328) 6x16. Gone at n12.\n\n**C: central pearl, core L 12-25, the largest.**\n- Faint in the coffee at about (536,1400) in n10-n11.\n- n12 (530,1403) 29x23 (cover frame).\n- n13 (533,1423) 39x30, plus an upper lobe at (534,1380) 12x24.\n- n14 (534,1438) 44x24; n15 (541,1452) 54x22; n16 (550,1461) 60x24.\n- n17 (559,1466) 38x35; n18 (560,1474) 35x44; n19 (560,1480) 36x52; n20 (554,1498) 18x28.\n\n**D: upper pearl.**\n- n17 (549,1422) 13x26; n18 (549,1422) 24x32 (core L 14).\n- n19 (549,1418) 20x30; n20 (549,1416) 18x33; n21 (548,1413) 18x33; n22 (545,1411) 23x36.\n- n23 (542,1408) 23x32; n24 (535,1408) 35x25, fading. Gone at n25.\n\n**E: S-shaped dark streak (R3-17 range only).**\n- n20 (575,1472) 19x36; n21 (571,1487) 43x59; n22 (574,1488) 47x58; n23 (575,1485) 51x54; n24 (576,1481) 54x50.\n- n25 (587,1469) 31x45; n26 (589,1463) 24x39; n27 (589,1460) 18x25; n28 (590,1458) 17x18; n29 (590,1457) 16x16.\n- It continues, never on screen, to n48.\n\n**F: faint, optional.** n19-n24 (622-630,1480-1494), 3-10 x 7-20, L 96-104.\n\n**On screen.** In the R3-21 preview the 1.25x punch-in shows C and D at f23-f29 (n12-n18) at about 70x30 screen px. In the R3-17 preview they are visible at 50% at f16.",
+    "fix": "0 credits. Mask each listed box padded 6-8 px with a feathered edge and fill it, before the punch-in scale.\n- **Milk below y about 1420:** the ribs never move (shift 0 px), so a temporal patch from the same x,y in a speck-free frame works: n2-n9 for C, D and E.\n- **Coffee/milk boundary (A, A2, B and the upper lobe of C):** clone along the same rib from 20-30 px above or below in the same frame, because the boundary moves.\n- **Order:** retouch n12 (cover) and n2 (f0 and loop freeze) first.\n- **Check:** re-check every patched frame at 100% and in motion for boil."
+   },
+   {
+    "id": "F2",
+    "severity": "major",
+    "claim": "The hook preview I was given (hookF/hook.mp4, R3-17: f15-29 = n17-n29) ends on the flat, too-wide crown sheet that the owner already called unnatural. It should not be built. The repo's R3-21 (only n0-n18 plus the settled tail) supersedes the S1 rows of R3-17 and is the cut to build.",
+    "evidence": "- **R3-17 cut.** In hookF/out f22-f29 (n24-n29) the crown flattens into a disc wider than the glass and droplets fan up to a flat ceiling at layout y about 890 (the plate line). At 25% and 50% it reads as a plastic saucer sitting on the glass. The owner's note is in HANDOFF.md §7 and BUILD-SPEC R3-21: «القهوة وهي تنكب شكلها مو طبيعي».\n- **R3-21 cut.** I checked the repo copy of hook-preview-1080p-x3.mp4, frames f0-f29. It ends on the crown at its peak (n18), which is the best material in the clip (n15-n20 at 150%).\n- **Repo copies.** The final and the scripts are byte-identical (md5) to the scratch copies. The hook preview differs, because it was re-rendered with mk_hook3.mjs.",
+    "fix": "Build from R3-21. Keep R3-18a, R3-18c and R3-18d, and keep R3-18b with the range from F1. Do not use the R3-17 hook rows."
+   },
+   {
+    "id": "F3",
+    "severity": "major",
+    "claim": "The R3-21 floor clean plate is specified as 'outside the glass and its shadow', but the darkest spill marks are inside the shadow. A plate that skips the shadow leaves them in every settled frame (n63-n96), which the CTA band and the 14-frame n96 hold show at full size.",
+    "evidence": "Differences of more than 18 levels between n96 (and n63) and n0 on the floor, outside the glass column:\n- 2,269 px (n96) and 2,567 px (n63), in x 211-839, y 1500-1658;\n- 867-1,125 of those px are inside n0's shadow mask, at x 679-835, y 1503-1546.\n\nThese are two dark glossy puddle ovals and the splash at the shadow's right end, shown in out/floor_plate.jpg. The shadow outline itself does not differ between n0 and n96: the green mask marks only the puddles. Fainter trails below 18 levels lie at about x 300-380, y 1560-1600 and x 650-700, y 1600-1650.",
+    "fix": "0 credits. Take every floor pixel outside the glass silhouette (about x 384-663 down to the base, y about 1589) from n0, including the shadow. Feather 4-6 px at the glass contact line."
+   },
+   {
+    "id": "F4",
+    "severity": "minor",
+    "claim": "A dark bean-shaped speck in the coffee layer near the left wall sits in every settled-tail frame, so it is in the Coffee B lens, the CTA band and the held n96. R3-18b does not cover it.",
+    "evidence": "From the dark-mode detector, checked at 300%:\n- n60-n82: (397-408, 1279-1300), 9-13 x 15-26, core L 30-56 (darkest n63-n73).\n- n83-n88: it splits into (409,1291) 5-7 x 7-11 plus (417-421,1307-1310) 4-6 x 4-10.\n- n89-n96: (408,1290) 7-9 x 11-15, with a thin drip line below it in n96.",
+    "fix": "0 credits. A static clone patch along the same rib, 20-30 px above or below, applied with the drift listed (a near-constant position). Optional, but the owner already reacted to the specks."
+   },
+   {
+    "id": "F5",
+    "severity": "minor",
+    "claim": "gates.json undercounts gate 4b at 1080p. Faint spray rises above y 880 from n16, not n21, so the R3-18a top plate is still needed under R3-21 even though R3-21 uses only n2-n18.",
+    "evidence": "Pixels above y 880 differing from n96 by more than 20 levels:\n- n16: 3 px at (735,845-847);\n- n17: 34 px at x 750-754, y 800-809;\n- n18: 7 px at x 767-769, y 764-771.\n\nIn the 1.25x punch-in about (540,900) these land at layout x 784-826, y 730-834, beside the ح of «حلو…». gates.json reports pixels_above_880 = 0 until n20 (threshold 40 against the backdrop median).",
+    "fix": "Keep the n96 top plate (ramp 900 to 880) on every full-frame and punch-in use of n2-n18. It is already applied in hookF/src (residual 0 above 880)."
+   },
+   {
+    "id": "F6",
+    "severity": "minor",
+    "claim": "There is a banding risk in the flat tangerine: the 10-bit source is almost noise-free, and the build extracts 8-bit JPEGs without dither.",
+    "evidence": "- Backdrop high-pass std is 0.77-0.90 10-bit codes (about 0.2 of an 8-bit level).\n- A 300x480 wall patch in the JPEG holds only 13-14 R, 26-28 G and 28-29 B values.\n- The wall darkens by 3-4 levels over y 600-880, giving wide 1-level steps that show only under contrast stretch (out/band_stretch.png).\n- HEVC 16-32 px blocks are about ±1.5 levels.\n- At 1x nothing is visible. Platform re-encodes of flat colour tend to turn such steps into blocky bands.",
+    "fix": "0 credits.\n- Extract via rgb48 with error-diffusion dither (for example `-vf format=rgb48le,...,format=rgb24` with sws_dither=ed), or add about 1-2 levels of static grain to the footage plates before the H.264 export.\n- Re-check the final export of the flat backdrop at 3x contrast."
+   },
+   {
+    "id": "F7",
+    "severity": "minor",
+    "claim": "The backdrop is off the tangerine target, and there is one global step of about 1 level at n8 to n9.",
+    "evidence": "- Wall top-left (244,143,71) and wall mid (242,130,55) against #FF7A1A (255,122,26); floor (246,153,59).\n- From n8 to n9 every patch shifts by +1.1 R, +0.5 G and -0.6 B (wall R 243.9 to 245.0) and stays there. Patch standard deviations are otherwise 0.36 levels or less.\n- With the n96 plate above y 900, the top is frozen at n96's level (wall R 244.4), so the seam differs from n2-n8 by under 1 level. The 20 px ramp hides it.",
+    "fix": "Grade in the build if the colour gate needs it. No action is needed for the n9 step."
+   },
+   {
+    "id": "F8",
+    "severity": "minor",
+    "claim": "Director's note on R3-21: the f15 punch-in jumps back from the rising crown (n16) to cubes in the air (n4). It works as a deliberate 'again, closer' replay only if the clap sits on f15, because f15-f22 replay about 0.27 s of slow ice fall before the second impact.",
+    "evidence": "In the repo preview f13-f16 the crown is up at f13-f14 (n15-n16), then f15 shows four cubes in the air at 1.25x (n4). The second impact lands at about f18-f21 and the crown peaks at f29 (n18). The ice moves only 2-16 px per native frame in n2-n8.",
+    "fix": "Optional, 0 credits. Start the replay at n6-n7 and hold n18 for the last 3-4 frames, so the punch lands on the splash. Or keep n4-n18 with the audio clap exactly on f15."
+   }
+  ],
+  "remap_still_valid": "Yes for timing: the final is the same take, so every frame number in R3-17 and R3-21 points at the same moment it did in the draft. But R3-17's S1 rows should not be built. Since this task was written, the repo has a newer rule, BUILD-SPEC R3-21 (owner's note «القهوة وهي تنكب شكلها مو طبيعي», 10 Nov), which replaces them: only n0-n18 and the settled tail n63-n96 are used, and n19-n62 never appear.\n\nR3-21 is valid on the final, with these corrections:\n1. **Top plate (R3-18a):** still needed under R3-21. Faint spray is above y 880 in n16-n18 at 1080p.\n2. **Retouch range (R3-18b):** n2-n18 (n0-n18 if the iris n0-n3 is used), not n12-n29. That covers tracks A, A2, B, C and D in F1, including the cover frame n12 and the f0/loop frame n2. Also patch the tail bean (F4) in n60-n96.\n3. **Floor plate (R3-21):** must include the shadow, or the dark puddles at x 679-835, y 1503-1546 stay in n63-n96 (F3).\n4. **CTA band:** keep source y up to about 1190 under the Lime panel, because drops fall above the rim until n73.\n\nf0 and the loop on n2 (R3-18c) and the geometry are confirmed:\n- ice top y 901-902;\n- calm rim y 1221;\n- horizon y 1411.5;\n- glass about x 385-663.",
+  "verdict": "use with listed fixes",
+  "summary": "The 1080p final is usable to build on, but only after the specks are retouched. It is the same take as the draft, frame for frame.\n\n**Same take.** Both clips are 97 frames at 24 fps. The best per-frame match against the draft is at the same index throughout the active motion, and the droplet and crown positions agree within 7 px.\n\n**What the 1080p shows:**\n- The ice is crisp and stays rigid, the ribs and camera are locked, and the crown at n12-n20 looks premium.\n- The 480p draft hid a lot of dark speckling. It starts at n0, which is earlier than R3-18b's n12-n29 range:\n  - two small dark dots on the left wall in n0-n19;\n  - a dark oval in the coffee on the right in n0-n11;\n  - a near-black central pearl in n12-n20, up to 60x24 px, including the cover frame n12;\n  - an upper pearl in n17-n24;\n  - an S-shaped streak in n20-n29;\n  - a dark bean in the coffee in every settled frame, n60-n96.\n- Exact frames, positions and sizes are in F1 and F4.\n- Compression is acceptable. The flat backdrop is almost noise-free, so the 8-bit export needs dither or light grain to avoid banding.\n\n**Gates on the final:**\n- Gate 1 fails as written (SSIM 0.930 against the still); using n2 at f0 fixes it.\n- Gates 2, 3 and 6 pass.\n- Gates 4a, 4b, 5, 7 and 8 pass only with the remap, plates and retouch. Gate 4b starts failing at n16, not n21 as gates.json says.\n\n**Hook preview (hookF/hook.mp4, R3-17 cut), seen as on a phone:**\n- The first second does stop the thumb: loud lime-on-tangerine type, falling ice, impact at about f5 and the crown up by f10. Nothing fights the type; the droplets stop about 50 px below the tag.\n- Its last third (f22-f29) shows the flat sheet wider than the glass that the owner has already rejected.\n- The punch-in makes the dark pearls in the milk easy to see.\n\n**Which cut to build.** The repo's R3-21 cut replaces R3-17 and ends on the crown's peak; it is the one to build. Before building it:\n- retouch n2-n18 (and n0-n3 if the iris uses them) plus the tail bean;\n- keep the n96 top plate;\n- extend the floor plate into the shadow;\n- add dither or grain.\n\nNo credits were spent and nothing in the repository was changed. That includes tash/HANDOFF.md, which I left alone because the task is read-only.\n\nEvidence is in /tmp/claude-0/-home-user-visitor-counter-api/1e0f8dbb-d731-5965-a898-07519c7bdbc3/scratchpad/r4/review2/qc/out:\n- speck crops: ov_n2-7.jpg, ov_n8-13.jpg, milk2x_n12-17.jpg, ov_n18-23.jpg, ov_n24-29.jpg, zoom_misc.jpg;\n- floor and banding: floor_plate.jpg, band_stretch.png;\n- hook previews: hook_50pct.jpg, hook3_cut.jpg;\n- detector output: specks_b68.json and specks_dark.json.\n\nThe scripts are in /tmp/claude-0/-home-user-visitor-counter-api/1e0f8dbb-d731-5965-a898-07519c7bdbc3/scratchpad/r4/review2/qc/scripts."
+ },
+ "skeptic": {
+  "verdicts": [
+   {
+    "id": "A-A1",
+    "verdict": "confirmed",
+    "reason": "Confirmed with two corrections. The specks are real. Nothing is retouched: hookF/src matches cmp/full exactly from y 900 down (glass-body diff 0, n0-n31), and the repo R3-21 preview still shows them (f0/n2 core L39, f17/n6 L21, f27/n16 L12, f29/n18 L9, against surrounds of about 130-139). Correction 1: the cores are darker than stated, L 8-34 in my bt709 decode, not 43-60. Correction 2: the sizes are given the wrong way round. C is wider than tall (n14-n16 about 45-65 wide x 22-24 tall), and E measures 47x58 at n22 and 54x49 at n24 (w x h). A sits at (416,1355), L36 against 145, in n0-n8 and is gone by n11. B sits at (629,1300) in n0-n11. The tail bean is confirmed. Widening the retouch range is justified."
+   },
+   {
+    "id": "A-A2",
+    "verdict": "confirmed",
+    "reason": "n12, rows 0-860: bt709 decode (252.1,135.3,48.8). cmp/full JPEG (241.5,129.0,53.5). JPEG against bt709: mean abs diff 7.0, max 23. JPEG against a forced bt601 decode: 1.39. I re-ran the BUILD-SPEC section 9 step 4 command and got (241.5,129,53.5), so the build would repeat the error. With out_color_matrix=bt601 to JPEG I get (251.9,134.4,48.7). The bt709 decode is also the closer match to the approved still: wall (253.8,146,63.5) against the still's (253.5,140.2,52.8); the JPEG gives (243.9,140.3,67.9). The repo hook preview the owner saw is untagged h264 and about 10 R levels darker: top-left (243.8,143.4,70.6) against the true (253.9,148.8,67.9). The H.264 phone copy s1alt-final-1080p.mp4 is tagged bt709 and decodes correctly. Small difference: my backdrop reads about 1.6 levels higher than the audit's 250.1."
+   },
+   {
+    "id": "A-A3",
+    "verdict": "confirmed",
+    "reason": "I measured the hump against n96 over x 400-650 and got the same profile. n62: 15 px over 62 columns. n63: 16 px at x 481 (64 columns). n64: 16 px at x 478 (64 columns). n65: 14 px (49 columns). n66-n67: 45-54 columns. n68: 8 columns, max 9 px at x 408, which is the bean. It shows as a rounded bump at 200% (rim_n60_96.png). The fix frame arithmetic is consistent. One sub-claim is not supported: 'about 2 frames later than the draft'. With the same metric the draft still has 13-20 columns raised at n66-n68 and is calm only from n69. The draft hump at n63-n64 was 11 and 9 px."
+   },
+   {
+    "id": "A-A4",
+    "verdict": "confirmed",
+    "reason": "True, but negligible, and it only applies to the superseded R3-17 hook. Compared with the punched-in n96 plate, the residual in screen rows 860-879 is at most 10 levels: f19 (322,879) 10, f20 (363,879) 5, f21 (393,879) 4. Every other frame is 2 or less. Not visible at 100%."
+   },
+   {
+    "id": "A-A5",
+    "verdict": "confirmed",
+    "reason": "In screen rows 880-899 the residual against the plate reaches 41-56 levels at f18-f20 (x 334-401) and 20 at f13 (x 720). Droplets do fade out inside the 20 px ramp. Under R3-21 the same happens, smaller, in n15-n18: in source rows 880-900, n17 has 22 px over 12 levels and n18 has 21 px."
+   },
+   {
+    "id": "A-A6",
+    "verdict": "confirmed",
+    "reason": "Measured against n96, the top of the ice is at y 900 in n0-n2, then 902 (n3) and 908 (n4). The ramp weight is 0 at y 900, so the ice tip is intact but has no margin."
+   },
+   {
+    "id": "A-A7",
+    "verdict": "confirmed",
+    "reason": "gates.json has pixels_above_880 = 0 for n14-n20 and its first count (6) at n21. I find faint spray from n15 (35 px over 8 levels, x 733-738, y 840-850) and n16 (22 px over 20 levels). In n31-n39 the highest droplets are at y 597-625 near x 479-481, with low contrast (22-30 levels). gates.json gives 795-812, because it uses a 40-level threshold. Its 0.9285 is n0 with a 7x7 SSIM."
+   },
+   {
+    "id": "A-A8",
+    "verdict": "confirmed",
+    "reason": "At x 470-580 the dark contact line under the glass is at y 1587-1589, with clean floor from y 1591. y 1576-1581 is a facet band, not the base. Horizon y 1411.4-1411.5; glass edges x 382-389 / 659-663."
+   },
+   {
+    "id": "A-A9",
+    "verdict": "confirmed",
+    "reason": "Visually confirmed (drape.png): at n29 the left edge of the disc droops and the right lobe sags over the rim. It no longer matters under R3-21, which never uses n19-n62."
+   },
+   {
+    "id": "A-A10",
+    "verdict": "confirmed",
+    "reason": "The direction holds; my numbers are lower. Max change n2 to n96 on the left (x 211-379, y 1548-1619): 114 in the final against 29 in the draft. On the right: 92 against 84. The splatter is visibly crisper (floor_n0_n63_n96.png)."
+   },
+   {
+    "id": "Q-F1",
+    "verdict": "confirmed",
+    "reason": "My top-hat detector reproduces the list. D: n18 (548,1422) 25x33 L10; n19 (547,1419) 26x28 L8; n20 (548,1415) 18x32. E: n22 (574,1487) 47x58 L34; n24 (576,1480) 54x49; n26 (588,1464) 24x41. A, A2 and B confirmed at 200% (specks_a.png). The R3-21 range n2-n18 (n0-n18 with the iris) is right, and the repo preview shows them unretouched. The list is incomplete: it misses a central streak in the coffee layer in the tail (NEW-1)."
+   },
+   {
+    "id": "Q-F2",
+    "verdict": "confirmed",
+    "reason": "Repo hook-preview-1080p-x3 maps f0-14 = n2-n16 and f15-29 = n4-n18 (h264 error 1.4-1.9). hookF f22-f29 = n24-n29 show the flat disc wider than the glass and the drape starting at n29. The owner's note is quoted verbatim in HANDOFF §7 and R3-21, and R3-21 says it supersedes the S1 rows of R3-17. The final, the scripts and mk_hook3 are md5-identical to the scratch copies. Caveats: HANDOFF says the owner's reaction to the R3-21 cut is still awaited. The crown is already wider than the glass at n14-n18 (arms about x 307-733 against glass 385-663), so the owner's eye still applies."
+   },
+   {
+    "id": "Q-F3",
+    "verdict": "confirmed",
+    "reason": "Outside the glass column, floor pixels differing from n0 by more than 18 levels: 2802 in n63 and 2547 in n96. Of those, 1387 and 1092 are inside n0's shadow, bbox x 681-838, y 1501-1546: two glossy puddles in the shadow. The puddles also sit inside lens L, which is centred (540,1270) with r 340. Note: n0's floor is about 1.2 G levels below n63-n96 because of the n8-n9 step, so the plate seam must be feathered or matched."
+   },
+   {
+    "id": "Q-F4",
+    "verdict": "confirmed",
+    "reason": "n60 (400,1287) 13x24 L51. n63-n73 (396,1279-1292) L37-43. n76-n80 (398-404,1297-1299) L51-61. n84 splits into (409,1293) and (419,1310). n88-n96 (407-408,1288-1289) L51-78. A thin dark line hangs below it in n84-n96 (tail_specks.png)."
+   },
+   {
+    "id": "Q-F5",
+    "verdict": "confirmed",
+    "reason": "Pixels over 20 levels against n96: n16 22 px at x 734-738, y 840-849; n17 39 px at x 750-754, y 800-810; n18 17 px at x 766-769, y 763-772. n15 is fainter (over 8 levels only). The punch-in mapping to screen x 783-826, y 729-836 is correct. QC's own same_take ('from n21/n22 in both') contradicts this."
+   },
+   {
+    "id": "Q-F6",
+    "verdict": "confirmed",
+    "reason": "Confirmed as a risk only. A 480x300 wall patch of the 8-bit JPEG holds just 7 R, 12 G and 19 B values. Nothing is visible at 1x, and I did not test a platform re-encode."
+   },
+   {
+    "id": "Q-F7",
+    "verdict": "refuted",
+    "reason": "Partly refuted. The n8-n9 step is real: wall R 253.67 to 254.56, G +0.46, B -0.35. The top-right corner is about 9 R levels dark at n0 and fades through about n10, not only n0-n4. But the colour figures (244,143,71) and (242,130,55) come from the BT.601-misdecoded JPEGs. The correct bt709 decode gives wall top-left about (254,148,67), and floor R clips at 255. The backdrop is still off #FF7A1A (G +26, B +41), but re-measure it after re-extraction."
+   },
+   {
+    "id": "Q-F8",
+    "verdict": "confirmed",
+    "reason": "The mechanics check out. In the repo preview f14 = n16 and f15 = n4 at 1.25x. The ice moves 2-18 px per frame over n2-n8 (top y 900 to 965), and entry n7 lands on f18. Where the clap goes is an editorial choice, not a defect."
+   },
+   {
+    "id": "NEW-1 (skeptic)",
+    "verdict": "confirmed",
+    "reason": "Not on either list. A dark blue-grey streak, about 45x25 px, sits in the coffee layer at x about 523-577, y about 1315-1375. It is darkest in n58-n63 (core L 43-53 against about 100 around it). It drifts up and fades: L about 60-66 at n68-n73, a faint smudge at n80, gone by n96. It is in Coffee B (n63-n77, or n68-n82 if moved), in both CTA bands and in the porthole n70-n80 (tail_centre_streak.png). Add it to the retouch."
+   },
+   {
+    "id": "audit.same_take",
+    "verdict": "confirmed",
+    "reason": "Ice top n0-n11: 900,900,900,902,908,918,931,947,965,985,1009,1033 (the audit is within 1 px). Phase correlation against the draft is (0,0) at n2, n12, n50 and n96, and 1 px vertical at n0 at 480 scale. Changed-area counts for n8-n21 track the draft. The falling drop's top y matches within 5 px in n68-n77, and it lands at n78 in both. Spray starts at n15/n16 in the final against n21 in the draft. Not verified: jet collapse, leg timing, drape y values. My hero-box match is ambiguous (margin 0.001 or less) at n13-n16."
+   },
+   {
+    "id": "audit.remap_still_valid",
+    "verdict": "confirmed",
+    "reason": "The frame numbers stay valid, and the hook mapping is exact. But the audit reasons from R3-17 and misses that R3-21 in the repo replaces the S1 rows of R3-17. Apply its range advice to R3-21: Return n7-n18 and Coffee A n4-n18 include the n15-n18 spray."
+   },
+   {
+    "id": "audit.verdict",
+    "verdict": "confirmed",
+    "reason": "'Use with listed fixes' holds once the colour re-extraction, the R3-21 cut, the floor plate including the shadow and NEW-1 are added."
+   },
+   {
+    "id": "audit.gate1",
+    "verdict": "confirmed",
+    "reason": "n2 against s1alt_fit, Gaussian SSIM: 0.9346 at 1080 and 0.9173 at 480. That is under 0.95, so the R3-18c n2 rule applies. n2 against n0: SSIM 0.997, mean abs diff 0.39."
+   },
+   {
+    "id": "audit.gate2",
+    "verdict": "confirmed",
+    "reason": "HEVC Main 10, yuv420p10le, bt709 tv, 24/1, 97/97 frames, 4.041667 s, 973301 b/s, PTS step 3750. framemd5 gives 97 unique frames."
+   },
+   {
+    "id": "audit.gate3",
+    "verdict": "confirmed",
+    "reason": "Four rigid cubes. At 100% the lowest cube is partly under at n7 and half under at n8. f5 = 0.167 s."
+   },
+   {
+    "id": "audit.gate4a",
+    "verdict": "confirmed",
+    "reason": "Crown walls and arms are clearly above the rim at n12, with spray up to about y 1032. The arms reach about y 1073 at n14."
+   },
+   {
+    "id": "audit.gate4b",
+    "verdict": "confirmed",
+    "reason": "hookF/src above y 880 equals the plate exactly, and from y 900 equals the JPEG, for n0-n31. In the raw final, spray is above y 880 from n15 to n67, highest y 597 at n36, and nothing from n68."
+   },
+   {
+    "id": "audit.gate5",
+    "verdict": "confirmed",
+    "reason": "The hump numbers match mine (see A-A3). The drop falls through n68-n77 and lands at n78."
+   },
+   {
+    "id": "audit.gate6",
+    "verdict": "confirmed",
+    "reason": "Horizon at y 1411.39-1411.54 on both sides at n0, n2, n12, n40, n63 and n96. Glass edges stable."
+   },
+   {
+    "id": "audit.gate7",
+    "verdict": "confirmed",
+    "reason": "The source fails, as the audit says. Its luma figures understate the cores (L 8-34), its sizes are given the wrong way round, and it misses NEW-1."
+   },
+   {
+    "id": "audit.gate8",
+    "verdict": "confirmed",
+    "reason": "mpdecimate drops n1, n2, n85, n87, n89, n91, n93, n94 and n96 (9). The draft drops 18. framemd5: 97 unique."
+   },
+   {
+    "id": "audit.cleanplate_preview",
+    "verdict": "confirmed",
+    "reason": "Mapping: f0-14 = n2-n16 (error 0.00); f15-27 = n17-n29 at 1.25x (about 0.35); f28-29 = n29. The residual above screen y 880 is 10 levels or less."
+   },
+   {
+    "id": "qc.same_take",
+    "verdict": "refuted",
+    "reason": "Partly refuted. The same take is confirmed, but two of its claims are wrong. 'Droplets above 880 from n21/n22 in both' is false: the final has spray from n15/n16, as QC's own gate 4b says. 'Calm rim y 1221 from n74' is false: a drop still falls at y 1079-1193 in n74-n77 and lands at n78 in both. The ice top reads 900, not 902. The single I-frame with a P-frame every 4 is confirmed."
+   },
+   {
+    "id": "qc.remap_still_valid",
+    "verdict": "confirmed",
+    "reason": "R3-21 is in the repo (commit 68220c8), and the repo preview mapping is verified. Correction 4 is partly wrong: drops stay above the rim until n77 (down to y about 1193-1209), so 'source y up to about 1190' is not enough; about 1210, the rim, is needed. With the spec's band offset (+230, source y 900-1690 shown), the drop is visible but falls back naturally."
+   },
+   {
+    "id": "qc.verdict",
+    "verdict": "confirmed",
+    "reason": "'Use with listed fixes' holds, plus the colour re-extraction (A-A2) and NEW-1."
+   },
+   {
+    "id": "qc.gate1",
+    "verdict": "confirmed",
+    "reason": "n0 Gaussian SSIM 0.9344 (QC's 7x7 gives 0.930); n2 against n0 is 0.997."
+   },
+   {
+    "id": "qc.gate2",
+    "verdict": "confirmed",
+    "reason": "Same probe as the audit."
+   },
+   {
+    "id": "qc.gate3",
+    "verdict": "confirmed",
+    "reason": "Entry at n7 lands on f5 = 0.167 s. QC's ice-top figures are 1-2 px off mine."
+   },
+   {
+    "id": "qc.gate4a",
+    "verdict": "confirmed",
+    "reason": "The crown is clearly up at n12, which plays at f10."
+   },
+   {
+    "id": "qc.gate4b",
+    "verdict": "confirmed",
+    "reason": "Spray from n16 confirmed; the plate residual in hookF/src is 0."
+   },
+   {
+    "id": "qc.gate5",
+    "verdict": "refuted",
+    "reason": "Partly refuted. It misses the 15-16 px foam hump in n62-n65, which is visible at 200%. Its 'rim calm from n74' is wrong: the drop falls until n77."
+   },
+   {
+    "id": "qc.gate6",
+    "verdict": "confirmed",
+    "reason": "Horizon stable; the n8-n9 step of about 1 level is confirmed."
+   },
+   {
+    "id": "qc.gate7",
+    "verdict": "confirmed",
+    "reason": "The specks and the bean are confirmed. 'Pass with remap' depends on the retouch, which also needs NEW-1."
+   },
+   {
+    "id": "qc.gate8",
+    "verdict": "confirmed",
+    "reason": "9 dropped, 97 unique frames."
+   },
+   {
+    "id": "qc.extra_1080p_qc",
+    "verdict": "uncertain",
+    "reason": "The colour values come from the misdecoded JPEGs (see Q-F7). The corner darkening lasts until about n10, not only n0-n4. I did not re-check the compression or blocking claims."
+   }
+  ],
+  "overall": "Yes, the final can be built into the ad with zero-credit fixes, but from R3-21, not from R3-17's S1 rows. It is the same take as the draft at 1080p: 97 frames at 24 fps, every event on the same native frame, so the frame numbers still hold. R3-17's punch-in ends on n24-n29, the flat disc and the start of the drape, which the owner called unnatural. Per HANDOFF his reaction to the R3-21 cut is still awaited. What remains, all at 0 credits:\n(1) Re-extract S1 with the bt709 matrix. All current JPEGs, the clean plate and both hook previews, including the one the owner saw, are about 10 R levels too dark and brown, and BUILD-SPEC section 9 step 4 repeats the error.\n(2) Retouch the specks in n2-n18 (n0-n18 if the iris uses n0-n3), the tail bean in n60-n96, and a central streak in the coffee layer in n56-n80 that neither reviewer listed (about x 523-577, y 1315-1375).\n(3) Apply the n96 top plate on every full-frame and punch-in use, n15-n18 included.\n(4) Take the floor plate from n0 including the shadow, matching the 1.2-level offset.\n(5) Start the bands and the Coffee B lens at n68, or accept the 16 px foam hump in n63-n67.\n(6) Use base y about 1589 in the layout, not 1576.\nEvidence crops: /tmp/claude-0/-home-user-visitor-counter-api/1e0f8dbb-d731-5965-a898-07519c7bdbc3/scratchpad/r4/review2/skeptic"
+ }
+}
