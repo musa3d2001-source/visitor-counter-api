@@ -381,6 +381,11 @@ describe("the provider webhook", () => {
     expect((await lessonOf(product.lessonIds[0])).processing_status).toBe("ready");
   });
 
+  it.each(["null", "3", '"text"', "[]", "true"])("answers 400 to a correctly signed body that is not an event object: %s", async (raw) => {
+    const headers = new Headers({ "x-bunnystream-signature": createHmac("sha256", sim.readOnlyKey).update(raw, "utf8").digest("hex"), "x-bunnystream-signature-version": "v1", "x-bunnystream-signature-algorithm": "hmac-sha256" });
+    expect((await handleBunnyWebhook(raw, headers)).status).toBe(400);
+  });
+
   it("two different events for one video are both processed", async () => {
     const v = await createVideo("حدثان");
     await createVideoProduct({ lessons: 1, provider: "bunny", videoRefs: [v.guid], ready: false, status: "draft" });

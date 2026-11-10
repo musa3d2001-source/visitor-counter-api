@@ -176,12 +176,13 @@ export async function handleBunnyWebhook(rawBody: string, headers: Headers): Pro
     // في الإنتاج التوقيع إلزامي
     return { status: 401, result: "webhook signing key not configured" };
   }
-  let body: { VideoLibraryId?: number | string; VideoGuid?: string; Status?: number };
+  let body: { VideoLibraryId?: number | string; VideoGuid?: string; Status?: number } | null;
   try {
     body = JSON.parse(rawBody);
   } catch {
     return { status: 400, result: "invalid json" };
   }
+  if (!body || typeof body !== "object") return { status: 400, result: "invalid json" };
   if (!body.VideoGuid || !isUuid(body.VideoGuid)) return { status: 400, result: "missing video" };
   if (String(body.VideoLibraryId ?? "") !== String(env().BUNNY_STREAM_LIBRARY_ID ?? "")) return { status: 400, result: "wrong library" };
   const key = createHash("sha256").update(rawBody).digest("hex");
