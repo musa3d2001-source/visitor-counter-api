@@ -61,7 +61,7 @@ export const SANDBOX_PASS_CHECKS = [
 ] as const;
 
 /** الترحيلات التي يحتاجها هذا الكود. اختبار الوحدة يفشل إذا أُضيف ترحيل بعد 0010 ولم يُذكر هنا */
-export const REQUIRED_MIGRATIONS = ["0010_payments_hardening.sql", "0011_accounts_hardening.sql", "0012_content_teachers.sql", "0013_site_ops.sql"] as const;
+export const REQUIRED_MIGRATIONS = ["0010_payments_hardening.sql", "0011_accounts_hardening.sql", "0012_content_teachers.sql", "0013_site_ops.sql", "0014_hardening.sql"] as const;
 
 // ---------------------------------------------------------------------------
 // الحقائق والتأشيرات
