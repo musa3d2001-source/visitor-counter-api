@@ -1,5 +1,6 @@
 import { runPaymentReconciliation } from "@/server/payments/reconcile";
 import { serveCron } from "@/server/platform/scheduled-jobs";
+import { withBusyGuard } from "@/server/busy-response";
 
 /**
  * وظيفة التسوية: مرة يوميًا في vercel.json لأن Hobby لا يقبل أكثر، ويفشل نشر المشروع كله بأي جدول أكثر تكرارًا.
@@ -12,6 +13,9 @@ import { serveCron } from "@/server/platform/scheduled-jobs";
 export const dynamic = "force-dynamic";
 export const maxDuration = 120;
 
-export async function GET(req: Request) {
+async function handleGET(req: Request) {
   return serveCron(req, "reconcile-payments", runPaymentReconciliation, (report) => (report.errors > 0 && report.checked === 0 ? "لم تجب بوابة الدفع عن أي فاتورة" : null));
 }
+
+/** انشغال قاعدة البيانات: 503 مع Retry-After بدل خطأ أو تعليق */
+export const GET = withBusyGuard(handleGET);

@@ -2,6 +2,8 @@ import { NextResponse, type NextRequest } from "next/server";
 import { handleMyFatoorahWebhook } from "@/server/payments/service";
 import { recordWebhookRejection } from "@/server/payments/monitoring";
 import { reportError } from "@/server/platform/report-error";
+import { withBusyGuard } from "@/server/busy-response";
+import { isDatabaseBusy } from "@/server/db-busy";
 
 /** أقل بكثير من مهلة إعادة المطالبة بالحدث (٥ دقائق)، فلا تتداخل معالجتان لحدث واحد */
 export const maxDuration = 60;
@@ -13,7 +15,7 @@ const MAX_BODY_CHARS = 256 * 1024;
  *   https://<domain>/api/payments/myfatoorah/webhook
  * التوقيع إلزامي، والمعالجة idempotent، والحالة النهائية تُحدد بالاستعلام من البوابة.
  */
-export async function POST(req: NextRequest) {
+async function handlePOST(req: NextRequest) {
   const raw = await req.text();
   if (raw.length > MAX_BODY_CHARS) {
     await recordWebhookRejection({ reason: "body_too_large", httpStatus: 413, rawBody: raw, headers: req.headers });
@@ -23,7 +25,12 @@ export async function POST(req: NextRequest) {
     const out = await handleMyFatoorahWebhook(raw, req.headers);
     return NextResponse.json({ result: out.result }, { status: out.status });
   } catch (err) {
+    // انشغال قاعدة البيانات قبل المطالبة بالحدث: 503 مع Retry-After فتعيد البوابة الإرسال
+    if (isDatabaseBusy(err)) throw err;
     await reportError("webhook:unhandled", err);
     return NextResponse.json({ error: "internal" }, { status: 500 });
   }
 }
+
+/** انشغال قاعدة البيانات: 503 مع Retry-After بدل خطأ أو تعليق */
+export const POST = withBusyGuard(handlePOST);

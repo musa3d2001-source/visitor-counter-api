@@ -1,8 +1,10 @@
 import { NextResponse } from "next/server";
+import { LONG_JOB_STATEMENT_MS, withDbDeadline } from "@/server/db";
 import { getCurrentUser } from "@/server/auth/session";
 import { parseRange, reportByTeacher, reportOrdersForExport } from "@/server/admin/stats";
 import { filsToKwdString } from "@/lib/money";
 import { ORDER_STATUS_LABELS, type OrderStatus } from "@/lib/labels";
+import { withBusyGuard } from "@/server/busy-response";
 
 export const dynamic = "force-dynamic";
 
@@ -13,7 +15,12 @@ function csvCell(v: unknown): string {
   return `"${s.replace(/"/g, '""')}"`;
 }
 
-export async function GET(req: Request) {
+/** تصدير المالك قد يمر على كل الطلبات: مهمة طويلة صريحة بمهلة أطول من الطلبات العادية، ولها حد */
+function handleGET(req: Request) {
+  return withDbDeadline(LONG_JOB_STATEMENT_MS, () => exportReport(req));
+}
+
+async function exportReport(req: Request) {
   const user = await getCurrentUser();
   if (!user || user.role !== "admin") return NextResponse.json({ error: "غير مصرح" }, { status: 403 });
   const url = new URL(req.url);
@@ -68,3 +75,6 @@ export async function GET(req: Request) {
     },
   });
 }
+
+/** انشغال قاعدة البيانات: 503 مع Retry-After بدل خطأ أو تعليق */
+export const GET = withBusyGuard(handleGET);

@@ -4,11 +4,12 @@ import { getCurrentUser } from "@/server/auth/session";
 import { checkFileAccess } from "@/server/access/entitlements";
 import { isSameOriginRequest } from "@/server/http";
 import { sql } from "@/server/db";
+import { withBusyGuard } from "@/server/busy-response";
 
 const schema = z.object({ fileId: z.string().uuid(), page: z.number().int().min(1).max(10000) });
 
 /** حفظ آخر صفحة وصل لها الطالب (استكمال القراءة) */
-export async function POST(req: NextRequest) {
+async function handlePOST(req: NextRequest) {
   if (!isSameOriginRequest(req)) return NextResponse.json({ error: "forbidden" }, { status: 403 });
   const user = await getCurrentUser();
   if (!user) return NextResponse.json({ error: "unauthenticated" }, { status: 401 });
@@ -23,3 +24,6 @@ export async function POST(req: NextRequest) {
   `;
   return NextResponse.json({ ok: true });
 }
+
+/** انشغال قاعدة البيانات: 503 مع Retry-After بدل خطأ أو تعليق */
+export const POST = withBusyGuard(handlePOST);

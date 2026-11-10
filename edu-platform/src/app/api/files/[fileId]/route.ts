@@ -9,6 +9,8 @@ import { reportError } from "@/server/platform/report-error";
 import { hitRateLimit } from "@/server/auth/rate-limit";
 import { ipFromHeaders } from "@/server/http";
 import { isUuid } from "@/lib/uuid";
+import { withBusyGuard } from "@/server/busy-response";
+import { INLINE_PAGE_CSP } from "@/lib/security-headers";
 
 /**
  * تسليم ملفات PDF المحمية:
@@ -41,14 +43,15 @@ const escapeHtml = (s: string) => s.replace(/[&<>"']/g, (c) => `&#${c.charCodeAt
 
 function errorPage(status: number, message: string) {
   const html = `<!doctype html><html lang="ar" dir="rtl"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><meta name="robots" content="noindex"><title>تعذر فتح الملف</title></head><body style="margin:0;min-height:100vh;display:grid;place-items:center;background:#f4f7f6;color:#172026;font-family:system-ui,sans-serif"><main style="box-sizing:border-box;max-width:26rem;margin:16px;padding:24px;background:#fff;border-radius:20px;text-align:center"><h1 style="margin:0 0 12px;font-size:1.25rem">تعذر فتح الملف</h1><p style="margin:0 0 20px;line-height:1.9">${escapeHtml(message)}</p><a href="/library" style="display:inline-block;padding:12px 20px;border-radius:14px;background:#0a6b66;color:#fff;text-decoration:none;font-weight:700">العودة إلى مكتبتي</a></main></body></html>`;
-  return new NextResponse(html, { status, headers: { ...NO_STORE, "content-type": "text/html; charset=utf-8" } });
+  // صفحة HTML ثابتة خارج proxy: سياسة خاصة بها (أنماط مضمنة فقط، لا سكربت)
+  return new NextResponse(html, { status, headers: { ...NO_STORE, "content-type": "text/html; charset=utf-8", "content-security-policy": INLINE_PAGE_CSP } });
 }
 
 function refuse(req: NextRequest, status: number, message: string) {
   return isDocumentNavigation(req) ? errorPage(status, message) : NextResponse.json({ error: message }, { status, headers: NO_STORE });
 }
 
-export async function GET(req: NextRequest, ctx: { params: Promise<{ fileId: string }> }) {
+async function handleGET(req: NextRequest, ctx: { params: Promise<{ fileId: string }> }) {
   const { fileId } = await ctx.params;
   const user = await getCurrentUser();
   const ip = ipFromHeaders(req.headers);
@@ -113,3 +116,6 @@ export async function GET(req: NextRequest, ctx: { params: Promise<{ fileId: str
     },
   });
 }
+
+/** انشغال قاعدة البيانات: 503 مع Retry-After بدل خطأ أو تعليق */
+export const GET = withBusyGuard(handleGET);

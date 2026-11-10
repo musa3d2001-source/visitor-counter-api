@@ -4,6 +4,7 @@ import Link from "next/link";
 import { House, MessagesSquare, RotateCw } from "lucide-react";
 import { Sparkle } from "@/components/art";
 import { Button } from "@/components/ui/button";
+import { DB_BUSY_MESSAGE, DB_BUSY_TITLE, isBusyDigest } from "@/lib/busy";
 
 /** رسم «انقطع الاتصال»: قابس وسلك مفصولان فوق شمس دافئة، مع شرارة صغيرة. زخرفي. */
 function UnpluggedArt({ className }: { className?: string }) {
@@ -25,6 +26,8 @@ function UnpluggedArt({ className }: { className?: string }) {
 }
 
 export default function SiteError({ error, reset }: { error: Error & { digest?: string }; reset: () => void }) {
+  // ضغط مؤقت على قاعدة البيانات، لا عطل: نقول ذلك بوضوح ولا نعرض رمز خطأ
+  const busy = isBusyDigest(error.digest);
   return (
     <section className="bg-sunny bg-dots relative overflow-hidden px-4 py-14 sm:py-20">
       <Sparkle className="animate-twinkle absolute end-[10%] top-10 size-5" />
@@ -33,8 +36,10 @@ export default function SiteError({ error, reset }: { error: Error & { digest?: 
         <div className="mx-auto h-36 w-52 sm:h-40 sm:w-60">
           <UnpluggedArt />
         </div>
-        <h1 className="mt-4 font-display text-[clamp(1.8rem,5vw,2.4rem)] leading-tight font-black text-ink">حدث خطأ غير متوقع</h1>
-        <p className="mx-auto mt-3 max-w-sm text-[1.02rem] leading-8 text-ink-soft">حاول مرة أخرى، وإذا تكرر الخطأ تواصل معنا.</p>
+        <h1 className="mt-4 font-display text-[clamp(1.8rem,5vw,2.4rem)] leading-tight font-black text-ink" data-testid={busy ? "busy-title" : undefined}>
+          {busy ? DB_BUSY_TITLE : "حدث خطأ غير متوقع"}
+        </h1>
+        <p className="mx-auto mt-3 max-w-sm text-[1.02rem] leading-8 text-ink-soft">{busy ? DB_BUSY_MESSAGE : "حاول مرة أخرى، وإذا تكرر الخطأ تواصل معنا."}</p>
         <div className="mt-7 flex flex-wrap items-center justify-center gap-3">
           <Button size="lg" onClick={reset}>
             <RotateCw aria-hidden />
@@ -49,7 +54,7 @@ export default function SiteError({ error, reset }: { error: Error & { digest?: 
           <MessagesSquare className="size-4.5" aria-hidden />
           تواصل معنا
         </Link>
-        {error.digest ? (
+        {error.digest && !busy ? (
           <p className="mt-3 text-[0.82rem] text-muted">
             رمز الخطأ للدعم:{" "}
             <span dir="ltr" className="num rounded-md bg-mist px-1.5 py-0.5 font-mono">

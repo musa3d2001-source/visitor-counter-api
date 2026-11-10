@@ -1,11 +1,12 @@
 import { NextResponse } from "next/server";
 import { storage } from "@/server/storage";
 import { assertSafeKey } from "@/server/storage/types";
+import { withBusyGuard } from "@/server/busy-response";
 
 /** خدمة الصور العامة (الأغلفة والشعار) من التخزين المحلي فقط. مع Supabase تُخدم الصور من الحاوية العامة مباشرة. */
 const TYPES: Record<string, string> = { jpg: "image/jpeg", jpeg: "image/jpeg", png: "image/png", webp: "image/webp" };
 
-export async function GET(_req: Request, ctx: { params: Promise<{ key: string[] }> }) {
+async function handleGET(_req: Request, ctx: { params: Promise<{ key: string[] }> }) {
   const { key } = await ctx.params;
   const k = key.join("/");
   try {
@@ -29,3 +30,6 @@ export async function GET(_req: Request, ctx: { params: Promise<{ key: string[] 
     return new NextResponse("Not found", { status: 404 });
   }
 }
+
+/** انشغال قاعدة البيانات: 503 مع Retry-After بدل خطأ أو تعليق */
+export const GET = withBusyGuard(handleGET);

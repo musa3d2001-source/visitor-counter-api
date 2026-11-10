@@ -1,12 +1,15 @@
 "use client";
 
+import { DB_BUSY_MESSAGE, DB_BUSY_TITLE, isBusyDigest } from "@/lib/busy";
+
 /**
  * خطأ في التخطيط الجذري نفسه: لا نضمن تحميل globals.css أو الخطوط هنا،
  * لذا التنسيق كله داخلي (inline) بنفس ألوان «الفصل المشمس».
  */
 const font = "'Cairo Variable', Cairo, Tajawal, 'Segoe UI', Tahoma, system-ui, sans-serif";
 
-export default function GlobalError({ reset }: { error: Error & { digest?: string }; reset: () => void }) {
+export default function GlobalError({ error, reset }: { error: Error & { digest?: string }; reset: () => void }) {
+  const busy = isBusyDigest(error.digest);
   return (
     <html lang="ar" dir="rtl">
       <body
@@ -56,8 +59,8 @@ export default function GlobalError({ reset }: { error: Error & { digest?: strin
               <path d="M12 10v4M12 17.2v.1" />
             </svg>
           </div>
-          <h1 style={{ margin: "22px 0 8px", fontSize: 30, fontWeight: 900, lineHeight: 1.3 }}>حدث خطأ غير متوقع</h1>
-          <p style={{ margin: "0 0 26px", fontSize: 17, lineHeight: 1.9, color: "#3c4a52" }}>حاول مرة أخرى بعد لحظات. إذا تكرر الخطأ، عُد إلى الصفحة الرئيسية.</p>
+          <h1 style={{ margin: "22px 0 8px", fontSize: 30, fontWeight: 900, lineHeight: 1.3 }}>{busy ? DB_BUSY_TITLE : "حدث خطأ غير متوقع"}</h1>
+          <p style={{ margin: "0 0 26px", fontSize: 17, lineHeight: 1.9, color: "#3c4a52" }}>{busy ? DB_BUSY_MESSAGE : "حاول مرة أخرى بعد لحظات. إذا تكرر الخطأ، عُد إلى الصفحة الرئيسية."}</p>
           <div style={{ display: "flex", flexWrap: "wrap", gap: 12, justifyContent: "center" }}>
             <button
               onClick={reset}

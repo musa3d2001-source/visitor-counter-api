@@ -3,6 +3,7 @@ import { getActor } from "@/server/auth/permissions";
 import { verifyLocalUploadToken } from "@/server/storage/local";
 import { storage } from "@/server/storage";
 import { reportError } from "@/server/platform/report-error";
+import { withBusyGuard } from "@/server/busy-response";
 
 /**
  * مستقبل الرفع المباشر في وضع التخزين المحلي فقط (بديل رابط الرفع الموقّع في Supabase).
@@ -11,7 +12,7 @@ import { reportError } from "@/server/platform/report-error";
 export const dynamic = "force-dynamic";
 export const maxDuration = 300;
 
-export async function PUT(req: Request) {
+async function handlePUT(req: Request) {
   if (storage().name !== "local") return NextResponse.json({ error: "غير متاح" }, { status: 404 });
   const token = new URL(req.url).searchParams.get("token") ?? "";
   const claims = verifyLocalUploadToken(token);
@@ -54,3 +55,6 @@ export async function PUT(req: Request) {
   }
   return NextResponse.json({ ok: true, size: total });
 }
+
+/** انشغال قاعدة البيانات: 503 مع Retry-After بدل خطأ أو تعليق */
+export const PUT = withBusyGuard(handlePUT);

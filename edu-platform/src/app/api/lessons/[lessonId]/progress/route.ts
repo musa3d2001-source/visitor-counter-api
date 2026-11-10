@@ -4,10 +4,11 @@ import { getCurrentUser } from "@/server/auth/session";
 import { checkLessonAccess } from "@/server/access/lessons";
 import { isSameOriginRequest } from "@/server/http";
 import { sql } from "@/server/db";
+import { withBusyGuard } from "@/server/busy-response";
 
 const schema = z.object({ position: z.number().min(0).max(60 * 60 * 10), completed: z.boolean().optional() });
 
-export async function POST(req: NextRequest, ctx: { params: Promise<{ lessonId: string }> }) {
+async function handlePOST(req: NextRequest, ctx: { params: Promise<{ lessonId: string }> }) {
   if (!isSameOriginRequest(req)) return NextResponse.json({ error: "forbidden" }, { status: 403 });
   const user = await getCurrentUser();
   if (!user) return NextResponse.json({ error: "unauthenticated" }, { status: 401 });
@@ -26,3 +27,6 @@ export async function POST(req: NextRequest, ctx: { params: Promise<{ lessonId: 
   `;
   return NextResponse.json({ ok: true });
 }
+
+/** انشغال قاعدة البيانات: 503 مع Retry-After بدل خطأ أو تعليق */
+export const POST = withBusyGuard(handlePOST);

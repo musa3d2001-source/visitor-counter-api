@@ -5,11 +5,13 @@ import { getActor, PermissionError } from "@/server/auth/permissions";
 import { AdminError } from "@/server/admin/common";
 import { completeSchema, completeUpload, UploadMissingError, UploadStorageError } from "@/server/admin/uploads";
 import { reportError } from "@/server/platform/report-error";
+import { withBusyGuard } from "@/server/busy-response";
+import { isDatabaseBusy } from "@/server/db-busy";
 
 export const dynamic = "force-dynamic";
 export const maxDuration = 120;
 
-export async function POST(req: Request) {
+async function handlePOST(req: Request) {
   if (!isSameOriginRequest(req)) return NextResponse.json({ error: "طلب غير مسموح" }, { status: 403 });
   const actor = await getActor();
   if (!actor) return NextResponse.json({ error: "غير مصرح" }, { status: 403 });
@@ -32,6 +34,7 @@ export async function POST(req: Request) {
     if (parsed.data.target === "logo") revalidatePath("/", "layout");
     return NextResponse.json({ ok: true, ...res }, { headers: { "cache-control": "no-store" } });
   } catch (err) {
+    if (isDatabaseBusy(err)) throw err;
     // عطل التخزين يستحق إعادة التأكيد نفسه، وملف لم يصل يحتاج رفعًا جديدًا، وغيرهما رفض نهائي
     if (err instanceof UploadStorageError) {
       await reportError("upload:storage", err.cause);
@@ -44,3 +47,6 @@ export async function POST(req: Request) {
     return NextResponse.json({ error: "تعذر إكمال حفظ الملف. حاول مرة أخرى." }, { status: 500 });
   }
 }
+
+/** انشغال قاعدة البيانات: 503 مع Retry-After بدل خطأ أو تعليق */
+export const POST = withBusyGuard(handlePOST);

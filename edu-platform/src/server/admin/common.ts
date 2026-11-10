@@ -4,6 +4,8 @@ import { assertStaff, PermissionError, type Actor } from "../auth/permissions";
 import type { ActionState } from "@/lib/action-state";
 import { clientIp } from "../http";
 import { reportError } from "../platform/report-error";
+import { isDatabaseBusy } from "../db-busy";
+import { DB_BUSY_MESSAGE } from "@/lib/busy";
 
 /**
  * غلاف موحد لـ Server Actions الخاصة بالإدارة:
@@ -32,6 +34,8 @@ async function toActionError(err: unknown): Promise<ActionState> {
   if (err instanceof PermissionError) return { error: err.userMessage };
   // إعادة رمي أخطاء التوجيه الخاصة بـ Next.js (redirect/notFound)
   if (isNextControlFlow(err)) throw err;
+  // مؤقت: لا يُسجل خطأً في الإجراء، ويُطلب من المالك إعادة المحاولة بعد لحظات
+  if (isDatabaseBusy(err)) return { error: DB_BUSY_MESSAGE };
   const pgCode = (err as { code?: string })?.code;
   if (pgCode === "23505") return { error: "القيمة مستخدمة مسبقًا (مثل الرابط أو الكود). اختر قيمة أخرى." };
   if (pgCode === "23503") return { error: "لا يمكن تنفيذ العملية لارتباط هذا العنصر ببيانات أخرى." };
@@ -49,7 +53,8 @@ export async function adminAction(fn: (ctx: AdminCtx) => Promise<ActionState | v
   let admin;
   try {
     admin = await assertAdmin();
-  } catch {
+  } catch (err) {
+    if (isDatabaseBusy(err)) return { error: DB_BUSY_MESSAGE };
     return { error: "غير مصرح لك بتنفيذ هذا الإجراء" };
   }
   try {
@@ -68,7 +73,8 @@ export async function staffAction(fn: (ctx: StaffCtx) => Promise<ActionState | v
   let actor: Actor;
   try {
     actor = await assertStaff();
-  } catch {
+  } catch (err) {
+    if (isDatabaseBusy(err)) return { error: DB_BUSY_MESSAGE };
     return { error: "غير مصرح لك بتنفيذ هذا الإجراء" };
   }
   try {

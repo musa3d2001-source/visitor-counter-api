@@ -1,7 +1,7 @@
 import "server-only";
 import { IP_SIGNAL } from "../admin/access-signals";
 import { pruneRateLimits } from "../auth/rate-limit";
-import { sql } from "../db";
+import { LONG_JOB_STATEMENT_MS, sql, withDbDeadline } from "../db";
 
 /**
  * تنظيف يومي للجداول التي تكبر مع الزيارات، بدفعات صغيرة حتى لا يطول قفل أو تتجاوز الدالة مهلتها.
@@ -24,7 +24,12 @@ const deleted = (query: PromiseLike<{ count: number }>) => query.then((result) =
 
 export type PruneReport = { rateLimits: number; sessions: number; accessLogs: number; errorEvents: number; finished: boolean };
 
-export async function runDataPruning(): Promise<PruneReport> {
+/** مهمة طويلة صريحة: مهلة الأمر الواحد فيها أطول من مهلة الطلبات العادية، ويبقى لها حد */
+export function runDataPruning(): Promise<PruneReport> {
+  return withDbDeadline(LONG_JOB_STATEMENT_MS, prune);
+}
+
+async function prune(): Promise<PruneReport> {
   const started = Date.now();
   let finished = true;
 

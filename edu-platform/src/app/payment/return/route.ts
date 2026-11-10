@@ -6,12 +6,14 @@ import { sql } from "@/server/db";
 import { parseCartCookie } from "@/server/commerce/cart";
 import { env } from "@/server/env";
 import { reportError } from "@/server/platform/report-error";
+import { withBusyGuard } from "@/server/busy-response";
+import { isDatabaseBusy } from "@/server/db-busy";
 
 /**
  * صفحة العودة من بوابة الدفع (CallBackUrl / ErrorUrl).
  * لا نعتبر الوصول إليها دليلًا على الدفع: نستعلم من البوابة عبر الخادم ثم نوجّه الطالب لصفحة الطلب.
  */
-export async function GET(req: NextRequest) {
+async function handleGET(req: NextRequest) {
   const url = req.nextUrl;
   const paymentId = url.searchParams.get("paymentId") ?? url.searchParams.get("PaymentId") ?? undefined;
   const invoiceId = url.searchParams.get("Id") ?? undefined;
@@ -44,7 +46,12 @@ export async function GET(req: NextRequest) {
     }
     return res;
   } catch (err) {
+    // انشغال مؤقت: صفحة تعيد المحاولة وحدها، فيُعاد التحقق من البوابة بدل رسالة خطأ
+    if (isDatabaseBusy(err)) throw err;
     await reportError("payment-return:verify", err);
     return NextResponse.redirect(`${base}/account?payment=error`, 303);
   }
 }
+
+/** انشغال قاعدة البيانات: 503 مع Retry-After بدل خطأ أو تعليق */
+export const GET = withBusyGuard(handleGET, "html");

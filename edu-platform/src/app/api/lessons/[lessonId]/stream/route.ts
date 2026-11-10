@@ -6,6 +6,7 @@ import { logAccess } from "@/server/platform/audit";
 import { ipFromHeaders } from "@/server/http";
 import { hitDeniedStreamLimit, hitStreamLimit } from "@/server/video/stream-limit";
 import { isUuid } from "@/lib/uuid";
+import { withBusyGuard } from "@/server/busy-response";
 
 /**
  * بث فيديو الدرس (المزود file):
@@ -17,7 +18,7 @@ function tooManyRequests(retryAfterSeconds: number) {
   return new NextResponse(null, { status: 429, headers: { "retry-after": String(Math.max(1, retryAfterSeconds)), "cache-control": "private, no-store", "x-robots-tag": "noindex" } });
 }
 
-export async function GET(req: NextRequest, ctx: { params: Promise<{ lessonId: string }> }) {
+async function handleGET(req: NextRequest, ctx: { params: Promise<{ lessonId: string }> }) {
   const { lessonId } = await ctx.params;
   const user = await getCurrentUser();
   const access = await checkLessonAccess(lessonId, user);
@@ -77,3 +78,6 @@ export async function GET(req: NextRequest, ctx: { params: Promise<{ lessonId: s
     },
   });
 }
+
+/** انشغال قاعدة البيانات: 503 مع Retry-After بدل خطأ أو تعليق */
+export const GET = withBusyGuard(handleGET);
