@@ -64,17 +64,18 @@
   "samples": 960000,
   "checks": {
    "lufs": -14.0,
-   "true_peak_dbtp": -2.3,
-   "share_below_150": 0.3254,
-   "share_500_6k": 0.2621,
-   "room_tone_dbfs": -40.0,
+   "true_peak_dbtp": -2.7,
+   "aac320_true_peak_dbtp": -2.2,
+   "share_below_150": 0.3233,
+   "share_500_6k": 0.2632,
+   "room_tone_dbfs": -40.1,
    "voice_over_bed_db": {
     "V1 «مشروعك حلو…»": 8.7,
     "V3 «طشّ!» f90": 7.2,
     "V2 «شنو حسابهم؟!»": 8.1,
     "V3 x3 «طشّ!»": 7.9
    },
-   "seam_jump": 0.00191,
+   "seam_jump": 0.00179,
    "passed": true
   },
   "cues": [
@@ -247,12 +248,6 @@
     "what": "rising landing tick 1480.0 Hz (dot lands on the ش, x 623)"
    },
    {
-    "frame": 87.84,
-    "t": 2.928,
-    "bus": "voice",
-    "what": "«طشّ!» V3 dry single take, onset on f90"
-   },
-   {
     "frame": 90.0,
     "t": 3.0,
     "bus": "hit",
@@ -281,6 +276,12 @@
     "t": 3.0,
     "bus": "music",
     "what": "chord D (full) f90-135"
+   },
+   {
+    "frame": 90,
+    "t": 3.0,
+    "bus": "voice",
+    "what": "«طشّ!» V3 dry single take, onset on f90 (stem starts 72 ms earlier)"
    },
    {
     "frame": 105.0,
@@ -529,16 +530,16 @@
     "what": "chord Eb (peak) f270-285"
    },
    {
-    "frame": 284.49,
-    "t": 9.483,
-    "bus": "voice",
-    "what": "«شنو حسابهم؟!» V2 (1.10 s)"
-   },
-   {
     "frame": 285,
     "t": 9.5,
     "bus": "sfx",
     "what": "typing ticks every 5 frames f285-325 (9 ticks, D6/Eb6/F#6 right to left, period 15 f)"
+   },
+   {
+    "frame": 285,
+    "t": 9.5,
+    "bus": "voice",
+    "what": "«شنو حسابهم؟!» V2 (1.10 s), onset on f285 (stem starts 17 ms earlier); «حسابهم» at about f295"
    },
    {
     "frame": 330.0,
@@ -607,12 +608,6 @@
     "what": "silence pocket f386-389 (room tone only)"
    },
    {
-    "frame": 387.84,
-    "t": 12.928,
-    "bus": "voice",
-    "what": "«طشّ!» V3 stacked x3 (0/+35/+70 ms, 0/+2/-3 st, centre/left/right), onset on the hit"
-   },
-   {
     "frame": 390.0,
     "t": 13.0,
     "bus": "hit",
@@ -641,6 +636,12 @@
     "t": 13.0,
     "bus": "music",
     "what": "chord D (half) f390-450"
+   },
+   {
+    "frame": 390,
+    "t": 13.0,
+    "bus": "voice",
+    "what": "«طشّ!» V3 stacked x3 (0/+35/+70 ms, 0/+2/-3 st, centre/left/right), first layer onset on the hit"
    },
    {
     "frame": 420.0,
@@ -723,9 +724,10 @@
   "samples": 672000,
   "checks": {
    "lufs": -14.0,
-   "true_peak_dbtp": -2.3,
-   "share_below_150": 0.2899,
-   "share_500_6k": 0.2856,
+   "true_peak_dbtp": -2.7,
+   "aac320_true_peak_dbtp": -2.6,
+   "share_below_150": 0.2886,
+   "share_500_6k": 0.2866,
    "room_tone_dbfs": -40.0,
    "voice_over_bed_db": {
     "V1 «مشروعك حلو…»": 8.6,
@@ -733,7 +735,7 @@
     "V2 «شنو حسابهم؟!»": 9.0,
     "V3 x3 «طشّ!»": 7.8
    },
-   "seam_jump": 0.0009,
+   "seam_jump": 0.00085,
    "passed": true
   },
   "cues": [
@@ -906,12 +908,6 @@
     "what": "rising landing tick 1480.0 Hz (dot lands on the ش, x 623)"
    },
    {
-    "frame": 87.84,
-    "t": 2.928,
-    "bus": "voice",
-    "what": "«طشّ!» V3 dry single take, onset on f90"
-   },
-   {
     "frame": 90.0,
     "t": 3.0,
     "bus": "hit",
@@ -940,6 +936,12 @@
     "t": 3.0,
     "bus": "music",
     "what": "chord D (full) f90-135"
+   },
+   {
+    "frame": 90,
+    "t": 3.0,
+    "bus": "voice",
+    "what": "«طشّ!» V3 dry single take, onset on f90 (stem starts 72 ms earlier)"
    },
    {
     "frame": 105.0,
@@ -1146,16 +1148,16 @@
     "what": "group clap (peak)"
    },
    {
-    "frame": 254.49,
-    "t": 8.483,
-    "bus": "voice",
-    "what": "«شنو حسابهم؟!» V2 (1.10 s)"
-   },
-   {
     "frame": 255,
     "t": 8.5,
     "bus": "sfx",
     "what": "typing ticks every 5 frames f255-265 (3 ticks, D6/Eb6/F#6 right to left, period 15 f)"
+   },
+   {
+    "frame": 255,
+    "t": 8.5,
+    "bus": "voice",
+    "what": "«شنو حسابهم؟!» V2 (1.10 s), onset on f255 (stem starts 17 ms earlier); «حسابهم» at about f265"
    },
    {
     "frame": 270.0,
@@ -1212,12 +1214,6 @@
     "what": "silence pocket f296-299 (room tone only)"
    },
    {
-    "frame": 297.84,
-    "t": 9.928,
-    "bus": "voice",
-    "what": "«طشّ!» V3 stacked x3 (0/+35/+70 ms, 0/+2/-3 st, centre/left/right), onset on the hit"
-   },
-   {
     "frame": 300.0,
     "t": 10.0,
     "bus": "hit",
@@ -1246,6 +1242,12 @@
     "t": 10.0,
     "bus": "music",
     "what": "chord D (half) f300-315"
+   },
+   {
+    "frame": 300,
+    "t": 10.0,
+    "bus": "voice",
+    "what": "«طشّ!» V3 stacked x3 (0/+35/+70 ms, 0/+2/-3 st, centre/left/right), first layer onset on the hit"
    },
    {
     "frame": 315.0,

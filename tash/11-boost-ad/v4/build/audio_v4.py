@@ -13,7 +13,8 @@ The three dots are three woodblock ticks D6 / E♭6 / F♯6 (1174.7 / 1244.5 / 1
 
 Run (from anywhere):  python3 tash/11-boost-ad/v4/build/audio_v4.py
 Writes v4/build/audio/A20.wav (960 000 samples), A14.wav (672 000 samples), 48 kHz stereo float, and cues.json; prints the
-phone-speaker checks and exits 1 if any check fails.
+phone-speaker checks and exits 1 if any check fails. The limiter ceiling is lowered until the AAC 320 kb/s encode
+that mux.sh makes also stays at -2 dBTP or lower (AAC overshoots the WAV by a few tenths of a dB).
 """
 import sys, os, json, math, subprocess, tempfile, time
 import numpy as np
@@ -47,7 +48,6 @@ G = dict(
     tick=0.50, tick_talk=0.30, swarm=0.22, fall_tick=0.46, land_tick=0.46, tap=0.40,
     crack=0.85, splash=0.42, crunch=0.55, clink=0.55, crackle=0.62, breath=0.40, sizzle=0.42, thump=0.75,
     pop=0.50, burst=0.55, shock=0.55, whoosh=0.40, riser=0.30, inflate=0.30, zip=0.22, notepop=0.45, swell=0.55,
-    room=0.0,                                     # set by calibrate_room(): the dead beat sits at -40 dBFS
 )
 MUSIC_SC_DB = -6.0                                # music (and sound beds) side-chained under each voice
 ROOM_TARGET = -40.0
@@ -599,7 +599,8 @@ def score(V, VO):
     put(group_clap(90, 10, 0.42), 90, 'music', 'HERO 1: group clap (10 hands)', G['hero_clap'])
     put(mirwas_dum(), 90, 'music', None, G['dum'])
     put(shockwave(), 90, 'hit', 'shockwave from the ش (r 0 to 2300 in 4 f), wordmark slam', G['shock'])
-    put(VO['v3'], 90, 'voice', '«طشّ!» V3 dry single take, onset on f90', G['voice'], dt=-VO['on3'])
+    put(VO['v3'], 90, 'voice', None, G['voice'], dt=-VO['on3'])
+    note(90, f'«طشّ!» V3 dry single take, onset on f90 (stem starts {VO["on3"] * 1000:.0f} ms earlier)', 'voice')
 
     # --- f105-134 portholes, clap f120 (in the groove), mirwas fill into f135
     for k, (f, p) in enumerate([(105, -0.5), (108, 0.0), (111, 0.5)]):
@@ -626,7 +627,8 @@ def score(V, VO):
 
     # --- TALK: mirwas + bass only, V2, typing ticks under the dot triplet (period 15 f, 5 f lag, right to left)
     t0, t1 = V['talk'], V['mult'][0]
-    put(VO['v2'], t0, 'voice', '«شنو حسابهم؟!» V2 (1.10 s)', G['voice'], dt=-VO['on2'])
+    put(VO['v2'], t0, 'voice', None, G['voice'], dt=-VO['on2'])
+    note(t0, f'«شنو حسابهم؟!» V2 (1.10 s), onset on f{t0} (stem starts {VO["on2"] * 1000:.0f} ms earlier); «حسابهم» at about f{t0 + 10}', 'voice')
     k = 0
     for f in range(t0, t1, 5):
         i = ((f - t0) // 5) % 3
@@ -661,7 +663,8 @@ def score(V, VO):
     put(gkick(1.0), h3, 'music', 'HERO 3: kick', G['hero_kick'])
     put(group_clap(h3, 12, 0.45), h3, 'music', 'HERO 3: group clap (12 hands)', G['hero_clap'])
     put(burst_pop(R), h3, 'hit', 'burst pop (81 dots fly out, slowing)', G['burst'])
-    put(VO['stack'], h3, 'voice', '«طشّ!» V3 stacked x3 (0/+35/+70 ms, 0/+2/-3 st, centre/left/right), onset on the hit', G['voice_stack'], dt=-VO['on3'])
+    put(VO['stack'], h3, 'voice', None, G['voice_stack'], dt=-VO['on3'])
+    note(h3, '«طشّ!» V3 stacked x3 (0/+35/+70 ms, 0/+2/-3 st, centre/left/right), first layer onset on the hit', 'voice')
 
     # --- CTA: soft kick on each band cut, two-note pop on «بالخاص»
     for f, world in V['band']:
@@ -788,7 +791,7 @@ def fold(V, m):
     return loop
 
 
-def master(V, loop):
+def master(V, loop, ceiling=-2.6):
     Nf = len(loop)
     tile = np.vstack([loop, loop, loop])
     tile = hp(tile, 28, order=4)
@@ -796,12 +799,22 @@ def master(V, loop):
     tile = sat(tile * 1.05, 1.15)
     y = tile[Nf:2 * Nf]
     for _ in range(6):
-        yl = limit(np.vstack([y, y, y]), -2.3)[Nf:2 * Nf]
+        yl = limit(np.vstack([y, y, y]), ceiling)[Nf:2 * Nf]
         I, P = ffmpeg_lufs(yl)
         if abs(I + 14.0) < 0.08:
             break
         y = y * db(-14.0 - I)
     return yl
+
+
+def aac_true_peak(x):
+    """True peak after the delivery encode (mux.sh: AAC-LC 320 kb/s 48 kHz); AAC overshoots the WAV by a few tenths."""
+    with tempfile.TemporaryDirectory() as d:
+        a, b = os.path.join(d, 'a.wav'), os.path.join(d, 'b.m4a')
+        wavfile.write(a, SR, x.astype(np.float32))
+        subprocess.run(['ffmpeg', '-v', 'error', '-y', '-i', a, '-c:a', 'aac', '-b:a', '320k', '-ar', str(SR), '-ac', '2', b], check=True)
+        o = subprocess.run(['ffmpeg', '-nostats', '-i', b, '-af', 'ebur128=peak=true', '-f', 'null', '-'], capture_output=True, text=True).stderr
+    return float([l for l in o.splitlines() if l.strip().startswith('Peak:')][-1].split()[1])
 
 
 def rms_db(x):
@@ -814,8 +827,14 @@ def render(V, VO, room_gain):
     m.buses['room'] *= room_gain
     sc = process(V, m)
     loop = fold(V, m)
-    y = master(V, loop)
-    return dict(y=y, m=m, cues=cues, sc=sc, secs=time.time() - t_)
+    ceiling = -2.6
+    for _ in range(4):                                  # keep -2 dBTP after the AAC encode too, not only in the WAV
+        y = master(V, loop, ceiling)
+        ap = aac_true_peak(y)
+        if ap <= -2.2:
+            break
+        ceiling -= ap + 2.2 + 0.05
+    return dict(y=y, m=m, cues=cues, sc=sc, secs=time.time() - t_, aac_peak=ap, ceiling=ceiling)
 
 
 def checks(V, VO, r):
@@ -846,6 +865,7 @@ def checks(V, VO, r):
     ok = {
         'loudness -14 +/- 0.5 LUFS': abs(I + 14) <= 0.5,
         'true peak <= -2 dBTP': P <= -2.0,
+        'true peak <= -2 dBTP after AAC 320k (mux.sh)': r['aac_peak'] <= -2.0,
         'energy 500 Hz-6 kHz >= 25 %': mid >= 0.25,
         'energy < 150 Hz <= 50 %': lo <= 0.50,
         'voices >= +6 dB over the bed (300-4000 Hz)': all(r_[1] >= 6.0 for r_ in rows),
@@ -886,7 +906,8 @@ def main():
         c = checks(V, VO, r)
         print(f'\n{V["name"]}: wrote {path} ({len(r["y"])} samples = {len(r["y"]) / SR:.3f} s, {V["frames"]} frames, '
               f'48 kHz stereo float; render {r["secs"]:.0f} s)')
-        print(f'  integrated loudness {c["I"]:.1f} LUFS (ffmpeg ebur128) · true peak {c["P"]:.1f} dBTP')
+        print(f'  integrated loudness {c["I"]:.1f} LUFS (ffmpeg ebur128) · true peak {c["P"]:.1f} dBTP (limiter ceiling '
+              f'{r["ceiling"]:.2f}) · after AAC 320k {r["aac_peak"]:.1f} dBTP')
         print(f'  energy share: below 150 Hz {100 * c["lo"]:.1f} % · 500 Hz-6 kHz {100 * c["mid"]:.1f} %')
         for name, ratio, scd, secs in c['voices']:
             print(f'  {name}: voice over music+sfx in 300-4000 Hz {ratio:+.1f} dB over {secs:.2f} s; music side-chain {scd:.1f} dB')
@@ -898,7 +919,7 @@ def main():
             failed |= not v
         cues = sorted(r['cues'], key=lambda q: (q['frame'], q['bus']))
         sheet[V['name']] = dict(file=f'audio/{V["name"]}.wav', frames=V['frames'], seconds=fr(V['frames']), samples=len(r['y']),
-                                checks=dict(lufs=round(c['I'], 2), true_peak_dbtp=round(c['P'], 2),
+                                checks=dict(lufs=round(c['I'], 2), true_peak_dbtp=round(c['P'], 2), aac320_true_peak_dbtp=round(r['aac_peak'], 2),
                                             share_below_150=round(c['lo'], 4), share_500_6k=round(c['mid'], 4),
                                             room_tone_dbfs=round(c['room'], 2),
                                             voice_over_bed_db={n: round(v, 1) for n, v, _, _ in c['voices']},
