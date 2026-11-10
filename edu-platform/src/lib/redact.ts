@@ -39,7 +39,10 @@ const BEARER = /\bBearer\s+[^\s"',;]+/gi;
 const SECRET_PAIRS = /\b(authorization|set-cookie|cookie|password|passwd|pwd|secret|token|api[-_]?key|access[-_]?key|session|otp|cvv|cvc|card[-_ ]?(?:number|no)|pan)\b(["']?\s*[:=]\s*["']?)[^\s"',;&]+/gi;
 const UUIDS = /\b[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}\b/gi;
 const IPV4 = /\b(?:\d{1,3}\.){3}\d{1,3}\b/g;
-const IPV6 = /(?<![\w:])(?:[0-9a-f]{1,4}:){2,7}(?::?[0-9a-f]{1,4})+(?![\w:])/gi;
+/** كل مجموعة تنتهي بنقطتين، فلا طريقة ثانية لتقسيم سلسلة الحروف: زمن خطي. النمط المتداخل السابق كان أُسيًا */
+const IPV6 = /(?<![\w:])(?:[0-9a-f]{0,4}:){2,7}[0-9a-f]{0,4}(?![\w:])/gi;
+/** النص الذي تفحصه الأنماط. نص الخطأ قد يحمل ردًا كاملًا من خدمة خارجية، والمخزَّن منه ٥٠٠ حرف على الأكثر */
+const MAX_SCAN = 2000;
 /** رقم بطاقة: من ١٣ إلى ١٩ رقمًا، بمسافات أو شرطات أو بدونها */
 const CARD = /(?<!\d)(?:\d[ -]?){12,18}\d(?!\d)/g;
 /** هاتف أو أي رقم طويل مشابه: أرقام الكويت ٨ خانات */
@@ -73,9 +76,18 @@ function withoutKnownSecrets(text: string): string {
   return out;
 }
 
+/**
+ * القص قبل الأنماط حتى لا يطول زمنها مع طول النص. وما قُص في منتصف كلمة يُحذف باقيه،
+ * لأن نصف رمز أو نصف بريد لا يطابق نمطه فيخرج كما هو
+ */
+function boundedForScan(text: string): string {
+  if (text.length <= MAX_SCAN) return text;
+  return text.slice(0, MAX_SCAN).replace(/\S+$/, "");
+}
+
 /** نص آمن للتخزين والإرسال، بطول محدود وعلى سطر واحد */
 export function scrubForOps(text: string, maxLength = 300): string {
-  const cleaned = easternDigits(withoutKnownSecrets(text))
+  const cleaned = easternDigits(boundedForScan(withoutKnownSecrets(text)))
     .replace(CONTROL, " ")
     .replace(URLS, "[url]")
     .replace(EMAILS, "[email]")

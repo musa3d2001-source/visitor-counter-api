@@ -55,6 +55,36 @@ describe("scrubForOps removes what may be a secret or a person", () => {
     expect(scrubForOps("card 4111-1111-1111-1111 declined")).toBe("card [card] declined");
   });
 
+  it.each([
+    ["loopback", "connect ::1 refused", "::1"],
+    ["link-local", "from fe80::1ff:fe23:4567:890a denied", "fe80"],
+    ["full form", "from 2001:0db8:0000:0000:0000:ff00:0042:8329 denied", "0db8"],
+  ])("removes an ipv6 address in %s form", (_label, input, secret) => {
+    expect(scrubForOps(input)).not.toContain(secret);
+  });
+
+  // النمط السابق كان أُسيًا: ٢٨ حرفًا ≈ ٤٠٠ مللي ثانية، و٤٠ حرفًا دقائق تتوقف فيها النسخة عن خدمة أي طلب
+  it.each([
+    ["the ipv6 pattern", `x 1:2:${"a".repeat(40)}g`],
+    ["the ipv6 pattern, 10 KB", `x 1:2:${"a".repeat(10_000)}g`],
+    ["the email pattern, 100 KB with no @", "a".repeat(100_000)],
+    ["many colons", `${"ab:".repeat(5_000)}g`],
+    ["many quotes", `"${"x".repeat(250)}`.repeat(400)],
+  ])("finishes quickly on a hostile string: %s", (_label, input) => {
+    const started = performance.now();
+    scrubForOps(input);
+    scrubStack(`Error\n    at ${input}`);
+    expect(performance.now() - started).toBeLessThan(250);
+  });
+
+  it("does not let a cut at the scan limit leave half a secret behind", () => {
+    const filler = "ok ".repeat(663);
+    for (const tail of ["sara.k@students.kw", `tok_${"Zq9".repeat(15)}`]) {
+      const out = scrubForOps(filler + tail, 5000);
+      expect(out).not.toMatch(/sara|Zq9Zq9/);
+    }
+  });
+
   it("is one line, and bounded", () => {
     const out = scrubForOps(`line one\nline two ${"word ".repeat(200)}`);
     expect(out).not.toContain("\n");
