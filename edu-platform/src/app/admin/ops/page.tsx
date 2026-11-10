@@ -1,7 +1,7 @@
 import Link from "next/link";
-import { BellRing, CalendarClock, CircleDollarSign, RefreshCw, Send, ServerCrash } from "lucide-react";
+import { BellRing, CalendarClock, CircleDollarSign, RefreshCw, Send, ServerCrash, Video } from "lucide-react";
 import { requireOwnerPage } from "@/server/auth/permissions";
-import { alertDelivery, jobViews, lastAlertSendFailed, opsConfig, type AlertDelivery, type JobView } from "@/server/platform/ops-status";
+import { alertDelivery, heldVideoLessons, jobViews, lastAlertSendFailed, opsConfig, paidRawVideoCount, type AlertDelivery, type JobView } from "@/server/platform/ops-status";
 import { ActionForm } from "@/components/admin/action-form";
 import { SubmitButton } from "@/components/ui/submit-button";
 import { reconcileNowAction, sendTestAlertAction } from "./actions";
@@ -34,6 +34,7 @@ const REASON_TEXT: Record<PaidNotGrantedReason, string> = {
 const MINUTES: CountWord = { one: "دقيقة", two: "دقيقتان", plural: "دقائق", acc: "دقيقة", oneSuffix: "واحدة" };
 const HOURS: CountWord = { one: "ساعة", two: "ساعتان", plural: "ساعات", acc: "ساعة", oneSuffix: "واحدة" };
 const DAYS: CountWord = { one: "يوم", two: "يومان", plural: "أيام", acc: "يومًا", oneSuffix: "واحد" };
+const PRODUCTS: CountWord = { one: "منتج", two: "منتجان", plural: "منتجات", acc: "منتجًا", oneSuffix: "واحد" };
 
 function ageText(since: Date, now: number) {
   const minutes = Math.max(1, Math.floor((now - since.getTime()) / 60_000));
@@ -136,7 +137,7 @@ export default async function OpsPage() {
   await runOpsWatchdogAfterResponse();
   const config = opsConfig();
   const paymentsOn = paymentsConfig().enabled;
-  const [jobs, errors, alertFailed, delivery, unhealed] = await Promise.all([jobViews(), listErrorEvents(), lastAlertSendFailed(), alertDelivery(), unhealedOrders()]);
+  const [jobs, errors, alertFailed, delivery, unhealed, heldVideos, paidRawVideo] = await Promise.all([jobViews(), listErrorEvents(), lastAlertSendFailed(), alertDelivery(), unhealedOrders(), heldVideoLessons(), paidRawVideoCount()]);
   const now = Date.now();
   const alertsWork = config.alertEmailConfigured && config.mailIsReal && !alertFailed;
   const okJobs = jobs.filter((job) => job.status === "ok").length;
@@ -189,11 +190,44 @@ export default async function OpsPage() {
         </Alert>
       ) : null}
 
+      {paidRawVideo > 0 ? (
+        <Alert tone="danger" title="فيديو مدفوع بلا مزود بث" data-testid="ops-warning-raw-video">
+          <p>
+            {count(paidRawVideo, PRODUCTS)} يُباع وفيديوه ملف خام أو بلا مفاتيح Bunny. الملف الخام يمكن تنزيله، ولا جودات متعددة له، ولا يستكمل رفعه إن انقطع، فهو ليس لإطلاق مدفوع. انقل الدروس إلى Bunny Stream، أو أخفِ المنتج حتى تنتقل.
+          </p>
+        </Alert>
+      ) : null}
+
       <StatGrid cols={3}>
         <StatTile label="وظائف تعمل كما يجب" tone={okJobs === jobs.length ? "green" : "gold"} icon={<CalendarClock />} value={<span className="num">{`${ar(okJobs)} من ${ar(jobs.length)}`}</span>} />
         <StatTile label="أخطاء ظهرت آخر ٢٤ ساعة" tone={errorsToday > 0 ? "coral" : "green"} icon={<ServerCrash />} value={<span className="num">{ar(errorsToday)}</span>} />
         <StatTile label="رسائل التنبيه" tone={alertsWork ? "green" : alertFailed ? "coral" : "gold"} icon={<BellRing />} value={<span className="text-[1.05rem] sm:text-[1.15rem]">{alertsWork ? "مفعّلة" : alertFailed ? "آخرها لم يخرج" : "غير مفعّلة"}</span>} />
       </StatGrid>
+
+      {heldVideos.length ? (
+        <Section id="video-held" title="دروس ينتظر فيديوها قرارك" description="تغيّر ملف الفيديو بعد اعتماده، فأخفينا الدرس عن الطلاب وأوقفنا بيع محتواه. افتح المحتوى، وشاهد الفيديو الحالي، ثم اقبله أو احذف الدرس." icon={<Video />} tone="coral">
+          <div data-testid="ops-video-held">
+            <DataList>
+              {heldVideos.map((row) => (
+                <DataRow
+                  key={row.lesson_id}
+                  leading={
+                    <ToneIcon tone="coral" size="sm">
+                      <Video />
+                    </ToneIcon>
+                  }
+                  title={
+                    <Link href={`/admin/products/${row.product_id}`} className="text-brand-700 hover:underline">
+                      {row.lesson_title}
+                    </Link>
+                  }
+                  sub={row.product_title}
+                />
+              ))}
+            </DataList>
+          </div>
+        </Section>
+      ) : null}
 
       <Section
         id="payments-unhealed"

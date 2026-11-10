@@ -8,7 +8,7 @@ import { adminTwoFactorRequired, env } from "../env";
 import { webhookDeliveryStatus } from "../payments/monitoring";
 import { paymentsConfig } from "../payments/service";
 import { bunnyConfigured } from "../video/bunny";
-import { videoHostingBlocked } from "../video/policy";
+import { paidVideoWithoutStreaming, videoHostingBlocked } from "../video/policy";
 import { audit } from "./audit";
 import { siteIndexable } from "./indexing";
 import { alertDelivery, jobViews, opsConfig } from "./ops-status";
@@ -149,7 +149,7 @@ export async function launchFacts(): Promise<LaunchFacts> {
   const ops = opsConfig();
   const settings = await safe("settings", () => readSettings());
 
-  const [migrations, mail, admins, webhooks, testOrders, teachers, catalog, content, jobs, opsAlertDelivery] = await Promise.all([
+  const [migrations, mail, admins, webhooks, testOrders, teachers, catalog, content, jobs, opsAlertDelivery, paidWithoutStreaming] = await Promise.all([
     safe("migrations", migrationsFact),
     safe("mail", () => mailFact(e.MAIL_DRIVER)),
     safe("admins", adminsFact),
@@ -163,6 +163,7 @@ export async function launchFacts(): Promise<LaunchFacts> {
     }),
     safe("jobs", async () => (await jobViews()).map((job) => ({ job: job.job, title: JOB_LABELS[job.job as JobName]?.title ?? job.job, status: job.status, lastSuccessAt: job.last_success_at }))),
     safe("ops_alert_delivery", alertDelivery),
+    safe("paid_video", () => paidVideoWithoutStreaming(sql, e.VIDEO_PROVIDER === "bunny" && bunnyConfigured())),
   ]);
 
   return {
@@ -209,6 +210,7 @@ export async function launchFacts(): Promise<LaunchFacts> {
       hostingBlocked: videoHostingBlocked(),
       bunnyKeys: bunnyConfigured(),
       bunnyCdnHost: filled(e.BUNNY_STREAM_CDN_HOSTNAME),
+      paidWithoutStreaming,
     },
   };
 }

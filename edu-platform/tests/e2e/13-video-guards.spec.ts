@@ -1,6 +1,6 @@
 import { test, expect, type Browser } from "@playwright/test";
 import { spawn } from "node:child_process";
-import { randomUUID } from "node:crypto";
+import { createHash, randomUUID } from "node:crypto";
 import { mkdirSync, writeFileSync } from "node:fs";
 import { dirname, resolve } from "node:path";
 import { E2E_BUNNY, E2E_SERVER_ENV, E2E_STORAGE_DIR } from "./e2e-env";
@@ -42,6 +42,22 @@ async function videoProduct(opts: { provider: "file" | "bunny"; status?: string;
     returning id
   `;
   return { id: p.id, slug, lessonId: l.id };
+}
+
+/** رفع ملف إلى المحاكي بتوقيع صحيح، وانتظار اكتمال معالجته */
+async function uploadToSim(guid: string) {
+  const expire = Math.floor(Date.now() / 1000) + 3600;
+  const signature = createHash("sha256").update(`${E2E_BUNNY.library}${E2E_BUNNY.apiKey}${expire}${guid}`).digest("hex");
+  const bytes = new Uint8Array(4096).fill(9);
+  const res = await fetch(`${E2E_BUNNY.base}/tusupload`, {
+    method: "POST",
+    headers: { AuthorizationSignature: signature, AuthorizationExpire: String(expire), VideoId: guid, LibraryId: E2E_BUNNY.library, "Tus-Resumable": "1.0.0", "Upload-Length": String(bytes.length), "Content-Type": "application/offset+octet-stream" },
+    body: bytes,
+  });
+  expect(res.status).toBe(201);
+  await expect
+    .poll(async () => ((await (await fetch(`${E2E_BUNNY.base}/library/${E2E_BUNNY.library}/videos/${guid}`, { headers: { AccessKey: E2E_BUNNY.apiKey } })).json()) as { status: number }).status, { timeout: 10_000 })
+    .toBe(4);
 }
 
 async function ownerOf(browser: Browser, productId: string) {
@@ -86,6 +102,92 @@ test.describe("Bunny player", () => {
   });
 });
 
+test.describe("the embed link", () => {
+  test("is renewed before it runs out, and stops at once when access is withdrawn", async ({ browser }) => {
+    const p = await videoProduct({ provider: "bunny" });
+    const { ctx, page } = await ownerOf(browser, p.id);
+    await page.clock.install();
+    await page.goto(`/watch/${p.id}?lesson=${p.lessonId}`);
+    const player = page.getByTestId("watch-player");
+    const iframe = player.locator("iframe");
+    await expect(page.frameLocator('[data-testid="watch-player"] iframe').getByTestId("sim-embed-ok")).toBeVisible({ timeout: 15_000 });
+    const first = await iframe.getAttribute("src");
+
+    const isRenewal = (url: string) => url.endsWith(`/api/lessons/${p.lessonId}/embed`);
+    const renewed = page.waitForResponse((r) => isRenewal(r.url()));
+    await page.clock.fastForward("56:00");
+    expect((await renewed).status()).toBe(200);
+    await expect.poll(() => iframe.getAttribute("src")).not.toBe(first);
+    await expect(page.frameLocator('[data-testid="watch-player"] iframe').getByTestId("sim-embed-ok")).toBeVisible({ timeout: 15_000 });
+
+    await db()`update entitlements set revoked_at = now() where product_id = ${p.id}`;
+    const refused = page.waitForResponse((r) => isRenewal(r.url()));
+    await page.clock.fastForward("56:00");
+    expect((await refused).status()).toBe(403);
+    const ended = page.getByTestId("lesson-access-ended");
+    await expect(ended).toBeVisible();
+    await expect(ended).toHaveAttribute("data-reason", "access-ended");
+    await expect(iframe).toHaveCount(0);
+    await expect(player.getByTestId("viewer-watermark")).toBeVisible();
+    await expectNoHorizontalOverflow(page);
+    await ctx.close();
+  });
+
+  test("keeps the video running through a temporary failure", async ({ browser }) => {
+    const p = await videoProduct({ provider: "bunny" });
+    const { ctx, page } = await ownerOf(browser, p.id);
+    await page.clock.install();
+    await page.goto(`/watch/${p.id}?lesson=${p.lessonId}`);
+    const iframe = page.getByTestId("watch-player").locator("iframe");
+    await expect(page.frameLocator('[data-testid="watch-player"] iframe').getByTestId("sim-embed-ok")).toBeVisible({ timeout: 15_000 });
+    const first = await iframe.getAttribute("src");
+    let calls = 0;
+    await page.route(`**/api/lessons/${p.lessonId}/embed`, (route) => {
+      calls++;
+      return calls === 1 ? route.fulfill({ status: 503, headers: { "retry-after": "5" } }) : route.continue();
+    });
+    await page.clock.fastForward("56:00");
+    await expect.poll(() => calls).toBe(1);
+    await expect(page.getByTestId("lesson-access-ended")).toHaveCount(0);
+    expect(await iframe.getAttribute("src")).toBe(first);
+    await page.clock.fastForward("00:06");
+    await expect.poll(() => iframe.getAttribute("src")).not.toBe(first);
+    expect(calls).toBe(2);
+    await ctx.close();
+  });
+});
+
+test.describe("a video replaced after approval", () => {
+  test("waits for the owner, who sees it in the health page and accepts it from the product", async ({ page, browser }) => {
+    const p = await videoProduct({ provider: "bunny" });
+    const [{ video_ref: guid }] = await db()<{ video_ref: string }[]>`select video_ref from lessons where id = ${p.lessonId}`;
+    await uploadToSim(guid);
+    await db()`update lessons set processing_status = 'held', video_hold_fingerprint = null where id = ${p.lessonId}`;
+
+    const buyer = await ownerOf(browser, p.id);
+    await buyer.page.goto(`/watch/${p.id}?lesson=${p.lessonId}`);
+    await expect(buyer.page.getByTestId("watch-player")).toHaveCount(0);
+    await buyer.ctx.close();
+
+    await loginAdmin(page);
+    await page.goto("/admin/ops");
+    const held = page.getByTestId("ops-video-held");
+    await expect(held).toBeVisible();
+    await expectNoHorizontalOverflow(page);
+    await held.getByRole("link", { name: "الدرس الأول" }).first().click();
+    await page.waitForURL(`**/admin/products/${p.id}`);
+    await expect(page.getByTestId("lesson-status")).toHaveText("بانتظار قرار المالك");
+    await page.getByTestId("lesson-list").locator("summary").first().click();
+    const alert = page.getByTestId("lesson-held");
+    await expect(alert).toBeVisible();
+    await expectNoHorizontalOverflow(page);
+    await alert.getByRole("button", { name: "قبول الفيديو الحالي" }).click();
+    await page.getByRole("alertdialog").getByRole("button", { name: "نعم، أقبله" }).click();
+    await expect(page.getByTestId("lesson-status")).toHaveText("جاهز");
+    expect((await db()<{ processing_status: string }[]>`select processing_status from lessons where id = ${p.lessonId}`)[0].processing_status).toBe("ready");
+  });
+});
+
 test.describe("a raw video file on production", () => {
   test("is closed to a visitor, in the page and on the server", async ({ browser }) => {
     const p = await videoProduct({ provider: "file", freePreview: true });
@@ -122,6 +224,14 @@ test.describe("a raw video file on production", () => {
     const stream = await page.request.get(`/api/lessons/${p.lessonId}/stream`, { headers: { range: "bytes=0-1023" } });
     expect(stream.status()).toBe(206);
     await ctx.close();
+  });
+
+  test("the owner is warned on the health page while a paid one is on sale", async ({ page }) => {
+    await videoProduct({ provider: "file" });
+    await loginAdmin(page);
+    await page.goto("/admin/ops");
+    await expect(page.getByTestId("ops-warning-raw-video")).toBeVisible();
+    await expectNoHorizontalOverflow(page);
   });
 
   test("the owner is told why it cannot be published", async ({ page }) => {

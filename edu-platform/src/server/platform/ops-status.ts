@@ -2,6 +2,8 @@ import "server-only";
 import { sql } from "../db";
 import { configWarnings, env, opsAlertEmail } from "../env";
 import { paymentsConfig } from "../payments/service";
+import { bunnyConfigured } from "../video/bunny";
+import { paidVideoWithoutStreaming } from "../video/policy";
 import { jobStatusOf, listJobHeartbeats, reconcileCadence, type JobHeartbeat, type JobStatus } from "./scheduled-jobs";
 
 /**
@@ -60,6 +62,23 @@ export type JobView = JobHeartbeat & { status: JobStatus };
 export async function jobViews(): Promise<JobView[]> {
   const rows = await listJobHeartbeats();
   return rows.map((row) => ({ ...row, status: jobStatusOf(row) }));
+}
+
+export type HeldVideo = { lesson_id: string; lesson_title: string; product_id: string; product_title: string };
+
+/** دروس تغيّر فيديوها بعد اعتمادها وتنتظر قرار المالك */
+export async function heldVideoLessons(): Promise<HeldVideo[]> {
+  return sql<HeldVideo[]>`
+    select l.id as lesson_id, l.title as lesson_title, p.id as product_id, p.title as product_title
+    from lessons l join products p on p.id = l.product_id
+    where l.processing_status = 'held'
+    order by l.status_checked_at desc nulls last limit 50
+  `;
+}
+
+/** منتجات مدفوعة منشورة يُشاهَد فيديوها بلا مزود بث */
+export function paidRawVideoCount(): Promise<number> {
+  return paidVideoWithoutStreaming(sql, env().VIDEO_PROVIDER === "bunny" && bunnyConfigured());
 }
 
 export type OpsSummary = OpsConfig & { jobsNeedingAttention: number; errorsLast24h: number };

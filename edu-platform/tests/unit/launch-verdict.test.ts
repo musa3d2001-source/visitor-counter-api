@@ -36,7 +36,7 @@ function perfectFacts(): LaunchFacts {
     catalog: { published: 5, stopped: 0 },
     teachers: { selling: 2, missingShare: 0, missingAgreement: 0, managedSelling: 1 },
     content: { unchecked: 0, flagged: 0, badPreviews: 0 },
-    video: { provider: "bunny", allowFileVideo: false, hostingBlocked: false, bunnyKeys: true, bunnyCdnHost: true },
+    video: { provider: "bunny", allowFileVideo: false, hostingBlocked: false, bunnyKeys: true, bunnyCdnHost: true, paidWithoutStreaming: 0 },
   };
 }
 
@@ -255,7 +255,7 @@ describe("a tick for an older wording", () => {
 describe("steps that are not needed now", () => {
   it("never block: a notes-only launch with no teacher content and no Vercel is still ready", () => {
     const { verdict, step } = evaluate((f) => {
-      f.video = { provider: "file", allowFileVideo: false, hostingBlocked: true, bunnyKeys: false, bunnyCdnHost: false };
+      f.video = { provider: "file", allowFileVideo: false, hostingBlocked: true, bunnyKeys: false, bunnyCdnHost: false, paidWithoutStreaming: 0 };
       f.teachers = { selling: 0, missingShare: 0, missingAgreement: 0, managedSelling: 0 };
       f.settings!.feeRulesConfirmed = false;
       f.deployment.vercelEnv = null;
@@ -300,10 +300,24 @@ describe("warnings that do not block", () => {
   });
 
   it("a downloadable file video is a warning, not a block", () => {
-    const { step } = evaluate((f) => (f.video = { provider: "file", allowFileVideo: true, hostingBlocked: false, bunnyKeys: false, bunnyCdnHost: false }));
+    const { step } = evaluate((f) => (f.video = { provider: "file", allowFileVideo: true, hostingBlocked: false, bunnyKeys: false, bunnyCdnHost: false, paidWithoutStreaming: 0 }));
     expect(step("video").state).toBe("open");
     expect(step("video").blocking).toBe(false);
     expect(step("video").facts.join(" ")).toMatch(/ALLOW_FILE_VIDEO=true/);
+  });
+
+  it("paid video products without the streaming provider hold back the launch", () => {
+    const { step, verdict } = evaluate((f) => (f.video = { provider: "file", allowFileVideo: true, hostingBlocked: false, bunnyKeys: false, bunnyCdnHost: false, paidWithoutStreaming: 2 }));
+    expect(step("video").state).toBe("open");
+    expect(step("video").blocking).toBe(true);
+    expect(step("video").facts.join(" ")).toContain("بلا مزود بث: 2");
+    expect(verdict.blockingOpen.map((s) => s.key)).toContain("video");
+  });
+
+  it("says so when it could not count them, and does not invent a block", () => {
+    const { step } = evaluate((f) => (f.video.paidWithoutStreaming = null));
+    expect(step("video").blocking).toBe(false);
+    expect(step("video").facts.join(" ")).toContain("تعذر حساب");
   });
 });
 

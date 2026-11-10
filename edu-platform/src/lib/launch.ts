@@ -30,7 +30,7 @@ export const MANUAL_VERSIONS = {
   uptime_monitor: "1",
   commercial_license: "1",
   lawyer_review: LEGAL_VERSION,
-  bunny_cdn_token: "1",
+  bunny_cdn_token: "2",
   bunny_mp4_off: "1",
   bunny_real_test: "1",
   sandbox_pass: "1",
@@ -111,7 +111,7 @@ export type LaunchFacts = {
   /** معلمون لهم محتوى يُباع الآن: منشور بنفسه أو داخل باقة منشورة، وليس مجانيًا */
   teachers: { selling: number; missingShare: number; missingAgreement: number; managedSelling: number } | null;
   content: { unchecked: number; flagged: number; badPreviews: number } | null;
-  video: { provider: "file" | "bunny"; allowFileVideo: boolean; hostingBlocked: boolean; bunnyKeys: boolean; bunnyCdnHost: boolean };
+  video: { provider: "file" | "bunny"; allowFileVideo: boolean; hostingBlocked: boolean; bunnyKeys: boolean; bunnyCdnHost: boolean; paidWithoutStreaming: number | null };
 };
 
 export type LaunchTick = { done: boolean; version: string; changedAt: Date; changedBy: string | null };
@@ -506,18 +506,23 @@ function contentSteps(f: LaunchFacts, ticks: LaunchTicks): Built[] {
   const videosEnabled = f.settings?.videosEnabled ?? null;
   const rawOpen = v.provider === "file" && !v.hostingBlocked && videosEnabled !== false;
   const bunnySold = v.provider === "bunny" && videosEnabled !== false;
+  const paidRaw = (v.paidWithoutStreaming ?? 0) > 0;
   steps.push({
     key: "video",
     title: "الفيديو",
-    state: rawOpen ? "open" : bunnySold && !v.bunnyKeys ? "open" : "done",
-    blocking: bunnySold && !v.bunnyKeys,
-    todo: rawOpen
-      ? "انقل الفيديو إلى Bunny Stream، أو احذف ALLOW_FILE_VIDEO لإغلاقه، ثم أعد النشر."
-      : bunnySold
-        ? "أكمل خطوات Bunny الثلاث التالية قبل بيع أول درس."
-        : "لا شيء الآن. قبل بيع الفيديو انقله إلى Bunny Stream كما في README.",
-    where: rawOpen || (bunnySold && !v.bunnyKeys) ? ENV_WHERE : { label: "README ← الفيديو" },
+    state: rawOpen || paidRaw ? "open" : bunnySold && !v.bunnyKeys ? "open" : "done",
+    blocking: paidRaw || (bunnySold && !v.bunnyKeys),
+    todo: paidRaw
+      ? "الملف الخام ليس لإطلاق مدفوع: انقل دروس هذه المنتجات إلى Bunny Stream، أو أخفِ المنتجات حتى تنتقل."
+      : rawOpen
+        ? "انقل الفيديو إلى Bunny Stream، أو احذف ALLOW_FILE_VIDEO لإغلاقه، ثم أعد النشر."
+        : bunnySold
+          ? "أكمل خطوات Bunny الثلاث التالية قبل بيع أول درس."
+          : "لا شيء الآن. قبل بيع الفيديو انقله إلى Bunny Stream كما في README.",
+    where: paidRaw ? { label: "المحتوى والمنتجات", href: "/admin/products" } : rawOpen || (bunnySold && !v.bunnyKeys) ? ENV_WHERE : { label: "README ← الفيديو" },
     facts: [
+      ...(paidRaw ? [`منتجات مدفوعة منشورة يُشاهَد فيديوها بلا مزود بث: ${v.paidWithoutStreaming}.`] : []),
+      ...(v.paidWithoutStreaming === null ? ["تعذر حساب المنتجات المدفوعة التي بلا مزود بث."] : []),
       v.provider === "bunny" ? "المزود: Bunny Stream." : "المزود: ملفات على تخزين المنصة.",
       v.hostingBlocked
         ? "الإطلاق بالمذكرات فقط: الفيديو مغلق لأن ملفه الخام يمكن تنزيله."
@@ -535,8 +540,8 @@ function contentSteps(f: LaunchFacts, ticks: LaunchTicks): Built[] {
   const notBunny = { yes: bunnySold, whyNot: "الفيديو لا يُباع عبر Bunny الآن، فلا حاجة لهذه الخطوة." };
   steps.push(
     manualStep("bunny_cdn_token", ticks, {
-      title: "توقيع روابط Bunny (CDN token authentication)",
-      todo: "فعّل CDN token authentication في إعدادات Security لمكتبة الفيديو، وتأكد أن رابط بث بلا توقيع يُرفض.",
+      title: "حماية روابط Bunny (Embed token و CDN token و Allowed referrers)",
+      todo: "في Security لمكتبة الفيديو: فعّل Embed view token authentication و CDN token authentication، واجعل Allowed referrers نطاق موقعك فقط. ثم تأكد أن رابط تضمين بلا توقيع يُرفض.",
       where: { label: "Bunny ← Stream ← مكتبة الفيديو ← Security" },
       applicable: notBunny,
     }),

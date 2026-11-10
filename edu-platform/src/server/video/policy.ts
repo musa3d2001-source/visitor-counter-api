@@ -21,6 +21,19 @@ export function videoHostingBlocked(): boolean {
   return env().VIDEO_PROVIDER === "file" && rawVideoForbidden();
 }
 
+/**
+ * عدد المنتجات المدفوعة المنشورة التي يُشاهَد فيديوها دون مزود بث: ملف خام، أو Bunny على نشر بلا مفاتيحه.
+ * الملف الخام ليس للبيع: رابطه قابل للتنزيل، ولا جودات متعددة له، ولا استكمال لرفعه. لذلك تحذير صريح للمالك ما دام موجودًا.
+ */
+export async function paidVideoWithoutStreaming(db: Db, streamingReady: boolean): Promise<number> {
+  const [{ n }] = await db<{ n: number }[]>`
+    select count(distinct p.id)::int as n
+    from products p join lessons l on l.product_id = p.id and l.is_published
+    where p.status = 'published' and not p.is_free and (l.provider = 'file' or not ${streamingReady}::boolean)
+  `;
+  return n;
+}
+
 type VideoSwitch = { videos_enabled: boolean };
 
 /** هل يُعرض الفيديو ويُباع على مستوى المنصة كلها؟ */

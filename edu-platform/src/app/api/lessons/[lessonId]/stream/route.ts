@@ -14,6 +14,12 @@ import { withBusyGuard } from "@/server/busy-response";
  * - مع التخزين المحلي: بث مع دعم Range
  * الحدود بعد فحص الصلاحية: انظر video/stream-limit
  */
+/**
+ * عمر الرابط الموقّع. المتصفح يعيد استعمال وجهة التحويل لطلبات الأجزاء التالية، فالأقصر من هذا يقطع المشاهدة كثيرًا،
+ * وعند انتهائه يعيد المشغل التحميل من هنا بفحص صلاحية جديد (lib/file-playback).
+ */
+const FILE_SIGNED_URL_TTL_SECONDS = 5 * 60;
+
 function tooManyRequests(retryAfterSeconds: number) {
   return new NextResponse(null, { status: 429, headers: { "retry-after": String(Math.max(1, retryAfterSeconds)), "cache-control": "private, no-store", "x-robots-tag": "noindex" } });
 }
@@ -44,7 +50,7 @@ async function handleGET(req: NextRequest, ctx: { params: Promise<{ lessonId: st
     await logAccess({ userId: user?.id ?? null, productId: l.product_id, lessonId: l.id, action: "video", ip, userAgent: req.headers.get("user-agent") });
   }
   const store = storage();
-  const signed = await store.signedUrl("private", l.video_ref, 60 * 30);
+  const signed = await store.signedUrl("private", l.video_ref, FILE_SIGNED_URL_TTL_SECONDS);
   if (signed) return NextResponse.redirect(signed, { status: 302, headers: { "cache-control": "private, no-store" } });
 
   const stat = await store.stat("private", l.video_ref);
