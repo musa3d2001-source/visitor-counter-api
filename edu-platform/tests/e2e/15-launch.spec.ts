@@ -1,6 +1,6 @@
 import { test, expect } from "@playwright/test";
-import { E2E_BUNNY, E2E_CRON_SECRET, E2E_OPS_ALERT_EMAIL, E2E_SERVER_ENV, E2E_WEBHOOK_SECRET } from "./e2e-env";
-import { db, expectNoHorizontalOverflow, loginAdmin, newStudentPage } from "./helpers";
+import { E2E_BUNNY, E2E_CRON_SECRET, E2E_MAIL_BASE_URL, E2E_OPS_ALERT_EMAIL, E2E_SERVER_ENV, E2E_WEBHOOK_SECRET } from "./e2e-env";
+import { db, expectNoHorizontalOverflow, loginAdmin, newStudentPage, waitForMailLink } from "./helpers";
 
 /**
  * صفحة خطوات الإطلاق على الخادم الإنتاجي الفعلي: الحكم، والتأشير اليدوي المحفوظ، وأنها للمالك وحده،
@@ -9,6 +9,8 @@ import { db, expectNoHorizontalOverflow, loginAdmin, newStudentPage } from "./he
 const step = (key: string) => `[data-testid="launch-step"][data-key="${key}"]`;
 
 test("the owner sees every step and a verdict that is not ready, with no secret on the page", async ({ page }) => {
+  // خادم البريد الحقيقي في رحلات أخرى قد يكون أخرج تنبيهًا إلى العنوان نفسه، والقاعدة مشتركة
+  await db()`delete from email_log where template in ('ops_alert', 'ops_alert_test') and status = 'sent'`;
   await loginAdmin(page);
   await page.goto("/admin/launch");
   await expect(page.getByTestId("launch-page")).toBeVisible();
@@ -18,7 +20,8 @@ test("the owner sees every step and a verdict that is not ready, with no secret 
   expect(await page.getByTestId("launch-step").count()).toBeGreaterThanOrEqual(30);
   // يكشفها النظام من بيئة هذا الخادم
   await expect(page.locator(step("cron_secret"))).toHaveAttribute("data-state", "done");
-  await expect(page.locator(step("ops_alert_email"))).toHaveAttribute("data-state", "done");
+  // العنوان مضبوط، لكن بريد هذا الخادم سجل داخلي لا يُخرج رسالة، فلا تُنجز الخطوة قبل رسالة قبلها خادم بريد حقيقي
+  await expect(page.locator(step("ops_alert_email"))).toHaveAttribute("data-state", "open");
   await expect(page.locator(step("payment_mode"))).toHaveAttribute("data-state", "open");
   await expect(page.locator(step("bunny_cdn_token"))).toHaveAttribute("data-blocking", "true");
 
@@ -31,6 +34,32 @@ test("the owner sees every step and a verdict that is not ready, with no secret 
     await page.setViewportSize({ width, height: 900 });
     await expectNoHorizontalOverflow(page);
   }
+});
+
+test.describe("the alert email step needs a message that really went out", () => {
+  test.use({ baseURL: E2E_MAIL_BASE_URL });
+  test.beforeEach(({}, info) => test.skip(info.project.name !== "desktop", "تكفي مرة واحدة على الكمبيوتر"));
+
+  test("a test alert through real SMTP reaches the owner's inbox and completes the step", async ({ page }) => {
+    await db()`delete from email_log where template in ('ops_alert', 'ops_alert_test')`;
+    await db()`delete from rate_limits where key like 'ops_test_alert:%'`;
+    await loginAdmin(page);
+    await page.goto("/admin/launch");
+    await expect(page.locator(step("ops_alert_email"))).toHaveAttribute("data-state", "open");
+
+    try {
+      await page.goto("/admin/ops#test-alert");
+      await page.getByRole("button", { name: "أرسل رسالة تجربة" }).click();
+      await expect(page.getByText("قبل خادم البريد رسالة التجربة")).toBeVisible();
+      await waitForMailLink(E2E_OPS_ALERT_EMAIL, /\/admin\/ops/);
+
+      await page.goto("/admin/launch");
+      await expect(page.locator(step("ops_alert_email"))).toHaveAttribute("data-state", "done");
+    } finally {
+      // الخادمان يشتركان في قاعدة البيانات: لا تبقى الرسالة فتُنجز الخطوة في اختبارات الأجهزة التالية
+      await db()`delete from email_log where template = 'ops_alert_test'`;
+    }
+  });
 });
 
 test.describe("manual ticks", () => {

@@ -35,6 +35,23 @@ export async function lastAlertSendFailed(): Promise<boolean> {
   return last?.status === "failed";
 }
 
+export type AlertDelivery = "sent" | "failed" | "logged" | "none";
+
+/**
+ * مصير آخر رسالة تنبيه أو تجربة إلى البريد المضبوط الآن. sent وحدها تعني أن خادم البريد قبلها.
+ * رسالة إلى عنوان سابق لا تُحسب: تغيير OPS_ALERT_EMAIL يعيد الخطوة مفتوحة حتى تخرج رسالة إلى الجديد.
+ */
+export async function alertDelivery(): Promise<AlertDelivery> {
+  const to = opsAlertEmail();
+  if (!to) return "none";
+  const [last] = await sql<{ status: "sent" | "failed" | "logged" }[]>`
+    select status from email_log
+    where template in ('ops_alert', 'ops_alert_test') and lower(to_email) = lower(${to})
+    order by id desc limit 1
+  `;
+  return last?.status ?? "none";
+}
+
 export type JobView = JobHeartbeat & { status: JobStatus };
 
 export async function jobViews(): Promise<JobView[]> {

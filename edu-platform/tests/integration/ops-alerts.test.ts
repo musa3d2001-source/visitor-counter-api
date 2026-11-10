@@ -2,8 +2,8 @@ import { afterAll, afterEach, beforeAll, beforeEach, describe, expect, it, vi } 
 import { resetEnvCache } from "@/server/env";
 import { handleMyFatoorahWebhook, requestOrderRefund, resetPaymentMethodsCache, verifyAndApplyPayment } from "@/server/payments/service";
 import * as mailer from "@/server/platform/mailer";
-import { flushSuppressedAlerts, MAX_ALERTS_PER_DAY, OPS_ALERTS, RETRY_FAILED_SEND_MINUTES, sendOpsAlert } from "@/server/platform/ops-alerts";
-import { lastAlertSendFailed } from "@/server/platform/ops-status";
+import { flushSuppressedAlerts, MAX_ALERTS_PER_DAY, OPS_ALERTS, RETRY_FAILED_SEND_MINUTES, sendOpsAlert, sendTestOpsAlert } from "@/server/platform/ops-alerts";
+import { alertDelivery, lastAlertSendFailed } from "@/server/platform/ops-status";
 import { resetOpsWatchdogForTests, runOpsWatchdog } from "@/server/platform/scheduled-jobs";
 import { startSimulator, type Simulator } from "../mocks/myfatoorah-simulator";
 import { closeDb, resetDb, sql } from "../helpers/db";
@@ -202,6 +202,21 @@ describe("the alert path cannot feed on itself", () => {
     await makeOld("server_error");
     await flushSuppressedAlerts();
     expect((await mails()).at(-1)?.body).toContain("٣");
+  });
+
+  it("a test alert says plainly whether it went out, and leaves every alert period alone", async () => {
+    expect(await sendTestOpsAlert()).toBe("logged");
+    expect(await alertDelivery()).toBe("logged");
+    smtpDown();
+    expect(await sendTestOpsAlert()).toBe("failed");
+    expect(await alertDelivery()).toBe("failed");
+    expect(await sql`select 1 from ops_alert_state`).toHaveLength(0);
+    smtpBack();
+    delete process.env.OPS_ALERT_EMAIL;
+    resetEnvCache();
+    expect(await sendTestOpsAlert()).toBe("no_address");
+    expect(await alertDelivery()).toBe("none");
+    expect(await sql`select 1 from email_log where template = 'ops_alert_test'`).toHaveLength(2);
   });
 
   it("the owner page learns that the last alert did not go out", async () => {

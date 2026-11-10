@@ -3,7 +3,7 @@ import { after } from "next/server";
 import { ar } from "@/lib/design";
 import { sql } from "../db";
 import { env, opsAlertEmail } from "../env";
-import { sendMail } from "./mailer";
+import { mailIsReal, sendMail } from "./mailer";
 
 /**
  * رسائل تنبيه المالك (OPS_ALERT_EMAIL). ثلاث قواعد لا تُكسر:
@@ -143,6 +143,30 @@ export async function sendOpsAlert(kind: OpsAlertKind, opts: { followUp?: boolea
     console.error("[ops-alert] not sent", kind, err instanceof Error ? err.name : "unknown");
     return false;
   }
+}
+
+export type TestAlertResult = "sent" | "logged" | "failed" | "no_address";
+
+/**
+ * رسالة تجربة يطلبها المالك من صفحة صحة المنصة، ليعرف أن التنبيهات تصله فعلًا قبل أن يحتاجها.
+ * لا تمر بحد الفترة ولا تغيّر حال أي تنبيه، وحدّها في الإجراء الذي يستدعيها. نصها ثابت مثل كل تنبيه.
+ * خطوة «بريد تنبيهات المالك» في صفحة الإطلاق لا تُنجز إلا بعد رسالة تنبيه خرجت فعلًا إلى البريد المضبوط.
+ */
+export async function sendTestOpsAlert(): Promise<TestAlertResult> {
+  const to = opsAlertEmail();
+  if (!to) return "no_address";
+  const sent = await within(
+    sendMail({
+      to,
+      subject: "تنبيه تشغيل: رسالة تجربة",
+      text: `هذه رسالة تجربة طلبتها من صفحة صحة المنصة. وصولها يعني أن رسائل التنبيه ستصلك على هذا البريد.\n\nصفحة صحة المنصة:\n${env().APP_URL}/admin/ops\n\nهذه الرسالة لا تحوي بيانات أي طالب أو دفعة.`,
+      template: "ops_alert_test",
+    }),
+    SEND_TIMEOUT_MS,
+    false,
+  );
+  if (!sent) return "failed";
+  return mailIsReal() ? "sent" : "logged";
 }
 
 /** التنبيه بعد إرسال الرد إن أمكن، حتى لا يؤخر خادم بريد بطيء رد Webhook. خارج سياق الطلب يعمل مباشرة */

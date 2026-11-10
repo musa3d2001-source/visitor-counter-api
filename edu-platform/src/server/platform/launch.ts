@@ -11,7 +11,7 @@ import { bunnyConfigured } from "../video/bunny";
 import { videoHostingBlocked } from "../video/policy";
 import { audit } from "./audit";
 import { siteIndexable } from "./indexing";
-import { jobViews, opsConfig } from "./ops-status";
+import { alertDelivery, jobViews, opsConfig } from "./ops-status";
 import { reportError } from "./report-error";
 import { JOB_LABELS, reconcileCadence, type JobName } from "./scheduled-jobs";
 import { readSettings, type PlatformSettings } from "./settings";
@@ -149,7 +149,7 @@ export async function launchFacts(): Promise<LaunchFacts> {
   const ops = opsConfig();
   const settings = await safe("settings", () => readSettings());
 
-  const [migrations, mail, admins, webhooks, testOrders, teachers, catalog, content, jobs] = await Promise.all([
+  const [migrations, mail, admins, webhooks, testOrders, teachers, catalog, content, jobs, opsAlertDelivery] = await Promise.all([
     safe("migrations", migrationsFact),
     safe("mail", () => mailFact(e.MAIL_DRIVER)),
     safe("admins", adminsFact),
@@ -162,6 +162,7 @@ export async function launchFacts(): Promise<LaunchFacts> {
       return { unchecked: counts.unchecked, flagged: counts.flagged, badPreviews: counts.badPreviews };
     }),
     safe("jobs", async () => (await jobViews()).map((job) => ({ job: job.job, title: JOB_LABELS[job.job as JobName]?.title ?? job.job, status: job.status, lastSuccessAt: job.last_success_at }))),
+    safe("ops_alert_delivery", alertDelivery),
   ]);
 
   return {
@@ -174,6 +175,7 @@ export async function launchFacts(): Promise<LaunchFacts> {
     jobs,
     reconcile: reconcileCadence(),
     opsAlertEmail: ops.alertEmailConfigured,
+    opsAlertDelivery,
     mail,
     admins,
     twoFactorRequired: adminTwoFactorRequired(),

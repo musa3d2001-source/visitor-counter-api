@@ -1,6 +1,9 @@
-import { Activity, BellRing, CalendarClock, ServerCrash } from "lucide-react";
+import { Activity, BellRing, CalendarClock, Send, ServerCrash } from "lucide-react";
 import { requireOwnerPage } from "@/server/auth/permissions";
-import { jobViews, lastAlertSendFailed, opsConfig, type JobView } from "@/server/platform/ops-status";
+import { alertDelivery, jobViews, lastAlertSendFailed, opsConfig, type AlertDelivery, type JobView } from "@/server/platform/ops-status";
+import { ActionForm } from "@/components/admin/action-form";
+import { SubmitButton } from "@/components/ui/submit-button";
+import { sendTestAlertAction } from "./actions";
 import { listErrorEvents } from "@/server/platform/report-error";
 import { JOB_LABELS, runOpsWatchdogAfterResponse, type JobName, type JobStatus } from "@/server/platform/scheduled-jobs";
 import { AdminPageHeader, Section, StatGrid, StatTile } from "@/components/admin/page-header";
@@ -22,7 +25,14 @@ const JOB_STATUS: Record<JobStatus, { label: string; tone: StatusTone }> = {
   never: { label: "لم تعمل بعد", tone: "neutral" },
 };
 
-const TIMES: CountWord = { one: "مرة", two: "مرتان", plural: "مرات", acc: "مرة", oneSuffix: "واحدة" };
+const DELIVERY_TEXT: Record<AlertDelivery, string> = {
+  sent: "قبل خادم البريد آخر رسالة إلى بريد التنبيهات.",
+  failed: "آخر رسالة إلى بريد التنبيهات لم تخرج.",
+  logged: "آخر رسالة إلى بريد التنبيهات سُجلت هنا ولم تخرج، لأن البريد في وضع السجل الداخلي.",
+  none: "لم تخرج بعد أي رسالة إلى بريد التنبيهات.",
+};
+
+const TIMES: CountWord ={ one: "مرة", two: "مرتان", plural: "مرات", acc: "مرة", oneSuffix: "واحدة" };
 
 function JobFact({ label, at }: { label: string; at: Date | null }) {
   return (
@@ -73,7 +83,7 @@ export default async function OpsPage() {
   await requireOwnerPage();
   await runOpsWatchdogAfterResponse();
   const config = opsConfig();
-  const [jobs, errors, alertFailed] = await Promise.all([jobViews(), listErrorEvents(), lastAlertSendFailed()]);
+  const [jobs, errors, alertFailed, delivery] = await Promise.all([jobViews(), listErrorEvents(), lastAlertSendFailed(), alertDelivery()]);
   const alertsWork = config.alertEmailConfigured && config.mailIsReal && !alertFailed;
   const okJobs = jobs.filter((job) => job.status === "ok").length;
   const dayAgo = Date.now() - 24 * 3600_000;
@@ -121,6 +131,17 @@ export default async function OpsPage() {
         <StatTile label="أخطاء ظهرت آخر ٢٤ ساعة" tone={errorsToday > 0 ? "coral" : "green"} icon={<ServerCrash />} value={<span className="num">{ar(errorsToday)}</span>} />
         <StatTile label="رسائل التنبيه" tone={alertsWork ? "green" : alertFailed ? "coral" : "gold"} icon={<BellRing />} value={<span className="text-[1.05rem] sm:text-[1.15rem]">{alertsWork ? "مفعّلة" : alertFailed ? "آخرها لم يخرج" : "غير مفعّلة"}</span>} />
       </StatGrid>
+
+      <Section id="test-alert" title="رسالة تجربة" description="تأكد أن رسائل التنبيه تصل إلى بريدك قبل أن تحتاجها." icon={<Send />} tone="violet">
+        <p className="text-[0.92rem] leading-7 text-ink-soft" data-testid="ops-alert-delivery" data-delivery={delivery}>
+          {DELIVERY_TEXT[delivery]}
+        </p>
+        <ActionForm action={sendTestAlertAction} className="mt-4">
+          <SubmitButton variant="outline" pendingText="جارٍ الإرسال…">
+            <Send aria-hidden /> أرسل رسالة تجربة
+          </SubmitButton>
+        </ActionForm>
+      </Section>
 
       <Section title="الوظائف المجدولة" description="كل وظيفة تسجل هنا آخر مرة بدأت ونجحت وفشلت. الموعد اليومي قد يتأخر حتى ساعة." icon={<CalendarClock />} tone="sky">
         <DataList>

@@ -67,6 +67,22 @@ test.describe("the live server", () => {
     await expectNoHorizontalOverflow(page);
   });
 
+  test("the owner sends a test alert and is told it was only logged, since this server's mail is not real", async ({ page }) => {
+    await db()`delete from email_log where template = 'ops_alert_test'`;
+    await db()`delete from rate_limits where key like 'ops_test_alert:%'`;
+    await loginAdmin(page);
+    await page.goto("/admin/ops#test-alert");
+    await page.getByRole("button", { name: "أرسل رسالة تجربة" }).click();
+    await expect(page.getByText("سُجلت الرسالة ولم تخرج إلى أحد")).toBeVisible();
+    await page.reload();
+    await expect(page.getByTestId("ops-alert-delivery")).toHaveAttribute("data-delivery", "logged");
+    expect(await db()`select 1 from email_log where template = 'ops_alert_test'`).toHaveLength(1);
+    for (const width of [390, 1440]) {
+      await page.setViewportSize({ width, height: 900 });
+      await expectNoHorizontalOverflow(page);
+    }
+  });
+
   test("an uncaught server failure reaches the owner page without the link or the session", async ({ request, page }) => {
     await db()`delete from error_events where route like '%teachers%'`;
     await db()`alter table teachers rename to teachers_moved_for_test`;

@@ -86,6 +86,8 @@ export type LaunchFacts = {
   jobs: JobFact[] | null;
   reconcile: "daily" | "frequent";
   opsAlertEmail: boolean;
+  /** مصير آخر رسالة تنبيه أو تجربة إلى البريد المضبوط الآن. null: تعذرت قراءة السجل */
+  opsAlertDelivery: "sent" | "failed" | "logged" | "none" | null;
   mail: { driver: "log" | "smtp"; lastSentAt: Date | null; lastFailedAt: Date | null } | null;
   admins: { total: number; enrolled: number } | null;
   twoFactorRequired: boolean;
@@ -172,6 +174,14 @@ export type LaunchVerdict = {
 };
 
 const ENV_WHERE = { label: "Vercel ← المشروع ← Settings ← Environment Variables ← Production، ثم إعادة النشر" };
+
+const ALERT_DELIVERY_FACT = {
+  sent: "قبل خادم البريد آخر رسالة تنبيه إلى هذا البريد. تأكد أنها وصلت ولم تذهب إلى الرسائل غير المرغوبة.",
+  failed: "آخر رسالة تنبيه إلى هذا البريد لم تخرج: رفضها خادم البريد أو لم يرد. السبب في صفحة «البريد الصادر».",
+  logged: "البريد في وضع السجل الداخلي، فآخر رسالة سُجلت ولم تخرج إلى أحد. فعّل SMTP ثم أرسل رسالة تجربة.",
+  none: "لم تخرج بعد أي رسالة تنبيه إلى هذا البريد. أرسل رسالة تجربة من صفحة صحة المنصة.",
+  unknown: "تعذرت قراءة سجل البريد، فلا نعرف إن كانت الرسائل تصل.",
+} as const;
 const SETTINGS_WHERE = { label: "إعدادات المنصة", href: "/admin/settings" };
 const HEALTH_WHERE = { label: "سلامة المحتوى", href: "/admin/content-health" };
 const UNKNOWN_FACT = "تعذرت قراءة هذه الحالة الآن، وسُجّل الخطأ في «صحة المنصة». أعد فتح الصفحة بعد قليل.";
@@ -350,11 +360,12 @@ function hostingSteps(f: LaunchFacts, ticks: LaunchTicks): Built[] {
   steps.push({
     key: "ops_alert_email",
     title: "بريد تنبيهات المالك (OPS_ALERT_EMAIL)",
-    state: f.opsAlertEmail ? "done" : "open",
+    // العنوان وحده لا يثبت أن الرسائل تصل: لا تُنجز الخطوة إلا بعد رسالة قبلها خادم البريد إلى هذا العنوان
+    state: !f.opsAlertEmail ? "open" : f.opsAlertDelivery === null ? "unknown" : f.opsAlertDelivery === "sent" ? "done" : "open",
     blocking: true,
-    todo: "أضف OPS_ALERT_EMAIL ببريدك الحقيقي، ثم أعد النشر، حتى تصلك رسالة عند نزاع أو دفعة زائدة أو وظيفة متوقفة.",
-    where: ENV_WHERE,
-    facts: [f.opsAlertEmail ? "مضبوط ببريد صالح." : "غير مضبوط أو ليس بريدًا صالحًا.", "الرسائل لا تخرج إلا والبريد الحقيقي (SMTP) مفعّل."],
+    todo: "أضف OPS_ALERT_EMAIL ببريدك الحقيقي وأعد النشر، ثم اضغط «أرسل رسالة تجربة» في صفحة صحة المنصة وتأكد أنها وصلتك، حتى تصلك رسالة عند نزاع أو دفعة زائدة أو وظيفة متوقفة.",
+    where: { label: `${ENV_WHERE.label}، ثم صحة المنصة ← أرسل رسالة تجربة`, href: "/admin/ops#test-alert" },
+    facts: [f.opsAlertEmail ? "مضبوط ببريد صالح." : "غير مضبوط أو ليس بريدًا صالحًا.", ...(f.opsAlertEmail ? [ALERT_DELIVERY_FACT[f.opsAlertDelivery ?? "unknown"]] : [])],
   });
 
   steps.push({

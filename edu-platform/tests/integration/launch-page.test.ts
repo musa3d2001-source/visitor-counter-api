@@ -25,6 +25,7 @@ vi.mock("@/server/auth/session", async (original) => ({
 }));
 
 const { setLaunchCheckAction } = await import("@/app/admin/launch/actions");
+const { sendTestAlertAction } = await import("@/app/admin/ops/actions");
 const { default: LaunchPage } = await import("@/app/admin/launch/page");
 
 const form = (values: Record<string, string>) => {
@@ -182,6 +183,30 @@ describe("facts read from the database", () => {
     expect(facts.mail!.lastFailedAt!.getTime()).toBeGreaterThan(facts.mail!.lastSentAt!.getTime());
   });
 
+  it("the alert email step is done only after an alert or test went out to the address set now", async () => {
+    const step = async () => (await launchStatus()).steps.find((s) => s.key === "ops_alert_email")!;
+    process.env.OPS_ALERT_EMAIL = "Owner@Farqad.example";
+    resetEnvCache();
+    expect((await step()).state).toBe("open");
+    expect((await step()).facts.join(" ")).toContain("لم تخرج بعد أي رسالة تنبيه");
+
+    // رسالة قبلها خادم البريد، لكن إلى عنوان سابق: لا تثبت أن العنوان الحالي يصل
+    await sql`insert into email_log (to_email, subject, template, status) values ('old-owner@farqad.example', 's', 'ops_alert_test', 'sent')`;
+    expect((await step()).state).toBe("open");
+
+    await sql`insert into email_log (to_email, subject, template, status) values ('owner@farqad.example', 's', 'ops_alert_test', 'logged')`;
+    expect((await step()).state).toBe("open");
+    expect((await step()).facts.join(" ")).toContain("وضع السجل الداخلي");
+
+    await sql`insert into email_log (to_email, subject, template, status) values ('owner@farqad.example', 's', 'ops_alert_test', 'sent')`;
+    expect((await step()).state).toBe("done");
+
+    // تنبيه حقيقي فشل بعدها: الخطوة تعود مفتوحة حتى تخرج رسالة
+    await sql`insert into email_log (to_email, subject, template, status) values ('owner@farqad.example', 's', 'ops_alert', 'failed')`;
+    expect((await step()).state).toBe("open");
+    expect((await step()).facts.join(" ")).toContain("لم تخرج");
+  });
+
   it("reads seller identity and contacts from settings, ignoring blank values", async () => {
     const put = (key: string, value: string) => sql`insert into settings (key, value) values (${key}, ${sql.json(value)}) on conflict (key) do update set value = excluded.value`;
     await put("seller_legal_name", "   ");
@@ -264,6 +289,37 @@ describe("manual ticks", () => {
     }
     expect(await sql`select 1 from launch_checks`).toHaveLength(0);
     expect(await sql`select 1 from audit_logs where entity_type = 'launch_check'`).toHaveLength(0);
+  });
+
+  it("the owner sends a test alert to the configured address, and only the owner can", async () => {
+    process.env.OPS_ALERT_EMAIL = "owner@farqad.example";
+    resetEnvCache();
+    // بيئة الاختبار تسجل البريد ولا ترسله، فتقول الرسالة ذلك بدل «وصلت»
+    const res = await sendTestAlertAction(null, form({ to: "attacker@evil.example" }));
+    expect(res).toMatchObject({ ok: true, partial: true });
+    expect(res?.message).toContain("وضع السجل الداخلي");
+    const rows = await sql<{ to_email: string; body: string }[]>`select to_email, body from email_log where template = 'ops_alert_test'`;
+    expect(rows.map((r) => r.to_email)).toEqual(["owner@farqad.example"]);
+    expect(rows[0].body).toContain("رسالة تجربة");
+    expect((await sql`select 1 from audit_logs where action = 'ops.test_alert' and actor_id = ${owner.id}`).length).toBe(1);
+
+    const teacher = await createTeacher({ mode: "self_managed", shareBps: 4000 });
+    for (const user of [teacher.user, await createUser(), null]) {
+      ctx.user = user;
+      expect(await sendTestAlertAction(null, form({}))).toEqual({ error: "غير مصرح لك بتنفيذ هذا الإجراء" });
+    }
+    expect(await sql`select 1 from email_log where template = 'ops_alert_test'`).toHaveLength(1);
+  });
+
+  it("a test alert is refused without an address, and is limited per hour", async () => {
+    delete process.env.OPS_ALERT_EMAIL;
+    resetEnvCache();
+    expect(await sendTestAlertAction(null, form({}))).toMatchObject({ error: expect.stringContaining("OPS_ALERT_EMAIL غير مضبوط") });
+    process.env.OPS_ALERT_EMAIL = "owner@farqad.example";
+    resetEnvCache();
+    for (let i = 0; i < 4; i++) expect(await sendTestAlertAction(null, form({}))).toMatchObject({ ok: true });
+    expect(await sendTestAlertAction(null, form({}))).toMatchObject({ error: expect.stringContaining("حاول بعد ساعة") });
+    expect(await sql`select 1 from email_log where template = 'ops_alert_test'`).toHaveLength(4);
   });
 
   it("refuses an unknown step or value", async () => {
