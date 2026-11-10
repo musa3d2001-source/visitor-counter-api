@@ -658,5 +658,53 @@
       "result": "video/final/s1alt-final-1080p-hevc.mp4 (as delivered: HEVC 10-bit, 1080x1920, 24 fps, 97 frames, 4.04 s); video/final/s1alt-final-1080p.mp4 is an H.264 copy for phones",
       "same_take_as_draft": "yes: per-frame SSIM against the draft 0.963-0.978 (whole frame), 0.85-0.91 (hero box); same 97 frames, same motion"
     }
+  },
+  "kling_round": {
+    "date": "2026-11-10",
+    "approved_by_owner": "«سو اللي تنصح فيه و كمل» (~05:30 UTC) = Claude's recommendations: S2 still retake (2), three Kling clips for the main ad (15.75), the version-B pool clip (5.25), burger pick S3",
+    "quotes": {
+      "still": 2,
+      "kling_pro_3s_sound_off": 5.25
+    },
+    "s2_retake": {
+      "job_id": "7056ea27-0401-43e2-a1ca-2babb6ab0dd9",
+      "model_reported": "nano_banana_2 (requested nano_banana_pro 2k; charged 2)",
+      "prompt": "A plain faceted clear glass perfume bottle full of deep amber oud perfume with a plain polished gold cap stands just right of centre and is the hero of the picture, its base at 84% of the frame height and its cap at 58%. Behind it on the left stands a traditional Kuwaiti square wooden mabkhara incense burner, smaller than the bottle, plain dark polished wood with plain flat brass corner plates and no carving, no mirrors and no studs. A glowing charcoal and one dark oud chip sit on its top, and a thin soft ribbon of white bakhoor smoke rises from it and thins out completely before it reaches 47% of the frame height. Flat seamless hot-pink (#FF4F9A) surface and backdrop, a faint reflection under the objects. Slightly high eye-level camera, 85 mm lens look, f/8. No flame, no engraving, no ornament, no tray, no label and no embossing on the bottle. [COMMON]",
+      "fit": "sb/stills/s2_fit.png (fit_stills.py s2 with override {\"s\":0.74,\"src\":[498,1399],\"dst\":[540,1600],\"shadow_side\":\"right\",\"target\":\"#FF4F9A\",\"fade_above\":[880,1010]}); the old still is kept as sb/stills/s2_v1_fit.png"
+    },
+    "clips": [
+      {
+        "shot": "S5 kunafa",
+        "job_id": "bf759f9b-94df-44be-b3c9-8090f75f56d8",
+        "start_media": "5633fa48-afce-4f58-9534-e451b44c2cf3",
+        "file": "video/kling/s5-kling-3s.mp4"
+      },
+      {
+        "shot": "S3 burger",
+        "job_id": "4442c35e-f7a2-4943-bb46-275e9dc79f86",
+        "start_media": "3ba3c6e2-5562-4e45-9ee6-d0ab8ca43a39",
+        "file": "video/kling/s3-kling-3s.mp4"
+      },
+      {
+        "shot": "S6 pool (version B)",
+        "job_id": "b76b9705-76d6-444c-8ad6-874094c3ba3a",
+        "start_media": "66b1ae36-f80e-4d54-b379-4607f12b5333",
+        "file": "video/kling/s6-kling-3s.mp4"
+      },
+      {
+        "shot": "S2 perfume and oud",
+        "job_id": "d6bd7c61-a862-42dc-9c55-55a4d5f5b86a",
+        "start_media": "6cfeece3-6fe6-4e5a-95f3-82acba9ad974",
+        "file": "video/kling/s2-kling-3s.mp4",
+        "motion_prompt": "Static tripod shot, the camera does not move. In the first quarter of a second one fuller puff of white smoke rolls up from the charcoal on the square wooden mabkhara, then the smoke keeps curling upward slowly and continuously and thins out before it reaches the empty upper half of the frame. The charcoal glows gently. The mabkhara and the perfume bottle do not move; soft light glints on the glass bottle. No cuts, no new objects, no hands, no flames, no text."
+      }
+    ],
+    "format": "all four: H.264 1080x1920, 24 fps, 73 frames, 3.04 s, untagged and encoded as BT.601 (decode with the default matrix)",
+    "credits": {
+      "this_round": 23,
+      "balance_before": 445.5,
+      "balance_after": 422.5,
+      "v4_total": 117
+    }
   }
 }
