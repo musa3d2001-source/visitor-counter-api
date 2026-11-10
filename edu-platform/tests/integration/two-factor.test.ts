@@ -115,8 +115,8 @@ describe("enrolment", () => {
     const user = await admin();
     const session = await createSession(user.id);
     const { secret } = await begin(user, hashToken(session.token));
-    await expect(confirmTwoFactorEnrolment({ userId: user.id, sessionId: hashToken(session.token), code: wrongCode(secret), ip })).resolves.toMatchObject({ ok: false });
-    await expect(confirmTwoFactorEnrolment({ userId: user.id, sessionId: hashToken(session.token), code: "not a code", ip })).resolves.toMatchObject({ ok: false });
+    await expect(confirmTwoFactorEnrolment({ password: TEST_PASSWORD, userId: user.id, sessionId: hashToken(session.token), code: wrongCode(secret), ip })).resolves.toMatchObject({ ok: false });
+    await expect(confirmTwoFactorEnrolment({ password: TEST_PASSWORD, userId: user.id, sessionId: hashToken(session.token), code: "not a code", ip })).resolves.toMatchObject({ ok: false });
     await expect(getTwoFactorStatus(user.id)).resolves.toMatchObject({ enabled: false, recoveryRemaining: 0 });
     expect(await unusedCodes(user.id)).toBe(0);
     expect(await auditsOf(user.id, "two_factor.enabled")).toHaveLength(0);
@@ -170,9 +170,9 @@ describe("enrolment", () => {
     // من عرف كلمة المرور وفتح الصفحة من جلسة أخرى لا يرى السر الذي يسجّله صاحب الحساب
     const b = await begin(user, second);
     expect(b.manualKey).not.toBe(a.manualKey);
-    await expect(confirmTwoFactorEnrolment({ userId: user.id, sessionId: first, code: codeAt(a.secret, currentStep()), ip })).resolves.toMatchObject({ ok: false });
-    await expect(confirmTwoFactorEnrolment({ userId: user.id, sessionId: first, code: codeAt(b.secret, currentStep()), ip })).resolves.toMatchObject({ ok: false });
-    await expect(confirmTwoFactorEnrolment({ userId: user.id, sessionId: second, code: codeAt(b.secret, currentStep()), ip })).resolves.toMatchObject({ ok: true });
+    await expect(confirmTwoFactorEnrolment({ password: TEST_PASSWORD, userId: user.id, sessionId: first, code: codeAt(a.secret, currentStep()), ip })).resolves.toMatchObject({ ok: false });
+    await expect(confirmTwoFactorEnrolment({ password: TEST_PASSWORD, userId: user.id, sessionId: first, code: codeAt(b.secret, currentStep()), ip })).resolves.toMatchObject({ ok: false });
+    await expect(confirmTwoFactorEnrolment({ password: TEST_PASSWORD, userId: user.id, sessionId: second, code: codeAt(b.secret, currentStep()), ip })).resolves.toMatchObject({ ok: true });
   });
 
   it("does not keep an unconfirmed secret for long", async () => {
@@ -180,7 +180,7 @@ describe("enrolment", () => {
     const sessionId = hashToken((await createSession(user.id)).token);
     const a = await begin(user, sessionId);
     await sql`update user_totp set created_at = now() - interval '31 minutes' where user_id = ${user.id}`;
-    await expect(confirmTwoFactorEnrolment({ userId: user.id, sessionId, code: codeAt(a.secret, currentStep()), ip })).resolves.toMatchObject({ ok: false });
+    await expect(confirmTwoFactorEnrolment({ password: TEST_PASSWORD, userId: user.id, sessionId, code: codeAt(a.secret, currentStep()), ip })).resolves.toMatchObject({ ok: false });
     expect((await begin(user, sessionId)).manualKey).not.toBe(a.manualKey);
   });
 
@@ -196,8 +196,8 @@ describe("enrolment", () => {
     const user = await admin();
     const sessionId = hashToken((await createSession(user.id)).token);
     const { secret } = await begin(user, sessionId);
-    for (let i = 0; i < 5; i++) await confirmTwoFactorEnrolment({ userId: user.id, sessionId, code: wrongCode(secret), ip });
-    const refused = await confirmTwoFactorEnrolment({ userId: user.id, sessionId, code: codeAt(secret, currentStep()), ip });
+    for (let i = 0; i < 5; i++) await confirmTwoFactorEnrolment({ password: TEST_PASSWORD, userId: user.id, sessionId, code: wrongCode(secret), ip });
+    const refused = await confirmTwoFactorEnrolment({ password: TEST_PASSWORD, userId: user.id, sessionId, code: codeAt(secret, currentStep()), ip });
     expect(refused).toMatchObject({ ok: false, retryAfter: expect.any(Number) });
     await expect(getTwoFactorStatus(user.id)).resolves.toMatchObject({ enabled: false });
   });
@@ -226,13 +226,30 @@ describe("enrolment", () => {
     await expect(TwoFactorSetupPage()).rejects.toThrow("NEXT_REDIRECT /login");
   });
 
+  it("binding a phone needs the password at that moment: a stolen session alone cannot do it, and the refusal is audited", async () => {
+    const user = await admin();
+    const session = await createSession(user.id);
+    const sessionId = hashToken(session.token);
+    ctx.jar.set(SESSION_COOKIE, session.token);
+    const { secret } = await begin(user, sessionId);
+    const code = codeAt(secret, currentStep());
+    await expect(confirmTwoFactorSetupAction(null, form({ code, currentPassword: "wrong-password-here" }))).resolves.toMatchObject({ error: expect.stringContaining("كلمة المرور") });
+    await expect(confirmTwoFactorSetupAction(null, form({ code }))).resolves.toMatchObject({ error: expect.stringContaining("كلمة المرور") });
+    expect(await sql`select user_id from user_totp where user_id = ${user.id} and enabled_at is not null`).toHaveLength(0);
+    expect(await sql`select id from audit_logs where action = 'two_factor.enrol_refused' and actor_id = ${user.id}`).toHaveLength(2);
+    await expect(confirmTwoFactorSetupAction(null, form({ code, currentPassword: TEST_PASSWORD }))).resolves.toMatchObject({ ok: true });
+    const [log] = await sql<{ metadata: Record<string, unknown> }[]>`select metadata from audit_logs where action = 'two_factor.enabled' and actor_id = ${user.id}`;
+    expect(log.metadata).toMatchObject({ passwordConfirmed: true });
+    expect(JSON.stringify(log.metadata)).not.toContain(TEST_PASSWORD);
+  });
+
   it("the action returns the codes and leaves the cookies alone, so the page does not lose them", async () => {
     const user = await admin();
     const session = await createSession(user.id);
     const sessionId = hashToken(session.token);
     ctx.jar.set(SESSION_COOKIE, session.token);
     const { secret } = await begin(user, sessionId);
-    const out = await confirmTwoFactorSetupAction(null, form({ code: codeAt(secret, currentStep()) }));
+    const out = await confirmTwoFactorSetupAction(null, form({ code: codeAt(secret, currentStep()), currentPassword: TEST_PASSWORD }));
     expect(out?.ok).toBe(true);
     expect(out?.secrets?.recoveryCodes?.split("\n")).toHaveLength(10);
     expect(ctx.options.size).toBe(0);
@@ -747,7 +764,7 @@ describe("the requirement", () => {
     const session = await createSession(user.id);
     ctx.jar.set(SESSION_COOKIE, session.token);
     const { secret } = await begin(user, hashToken(session.token));
-    await expect(confirmTwoFactorSetupAction(null, form({ code: codeAt(secret, currentStep()) }))).resolves.toMatchObject({ ok: true });
+    await expect(confirmTwoFactorSetupAction(null, form({ code: codeAt(secret, currentStep()), currentPassword: TEST_PASSWORD }))).resolves.toMatchObject({ ok: true });
     await expect(getCurrentUser()).resolves.toMatchObject({ id: user.id });
   });
 
@@ -910,7 +927,7 @@ describe("the last recovery code", () => {
     await restart(s);
     const details = await beginTwoFactorEnrolment({ userId: s.user.id, sessionId: s.sessionId, account: s.user.email, issuer: "فرقد" });
     const fresh = base32Decode(details!.manualKey.replace(/\s/g, ""));
-    expect(await confirmTwoFactorEnrolment({ userId: s.user.id, sessionId: s.sessionId, code: codeAt(fresh, currentStep()), ip })).toMatchObject({ ok: true });
+    expect(await confirmTwoFactorEnrolment({ password: TEST_PASSWORD, userId: s.user.id, sessionId: s.sessionId, code: codeAt(fresh, currentStep()), ip })).toMatchObject({ ok: true });
     expect((await methodOf(s.token)).two_factor_method).toBe("totp");
   });
 

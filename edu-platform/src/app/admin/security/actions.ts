@@ -7,7 +7,18 @@ import { STEP_UP_FIELD, TWO_FACTOR_SETUP_PATH } from "@/lib/two-factor";
 import { AdminError, adminAction } from "@/server/admin/common";
 import { adminTwoFactorRequired } from "@/server/env";
 import { getCurrentSession } from "@/server/auth/session";
-import { disableTwoFactor, regenerateRecoveryCodes, restartTwoFactorAfterLastCode } from "@/server/auth/two-factor";
+import { disableTwoFactor, proveStepUp, regenerateRecoveryCodes, restartTwoFactorAfterLastCode } from "@/server/auth/two-factor";
+
+/** خطوة الإثبات: رمز جديد يفتح الأوامر الحساسة لهذه الجلسة وحدها مدة قصيرة، ثم يعيد المتصفح الأمر نفسه */
+export async function proveStepUpAction(_prev: ActionState, fd: FormData): Promise<ActionState> {
+  return adminAction(async ({ adminId, ip }) => {
+    const session = await getCurrentSession();
+    if (!session) throw new AdminError("انتهت الجلسة، سجّل الدخول مرة أخرى");
+    const res = await proveStepUp({ userId: adminId, sessionId: session.sessionId, code: fd.get(STEP_UP_FIELD), ip });
+    if (!res.ok) throw new AdminError(res.error);
+    return { ok: true, message: "تم التأكيد" };
+  });
+}
 
 /** رموز استرداد جديدة بعد رمز صحيح. تعاد في حالة النموذج فقط، وإعادة رسم الصفحة قبل قراءتها تضيعها */
 export async function regenerateRecoveryCodesAction(_prev: ActionState, fd: FormData): Promise<ActionState> {

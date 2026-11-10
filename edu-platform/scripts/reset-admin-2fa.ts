@@ -113,6 +113,7 @@ async function main() {
     const out = await resetAdminTwoFactor(sql, opts);
     console.log(out.applied ? "Applied:" : "Dry run, nothing was changed. Add --apply to act:");
     console.log(JSON.stringify(out, null, 2));
+    if (out.applied) console.log("Next, right now: sign in and enrol the new phone. Sensitive owner commands stay refused until then.");
   } finally {
     await sql.end();
   }

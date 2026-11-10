@@ -12,6 +12,9 @@ export function recoveryCodesAreLow(status: { enabled: boolean; recoveryRemainin
   return status.enabled && status.recoveryRemaining <= LOW_RECOVERY_CODES;
 }
 
+/** مدة صلاحية إثبات العامل الثاني للأوامر الحساسة، وهو خاص بالجلسة التي أدخلت الرمز */
+export const STEP_UP_PROOF_MINUTES = 10;
+
 /** اسم حقل الرمز في نماذج الإدارة */
 export const STEP_UP_FIELD = "twoFactorCode";
 

@@ -2,6 +2,7 @@ import { beginTwoFactorEnrolment, confirmTwoFactorEnrolment } from "@/server/aut
 import { createSession, hashToken } from "@/server/auth/session";
 import { base32Decode, hotp, timeStep } from "@/server/auth/two-factor-core";
 import { sql } from "./db";
+import { TEST_PASSWORD } from "./factories";
 
 export const currentStep = () => timeStep(Date.now());
 export const codeAt = (secret: Buffer, step: number) => hotp(secret, step);
@@ -23,7 +24,7 @@ export async function enrolAdmin(user: { id: string; email: string }) {
   const details = await beginTwoFactorEnrolment({ userId: user.id, sessionId, account: user.email, issuer: "فرقد" });
   if (!details) throw new Error("already enrolled");
   const secret = base32Decode(details.manualKey.replace(/\s/g, ""));
-  const confirmed = await confirmTwoFactorEnrolment({ userId: user.id, sessionId, code: codeAt(secret, currentStep()), ip: "192.0.2.10" });
+  const confirmed = await confirmTwoFactorEnrolment({ password: TEST_PASSWORD, userId: user.id, sessionId, code: codeAt(secret, currentStep()), ip: "192.0.2.10" });
   if (!confirmed.ok) throw new Error(`enrolment refused: ${confirmed.error}`);
   return { session, sessionId, secret, recoveryCodes: confirmed.recoveryCodes, details };
 }

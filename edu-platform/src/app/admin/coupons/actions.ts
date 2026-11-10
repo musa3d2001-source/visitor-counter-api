@@ -9,6 +9,7 @@ import { sql } from "@/server/db";
 import { audit } from "@/server/platform/audit";
 import { kuwaitDayStart } from "@/server/admin/stats";
 import { AdminError, adminAction, bool, isUuid, str } from "@/server/admin/common";
+import { assertFreshProof } from "@/server/auth/step-up";
 
 const KEYS = ["code", "kind", "value", "minOrder", "maxRedemptions", "maxPerUser", "startsAt", "endsAt", "note"];
 
@@ -57,11 +58,13 @@ function parseCoupon(fd: FormData): CouponInput {
 
 export async function saveCouponAction(_p: ActionState, fd: FormData): Promise<ActionState> {
   let redirectTo: string | null = null;
-  const res = await adminAction(async ({ adminId }) => {
+  const res = await adminAction(async ({ adminId, ip }) => {
     const id = str(fd, "id");
     const c = parseCoupon(fd);
+    if (id && !isUuid(id)) throw new AdminError("طلب غير صالح");
+    // كوبون ١٠٠٪ يوزَّع يساوي منح كل المحتوى مجانًا
+    await assertFreshProof({ adminId, ip, command: "coupon.save" });
     if (id) {
-      if (!isUuid(id)) throw new AdminError("طلب غير صالح");
       await sql`
         update coupons set code = ${c.code}, kind = ${c.kind}, value = ${c.value}, min_order_fils = ${c.minOrderFils},
           max_redemptions = ${c.maxRedemptions}, max_per_user = ${c.maxPerUser}, starts_at = ${c.startsAt}, ends_at = ${c.endsAt},
@@ -87,10 +90,11 @@ export async function saveCouponAction(_p: ActionState, fd: FormData): Promise<A
 }
 
 export async function toggleCouponAction(_p: ActionState, fd: FormData): Promise<ActionState> {
-  return adminAction(async ({ adminId }) => {
+  return adminAction(async ({ adminId, ip }) => {
     const id = str(fd, "id");
     if (!isUuid(id)) throw new AdminError("طلب غير صالح");
     const active = str(fd, "active") === "1";
+    if (active) await assertFreshProof({ adminId, ip, command: "coupon.activate" });
     await sql`update coupons set is_active = ${active} where id = ${id}`;
     await audit({ actorId: adminId, action: active ? "coupon.activate" : "coupon.deactivate", entityType: "coupon", entityId: id });
     revalidatePath("/admin/coupons");

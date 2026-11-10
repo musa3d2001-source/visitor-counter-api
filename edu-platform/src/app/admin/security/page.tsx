@@ -10,7 +10,7 @@ import { StatusPill } from "@/components/admin/status-badge";
 import { Alert } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
 import { ar, count, W } from "@/lib/design";
-import { LOW_RECOVERY_CODES, RECOVERY_CODE_WORD, STEP_UP_CONFIRM_FIELD, TWO_FACTOR_SETUP_PATH } from "@/lib/two-factor";
+import { LOW_RECOVERY_CODES, RECOVERY_CODE_WORD, STEP_UP_CONFIRM_FIELD, STEP_UP_PROOF_MINUTES, TWO_FACTOR_SETUP_PATH } from "@/lib/two-factor";
 import { formatDateTime } from "@/lib/utils";
 import { PageBand } from "../_components/overview/bands";
 import { disableTwoFactorAction } from "./actions";
@@ -63,7 +63,7 @@ export default async function AdminSecurityPage({ searchParams }: { searchParams
             <div className="space-y-4">
               <p className="text-[0.98rem] leading-8 text-ink-soft">
                 {status.enabledAt ? <>مفعّل منذ {formatDateTime(status.enabledAt)}. </> : null}
-                يُطلب الرمز عند كل دخول وعند كل أمر استرداد يخرج مالًا.
+                يُطلب الرمز عند كل دخول وعند كل أمر استرداد. والأوامر الحساسة الأخرى، مثل التسويات وتصدير بيانات العملاء، تطلب رمزًا جديدًا يبقى صالحًا {count(STEP_UP_PROOF_MINUTES, W.minute)} على هذا الجهاز فقط.
               </p>
               <div className="border-t border-dashed border-line-strong pt-4">
                 <ConfirmButton
@@ -74,7 +74,7 @@ export default async function AdminSecurityPage({ searchParams }: { searchParams
                   description={
                     status.required
                       ? "التحقق إلزامي في هذا النشر، فستنتقل مباشرة لتسجيله من جديد بجوالك الجديد. تنتهي كل جلسة أخرى وتبطل رموز الاسترداد الحالية."
-                      : "ستكفي كلمة المرور وحدها للدخول، وتخرج أوامر الاسترداد بلا رمز. تنتهي كل جلسة أخرى وتبطل رموز الاسترداد الحالية."
+                      : "ستكفي كلمة المرور وحدها للدخول، وتتوقف الاستردادات والأوامر الحساسة كلها حتى تفعّله من جديد. تنتهي كل جلسة أخرى وتبطل رموز الاسترداد الحالية."
                   }
                   fields={[STEP_UP_CONFIRM_FIELD]}
                   confirmLabel="إيقاف"
@@ -84,7 +84,7 @@ export default async function AdminSecurityPage({ searchParams }: { searchParams
           ) : (
             <div className="space-y-4">
               <Alert tone="warning" title="كلمة المرور وحدها تكفي للدخول إلى حسابك الآن">
-                التحقق بخطوتين غير إلزامي في هذا النشر، ولم تفعّله على حسابك، فأوامر الاسترداد تخرج بلا رمز تحقق.
+                لم تفعّل التحقق بخطوتين على حسابك، فلن تعمل الاستردادات والتسويات وتصدير بيانات العملاء وباقي الأوامر الحساسة حتى تفعّله.
               </Alert>
               <Button asChild>
                 <Link href={TWO_FACTOR_SETUP_PATH}>

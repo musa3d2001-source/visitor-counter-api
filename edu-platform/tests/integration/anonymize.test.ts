@@ -13,6 +13,7 @@ import { dashboardTotals } from "@/server/admin/stats";
 import { anonymizedEmail, anonymizedName } from "@/lib/anonymize";
 import { closeDb, resetDb, sql } from "../helpers/db";
 import { confirmPaid, invoiceIdOf, newOrder, startPayment } from "../helpers/payment-flow";
+import { provenOwner } from "../helpers/step-up";
 import { activeEntitlements, createProduct, createTeacher, createUser, createVideoProduct, TEST_PASSWORD } from "../helpers/factories";
 import { startSimulator, type Simulator } from "../mocks/myfatoorah-simulator";
 import { SIM_API_KEY, SIM_PORT, TEST_DATABASE_URL, TEST_ENV, WEBHOOK_SECRET } from "../test-env";
@@ -128,7 +129,7 @@ describe("who and what can be anonymised", () => {
 
   it("the action tells the owner when there was nothing left to do", async () => {
     const [u, a] = [await student(), await admin()];
-    ctx.cookie = (await createSession(a.id, meta)).token;
+    ctx.cookie = (await provenOwner(a)).session.token;
     const first = await anonymizeStudentAction(null, form({ userId: u.id, confirmEmail: u.email, reason: REASON }));
     expect(first?.ok).toBe(true);
     const again = await anonymizeStudentAction(null, form({ userId: u.id, confirmEmail: u.email, reason: REASON }));

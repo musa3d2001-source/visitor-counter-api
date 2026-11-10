@@ -1,7 +1,7 @@
 "use client";
 
 import { useActionState, useState } from "react";
-import { Check, Copy, ExternalLink, Hash } from "lucide-react";
+import { Check, Copy, ExternalLink, Hash, LockKeyhole } from "lucide-react";
 import type * as React from "react";
 import { confirmTwoFactorSetupAction } from "../actions";
 import { Field, Input } from "@/components/ui/form";
@@ -29,7 +29,7 @@ export function TwoFactorSetupForm({ manualKey, otpauthUri, qr }: { manualKey: s
     return (
       <div className="flex flex-col gap-4">
         <Alert tone="success" title="تم تفعيل التحقق بخطوتين">
-          من الآن سيُطلب الرمز عند كل دخول وعند كل استرداد، وأُنهيت أي جلسة أخرى على هذا الحساب.
+          من الآن سيُطلب الرمز عند كل دخول وعند كل أمر حساس، وأُنهيت أي جلسة أخرى على هذا الحساب.
         </Alert>
         <RecoveryCodesPanel codes={recoveryCodes} doneLabel="حفظتها، متابعة إلى اللوحة" onDone={() => window.location.assign("/admin")} />
       </div>
@@ -69,11 +69,16 @@ export function TwoFactorSetupForm({ manualKey, otpauthUri, qr }: { manualKey: s
           </Button>
         </div>
       </div>
-      <Step n="٣">اكتب الرمز الذي يظهر في التطبيق.</Step>
+      <Step n="٣">اكتب الرمز الذي يظهر في التطبيق، ثم كلمة مرور حسابك للتأكيد.</Step>
       {state?.error ? <Alert tone="danger">{state.error}</Alert> : null}
       <Field label="الرمز من التطبيق" htmlFor="code" hint="٦ أرقام، ويتغير كل ٣٠ ثانية">
         <IconInput icon={<Hash />} tone="teal">
           <Input id="code" name="code" inputMode="numeric" autoComplete="one-time-code" dir="ltr" required maxLength={8} className={BIG_INPUT} data-testid="two-factor-code" />
+        </IconInput>
+      </Field>
+      <Field label="كلمة المرور الحالية" htmlFor="currentPassword" hint="ربط جوال جديد بحسابك يحتاج كلمة المرور في هذه اللحظة">
+        <IconInput icon={<LockKeyhole />} tone="gold">
+          <Input id="currentPassword" name="currentPassword" type="password" autoComplete="current-password" dir="ltr" required maxLength={128} className={BIG_INPUT} data-testid="two-factor-password" />
         </IconInput>
       </Field>
       <SubmitButton size="xl" pendingText="جارٍ التحقق…" className="w-full" data-testid="two-factor-submit">

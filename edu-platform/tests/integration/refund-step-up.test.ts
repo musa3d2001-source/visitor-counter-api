@@ -7,16 +7,21 @@ import { closeDb, resetDb, sql } from "../helpers/db";
 import { expireLocally, invoiceIdOf, newOrder, orderRow, startPayment } from "../helpers/payment-flow";
 import { createUser } from "../helpers/factories";
 import { enrolAdmin, freshCode, wrongCode } from "../helpers/two-factor";
+import { proveStepUp } from "@/server/auth/two-factor";
 import { SIM_API_KEY, SIM_PORT, TEST_ENV, WEBHOOK_SECRET } from "../test-env";
 
 /** خطوة التحقق الحقيقية على أوامر إخراج المال: لا تُستبدل step-up هنا، بعكس refunds.test */
-const ctx = vi.hoisted(() => ({ admin: null as unknown }));
+const ctx = vi.hoisted(() => ({ admin: null as unknown, sessionId: "" }));
 vi.mock("@/server/auth/guards", async (original) => ({
   ...(await original<typeof import("@/server/auth/guards")>()),
   assertAdmin: async () => {
     if (!ctx.admin) throw new Error("denied");
     return ctx.admin;
   },
+}));
+vi.mock("@/server/auth/session", async (original) => ({
+  ...(await original<typeof import("@/server/auth/session")>()),
+  getCurrentSession: async () => (ctx.admin ? { user: ctx.admin, sessionId: ctx.sessionId, mustChangePassword: false, needsTwoFactorEnrolment: false } : null),
 }));
 vi.mock("next/cache", () => ({ revalidatePath: () => {} }));
 
@@ -44,6 +49,7 @@ beforeEach(async () => {
   const enrolled = await enrolAdmin(owner);
   secret = enrolled.secret;
   recoveryCodes = enrolled.recoveryCodes;
+  ctx.sessionId = enrolled.sessionId;
 });
 afterEach(() => {
   sim.clearFaults();
@@ -166,7 +172,9 @@ describe("refunding an extra payment", () => {
 });
 
 describe("actions that send no money", () => {
-  it("re-checking and dismissing a refund need no code and send nothing", async () => {
+  const proveNow = async () => expect(await proveStepUp({ userId: owner.id, sessionId: ctx.sessionId, code: await freshCode(owner.id, secret), ip: "192.0.2.10" })).toMatchObject({ ok: true });
+
+  it("re-checking a refund needs no code, closing it needs a live proof, and neither sends anything", async () => {
     const { order } = await refusedRefund();
     const [{ id }] = await refundsOf(order.id);
     await sql`update refunds set status = 'unknown', claimed_at = now() - interval '5 minutes' where id = ${id}`;
@@ -174,18 +182,22 @@ describe("actions that send no money", () => {
     expect(recheck?.error ?? "").not.toMatch(/الرمز|رمز/);
     expect(makeRefundCalls()).toHaveLength(0);
     await sql`update refunds set status = 'unknown', claimed_at = now() - interval '5 minutes' where id = ${id}`;
+    await expect(dismissRefundAction({}, form({ refundId: id, orderId: order.id, reason: "راجعنا لوحة البوابة" }))).resolves.toMatchObject({ stepUp: "proof" });
+    await proveNow();
     await expect(dismissRefundAction({}, form({ refundId: id, orderId: order.id, reason: "راجعنا لوحة البوابة" }))).resolves.toMatchObject({ ok: true });
     expect(makeRefundCalls()).toHaveLength(0);
     expect(await refusedAudits()).toHaveLength(0);
   });
 
-  it("re-checking and dismissing an extra payment need no code and send nothing", async () => {
+  it("re-checking an extra payment needs no code, closing it needs a live proof, and neither sends anything", async () => {
     const { order, extra } = await orderWithExtra();
     await refundExtraPayment({ extraId: extra.id, adminId: owner.id, reason: "دفعة مكررة" });
     sim.state.requests.length = 0;
     await expect(recheckExtraPaymentAction({}, form({ extraId: extra.id }))).resolves.toMatchObject({ ok: true });
     expect(makeRefundCalls()).toHaveLength(0);
     const other = await orderWithExtra();
+    await expect(dismissExtraPaymentAction({}, form({ extraId: other.extra.id, reason: "تمت التسوية يدويًا" }))).resolves.toMatchObject({ stepUp: "proof" });
+    await proveNow();
     await expect(dismissExtraPaymentAction({}, form({ extraId: other.extra.id, reason: "تمت التسوية يدويًا" }))).resolves.toMatchObject({ ok: true });
     expect((await extraOf(other.order.id)).state).toBe("dismissed");
     expect(makeRefundCalls()).toHaveLength(0);
@@ -200,12 +212,15 @@ describe("when two-factor is not on for this admin", () => {
     ctx.admin = owner;
   }
 
-  it("passes when it is not required", async () => {
+  it("refuses even with the requirement switched off: the flag only lets the owner sign in to enrol", async () => {
     await plainOwner();
+    process.env.ADMIN_2FA_REQUIRED = "false";
+    resetEnvCache();
     const { order } = await paidOrder();
     sim.state.requests.length = 0;
-    await expect(refundOrderAction({}, form({ orderId: order.id, reason: "طلب الطالب" }))).resolves.toMatchObject({ ok: true });
-    expect(makeRefundCalls()).toHaveLength(1);
+    await expect(refundOrderAction({}, form({ orderId: order.id, reason: "طلب الطالب" }))).resolves.toMatchObject({ stepUp: "enrol" });
+    expect(makeRefundCalls()).toHaveLength(0);
+    expect(await sql`select id from audit_logs where action = 'two_factor.step_up_refused' and actor_id = ${owner.id} and metadata->>'reason' = 'not_enrolled'`).toHaveLength(1);
   });
 
   it("refuses when it is required, even if the session gate were bypassed", async () => {
@@ -214,7 +229,7 @@ describe("when two-factor is not on for this admin", () => {
     resetEnvCache();
     const { order } = await paidOrder();
     sim.state.requests.length = 0;
-    await expect(refundOrderAction({}, form({ orderId: order.id, reason: "طلب الطالب" }))).resolves.toMatchObject({ error: expect.stringContaining("إلزامي") });
+    await expect(refundOrderAction({}, form({ orderId: order.id, reason: "طلب الطالب" }))).resolves.toMatchObject({ stepUp: "enrol", error: expect.stringContaining("فعّل التحقق") });
     expect(makeRefundCalls()).toHaveLength(0);
   });
 });

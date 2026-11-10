@@ -10,6 +10,8 @@ export type ActionState = {
   values?: Record<string, string>;
   /** أسرار تُعرض مرة واحدة للمالك: تعيش في حالة React فقط */
   secrets?: Record<string, string>;
+  /** رفض الخادم هذا الأمر الحساس حتى يثبت المالك هويته بعامله الثاني، أو يسجّله إن لم يكن عنده */
+  stepUp?: "proof" | "enrol";
 } | null;
 
 export function formValues(fd: FormData, keys: string[]): Record<string, string> {

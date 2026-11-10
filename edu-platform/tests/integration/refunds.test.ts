@@ -22,6 +22,7 @@ vi.mock("@/server/auth/guards", async (original) => ({
 }));
 vi.mock("next/cache", () => ({ revalidatePath: () => {} }));
 vi.mock("@/server/auth/step-up", () => ({
+  assertFreshProof: async () => {},
   assertRefundStepUp: async () => {
     if (ctx.stepUpFails) {
       const { AdminError } = await import("@/server/admin/common");

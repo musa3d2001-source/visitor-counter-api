@@ -181,12 +181,18 @@ export async function beginTwoFactorEnrolment(input: { userId: string; sessionId
 export type ConfirmEnrolmentResult = { ok: true; recoveryCodes: string[] } | Refused;
 
 /** يتطلب رمزًا صحيحًا من السر الجديد قبل التفعيل. التفعيل يُنهي كل جلسة أخرى ويختم هذه الجلسة بأنها اجتازت العامل الثاني */
-export async function confirmTwoFactorEnrolment(input: { userId: string; sessionId: string; code: unknown; ip?: string | null }): Promise<ConfirmEnrolmentResult> {
+export async function confirmTwoFactorEnrolment(input: { userId: string; sessionId: string; code: unknown; password: unknown; ip?: string | null }): Promise<ConfirmEnrolmentResult> {
   const parsed = parseSecondFactorCode(input.code);
   if (parsed?.kind !== "totp") return { ok: false, error: "أدخل الرمز المكوّن من ٦ أرقام الظاهر في تطبيق المصادقة." };
   const key = failureKey(input.userId);
   const slot = await reserveFailureSlot(key, CODE_FAILURES);
   if (!slot.allowed) return { ok: false, error: waitMessage(slot.retryAfterSeconds), retryAfter: slot.retryAfterSeconds };
+  // ربط عامل ثانٍ بالحساب يحتاج كلمة المرور في هذه اللحظة: جلسة مسروقة وحدها لا تسجّل جوال غير صاحبه
+  const [user] = await sql<{ password_hash: string }[]>`select password_hash from users where id = ${input.userId}`;
+  if (!user || typeof input.password !== "string" || input.password.length > 128 || !(await verifyPassword(input.password, user.password_hash))) {
+    await audit({ actorId: input.userId, action: "two_factor.enrol_refused", entityType: "user", entityId: input.userId, metadata: { reason: "password" }, ip: input.ip ?? null });
+    return { ok: false, error: "كلمة المرور غير صحيحة. اكتب كلمة مرور حسابك الحالية." };
+  }
   const recoveryCodes = generateRecoveryCodes();
 
   const state = await sql.begin(async (tx): Promise<"ok" | "stale" | "invalid" | "already"> => {
@@ -209,7 +215,7 @@ export async function confirmTwoFactorEnrolment(input: { userId: string; session
     await tx`delete from sessions where user_id = ${input.userId} and id <> ${input.sessionId}`;
     await tx`update sessions set two_factor_at = now(), two_factor_method = 'totp' where id = ${input.sessionId}`;
     await tx`delete from login_challenges where user_id = ${input.userId}`;
-    await audit({ actorId: input.userId, action: "two_factor.enabled", entityType: "user", entityId: input.userId, ip: input.ip ?? null }, tx);
+    await audit({ actorId: input.userId, action: "two_factor.enabled", entityType: "user", entityId: input.userId, metadata: { passwordConfirmed: true }, ip: input.ip ?? null }, tx);
     return "ok";
   });
 
@@ -237,6 +243,7 @@ export async function disableTwoFactor(input: { userId: string; sessionId: strin
     await tx`delete from user_recovery_codes where user_id = ${input.userId}`;
     await tx`delete from login_challenges where user_id = ${input.userId}`;
     await tx`delete from sessions where user_id = ${input.userId} and id <> ${input.sessionId}`;
+    await tx`update sessions set step_up_at = null where id = ${input.sessionId}`;
     await audit({ actorId: input.userId, action: "two_factor.disabled", entityType: "user", entityId: input.userId, metadata: { method }, ip: input.ip ?? null }, tx);
   });
   return out.ok ? { ok: true } : out;
@@ -279,6 +286,7 @@ export async function restartTwoFactorAfterLastCode(input: { userId: string; ses
     await tx`delete from user_recovery_codes where user_id = ${input.userId}`;
     await tx`delete from login_challenges where user_id = ${input.userId}`;
     await tx`delete from sessions where user_id = ${input.userId} and id <> ${input.sessionId}`;
+    await tx`update sessions set step_up_at = null where id = ${input.sessionId}`;
     await audit({ actorId: input.userId, action: "two_factor.restarted_after_last_code", entityType: "user", entityId: input.userId, ip: input.ip ?? null }, tx);
     return true;
   });
@@ -291,6 +299,30 @@ export async function restartTwoFactorAfterLastCode(input: { userId: string; ses
 export async function verifyStepUpCode(input: { userId: string; code: unknown; ip?: string | null }): Promise<{ ok: true; method: "totp" | "recovery" } | Refused> {
   const out = await withVerifiedCode(input.userId, input.code, { ip: input.ip, purpose: "step_up" }, async () => undefined);
   return out.ok ? { ok: true, method: out.method } : out;
+}
+
+class SessionGone extends Error {}
+
+/**
+ * إثبات جديد بالعامل الثاني لهذه الجلسة وحدها. الوقت من ساعة قاعدة البيانات، فلا تختلف عليه نسخ الخادم.
+ * العدّاد نفسه الذي يحمي الدخول، والرمز نفسه لا يصلح مرتين، حتى لو استُخدم للدخول قبل ثوانٍ.
+ * جلسة انتهت لا تستهلك الرمز: الخطأ يلغي المعاملة كلها.
+ */
+export async function proveStepUp(input: { userId: string; sessionId: string; code: unknown; ip?: string | null }): Promise<{ ok: true; method: SecondFactorMethod } | Refused> {
+  let out: { ok: true; method: SecondFactorMethod } | Refused;
+  try {
+    out = await withVerifiedCode(input.userId, input.code, { ip: input.ip, purpose: "step_up" }, async (tx, method) => {
+      const marked = await tx`update sessions set step_up_at = now() where id = ${input.sessionId} and user_id = ${input.userId} and expires_at > now() returning id`;
+      if (!marked.length) throw new SessionGone();
+      await audit({ actorId: input.userId, action: "two_factor.proof_granted", entityType: "user", entityId: input.userId, metadata: { method }, ip: input.ip ?? null }, tx);
+    });
+  } catch (err) {
+    if (err instanceof SessionGone) return { ok: false, error: "انتهت الجلسة، سجّل الدخول مرة أخرى" };
+    throw err;
+  }
+  if (out.ok) return { ok: true, method: out.method };
+  await audit({ actorId: input.userId, action: "two_factor.proof_refused", entityType: "user", entityId: input.userId, metadata: { reason: "code" }, ip: input.ip ?? null });
+  return out;
 }
 
 export type StartChallengeResult = { ok: true; token: string; expiresAt: Date } | Refused;

@@ -10,6 +10,7 @@ import { verifyPassword } from "@/server/auth/password";
 import { startSmtpSink, type SmtpSink } from "../mocks/smtp-sink";
 import { closeDb, resetDb, sql } from "../helpers/db";
 import { createUser, TEST_PASSWORD } from "../helpers/factories";
+import { provenOwner } from "../helpers/step-up";
 import { TEST_ENV } from "../test-env";
 
 /** جلسة حقيقية عبر كوكي: هذه الاختبارات تفحص البوابة نفسها، فلا نستبدل getCurrentUser */
@@ -329,7 +330,7 @@ describe("owner actions are for the owner", () => {
 
   it("the owner gets both secrets once, and a reason is required", async () => {
     const admin = await createUser({ role: "admin" });
-    ctx.cookie = (await createSession(admin.id)).token;
+    ctx.cookie = (await provenOwner(admin)).session.token;
     const student = await createUser();
     expect(await resetStudentPasswordAction(null, form({ userId: student.id, reason: "" }))).toMatchObject({ error: expect.stringContaining("سبب") });
     expect((await loginWithPassword(student.email, TEST_PASSWORD, meta)).ok).toBe(true);
@@ -407,7 +408,7 @@ describe("owner correction of a student's email", () => {
   describe("what the owner is told about the mail", () => {
     async function viaAction(email: string, student: { id: string }) {
       const admin = await createUser({ role: "admin" });
-      ctx.cookie = (await createSession(admin.id)).token;
+      ctx.cookie = (await provenOwner(admin)).session.token;
       return correctStudentEmailAction(null, form({ userId: student.id, email, reason: "خطأ إملائي" }));
     }
 

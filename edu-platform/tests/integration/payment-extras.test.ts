@@ -20,6 +20,8 @@ vi.mock("@/server/auth/guards", async (original) => ({
   },
 }));
 vi.mock("next/cache", () => ({ revalidatePath: () => {} }));
+// الرمز والإثبات لهما اختبارهما الحقيقي في refund-step-up وstep-up-proof
+vi.mock("@/server/auth/step-up", () => ({ assertFreshProof: async () => {}, assertRefundStepUp: async () => {} }));
 
 const { dismissExtraPaymentAction, recheckExtraPaymentAction, refundExtraPaymentAction } = await import("@/app/admin/orders/actions");
 

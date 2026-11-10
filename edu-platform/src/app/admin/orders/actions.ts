@@ -7,7 +7,7 @@ import { ExtraPaymentRefundError, checkOrderInvoices, recheckExtraPayment, reche
 import { dismissExtraPayment } from "@/server/payments/extras";
 import { RefundError, dismissRefund, recordMoneyReturned, type RefundOutcome } from "@/server/payments/refunds";
 import { releaseOrderHold } from "@/server/payments/holds";
-import { assertRefundStepUp } from "@/server/auth/step-up";
+import { assertFreshProof, assertRefundStepUp } from "@/server/auth/step-up";
 import { resolvePaymentAlert } from "@/server/payments/monitoring";
 import { audit } from "@/server/platform/audit";
 import { AdminError, adminAction, isUuid, str } from "@/server/admin/common";
@@ -129,6 +129,7 @@ export async function dismissRefundAction(_p: ActionState, fd: FormData): Promis
     const reason = str(fd, "reason");
     if (!isUuid(refundId)) throw new AdminError("طلب غير صالح");
     if (reason.length < 3) throw new AdminError("اكتب سبب الإغلاق (٣ أحرف على الأقل)");
+    await assertFreshProof({ adminId, ip, command: "refund.dismiss" });
     const done = await dismissRefund({ refundId, adminId, reason, ip });
     if (!done) throw new AdminError("لا يمكن إغلاق هذا السجل في حالته الحالية");
     revalidateRefund(isUuid(orderId) ? orderId : null);
@@ -224,6 +225,7 @@ export async function dismissExtraPaymentAction(_p: ActionState, fd: FormData): 
     const reason = str(fd, "reason");
     if (!isUuid(extraId)) throw new AdminError("طلب غير صالح");
     if (reason.length < 3) throw new AdminError("اكتب سبب الإغلاق (٣ أحرف على الأقل)");
+    await assertFreshProof({ adminId, ip, command: "extra_payment.dismiss" });
     const done = await dismissExtraPayment({ extraId, adminId, reason, ip });
     if (!done) throw new AdminError("لا يمكن إغلاق هذه الدفعة في حالتها الحالية");
     revalidatePath("/admin/orders");

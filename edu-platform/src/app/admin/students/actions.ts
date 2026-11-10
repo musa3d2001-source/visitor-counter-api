@@ -8,6 +8,7 @@ import { invalidateAllUserSessions } from "@/server/auth/session";
 import { audit } from "@/server/platform/audit";
 import { mailIsReal } from "@/server/platform/mailer";
 import { AdminError, adminAction, isUuid, str } from "@/server/admin/common";
+import { assertFreshProof } from "@/server/auth/step-up";
 import { correctStudentEmail, markStudentEmailVerified, resetStudentPassword } from "@/server/admin/student-accounts";
 import { anonymizeStudent } from "@/server/admin/student-anonymize";
 
@@ -30,6 +31,7 @@ export async function grantAction(_p: ActionState, fd: FormData): Promise<Action
     const [u] = await sql<{ role: string; anonymized_at: Date | null }[]>`select role, anonymized_at from users where id = ${userId}`;
     if (!u) throw new AdminError("المستخدم غير موجود");
     if (u.anonymized_at) throw new AdminError(ANONYMIZED_ACCOUNT_ERROR);
+    await assertFreshProof({ adminId, ip, command: "student.grant" });
     const res = await adminGrant({ userId, productId, adminId, reason, ip });
     revalidatePath(`/admin/students/${userId}`);
     return {
@@ -57,6 +59,7 @@ export async function resetStudentPasswordAction(_p: ActionState, fd: FormData):
     const userId = str(fd, "userId");
     if (!isUuid(userId)) throw new AdminError("طلب غير صالح");
     const reason = requireReason(fd);
+    await assertFreshProof({ adminId, ip, command: "student.reset_password" });
     const { link, temporaryPassword } = await resetStudentPassword({ studentId: userId, adminId, reason, ip });
     return { ok: true, message: "تم إلغاء كلمة المرور الحالية وتسجيل خروج الطالب من كل الأجهزة.", secrets: { link, temporaryPassword } };
   });
@@ -67,6 +70,7 @@ export async function correctStudentEmailAction(_p: ActionState, fd: FormData): 
     const userId = str(fd, "userId");
     if (!isUuid(userId)) throw new AdminError("طلب غير صالح");
     const reason = requireReason(fd);
+    await assertFreshProof({ adminId, ip, command: "student.correct_email" });
     const outcome = await correctStudentEmail({ studentId: userId, newEmail: str(fd, "email"), adminId, reason, ip });
     revalidatePath(`/admin/students/${userId}`);
     revalidatePath("/admin/students");
@@ -104,6 +108,7 @@ export async function anonymizeStudentAction(_p: ActionState, fd: FormData): Pro
     const userId = str(fd, "userId");
     if (!isUuid(userId)) throw new AdminError("طلب غير صالح");
     const reason = requireReason(fd);
+    await assertFreshProof({ adminId, ip, command: "student.anonymize" });
     const { alreadyAnonymized } = await anonymizeStudent({ studentId: userId, adminId, confirmEmail: str(fd, "confirmEmail"), reason, ip });
     revalidatePath(`/admin/students/${userId}`);
     revalidatePath("/admin/students");
@@ -120,6 +125,7 @@ export async function setActiveAction(_p: ActionState, fd: FormData): Promise<Ac
     const reason = active ? str(fd, "reason") || null : requireReason(fd);
     const [target] = await sql<{ anonymized_at: Date | null }[]>`select anonymized_at from users where id = ${userId}`;
     if (target?.anonymized_at) throw new AdminError(ANONYMIZED_ACCOUNT_ERROR);
+    await assertFreshProof({ adminId, ip, command: "student.active" });
     const [u] = await sql<{ role: string }[]>`update users set is_active = ${active} where id = ${userId} returning role`;
     if (!u) throw new AdminError("المستخدم غير موجود");
     if (!active) await invalidateAllUserSessions(userId);

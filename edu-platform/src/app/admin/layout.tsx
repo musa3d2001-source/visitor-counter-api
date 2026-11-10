@@ -8,6 +8,7 @@ import { getSettings } from "@/server/platform/settings";
 import { storage } from "@/server/storage";
 import { AdminMobileNav, AdminSidebar } from "@/components/admin/sidebar";
 import { SandboxBanner } from "@/components/site/sandbox-banner";
+import { StepUpProvider } from "@/components/admin/step-up";
 import { isOwnerOnlyPath } from "@/lib/admin-paths";
 
 export const metadata: Metadata = {
@@ -48,7 +49,7 @@ export default async function AdminLayout({ children }: { children: React.ReactN
         <SandboxBanner />
         <AdminMobileNav siteName={settings.site_name} role={role} pendingReview={waitingReview} adminName={name} logoUrl={logoUrl} />
         <main id="main" className="mx-auto w-full max-w-[84rem] px-4 pt-6 pb-16 sm:px-6 lg:px-10 lg:pt-9">
-          {children}
+          <StepUpProvider>{children}</StepUpProvider>
         </main>
       </div>
     </div>

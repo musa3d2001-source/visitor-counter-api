@@ -70,7 +70,7 @@ describe("the admin two-factor reset command", () => {
     const sessionId = hashToken(session.token);
     const details = await beginTwoFactorEnrolment({ userId: user.id, sessionId, account: user.email, issuer: "فرقد" });
     const fresh = base32Decode(details!.manualKey.replace(/\s/g, ""));
-    expect(await confirmTwoFactorEnrolment({ userId: user.id, sessionId, code: codeAt(fresh, currentStep()), ip: "192.0.2.61" })).toMatchObject({ ok: true });
+    expect(await confirmTwoFactorEnrolment({ password: TEST_PASSWORD, userId: user.id, sessionId, code: codeAt(fresh, currentStep()), ip: "192.0.2.61" })).toMatchObject({ ok: true });
   });
 
   it("the dry run reports and changes nothing", async () => {

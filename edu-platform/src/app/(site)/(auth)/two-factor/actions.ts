@@ -31,7 +31,7 @@ export async function verifyLoginCodeAction(_prev: ActionState, fd: FormData): P
 export async function confirmTwoFactorSetupAction(_prev: ActionState, fd: FormData): Promise<ActionState> {
   const session = await getCurrentSession();
   if (!session || session.mustChangePassword || session.user.role !== "admin") return { error: "انتهت الجلسة، سجّل الدخول مرة أخرى" };
-  const res = await confirmTwoFactorEnrolment({ userId: session.user.id, sessionId: session.sessionId, code: fd.get("code"), ip: await clientIp() });
+  const res = await confirmTwoFactorEnrolment({ userId: session.user.id, sessionId: session.sessionId, code: fd.get("code"), password: fd.get("currentPassword"), ip: await clientIp() });
   if (!res.ok) return { error: res.error };
   return { ok: true, message: "تم تفعيل التحقق بخطوتين", secrets: { recoveryCodes: res.recoveryCodes.join("\n") } };
 }

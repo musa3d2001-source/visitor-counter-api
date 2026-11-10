@@ -1,6 +1,6 @@
 "use client";
 
-import { useActionState, useEffect, useId, useState } from "react";
+import { useEffect, useId, useState } from "react";
 import { usePreservingAction } from "./use-preserving-action";
 import { AlertDialog } from "radix-ui";
 import { CircleCheck, LoaderCircle, TriangleAlert } from "lucide-react";
@@ -169,7 +169,7 @@ export function QuickAction({
   icon?: React.ReactNode;
   title?: string;
 }) {
-  const [state, formAction, pending] = useActionState(action, null);
+  const { state, formAction, pending } = usePreservingAction(action);
   return (
     <form action={formAction} className="inline-flex flex-col items-start">
       {hidden ? Object.entries(hidden).map(([k, v]) => <input key={k} type="hidden" name={k} value={v} />) : null}

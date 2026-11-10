@@ -139,3 +139,13 @@ alter table payment_method_cache enable row level security;
 -- جدولا مرحلة pdf أعلاه بلا RLS، فكانا ظاهرين لأدوار واجهة REST العامة كسائر ما لا يُفعل عليه
 alter table stamped_copies enable row level security;
 alter table upload_tickets enable row level security;
+
+-- =====================================================================
+-- إثبات العامل الثاني للأوامر الحساسة (مرحلة access-stepup، القرار F7)
+-- وقت آخر رمز صحيح أدخله المالك على هذه الجلسة بعينها. الجلسة نفسها هي الرابط، فجلسة أخرى لا تستفيد منه.
+-- عمود بلا قيمة افتراضية: لا إعادة كتابة للجدول، والكود القديم لا يقرؤه.
+-- الجدول يُقرأ مع كل طلب، فمهلة القفل القصيرة تمنع طابورًا خلف هذا التغيير. إن انتهت المهلة يفشل الترحيل كله دون أثر، وتعيد تشغيله.
+-- =====================================================================
+set local lock_timeout = '5s';
+alter table sessions add column if not exists step_up_at timestamptz;
+set local lock_timeout = default;

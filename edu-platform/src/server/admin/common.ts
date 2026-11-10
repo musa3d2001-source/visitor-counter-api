@@ -22,6 +22,17 @@ export class AdminError extends Error {
   }
 }
 
+/** هذا الأمر يحتاج إثباتًا جديدًا بالعامل الثاني (proof)، أو عاملًا ثانيًا لم يُسجَّل بعد (enrol). لا شيء يُكتب قبل هذا الرفض */
+export class StepUpRequired extends AdminError {
+  constructor(
+    userMessage: string,
+    public readonly need: "proof" | "enrol",
+  ) {
+    super(userMessage);
+    this.name = "StepUpRequired";
+  }
+}
+
 export type AdminCtx = { adminId: string; ip: string };
 
 function isNextControlFlow(err: unknown) {
@@ -31,6 +42,7 @@ function isNextControlFlow(err: unknown) {
 }
 
 async function toActionError(err: unknown): Promise<ActionState> {
+  if (err instanceof StepUpRequired) return { error: err.userMessage, stepUp: err.need };
   if (err instanceof AdminError) return { error: err.userMessage, fieldErrors: err.fieldErrors };
   if (err instanceof PermissionError) return { error: err.userMessage };
   // إعادة رمي أخطاء التوجيه الخاصة بـ Next.js (redirect/notFound)
