@@ -78,7 +78,7 @@ for (const viewport of [{ width: 390, height: 844 }, { width: 1440, height: 900 
       );
       await page.goto(`/read/${fileId}`);
       await expect(page.getByTestId("reader-retry")).toBeVisible({ timeout: 40_000 });
-      await expect(page.getByRole("alert")).toContainText("المنصة مشغولة");
+      await expect(page.locator('[role="alert"]:not(#__next-route-announcer__)')).toContainText("المنصة مشغولة");
       await expectNoHorizontalOverflow(page);
       await page.screenshot({ path: info.outputPath(`reader-busy-${viewport.width}.png`) });
     });
