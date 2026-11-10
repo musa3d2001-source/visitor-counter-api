@@ -3,7 +3,7 @@
 # usage: bash render.sh <len 20|14> <plat ig|tt> <fmt 916|45> <prepared footage dir> <work dir> <out mp4> [sweet kunafa|cake]
 set -euo pipefail
 HERE="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"; SB="$HERE/../../sb"
-LEN=$1 PLAT=$2 FMT=$3 SRC=$4 WORK=$5 OUT=$6 SWEET=${7:-kunafa}
+LEN=$1 PLAT=$2 FMT=$3 SRC=$4 WORK=$5 OUT=$6 SWEET=${7:-cake}
 mkdir -p "$WORK"; rm -rf "$WORK/frames"; mkdir -p "$WORK/frames"
 node "$HERE/mk_film.mjs" --len "$LEN" --plat "$PLAT" --fmt "$FMT" --sweet "$SWEET" --out "$WORK" --chunks 3 | cut -c1-80
 for c in 0 1 2; do node "$SB/compose.mjs" --frames "$WORK/film.$c.json" --out "$WORK/frames" --stills "$SRC" --nosheet > "$WORK/render.$c.log" 2>&1 & done

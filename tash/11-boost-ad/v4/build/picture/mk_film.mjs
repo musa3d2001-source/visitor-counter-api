@@ -2,7 +2,7 @@
 // Rows: BUILD-SPEC.md sections 5, 7, 11 and section 15 (Revision 3, R3-1..R3-24, which wins). Footage = frames prepared by prep_all.py.
 // usage: node mk_film.mjs --len 20|14 --plat ig|tt --fmt 916|45 [--sweet kunafa|cake] --out <dir> [--chunks 3]
 // Worlds (owner's note, 10 Nov): footage from earlier TASH works per swap_manifest.json (HABBA coffee, LAYL perfume, STAKK burger;
-// sweet = kunafa by default, DOSE cake only with the owner's written yes). Frames prepared by prep_swap.py.
+// sweet = DOSE cake (owner's written yes, 10 Nov: «كيكة دوز خوش»; no dose name or mention anywhere), kunafa kept as --sweet kunafa). Frames prepared by prep_swap.py.
 //   -> <dir>/film.json (all frames) and <dir>/film.<i>.json (chunks for parallel renders). Frame ids are 4-digit frame numbers.
 // Pure function of the frame number: no state between frames; seeded tables only.
 import { writeFileSync, mkdirSync, readFileSync } from 'node:fs';
@@ -10,7 +10,7 @@ import { join, dirname } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
 const A = process.argv.slice(2), arg = (k, d) => { const i = A.indexOf('--' + k); return i >= 0 ? A[i + 1] : d; };
-const LEN = +arg('len', 20), PLAT = arg('plat', 'ig'), FMT = arg('fmt', '916'), OUT = arg('out'), CHUNKS = +arg('chunks', 1), SWEET = arg('sweet', 'kunafa');
+const LEN = +arg('len', 20), PLAT = arg('plat', 'ig'), FMT = arg('fmt', '916'), OUT = arg('out'), CHUNKS = +arg('chunks', 1), SWEET = arg('sweet', 'cake');   // owner, 10 Nov: «كيكة دوز خوش»
 if (!['kunafa', 'cake'].includes(SWEET)) throw new Error('--sweet kunafa|cake');
 if (!OUT || ![20, 14].includes(LEN) || !['ig', 'tt'].includes(PLAT) || !['916', '45'].includes(FMT)) throw new Error('usage: --len 20|14 --plat ig|tt --fmt 916|45 --out dir');
 const R45 = FMT === '45', N = LEN === 20 ? 600 : 420;
