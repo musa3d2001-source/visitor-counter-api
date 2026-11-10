@@ -1,13 +1,17 @@
 // TASH boost ad v4 «نقاط مشروعك»: the whole film as compositor specs (one layer list per frame), for sb/compose.mjs.
 // Rows: BUILD-SPEC.md sections 5, 7, 11 and section 15 (Revision 3, R3-1..R3-24, which wins). Footage = frames prepared by prep_all.py.
-// usage: node mk_film.mjs --len 20|14 --plat ig|tt --fmt 916|45 --out <dir> [--chunks 3]
+// usage: node mk_film.mjs --len 20|14 --plat ig|tt --fmt 916|45 [--sweet kunafa|cake] --out <dir> [--chunks 3]
+// Worlds (owner's note, 10 Nov): footage from earlier TASH works per swap_manifest.json (HABBA coffee, LAYL perfume, STAKK burger;
+// sweet = kunafa by default, DOSE cake only with the owner's written yes). Frames prepared by prep_swap.py.
 //   -> <dir>/film.json (all frames) and <dir>/film.<i>.json (chunks for parallel renders). Frame ids are 4-digit frame numbers.
 // Pure function of the frame number: no state between frames; seeded tables only.
-import { writeFileSync, mkdirSync } from 'node:fs';
-import { join } from 'node:path';
+import { writeFileSync, mkdirSync, readFileSync } from 'node:fs';
+import { join, dirname } from 'node:path';
+import { fileURLToPath } from 'node:url';
 
 const A = process.argv.slice(2), arg = (k, d) => { const i = A.indexOf('--' + k); return i >= 0 ? A[i + 1] : d; };
-const LEN = +arg('len', 20), PLAT = arg('plat', 'ig'), FMT = arg('fmt', '916'), OUT = arg('out'), CHUNKS = +arg('chunks', 1);
+const LEN = +arg('len', 20), PLAT = arg('plat', 'ig'), FMT = arg('fmt', '916'), OUT = arg('out'), CHUNKS = +arg('chunks', 1), SWEET = arg('sweet', 'kunafa');
+if (!['kunafa', 'cake'].includes(SWEET)) throw new Error('--sweet kunafa|cake');
 if (!OUT || ![20, 14].includes(LEN) || !['ig', 'tt'].includes(PLAT) || !['916', '45'].includes(FMT)) throw new Error('usage: --len 20|14 --plat ig|tt --fmt 916|45 --out dir');
 const R45 = FMT === '45', N = LEN === 20 ? 600 : 420;
 
@@ -58,14 +62,35 @@ const lens = (p, n, scale, sx, sy, { dx = 0, dy = 0, k = 1, push = 1 } = {}) => 
     { t: 'dot', x, y, r: r - 6, fill: null, ring: { color: 'ink', lw: 12 } }]; };
 const pushIn = (f, f0) => 1 + 0.04 * (f - f0) / 14;
 
-// ---------------- footage per use (one place to swap worlds) ----------------
+// ---------------- footage per use, from swap_manifest.json (one place to swap worlds) ----------------
+const MAN = JSON.parse(readFileSync(join(dirname(fileURLToPath(import.meta.url)), 'swap_manifest.json'), 'utf8'));
+const USES = new Map([...MAN.uses.coffee, ...MAN.uses.perfume, ...MAN.uses.burger, ...MAN.sweet[SWEET]].map(u => [u.id, u]));
+const VK = LEN === 20 ? 'A20' : 'A14';
+// native frame of use `id` at timeline frame f (or at offset i into the use when f is null)
+function nat(id, f, i = null) {
+  const u = USES.get(id); if (!u) throw new Error('no use ' + id);
+  const R = u[VK]; if (!R && !u.rule.includes('frozen')) throw new Error(`use ${id} has no ${VK} range`);
+  const list = (R && R.n) || u.n, f0 = R && R.f ? R.f[0] : 0, k = i ?? (f - f0);
+  if (k < 0 || k >= list.length) throw new Error(`use ${id}: frame ${f} (index ${k}) outside its range`);
+  return list[k];
+}
+const geo = id => USES.get(id)[FMT];
+// one footage layer of a use: full (final canvas dy), punch, band; lens and porthole are built by their own helpers
+function useLayer(id, f, o = {}, i = null) {
+  const u = USES.get(id), g = geo(id), n = nat(id, f, i), s = src(u.prefix, n);
+  if (u.kind === 'full') return { t: 'still', src: s, ...o, dy: (g.dy ?? 0) + (o.dy ?? 0) };
+  if (u.kind === 'punch') return { t: 'still', src: s, scale: g.scale * (o.push ?? 1), cx: g.sx / 1080, cy: g.sy / 1920, ax: g.ax, ay: g.ay, dy: o.dy ?? 0 };
+  if (u.kind === 'band') return { t: 'still', src: s, ...o, dy: g.dy };
+  throw new Error('useLayer: ' + u.kind);
+}
+const useLens = (id, f, o) => { const u = USES.get(id), g = geo(id); return lens(u.prefix, nat(id, f), g.scale, g.sx, g.sy, o); };
 const SH = {
-  hook: f => f < 15 ? full('c', f + 2) : punch('c', Math.min(f - 9, 18), 1.25),   // f0-14 wide, f15-29 punch-in (R3-22b)
-  drain: (f, o) => full('k', f, o),                  // f30-44, the thirds
-  ret: (f, o) => full('c', f - 71, o),               // f78-89, inside the repaint circles
-  hold: () => full('c', 18),                         // f90-92, outside the shockwave
-  iris: f => full('c', f - 131),                     // f131-134, the centre porthole opens onto the first world
-  loop: (o = {}) => full('c', 2, o),                 // wind-up iris and f594-599 = the f0 picture
+  hook: f => f < 15 ? useLayer('opener-full', f) : useLayer('opener-punch', f),   // f0-14 wide, f15-29 punch-in on the clap
+  drain: (f, o) => useLayer('drain', f, o),          // f30-44, the thirds (the sweet)
+  ret: (f, o) => useLayer('return', f, o),           // f78-89, inside the repaint circles
+  hold: () => useLayer('hold', 90),                  // f90-92, outside the shockwave
+  iris: f => useLayer('iris', f),                    // f131-134, the centre porthole opens onto the first world
+  loop: (o = {}) => useLayer('loop', null, o, 0),    // wind-up iris and the end = the f0 picture frozen
 };
 
 // ---------------- TASH wordmark M: box top-left (x0,y0), width w; k scales it about the box centre ----------------
@@ -118,35 +143,33 @@ const row = (cx, cy, offs, r = 40, pitch = 92, o = {}) => [-1, 0, 1].flatMap((n,
 // ---------------- variant timing ----------------
 const V = LEN === 20 ? {
   cats: [
-    { f0: 135, kind: 'full', p: 'c', n0: 4, tag: 'قهوة؟' },
-    { f0: 150, kind: 'lens', p: 'c', n0: 68, tag: 'قهوة؟', sc: 1.3, sx: 523, sy: 1405, enter: 'pop' },
-    { f0: 165, kind: 'full', p: 'o', n0: 0, tag: 'عطر؟' },
-    { f0: 180, kind: 'punch', p: 'o', n0: 15, s: 1.25, tag: 'عطر؟', tagPop: true },
-    { f0: 195, kind: 'lens', p: 'o', n0: 30, tag: 'عطر؟', sc: 0.95, sx: 538, sy: 1370, enter: 'slide' },
-    { f0: 210, kind: 'burgerA', tag: 'برجر؟' },
-    { f0: 225, kind: 'burgerB', tag: 'برجر؟' },
-    { f0: 240, kind: 'lens', p: 'b', n0: 54, tag: 'برجر؟', sc: 0.78, sx: 540, sy: 1355, enter: 'drop' },
-    { f0: 255, kind: 'full', p: 'k', n0: 30, tag: 'حلويات؟', size: 180 },
-    { f0: 270, kind: 'lens', p: 'k', n0: 45, tag: 'حلويات؟', size: 180, sc: 1.0, sx: 540, sy: 1270 }],
+    { f0: 135, use: 'coffee-a', tag: 'قهوة؟' },
+    { f0: 150, use: 'coffee-b-lens', tag: 'قهوة؟', enter: 'pop' },
+    { f0: 165, use: 'oud-a', tag: 'عطر؟' },
+    { f0: 180, use: 'oud-b', tag: 'عطر؟', tagPop: true },
+    { f0: 195, use: 'oud-c-lens', tag: 'عطر؟', enter: 'slide' },
+    { f0: 210, use: 'burger-a', tag: 'برجر؟' },
+    { f0: 225, use: 'burger-b', tag: 'برجر؟', bump: true },
+    { f0: 240, use: 'burger-c-lens', tag: 'برجر؟', enter: 'drop' },
+    { f0: 255, use: 'sweet-a', tag: 'حلويات؟', size: 180 },
+    { f0: 270, use: 'sweet-lens', tag: 'حلويات؟', size: 180 }],
   talk: 285, talk2: 291, mult: [330, 345, 360], grounds: [TANG, PINK, AZURE], flood: 375,
   snap: 390, shrink: true, tagline: [402, 404, 406], cta: 450, ctaIn: [453, 457, 461, 463],
-  band: [{ f0: 450, f1: 479, p: 'k', n: i => 43 + i, dy: R45 ? -216 : 60 }, { f0: 480, f1: 509, p: 'b', n: i => Math.min(57 + i, 72), dy: R45 ? -274 : -20 },
-         { f0: 510, f1: 539, p: 'o', n: i => i, dy: R45 ? -300 : -45 }, { f0: 540, f1: 587, p: 'c', n: i => Math.min(68 + i, 96), dy: R45 ? -380 : -105 }],
+  band: [{ f0: 450, f1: 479, use: 'sweet-band' }, { f0: 480, f1: 509, use: 'burger-band' }, { f0: 510, f1: 539, use: 'oud-band' }, { f0: 540, f1: 587, use: 'coffee-band' }],
   wind: 588, irisLen: 6,
 } : {
   cats: [
-    { f0: 135, kind: 'full', p: 'c', n0: 4, tag: 'قهوة؟' },
-    { f0: 150, kind: 'lens', p: 'c', n0: 68, tag: 'قهوة؟', sc: 1.3, sx: 523, sy: 1405, enter: 'pop' },
-    { f0: 165, kind: 'full', p: 'o', n0: 0, tag: 'عطر؟' },
-    { f0: 180, kind: 'lens', p: 'o', n0: 15, tag: 'عطر؟', sc: 0.95, sx: 538, sy: 1370, enter: 'slide' },
-    { f0: 195, kind: 'burgerA', tag: 'برجر؟' },
-    { f0: 210, kind: 'burgerB', tag: 'برجر؟' },
-    { f0: 225, kind: 'full', p: 'k', n0: 30, tag: 'حلويات؟', size: 180 },
-    { f0: 240, kind: 'lens', p: 'k', n0: 45, tag: 'حلويات؟', size: 180, sc: 1.0, sx: 540, sy: 1270 }],
+    { f0: 135, use: 'coffee-a', tag: 'قهوة؟' },
+    { f0: 150, use: 'coffee-b-lens', tag: 'قهوة؟', enter: 'pop' },
+    { f0: 165, use: 'oud-a', tag: 'عطر؟' },
+    { f0: 180, use: 'oud-c-lens', tag: 'عطر؟', enter: 'slide' },
+    { f0: 195, use: 'burger-a', tag: 'برجر؟' },
+    { f0: 210, use: 'burger-b', tag: 'برجر؟', bump: true },
+    { f0: 225, use: 'sweet-a', tag: 'حلويات؟', size: 180 },
+    { f0: 240, use: 'sweet-lens', tag: 'حلويات؟', size: 180 }],
   talk: 255, talk2: 260, mult: [270, 275, 280], grounds: [TANG, TANG, TANG], flood: 285,
   snap: 300, shrink: false, tagline: null, cta: 315, ctaIn: [316, 318, 320, 321],
-  band: [{ f0: 315, f1: 344, p: 'k', n: i => 43 + i, dy: R45 ? -216 : 60 }, { f0: 345, f1: 374, p: 'b', n: i => Math.min(57 + i, 72), dy: R45 ? -274 : -20 },
-         { f0: 375, f1: 413, p: 'c', n: i => Math.min(68 + i, 96), dy: R45 ? -380 : -105 }],
+  band: [{ f0: 315, f1: 344, use: 'sweet-band' }, { f0: 345, f1: 374, use: 'burger-band' }, { f0: 375, f1: 413, use: 'coffee-band' }],
   wind: 414, irisLen: 3,
 };
 const CATS_END = V.talk, CUTS = [15, 30, ...V.cats.map(c => c.f0), V.talk, ...new Set(V.mult)];
@@ -181,7 +204,7 @@ function drain(f) {
 // f45-89 dead beat and return (R3-4, R3-14): drained Smoke dots drop onto the floor f45-50, turn Lime f72, jump and land right to left f78/81/84
 const FLOOR = [{ x: 660, j: 2, land: 78 }, { x: 540, j: 1, land: 81 }, { x: 420, j: 0, land: 84 }];
 const FLOOR_IN = [-170, -100, -30, 0, -12, 0];
-const deadLine = f => text('محد يسولف؟', 126 * pop(f - 45), 740 + T);
+const deadLine = f => text('محد يسولف؟', 126 * pop(f - 45), 740 + T, f >= 78 ? { stroke: 'paper', lw: 12 } : {});   // Paper keyline once the coffee returns under it
 function dead(f) {
   const L = [{ t: 'fill', color: GREY }, wordHollow()];
   const landed = FLOOR.filter(D => f >= D.land);
@@ -208,10 +231,8 @@ function dead(f) {
 const OM = { x0: 320, y0: 290 + T, w: 440 };
 const IR = Math.hypot(540, Math.max(PORT_Y, HH - PORT_Y)) + 12;    // the iris covers the frame exactly on f134
 const shockR = f => (R45 ? 1800 : 1744) * (1 - (1 - clamp((f - 89) / 4)) ** 2);   // front visible for 3 frames (review m9)
-const PORTS = [   // right to left; R3-24 (centre porthole = perfume, so the coffee crash is not repeated here)
-  { x: 810, fo: 105, from: 1, p: 'k', n: f => f < 120 ? 30 + f - 105 : 45 + f - 120, sc: 0.4, sx: 538, sy: 1272 },
-  { x: 540, fo: 108, from: 0, p: 'o', n: f => f < 120 ? f - 105 : 15 + f - 120, sc: 0.3, sx: 540, sy: 1375 },
-  { x: 270, fo: 111, from: -1, p: 'b', n: f => f < 120 ? 57 + f - 105 : 54 + f - 120, sc: 0.3, sx: 540, sy: 1355 }];
+const PORTS = [   // right to left (swap_manifest): perfume, coffee (becomes the iris), burger
+  { fo: 105, use: 'porthole-right' }, { fo: 108, use: 'porthole-centre' }, { fo: 111, use: 'porthole-left' }].map(P => ({ ...P, x: geo(P.use).x }));
 function offer(f) {
   const L = [];
   if (f < 93) {                                                   // outside the wave: the f89 picture held
@@ -228,7 +249,8 @@ function offer(f) {
     if (P.x === 540 && f >= 131) continue;                         // the centre porthole becomes the iris
     const r = 22 + 88 * easeOutBack(clamp((f - P.fo) / 6));
     if (r < 34) { L.push({ t: 'dot', x: P.x, y, r, fill: 'ink' }); continue; }
-    L.push({ t: 'still', src: src(P.p, P.n(f)), clip: { type: 'circle', x: P.x, y, r }, scale: P.sc, cx: P.sx / 1080, cy: P.sy / 1920, ax: P.x, ay: y },
+    const g = geo(P.use), u = USES.get(P.use);
+    L.push({ t: 'still', src: src(u.prefix, nat(P.use, f)), clip: { type: 'circle', x: P.x, y, r }, scale: g.scale, cx: g.sx / 1080, cy: g.sy / 1920, ax: P.x, ay: y },
       { t: 'dot', x: P.x, y, r: r - 6, fill: null, ring: { color: 'ink', lw: 12 } });
   }
   if (f >= 131) { const r = 110 + (IR - 110) * ((f - 130) / 4) ** 2, C = { type: 'circle', x: 540, y: PORT_Y, r };   // under the offer line: it stays clean to f133 (review T3)
@@ -241,19 +263,16 @@ function offer(f) {
 // categories (R3-23, R3-24): worlds on the beat, lens beats on Lime
 function cats(f) {
   const i = V.cats.findLastIndex(c => f >= c.f0), C = V.cats[i], d = f - C.f0, size = C.size ?? 200, pw = pulseAt(f, [C.f0]);
-  const onLime = C.kind === 'lens';
+  const kind = USES.get(C.use).kind, onLime = kind === 'lens';
   let L;
-  if (C.kind === 'full') L = [full(C.p, C.n0 + d)];
-  else if (C.kind === 'punch') L = [punch(C.p, C.n0 + d, C.s)];
-  else if (C.kind === 'burgerA') { const n = d <= 8 ? 11 : 12 + 2 * (d - 9); L = [full('b', n, { clip: { x: 0, y: 0, w: 1080, h: 30 } }), full('b', n, { dy: 30 })]; }
-  else if (C.kind === 'burgerB') L = [punch('b', 57 + d, 1.2 * pushIn(f, C.f0), { dy: d === 0 ? -10 : d === 1 ? -5 : 0 })];
-  else {
+  if (kind === 'lens') {
     const o = { push: pushIn(f, C.f0) };
     if (C.enter === 'pop' && d < 3) o.k = [1.08, 1.05, 1.02][d];
     if (C.enter === 'slide' && d < 3) o.dx = [-340, -120, -20][d];
-    if (C.enter === 'drop' && d < 5) o.dy = [-74, -46, 6, -2, 0][d];
-    L = [{ t: 'fill', color: 'lime' }, ...lens(C.p, C.n0 + d, C.sc, C.sx, C.sy, o)];
-  }
+    if (C.enter === 'drop' && d < 5) o.dy = [-74, -46, -12, -3, 0][d];          // settles downward only (review m8: no upward rebound)
+    L = [{ t: 'fill', color: 'lime' }, ...useLens(C.use, f, o)];
+  } else if (kind === 'punch') L = [useLayer(C.use, f, { push: C.bump ? pushIn(f, C.f0) : 1, dy: C.bump && d < 2 ? [-10, -5][d] : 0 })];
+  else L = [useLayer(C.use, f)];
   const tk = C.tagPop && d < 3 ? [1.05, 1.03, 1.01][d] : 1;
   if (onLime) L.push(tagInk(C.tag, size, tk), wordInk(pw), ...dotsInk(f)); else L.push(tagLime(C.tag, size, tk), word(pw), ...dotsLime(f));
   return L;
@@ -326,10 +345,10 @@ const TAG_SPLIT = 650;     // the space between «خلّهم» (right) and «ي�
 const CTA = R45 ? { panel: 800, b: [202, 422, 562], m: [420, 616, 240] } : { panel: 1060, b: [PLAT === 'tt' ? 414 : 400, 620, 760], m: [380, 836, 320] };
 const L1 = PLAT === 'tt' ? 'دزّ لنا' : 'اطلب إعلانك', HANDLE = PLAT === 'tt' ? '@tash.creative' : '@tash.creative.kw';
 function cta(f) {
-  const B = V.band.find(b => f >= b.f0 && f <= b.f1) ?? V.band[V.band.length - 1], i = f - B.f0;
+  const B = V.band.find(b => f >= b.f0 && f <= b.f1) ?? V.band[V.band.length - 1], bdy = geo(B.use).dy, bi = Math.min(f, B.f1);
   const band = { x: 0, y: CTA.panel, w: 1080, h: 1920 - CTA.panel };
-  const L = [...(B.dy < 0 ? [{ t: 'still', src: src(B.p, B.n(i)), clip: band }] : []),          // unshifted copy under the shifted one: no empty rows at the bottom
-    { t: 'still', src: src(B.p, B.n(i)), clip: band, dy: B.dy },
+  const L = [...(bdy < 0 ? [{ ...useLayer(B.use, bi, { clip: band }), dy: 0 }] : []),          // unshifted copy under the shifted one: no empty rows at the bottom
+    useLayer(B.use, bi, { clip: band }),
     { t: 'rect', x: 0, y: 0, w: 1080, h: CTA.panel, fill: 'lime' }, { t: 'rect', x: 0, y: CTA.panel - 10, w: 1080, h: 10, fill: 'ink' }];
   const [a, b, c, m] = V.ctaIn, wd = f - V.wind, tip = wd >= 0 ? clamp((wd + 1) / (V.irisLen === 6 ? 5 : 3)) : 0;
   const PANEL = { x: 0, y: 0, w: 1080, h: CTA.panel - 10 };

@@ -1,0 +1,1887 @@
+{
+ "title": "TASH boost ad v4: world-swap footage map (earlier TASH works replace the v4 AI worlds)",
+ "status": "Prepared and mock-checked at 0 credits. Not built into the film, not delivered, not approved. The cake option needs the owner's written yes (it recreates specialty dose's signature cake).",
+ "plan": "tash/11-boost-ad/v4/swap/director-plan.json (wins on details; deviations are listed under \"deviations\")",
+ "stills_dir": "/tmp/claude-0/-home-user-visitor-counter-api/1e0f8dbb-d731-5965-a898-07519c7bdbc3/scratchpad/b/src2",
+ "prep": "python3 -I tash/11-boost-ad/v4/build/picture/prep_swap.py /tmp/claude-0/-home-user-visitor-counter-api/1e0f8dbb-d731-5965-a898-07519c7bdbc3/scratchpad/b/src2 --kunafa /tmp/claude-0/-home-user-visitor-counter-api/1e0f8dbb-d731-5965-a898-07519c7bdbc3/scratchpad/b/src --layl-clean /tmp/claude-0/-home-user-visitor-counter-api/1e0f8dbb-d731-5965-a898-07519c7bdbc3/scratchpad/swap/prep/layl_nolabel",
+ "conventions": {
+  "frames": "<prefix><NNNN>.png, 1080x1920 RGB, NNNN = native frame index of the source clip (LAYL: film frame number). One native frame per 30 fps timeline frame; never reversed, never blended.",
+  "n": "For a use with timeline range [f0, f1]: frame f shows n[f - f0]. \"rule\" says the same in words.",
+  "still_layer": "page.html \"still\": k = scale (prepared frames are 1080x1920, so cover = 1); source point (cx*1080, cy*1920) lands on canvas (ax, ay); dx/dy shift after that. Defaults scale 1, cx 0.5, cy 0.5, ax 540, ay 960.",
+  "full": "{dy}: the final canvas offset. 9:16 is always 0 (shifts and fills are baked into the frames). 4:5: mk_film full() already adds FD = -285, so pass o.dy = dy + 285.",
+  "punch": "{scale, sx, sy, ax, ay}: cx = sx/1080, cy = sy/1920. All final canvas values (4:5 already includes its offset). \"push\" multiplies scale; \"bump_dy\" is dy on the first two frames.",
+  "lens": "{scale, sx, sy}: \"scale\" is the value for mk_film lens(), which multiplies it by LENS.k (0.88 in 4:5), the entrance factor and the push; \"effective\" = scale x LENS.k. Lens 9:16 r 340 at (540,1270); 4:5 r 300 at (540,985).",
+  "porthole": "{x, y, r, scale, sx, sy}: circle centre (x, y), radius up to r (easeOutBack open), 12 px Ink ring; source point (sx,sy) on the centre at \"scale\".",
+  "band": "{dy}: final canvas offset of the frame, clipped to the band (9:16 y 1060-1920, 4:5 y 800-1350). When dy < 0, mk_film also draws an unshifted copy under it (no empty rows at the bottom).",
+  "tags": "Type is unchanged: tag «حلو…» / «قهوة؟» / «عطر؟» / «برجر؟» 200 px (4:5 170), «حلويات؟» 180 px (4:5 153)."
+ },
+ "portholes": "Offer card f105-134, right to left: x 810 = perfume (lb, opens f105), x 540 = coffee (hp, opens f108, becomes the iris at f131), x 270 = burger (su, opens f111). The sweet has no porthole in either option.",
+ "grounds": "The worlds are natural now: coffee walnut and limewash, perfume near-black, burger STAKK red, sweet beige/steel (cake) or hot pink (kunafa). Tangerine, hot pink and azure stay only as the multiplication grounds and burst dots.",
+ "prefixes": {
+  "hp": {
+   "source": "tash/05-concept-ads/03-coffee-habba/footage/ai/k3_pour.mp4 (tagged BT.709 tv, 24 fps)",
+   "frames": "n40-n81, n106-n120",
+   "prep": "rotated 180 deg (barista view: cup centre about (561,1259), pitcher from the bottom edge), cover 1084x1920, crop 2 px a side; lift x + 0.28 x(1-x)"
+  },
+  "hu": {
+   "source": "k3_pour.mp4",
+   "frames": "n45-n92",
+   "prep": "unrotated, cover; cup centre about (519,661); lift x + 0.28 x(1-x)"
+  },
+  "hb": {
+   "source": "tash/05-concept-ads/03-coffee-habba/footage/ai/k4_beans.mp4 (untagged, decoded BT.709 as HABBA conform.py)",
+   "frames": "n95-n113",
+   "prep": "cover, no shift"
+  },
+  "ls": {
+   "source": "tash/05-concept-ads/01-perfume-layl/LAYL-concept-9x16.mp4 (BT.709 tv, 30 fps, 1:1)",
+   "frames": "film f180-f230 (used f195-f224)",
+   "prep": "drawn 400 px lower; rows 0-400 = the frame's own top 16 rows averaged and smoothed (sigma 40 px), dithered (sigma 0.55), 48 px feather"
+  },
+  "lb": {
+   "source": "LAYL src re-rendered (layl_nolabel.mjs: scene.js patched in memory, label.visible = false, ?clean=1)",
+   "frames": "film f315-f344",
+   "prep": "unshifted; no label, no reflection of it, no end card; checked against the film: mean 0.94-1.08/255 outside the label (H.264 noise)"
+  },
+  "sa": {
+   "source": "tash/05-concept-ads/02-burger-stakk/footage/ai/b7_crown.mp4 (tagged BT.709 tv, 24 fps)",
+   "frames": "n0-n9",
+   "prep": "drawn 100 px lower, rows 0-100 from n0, 40 px feather; lift x + 0.22 x(1-x)"
+  },
+  "sb": {
+   "source": "b7_crown.mp4",
+   "frames": "n19-n33",
+   "prep": "drawn 250 px lower, rows 0-480 from n0 with an 80 px feather (removes the white smear the falling crown leaves at the top of n19-n23); lift x + 0.22 x(1-x)"
+  },
+  "su": {
+   "source": "b7_crown.mp4",
+   "frames": "n4-n17, n19-n48 (lens uses sl)",
+   "prep": "unshifted; n18 (ghost bun) is not prepared; lift x + 0.22 x(1-x)"
+  },
+  "dc": {
+   "source": "tash/10-spec-dose/footage/ai/d4_cake.mp4 (untagged, decoded BT.709 as DOSE common.py)",
+   "frames": "n0-n35 (used n2-n31 only)",
+   "prep": "cover, unshifted"
+  },
+  "k": {
+   "source": "scratchpad/b/src/k0030-k0072.png (prep_all.py, current kunafa)",
+   "frames": "n30-n72",
+   "prep": "copied byte for byte"
+  },
+  "sl": {
+   "source": "b7_crown.mp4",
+   "frames": "n34-n48",
+   "prep": "lift x + 0.22 x(1-x), shrunk to 958x1703 (Lanczos) and placed so (540,1112) stays put; the 61 px side margins are the per-row mean of the 12 outer backdrop columns, smoothed vertically (sigma 10) and dithered (sigma 1); rows outside the image repeat its edge rows (outside every lens)"
+  }
+ },
+ "uses": {
+  "coffee": [
+   {
+    "id": "opener-full",
+    "what": "Opener, full frame (cover frame for the post = f10 = n50)",
+    "prefix": "hp",
+    "kind": "full",
+    "A20": {
+     "f": [
+      0,
+      14
+     ]
+    },
+    "A14": {
+     "f": [
+      0,
+      14
+     ]
+    },
+    "n": [
+     40,
+     41,
+     42,
+     43,
+     44,
+     45,
+     46,
+     47,
+     48,
+     49,
+     50,
+     51,
+     52,
+     53,
+     54
+    ],
+    "916": {
+     "dy": 0
+    },
+    "45": {
+     "dy": -285
+    },
+    "rule": "n = f + 40",
+    "tag": "حلو… (from f3)"
+   },
+   {
+    "id": "opener-punch",
+    "what": "Opener, punch-in on the clap",
+    "prefix": "hp",
+    "kind": "punch",
+    "A20": {
+     "f": [
+      15,
+      29
+     ]
+    },
+    "A14": {
+     "f": [
+      15,
+      29
+     ]
+    },
+    "n": [
+     55,
+     56,
+     57,
+     58,
+     59,
+     60,
+     61,
+     62,
+     63,
+     64,
+     65,
+     66,
+     67,
+     68,
+     69
+    ],
+    "916": {
+     "scale": 1.25,
+     "sx": 540,
+     "sy": 640,
+     "ax": 540,
+     "ay": 640
+    },
+    "45": {
+     "scale": 1.15,
+     "sx": 561,
+     "sy": 1259,
+     "ax": 561,
+     "ay": 980
+    },
+    "rule": "n = f + 40",
+    "tag": "حلو…",
+    "note_45": "1.25x about (540,640) shifted by -285 would cut the cup 157 px at the frame bottom; 1.15x with the cup centre at (561,980) keeps the rim y 632-1328, under the tag and inside the frame"
+   },
+   {
+    "id": "return",
+    "what": "Return: footage inside the three repaint circles",
+    "prefix": "hp",
+    "kind": "full",
+    "A20": {
+     "f": [
+      78,
+      89
+     ]
+    },
+    "A14": {
+     "f": [
+      78,
+      89
+     ]
+    },
+    "n": [
+     70,
+     71,
+     72,
+     73,
+     74,
+     75,
+     76,
+     77,
+     78,
+     79,
+     80,
+     81
+    ],
+    "916": {
+     "dy": 0
+    },
+    "45": {
+     "dy": -285
+    },
+    "rule": "n = f - 8"
+   },
+   {
+    "id": "hold",
+    "what": "Offer card f90-92: the f89 picture held outside the shockwave",
+    "prefix": "hp",
+    "kind": "full",
+    "A20": {
+     "f": [
+      90,
+      92
+     ]
+    },
+    "A14": {
+     "f": [
+      90,
+      92
+     ]
+    },
+    "n": [
+     81,
+     81,
+     81
+    ],
+    "916": {
+     "dy": 0
+    },
+    "45": {
+     "dy": -285
+    },
+    "rule": "n = 81"
+   },
+   {
+    "id": "porthole-centre",
+    "what": "Offer card, centre porthole (x 540); opens f108, hidden from f131 (it becomes the iris)",
+    "prefix": "hp",
+    "kind": "porthole",
+    "A20": {
+     "f": [
+      105,
+      130
+     ]
+    },
+    "A14": {
+     "f": [
+      105,
+      130
+     ]
+    },
+    "n": [
+     60,
+     61,
+     62,
+     63,
+     64,
+     65,
+     66,
+     67,
+     68,
+     69,
+     70,
+     71,
+     72,
+     73,
+     74,
+     107,
+     108,
+     109,
+     110,
+     111,
+     112,
+     113,
+     114,
+     115,
+     116,
+     117
+    ],
+    "916": {
+     "x": 540,
+     "y": 1125,
+     "r": 110,
+     "scale": 0.31,
+     "sx": 561,
+     "sy": 1259
+    },
+    "45": {
+     "x": 540,
+     "y": 917,
+     "r": 110,
+     "scale": 0.31,
+     "sx": 561,
+     "sy": 1259
+    },
+    "rule": "f105-119 n = f - 45; f120-130 n = f - 13"
+   },
+   {
+    "id": "iris",
+    "what": "Iris from the centre porthole f131-134 (f134 = complete) onto Coffee A",
+    "prefix": "hb",
+    "kind": "full",
+    "A20": {
+     "f": [
+      131,
+      134
+     ]
+    },
+    "A14": {
+     "f": [
+      131,
+      134
+     ]
+    },
+    "n": [
+     95,
+     96,
+     97,
+     98
+    ],
+    "916": {
+     "dy": 0
+    },
+    "45": {
+     "dy": -335
+    },
+    "rule": "n = f - 36"
+   },
+   {
+    "id": "coffee-a",
+    "what": "Coffee A, full: bean D lands at n102 = f138",
+    "prefix": "hb",
+    "kind": "full",
+    "A20": {
+     "f": [
+      135,
+      149
+     ]
+    },
+    "A14": {
+     "f": [
+      135,
+      149
+     ]
+    },
+    "n": [
+     99,
+     100,
+     101,
+     102,
+     103,
+     104,
+     105,
+     106,
+     107,
+     108,
+     109,
+     110,
+     111,
+     112,
+     113
+    ],
+    "916": {
+     "dy": 0
+    },
+    "45": {
+     "dy": -335
+    },
+    "rule": "n = f - 36",
+    "tag": "قهوة؟",
+    "note_45": "-335 (not -285) lifts the beans clear of the frame bottom; the wall above stays empty"
+   },
+   {
+    "id": "coffee-b-lens",
+    "what": "Coffee B, lens on Lime: the finished heart, rim concentric inside the lens",
+    "prefix": "hp",
+    "kind": "lens",
+    "A20": {
+     "f": [
+      150,
+      164
+     ]
+    },
+    "A14": {
+     "f": [
+      150,
+      164
+     ]
+    },
+    "n": [
+     106,
+     107,
+     108,
+     109,
+     110,
+     111,
+     112,
+     113,
+     114,
+     115,
+     116,
+     117,
+     118,
+     119,
+     120
+    ],
+    "916": {
+     "scale": 1.0,
+     "sx": 561,
+     "sy": 1259,
+     "effective": 1.0,
+     "push": "1.00 to 1.04",
+     "enter": "pop"
+    },
+    "45": {
+     "scale": 1.0,
+     "sx": 561,
+     "sy": 1259,
+     "effective": 0.88,
+     "push": "1.00 to 1.04",
+     "enter": "pop"
+    },
+    "rule": "n = f - 44",
+    "tag": "قهوة؟ (Ink)"
+   },
+   {
+    "id": "coffee-band",
+    "what": "CTA band, coffee: unrotated pour, the pitcher pours in from under the panel edge",
+    "prefix": "hu",
+    "kind": "band",
+    "A20": {
+     "f": [
+      540,
+      587
+     ],
+     "n": [
+      45,
+      46,
+      47,
+      48,
+      49,
+      50,
+      51,
+      52,
+      53,
+      54,
+      55,
+      56,
+      57,
+      58,
+      59,
+      60,
+      61,
+      62,
+      63,
+      64,
+      65,
+      66,
+      67,
+      68,
+      69,
+      70,
+      71,
+      72,
+      73,
+      74,
+      75,
+      76,
+      77,
+      78,
+      79,
+      80,
+      81,
+      82,
+      83,
+      84,
+      85,
+      86,
+      87,
+      88,
+      89,
+      90,
+      91,
+      92
+     ]
+    },
+    "A14": {
+     "f": [
+      375,
+      413
+     ],
+     "n": [
+      54,
+      55,
+      56,
+      57,
+      58,
+      59,
+      60,
+      61,
+      62,
+      63,
+      64,
+      65,
+      66,
+      67,
+      68,
+      69,
+      70,
+      71,
+      72,
+      73,
+      74,
+      75,
+      76,
+      77,
+      78,
+      79,
+      80,
+      81,
+      82,
+      83,
+      84,
+      85,
+      86,
+      87,
+      88,
+      89,
+      90,
+      91,
+      92
+     ]
+    },
+    "916": {
+     "dy": 829
+    },
+    "45": {
+     "dy": 376
+    },
+    "rule": "A-20 n = f - 495; A-14 n = f - 321 (both end on n92, before the stream thins at n93)",
+    "note_916": "source point (519,661) lands on (519,1490): the cup sits 21 px left of centre (a 21 px move needed a mirrored edge fill that showed in the sun bars)",
+    "note_45": "the cup (606 px) is taller than the 550 px band: its bottom rim sits at y 1340 and the top 66 px of the rim pass under the panel, where the stream comes in"
+   },
+   {
+    "id": "loop",
+    "what": "Wind-up iris and the loop: the f0 picture frozen",
+    "prefix": "hp",
+    "kind": "full",
+    "916": {
+     "dy": 0
+    },
+    "45": {
+     "dy": -285
+    },
+    "rule": "n = 40 frozen (A-20 f588-599, A-14 f414-419)",
+    "A20": {
+     "f": [
+      588,
+      599
+     ],
+     "n": [
+      40,
+      40,
+      40,
+      40,
+      40,
+      40,
+      40,
+      40,
+      40,
+      40,
+      40,
+      40
+     ]
+    },
+    "A14": {
+     "f": [
+      414,
+      419
+     ],
+     "n": [
+      40,
+      40,
+      40,
+      40,
+      40,
+      40
+     ]
+    }
+   }
+  ],
+  "perfume": [
+   {
+    "id": "porthole-right",
+    "what": "Offer card, right porthole (x 810); opens f105",
+    "prefix": "lb",
+    "kind": "porthole",
+    "A20": {
+     "f": [
+      105,
+      134
+     ]
+    },
+    "A14": {
+     "f": [
+      105,
+      134
+     ]
+    },
+    "n": [
+     315,
+     316,
+     317,
+     318,
+     319,
+     320,
+     321,
+     322,
+     323,
+     324,
+     325,
+     326,
+     327,
+     328,
+     329,
+     330,
+     331,
+     332,
+     333,
+     334,
+     335,
+     336,
+     337,
+     338,
+     339,
+     340,
+     341,
+     342,
+     343,
+     344
+    ],
+    "916": {
+     "x": 810,
+     "y": 1125,
+     "r": 110,
+     "scale": 0.27,
+     "sx": 540,
+     "sy": 1170
+    },
+    "45": {
+     "x": 810,
+     "y": 917,
+     "r": 110,
+     "scale": 0.27,
+     "sx": 540,
+     "sy": 1170
+    },
+    "rule": "n = f + 210 (LAYL film frame)",
+    "why": "0.27 about (540,1170), not the plan's 0.31 about (540,1175): at 0.31 the cap top and the bottle shoulders/base run under the 12 px ring (checker, 100%); at 0.27 the whole bottle with its cap sits inside"
+   },
+   {
+    "id": "oud-a",
+    "what": "Oud A, full: the cap sprays (drawn +400 in the prepared frame)",
+    "prefix": "ls",
+    "kind": "full",
+    "A20": {
+     "f": [
+      165,
+      179
+     ]
+    },
+    "A14": {
+     "f": [
+      165,
+      179
+     ]
+    },
+    "n": [
+     195,
+     196,
+     197,
+     198,
+     199,
+     200,
+     201,
+     202,
+     203,
+     204,
+     205,
+     206,
+     207,
+     208,
+     209
+    ],
+    "916": {
+     "dy": 0
+    },
+    "45": {
+     "dy": -285
+    },
+    "rule": "n = f + 30",
+    "tag": "عطر؟"
+   },
+   {
+    "id": "oud-b",
+    "what": "Oud B, punch-in: the cloud blooms (A-20 only)",
+    "prefix": "ls",
+    "kind": "punch",
+    "A20": {
+     "f": [
+      180,
+      194
+     ]
+    },
+    "n": [
+     210,
+     211,
+     212,
+     213,
+     214,
+     215,
+     216,
+     217,
+     218,
+     219,
+     220,
+     221,
+     222,
+     223,
+     224
+    ],
+    "916": {
+     "scale": 1.25,
+     "sx": 540,
+     "sy": 900,
+     "ax": 540,
+     "ay": 900
+    },
+    "45": {
+     "scale": 1.25,
+     "sx": 540,
+     "sy": 900,
+     "ax": 540,
+     "ay": 615
+    },
+    "rule": "n = f + 30",
+    "tag": "عطر؟ (tag pulse 1.05/1.03/1.01)"
+   },
+   {
+    "id": "oud-c-lens",
+    "what": "Oud C, lens on Lime: the bottle stays (A-14: f180-194)",
+    "prefix": "lb",
+    "kind": "lens",
+    "A20": {
+     "f": [
+      195,
+      209
+     ]
+    },
+    "A14": {
+     "f": [
+      180,
+      194
+     ]
+    },
+    "n": [
+     315,
+     316,
+     317,
+     318,
+     319,
+     320,
+     321,
+     322,
+     323,
+     324,
+     325,
+     326,
+     327,
+     328,
+     329
+    ],
+    "916": {
+     "scale": 0.8,
+     "sx": 540,
+     "sy": 1175,
+     "effective": 0.8,
+     "push": "1.00 to 1.04",
+     "enter": "slide"
+    },
+    "45": {
+     "scale": 0.8,
+     "sx": 540,
+     "sy": 1175,
+     "effective": 0.704,
+     "push": "1.00 to 1.04",
+     "enter": "slide"
+    },
+    "rule": "A-20 n = f + 120; A-14 n = f + 135",
+    "tag": "عطر؟ (Ink)"
+   },
+   {
+    "id": "oud-band",
+    "what": "CTA band, perfume (A-20 only)",
+    "prefix": "lb",
+    "kind": "band",
+    "A20": {
+     "f": [
+      510,
+      539
+     ]
+    },
+    "n": [
+     315,
+     316,
+     317,
+     318,
+     319,
+     320,
+     321,
+     322,
+     323,
+     324,
+     325,
+     326,
+     327,
+     328,
+     329,
+     330,
+     331,
+     332,
+     333,
+     334,
+     335,
+     336,
+     337,
+     338,
+     339,
+     340,
+     341,
+     342,
+     343,
+     344
+    ],
+    "916": {
+     "dy": 280
+    },
+    "45": {
+     "dy": -20
+    },
+    "rule": "n = f - 195",
+    "note_45": "the bottle (cap top y 849-828 with the push, amber to y 1408) is taller than the 550 px band: cap top y 829-808, clear of the panel edge; the bottom 40 px of the body run off the frame"
+   }
+  ],
+  "burger": [
+   {
+    "id": "porthole-left",
+    "what": "Offer card, left porthole (x 270); opens f111",
+    "prefix": "su",
+    "kind": "porthole",
+    "A20": {
+     "f": [
+      105,
+      134
+     ]
+    },
+    "A14": {
+     "f": [
+      105,
+      134
+     ]
+    },
+    "n": [
+     19,
+     20,
+     21,
+     22,
+     23,
+     24,
+     25,
+     26,
+     27,
+     28,
+     29,
+     30,
+     31,
+     32,
+     33,
+     34,
+     35,
+     36,
+     37,
+     38,
+     39,
+     40,
+     41,
+     42,
+     43,
+     44,
+     45,
+     46,
+     47,
+     48
+    ],
+    "916": {
+     "x": 270,
+     "y": 1125,
+     "r": 110,
+     "scale": 0.2,
+     "sx": 540,
+     "sy": 1112
+    },
+    "45": {
+     "x": 270,
+     "y": 917,
+     "r": 110,
+     "scale": 0.2,
+     "sx": 540,
+     "sy": 1112
+    },
+    "rule": "n = f - 86",
+    "why": "0.20 about (540,1112), not the plan's 0.31 about (540,1060): at 0.31 the crown top, the base bun and both sides are cut by the ring (a close-up crop); at 0.20 the whole burger sits inside with STAKK red around it, like the whole cup in the centre porthole (checker, 100%)"
+   },
+   {
+    "id": "burger-a",
+    "what": "Burger A, full: the open stack, steam (prepared +100)",
+    "prefix": "sa",
+    "kind": "full",
+    "A20": {
+     "f": [
+      210,
+      224
+     ]
+    },
+    "A14": {
+     "f": [
+      195,
+      209
+     ]
+    },
+    "n": [
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     1,
+     2,
+     3,
+     4,
+     5,
+     6,
+     7,
+     8,
+     9
+    ],
+    "916": {
+     "dy": 0
+    },
+    "45": {
+     "dy": -320
+    },
+    "rule": "n0 held 6 frames, then n1-n9",
+    "why": "the plan's fallback: in n10-n12 the falling crown is a flat blurred bar cut straight at y 100 (checked at 100%)",
+    "tag": "برجر؟",
+    "note_45": "-320: stack top y 620 (under the tag box), the bottom 31 px of the base bun below the frame"
+   },
+   {
+    "id": "burger-b",
+    "what": "Burger B, punch-in: the crown has landed on the cut",
+    "prefix": "sb",
+    "kind": "punch",
+    "A20": {
+     "f": [
+      225,
+      239
+     ]
+    },
+    "A14": {
+     "f": [
+      210,
+      224
+     ]
+    },
+    "n": [
+     19,
+     20,
+     21,
+     22,
+     23,
+     24,
+     25,
+     26,
+     27,
+     28,
+     29,
+     30,
+     31,
+     32,
+     33
+    ],
+    "916": {
+     "scale": 1.2,
+     "sx": 540,
+     "sy": 900,
+     "ax": 540,
+     "ay": 900,
+     "push": "1.00 to 1.04 (x scale)",
+     "bump_dy": [
+      -10,
+      -5
+     ]
+    },
+    "45": {
+     "scale": 1.2,
+     "sx": 540,
+     "sy": 900,
+     "ax": 540,
+     "ay": 663,
+     "push": "1.00 to 1.04 (x scale)",
+     "bump_dy": [
+      -10,
+      -5
+     ]
+    },
+    "rule": "A-20 n = f - 206; A-14 n = f - 191",
+    "tag": "برجر؟",
+    "note": "a punch-in close-up: the base runs off the frame bottom by design (9:16 bun top y 852, 4:5 y 625)"
+   },
+   {
+    "id": "burger-c-lens",
+    "what": "Burger C, lens on Lime: the whole burger inside the rim (A-20 only)",
+    "prefix": "sl",
+    "kind": "lens",
+    "A20": {
+     "f": [
+      240,
+      254
+     ]
+    },
+    "n": [
+     34,
+     35,
+     36,
+     37,
+     38,
+     39,
+     40,
+     41,
+     42,
+     43,
+     44,
+     45,
+     46,
+     47,
+     48
+    ],
+    "916": {
+     "scale": 0.62,
+     "sx": 540,
+     "sy": 1112,
+     "effective": 0.62,
+     "push": "1.00 to 1.04",
+     "enter": "drop"
+    },
+    "45": {
+     "scale": 0.62,
+     "sx": 540,
+     "sy": 1112,
+     "effective": 0.5456,
+     "push": "1.00 to 1.04",
+     "enter": "drop"
+    },
+    "rule": "n = f - 206",
+    "tag": "برجر؟ (Ink)",
+    "why": "sl frames are the burger shrunk 958/1080 about (540,1112) with the red backdrop continued sideways, so lens scale 0.62 shows the burger at 0.55 effective (whole burger inside the rim) while the frame still covers the whole lens. With su at 0.55 (builder's first version) the frame was only 594-618 px wide inside the 656 px lens and Lime showed as two slivers left and right of a red rectangle (checker)"
+   },
+   {
+    "id": "burger-band",
+    "what": "CTA band, burger: the crown falls hidden behind the panel and lands at about f494 (A-14 f359)",
+    "prefix": "su",
+    "kind": "band",
+    "A20": {
+     "f": [
+      480,
+      509
+     ]
+    },
+    "A14": {
+     "f": [
+      345,
+      374
+     ]
+    },
+    "n": [
+     4,
+     5,
+     6,
+     7,
+     8,
+     9,
+     10,
+     11,
+     12,
+     13,
+     14,
+     15,
+     16,
+     17,
+     19,
+     20,
+     21,
+     22,
+     23,
+     24,
+     25,
+     26,
+     27,
+     28,
+     29,
+     30,
+     31,
+     32,
+     33,
+     34
+    ],
+    "916": {
+     "dy": 460
+    },
+    "45": {
+     "dy": 187
+    },
+    "rule": "n4-n17, then n19-n34 (n18 skipped)",
+    "note_45": "crown top lands at y 810, just under the panel edge, as in 9:16"
+   }
+  ]
+ },
+ "sweet": {
+  "pick": "owner decides: \"cake\" only with his written yes; otherwise \"kunafa\"",
+  "cake": [
+   {
+    "id": "drain",
+    "what": "Drain f30-44: the three thirds fall (each third adds its own drop to dy)",
+    "prefix": "dc",
+    "kind": "full",
+    "A20": {
+     "f": [
+      30,
+      44
+     ]
+    },
+    "A14": {
+     "f": [
+      30,
+      44
+     ]
+    },
+    "n": [
+     2,
+     3,
+     4,
+     5,
+     6,
+     7,
+     8,
+     9,
+     10,
+     11,
+     12,
+     13,
+     14,
+     15,
+     16
+    ],
+    "916": {
+     "dy": 0
+    },
+    "45": {
+     "dy": -225
+    },
+    "rule": "n = f - 28"
+   },
+   {
+    "id": "sweet-a",
+    "what": "Sweet A, full: the sauce stream on the cake",
+    "prefix": "dc",
+    "kind": "full",
+    "A20": {
+     "f": [
+      255,
+      269
+     ]
+    },
+    "A14": {
+     "f": [
+      225,
+      239
+     ]
+    },
+    "n": [
+     2,
+     3,
+     4,
+     5,
+     6,
+     7,
+     8,
+     9,
+     10,
+     11,
+     12,
+     13,
+     14,
+     15,
+     16
+    ],
+    "916": {
+     "dy": 0
+    },
+    "45": {
+     "dy": -225
+    },
+    "rule": "A-20 n = f - 253; A-14 n = f - 223",
+    "tag": "حلويات؟ (180 px; 4:5 153 px)",
+    "note_45": "-225: crumble top y 650 under the tag box, cake base y 1295"
+   },
+   {
+    "id": "sweet-lens",
+    "what": "Sweet, lens on Lime: the whole cake inside the rim",
+    "prefix": "dc",
+    "kind": "lens",
+    "A20": {
+     "f": [
+      270,
+      284
+     ]
+    },
+    "A14": {
+     "f": [
+      240,
+      254
+     ]
+    },
+    "n": [
+     17,
+     18,
+     19,
+     20,
+     21,
+     22,
+     23,
+     24,
+     25,
+     26,
+     27,
+     28,
+     29,
+     30,
+     31
+    ],
+    "916": {
+     "scale": 0.68,
+     "sx": 596,
+     "sy": 1190,
+     "effective": 0.68,
+     "push": "1.00 to 1.04"
+    },
+    "45": {
+     "scale": 0.68,
+     "sx": 596,
+     "sy": 1190,
+     "effective": 0.5984,
+     "push": "1.00 to 1.04"
+    },
+    "rule": "A-20 n = f - 253; A-14 n = f - 223",
+    "tag": "حلويات؟ (Ink)",
+    "why": "0.68, not the plan's 0.80: at 0.80 the slab's left side and right crumble ran under the rim at 100%; source point x 596, not 600 (checker): at 600 the frame's right edge stopped 1.6 px short of the rim on f270 (a Lime sliver 64 px tall at the equator before the push)"
+   },
+   {
+    "id": "sweet-band",
+    "what": "CTA band, sweet: the stream enters from the panel edge",
+    "prefix": "dc",
+    "kind": "band",
+    "A20": {
+     "f": [
+      450,
+      479
+     ]
+    },
+    "A14": {
+     "f": [
+      315,
+      344
+     ]
+    },
+    "n": [
+     2,
+     3,
+     4,
+     5,
+     6,
+     7,
+     8,
+     9,
+     10,
+     11,
+     12,
+     13,
+     14,
+     15,
+     16,
+     17,
+     18,
+     19,
+     20,
+     21,
+     22,
+     23,
+     24,
+     25,
+     26,
+     27,
+     28,
+     29,
+     30,
+     31
+    ],
+    "916": {
+     "dy": 170
+    },
+    "45": {
+     "dy": -60
+    },
+    "rule": "A-20 n = f - 448; A-14 n = f - 313",
+    "note_45": "the cake (645 px) is taller than the band: crumble top y 815, the crater and stream in the band, the front base below the frame"
+   }
+  ],
+  "kunafa": [
+   {
+    "id": "drain",
+    "what": "Drain f30-44 (as built)",
+    "prefix": "k",
+    "kind": "full",
+    "A20": {
+     "f": [
+      30,
+      44
+     ]
+    },
+    "A14": {
+     "f": [
+      30,
+      44
+     ]
+    },
+    "n": [
+     30,
+     31,
+     32,
+     33,
+     34,
+     35,
+     36,
+     37,
+     38,
+     39,
+     40,
+     41,
+     42,
+     43,
+     44
+    ],
+    "916": {
+     "dy": 0
+    },
+    "45": {
+     "dy": -285
+    },
+    "rule": "n = f"
+   },
+   {
+    "id": "sweet-a",
+    "what": "Kunafa A, full (as built, R3-23)",
+    "prefix": "k",
+    "kind": "full",
+    "A20": {
+     "f": [
+      255,
+      269
+     ]
+    },
+    "A14": {
+     "f": [
+      225,
+      239
+     ]
+    },
+    "n": [
+     30,
+     31,
+     32,
+     33,
+     34,
+     35,
+     36,
+     37,
+     38,
+     39,
+     40,
+     41,
+     42,
+     43,
+     44
+    ],
+    "916": {
+     "dy": 0
+    },
+    "45": {
+     "dy": -285
+    },
+    "rule": "A-20 n = f - 225; A-14 n = f - 195",
+    "tag": "حلويات؟ (180 px; 4:5 153 px)"
+   },
+   {
+    "id": "sweet-lens",
+    "what": "Kunafa B, lens on Lime (as built, R3-23)",
+    "prefix": "k",
+    "kind": "lens",
+    "A20": {
+     "f": [
+      270,
+      284
+     ]
+    },
+    "A14": {
+     "f": [
+      240,
+      254
+     ]
+    },
+    "n": [
+     45,
+     46,
+     47,
+     48,
+     49,
+     50,
+     51,
+     52,
+     53,
+     54,
+     55,
+     56,
+     57,
+     58,
+     59
+    ],
+    "916": {
+     "scale": 1.0,
+     "sx": 540,
+     "sy": 1270,
+     "effective": 1.0,
+     "push": "1.00 to 1.04"
+    },
+    "45": {
+     "scale": 1.0,
+     "sx": 540,
+     "sy": 1270,
+     "effective": 0.88,
+     "push": "1.00 to 1.04"
+    },
+    "rule": "A-20 n = f - 225; A-14 n = f - 195",
+    "tag": "حلويات؟ (Ink)"
+   },
+   {
+    "id": "sweet-band",
+    "what": "CTA band, kunafa (as built, R3-9/R3-10)",
+    "prefix": "k",
+    "kind": "band",
+    "A20": {
+     "f": [
+      450,
+      479
+     ]
+    },
+    "A14": {
+     "f": [
+      315,
+      344
+     ]
+    },
+    "n": [
+     43,
+     44,
+     45,
+     46,
+     47,
+     48,
+     49,
+     50,
+     51,
+     52,
+     53,
+     54,
+     55,
+     56,
+     57,
+     58,
+     59,
+     60,
+     61,
+     62,
+     63,
+     64,
+     65,
+     66,
+     67,
+     68,
+     69,
+     70,
+     71,
+     72
+    ],
+    "916": {
+     "dy": 60
+    },
+    "45": {
+     "dy": -216
+    },
+    "rule": "A-20 n = f - 407; A-14 n = f - 272"
+   }
+  ]
+ },
+ "never": [
+  "hp/k3: n93-n106 in any full or punch frame (stream breaks n94, milk bulb on the spout to n106); never hold n107-n120 longer than about 0.5 s",
+  "hb/k4: n51-n94",
+  "LAYL: film f180-f189 and f230 on; the film's own S6 frames from f335 (end card) - the prepared lb frames are re-rendered without it",
+  "b7: n13-n18 under type; n18 anywhere; n65 on in lens, porthole or band; no slowing or holding of n80-n120; n10-n12 (dropped, see burger-a)",
+  "d4: n0-n1 and n32 on",
+  "no S1-alt, S2, S3 or S5 frame in any use (kunafa only in the kunafa option)"
+ ],
+ "deviations": [
+  "Burger A = n0 held 6 frames + n1-n9 (plan: n0 x3 + n1-n12). The plan's own fallback: at 100% the falling crown in n10-n12 is a flat blurred bar cut straight at y 100 by the plate.",
+  "Burger B (sb): rows 0-480 come from n0 (plan: rows 0-250). A white smear the falling crown leaves in source rows 0-230 of n19-n23 sat at screen y 120-220 after the punch-in.",
+  "Burger C lens scale 0.55 about (540,1112) (plan 0.62 about (540,1115)); sweet cake lens 0.68 about (600,1190) (plan 0.80 about (600,1200)): at the plan's values the product ran under the rim at 100% with the 1.04 push. Checker fix: 0.55 on the unpadded su frames left Lime slivers inside the lens (the frame was narrower than the lens), so the lens now uses prefix sl (padded, shrunk 958/1080) at 0.62 = the same 0.55 effective.",
+  "Coffee band: the cup stays at x 519 (plan: moved to 540); a 21 px move needs new columns and the mirrored fill showed in the sun bars.",
+  "LAYL S6 (lb): re-rendered from LAYL src with the label hidden (the task's preferred option when clearly better: no hairline, dust and glass intact; 30 frames in about 1 minute) instead of the paint-out. prep_swap.py keeps the paint-out as the fallback.",
+  "LAYL S4 (ls): the top 400 rows are the frame's own top rows averaged, smoothed horizontally and dithered (plan: row 0 replicated), so no vertical streaks.",
+  "Grade: the plan's lift is baked in: k3 x + 0.28 x(1-x), b7 x + 0.22 x(1-x) (plan: about +0.04 / small lift).",
+  "All 4:5 values are new (the plan gives 9:16 only).",
+  "Portholes (checker fix): right/perfume 0.27 about (540,1170) and left/burger 0.20 about (540,1112) instead of the plan's 0.31 about (540,1175) / (540,1060), so each product sits whole inside its Ø220 window like the coffee cup (at 0.31 the bottle cap and the burger crown/base were cut by the ring). Centre/coffee stays 0.31 about (561,1259)."
+ ],
+ "for_the_generator": [
+  "Portholes move: right (x 810) = lb perfume 0.27 about (540,1170), centre (x 540) = hp coffee 0.31 about (561,1259), left (x 270) = su burger 0.20 about (540,1112) (mk_film PORTS today: k / o / b at 0.4 / 0.3 / 0.3).",
+  "Burger C lens uses prefix sl (padded frames) at lens scale 0.62, not su: su is narrower than the lens at the scale that fits the burger.",
+  "SH table: hook = hp n40-n54 full + n55-n69 punch (4:5 punch params differ, see opener-punch); drain = cake or kunafa use; ret = hp n70-n81; hold = hp n81; iris = hb n95-n98 (4:5 dy -335); loop = hp n40.",
+  "The sweet option is one switch: uses under sweet.cake or sweet.kunafa (drain, Sweet A, lens, band). Cake only with the owner's written yes.",
+  "Finding, type not footage: «محد يسولف؟» is Ink with no keyline; during the return f78-89 it now sits on dark walnut and the saucer (9:16) and on the saucer and cup rim (4:5), where it reads poorly (on tangerine it read). The Paper keyline the talk line uses on colour grounds (stroke paper, lw 12) from f78 would fix it; or accept it for 0.4 s.",
+  "Band dy is a total canvas offset; mk_film already draws an unshifted copy under negative dy. Bands with dy > 0 need no copy (the frame top is above the panel edge).",
+  "Grounds: the world colours in mk_film (TANG/PINK/AZURE) are used only by the multiplication grounds and burst dots; no world ground is drawn as a flat colour any more.",
+  "Audio: world sounds and the band order follow the new worlds (pour, bean tap, spray, crown thump, sauce); the band order stays sweet f450, burger f480, perfume f510, coffee f540 (A-14: sweet, burger, coffee)."
+ ],
+ "no_footage": "Snap f390-404 (A-14 f300-314): the wordmark dots are solid Ink (R3-8), so no footage. The dead beat f45-77, talk, multiplication and flood have none either.",
+ "checks": {
+  "how": "Every use was mocked at the real geometry with the current type (layer code copied from mk_film.mjs) and rendered through sb/compose.mjs from the prepared frames: first, middle and last frame of each use, A-20 ranges, both 9:16 and 4:5 (77 frames each), plus the offer card at f108/115/125/130 and the iris at f132/133. Looked at with Read at phone size (270 px wide sheets) and at 100% crops of every tag/product edge, every lens rim and every band. Mock tools: /tmp/claude-0/-home-user-visitor-counter-api/1e0f8dbb-d731-5965-a898-07519c7bdbc3/scratchpad/swap/prep/tools/mk_mocks.mjs; frames: /tmp/claude-0/-home-user-visitor-counter-api/1e0f8dbb-d731-5965-a898-07519c7bdbc3/scratchpad/swap/prep/mock/916 and /45; sheets: /tmp/claude-0/-home-user-visitor-counter-api/1e0f8dbb-d731-5965-a898-07519c7bdbc3/scratchpad/swap/prep/mock/s916_<world>.png, s45_<world>.png; 100% crops: /tmp/claude-0/-home-user-visitor-counter-api/1e0f8dbb-d731-5965-a898-07519c7bdbc3/scratchpad/swap/prep/chk/c1-c9.png.",
+  "forbidden_frames": {
+   "timeline_frames_checked": 975,
+   "violations": [],
+   "rules": "k3 n93-n106 in full/punch, k3 holds of n107-n120 over 15 frames, k4 n51-n94, LAYL S4 before f190 or from f230, b7 n18 anywhere / n10-n17 under type / n65+ scaled, d4 n0-n1 and n32+"
+  },
+  "product_under_type": {
+   "burger_and_perfume_measured": "tag alpha mask x product mask (not-STAKK-red / LAYL luma > 45): 0 product pixels under the tag in all 24 burger and perfume full/punch mocks, both formats",
+   "clearance_px": {
+    "45 burger-burger-a-f210-sa0": 13,
+    "45 burger-burger-a-f217-sa2": 13,
+    "45 burger-burger-a-f224-sa9": 13,
+    "45 burger-burger-b-f225-sb19": 10,
+    "45 burger-burger-b-f232-sb26": 24,
+    "45 burger-burger-b-f239-sb33": 22,
+    "45 perfume-oud-a-f165-ls195": 259,
+    "45 perfume-oud-a-f172-ls202": 264,
+    "45 perfume-oud-a-f179-ls209": 270,
+    "45 perfume-oud-b-f180-ls210": 338,
+    "45 perfume-oud-b-f187-ls217": 320,
+    "45 perfume-oud-b-f194-ls224": 256,
+    "916 burger-burger-a-f210-sa0": 96,
+    "916 burger-burger-a-f217-sa2": 96,
+    "916 burger-burger-a-f224-sa9": 96,
+    "916 burger-burger-b-f225-sb19": 10,
+    "916 burger-burger-b-f232-sb26": 24,
+    "916 burger-burger-b-f239-sb33": 22,
+    "916 perfume-oud-a-f165-ls195": 307,
+    "916 perfume-oud-a-f172-ls202": 312,
+    "916 perfume-oud-a-f179-ls209": 318,
+    "916 perfume-oud-b-f180-ls210": 386,
+    "916 perfume-oud-b-f187-ls217": 368,
+    "916 perfume-oud-b-f194-ls224": 304
+   },
+   "others_at_100pct": "opener: the tag bottom rides on the saucer rim, the cup rim is 110 px (9:16) / 64 px (4:5 full) / 25 px (4:5 punch) below it, as the plan accepts; Coffee A beans 300+ px below the tag; cake: the tag sits over the tray rim and the stream, crumble top 60-90 px below it (9:16 and 4:5)"
+  },
+  "lens_fit_100pct": "coffee rim concentric (r 303 x 1.04 push inside r 328); perfume whole bottle inside; burger: prefix sl at 0.62 (= 0.55 effective) whole burger inside with red all round (at the plan's 0.62 on su the bun and patty edges ran under the rim; at 0.55 on su Lime showed beside the frame, fixed by the checker); cake at 0.68 the whole slab inside (at 0.80 its sides ran under the rim); kunafa as built",
+  "bands": "9:16: coffee pitcher pours in from under the panel edge; perfume cap just under the panel, no label, no label reflection; burger crown falls behind the panel and lands at the band top (n18 skipped); cake stream from the panel edge. 4:5 (550 px band): every product is taller than the band, so each is cut at the frame bottom only (coffee also loses 66 px of rim under the panel, where the stream enters); no product top is under the panel",
+  "marks": "LAYL S6: label and its reflection are gone in all 30 lb frames (re-render, checked at 100% on f315/f330/f344 and against the film: mean 0.94-1.08/255 outside the label). k3, k4, b7, d4: no logo, text, sign, face or hand in the used ranges (checked on the sheets; the only object at an edge is the plain glass jug lip of d4 at y 0-40 in n2-n6, Sweet A f255-259 and drain f30-34, 9:16 only)",
+  "seams_100pct": "ls +400 fill: no visible seam (smoothed, dithered); sa +100 plate: none; sb rows 0-480 from n0: clean red, no seam; mirrored-edge fill for the coffee band was rejected (chevron in the sun bars), so hu is unshifted",
+  "luma_Y_mean": {
+   "gate": "BUILD-SPEC: no frame under Y' 0.40",
+   "after_lift_916_below_0.40": {
+    "coffee-opener-full": [
+     0.399,
+     0.401
+    ],
+    "coffee-return": [
+     0.389,
+     0.391
+    ],
+    "coffee-hold": [
+     0.389,
+     0.389
+    ],
+    "coffee-loop": [
+     0.393,
+     0.393
+    ],
+    "perfume-oud-a": [
+     0.138,
+     0.152
+    ],
+    "perfume-oud-b": [
+     0.153,
+     0.171
+    ],
+    "burger-burger-a": [
+     0.399,
+     0.402
+    ]
+   },
+   "after_lift_45_below_0.40": {
+    "perfume-oud-a": [
+     0.157,
+     0.175
+    ],
+    "perfume-oud-b": [
+     0.172,
+     0.199
+    ]
+   },
+   "all": {
+    "916": {
+     "coffee-opener-full": [
+      0.399,
+      0.401
+     ],
+     "coffee-opener-punch": [
+      0.43,
+      0.434
+     ],
+     "coffee-return": [
+      0.389,
+      0.391
+     ],
+     "coffee-hold": [
+      0.389,
+      0.389
+     ],
+     "coffee-iris": [
+      0.424,
+      0.428
+     ],
+     "coffee-coffee-a": [
+      0.413,
+      0.419
+     ],
+     "coffee-coffee-b-lens": [
+      0.768,
+      0.772
+     ],
+     "coffee-coffee-band": [
+      0.649,
+      0.653
+     ],
+     "coffee-loop": [
+      0.393,
+      0.393
+     ],
+     "offer": [
+      0.522,
+      0.817
+     ],
+     "perfume-oud-a": [
+      0.138,
+      0.152
+     ],
+     "perfume-oud-b": [
+      0.153,
+      0.171
+     ],
+     "perfume-oud-c-lens": [
+      0.714,
+      0.717
+     ],
+     "perfume-oud-band": [
+      0.498,
+      0.502
+     ],
+     "burger-burger-a": [
+      0.399,
+      0.402
+     ],
+     "burger-burger-b": [
+      0.417,
+      0.423
+     ],
+     "burger-burger-c-lens": [
+      0.758,
+      0.758
+     ],
+     "burger-burger-band": [
+      0.628,
+      0.646
+     ],
+     "cake-drain": [
+      0.454,
+      0.553
+     ],
+     "cake-sweet-a": [
+      0.454,
+      0.455
+     ],
+     "cake-sweet-lens": [
+      0.737,
+      0.738
+     ],
+     "cake-sweet-band": [
+      0.617,
+      0.621
+     ],
+     "kunafa-drain": [
+      0.488,
+      0.562
+     ],
+     "kunafa-sweet-a": [
+      0.486,
+      0.486
+     ],
+     "kunafa-sweet-lens": [
+      0.755,
+      0.756
+     ],
+     "kunafa-sweet-band": [
+      0.654,
+      0.655
+     ]
+    },
+    "45": {
+     "coffee-opener-full": [
+      0.425,
+      0.43
+     ],
+     "coffee-opener-punch": [
+      0.449,
+      0.454
+     ],
+     "coffee-return": [
+      0.422,
+      0.423
+     ],
+     "coffee-hold": [
+      0.422,
+      0.422
+     ],
+     "coffee-iris": [
+      0.437,
+      0.442
+     ],
+     "coffee-coffee-a": [
+      0.422,
+      0.43
+     ],
+     "coffee-coffee-b-lens": [
+      0.748,
+      0.753
+     ],
+     "coffee-coffee-band": [
+      0.654,
+      0.66
+     ],
+     "coffee-loop": [
+      0.422,
+      0.422
+     ],
+     "offer": [
+      0.475,
+      0.79
+     ],
+     "perfume-oud-a": [
+      0.157,
+      0.175
+     ],
+     "perfume-oud-b": [
+      0.172,
+      0.199
+     ],
+     "perfume-oud-c-lens": [
+      0.689,
+      0.692
+     ],
+     "perfume-oud-band": [
+      0.525,
+      0.53
+     ],
+     "burger-burger-a": [
+      0.412,
+      0.416
+     ],
+     "burger-burger-b": [
+      0.436,
+      0.442
+     ],
+     "burger-burger-c-lens": [
+      0.736,
+      0.737
+     ],
+     "burger-burger-band": [
+      0.641,
+      0.666
+     ],
+     "cake-drain": [
+      0.437,
+      0.521
+     ],
+     "cake-sweet-a": [
+      0.443,
+      0.443
+     ],
+     "cake-sweet-lens": [
+      0.715,
+      0.716
+     ],
+     "cake-sweet-band": [
+      0.614,
+      0.615
+     ],
+     "kunafa-drain": [
+      0.478,
+      0.52
+     ],
+     "kunafa-sweet-a": [
+      0.486,
+      0.486
+     ],
+     "kunafa-sweet-lens": [
+      0.734,
+      0.735
+     ],
+     "kunafa-sweet-band": [
+      0.654,
+      0.657
+     ]
+    }
+   },
+   "note": "opener full 0.399-0.401 and Burger A 0.399-0.402 after the plan's lift (before: 0.354-0.357 and 0.368-0.371). Return/hold/loop (no lime tag) 0.389-0.393. Perfume 0.14-0.20 is the plan's accepted night beat (needs the gate waived). Lens and band frames are all 0.55+"
+  },
+  "checker": {
+   "what": "Independent check (10 Nov): every prepared frame re-decoded from source on a separate path (no select filter) and compared: hp/hu/hb/dc/su exact, sa/sb shifted rows and n0 plates exact; LAYL lb re-render checked against the film at f-1/f/f+1 (best match on f, so no frame offset); full prep re-run into a fresh folder: all 368 files byte-identical; 975 timeline frames re-checked against the never-lists (0 violations); critical frames re-rendered from this manifest with mk_film's real tag sizes (hook 230/216 px, Burger B bump) in both formats and viewed at 100% and phone size.",
+   "fixed": [
+    "Burger C lens: Lime slivers left and right of a red rectangle inside the lens (10,785 px on f240 9:16, 8,103 px 4:5) because su at 0.55 is 594-618 px wide against a 656 px lens. New prefix sl (prep_swap.py), lens 0.62: 0 Lime px in all lens frames.",
+    "Cake lens f270: a 1.6 px Lime sliver at the right rim (frame edge at x 866.4, lens inner edge 868) before the push; source point x 600 -> 596.",
+    "Portholes: perfume cap and shoulders and the burger crown and base were cut by the ring at 0.31; now 0.27 about (540,1170) and 0.20 about (540,1112), whole products like the coffee cup."
+   ],
+   "open": [
+    "Burger band n16-n17 (A-20 f492-493, A-14 f357-358): the falling crown shows as a big blurred streak just under the panel edge in both formats (not hidden as the plan says). Two frames of motion blur read as the drop; to hide it, play n4-n15 then n19-n36 instead.",
+    "Cake n2-n6 (drain f30-34, Sweet A f255-259, 9:16): the white jug lip still shows at the top edge (y 0-40); not a mark, but the plan only excluded n0-n1 for it.",
+    "Brightness gate (Y' 0.40) still missed: opener full 0.399 at the low end, return/hold/loop 0.389-0.393, perfume 0.14-0.20: owner waiver needed (or a slightly stronger k3 lift).",
+    "Note text: 4:5 bands are not all cut only at the frame bottom: the coffee band's top 66 px of rim sit under the panel (as its own note says); the perfume band loses about 120 px of the glass base (amber about 38 px), not 40."
+   ]
+  }
+ }
+}

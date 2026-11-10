@@ -1,5 +1,5 @@
 {
- "spec": "v4/BUILD-SPEC.md §10, §7, §11 A-14, §15 R3-1..R3-24 (R3 wins; no version B)",
+ "spec": "v4/BUILD-SPEC.md §10, §7, §11 A-14, §15 R3-1..R3-24 (R3 wins; no version B); world sounds re-mapped to v4/swap/director-plan.json (HABBA pour + bean, LAYL spray + bottle, STAKK crown, sweet drizzle)",
  "fps": 30,
  "bpm": 120,
  "beat_frames": 15,
@@ -11,13 +11,18 @@
    "source_seconds": 1.0117,
    "measured_closure_s": 0.5525,
    "measured_hilu_frication_s": 0.6225,
+   "raw_closure_ms": 70.0,
+   "closure_cut_ms": 42.8,
+   "closure_kept_ms": 27.3,
+   "splice_match": 0.775,
    "stretch_percent": 6.0,
    "rubberband_tempo": 1.06383,
-   "head_trim_ms": 12.5,
+   "head_trim_ms": 22.5,
+   "head_trim_limit_ms": 22.5,
    "head_pad_ms": 0.0,
-   "placed_closure_s": 0.5,
-   "placed_hilu_frication_s": 0.5725,
-   "placed_seconds": 0.9385
+   "placed_closure_s": 0.49,
+   "placed_hilu_frication_s": 0.5225,
+   "placed_seconds": 0.8883
   },
   "V2": {
    "file": "src/assets/rec/voice2.wav",
@@ -64,32 +69,41 @@
   "samples": 960000,
   "checks": {
    "lufs": -14.0,
-   "true_peak_dbtp": -2.7,
-   "aac320_true_peak_dbtp": -2.2,
-   "share_below_150": 0.3233,
-   "share_500_6k": 0.2632,
-   "room_tone_dbfs": -40.1,
+   "true_peak_dbtp": -2.8,
+   "aac320_true_peak_dbtp": -2.7,
+   "share_below_150": 0.3239,
+   "share_500_6k": 0.2591,
+   "room_tone_dbfs": -40.0,
    "voice_over_bed_db": {
-    "V1 «مشروعك حلو…»": 8.7,
+    "V1 «مشروعك حلو…»": 10.0,
     "V3 «طشّ!» f90": 7.2,
     "V2 «شنو حسابهم؟!»": 8.1,
-    "V3 x3 «طشّ!»": 7.9
+    "V3 x3 «طشّ!»": 8.0
    },
-   "seam_jump": 0.00179,
+   "f1_hilu_s": 0.524,
+   "f1_hilu_xcorr_peak": 0.486,
+   "f1_hilu_peak_vs_next": 3.03,
+   "f2_mush_first150ms_voice_over_bed_db": {
+    "300-1000": -1.4,
+    "1000-4000": 6.7,
+    "2000-6000": 14.3,
+    "300-4000": 0.7
+   },
+   "seam_jump": 0.00258,
    "passed": true
   },
   "cues": [
    {
     "frame": 0.0,
     "t": 0.0,
-    "bus": "hit",
-    "what": "ice-on-glass crack (ice hits the latte)"
+    "bus": "music",
+    "what": "808 A1 55 Hz (+110/165/220 Hz) on frame 0 (the hit); its 250-1600 Hz copy -6 dB over 0-0.30 s, back by 0.35 s"
    },
    {
     "frame": 0.0,
     "t": 0.0,
-    "bus": "music",
-    "what": "808 A1 55 Hz (+110/165/220 Hz) on frame 0"
+    "bus": "sfx",
+    "what": "soft milk pour f0-29 (thin stream into the latte, art forming; comes in soft, full at the f15 punch-in; no ice, no splash)"
    },
    {
     "frame": 0.0,
@@ -101,13 +115,7 @@
     "frame": 0.0,
     "t": 0.0,
     "bus": "voice",
-    "what": "V1 «مشروعك حلو…» from 0.00 s; «حلو» starts 0.500 s"
-   },
-   {
-    "frame": 5.0,
-    "t": 0.1667,
-    "bus": "sfx",
-    "what": "ice enters the coffee: splash (n7 entry)"
+    "what": "V1 «مشروعك حلو…» from 0.00 s; the «ح» of «حلو» at 0.522 s (43 ms cut from the «ك» closure)"
    },
    {
     "frame": 5.0,
@@ -126,12 +134,6 @@
     "t": 0.5,
     "bus": "music",
     "what": "group clap on the voiced «حلو» (punch-in)"
-   },
-   {
-    "frame": 16.0,
-    "t": 0.5333,
-    "bus": "sfx",
-    "what": "closer replay of the ice touching the coffee (dark plop)"
    },
    {
     "frame": 30,
@@ -161,7 +163,7 @@
     "frame": 30.0,
     "t": 1.0,
     "bus": "sfx",
-    "what": "soft syrup / pastry crunch (kunafa, no nut scatter)"
+    "what": "soft drizzle (the sweet of the drain; no crunch)"
    },
    {
     "frame": 32.0,
@@ -233,6 +235,12 @@
     "frame": 78.0,
     "t": 2.6,
     "bus": "sfx",
+    "what": "the milk pour again, softer, f78-89 (the picture returns to the pour)"
+   },
+   {
+    "frame": 78.0,
+    "t": 2.6,
+    "bus": "sfx",
     "what": "rising landing tick 1174.7 Hz (dot lands on the ش, x 807)"
    },
    {
@@ -287,19 +295,19 @@
     "frame": 105.0,
     "t": 3.5,
     "bus": "hit",
-    "what": "porthole pop 1 (x 270)"
+    "what": "porthole pop 1 (x 810, perfume)"
    },
    {
     "frame": 108.0,
     "t": 3.6,
     "bus": "hit",
-    "what": "porthole pop 2 (x 540)"
+    "what": "porthole pop 2 (x 540, coffee pour)"
    },
    {
     "frame": 111.0,
     "t": 3.7,
     "bus": "hit",
-    "what": "porthole pop 3 (x 810)"
+    "what": "porthole pop 3 (x 270, burger)"
    },
    {
     "frame": 120,
@@ -329,7 +337,7 @@
     "frame": 135,
     "t": 4.5,
     "bus": "music",
-    "what": "kick: Coffee A full frame"
+    "what": "kick: Coffee A full frame (HABBA bean lands)"
    },
    {
     "frame": 135.0,
@@ -347,13 +355,13 @@
     "frame": 138.0,
     "t": 4.6,
     "bus": "sfx",
-    "what": "ice clink + small splash (Coffee A; ice impact about f138)"
+    "what": "a coffee bean lands on the wooden table: small crisp wooden tap, then it rocks flat (Coffee A, n102 = f138)"
    },
    {
     "frame": 150,
     "t": 5.0,
     "bus": "music",
-    "what": "group clap: Coffee B lens"
+    "what": "group clap: Coffee B lens (latte heart)"
    },
    {
     "frame": 150.0,
@@ -377,7 +385,7 @@
     "frame": 165,
     "t": 5.5,
     "bus": "music",
-    "what": "kick: Oud A full frame"
+    "what": "kick: Perfume A full frame (LAYL atomiser sprays)"
    },
    {
     "frame": 165.0,
@@ -386,16 +394,16 @@
     "what": "kick (peak)"
    },
    {
-    "frame": 165.0,
-    "t": 5.5,
+    "frame": 166.2,
+    "t": 5.54,
     "bus": "sfx",
-    "what": "charcoal crackle + smoke puff (Oud A; no puff on screen, the sound carries it)"
+    "what": "atomiser: short pump click 40 ms after the entry kick (so the kick does not mask it), then a fine spray hiss (Perfume A, LAYL spray)"
    },
    {
     "frame": 180,
     "t": 6.0,
     "bus": "music",
-    "what": "group clap: Oud B punch-in"
+    "what": "group clap: Perfume B punch-in (the mist blooms)"
    },
    {
     "frame": 180.0,
@@ -413,13 +421,13 @@
     "frame": 180.0,
     "t": 6.0,
     "bus": "sfx",
-    "what": "breath of smoke (Oud B punch-in)"
+    "what": "the mist blooms: a soft wide air swell (Perfume B punch-in)"
    },
    {
     "frame": 195,
     "t": 6.5,
     "bus": "music",
-    "what": "kick: Oud C lens"
+    "what": "kick: Perfume C lens (LAYL bottle)"
    },
    {
     "frame": 195.0,
@@ -428,10 +436,16 @@
     "what": "kick (peak)"
    },
    {
+    "frame": 195.0,
+    "t": 6.5,
+    "bus": "sfx",
+    "what": "soft glass tone Bb6 (the LAYL bottle in the lens)"
+   },
+   {
     "frame": 210,
     "t": 7.0,
     "bus": "music",
-    "what": "kick: Burger A full frame"
+    "what": "kick: Burger A full frame (STAKK crown falls)"
    },
    {
     "frame": 210.0,
@@ -455,7 +469,7 @@
     "frame": 210.0,
     "t": 7.0,
     "bus": "sfx",
-    "what": "sizzle bed f210-225 (Burger A, sound only)"
+    "what": "sizzle bed f210-239 (the STAKK patties under the falling crown)"
    },
    {
     "frame": 225.0,
@@ -491,7 +505,7 @@
     "frame": 255,
     "t": 8.5,
     "bus": "music",
-    "what": "kick: Kunafa A full frame"
+    "what": "kick: Sweet A full frame (sauce drizzle)"
    },
    {
     "frame": 255.0,
@@ -503,13 +517,13 @@
     "frame": 255.0,
     "t": 8.5,
     "bus": "sfx",
-    "what": "soft crunch (Kunafa A)"
+    "what": "slow glossy drizzle f255-283 (thick sauce onto the cake, or syrup on the kunafa)"
    },
    {
     "frame": 270,
     "t": 9.0,
     "bus": "music",
-    "what": "group clap: Kunafa B lens"
+    "what": "group clap: Sweet B lens"
    },
    {
     "frame": 270.0,
@@ -653,7 +667,7 @@
     "frame": 450.0,
     "t": 15.0,
     "bus": "music",
-    "what": "soft kick: band cuts to kunafa"
+    "what": "soft kick: band cuts to sweet"
    },
    {
     "frame": 450.0,
@@ -683,7 +697,7 @@
     "frame": 510.0,
     "t": 17.0,
     "bus": "music",
-    "what": "soft kick: band cuts to oud"
+    "what": "soft kick: band cuts to perfume"
    },
    {
     "frame": 510.0,
@@ -724,32 +738,41 @@
   "samples": 672000,
   "checks": {
    "lufs": -14.0,
-   "true_peak_dbtp": -2.7,
-   "aac320_true_peak_dbtp": -2.6,
-   "share_below_150": 0.2886,
-   "share_500_6k": 0.2866,
+   "true_peak_dbtp": -2.8,
+   "aac320_true_peak_dbtp": -2.7,
+   "share_below_150": 0.2864,
+   "share_500_6k": 0.284,
    "room_tone_dbfs": -40.0,
    "voice_over_bed_db": {
-    "V1 «مشروعك حلو…»": 8.6,
+    "V1 «مشروعك حلو…»": 10.1,
     "V3 «طشّ!» f90": 7.2,
-    "V2 «شنو حسابهم؟!»": 9.0,
-    "V3 x3 «طشّ!»": 7.8
+    "V2 «شنو حسابهم؟!»": 9.1,
+    "V3 x3 «طشّ!»": 7.7
    },
-   "seam_jump": 0.00085,
+   "f1_hilu_s": 0.524,
+   "f1_hilu_xcorr_peak": 0.482,
+   "f1_hilu_peak_vs_next": 3.03,
+   "f2_mush_first150ms_voice_over_bed_db": {
+    "300-1000": -1.3,
+    "1000-4000": 7.0,
+    "2000-6000": 14.9,
+    "300-4000": 0.8
+   },
+   "seam_jump": 0.00117,
    "passed": true
   },
   "cues": [
    {
     "frame": 0.0,
     "t": 0.0,
-    "bus": "hit",
-    "what": "ice-on-glass crack (ice hits the latte)"
+    "bus": "music",
+    "what": "808 A1 55 Hz (+110/165/220 Hz) on frame 0 (the hit); its 250-1600 Hz copy -6 dB over 0-0.30 s, back by 0.35 s"
    },
    {
     "frame": 0.0,
     "t": 0.0,
-    "bus": "music",
-    "what": "808 A1 55 Hz (+110/165/220 Hz) on frame 0"
+    "bus": "sfx",
+    "what": "soft milk pour f0-29 (thin stream into the latte, art forming; comes in soft, full at the f15 punch-in; no ice, no splash)"
    },
    {
     "frame": 0.0,
@@ -761,13 +784,7 @@
     "frame": 0.0,
     "t": 0.0,
     "bus": "voice",
-    "what": "V1 «مشروعك حلو…» from 0.00 s; «حلو» starts 0.500 s"
-   },
-   {
-    "frame": 5.0,
-    "t": 0.1667,
-    "bus": "sfx",
-    "what": "ice enters the coffee: splash (n7 entry)"
+    "what": "V1 «مشروعك حلو…» from 0.00 s; the «ح» of «حلو» at 0.522 s (43 ms cut from the «ك» closure)"
    },
    {
     "frame": 5.0,
@@ -786,12 +803,6 @@
     "t": 0.5,
     "bus": "music",
     "what": "group clap on the voiced «حلو» (punch-in)"
-   },
-   {
-    "frame": 16.0,
-    "t": 0.5333,
-    "bus": "sfx",
-    "what": "closer replay of the ice touching the coffee (dark plop)"
    },
    {
     "frame": 30,
@@ -821,7 +832,7 @@
     "frame": 30.0,
     "t": 1.0,
     "bus": "sfx",
-    "what": "soft syrup / pastry crunch (kunafa, no nut scatter)"
+    "what": "soft drizzle (the sweet of the drain; no crunch)"
    },
    {
     "frame": 32.0,
@@ -893,6 +904,12 @@
     "frame": 78.0,
     "t": 2.6,
     "bus": "sfx",
+    "what": "the milk pour again, softer, f78-89 (the picture returns to the pour)"
+   },
+   {
+    "frame": 78.0,
+    "t": 2.6,
+    "bus": "sfx",
     "what": "rising landing tick 1174.7 Hz (dot lands on the ش, x 807)"
    },
    {
@@ -947,19 +964,19 @@
     "frame": 105.0,
     "t": 3.5,
     "bus": "hit",
-    "what": "porthole pop 1 (x 270)"
+    "what": "porthole pop 1 (x 810, perfume)"
    },
    {
     "frame": 108.0,
     "t": 3.6,
     "bus": "hit",
-    "what": "porthole pop 2 (x 540)"
+    "what": "porthole pop 2 (x 540, coffee pour)"
    },
    {
     "frame": 111.0,
     "t": 3.7,
     "bus": "hit",
-    "what": "porthole pop 3 (x 810)"
+    "what": "porthole pop 3 (x 270, burger)"
    },
    {
     "frame": 120,
@@ -989,7 +1006,7 @@
     "frame": 135,
     "t": 4.5,
     "bus": "music",
-    "what": "kick: Coffee A full frame"
+    "what": "kick: Coffee A full frame (HABBA bean lands)"
    },
    {
     "frame": 135.0,
@@ -1007,13 +1024,13 @@
     "frame": 138.0,
     "t": 4.6,
     "bus": "sfx",
-    "what": "ice clink + small splash (Coffee A; ice impact about f138)"
+    "what": "a coffee bean lands on the wooden table: small crisp wooden tap, then it rocks flat (Coffee A, n102 = f138)"
    },
    {
     "frame": 150,
     "t": 5.0,
     "bus": "music",
-    "what": "group clap: Coffee B lens"
+    "what": "group clap: Coffee B lens (latte heart)"
    },
    {
     "frame": 150.0,
@@ -1037,7 +1054,7 @@
     "frame": 165,
     "t": 5.5,
     "bus": "music",
-    "what": "kick: Oud A full frame"
+    "what": "kick: Perfume A full frame (LAYL atomiser sprays)"
    },
    {
     "frame": 165.0,
@@ -1046,16 +1063,16 @@
     "what": "kick (peak)"
    },
    {
-    "frame": 165.0,
-    "t": 5.5,
+    "frame": 166.2,
+    "t": 5.54,
     "bus": "sfx",
-    "what": "charcoal crackle + smoke puff (Oud A; no puff on screen, the sound carries it)"
+    "what": "atomiser: short pump click 40 ms after the entry kick (so the kick does not mask it), then a fine spray hiss (Perfume A, LAYL spray)"
    },
    {
     "frame": 180,
     "t": 6.0,
     "bus": "music",
-    "what": "group clap: Oud C lens"
+    "what": "group clap: Perfume lens (LAYL bottle)"
    },
    {
     "frame": 180.0,
@@ -1070,10 +1087,16 @@
     "what": "group clap (peak)"
    },
    {
+    "frame": 180.0,
+    "t": 6.0,
+    "bus": "sfx",
+    "what": "soft glass tone Bb6 (the LAYL bottle in the lens)"
+   },
+   {
     "frame": 195,
     "t": 6.5,
     "bus": "music",
-    "what": "kick: Burger A full frame"
+    "what": "kick: Burger A full frame (STAKK crown falls)"
    },
    {
     "frame": 195.0,
@@ -1085,7 +1108,7 @@
     "frame": 195.0,
     "t": 6.5,
     "bus": "sfx",
-    "what": "sizzle bed f195-210 (Burger A, sound only)"
+    "what": "sizzle bed f195-224 (the STAKK patties under the falling crown)"
    },
    {
     "frame": 210.0,
@@ -1115,7 +1138,7 @@
     "frame": 225,
     "t": 7.5,
     "bus": "music",
-    "what": "kick: Kunafa A full frame"
+    "what": "kick: Sweet A full frame (sauce drizzle)"
    },
    {
     "frame": 225.0,
@@ -1127,13 +1150,13 @@
     "frame": 225.0,
     "t": 7.5,
     "bus": "sfx",
-    "what": "soft crunch (Kunafa A)"
+    "what": "slow glossy drizzle f225-253 (thick sauce onto the cake, or syrup on the kunafa)"
    },
    {
     "frame": 240,
     "t": 8.0,
     "bus": "music",
-    "what": "group clap: Kunafa B lens"
+    "what": "group clap: Sweet B lens"
    },
    {
     "frame": 240.0,
@@ -1253,7 +1276,7 @@
     "frame": 315.0,
     "t": 10.5,
     "bus": "music",
-    "what": "soft kick: band cuts to kunafa"
+    "what": "soft kick: band cuts to sweet"
    },
    {
     "frame": 315.0,
