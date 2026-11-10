@@ -107,11 +107,22 @@ describe("a job cannot overlap itself", () => {
     expect(runs).toBe(1);
   });
 
-  it("two started at the same moment run once", async () => {
+  it("eight started at the same moment run once", async () => {
+    const gate = deferred();
     let runs = 0;
-    const results = await Promise.all(Array.from({ length: 8 }, () => runScheduledJob("expire-orders", async () => void runs++)));
-    expect(runs).toBeGreaterThanOrEqual(1);
-    expect(results.filter((r) => r.state === "overlapped").length).toBe(8 - runs);
+    let settled = 0;
+    const pending = Array.from({ length: 8 }, () =>
+      runScheduledJob("expire-orders", async () => {
+        runs++;
+        await gate.promise;
+      }).finally(() => settled++),
+    );
+    // الفائز يمسك العقد حتى تُفتح البوابة، فكل استدعاء آخر يجده. ننتظر عودتهم، أو لحظة إن كان أكثر من واحد قد فاز
+    await vi.waitFor(() => expect(settled).toBe(7), { timeout: 2000, interval: 10 }).catch(() => undefined);
+    gate.release();
+    const results = await Promise.all(pending);
+    expect(runs).toBe(1);
+    expect(results.filter((r) => r.state === "overlapped")).toHaveLength(7);
   });
 
   it("an overlapped request gets a plain 200, because Vercel does not retry", async () => {
