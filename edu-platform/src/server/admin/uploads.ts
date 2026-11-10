@@ -5,6 +5,9 @@ import { sql, type Db } from "../db";
 import { storage, newStorageKey, sniffMime, storageFileCap, toMb, uploadLimitBytes, UPLOAD_RULES, type UploadKind } from "../storage";
 import { inspectPdf, PreviewNotIsolatedError, rebuildCustomPreview } from "../access/pdf";
 import { UPLOAD_REJECTION } from "../access/file-check";
+import { withStampSlot } from "../access/stamp-gate";
+import { hitRateLimit } from "../auth/rate-limit";
+import { STAMP_LIMIT_REASON } from "@/lib/pdf-limits";
 import { audit } from "../platform/audit";
 import { reportError } from "../platform/report-error";
 import { getSettings, saveSettings } from "../platform/settings";
@@ -27,6 +30,21 @@ import { isUuid } from "@/lib/uuid";
  * 2) complete: التحقق الفعلي من الملف في التخزين (الحجم + التوقيع الثنائي) ثم ربطه بالمنتج
  * المعلم يرفع لمسوداته فقط وبشرط تفعيل صلاحية الرفع.
  */
+
+/**
+ * حد روابط الرفع لكل حساب في الساعة: المالك الذي يرفع كتالوجه دفعة واحدة لا يصل إليه،
+ * وحساب معلم مسروق لا يملأ التخزين بروابط لا تنتهي.
+ */
+export const UPLOAD_TICKET_LIMIT = { perHour: 120, windowSeconds: 60 * 60 } as const;
+/** رابط الرفع يُستعمل خلال هذه المدة، وكائن لم يُؤكد بعدها يحذفه التنظيف اليومي */
+export const UPLOAD_TICKET_HOURS = 24;
+
+/** طلبات تجهيز رفع كثيرة من الحساب نفسه */
+export class UploadRateLimitError extends AdminError {
+  constructor(readonly retryAfterSeconds: number) {
+    super("طلبت روابط رفع كثيرة في وقت قصير. انتظر قليلًا ثم حاول مرة أخرى.");
+  }
+}
 
 /** عطل في التخزين وليس عيبًا في الملف: الملف باقٍ ويكفي إعادة التأكيد */
 export class UploadStorageError extends AdminError {}
@@ -106,6 +124,8 @@ function tooLargeMessage(kind: UploadKind, actor: Actor): string {
   const limit = uploadLimitBytes(kind);
   const mb = toMb(limit);
   const capped = limit < UPLOAD_RULES[kind].maxBytes;
+  // حد PDF من ذاكرة الختم لا من خطة التخزين: يقال سببه وما يفعله الرافع
+  if (kind === "pdf" && !capped) return `حجم الملف أكبر من المسموح (${mb} ميجابايت). ${STAMP_LIMIT_REASON}`;
   if (capped && actor.kind === "owner") {
     const why = storageFileCap().source === "free_plan" ? "حد الملف الواحد في خطة التخزين المجانية" : "حد الملف الواحد المضبوط للتخزين";
     return `حجم الملف أكبر من ${mb} ميجابايت، وهو ${why}. طريقة رفع الحد موضحة في الإعدادات، قسم التخزين.`;
@@ -171,9 +191,22 @@ async function authorizeTarget(
   return { ref: productId, productType: type };
 }
 
+/**
+ * تذكرة الرفع: المفتاح والحجم المعلن ومن طلبه. التأكيد لا يقبل مفتاحًا بلا تذكرة من الشخص نفسه،
+ * ويقارن حجم ما وصل بالحجم المعلن. Supabase لا يحد حجم رابط الرفع الموقّع نفسه، فهذا هو الحد.
+ */
+export async function recordUploadTicket(ticket: { key: string; bucket: "private" | "public"; target: UploadTarget; actorId: string; declaredSize: number }) {
+  await sql`
+    insert into upload_tickets (storage_key, bucket, target, actor_id, declared_size)
+    values (${ticket.key}, ${ticket.bucket}, ${ticket.target}, ${ticket.actorId}, ${ticket.declaredSize})
+  `;
+}
+
 export async function initUpload(input: z.infer<typeof initSchema>, actor: Actor) {
   const kind = TARGET_KIND[input.target];
   if (input.kind && input.kind !== kind) throw new AdminError("نوع الملف لا يناسب هذا الحقل");
+  const slot = await hitRateLimit(`upload-init:${actor.userId}`, UPLOAD_TICKET_LIMIT.perHour, UPLOAD_TICKET_LIMIT.windowSeconds);
+  if (!slot.allowed) throw new UploadRateLimitError(slot.retryAfterSeconds);
   const { ref } = await authorizeTarget(actor, input.target, input);
   assertLessonUploadOpen(input.target, actor);
   const mime = input.mime === "image/jpg" ? "image/jpeg" : input.mime;
@@ -224,7 +257,8 @@ export async function initUpload(input: z.infer<typeof initSchema>, actor: Actor
   // الرفض هنا قبل بدء الرفع، لا بعد أن يقضي المعلم دقائق يرفع ملفًا سترفضه خطة التخزين
   if (input.size > limit) throw new AdminError(tooLargeMessage(kind, actor));
   const key = newStorageKey(kind, mime, prefixFor(input.target, ref));
-  const target = await storage().createUploadTarget(rules.bucket, key, mime, limit, actor.userId);
+  await recordUploadTicket({ key, bucket: rules.bucket, target: input.target, actorId: actor.userId, declaredSize: input.size });
+  const target = await storage().createUploadTarget(rules.bucket, key, mime, Math.min(limit, input.size), actor.userId);
   return { key, kind, ...target };
 }
 
@@ -307,10 +341,23 @@ export async function completeUpload(input: z.infer<typeof completeSchema>, acto
     throw new AdminError(msg);
   };
 
+  // المفتاح يجب أن يكون صادرًا من initUpload لهذا الشخص، وخلال مدته
+  const [ticket] = await sql<{ actor_id: string; declared_size: string; fresh: boolean }[]>`
+    select actor_id, declared_size::text, created_at > now() - make_interval(hours => ${UPLOAD_TICKET_HOURS}) as fresh
+    from upload_tickets where storage_key = ${input.key} and target = ${input.target}
+  `;
+  // رابط رفع شخص آخر: يُرفض ولا يُحذف ملفه الذي ما زال يرفعه
+  if (ticket && ticket.actor_id !== actor.userId) throw new AdminError("مرجع الملف غير صالح");
+  if (!ticket) return reject("انتهت صلاحية رابط الرفع أو لم يصدر لك. ارفع الملف من جديد.");
+  if (!ticket.fresh) return reject("انتهت صلاحية رابط الرفع. ارفع الملف من جديد.");
+
   const stat = await fromStorage(() => storage().stat(bucket, input.key));
   if (!stat) throw new UploadMissingError("لم يكتمل رفع الملف. حاول مرة أخرى.");
   if (stat.size <= 0) await reject("الملف فارغ");
+  // الحد قبل أي قراءة: ملف أكبر من المسموح لا يُحمَّل في الذاكرة أصلًا
   if (stat.size > uploadLimitBytes(kind)) await reject(tooLargeMessage(kind, actor));
+  // الحجم المعلن عند طلب الرابط هو العقد: ما وصل أكبر أو أصغر منه لا يُقبل
+  if (stat.size !== Number(ticket.declared_size)) await reject("لم يصل الملف كاملًا أو وصل بحجم غير الذي أُعلن. ارفعه مرة أخرى.");
   if (input.size !== undefined && stat.size !== input.size) await reject("لم يصل الملف كاملًا. ارفعه مرة أخرى.");
   const head = await fromStorage(() => storage().readHead(bucket, input.key, 16));
   const mime = sniffMime(head);
@@ -319,9 +366,22 @@ export async function completeUpload(input: z.infer<typeof completeSchema>, acto
   const originalName = (input.originalName ?? "").slice(0, 255);
 
   if (isPdfTarget) {
-    // تعطل التخزين ليس عيبًا في الملف: لا نحذفه، ويمكن إعادة التأكيد
-    const bytes = await fromStorage(() => storage().read(bucket, input.key));
-    const inspection = await inspectPdf(bytes);
+    // القراءة والفحص والختم التجريبي وبناء المعاينة تحمل الملف كله في الذاكرة: مكان من أماكن الختم المحدودة على النسخة
+    const processed = await withStampSlot(async () => {
+      // تعطل التخزين ليس عيبًا في الملف: لا نحذفه، ويمكن إعادة التأكيد
+      const bytes = await fromStorage(() => storage().read(bucket, input.key));
+      const inspection = await inspectPdf(bytes);
+      if (!inspection.ok) return { inspection, isolated: null, isolationFailed: false };
+      if (input.target !== "preview") return { inspection, isolated: null, isolationFailed: false };
+      try {
+        return { inspection, isolated: (await rebuildCustomPreview(bytes)).bytes, isolationFailed: false };
+      } catch (err) {
+        if (!(err instanceof PreviewNotIsolatedError)) throw err;
+        await reportError("upload:preview-not-isolated", err);
+        return { inspection, isolated: null, isolationFailed: true };
+      }
+    });
+    const inspection = processed.inspection;
     if (!inspection.ok) return reject(UPLOAD_REJECTION[inspection.problem]);
     const pageCount = inspection.pageCount;
 
@@ -338,16 +398,8 @@ export async function completeUpload(input: z.infer<typeof completeSchema>, acto
     }
 
     // المعاينة ملف عام: تُحفظ نسختها المبنية من جديد، لا ما رُفع كما هو
-    let isolated: Uint8Array | null = null;
-    if (input.target === "preview") {
-      try {
-        isolated = (await rebuildCustomPreview(bytes)).bytes;
-      } catch (err) {
-        if (!(err instanceof PreviewNotIsolatedError)) throw err;
-        await reportError("upload:preview-not-isolated", err);
-        return reject("تعذر تجهيز هذه المعاينة للعرض العام. صدّرها بصيغة PDF من جديد ثم ارفعها، أو استخدم التوليد التلقائي.");
-      }
-    }
+    const isolated: Uint8Array | null = processed.isolated;
+    if (processed.isolationFailed) return reject("تعذر تجهيز هذه المعاينة للعرض العام. صدّرها بصيغة PDF من جديد ثم ارفعها، أو استخدم التوليد التلقائي.");
 
     const title = input.title || stripExt(originalName) || (input.target === "main" ? "ملف المذكرة" : "معاينة مجانية");
     const saved = await sql.begin(async (tx) => {
@@ -380,6 +432,7 @@ export async function completeUpload(input: z.infer<typeof completeSchema>, acto
     });
     if (saved.registered) return registeredReply(saved.registered);
     const { id: fileId, replacedKeys } = saved;
+    await markTicketCompleted(input.key);
     for (const k of replacedKeys) await storage().remove("private", k).catch(() => {});
     if (isolated) await storage().remove(bucket, input.key).catch(() => {});
 
@@ -400,6 +453,7 @@ export async function completeUpload(input: z.infer<typeof completeSchema>, acto
     const [p] = await sql<{ cover_key: string | null }[]>`select cover_key from products where id = ${productId}`;
     if (!p) return reject("المنتج غير موجود");
     await sql`update products set cover_key = ${input.key} where id = ${productId}`;
+    await markTicketCompleted(input.key);
     if (p.cover_key && p.cover_key !== input.key) await storage().remove("public", p.cover_key).catch(() => {});
     await audit({ actorId: actor.userId, action: "product.cover_upload", entityType: "product", entityId: productId });
     return { id: productId!, message: "تم تحديث صورة الغلاف" };
@@ -408,6 +462,7 @@ export async function completeUpload(input: z.infer<typeof completeSchema>, acto
   if (input.target === "logo") {
     const current = await getSettings();
     await saveSettings({ logo_key: input.key }, actor.userId);
+    await markTicketCompleted(input.key);
     if (current.logo_key && current.logo_key !== input.key) await storage().remove("public", current.logo_key).catch(() => {});
     await audit({ actorId: actor.userId, action: "settings.logo_upload", entityType: "settings", entityId: "logo_key" });
     return { id: input.key, message: "تم تحديث الشعار" };
@@ -416,9 +471,11 @@ export async function completeUpload(input: z.infer<typeof completeSchema>, acto
   if (input.target === "teacher_photo") {
     if (actor.kind === "teacher") {
       await proposeTeacherPhoto(actor, input.key);
+      await markTicketCompleted(input.key);
       return { id: ref!, message: "رُفعت الصورة وهي بانتظار موافقة الإدارة، وتبقى صورتك الحالية ظاهرة حتى ذلك الحين" };
     }
     await setTeacherPhoto(ref!, input.key, actor.userId);
+    await markTicketCompleted(input.key);
     return { id: ref!, message: "تم تحديث صورة المعلم" };
   }
 
@@ -426,6 +483,7 @@ export async function completeUpload(input: z.infer<typeof completeSchema>, acto
     const [l] = await sql<{ thumbnail_key: string | null }[]>`select thumbnail_key from lessons where id = ${input.lessonId!} and product_id = ${productId}`;
     if (!l) return reject("الدرس غير موجود");
     await sql`update lessons set thumbnail_key = ${input.key} where id = ${input.lessonId!}`;
+    await markTicketCompleted(input.key);
     if (l.thumbnail_key && l.thumbnail_key !== input.key) await storage().remove("public", l.thumbnail_key).catch(() => {});
     await audit({ actorId: actor.userId, action: "lesson.thumbnail_upload", entityType: "product", entityId: productId, metadata: { lessonId: input.lessonId } });
     return { id: input.lessonId!, message: "تم تحديث الصورة المصغرة" };
@@ -452,8 +510,57 @@ export async function completeUpload(input: z.infer<typeof completeSchema>, acto
     `;
     return { lesson: row };
   });
+  await markTicketCompleted(input.key);
   if (created.existing) return { id: created.existing.id, message: `تمت إضافة الدرس «${created.existing.title}»` };
   const { lesson } = created;
   await audit({ actorId: actor.userId, action: "lesson.create", entityType: "product", entityId: productId, metadata: { lessonId: lesson.id, title, provider: "file", duration } });
   return { id: lesson.id, message: `تمت إضافة الدرس «${title}»` };
+}
+
+/** التذكرة استُعملت: التنظيف اليومي لا يلمس كائنها */
+async function markTicketCompleted(key: string) {
+  await sql`update upload_tickets set completed_at = coalesce(completed_at, now()) where storage_key = ${key}`;
+}
+
+export type UploadSweep = { removed: number; forgotten: number };
+
+/**
+ * التنظيف اليومي (K053 و K035): كائن صدر له رابط رفع ولم يُؤكد خلال UPLOAD_TICKET_HOURS يُحذف من التخزين،
+ * إلا إن كان مستعملًا فعلًا (تأكيد تعثر بعد التسجيل). والتذاكر المؤكدة تُنسى بعد شهر. دفعات محدودة بوقت.
+ */
+export async function sweepUploadTickets(opts: { batch: number; deadline: number }): Promise<UploadSweep & { finished: boolean }> {
+  let removed = 0;
+  let finished = true;
+  for (;;) {
+    if (Date.now() > opts.deadline) {
+      finished = false;
+      break;
+    }
+    const stale = await sql<{ storage_key: string; bucket: "private" | "public" }[]>`
+      select storage_key, bucket from upload_tickets
+      where completed_at is null and created_at < now() - make_interval(hours => ${UPLOAD_TICKET_HOURS})
+      order by created_at limit ${opts.batch}
+    `;
+    if (stale.length === 0) break;
+    for (const t of stale) {
+      if (Date.now() > opts.deadline) {
+        finished = false;
+        break;
+      }
+      if (!(await storageKeyInUse(t.storage_key))) {
+        await storage().removeMany(t.bucket, [t.storage_key]);
+        removed++;
+      }
+      await sql`delete from upload_tickets where storage_key = ${t.storage_key} and completed_at is null`;
+    }
+    if (!finished || stale.length < opts.batch) break;
+  }
+  const forgotten = (await sql`
+    with batch as materialized (
+      select storage_key from upload_tickets where completed_at is not null and completed_at < now() - interval '30 days'
+      limit ${opts.batch} for update skip locked
+    )
+    delete from upload_tickets t using batch where t.storage_key = batch.storage_key
+  `).count;
+  return { removed, forgotten, finished };
 }

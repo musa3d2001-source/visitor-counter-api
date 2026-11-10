@@ -6,7 +6,7 @@ import { CONSENT_VERSIONS } from "@/lib/consent";
 import { REFUND_HOLD_DAYS } from "@/lib/teacher-terms";
 import { RIGHTS_ATTESTATION_TEXT, RIGHTS_ATTESTATION_VERSION, TEACHER_AGREEMENT_DRAFT_NOTICE, TEACHER_AGREEMENT_SECTIONS } from "@/lib/teacher-agreement";
 import { submitForReview } from "@/server/admin/products";
-import { completeUpload } from "@/server/admin/uploads";
+import { completeTicketed } from "../helpers/upload-ticket";
 import { getPublishedProductsByIds } from "@/server/catalog/queries";
 import { unsellableProductIds } from "@/server/commerce/cart";
 import { storage } from "@/server/storage";
@@ -173,7 +173,7 @@ describe("قبول الاتفاقية", () => {
     await expect(assertProductAccess(actorOf(t), draft.id, "upload")).resolves.toMatchObject({ id: draft.id });
     const key = `products/${draft.id}/2026/11/${randomUUID()}.pdf`;
     await storage().put("private", key, await makePdf(6), "application/pdf");
-    await expect(completeUpload({ target: "main", key, productId: draft.id, originalName: "مذكرة.pdf" }, actorOf(t))).resolves.toMatchObject({ id: expect.any(String) });
+    await expect(completeTicketed({ target: "main", key, productId: draft.id, originalName: "مذكرة.pdf" }, actorOf(t))).resolves.toMatchObject({ id: expect.any(String) });
     await onSale();
 
     // الإرسال يُرفض ولا يترك أثرًا

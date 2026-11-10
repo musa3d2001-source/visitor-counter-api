@@ -10,7 +10,7 @@ import { grantProduct } from "@/server/access/entitlements";
 import { contentHealthCounts, contentHealthReport, needsOwnerAttention, recheckFile, regenerateBadPreviews, scanUncheckedFiles } from "@/server/admin/content-health";
 import { addBundleItem, approveAndPublish, getAdminProduct, publishBlockers, regenerateAutoPreview, submitForReview, withdrawFromReview } from "@/server/admin/products";
 import { getTeacherAdmin, updateTeacher, type TeacherInput } from "@/server/admin/teachers";
-import { completeUpload } from "@/server/admin/uploads";
+import { completeTicketed, issueTicket } from "../helpers/upload-ticket";
 import type { Actor } from "@/server/auth/permissions";
 import { getProductFilesInfo } from "@/server/catalog/queries";
 import { saveSettings } from "@/server/platform/settings";
@@ -63,7 +63,7 @@ async function put(productId: string, target: "main" | "preview", bytes: Uint8Ar
 }
 async function upload(productId: string, target: "main" | "preview", bytes: Uint8Array) {
   const key = await put(productId, target, bytes);
-  return { key, ...(await completeUpload({ target, key, productId, originalName: "ملف.pdf" }, owner)) };
+  return { key, ...(await completeTicketed({ target, key, productId, originalName: "ملف.pdf" }, owner)) };
 }
 async function legacyMain(productId: string, bytes: Uint8Array, pages: number) {
   const key = `products/${productId}/${randomUUID()}.pdf`;
@@ -124,7 +124,7 @@ describe("المعاينة العامة معزولة عن بقية الملف", 
     const p = await draft();
     await upload(p.id, "main", await makePdf(20));
     const first = await upload(p.id, "preview", await linkedPdf(2));
-    const again = await completeUpload({ target: "preview", key: first.key, productId: p.id, originalName: "ملف.pdf" }, owner);
+    const again = await completeTicketed({ target: "preview", key: first.key, productId: p.id, originalName: "ملف.pdf" }, owner);
     expect(again.id).toBe(first.id);
     expect((await filesOf(p.id)).filter((f) => f.kind === "preview")).toHaveLength(1);
   });
@@ -169,7 +169,7 @@ describe("المعاينة العامة معزولة عن بقية الملف", 
     await upload(p.id, "main", await makePdf(20));
     const key = await put(p.id, "preview", await linkedPdf(2));
     vi.spyOn(pdf, "rebuildCustomPreview").mockRejectedValue(new pdf.PreviewNotIsolatedError("test"));
-    await expect(completeUpload({ target: "preview", key, productId: p.id, originalName: "x.pdf" }, owner)).rejects.toThrow(/للعرض العام/);
+    await expect(completeTicketed({ target: "preview", key, productId: p.id, originalName: "x.pdf" }, owner)).rejects.toThrow(/للعرض العام/);
     expect(existsSync(privatePath(key))).toBe(false);
   });
 });
@@ -369,7 +369,7 @@ describe("تأكيد الرفع على شبكة ضعيفة", () => {
     const p = await draft();
     const key = await put(p.id, "main", await makePdf(20));
     const body = { target: "main" as const, key, productId: p.id, originalName: "ملف.pdf" };
-    const [a, b] = await Promise.all([completeUpload(body, owner), completeUpload(body, owner)]);
+    const [a, b] = await Promise.all([completeTicketed(body, owner), completeTicketed(body, owner)]);
     expect(a.id).toBe(b.id);
     expect((await filesOf(p.id)).filter((f) => f.kind === "main")).toHaveLength(1);
     expect(existsSync(privatePath(key))).toBe(true);
@@ -378,7 +378,7 @@ describe("تأكيد الرفع على شبكة ضعيفة", () => {
   it("a confirmation repeated after its answer was lost returns the same file, with no second audit entry", async () => {
     const p = await draft();
     const first = await upload(p.id, "main", await makePdf(20));
-    const again = await completeUpload({ target: "main", key: first.key, productId: p.id, originalName: "ملف.pdf" }, owner);
+    const again = await completeTicketed({ target: "main", key: first.key, productId: p.id, originalName: "ملف.pdf" }, owner);
     expect(again.id).toBe(first.id);
     expect(await auditOf("product.file_upload", p.id)).toHaveLength(1);
   });
@@ -387,7 +387,7 @@ describe("تأكيد الرفع على شبكة ضعيفة", () => {
     const p = await draft();
     const first = await upload(p.id, "main", await makePdf(20));
     vi.spyOn(storage(), "stat").mockRejectedValue(new Error("down"));
-    await expect(completeUpload({ target: "main", key: first.key, productId: p.id, originalName: "ملف.pdf" }, owner)).resolves.toMatchObject({ id: first.id });
+    await expect(completeTicketed({ target: "main", key: first.key, productId: p.id, originalName: "ملف.pdf" }, owner)).resolves.toMatchObject({ id: first.id });
   });
 
   describe("رد الخادم يحدد ما يفعله المتصفح", () => {
@@ -398,6 +398,7 @@ describe("تأكيد الرفع على شبكة ضعيفة", () => {
     it("a storage failure answers 503 in Arabic and leaves the file for the retry", async () => {
       const p = await draft();
       const key = await put(p.id, "main", await makePdf(6));
+      await issueTicket(key, "main", owner.userId);
       signIn();
       const stat = vi.spyOn(storage(), "stat").mockRejectedValueOnce(new Error("storage stat failed: gateway"));
       const res = await confirmRequest({ target: "main", key, productId: p.id, originalName: "ملف.pdf" });
@@ -415,6 +416,7 @@ describe("تأكيد الرفع على شبكة ضعيفة", () => {
     it("a read failure after the stat is also 503", async () => {
       const p = await draft();
       const key = await put(p.id, "main", await makePdf(6));
+      await issueTicket(key, "main", owner.userId);
       signIn();
       vi.spyOn(storage(), "read").mockRejectedValueOnce(new Error("download failed"));
       expect((await confirmRequest({ target: "main", key, productId: p.id, originalName: "ملف.pdf" })).status).toBe(503);
@@ -424,7 +426,9 @@ describe("تأكيد الرفع على شبكة ضعيفة", () => {
     it("storage saying the file is not there answers 409, so the browser uploads it again", async () => {
       const p = await draft();
       signIn();
-      const res = await confirmRequest({ target: "main", key: `products/${p.id}/2026/11/${randomUUID()}.pdf`, productId: p.id, originalName: "ملف.pdf" });
+      const key = `products/${p.id}/2026/11/${randomUUID()}.pdf`;
+      await issueTicket(key, "main", owner.userId);
+      const res = await confirmRequest({ target: "main", key, productId: p.id, originalName: "ملف.pdf" });
       expect(res.status).toBe(409);
     });
 

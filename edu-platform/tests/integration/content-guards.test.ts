@@ -7,7 +7,8 @@ import { checkFileAccess, grantProduct } from "@/server/access/entitlements";
 import { contentHealthCounts, contentHealthReport, regenerateBadPreviews, scanUncheckedFiles } from "@/server/admin/content-health";
 import { approveAndPublish, deleteProductFile, moveProductFile, publishBlockers, regenerateAutoPreview, setProductStatus, submitForReview, updateProduct } from "@/server/admin/products";
 import { updateTeacher, getTeacherAdmin } from "@/server/admin/teachers";
-import { completeUpload, initUpload } from "@/server/admin/uploads";
+import { initUpload } from "@/server/admin/uploads";
+import { completeTicketed } from "../helpers/upload-ticket";
 import type { Actor } from "@/server/auth/permissions";
 import { getProductFilesInfo, getPublishedProductsByIds } from "@/server/catalog/queries";
 import { computeCart, unsellableProductIds } from "@/server/commerce/cart";
@@ -52,7 +53,7 @@ async function upload(productId: string, target: "main" | "preview", bytes: Uint
   const prefix = target === "main" ? "products" : "previews";
   const key = extra.key ?? `${prefix}/${productId}/2026/11/${randomUUID()}.pdf`;
   if (!extra.key) await storage().put("private", key, bytes, "application/pdf");
-  const res = await completeUpload({ target, key, productId, originalName: "ملف.pdf", size: extra.size }, actor);
+  const res = await completeTicketed({ target, key, productId, originalName: "ملف.pdf", size: extra.size }, actor);
   return { key, ...res };
 }
 
@@ -94,7 +95,7 @@ describe("C1 رفض الملفات التي ستفشل عند الطالب", () 
     const p = await draft();
     const key = `products/${p.id}/2026/11/${randomUUID()}.pdf`;
     await storage().put("private", key, fixture(name), "application/pdf");
-    await expect(completeUpload({ target: "main", key, productId: p.id, originalName: name }, owner)).rejects.toThrow(message);
+    await expect(completeTicketed({ target: "main", key, productId: p.id, originalName: name }, owner)).rejects.toThrow(message);
     expect(existsSync(privatePath(key))).toBe(false);
     expect(await filesOf(p.id)).toHaveLength(0);
   });
@@ -581,7 +582,7 @@ describe("C6 حد الحجم حسب خطة التخزين وتأكيد الرف�
     big.set(fixture("plain.pdf"));
     const key = `products/${p.id}/2026/11/${randomUUID()}.pdf`;
     await storage().put("private", key, big, "application/pdf");
-    await expect(completeUpload({ target: "main", key, productId: p.id }, owner)).rejects.toThrow(/حجم الملف أكبر/);
+    await expect(completeTicketed({ target: "main", key, productId: p.id }, owner)).rejects.toThrow(/حجم الملف أكبر/);
     expect(existsSync(privatePath(key))).toBe(false);
   });
 
@@ -606,7 +607,7 @@ describe("C6 حد الحجم حسب خطة التخزين وتأكيد الرف�
     const a = await draft();
     const b = await draft();
     const first = await upload(a.id, "main", await makePdf(20));
-    await expect(completeUpload({ target: "main", key: first.key, productId: b.id }, owner)).rejects.toThrow(/مرجع الملف غير صالح/);
+    await expect(completeTicketed({ target: "main", key: first.key, productId: b.id }, owner)).rejects.toThrow(/مرجع الملف غير صالح/);
   });
 
   it("a storage outage at completion does not delete the upload, so it can be confirmed again", async () => {
@@ -615,9 +616,9 @@ describe("C6 حد الحجم حسب خطة التخزين وتأكيد الرف�
     const key = `products/${p.id}/2026/11/${randomUUID()}.pdf`;
     await storage().put("private", key, bytes, "application/pdf");
     vi.spyOn(storage(), "read").mockRejectedValueOnce(new Error("storage down"));
-    await expect(completeUpload({ target: "main", key, productId: p.id }, owner)).rejects.toThrow(/حاول مرة أخرى/);
+    await expect(completeTicketed({ target: "main", key, productId: p.id }, owner)).rejects.toThrow(/حاول مرة أخرى/);
     expect(existsSync(privatePath(key))).toBe(true);
-    await expect(completeUpload({ target: "main", key, productId: p.id }, owner)).resolves.toMatchObject({ id: expect.any(String) });
+    await expect(completeTicketed({ target: "main", key, productId: p.id }, owner)).resolves.toMatchObject({ id: expect.any(String) });
   });
 
   it("a product whose upload never finished stays a draft that cannot be published", async () => {

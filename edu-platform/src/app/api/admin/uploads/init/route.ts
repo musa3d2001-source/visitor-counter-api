@@ -2,7 +2,7 @@ import { NextResponse } from "next/server";
 import { isSameOriginRequest } from "@/server/http";
 import { getActor, PermissionError } from "@/server/auth/permissions";
 import { AdminError } from "@/server/admin/common";
-import { initSchema, initUpload } from "@/server/admin/uploads";
+import { initSchema, initUpload, UploadRateLimitError } from "@/server/admin/uploads";
 import { BunnyError } from "@/server/video/bunny";
 import { reportError } from "@/server/platform/report-error";
 import { withBusyGuard } from "@/server/busy-response";
@@ -28,6 +28,7 @@ async function handlePOST(req: Request) {
     return NextResponse.json(res, { headers: { "cache-control": "no-store" } });
   } catch (err) {
     if (isDatabaseBusy(err)) throw err;
+    if (err instanceof UploadRateLimitError) return NextResponse.json({ error: err.userMessage }, { status: 429, headers: { "retry-after": String(Math.max(1, err.retryAfterSeconds)) } });
     if (err instanceof AdminError) return NextResponse.json({ error: err.userMessage }, { status: 400 });
     if (err instanceof PermissionError) return NextResponse.json({ error: err.userMessage }, { status: 403 });
     if (err instanceof BunnyError) {

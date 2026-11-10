@@ -7,6 +7,7 @@ import { completeSchema, completeUpload, UploadMissingError, UploadStorageError 
 import { reportError } from "@/server/platform/report-error";
 import { withBusyGuard } from "@/server/busy-response";
 import { isDatabaseBusy } from "@/server/db-busy";
+import { StampBusyError } from "@/server/access/stamp-gate";
 
 export const dynamic = "force-dynamic";
 export const maxDuration = 120;
@@ -36,6 +37,10 @@ async function handlePOST(req: Request) {
   } catch (err) {
     if (isDatabaseBusy(err)) throw err;
     // عطل التخزين يستحق إعادة التأكيد نفسه، وملف لم يصل يحتاج رفعًا جديدًا، وغيرهما رفض نهائي
+    // الخادم يختم ملفات كثيرة الآن: الملف المرفوع باقٍ، وإعادة التأكيد بعد قليل تكفي
+    if (err instanceof StampBusyError) {
+      return NextResponse.json({ error: "المنصة تجهز ملفات كثيرة الآن. الملف المرفوع محفوظ، أعد المحاولة بعد قليل." }, { status: 503, headers: { "retry-after": String(err.retryAfterSeconds) } });
+    }
     if (err instanceof UploadStorageError) {
       await reportError("upload:storage", err.cause);
       return NextResponse.json({ error: err.userMessage }, { status: 503 });

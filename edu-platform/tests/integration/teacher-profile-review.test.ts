@@ -1,7 +1,7 @@
 import { randomUUID } from "node:crypto";
 import { afterAll, beforeAll, beforeEach, describe, expect, it, vi } from "vitest";
 import { renderToStaticMarkup } from "react-dom/server";
-import { completeUpload } from "@/server/admin/uploads";
+import { completeTicketed } from "../helpers/upload-ticket";
 import { approveProfileChange, listPendingProfileChanges, pendingProfileChangesCount, proposeTeacherPhoto, proposeTeacherText, rejectProfileChange, teacherProfileState } from "@/server/admin/teacher-profile-review";
 import { setTeacherPhoto } from "@/server/admin/teachers";
 import { getTeacherBySlug } from "@/server/catalog/queries";
@@ -91,7 +91,7 @@ describe("الصفحة العامة تبقى على المعتمد", () => {
     await sql`update teachers set photo_key = ${oldKey} where id = ${t.id}`;
     const newKey = await putPhoto(t);
 
-    const res = await completeUpload({ target: "teacher_photo", key: newKey, teacherId: t.id, originalName: "a.png" }, actorOf(t));
+    const res = await completeTicketed({ target: "teacher_photo", key: newKey, teacherId: t.id, originalName: "a.png" }, actorOf(t));
     expect(res.message).toContain("بانتظار موافقة الإدارة");
     expect((await liveOf(t.id)).photo_key).toBe(oldKey);
     expect((await teacherProfileState(t.id)).pending).toMatchObject({ photo_action: "replace", photo_key: newKey });
@@ -119,7 +119,7 @@ describe("الصفحة العامة تبقى على المعتمد", () => {
     const t = await newTeacher();
     const key = await putPhoto(t);
     const ownerActor: Actor = { kind: "owner", userId: owner.id, name: "م", email: owner.email, teacherId: null, canUpload: true };
-    await completeUpload({ target: "teacher_photo", key, teacherId: t.id, originalName: "a.png" }, ownerActor);
+    await completeTicketed({ target: "teacher_photo", key, teacherId: t.id, originalName: "a.png" }, ownerActor);
     expect((await liveOf(t.id)).photo_key).toBe(key);
     expect((await teacherProfileState(t.id)).pending).toBeNull();
     await setTeacherPhoto(t.id, null, owner.id);
@@ -202,7 +202,7 @@ describe("الصورة المعتمدة لا تُحذف بطلب مصنوع", ()
 
   it("a completion that names the live photo is no change at all", async () => {
     const { t, key } = await withLivePhoto();
-    await completeUpload({ target: "teacher_photo", key, teacherId: t.id }, actorOf(t));
+    await completeTicketed({ target: "teacher_photo", key, teacherId: t.id }, actorOf(t));
     expect((await teacherProfileState(t.id)).pending).toBeNull();
     expect((await liveOf(t.id)).photo_key).toBe(key);
     expect(await exists(key)).toBe(true);
@@ -228,14 +228,14 @@ describe("الصورة المعتمدة لا تُحذف بطلب مصنوع", ()
 
   it("a refused completion cannot delete the live photo either", async () => {
     const { t, key } = await withLivePhoto();
-    await expect(completeUpload({ target: "teacher_photo", key, teacherId: t.id, size: 1 }, actorOf(t))).rejects.toThrow(/لم يصل الملف كاملًا/);
+    await expect(completeTicketed({ target: "teacher_photo", key, teacherId: t.id, size: 1 }, actorOf(t))).rejects.toThrow(/لم يصل الملف كاملًا/);
     expect(await exists(key)).toBe(true);
   });
 
   it("a refused completion still removes a file nothing uses", async () => {
     const t = await newTeacher();
     const key = await putPhoto(t);
-    await expect(completeUpload({ target: "teacher_photo", key, teacherId: t.id, size: 1 }, actorOf(t))).rejects.toThrow(/لم يصل الملف كاملًا/);
+    await expect(completeTicketed({ target: "teacher_photo", key, teacherId: t.id, size: 1 }, actorOf(t))).rejects.toThrow(/لم يصل الملف كاملًا/);
     expect(await exists(key)).toBe(false);
   });
 
@@ -369,7 +369,7 @@ describe("الصلاحيات", () => {
     const a = await newTeacher();
     const b = await newTeacher();
     const key = await putPhoto(b);
-    await expect(completeUpload({ target: "teacher_photo", key, teacherId: b.id, originalName: "a.png" }, actorOf(a))).rejects.toThrow();
+    await expect(completeTicketed({ target: "teacher_photo", key, teacherId: b.id, originalName: "a.png" }, actorOf(a))).rejects.toThrow();
     expect((await teacherProfileState(b.id)).pending).toBeNull();
   });
 });

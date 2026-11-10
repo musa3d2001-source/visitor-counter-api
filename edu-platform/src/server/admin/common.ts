@@ -6,6 +6,7 @@ import { clientIp } from "../http";
 import { reportError } from "../platform/report-error";
 import { isDatabaseBusy } from "../db-busy";
 import { DB_BUSY_MESSAGE } from "@/lib/busy";
+import { StampBusyError } from "../access/stamp-gate";
 
 /**
  * غلاف موحد لـ Server Actions الخاصة بالإدارة:
@@ -36,6 +37,8 @@ async function toActionError(err: unknown): Promise<ActionState> {
   if (isNextControlFlow(err)) throw err;
   // مؤقت: لا يُسجل خطأً في الإجراء، ويُطلب من المالك إعادة المحاولة بعد لحظات
   if (isDatabaseBusy(err)) return { error: DB_BUSY_MESSAGE };
+  // حد أعمال PDF الثقيلة على هذه النسخة (فحص ملف، توليد معاينة): مؤقت مثل انشغال قاعدة البيانات
+  if (err instanceof StampBusyError) return { error: "المنصة تجهز ملفات كثيرة الآن. حاول مرة أخرى بعد دقيقة." };
   const pgCode = (err as { code?: string })?.code;
   if (pgCode === "23505") return { error: "القيمة مستخدمة مسبقًا (مثل الرابط أو الكود). اختر قيمة أخرى." };
   if (pgCode === "23503") return { error: "لا يمكن تنفيذ العملية لارتباط هذا العنصر ببيانات أخرى." };
