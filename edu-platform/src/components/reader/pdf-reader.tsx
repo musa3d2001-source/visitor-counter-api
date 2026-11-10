@@ -32,7 +32,8 @@ type Props = {
    * زر إجراء اختياري في الشريط (مثل «اشترِ المذكرة» في المعاينة). shortLabel يظهر على الجوال.
    * في المعاينة يُعاد استخدامه في بطاقة «انتهت المعاينة» بعد آخر صفحة، مع السعر إن وُجد.
    */
-  cta?: { href: string; label: string; shortLabel?: string; priceFils?: number | null; compareAtPriceFils?: number | null };
+  /** libraryNote: جملة «تظهر في مكتبتي» من site-truth على الخادم، أو null حين لا يوجد دفع يُؤكَّد */
+  cta?: { href: string; label: string; shortLabel?: string; priceFils?: number | null; compareAtPriceFils?: number | null; libraryNote?: string | null };
 };
 
 export function PdfReader({ src, title, backHref, backLabel, initialPage = 1, watermark, downloadHref, progressFileId, badge, variant = "full", cta }: Props) {
@@ -279,7 +280,7 @@ function PreviewEndCard({
         انتهت المعاينة
       </h2>
       <p className="mt-2 text-[0.98rem] leading-7 text-ink-soft">
-        وصلت إلى آخر صفحة في المعاينة. النسخة الكاملة تظهر في «مكتبتي» فور تأكيد الدفع.
+        وصلت إلى آخر صفحة في المعاينة.{cta.libraryNote ? ` ${cta.libraryNote}` : null}
       </p>
       {cta.priceFils != null ? (
         <Price fils={cta.priceFils} compareAt={cta.compareAtPriceFils} size="lg" className="mt-4 justify-center" />

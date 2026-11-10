@@ -1,8 +1,13 @@
 import { describe, expect, it } from "vitest";
 import {
+  AFTER_CONFIRM,
   authPerks,
   claimsUntrue,
   DEFAULT_FAQ,
+  DEFAULT_FOOTER_NOTE,
+  libraryNote,
+  publicFooterNote,
+  type LibraryLineKey,
   EMPTY_HERO,
   gradeMeta,
   gradesHeading,
@@ -22,6 +27,7 @@ import {
 const facts = (over: Partial<SiteFacts> = {}): SiteFacts => ({ payment: "live", video: true, notes: true, content: true, teachers: 3, ...over });
 const notesOnly = (over: Partial<SiteFacts> = {}) => facts({ video: false, ...over });
 const VIDEO = /فيديو|مرئي/;
+const LIBRARY_KEYS: LibraryLineKey[] = ["previewEnd", "watchCta", "contactTile", "libraryEmpty", "bundleContents", "cartSub", "cartPerk", "homeLibrary"];
 
 const LEGACY_SUBTITLE = "شرح بالفيديو لكل وحدة، ومراجعات قبل الاختبارات القصيرة وليلة الاختبار، ومذكرات جاهزة للطباعة. ادفع لما تحتاجه فقط، ويظهر في مكتبتك فور تأكيد الدفع.";
 const LEGACY_TAGLINE = "شروحات فيديو ومذكرات لطلاب الكويت";
@@ -59,6 +65,13 @@ describe("payment claims follow the real state", () => {
     for (const phrase of ["صفحة الدفع الآمنة", "دفع آمن", "دفع إلكتروني آمن", "ادفع بأمان", "كي نت", "KNET", "ماي فاتورة", "MyFatoorah"]) expect(phrase).toMatch(PAYMENT_CLAIM);
   });
 
+  it("live names no payment method: the account may have KNET alone or cards alone", () => {
+    const c = paymentClaims("live");
+    // «لا نحتفظ ببيانات بطاقتك» وعد عن البيانات وليس ادعاءً بوسيلة مفعّلة
+    const lines = [c.hero, c.footer, c.authPerk, c.productLine, c.cartLine, c.step.t, c.step.p, c.checkoutEyebrow, c.checkoutSub, c.checkoutNote].map((x) => (x ?? "").replace("بيانات بطاقتك", ""));
+    for (const line of lines) expect(line).not.toMatch(/كي\s*نت|knet|بطاق/i);
+  });
+
   it("with payment off nothing promises an order that will be confirmed", () => {
     expect(productLibraryLine("off", false)).toBeNull();
     expect(productLibraryLine("sandbox", false)).toContain("بعد تأكيد الدفع");
@@ -66,6 +79,21 @@ describe("payment claims follow the real state", () => {
     expect(JSON.stringify(heroTrust(facts({ payment: "off" })))).not.toContain("تأكيد الدفع");
     expect(JSON.stringify(authPerks(facts({ payment: "off" })))).not.toContain("تأكيد الدفع");
     expect(JSON.stringify(homeSteps(facts({ payment: "off" })))).not.toContain("تأكيد الدفع");
+  });
+
+  it.each(LIBRARY_KEYS)("%s promises the library after confirmation only when a payment can be confirmed", (key) => {
+    expect(libraryNote("live", key)).toMatch(AFTER_CONFIRM);
+    expect(libraryNote("sandbox", key)).toMatch(AFTER_CONFIRM);
+    const off = libraryNote("off", key);
+    if (off !== null) {
+      expect(off).not.toMatch(AFTER_CONFIRM);
+      expect(off).not.toMatch(PAYMENT_CLAIM);
+    }
+  });
+
+  it("the promise is caught in each wording the pages used", () => {
+    for (const phrase of ["فور تأكيد الدفع", "بعد تأكيد الدفع", "بعد تأكيد عملية الدفع"]) expect(phrase).toMatch(AFTER_CONFIRM);
+    expect("بانتظار تأكيد الدفع").not.toMatch(AFTER_CONFIRM);
   });
 });
 
@@ -77,6 +105,18 @@ describe("what the owner wrote stays unless it says what is not there", () => {
     expect(claimsUntrue("دفع آمن", facts({ payment: "sandbox" }))).toBe(true);
     expect(claimsUntrue("دفع آمن", facts({ payment: "off" }))).toBe(true);
     expect(claimsUntrue("دفع آمن وشروحات فيديو ومذكرات", facts())).toBe(false);
+    expect(claimsUntrue("يظهر في مكتبتك بعد تأكيد الدفع", facts({ payment: "off" }))).toBe(true);
+    expect(claimsUntrue("يظهر في مكتبتك بعد تأكيد الدفع", facts({ payment: "sandbox" }))).toBe(false);
+  });
+
+  it("the footer note the owner wrote is shown only while it is true", () => {
+    const untrue = "دفع آمن بكي نت وشروحات فيديو لكل وحدة";
+    expect(publicFooterNote(untrue, notesOnly({ payment: "off" }))).toBe(DEFAULT_FOOTER_NOTE);
+    expect(publicFooterNote(untrue, facts())).toBe(untrue);
+    expect(publicFooterNote("كل الحقوق لأصحابها.", notesOnly({ payment: "off" }))).toBe("كل الحقوق لأصحابها.");
+    expect(publicFooterNote("", notesOnly({ payment: "off" }))).toBe("");
+    // البديل نفسه صادق في أسوأ الحالات
+    expect(claimsUntrue(DEFAULT_FOOTER_NOTE, facts({ payment: "off", video: false, notes: false, content: false }))).toBe(false);
   });
 
   it("the owner's honest tagline and hero are shown as written", () => {

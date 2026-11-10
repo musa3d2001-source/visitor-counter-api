@@ -1,7 +1,7 @@
 import { readdirSync, readFileSync, statSync } from "node:fs";
 import { join, relative, resolve } from "node:path";
 import { describe, expect, it } from "vitest";
-import { PAYMENT_CLAIM } from "@/lib/site-truth";
+import { AFTER_CONFIRM, PAYMENT_CLAIM } from "@/lib/site-truth";
 
 /**
  * كل ادعاء عن الدفع يأتي من site-truth حسب حال الدفع الفعلية. هذا الاختبار يفشل إن كتبت صفحة عامة ادعاءً بيدها.
@@ -49,6 +49,19 @@ describe("no public page hard-codes a payment claim", () => {
 
   it.each(scanned)("%s", (file) => {
     expect(claimsIn(readFileSync(join(SRC, file), "utf8"))).toEqual([]);
+  });
+});
+
+/** «يظهر بعد تأكيد الدفع» كذب حين يتوقف الدفع، فيأتي من libraryNote أو productLibraryLine حسب الحال، ولا يُكتب في صفحة */
+describe("no public page hard-codes 'after payment confirmation'", () => {
+  it("covers the pages that used to carry it", () => {
+    for (const f of ["components/reader/pdf-reader.tsx", "app/(reader)/watch/[productId]/page.tsx", "app/(site)/contact/page.tsx", "app/(site)/library/page.tsx", "app/(site)/cart/page.tsx", "app/(site)/_home/sections.tsx"]) {
+      expect(scanned, f).toContain(f);
+    }
+  });
+
+  it.each(scanned)("%s", (file) => {
+    expect(visibleCode(readFileSync(join(SRC, file), "utf8")).match(new RegExp(AFTER_CONFIRM.source, "g")) ?? []).toEqual([]);
   });
 });
 

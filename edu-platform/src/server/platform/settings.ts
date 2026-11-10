@@ -2,7 +2,7 @@ import "server-only";
 import { cache } from "react";
 import { z } from "zod";
 import { sql, type Db } from "../db";
-import { DEFAULT_FAQ, DEFAULT_HERO_SUBTITLE, DEFAULT_HERO_TITLE, DEFAULT_TAGLINE } from "@/lib/site-truth";
+import { DEFAULT_FAQ, DEFAULT_FOOTER_NOTE, DEFAULT_HERO_SUBTITLE, DEFAULT_HERO_TITLE, DEFAULT_TAGLINE } from "@/lib/site-truth";
 
 /**
  * إعدادات المنصة القابلة للتعديل من لوحة الإدارة (الاسم، الشعار، الألوان، التواصل، الأسئلة الشائعة...)
@@ -58,7 +58,7 @@ export const DEFAULT_SETTINGS: PlatformSettings = {
   videos_enabled: true,
   watermark_enabled: true,
   faq: DEFAULT_FAQ,
-  footer_note: "جميع الحقوق محفوظة. المحتوى مخصص للاستخدام الشخصي للطالب فقط.",
+  footer_note: DEFAULT_FOOTER_NOTE,
   fee_percent_bps: 0,
   fee_fixed_fils: 0,
   fee_rules_confirmed_at: null,

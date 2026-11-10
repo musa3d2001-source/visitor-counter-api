@@ -3,10 +3,10 @@ import { createElement } from "react";
 import { renderToStaticMarkup } from "react-dom/server";
 import { resetEnvCache } from "@/server/env";
 import { resetPaymentMethodsCache } from "@/server/payments/service";
-import { EMPTY_HERO, PAYMENT_CLAIM } from "@/lib/site-truth";
+import { AFTER_CONFIRM, DEFAULT_FOOTER_NOTE, EMPTY_HERO, PAYMENT_CLAIM } from "@/lib/site-truth";
 import { startSimulator, type Simulator } from "../mocks/myfatoorah-simulator";
 import { closeDb, resetDb, sql } from "../helpers/db";
-import { createProduct, createTeacher, createUser, createVideoProduct } from "../helpers/factories";
+import { createBundle, createProduct, createTeacher, createUser, createVideoProduct } from "../helpers/factories";
 import { SIM_API_KEY, SIM_PORT, TEST_ENV, WEBHOOK_SECRET } from "../test-env";
 
 /** الصفحات الحقيقية كاملة: ما يقرؤه الزائر في كل حال من أحوال الدفع والمحتوى */
@@ -41,6 +41,9 @@ const { default: LoginPage } = await import("@/app/(site)/(auth)/login/page");
 const { default: RegisterPage } = await import("@/app/(site)/(auth)/register/page");
 const { authPagePerks } = await import("@/server/platform/site-facts");
 const { generateMetadata } = await import("@/app/layout");
+const { default: PreviewPage } = await import("@/app/(reader)/preview/[fileId]/page");
+const { default: WatchPage } = await import("@/app/(reader)/watch/[productId]/page");
+const { default: LibraryPage } = await import("@/app/(site)/library/page");
 
 let sim: Simulator;
 beforeAll(async () => {
@@ -234,6 +237,62 @@ describe("the home page when video is on sale", () => {
     const h = await home();
     expect(h).toContain("تكمل الفيديو من حيث توقفت");
     expect(h).toContain("أحدث الدروس المرئية");
+  });
+});
+
+describe("the promise that a purchase appears after confirmation", () => {
+  /** كل صفحة قالت الجملة بيدها قبل أن تأتي من site-truth */
+  async function surfaces() {
+    const note = await createProduct({ withFile: true, withPreview: true });
+    const video = await createVideoProduct({ freePreviewIndex: 0 });
+    const bundle = await createBundle({ items: [note.id] });
+    ctx.user = null;
+    const preview = (await PreviewPage({ params: Promise.resolve({ fileId: note.previewFileId! }) })) as React.ReactElement<{ cta: { libraryNote?: string | null } }>;
+    const watch = html(await WatchPage({ params: Promise.resolve({ productId: video.id }), searchParams: Promise.resolve({}) }));
+    ctx.user = await createUser();
+    ctx.cart = [note.id];
+    return {
+      previewEnd: preview.props.cta.libraryNote ?? "",
+      watch,
+      contact: html(await ContactPage()),
+      library: html(await LibraryPage({ searchParams: Promise.resolve({}) })),
+      bundle: html(await ProductPage({ params: Promise.resolve({ slug: bundle.slug }) })),
+      cart: html(await CartPage()),
+      home: await home(),
+    };
+  }
+
+  it("payment off: no page makes it", async () => {
+    payments("off");
+    for (const [name, page] of Object.entries(await surfaces())) expect(page.match(AFTER_CONFIRM)?.[0] ?? null, name).toBeNull();
+  });
+
+  it.each(["live", "sandbox"] as const)("%s: each page still makes it", async (mode) => {
+    payments(mode);
+    for (const [name, page] of Object.entries(await surfaces())) expect(page, name).toMatch(AFTER_CONFIRM);
+  });
+});
+
+describe("the footer note the owner wrote", () => {
+  const untrue = "دفع آمن بكي نت وشروحات فيديو لكل وحدة";
+
+  it("gives way to the default while it names what is not there", async () => {
+    payments("off");
+    await createProduct({ withFile: true });
+    await set("footer_note", untrue);
+    const footer = textOf(html(await SiteFooter()));
+    expect(footer).not.toContain(untrue);
+    expect(footer).not.toMatch(PAYMENT_CLAIM);
+    expect(footer).not.toMatch(VIDEO);
+    expect(footer).toContain(DEFAULT_FOOTER_NOTE);
+  });
+
+  it("is shown as written while it is true", async () => {
+    payments("live");
+    await createProduct({ withFile: true });
+    await createVideoProduct({ freePreviewIndex: 0 });
+    await set("footer_note", untrue);
+    expect(textOf(html(await SiteFooter()))).toContain(untrue);
   });
 });
 

@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
 import Link from "next/link";
-import { publicFaq } from "@/lib/site-truth";
+import { libraryNote, publicFaq, type PaymentPublicState } from "@/lib/site-truth";
 import { siteFacts } from "@/server/platform/site-facts";
 import {
   ArrowLeft,
@@ -33,8 +33,8 @@ type Channel = { key: string; Icon: typeof Mail; label: string; value: string; h
 const GREEN = toneVars({ from: "#3DDC84", to: "#169C4F", deep: "#0F6B36", soft: "#E3F8EC", ink: "#0F6B36" });
 const TEAL = toneVars({ from: "#2DC2B3", to: "#0A6B66", deep: "#063F3C", soft: "#DDF6F4", ink: "#0A6670" });
 
-const helpTiles = (mailWorks: boolean) => [
-  { href: "/library", Icon: LibraryBig, title: "مشترياتك في «مكتبتي»", text: "كل ما اشتريته يظهر هناك بعد تأكيد الدفع.", vars: subjectVars("math") },
+const helpTiles = (mailWorks: boolean, payment: PaymentPublicState) => [
+  { href: "/library", Icon: LibraryBig, title: "مشترياتك في «مكتبتي»", text: libraryNote(payment, "contactTile") ?? "", vars: subjectVars("math") },
   { href: "/forgot-password", Icon: KeyRound, title: "نسيت كلمة المرور؟", text: mailWorks ? "أرسل لنفسك رابطًا لتعيين كلمة مرور جديدة." : "تواصل معنا لنصدر لك رابطًا جديدًا.", vars: subjectVars("social") },
   { href: "/refund-policy", Icon: RotateCcw, title: "سياسة الاسترجاع", text: "متى يُسترجع المبلغ، وكيف تطلب ذلك.", vars: subjectVars("arabic") },
   { href: "/terms", Icon: ScrollText, title: "الشروط والأحكام", text: "استخدام الحساب والمحتوى والدفع.", vars: subjectVars("english") },
@@ -75,7 +75,8 @@ export default async function ContactPage() {
       ltr: true,
     },
   ].filter(Boolean) as Channel[];
-  const faq = publicFaq(s.faq ?? [], await siteFacts());
+  const facts = await siteFacts();
+  const faq = publicFaq(s.faq ?? [], facts);
   const cols = channels.length >= 4 ? "lg:grid-cols-4" : channels.length === 3 ? "lg:grid-cols-3" : "";
 
   return (
@@ -163,7 +164,7 @@ export default async function ContactPage() {
         <section aria-labelledby="help-title" className="mt-16 sm:mt-20">
           <SectionHead id="help-title" icon={<Lightbulb aria-hidden />} eyebrow="قبل أن تراسلنا" tone="gold" title="جوابك قد يكون هنا" sub="أسرع طريق لأكثر ما يسأل عنه الطلاب وأولياء الأمور." />
           <ul className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-            {helpTiles(mailIsReal()).map(({ href, Icon, title, text, vars }) => (
+            {helpTiles(mailIsReal(), facts.payment).map(({ href, Icon, title, text, vars }) => (
               <li key={href} className="min-w-0">
                 <Link href={href} className="tile-3d group flex h-full items-start gap-4 p-5" style={vars}>
                   <span className="icon-tile [&_svg]:size-6">

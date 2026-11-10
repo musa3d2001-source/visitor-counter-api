@@ -20,6 +20,8 @@ import { cn } from "@/lib/utils";
 import { LessonRows } from "./_components/lesson-rows";
 import { LockedStage, StageFrame, StageNotice } from "./_components/stage-parts";
 import { isUuid } from "@/lib/uuid";
+import { libraryNote } from "@/lib/site-truth";
+import { paymentPublicState } from "@/server/payments/public-state";
 
 export const metadata: Metadata = { title: "مشاهدة الدرس", robots: { index: false, follow: false } };
 
@@ -92,6 +94,7 @@ export default async function WatchPage({ params, searchParams }: { params: Prom
   const showBuy = isFreeView && !next && !ownsRoot && !staff;
   const showBar = hasNav || showBuy;
   const showFreeCta = isFreeView && !ownsRoot && !staff;
+  const watchLibraryNote = libraryNote(paymentPublicState(), "watchCta");
   const showProgress = Boolean(user && lessons.length && (ownsRoot || progress.length > 0));
   const showLoginCard = !user && Boolean(access?.ok) && !showFreeCta;
   const hasSide = showFreeCta || files.length > 0 || showLoginCard;
@@ -350,7 +353,7 @@ export default async function WatchPage({ params, searchParams }: { params: Prom
                       <h2 id="unlock-all" className="mt-3 text-[1.35rem] leading-snug font-black text-white">
                         افتح {count(lessons.length, W.lesson)} في هذا المحتوى
                       </h2>
-                      <p className="mt-1.5 text-[0.95rem] text-white/80">بعد الشراء يظهر المحتوى في مكتبتك فور تأكيد الدفع، وتتابع من حيث توقفت.</p>
+                      {watchLibraryNote ? <p className="mt-1.5 text-[0.95rem] text-white/80">{watchLibraryNote}</p> : null}
                       {detail && detail.priceFils > 0 ? <Price fils={detail.priceFils} compareAt={detail.compareAtPriceFils} size="lg" tone="light" className="mt-3" /> : null}
                       <Link href={`/products/${product.slug}`} className="btn btn-3d btn-accent btn-md mt-4 w-full">
                         <ShoppingCart aria-hidden /> اشترِ للوصول لكل الدروس

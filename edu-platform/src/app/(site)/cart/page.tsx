@@ -10,7 +10,7 @@ import { PageHeader, StatPill } from "@/components/ui/page-header";
 import { ProductCover } from "@/components/site/product-cover";
 import { listGrades } from "@/server/catalog/queries";
 import { paymentPublicState } from "@/server/payments/public-state";
-import { paymentClaims } from "@/lib/site-truth";
+import { libraryNote } from "@/lib/site-truth";
 import { CompactPrice, Kicker, SaleEndedChip, contentChips, shortTerm } from "@/components/site/card-parts";
 import { PRODUCT_TYPE_LABELS } from "@/lib/labels";
 import { filsToKwdString } from "@/lib/money";
@@ -36,13 +36,7 @@ export default async function CartPage() {
         breadcrumbs={[{ label: "الرئيسية", href: "/" }, { label: "السلة" }]}
         eyebrow={{ icon: <ShoppingCart />, label: "سلة المشتريات", tone: "gold" }}
         title="السلة"
-        sub={
-          empty
-            ? "كل ما تضيفه يظهر هنا قبل الدفع."
-            : paymentClaims(payment).afterConfirm
-              ? "راجع اختياراتك ثم أكمل الشراء. يظهر كل شيء في مكتبتك بعد تأكيد الدفع."
-              : "راجع اختياراتك هنا. الدفع الإلكتروني غير متاح حاليًا."
-        }
+        sub={empty ? "كل ما تضيفه يظهر هنا قبل الدفع." : (libraryNote(payment, "cartSub") ?? undefined)}
         aside={
           empty ? undefined : (
             <TiltedPosters

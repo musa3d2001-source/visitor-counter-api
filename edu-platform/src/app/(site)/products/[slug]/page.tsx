@@ -15,7 +15,7 @@ import { sql } from "@/server/db";
 import { VideoProductView, accessPeriodText } from "./video-view";
 import { getSettings } from "@/server/platform/settings";
 import { paymentPublicState } from "@/server/payments/public-state";
-import { paymentClaims, productLibraryLine } from "@/lib/site-truth";
+import { libraryNote, paymentClaims, productLibraryLine } from "@/lib/site-truth";
 import { closedVideoProductIds } from "@/server/video/policy";
 import { unsellableProductIds } from "@/server/commerce/cart";
 import { env } from "@/server/env";
@@ -295,7 +295,7 @@ export default async function ProductPage({ params }: { params: Promise<Params> 
             eyebrowIcon={<Layers aria-hidden />}
             tone="eyebrow-violet"
             title="محتويات الباقة"
-            sub="كل ما تحصل عليه عند شراء الباقة، ويظهر في مكتبتك بعد تأكيد الدفع."
+            sub={libraryNote(paymentPublicState(), "bundleContents") ?? undefined}
           />
           <ProductGrid products={bundleItems} ownedIds={owned} />
         </section>

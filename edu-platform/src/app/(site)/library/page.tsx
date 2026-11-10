@@ -13,6 +13,8 @@ import { isVideoType, PRODUCT_TYPE_LABELS, type ProductType } from "@/lib/labels
 import { ar, count, gradeClass, toneClass, W } from "@/lib/design";
 import { cn } from "@/lib/utils";
 import { sql } from "@/server/db";
+import { libraryNote } from "@/lib/site-truth";
+import { paymentPublicState } from "@/server/payments/public-state";
 import { formatClock } from "@/components/site/format";
 import { EmptyStart, TiltedPosters, pillParts } from "../cart/_components/commerce";
 import { NoteLibraryRow, ResumeFeatured, ResumeRow, VideoLibraryCard, type ResumeEntry } from "./_components/library-ui";
@@ -105,7 +107,7 @@ export default async function LibraryPage({ searchParams }: { searchParams: Prom
       <PageHeader
         eyebrow={{ icon: <Sparkles />, label: `أهلًا ${user.fullName.split(" ")[0]}`, tone: "gold" }}
         title="مكتبتي"
-        sub={items.length ? "كل ما اشتريته هنا، ويفتح من أي جهاز." : "ما تشتريه يظهر هنا بعد تأكيد الدفع."}
+        sub={items.length ? "كل ما اشتريته هنا، ويفتح من أي جهاز." : (libraryNote(paymentPublicState(), "libraryEmpty") ?? undefined)}
         actions={
           <Button asChild variant="outline">
             <Link href="/account">

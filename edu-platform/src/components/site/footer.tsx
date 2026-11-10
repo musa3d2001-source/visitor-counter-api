@@ -4,7 +4,7 @@ import { Sparkle } from "@/components/art";
 import { ar } from "@/lib/design";
 import { getSettings } from "@/server/platform/settings";
 import { siteFacts } from "@/server/platform/site-facts";
-import { paymentClaims, publicTagline, sellerIdentity } from "@/lib/site-truth";
+import { paymentClaims, publicFooterNote, publicTagline, sellerIdentity } from "@/lib/site-truth";
 import { listGrades } from "@/server/catalog/queries";
 import { storage } from "@/server/storage";
 import { Logo } from "./logo";
@@ -13,6 +13,7 @@ import { Logo } from "./logo";
 export async function SiteFooter() {
   const [settings, grades, facts] = await Promise.all([getSettings(), listGrades(), siteFacts()]);
   const tagline = publicTagline(settings.tagline, facts);
+  const footerNote = publicFooterNote(settings.footer_note, facts);
   const paymentLine = paymentClaims(facts.payment).footer;
   const seller = sellerIdentity(settings);
   const logoUrl = settings.logo_key ? storage().publicUrl(settings.logo_key) : null;
@@ -80,7 +81,7 @@ export async function SiteFooter() {
             </dl>
           ) : null}
           <p>
-            © <span className="num">{ar(year)}</span> {settings.site_name}. {settings.footer_note}
+            © <span className="num">{ar(year)}</span> {settings.site_name}. {footerNote}
           </p>
         </div>
       </div>

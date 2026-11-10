@@ -1,7 +1,7 @@
 import Link from "next/link";
 import { BookOpenText, CirclePlay, Clock3, GraduationCap, Layers, Library, ListVideo, MonitorSmartphone, Play, ShieldCheck, Sparkles, Zap } from "lucide-react";
 import type { PlaylistGroup, ProductCard, ProductDetail, PublicFileInfo } from "@/server/catalog/queries";
-import { paymentClaims, productLibraryLine, type PaymentPublicState } from "@/lib/site-truth";
+import { libraryNote, paymentClaims, productLibraryLine, type PaymentPublicState } from "@/lib/site-truth";
 import { AddToCart } from "@/components/site/add-to-cart";
 import { ProductGrid } from "@/components/site/product-card";
 import { TeacherAvatar } from "@/components/site/teacher-avatar";
@@ -247,7 +247,7 @@ export function VideoProductView({
             eyebrowIcon={<Layers aria-hidden />}
             tone="eyebrow-violet"
             title={isBundle ? "محتويات الباقة" : "أجزاء الدورة"}
-            sub={isBundle ? "كل ما تحصل عليه عند شراء الباقة، ويظهر في مكتبتك بعد تأكيد الدفع." : "تحتاج جزءًا واحدًا فقط؟ كل جزء متاح للشراء وحده."}
+            sub={isBundle ? (libraryNote(payment, "bundleContents") ?? undefined) : "تحتاج جزءًا واحدًا فقط؟ كل جزء متاح للشراء وحده."}
           />
           <ProductGrid products={included} ownedIds={owned} />
         </section>

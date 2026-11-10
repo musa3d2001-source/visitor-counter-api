@@ -23,12 +23,19 @@ export type FaqItem = { q: string; a: string };
 
 /** ما يُعد ادعاءً عن بوابة الدفع أو أمانها. لا يقال إلا والدفع حقيقي */
 export const PAYMENT_CLAIM = /ماي\s*فاتورة|my\s*fatoorah|كي\s*نت|knet|دفع(?:\s+إلكتروني)?\s+(?:ال)?آمن|بأمان/i;
+/** وعد بأن الشراء «يظهر بعد تأكيد الدفع». لا يقال إلا حين يوجد دفع يُؤكَّد، وإلا البديل الصادق أو لا شيء */
+export const AFTER_CONFIRM = /(?:بعد|فور)\s+تأكيد\s+(?:عملية\s+)?الدفع/;
 const VIDEO_CLAIM = /فيديو|مرئي/;
 const NOTES_CLAIM = /مذكر/;
 
 /** هل يذكر هذا النص ما ليس موجودًا الآن؟ يُستخدم على ما يكتبه المالك في الإعدادات */
 export function claimsUntrue(text: string, f: SiteFacts): boolean {
-  return (f.payment !== "live" && PAYMENT_CLAIM.test(text)) || (!f.video && VIDEO_CLAIM.test(text)) || (!f.notes && NOTES_CLAIM.test(text));
+  return (
+    (f.payment !== "live" && PAYMENT_CLAIM.test(text)) ||
+    (!paymentClaims(f.payment).afterConfirm && AFTER_CONFIRM.test(text)) ||
+    (!f.video && VIDEO_CLAIM.test(text)) ||
+    (!f.notes && NOTES_CLAIM.test(text))
+  );
 }
 
 // ---------------------------------------------------------------------------
@@ -55,13 +62,17 @@ export type PaymentClaims = {
   afterConfirm: boolean;
 };
 
+/**
+ * لا تسمي وسيلة دفع بعينها: الحساب الحقيقي الجديد قد يبدأ بكي نت وحده والبطاقات قيد التفعيل،
+ * ولا شيء في الحقائق يعرف ما المفعّل. صفحة البوابة تعرض الوسائل المتاحة فعلًا، والأسئلة الشائعة تقولها بتحفظ
+ */
 const LIVE_CLAIMS: PaymentClaims = {
-  hero: "دفع آمن بكي نت والبطاقات",
-  footer: "دفع إلكتروني آمن عبر ماي فاتورة: كي نت والبطاقات البنكية",
+  hero: "دفع إلكتروني آمن عبر ماي فاتورة",
+  footer: "دفع إلكتروني آمن عبر بوابة ماي فاتورة",
   authPerk: "دفع آمن عبر ماي فاتورة، ولا نحتفظ ببيانات بطاقتك",
-  productLine: "دفع آمن عبر ماي فاتورة: كي نت أو بطاقة",
-  cartLine: "دفع آمن عبر ماي فاتورة: كي نت والبطاقات",
-  step: { t: "ادفع بأمان", p: "عبر بوابة ماي فاتورة بكي نت أو البطاقة البنكية، ولا نحتفظ ببيانات بطاقتك." },
+  productLine: "دفع آمن عبر ماي فاتورة",
+  cartLine: "دفع آمن عبر بوابة ماي فاتورة",
+  step: { t: "ادفع بأمان", p: "عبر بوابة ماي فاتورة بالوسائل المفعّلة فيها، ولا نحتفظ ببيانات بطاقتك." },
   checkoutEyebrow: "دفع آمن",
   checkoutSub: "ثلاث خطوات قصيرة، ثم ننقلك إلى صفحة الدفع الآمنة لإتمام العملية.",
   checkoutNote: "ننقلك إلى صفحة الدفع الآمنة لدى ماي فاتورة، ولا نحتفظ ببيانات بطاقتك.",
@@ -107,6 +118,25 @@ export function productLibraryLine(state: PaymentPublicState, isBundle: boolean)
   return isBundle ? "كل محتويات الباقة تظهر في مكتبتي بعد تأكيد الدفع" : "يظهر في مكتبتي بعد تأكيد الدفع";
 }
 
+/** كل جملة عامة تقول «يظهر بعد تأكيد الدفع» مع بديلها حين لا يوجد دفع. اختبار مسح المصدر يمنع كتابتها في صفحة */
+const LIBRARY_LINES = {
+  previewEnd: { on: "النسخة الكاملة تظهر في «مكتبتي» فور تأكيد الدفع.", off: null },
+  watchCta: { on: "بعد الشراء يظهر المحتوى في مكتبتك فور تأكيد الدفع، وتتابع من حيث توقفت.", off: null },
+  contactTile: { on: "كل ما اشتريته يظهر هناك بعد تأكيد الدفع.", off: "كل ما تحصل عليه من محتوى يظهر هناك، وتفتحه من أي جهاز." },
+  libraryEmpty: { on: "ما تشتريه يظهر هنا بعد تأكيد الدفع.", off: "ما تحصل عليه من محتوى يظهر هنا." },
+  bundleContents: { on: "كل ما تحصل عليه عند شراء الباقة، ويظهر في مكتبتك بعد تأكيد الدفع.", off: "كل ما تضمه هذه الباقة." },
+  cartSub: { on: "راجع اختياراتك ثم أكمل الشراء. يظهر كل شيء في مكتبتك بعد تأكيد الدفع.", off: "راجع اختياراتك هنا. الدفع الإلكتروني غير متاح حاليًا." },
+  cartPerk: { on: "يظهر في مكتبتك بعد تأكيد الدفع", off: null },
+  homeLibrary: { on: "، وكل ما تشتريه تجده في «مكتبتي» بعد تأكيد الدفع", off: null },
+} as const satisfies Record<string, { on: string; off: string | null }>;
+
+export type LibraryLineKey = keyof typeof LIBRARY_LINES;
+
+/** جمل «يظهر في مكتبتك» خارج سطر صفحة المنتج: الوعد حين يوجد دفع يُؤكَّد، وإلا البديل الصادق أو لا شيء */
+export function libraryNote(state: PaymentPublicState, key: LibraryLineKey): string | null {
+  return paymentClaims(state).afterConfirm ? LIBRARY_LINES[key].on : LIBRARY_LINES[key].off;
+}
+
 export const ORDER_PAYMENT_FALLBACK = "الدفع الإلكتروني";
 
 // ---------------------------------------------------------------------------
@@ -140,6 +170,14 @@ function autoTagline(f: SiteFacts): string {
 function autoSubtitle(f: SiteFacts): string {
   const lead = f.video && f.notes ? "شروحات بالفيديو ومذكرات مرتبة حسب الصف والمادة" : f.video ? "شروحات بالفيديو مرتبة حسب الصف والمادة" : f.notes ? "مذكرات مرتبة حسب الصف والمادة" : "محتوى مرتب حسب الصف والمادة";
   return `${lead}، تختار منها ما تحتاجه فقط.${paymentClaims(f.payment).afterConfirm ? " ويظهر ما تشتريه في مكتبتك بعد تأكيد الدفع." : ""}`;
+}
+
+export const DEFAULT_FOOTER_NOTE = "جميع الحقوق محفوظة. المحتوى مخصص للاستخدام الشخصي للطالب فقط.";
+
+/** نص التذييل الظاهر في كل صفحة: نص المالك ما دام صادقًا، وإلا النص الافتراضي الذي لا يذكر دفعًا ولا محتوى */
+export function publicFooterNote(stored: string, f: SiteFacts): string {
+  if (!stored) return "";
+  return claimsUntrue(stored, f) ? DEFAULT_FOOTER_NOTE : stored;
 }
 
 /** الشعار الظاهر: نص المالك ما دام صادقًا، وإلا ما يطابق الموجود */

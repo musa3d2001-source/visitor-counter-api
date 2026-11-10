@@ -3,7 +3,7 @@ import { ArrowLeft, ChevronDown, MessageCircle, Zap } from "lucide-react";
 import { Sparkle, StepArt } from "@/components/art";
 import { SectionHead } from "@/components/ui/section-head";
 import { ar, gradeClass } from "@/lib/design";
-import { homeSteps, paymentClaims, type SiteFacts } from "@/lib/site-truth";
+import { homeSteps, libraryNote, type SiteFacts } from "@/lib/site-truth";
 import { cn } from "@/lib/utils";
 import type { HeroGrade } from "./hero";
 import s from "./home.module.css";
@@ -96,7 +96,7 @@ export function ClosingCta({ grades, facts }: { grades: HeroGrade[]; facts: Site
             <h2 id="cta-title" className="h-section text-white">
               جاهز تبدأ؟ <span className="text-gold">اختر صفك الآن</span>
             </h2>
-            <p>ابدأ بالمعاينة المجانية حيث تتوفر{paymentClaims(facts.payment).afterConfirm ? "، وكل ما تشتريه تجده في «مكتبتي» بعد تأكيد الدفع" : ""}.</p>
+            <p>ابدأ بالمعاينة المجانية حيث تتوفر{libraryNote(facts.payment, "homeLibrary") ?? ""}.</p>
           </div>
           <ul className={s.ctaGrades}>
             {grades.map((g) => (

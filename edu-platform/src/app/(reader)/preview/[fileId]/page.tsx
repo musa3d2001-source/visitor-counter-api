@@ -5,6 +5,8 @@ import { getCurrentUser } from "@/server/auth/session";
 import { sql } from "@/server/db";
 import { getPublishedProductsByIds } from "@/server/catalog/queries";
 import { PdfReader } from "@/components/reader/pdf-reader";
+import { paymentPublicState } from "@/server/payments/public-state";
+import { libraryNote } from "@/lib/site-truth";
 
 export const metadata: Metadata = { title: "معاينة مجانية", robots: { index: false, follow: true } };
 
@@ -30,6 +32,7 @@ export default async function PreviewPage({ params }: { params: Promise<{ fileId
         shortLabel: "اشترِ",
         priceFils: card?.priceFils ?? null,
         compareAtPriceFils: card?.compareAtPriceFils ?? null,
+        libraryNote: libraryNote(paymentPublicState(), "previewEnd"),
       }}
     />
   );
