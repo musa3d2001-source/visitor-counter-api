@@ -6,7 +6,7 @@ import { tmpdir } from "node:os";
 import { dirname, join, resolve } from "node:path";
 import { afterAll, afterEach, beforeAll, beforeEach, describe, expect, it } from "vitest";
 import { getDb } from "@/server/db";
-import { BackupRefusedError, expectedObjects, formatBackupReport, localStore, MANIFEST_FILE, REPOSITORY_ROOT, runBackup, runRestore, supabaseStore, type Manifest, type ObjectStore } from "../../scripts/_storage-backup";
+import { BackupRefusedError, expectedObjects, formatBackupReport, formatRestoreReport, localStore, MANIFEST_FILE, REPOSITORY_ROOT, runBackup, runRestore, supabaseStore, type Manifest, type ObjectStore } from "../../scripts/_storage-backup";
 import { parseBackupArgs } from "../../scripts/storage-backup";
 import { parseRestoreArgs } from "../../scripts/storage-restore";
 import { closeDb, resetDb, sql } from "../helpers/db";
@@ -185,6 +185,57 @@ describe("the backup", () => {
     expect(readdirSync(join(out, "private"), { recursive: true }).join(" ")).not.toContain(".part");
   });
 
+  it("keeps a file it copied earlier after it vanishes from storage, and the restore brings it back", async () => {
+    const { key } = await productWithFile("precious");
+    await backup();
+    rmSync(join(source, "private", key));
+    const report = await backup();
+    expect(report).toMatchObject({ complete: false, recoverable: 1, keptFromEarlier: [{ bucket: "private", key }] });
+    expect(report.missing).toHaveLength(1);
+    expect(manifestOf(out).objects.find((o) => o.key === key)).toMatchObject({ sha256: sha("precious"), inSource: false, referenced: true });
+    expect(formatBackupReport(report)).toContain("storage:restore puts them back: 1");
+    const restored = await runRestore(localStore(target), { apply: true, fromDir: out });
+    expect(restored).toMatchObject({ restored: 1, unrecoverable: [], complete: true });
+    expect(readFileSync(join(target, "private", key), "utf8")).toBe("precious");
+  });
+
+  it("an emptied bucket does not empty the backup", async () => {
+    await productWithFile("one");
+    await productWithFile("two");
+    write(source, "public", "covers/x.png", "cover");
+    await backup();
+    rmSync(join(source, "private"), { recursive: true, force: true });
+    mkdirSync(join(source, "private"));
+    const report = await backup();
+    expect(report.keptFromEarlier).toHaveLength(2);
+    expect(report.recoverable).toBe(2);
+    expect(manifestOf(out).objects).toHaveLength(3);
+  });
+
+  it("a failed download on a later run keeps the copy made earlier", async () => {
+    const { key } = await productWithFile("v1");
+    await backup();
+    write(source, "private", key, "version-two");
+    const flaky = localStore(source);
+    flaky.open = () => Promise.reject(new Error("timeout"));
+    const report = await runBackup(getDb(), flaky, { apply: true, outDir: out });
+    expect(report).toMatchObject({ copied: 0, complete: false });
+    expect(report.failed).toHaveLength(1);
+    expect(manifestOf(out).objects.find((o) => o.key === key)).toMatchObject({ sha256: sha("v1"), inSource: true });
+    expect(readFileSync(join(out, "private", key), "utf8")).toBe("v1");
+  });
+
+  it("drops an earlier copy that no longer matches its fingerprint, and says so", async () => {
+    const { key } = await productWithFile("original");
+    await backup();
+    rmSync(join(source, "private", key));
+    writeFileSync(join(out, "private", key), "tampered");
+    const report = await backup();
+    expect(report.droppedFromBackup).toEqual([{ bucket: "private", key }]);
+    expect(report.recoverable).toBe(0);
+    expect(manifestOf(out).objects).toHaveLength(0);
+  });
+
   it("does not copy a file with an unsafe name", async () => {
     write(source, "private", "fine/ok.pdf", "ok");
     write(source, "private", "fine/bad name.pdf", "bad");
@@ -282,6 +333,18 @@ describe("the restore", () => {
 
   it("refuses a folder with no manifest", async () => {
     await expect(runRestore(localStore(target), { apply: true, fromDir: source })).rejects.toBeInstanceOf(BackupRefusedError);
+  });
+});
+
+describe("a restore when a needed file was never backed up", () => {
+  it("names it and does not call the restore complete", async () => {
+    const { key } = await productWithFile("never-copied");
+    rmSync(join(source, "private", key));
+    await backup();
+    const report = await runRestore(localStore(target), { apply: true, fromDir: out });
+    expect(report.unrecoverable).toEqual([expect.objectContaining({ bucket: "private", key, table: "product_files" })]);
+    expect(report.complete).toBe(false);
+    expect(formatRestoreReport(report)).toContain("held by no backup, cannot be restored: 1");
   });
 });
 

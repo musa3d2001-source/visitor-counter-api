@@ -166,7 +166,11 @@ export async function expectedObjects(db: postgres.Sql): Promise<ExpectedObject[
   return [...(rows as unknown as { bucket: Bucket; key: string; tbl: string; col: string; row_id: string }[])].map((row) => ({ bucket: row.bucket, key: row.key, table: row.tbl, column: row.col, rowId: row.row_id }));
 }
 
-export type ManifestEntry = { bucket: Bucket; key: string; size: number; sha256: string; contentType: string; referenced: boolean };
+/**
+ * inSource=false: نُسخ في جولة سابقة ولم يعد في التخزين. يبقى في النسخة وفي البيان حتى تعيده الاستعادة،
+ * لأن فقدانه من التخزين هو بالضبط ما وُجدت النسخة من أجله. البيانات الأقدم بلا هذا الحقل تعني true.
+ */
+export type ManifestEntry = { bucket: Bucket; key: string; size: number; sha256: string; contentType: string; referenced: boolean; inSource?: boolean };
 export type Manifest = { version: 1; createdAt: string; source: string; complete: boolean; objects: ManifestEntry[]; missing: ExpectedObject[] };
 
 export type BackupReport = {
@@ -180,6 +184,12 @@ export type BackupReport = {
   bytesCopied: number;
   /** تشير إليه قاعدة البيانات وليس في التخزين */
   missing: ExpectedObject[];
+  /** من المفقود في التخزين: ما تحفظه هذه النسخة من جولة سابقة، فتعيده الاستعادة */
+  recoverable: number;
+  /** نُسخ في جولة سابقة ولم يعد في التخزين، فبقي في النسخة كما هو */
+  keptFromEarlier: { bucket: Bucket; key: string }[];
+  /** كان في البيان السابق وملفه في مجلد النسخة غائب أو تغيّر، فلم يعد في البيان */
+  droppedFromBackup: { bucket: Bucket; key: string }[];
   /** في التخزين ولا تشير إليه قاعدة البيانات: يُنسخ احتياطًا ويُبلَّغ عنه */
   orphans: { bucket: Bucket; key: string }[];
   invalidKeys: { bucket: Bucket; key: string; table: string | null; rowId: string | null }[];
@@ -252,7 +262,24 @@ export async function runBackup(db: postgres.Sql, store: ObjectStore, opts: { ap
   const listings = new Map<Bucket, Map<string, StoredObject>>();
   for (const bucket of BUCKETS) listings.set(bucket, new Map((await store.list(bucket)).filter((object) => !object.key.endsWith(".part")).map((object) => [object.key, object])));
 
-  const report: BackupReport = { applied: opts.apply, source: store.label, outDir, referenced: 0, copied: 0, unchanged: 0, bytesCopied: 0, missing: [], orphans: [], invalidKeys: [], failed: [], bunnyLessonsNotCovered: bunnyLessons, complete: true };
+  const report: BackupReport = {
+    applied: opts.apply,
+    source: store.label,
+    outDir,
+    referenced: 0,
+    copied: 0,
+    unchanged: 0,
+    bytesCopied: 0,
+    missing: [],
+    recoverable: 0,
+    keptFromEarlier: [],
+    droppedFromBackup: [],
+    orphans: [],
+    invalidKeys: [],
+    failed: [],
+    bunnyLessonsNotCovered: bunnyLessons,
+    complete: true,
+  };
 
   const referenced = new Set<string>();
   for (const row of expected) {
@@ -292,20 +319,45 @@ export async function runBackup(db: postgres.Sql, store: ObjectStore, opts: { ap
       // المفاتيح لا يُكتب فوقها في التخزين، فنفس الحجم يعني نفس الملف
       const onDisk = before && object.size === before.size ? await stat(target).catch(() => null) : null;
       if (before && onDisk?.size === before.size) {
-        objects.push({ ...before, referenced: isReferenced });
+        objects.push({ ...before, referenced: isReferenced, inSource: true });
         report.unchanged++;
         continue;
       }
       try {
         const copied = await streamToFile(await store.open(bucket, object.key), target);
         if (object.size !== null && copied.size !== object.size) throw new Error(`size differs from the listing (${copied.size} and ${object.size})`);
-        objects.push({ bucket, key: object.key, size: copied.size, sha256: copied.sha256, contentType: contentTypeOf(object.key, object.contentType), referenced: isReferenced });
+        objects.push({ bucket, key: object.key, size: copied.size, sha256: copied.sha256, contentType: contentTypeOf(object.key, object.contentType), referenced: isReferenced, inSource: true });
         report.copied++;
         report.bytesCopied += copied.size;
       } catch (err) {
         report.failed.push({ bucket, key: object.key, reason: describeFailure(err) });
       }
     }
+  }
+
+  // ما نُسخ وتحقق سابقًا لا يسقط من البيان: لا لأنه اختفى من التخزين، ولا لأن تنزيله فشل هذه المرة.
+  // يبقى ما دام ملفه في مجلد النسخة بالبصمة نفسها، فالاستعادة تعيده. التنزيل الفاشل لا يمس الملف القديم (يكتب في .part أولًا)
+  if (opts.apply && previous) {
+    const inManifest = new Set(objects.map((entry) => `${entry.bucket}/${entry.key}`));
+    for (const before of previous.objects) {
+      const id = `${before.bucket}/${before.key}`;
+      if (inManifest.has(id) || !BUCKETS.includes(before.bucket)) continue;
+      let onDisk: { size: number; sha256: string } | null = null;
+      try {
+        onDisk = await hashOf(createReadStream(pathInside(outDir!, before.bucket, before.key)));
+      } catch {
+        onDisk = null;
+      }
+      if (!onDisk || onDisk.size !== before.size || onDisk.sha256 !== before.sha256) {
+        report.droppedFromBackup.push({ bucket: before.bucket, key: before.key });
+        continue;
+      }
+      const stillListed = listings.get(before.bucket)!.has(before.key);
+      objects.push({ ...before, referenced: referenced.has(id), inSource: stillListed });
+      inManifest.add(id);
+      if (!stillListed) report.keptFromEarlier.push({ bucket: before.bucket, key: before.key });
+    }
+    report.recoverable = report.missing.filter((row) => inManifest.has(`${row.bucket}/${row.key}`)).length;
   }
 
   report.complete = report.missing.length === 0 && report.failed.length === 0 && report.invalidKeys.length === 0;
@@ -331,6 +383,8 @@ export type RestoreReport = {
   /** ملف النسخة لا يطابق بصمته: لا يُستعاد */
   corrupt: { bucket: Bucket; key: string }[];
   failed: { bucket: Bucket; key: string; reason: string }[];
+  /** تشير إليه قاعدة البيانات، وكان مفقودًا من التخزين يوم النسخ، وليس في هذه النسخة: لا تستطيع الاستعادة إعادته */
+  unrecoverable: { bucket: string; key: string; table: string; rowId: string }[];
   backupWasComplete: boolean;
   complete: boolean;
 };
@@ -355,7 +409,27 @@ export async function runRestore(store: ObjectStore, opts: { apply: boolean; fro
   const present = new Map<Bucket, Map<string, StoredObject>>();
   for (const bucket of BUCKETS) present.set(bucket, new Map((await store.list(bucket)).map((object) => [object.key, object])));
 
-  const report: RestoreReport = { applied: opts.apply, target: store.label, inBackup: manifest.objects.length, restored: 0, alreadyThere: 0, conflicts: [], corrupt: [], failed: [], backupWasComplete: manifest.complete, complete: true };
+  const backedUp = new Set(manifest.objects.map((entry) => `${entry.bucket}/${entry.key}`));
+  const recordedMissing = Array.isArray(manifest.missing) ? manifest.missing : [];
+  const unrecoverable = recordedMissing
+    .filter((row) => row && typeof row.bucket === "string" && typeof row.key === "string" && !backedUp.has(`${row.bucket}/${row.key}`))
+    // عاد إلى التخزين بطريق آخر بعد يوم النسخ
+    .filter((row) => !present.get(row.bucket)?.has(row.key))
+    .map((row) => ({ bucket: row.bucket, key: row.key, table: String(row.table ?? ""), rowId: String(row.rowId ?? "") }));
+
+  const report: RestoreReport = {
+    applied: opts.apply,
+    target: store.label,
+    inBackup: manifest.objects.length,
+    restored: 0,
+    alreadyThere: 0,
+    conflicts: [],
+    corrupt: [],
+    failed: [],
+    unrecoverable,
+    backupWasComplete: manifest.complete,
+    complete: true,
+  };
 
   for (const entry of manifest.objects) {
     const existing = present.get(entry.bucket)!.get(entry.key);
@@ -384,7 +458,8 @@ export async function runRestore(store: ObjectStore, opts: { apply: boolean; fro
       else report.failed.push({ bucket: entry.bucket, key: entry.key, reason: describeFailure(err) });
     }
   }
-  report.complete = report.conflicts.length === 0 && report.corrupt.length === 0 && report.failed.length === 0;
+  // ما تحتاجه قاعدة البيانات ولا تحمله النسخة يبقى مفقودًا بعد الاستعادة، فلا تُقال «اكتملت»
+  report.complete = report.conflicts.length === 0 && report.corrupt.length === 0 && report.failed.length === 0 && report.unrecoverable.length === 0;
   return report;
 }
 
@@ -404,6 +479,11 @@ export function formatBackupReport(report: BackupReport): string {
     `Bunny videos not covered by this backup: ${report.bunnyLessonsNotCovered}`,
     `Missing from storage: ${report.missing.length}`,
     ...list(report.missing, (m) => `${m.bucket}/${m.key} (${m.table}.${m.column}, row ${m.rowId})`),
+    report.applied && report.missing.length ? `Of those, held by this backup from an earlier run, so storage:restore puts them back: ${report.recoverable}` : null,
+    report.keptFromEarlier.length ? `Kept from earlier runs although gone from storage: ${report.keptFromEarlier.length}` : null,
+    ...list(report.keptFromEarlier, (k) => `${k.bucket}/${k.key}`),
+    report.droppedFromBackup.length ? `Earlier copies no longer intact in the backup folder, removed from the manifest: ${report.droppedFromBackup.length}` : null,
+    ...list(report.droppedFromBackup, (d) => `${d.bucket}/${d.key}`),
     `In storage but not in the database: ${report.orphans.length}`,
     ...list(report.orphans, (o) => `${o.bucket}/${o.key}`),
     report.invalidKeys.length ? `Unsafe file names, not copied: ${report.invalidKeys.length}` : null,
@@ -429,6 +509,8 @@ export function formatRestoreReport(report: RestoreReport): string {
     ...list(report.corrupt, (c) => `${c.bucket}/${c.key}`),
     report.failed.length ? `Failed: ${report.failed.length}` : null,
     ...list(report.failed, (f) => `${f.bucket}/${f.key}: ${f.reason}`),
+    `Referenced by the database but held by no backup, cannot be restored: ${report.unrecoverable.length}`,
+    ...list(report.unrecoverable, (u) => `${u.bucket}/${u.key} (${u.table}, row ${u.rowId})`),
     report.complete ? "Result: complete." : "Result: INCOMPLETE. See the lists above.",
   ]
     .filter((line) => line !== null)
