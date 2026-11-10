@@ -7,6 +7,7 @@ import { closeDb, resetDb, sql } from "../helpers/db";
 import { createProduct, createUser } from "../helpers/factories";
 import { SIM_API_KEY, SIM_PORT, TEST_ENV, WEBHOOK_SECRET } from "../test-env";
 import { startPayment } from "../helpers/payment-flow";
+import { routeOfficialGatewayTo } from "../helpers/gateway-fetch";
 
 /** ما يصل إلى الخدمة من إجراءات الشراء — تستبدلها الاختبارات لتشغيل الإجراءات الحقيقية خارج Next.js */
 const ctx = vi.hoisted(() => ({ user: null as unknown, cart: [] as string[], redirected: [] as string[] }));
@@ -39,6 +40,7 @@ afterAll(async () => {
   await closeDb();
 });
 afterEach(() => {
+  vi.unstubAllGlobals();
   vi.unstubAllEnvs();
   for (const [k, v] of Object.entries(TEST_ENV)) process.env[k] = v;
   delete process.env.ALLOW_SANDBOX_ON_PRODUCTION;
@@ -95,7 +97,8 @@ describe("sandbox on a production deployment", () => {
     ["a loopback address", "http://127.0.0.1:3000", undefined, undefined],
     ["a .test host", "https://farqad.test", undefined, undefined],
   ])("allowed with %s", (_label, APP_URL, VERCEL_ENV, ALLOW_SANDBOX_ON_PRODUCTION) => {
-    setEnv({ NODE_ENV: "production", APP_URL, VERCEL_ENV, ALLOW_SANDBOX_ON_PRODUCTION });
+    // محاكي الاختبار لا يصلح إلا مع APP_URL محلي، فالعناوين الحقيقية تذهب إلى البوابة التجريبية الرسمية
+    setEnv({ NODE_ENV: "production", APP_URL, VERCEL_ENV, ALLOW_SANDBOX_ON_PRODUCTION, ...(APP_URL.startsWith("https:") ? { MYFATOORAH_BASE_URL: undefined } : {}) });
     expect(paymentsConfig()).toMatchObject({ enabled: true, environment: "sandbox" });
   });
 
@@ -105,7 +108,7 @@ describe("sandbox on a production deployment", () => {
   });
 
   it("outside production the rule does not apply", () => {
-    setEnv({ NODE_ENV: "development", APP_URL: "https://farqad.com" });
+    setEnv({ NODE_ENV: "development", APP_URL: "https://farqad.com", MYFATOORAH_BASE_URL: undefined });
     expect(paymentsConfig()).toMatchObject({ enabled: true, environment: "sandbox" });
   });
 
@@ -122,7 +125,7 @@ describe("sandbox on a production deployment", () => {
   });
 
   it("the official test gateway is allowed in sandbox", () => {
-    setEnv({ MYFATOORAH_BASE_URL: "https://apitest.myfatoorah.com" });
+    setEnv({ MYFATOORAH_BASE_URL: "https://apitest.myfatoorah.com", APP_URL: "https://staging.farqad.com" });
     expect(paymentsConfig()).toMatchObject({ enabled: true, baseUrl: "https://apitest.myfatoorah.com" });
     setEnv({ MYFATOORAH_BASE_URL: undefined });
     expect(paymentsConfig()).toMatchObject({ enabled: true, baseUrl: "https://apitest.myfatoorah.com" });
@@ -134,7 +137,8 @@ async function makeOrder(isTest: boolean, priceFils = 3000) {
   const p = await createProduct({ priceFils });
   return { user, product: p, order: await createOrder({ user, productIds: [p.id], isTest }) };
 }
-const liveOnSimulator = { PAYMENTS_MODE: "live", MYFATOORAH_LIVE_CONFIRMED: "true" };
+/** وضع الإنتاج لا يقبل عنوان المحاكي: نتركه على العنوان الرسمي ونحوّل الطلبات داخل الاختبار فقط */
+const liveOnSimulator = { PAYMENTS_MODE: "live", MYFATOORAH_LIVE_CONFIRMED: "true", MYFATOORAH_BASE_URL: undefined, APP_URL: "https://farqad.com" };
 
 describe("startPayment refuses an order from the other mode", () => {
   it("a real order cannot be paid against the sandbox: nothing is written", async () => {
@@ -167,6 +171,7 @@ describe("startPayment refuses an order from the other mode", () => {
     await expect(startPayment(sandbox.order, 1)).resolves.toMatchObject({ url: expect.stringContaining("/pay/") });
     const live = await makeOrder(false);
     setEnv(liveOnSimulator);
+    routeOfficialGatewayTo(sim);
     await expect(startPayment(live.order, 1)).resolves.toMatchObject({ url: expect.stringContaining("/pay/") });
     const [p] = await sql<{ environment: string }[]>`select environment from payments where order_id = ${live.order.id}`;
     expect(p.environment).toBe("live");

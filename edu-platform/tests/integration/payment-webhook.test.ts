@@ -3,6 +3,7 @@ import { NextRequest } from "next/server";
 import { POST, maxDuration } from "@/app/api/payments/myfatoorah/webhook/route";
 import { createOrder, type OrderRow } from "@/server/commerce/orders";
 import { handleMyFatoorahWebhook, paymentsConfig, verifyAndApplyPayment } from "@/server/payments/service";
+import { resetWebhookGate } from "@/server/payments/webhook-gate";
 import { WEBHOOK_STALE_CLAIM_MINUTES, openPaymentAlertCount, openPaymentAlerts, resolvePaymentAlert, webhookDeliveryStatus } from "@/server/payments/monitoring";
 import { resetEnvCache } from "@/server/env";
 import { startSimulator, type Simulator } from "../mocks/myfatoorah-simulator";
@@ -22,6 +23,7 @@ afterAll(async () => {
   await closeDb();
 });
 beforeEach(async () => {
+  resetWebhookGate();
   await sql`delete from payment_webhook_rejections`;
   await sql`delete from payment_alerts`;
   await sql`delete from payment_events`;
@@ -141,7 +143,11 @@ describe("rejected deliveries are stored in a bounded way", () => {
   });
 
   it("the store never exceeds its 200 rows under a flood, and keeps the newest", async () => {
-    for (let i = 0; i < 230; i++) await handleMyFatoorahWebhook(`{not json ${i}`, new Headers());
+    // حد الكتابات في الدقيقة مُختبر في payment-gateway-hardening، وهذا اختبار سعة الحلقة نفسها
+    for (let i = 0; i < 230; i++) {
+      resetWebhookGate();
+      await handleMyFatoorahWebhook(`{not json ${i}`, new Headers());
+    }
     const [{ n }] = await sql<{ n: number }[]>`select count(*)::int as n from payment_webhook_rejections`;
     expect(n).toBe(200);
     const [{ newest }] = await sql<{ newest: number }[]>`select max(body_bytes)::int as newest from payment_webhook_rejections`;
@@ -221,10 +227,11 @@ describe("event claim: retrying a stuck event", () => {
     resetEnvCache();
     const failed = await handleMyFatoorahWebhook(body, headers);
     expect(failed.status).toBe(500);
-    expect(failed.result).toMatch(/^error: /);
+    // لا نص داخلي لمن أرسل الحدث ولا في الجدول: التفاصيل في سجل الأخطاء بعد التنقية
+    expect(failed.result).toBe("error");
     const [row] = await eventRows();
     expect(row).toMatchObject({ processed_at: null, claimed_at: null });
-    expect(row.result).toMatch(/^error: /);
+    expect(row.result).toBe("error");
     process.env.MYFATOORAH_API_KEY = SIM_API_KEY;
     resetEnvCache();
     expect(await handleMyFatoorahWebhook(body, headers)).toEqual({ status: 200, result: "paid" });

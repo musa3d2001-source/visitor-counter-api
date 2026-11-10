@@ -406,6 +406,8 @@ describe("closing stale orders", () => {
     await makeStale(order.id);
     process.env.PAYMENTS_MODE = "live";
     process.env.MYFATOORAH_LIVE_CONFIRMED = "true";
+    process.env.APP_URL = "https://farqad.com";
+    delete process.env.MYFATOORAH_BASE_URL;
     resetEnvCache();
     sim.state.requests.length = 0;
     expect(await runPaymentReconciliation()).toMatchObject({ mode: "live", claimed: 0, closed: 1 });

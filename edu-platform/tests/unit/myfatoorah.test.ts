@@ -191,8 +191,8 @@ describe("isKuwaitiDinarDisplay (InvoiceDisplayValue)", () => {
   it("rejects any other currency, and text with no clear currency", () => {
     for (const v of ["3.000 USD", "3.000 SAR", "3.000 SR", "3.000 KDX", "3.000", "3.000KD", "3.000 ر.س", "3.000 د.إ", "3.000 د.ب", "3.000 دينار"]) expect(isKuwaitiDinarDisplay(v)).toBe(false);
   });
-  it("an absent value is not a foreign currency (InvoiceValue is in the account's KWD base currency)", () => {
-    for (const v of ["", "   ", null, undefined]) expect(isKuwaitiDinarDisplay(v)).toBe(true);
+  it("an absent value is refused: when in doubt the payment is not confirmed", () => {
+    for (const v of ["", "   ", null, undefined]) expect(isKuwaitiDinarDisplay(v)).toBe(false);
   });
 });
 

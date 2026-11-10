@@ -15,6 +15,7 @@ import { closeDb, resetDb, sql } from "../helpers/db";
 import { activeEntitlements, createProduct, createUser } from "../helpers/factories";
 import { SIM_API_KEY, SIM_PORT, TEST_ENV, WEBHOOK_SECRET } from "../test-env";
 import { startPayment } from "../helpers/payment-flow";
+import { paymentReturnRef } from "@/server/payments/return-ref";
 
 let sim: Simulator;
 
@@ -69,6 +70,7 @@ describe("payment configuration safety", () => {
 
   it("live mode requires explicit confirmation, a webhook secret and a non-test URL", () => {
     process.env.PAYMENTS_MODE = "live";
+    process.env.APP_URL = "https://farqad.com";
     delete process.env.MYFATOORAH_BASE_URL;
     resetEnvCache();
     expect(paymentsConfig()).toMatchObject({ enabled: false, reason: "وضع الإنتاج يتطلب تأكيدًا صريحًا" });
@@ -116,8 +118,8 @@ describe("InitiatePayment / ExecutePayment", () => {
       DisplayCurrencyIso: "KWD",
       CustomerReference: order.number,
       UserDefinedField: pay.id,
-      CallBackUrl: "http://localhost:3000/payment/return",
-      ErrorUrl: "http://localhost:3000/payment/return",
+      CallBackUrl: `http://localhost:3000/payment/return?ref=${paymentReturnRef(pay.id)}`,
+      ErrorUrl: `http://localhost:3000/payment/return?ref=${paymentReturnRef(pay.id)}`,
       Language: "AR",
       MobileCountryCode: "+965",
       CustomerMobile: "99887766",
@@ -137,7 +139,9 @@ describe("InitiatePayment / ExecutePayment", () => {
 
   it("gateway validation errors mark the payment attempt failed and surface the message", async () => {
     const { order } = await newOrder();
-    await expect(startPayment(order, 9999)).rejects.toThrow(/PaymentMethodId/);
+    sim.setInvoiceRefusal({ Name: "PaymentMethodId", Error: "Invalid PaymentMethodId." });
+    await expect(startPayment(order, 1)).rejects.toThrow(/PaymentMethodId/);
+    sim.setInvoiceRefusal(null);
     const [p] = await sql<{ status: string; error_message: string }[]>`select status, error_message from payments where order_id = ${order.id}`;
     expect(p.status).toBe("failed");
     expect(p.error_message).toMatch(/PaymentMethodId/);

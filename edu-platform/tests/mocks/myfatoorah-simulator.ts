@@ -118,6 +118,8 @@ export type Simulator = {
   setAmountTamper(deltaFils: number | null): void;
   /** يستبدل عملة InvoiceDisplayValue في GetPaymentStatus (null يعيد "KD" الموثقة) */
   setDisplayCurrency(label: string | null): void;
+  /** رفض إنشاء الفواتير بخطأ تحقق من البوابة (null يلغيه) */
+  setInvoiceRefusal(error: { Name: string; Error: string } | null): void;
   /** عطل مصطنع لمسار كامل (null يلغيه) */
   setFault(path: string, fault: SimFault | null): void;
   /** تأخير رد مسار كامل بالمللي ثانية (لاختبار ما يحدث أثناء انتظار البوابة) */
@@ -242,6 +244,7 @@ export async function startSimulator(opts: SimulatorOptions): Promise<Simulator>
   let nextRefundId = 900_000;
   let amountTamper: number | null = null;
   let refundRefusal: string | null = null;
+  let invoiceRefusal: { Name: string; Error: string } | null = null;
   let displayCurrency: string | null = null;
   let refundStatusNullData = false;
   let beforeRefundReply: ((refund: SimRefund, invoice: SimInvoice) => Promise<void>) | null = null;
@@ -283,7 +286,7 @@ export async function startSimulator(opts: SimulatorOptions): Promise<Simulator>
   };
 
   const validateInvoiceInput = (b: Record<string, unknown>, requireUrls: boolean) => {
-    const errors: { Name: string; Error: string }[] = [];
+    const errors: { Name: string; Error: string }[] = invoiceRefusal ? [invoiceRefusal] : [];
     const value = Number(b.InvoiceValue);
     if (b.InvoiceValue === undefined || b.InvoiceValue === null || !Number.isFinite(value) || value <= 0) {
       errors.push({ Name: "InvoiceValue", Error: "The field InvoiceValue must be greater than 0." });
@@ -755,6 +758,9 @@ ${isExpired(inv) ? `<p data-testid="sim-expired">انتهت صلاحية هذا 
     },
     setDisplayCurrency: (label) => {
       displayCurrency = label;
+    },
+    setInvoiceRefusal: (error) => {
+      invoiceRefusal = error;
     },
     setFault: (path, fault) => {
       if (fault) faults.set(path, fault);

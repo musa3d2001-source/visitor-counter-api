@@ -1,7 +1,7 @@
 import "server-only";
 import { createHash } from "node:crypto";
 import { sql, type Db } from "../db";
-import { env, type Env } from "../env";
+import { env, isVercelDeployment, type Env } from "../env";
 import { filsToKwdString, kwdNumberToFils } from "@/lib/money";
 import { defectiveProductIds, unsellableProductIds } from "../commerce/cart";
 import { closeOrder, endedProductsInOrder, findOpenOrdersCovering, markOrderPaid, unpublishedProductsInOrder, type OrderClosedReason, type OrderRow } from "../commerce/orders";
@@ -18,6 +18,7 @@ import {
   interpretPaymentStatus,
   isSuccessfulTransaction,
   isDefiniteGatewayRefusal,
+  isKuwaitiDinarCode,
   isKuwaitiDinarDisplay,
   sanitizeCustomerName,
   verifyWebhookV2Signature,
@@ -37,6 +38,10 @@ import { reportError } from "../platform/report-error";
 import { EmailVerificationRequiredError, emailVerificationRequired } from "../auth/email-verification";
 import { assertOrderConsent } from "../platform/consent";
 import { redactGatewayStatus, redactWebhookPayload } from "@/lib/anonymize";
+import { scrubForOps } from "@/lib/redact";
+import { isDatabaseBusy } from "../db-busy";
+import { GATEWAY_REASONS, checkGatewayTarget, isGatewayPaymentPage } from "./gateway-hosts";
+import { paymentReturnRef } from "./return-ref";
 
 /**
  * خدمة الدفع — قواعد حاسمة:
@@ -49,7 +54,7 @@ import { redactGatewayStatus, redactWebhookPayload } from "@/lib/anonymize";
 const DEFAULT_URLS = { sandbox: "https://apitest.myfatoorah.com", live: "https://api.myfatoorah.com" } as const;
 
 export type PaymentsConfig =
-  | { enabled: true; environment: "sandbox" | "live"; baseUrl: string; apiKey: string; webhookSecret: string }
+  | { enabled: true; environment: "sandbox" | "live"; baseUrl: string; apiKey: string; webhookSecret: string; simulator: boolean }
   | { enabled: false; environment: "none"; reason: string };
 
 /** كلمات تدل بوضوح على نشر اختباري في الجزء الأول من النطاق. لا نضيف "preview": نطاق الإنتاج الحالي darb-preview.vercel.app */
@@ -88,6 +93,8 @@ function isLiveGatewayHost(baseUrl: string): boolean {
   return Boolean(host && host !== "apitest.myfatoorah.com" && (host === "myfatoorah.com" || host.endsWith(".myfatoorah.com")));
 }
 
+const disabled = (reason: string) => ({ enabled: false, environment: "none", reason }) as const;
+
 export function paymentsConfig(): PaymentsConfig {
   const e = env();
   if (e.PAYMENTS_MODE === "disabled") return { enabled: false, environment: "none", reason: "الدفع الإلكتروني غير مفعّل حاليًا" };
@@ -101,42 +108,71 @@ export function paymentsConfig(): PaymentsConfig {
   const webhookSecret = e.MYFATOORAH_WEBHOOK_SECRET as string;
   const environment = e.PAYMENTS_MODE;
   const baseUrl = e.MYFATOORAH_BASE_URL ?? DEFAULT_URLS[environment];
-  if (environment === "live" && /apitest\./.test(baseUrl)) {
-    return { enabled: false, environment: "none", reason: "رابط بوابة الدفع لا يطابق وضع الإنتاج" };
-  }
   if (environment === "sandbox") {
-    if (isLiveGatewayHost(baseUrl)) return { enabled: false, environment: "none", reason: "رابط بوابة الدفع لا يطابق الوضع التجريبي" };
-    if (sandboxBlockedOnProduction(e)) {
-      return { enabled: false, environment: "none", reason: "الوضع التجريبي محظور على نشر الإنتاج. استخدم PAYMENTS_MODE=live أو اضبط ALLOW_SANDBOX_ON_PRODUCTION=true" };
-    }
+    if (isLiveGatewayHost(baseUrl)) return disabled(GATEWAY_REASONS.sandboxMismatch);
+    if (sandboxBlockedOnProduction(e)) return disabled("الوضع التجريبي محظور على نشر الإنتاج. استخدم PAYMENTS_MODE=live أو اضبط ALLOW_SANDBOX_ON_PRODUCTION=true");
   }
-  return { enabled: true, environment, baseUrl, apiKey: e.MYFATOORAH_API_KEY, webhookSecret };
+  // عنوان البوابة و APP_URL معًا، قبل أن يُبنى أي عميل: المفتاح لا يُرسل إلا إلى عنوان رسمي
+  const target = checkGatewayTarget({ environment, baseUrl, appUrl: e.APP_URL, vercel: isVercelDeployment(e) });
+  if (!target.ok) return disabled(target.reason);
+  return { enabled: true, environment, baseUrl: target.origin, apiKey: e.MYFATOORAH_API_KEY, webhookSecret, simulator: target.simulator };
 }
 
 function client(cfg: Extract<PaymentsConfig, { enabled: true }>, timeoutMs?: number) {
   return new MyFatoorahClient({ baseUrl: cfg.baseUrl, apiKey: cfg.apiKey, timeoutMs });
 }
 
-// ذاكرة مؤقتة لوسائل الدفع (10 دقائق)
-let methodsCache: { at: number; methods: MfPaymentMethod[] } | null = null;
+// ذاكرة مؤقتة لوسائل الدفع (10 دقائق) لكل مبلغ: البوابة قد تعرض وسائل مختلفة بحسب المبلغ
+const METHODS_TTL_MS = 10 * 60_000;
+const METHODS_MAX_AMOUNTS = 64;
+const methodsCache = new Map<number, { at: number; methods: MfPaymentMethod[] }>();
 
 export type PaymentMethodOption = { id: number; nameAr: string; code: string; imageUrl: string };
 
 /** وسائل الدفع المفعّلة فعليًا في حساب التاجر (كي نت، بطاقات، Apple Pay...) */
-export async function getPaymentMethods(amountFils: number): Promise<PaymentMethodOption[]> {
+export async function getPaymentMethods(amountFils: number, opts: { timeoutMs?: number } = {}): Promise<PaymentMethodOption[]> {
   const cfg = paymentsConfig();
   if (!cfg.enabled) return [];
-  if (!methodsCache || Date.now() - methodsCache.at > 10 * 60_000) {
-    const methods = await client(cfg).initiatePayment(filsToKwdString(Math.max(amountFils, 100)));
-    methodsCache = { at: Date.now(), methods };
+  const amount = Math.max(amountFils, 100);
+  let cached = methodsCache.get(amount);
+  if (!cached || Date.now() - cached.at > METHODS_TTL_MS) {
+    cached = { at: Date.now(), methods: await client(cfg, opts.timeoutMs).initiatePayment(filsToKwdString(amount)) };
+    methodsCache.delete(amount);
+    if (methodsCache.size >= METHODS_MAX_AMOUNTS) methodsCache.delete(methodsCache.keys().next().value!);
+    methodsCache.set(amount, cached);
   }
-  return methodsCache.methods
+  return cached.methods
     .filter((m) => !m.IsDirectPayment)
     .map((m) => ({ id: m.PaymentMethodId, nameAr: m.PaymentMethodAr || m.PaymentMethodEn, code: m.PaymentMethodCode, imageUrl: m.ImageUrl }));
 }
 
 export function resetPaymentMethodsCache() {
-  methodsCache = null;
+  methodsCache.clear();
+}
+
+/** مهلة قصيرة: إن لم تجب البوابة نذهب إلى رابط الدفع العام بدل أن يطول انتظار المشتري */
+const METHOD_CHECK_TIMEOUT_MS = 8_000;
+
+/**
+ * المعرّف يأتي من نموذج في المتصفح، فلا يصل إلى البوابة إلا إن كانت عرضته لهذا المبلغ بصفحة مستضافة.
+ * غير ذلك نستعمل رابط الدفع العام: صفحة البوابة نفسها تعرض ما هو متاح، فلا يتعطل المشتري ولا تصل وسيلة مباشرة تُدخل البطاقة عندنا.
+ */
+async function offeredMethodId(paymentMethodId: number | null, amountFils: number): Promise<number | null> {
+  if (paymentMethodId === null) return null;
+  try {
+    const offered = await getPaymentMethods(amountFils, { timeoutMs: METHOD_CHECK_TIMEOUT_MS });
+    return offered.some((m) => m.id === paymentMethodId) ? paymentMethodId : null;
+  } catch (err) {
+    if (isDatabaseBusy(err)) throw err;
+    return null;
+  }
+}
+
+/** رابط لا يطابق نطاق البوابة لا يُحفظ ولا يُتبع. الرسالة للمالك فقط */
+function assertPaymentPage(url: unknown, cfg: Extract<PaymentsConfig, { enabled: true }>): asserts url is string {
+  if (!isGatewayPaymentPage(url, { environment: cfg.environment, simulatorOrigin: cfg.simulator ? cfg.baseUrl : null })) {
+    throw new MyFatoorahError("أعادت البوابة رابط دفع ليس على نطاقها، فلم نوجه المشتري إليه");
+  }
 }
 
 /** طلب أُنشئ في وضع دفع (تجريبي/حقيقي) لا يطابق الوضع الحالي للخادم */
@@ -396,16 +432,26 @@ export async function startPayment(order: OrderRow, paymentMethodId: number | nu
   if (!walk.allChecked) throw new MyFatoorahError(`تعذر التحقق من فواتير الطلب: ${walk.error}`);
   if (walk.anyPaid) throw new OrderSettledError(order.id);
 
+  // قبل أي مطالبة: انتظار البوابة هنا لا يحجز فاتورة
+  const methodId = await offeredMethodId(paymentMethodId, order.total_fils);
   const decision = await decidePayment(order.id, cfg.environment, walk);
   if (decision.kind === "settled") throw new OrderSettledError(order.id);
   if (decision.kind === "closed") throw new OrderClosedError(decision.reason);
   if (decision.kind === "blocked") throw new PaymentInProgressError();
-  if (decision.kind === "reuse") return { url: decision.url, reused: true };
-  if (decision.kind === "wait") return { url: await waitForClaim(decision.claimId), reused: true };
+  if (decision.kind === "reuse") {
+    assertPaymentPage(decision.url, cfg);
+    return { url: decision.url, reused: true };
+  }
+  if (decision.kind === "wait") {
+    const url = await waitForClaim(decision.claimId);
+    assertPaymentPage(url, cfg);
+    return { url, reused: true };
+  }
 
   const current = decision.order;
   const appUrl = env().APP_URL.replace(/\/$/, "");
   const phone = current.customer_phone?.replace(/^\+965/, "");
+  const returnUrl = `${appUrl}/payment/return?ref=${paymentReturnRef(decision.claimId)}`;
   const input = {
     InvoiceValue: Number(filsToKwdString(current.total_fils)),
     DisplayCurrencyIso: "KWD" as const,
@@ -415,28 +461,33 @@ export async function startPayment(order: OrderRow, paymentMethodId: number | nu
     CustomerReference: current.number,
     UserDefinedField: decision.claimId,
     Language: "AR" as const,
-    CallBackUrl: `${appUrl}/payment/return`,
-    ErrorUrl: `${appUrl}/payment/return`,
+    // المرجع الموقّع يقول لصفحة العودة أي سجل دفع هذا دون أن تسأل البوابة عن رقم لا تعرفه. البوابة تضيف paymentId إلى الرابط بعده
+    CallBackUrl: returnUrl,
+    ErrorUrl: returnUrl,
     SourceInfo: "edu-platform",
     ExpiryDate: gatewayExpiryDate(decision.expiresAt),
   };
   try {
     const mf = client(cfg);
-    const res = paymentMethodId
-      ? await mf.executePayment({ ...input, PaymentMethodId: paymentMethodId })
+    const res = methodId
+      ? await mf.executePayment({ ...input, PaymentMethodId: methodId })
       : await mf.sendPayment(input);
+    // وسيلة مباشرة تعني إدخال البطاقة خارج صفحة البوابة، وهذا ما لا نقبله أبدًا
+    if ("IsDirectPayment" in res && res.IsDirectPayment === true) throw new MyFatoorahError("أعادت البوابة رابطًا لوسيلة دفع مباشرة");
     const url = "PaymentURL" in res ? res.PaymentURL : res.InvoiceURL;
+    assertPaymentPage(url, cfg);
     // الشرط على المطالبة: إن أُغلق الطلب أثناء الاستدعاء لا نسلّم رابطًا لطلب مغلق، والفاتورة لم يرها أحد فلا يمكن دفعها
     const saved = await sql`
       update payments set status = 'pending', gateway_invoice_id = ${String(res.InvoiceId)}, payment_url = ${url},
-        payment_method = ${paymentMethodId ? String(paymentMethodId) : "all"}
+        payment_method = ${methodId ? String(methodId) : "all"}
       where id = ${decision.claimId} and status = 'initiated'
       returning id
     `;
     if (saved.length === 0) throw new OrderSettledError(current.id);
     return { url, reused: false };
   } catch (err) {
-    const message = err instanceof Error ? err.message : String(err);
+    // للمالك فقط، بعد التنقية. المشتري يرى جملة ثابتة بحسب نوع الفشل (src/lib/payment-failure.ts)
+    const message = scrubForOps(err instanceof Error ? err.message : String(err));
     await sql`update payments set status = 'failed', error_message = ${message.slice(0, 500)} where id = ${decision.claimId} and status = 'initiated'`;
     throw err;
   }
@@ -446,12 +497,20 @@ export async function startPayment(order: OrderRow, paymentMethodId: number | nu
 export type OpenOrderResolution = { kind: "none" } | { kind: "paid"; orderId: string } | { kind: "open"; orderId: string };
 
 const OPEN_ORDERS_WALK_LIMIT = 8;
+/** طلب الشراء يعمل تحت maxDuration: بعد هذا الوقت لا نبدأ فحص طلب آخر */
+const OPEN_ORDERS_WALK_BUDGET_MS = 25_000;
 
 export async function resolveOpenOrderForCheckout(input: { userId: string; productIds: string[]; isTest: boolean }): Promise<OpenOrderResolution> {
   const cart = await computeCart(input.productIds, input.userId);
   const open = await findOpenOrdersCovering(sql, { userId: input.userId, productIds: cart.payableLines.map((l) => l.id), isTest: input.isTest });
   let stillOpen: string | null = null;
+  const startedAt = Date.now();
   for (const { id } of open.slice(0, OPEN_ORDERS_WALK_LIMIT)) {
+    // ما لم نفحصه يبقى طلبًا مفتوحًا: لا ننشئ طلبًا موازيًا عليه
+    if (Date.now() - startedAt > OPEN_ORDERS_WALK_BUDGET_MS) {
+      stillOpen ??= id;
+      break;
+    }
     const walk = await checkOrderInvoices(id);
     if (walk.error) await reportError("checkout:open-order", walk.error);
     const [row] = await sql<{ status: OrderRow["status"] }[]>`select status from orders where id = ${id}`;
@@ -621,11 +680,20 @@ async function applyConfirmedPayment(db: Db, p: ConfirmedPayment): Promise<{ res
   return { result: flagged ? { state: "flagged", orderId: order.id, kind: otherKind } : main, newExtra };
 }
 
+/** ما بعد الالتزام: الدفعة سُجلت، فلا شيء هنا يغيّر النتيجة أو يقلب الصفحة إلى خطأ */
+async function notifyAfterCommit(fn: () => Promise<unknown>): Promise<void> {
+  try {
+    await fn();
+  } catch (err) {
+    await reportError("payment:after-commit", err);
+  }
+}
+
 /**
  * التحقق من الدفع عبر الخادم (من صفحة العودة أو Webhook) وتطبيق النتيجة.
  * يتحقق من: الفاتورة تخص سجل دفع لدينا، الرقم المرجعي = رقم الطلب، المبلغ والعملة مطابقان.
  */
-export async function verifyAndApplyPayment(key: { paymentId?: string; invoiceId?: string }, opts: { timeoutMs?: number } = {}): Promise<VerifyResult> {
+export async function verifyAndApplyPayment(key: { paymentId?: string; invoiceId?: string }, opts: { timeoutMs?: number; focusPaymentId?: string } = {}): Promise<VerifyResult> {
   const cfg = paymentsConfig();
   if (!cfg.enabled) return { state: "invalid", error: cfg.reason };
   const keyValue = key.paymentId ?? key.invoiceId;
@@ -643,16 +711,17 @@ export async function verifyAndApplyPayment(key: { paymentId?: string; invoiceId
   const [order] = await sql<OrderRow[]>`select * from orders where id = ${payment.order_id}`;
   if (!order) return { state: "invalid", error: "الطلب غير موجود" };
 
-  if (status.CustomerReference && status.CustomerReference !== order.number) {
-    return { state: "invalid", error: "الفاتورة لا تخص هذا الطلب" };
-  }
-  const result = interpretPaymentStatus(status, key.paymentId);
+  const result = interpretPaymentStatus(status, opts.focusPaymentId ?? key.paymentId);
   const invoiceFils = kwdNumberToFils(Number(status.InvoiceValue));
-  if (invoiceFils !== order.total_fils || invoiceFils !== payment.amount_fils || !isKuwaitiDinarDisplay(status.InvoiceDisplayValue)) {
+  // المرجع إلزامي دائمًا. UserDefinedField رقم المحاولة عندنا، وعند وجوده يجب أن يطابق صف الدفع (المكتبة الرسمية تفحص المرجع وحده)
+  const wrongReference = status.CustomerReference !== order.number || Boolean(status.UserDefinedField && status.UserDefinedField !== payment.id);
+  // InvoiceValue بالعملة الأساسية للحساب. PaidCurrency لا تُقارن: هي عملة ما دفع به المشتري، وقد تختلف ولا يختلف المبلغ
+  const wrongCurrency = !isKuwaitiDinarDisplay(status.InvoiceDisplayValue) || (result.state === "paid" && !isKuwaitiDinarCode(result.transaction?.Currency));
+  if (wrongReference || wrongCurrency || invoiceFils !== order.total_fils || invoiceFils !== payment.amount_fils) {
     const newExtra = await sql.begin(async (db) => {
       await db`select id from orders where id = ${order.id} for update`;
       const [row] = await db<{ gateway_payment_id: string | null }[]>`
-        update payments set error_message = 'amount/currency mismatch', last_gateway_status = ${db.json(stored as never)}, last_checked_at = now(),
+        update payments set error_message = ${wrongReference ? "reference mismatch" : "amount/currency mismatch"}, last_gateway_status = ${db.json(stored as never)}, last_checked_at = now(),
           gateway_payment_id = coalesce(gateway_payment_id, ${result.state === "paid" ? (result.transaction?.PaymentId ?? null) : null})
         where id = ${payment.id}
         returning gateway_payment_id
@@ -665,20 +734,20 @@ export async function verifyAndApplyPayment(key: { paymentId?: string; invoiceId
         orderId: order.id,
         kind: "amount_mismatch",
         amountFils,
-        details: { gatewayAmountFils: Number.isInteger(invoiceFils) ? invoiceFils : null, gatewayDisplayValue: status.InvoiceDisplayValue ?? null },
+        details: { gatewayAmountFils: Number.isInteger(invoiceFils) ? invoiceFils : null, gatewayDisplayValue: status.InvoiceDisplayValue ?? null, ...(wrongReference ? { referenceMismatch: true } : {}) },
       });
       const others = await recordOtherSuccesses(db, { paymentId: payment.id, orderId: order.id, settlingId: row.gateway_payment_id, amountFils, status, kind: "amount_mismatch" });
       return recorded || others.recorded;
     });
-    if (newExtra) await notifyExtraPayment(order.id);
-    return { state: "invalid", error: "المبلغ لا يطابق الطلب" };
+    if (newExtra) await notifyAfterCommit(() => notifyExtraPayment(order.id));
+    return { state: "invalid", error: wrongReference ? "الفاتورة لا تخص هذا الطلب" : "المبلغ لا يطابق الطلب" };
   }
 
   if (result.state === "paid") {
     const { result: applied, newExtra } = await sql.begin((db) => applyConfirmedPayment(db, { orderId: order.id, paymentId: payment.id, invoiceFils, status, transaction: result.transaction }));
     // بعد الالتزام، ولا يرمي: تعذر البريد لا يؤثر على الدفع
-    if (applied.state === "paid" && applied.changed) await sendOrderConfirmationEmail(order.id);
-    if (newExtra) await notifyExtraPayment(order.id);
+    if (applied.state === "paid" && applied.changed) await notifyAfterCommit(() => sendOrderConfirmationEmail(order.id));
+    if (newExtra) await notifyAfterCommit(() => notifyExtraPayment(order.id));
     return applied;
   }
 
@@ -705,7 +774,7 @@ export async function verifyAndApplyPayment(key: { paymentId?: string; invoiceId
       }
       await db`
         update payments set status = case when status in ('paid', 'refunded') then status else 'failed' end,
-          error_message = ${result.error}, last_gateway_status = ${db.json(stored as never)}, last_checked_at = now()
+          error_message = ${result.error === null ? null : scrubForOps(result.error).slice(0, 500)}, last_gateway_status = ${db.json(stored as never)}, last_checked_at = now()
         where id = ${payment.id}
       `;
       if (row.status !== "pending") return true;
@@ -776,12 +845,10 @@ export async function handleMyFatoorahWebhook(
 
   if (!signature?.trim()) return reject("missing_signature", 401, "invalid signature", body);
   if (webhookV2SigningString(body) === null) return reject("unsupported_event", 401, "invalid signature", body);
-  if (!verifyWebhookV2Signature(body, signature, cfg.webhookSecret)) {
-    console.warn("[webhook] invalid signature");
-    return reject("invalid_signature", 401, "invalid signature", body);
-  }
+  if (!verifyWebhookV2Signature(body, signature, cfg.webhookSecret)) return reject("invalid_signature", 401, "invalid signature", body);
 
-  const eventKey = createHash("sha256").update(`${body.Event.Code}|${signature}|${rawBody}`).digest("hex");
+  // ما وقّعته البوابة هو هوية الحدث: نسخة أعيد ترتيب بايتاتها أو مسافاتها هي الحدث نفسه
+  const eventKey = createHash("sha256").update(`${body.Event.Code}|${webhookV2SigningString(body)}`).digest("hex");
   // الحدث يحمل بيانات العميل والبطاقة: لا يُخزن منه إلا ما تحتاجه المراجعة، لأي طالب وفي أي وقت
   const stored = redactWebhookPayload(body);
   // مطالبة ذرّية: نسخة واحدة فقط تعالج الحدث، ويمكن إعادة المطالبة بحدث عالق منذ أكثر من ٥ دقائق
@@ -826,11 +893,12 @@ export async function handleMyFatoorahWebhook(
       result = await raiseDisputeAlert(body, eventKey);
     }
   } catch (err) {
-    result = `error: ${err instanceof Error ? err.message : String(err)}`.slice(0, 300);
+    // التفاصيل للمالك في سجل الأخطاء، بعد التنقية. من أرسل الحدث لا يرى منها شيئًا
     await reportError("webhook:processing", err);
     // نُبقي الحدث ونحرر المطالبة كي تنجح إعادة إرسال البوابة فورًا
-    await sql`update payment_events set result = ${result}, claimed_at = null where id = ${eventId}`;
-    return { status: 500, result };
+    const code = isDatabaseBusy(err) ? "busy" : "error";
+    await sql`update payment_events set result = ${code}, claimed_at = null where id = ${eventId}`;
+    return { status: 500, result: code };
   }
   await sql`update payment_events set result = ${result}, processed_at = now() where id = ${eventId}`;
   return { status: 200, result };
@@ -977,7 +1045,7 @@ export async function recheckExtraPayment(input: { extraId: string; adminId: str
   if (!found || !status) return { state: row.state };
   const refundId = String(found.RefundId);
   return sql.begin(async (db) => {
-    await applyExtraRefundEvent(db, { invoiceId, refundId, status, amountFils: row.amount_fils, extraId: row.id });
+    await applyExtraRefundEvent(db, { invoiceId, refundId, status, amountFils: row.amount_fils, extraId: row.id, amountMatchAllowed: true });
     const [now] = await db<{ state: ExtraPaymentState }[]>`select state from payment_extras where id = ${row.id}`;
     await audit({ actorId: input.adminId, action: "payment_extra.refund_rechecked", entityType: "payment_extra", entityId: row.id, metadata: { orderId: row.order_id, gatewayRefundId: refundId, gatewayStatus: found.RefundStatus, state: now.state }, ip: input.ip ?? null }, db);
     return { state: now.state };

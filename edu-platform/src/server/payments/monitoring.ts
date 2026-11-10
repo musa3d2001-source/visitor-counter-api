@@ -5,6 +5,8 @@ import { audit } from "../platform/audit";
 import { alertAfterResponse } from "../platform/ops-alerts";
 import { reportError } from "../platform/report-error";
 import type { WebhookV2Body } from "./myfatoorah";
+import { ipFromHeaders } from "../http";
+import { admitRejectionWrite } from "./webhook-gate";
 
 /**
  * مراقبة Webhook البوابة وتنبيهات الدفع للمالك:
@@ -59,13 +61,18 @@ function describeDelivery(parsed: unknown) {
   };
 }
 
-/** تسجيل إشعار مرفوض — لا يغيّر رد HTTP أبدًا حتى لو فشل التسجيل */
-export async function recordWebhookRejection(input: { reason: WebhookRejectionReason; httpStatus: number; rawBody: string; headers: Headers; parsed?: unknown }): Promise<void> {
+/**
+ * تسجيل إشعار مرفوض — لا يغيّر رد HTTP أبدًا حتى لو فشل التسجيل.
+ * محدود قبل أي كتابة (webhook-gate): الطوفان لا يكلف أكثر من بضع كتابات في الدقيقة إلى الحلقة نفسها.
+ * bodyBytes: الحجم المعلن حين رُفض الطلب قبل قراءة جسمه.
+ */
+export async function recordWebhookRejection(input: { reason: WebhookRejectionReason; httpStatus: number; rawBody: string; headers: Headers; parsed?: unknown; bodyBytes?: number }): Promise<void> {
   try {
+    if (!admitRejectionWrite(ipFromHeaders(input.headers))) return;
     const { code, name, reference, invoiceId } = describeDelivery(input.parsed);
     const version = clip(input.headers.get("myfatoorah-webhook-version"), 16);
     const sha256 = createHash("sha256").update(input.rawBody, "utf8").digest("hex");
-    const bytes = Buffer.byteLength(input.rawBody, "utf8");
+    const bytes = input.bodyBytes ?? Buffer.byteLength(input.rawBody, "utf8");
     await sql`
       insert into payment_webhook_rejections (slot, reason, http_status, event_code, event_name, event_reference, invoice_id, version_header, body_bytes, body_sha256)
       values (nextval('payment_webhook_rejection_slot'), ${input.reason}, ${input.httpStatus}, ${code}, ${name}, ${reference}, ${invoiceId}, ${version}, ${bytes}, ${sha256})

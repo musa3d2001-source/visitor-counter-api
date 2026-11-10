@@ -396,14 +396,21 @@ export async function applyRefundEvent(gateway: RefundGateway, environment: Envi
   }
   if (transactionExtra) {
     const extraId = transactionExtra.id;
-    await sql.begin((db) => applyExtraRefundEvent(db, { ...ev, extraId }));
+    await sql.begin((db) => applyExtraRefundEvent(db, { ...ev, extraId, amountMatchAllowed: true }));
     return;
   }
 
   const wholeInvoice = extras.find((e) => e.gateway_payment_id === null);
   if (wholeInvoice) {
+    // المبلغ وحده لا يكفي ما دام المرجع متاحًا: ما أرسلناه يحمل extra:<id>، واسترداد بمرجع آخر ليس لهذا السجل.
+    // وبلا مرجع فهو استرداد نفذه المالك من لوحة البوابة: يُحسب إن اكتمل، ولا يلغي استردادًا أرسلناه نحن
+    let amountMatchAllowed = false;
+    if (wholeInvoice.gateway_refund_id === null && wholeInvoice.state !== "refunded" && wholeInvoice.state !== "dismissed") {
+      const entry = (await gateway.getRefundStatus(ev.invoiceId, "InvoiceId")).find((r) => String(r.RefundId) === ev.refundId);
+      amountMatchAllowed = entry?.ExternalIdentifier === `extra:${wholeInvoice.id}` || (ev.status === "REFUNDED" && entry !== undefined && !entry.ExternalIdentifier);
+    }
     await sql.begin(async (db) => {
-      const applied = await applyExtraRefundEvent(db, ev);
+      const applied = await applyExtraRefundEvent(db, { ...ev, amountMatchAllowed });
       if (applied === 0 && ev.status === "REFUNDED" && wholeInvoice.state !== "refunded") {
         await raiseRefundAlert(db, { orderId: payment.order_id, paymentId: payment.id, details: details("extra_mismatch") });
       }
@@ -411,21 +418,37 @@ export async function applyRefundEvent(gateway: RefundGateway, environment: Envi
     return;
   }
 
-  // قد يصل الحدث قبل رد MakeRefund: صف أرسلناه ولم نعرف رقمه بعد هو هذا الاسترداد إن طابق المبلغ
-  const find = (db: Db, lock: boolean) => db<RefundRow[]>`
-    select *, ${staleClaim(db)} from refunds
+  // قد يصل الحدث قبل رد MakeRefund، فصف أرسلناه ولم نعرف رقمه بعد مرشح إن طابق المبلغ. المبلغ وحده لا يكفي:
+  // نسخة قديمة من إلغاء محاولة سابقة لها المبلغ نفسه. لذلك يبقى مرشحًا حتى تؤكد البوابة أن هذا الرقم يخص محاولته (مرجعها الخارجي)
+  const [peek] = await sql<RefundRow[]>`
+    select *, ${staleClaim(sql)} from refunds
     where payment_id = ${payment.id} and status <> 'dismissed'
       and (gateway_refund_id = ${ev.refundId} or (gateway_refund_id is null and amount_fils = ${ev.amountFils} and status in ('sending', 'unknown', 'not_sent', 'recorded')))
-    order by (gateway_refund_id is not null) desc, created_at desc limit 1 ${lock ? db`for update` : db``}
+    order by (gateway_refund_id is not null) desc, created_at desc limit 1
+  `;
+  const known = peek?.gateway_refund_id === ev.refundId;
+  // السؤال قبل المعاملة: لا نبقي قفلًا مفتوحًا أثناء استدعاء البوابة.
+  // نسأل بالفاتورة الأصلية ونطابق برقم الاسترداد: الوثائق تقول إن InvoiceId في الرد هو الفاتورة المستخدمة في الاستعلام،
+  // وللاسترداد فاتورة خاصة به (Refund.InvoiceId في الحدث) تختلف عن ReferencedInvoice.Id.
+  // رقم نعرفه لا يحتاج سؤالًا: البوابة أعطتنا إياه، والتوقيع يغطي رقم الاسترداد وحالته، و applyFact لا يرجع عن حالة نهائية
+  const list = !known && (peek || ev.status === "REFUNDED") ? await gateway.getRefundStatus(ev.invoiceId, "InvoiceId") : [];
+  const entry = list.find((r) => String(r.RefundId) === ev.refundId) ?? null;
+  let attemptId: string | null = null;
+  if (peek && !known && entry) {
+    const fils = kwdNumberToFils(Number(entry.RefundAmount ?? entry.Amount));
+    // سجل قديم لم يُرسل قط لا مرجع له، فيكفيه استرداد بلا مرجع بالمبلغ نفسه
+    const belongs = peek.status === "recorded" ? !entry.ExternalIdentifier && fils === peek.amount_fils : entry.ExternalIdentifier === externalIdOf(peek.id, peek.attempt);
+    if (belongs) attemptId = peek.id;
+  }
+  const find = (db: Db) => db<RefundRow[]>`
+    select *, ${staleClaim(db)} from refunds
+    where payment_id = ${payment.id} and status <> 'dismissed'
+      and (gateway_refund_id = ${ev.refundId} or (id = ${attemptId}::uuid and gateway_refund_id is null))
+    order by (gateway_refund_id is not null) desc, created_at desc limit 1 for update
   `;
 
-  // الاستعلام قبل المعاملة: لا نبقي قفلًا مفتوحًا أثناء استدعاء البوابة
-  const [peek] = await find(sql, false);
   let confirmed: MfRefundStatus | null = null;
-  if (!peek && ev.status === "REFUNDED") {
-    // نسأل بالفاتورة الأصلية ونطابق برقم الاسترداد: الوثائق تقول إن InvoiceId في الرد هو الفاتورة المستخدمة في الاستعلام،
-    // وللاسترداد فاتورة خاصة به (Refund.InvoiceId في الحدث) تختلف عن ReferencedInvoice.Id
-    const list = await gateway.getRefundStatus(ev.invoiceId, "InvoiceId");
+  if (!known && attemptId === null && ev.status === "REFUNDED") {
     confirmed = list.find((r) => String(r.RefundId) === ev.refundId && /^refunded$/i.test(r.RefundStatus)) ?? null;
     // استرداد من لوحة البوابة على فاتورة بعمليتين ناجحتين: قد يخص أيًا منهما، وتطبيقه على الطلب قد يسحب وصولًا مدفوعًا
     if (perTransaction.some((e) => e.state !== "refunded" && e.state !== "dismissed")) {
@@ -435,7 +458,7 @@ export async function applyRefundEvent(gateway: RefundGateway, environment: Envi
 
   const t = await sql.begin(async (db): Promise<Transition | null> => {
     const [order] = await db<OrderRow[]>`select * from orders where id = ${payment.order_id} for update`;
-    const [row] = await find(db, true);
+    const [row] = await find(db);
     const actor: Actor = { actorId: null };
     if (row) return applyFact(db, order, row, { kind: ev.status === "REFUNDED" ? "refunded" : "cancelled", refundId: ev.refundId }, actor);
 

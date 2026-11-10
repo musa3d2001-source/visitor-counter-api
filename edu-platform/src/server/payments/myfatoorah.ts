@@ -247,13 +247,20 @@ export function isDefiniteGatewayRefusal(err: unknown): boolean {
 /**
  * هل تدل قيمة InvoiceDisplayValue على الدينار الكويتي؟
  * الوثائق تعرضها هكذا: "1.000 KD" و"12,345.000 KD"، ونقبل أيضًا التهجئة ISO: "3.000 KWD" والرمز العربي "3.000 د.ك" لأننا نرسل Language=AR.
- * أي عملة أخرى أو نص بلا عملة نرفضه (عند الشك لا نؤكد الدفع). الحقل الفارغ مقبول
- * لأن InvoiceValue تأتي دائمًا بالعملة الأساسية للحساب، وهي الدينار.
+ * أي عملة أخرى أو نص بلا عملة أو حقل فارغ نرفضه: عند الشك لا نؤكد الدفع، ويراجعه المالك.
  */
 export function isKuwaitiDinarDisplay(displayValue: string | null | undefined): boolean {
   const text = (displayValue ?? "").trim();
-  if (!text) return true;
-  const unit = text.split(/\s+/).pop()!.toUpperCase();
+  if (!text) return false;
+  return isKuwaitiDinarCode(text.split(/\s+/).pop());
+}
+
+/**
+ * رمز العملة في حقل Currency على العملية: الوثائق تعرضه "KD"، ونقبل ISO "KWD" كذلك. الفارغ مرفوض.
+ * يطابق الرمز كله، فلا يمر "1KD" ولا "KDX".
+ */
+export function isKuwaitiDinarCode(code: string | null | undefined): boolean {
+  const unit = (code ?? "").trim().toUpperCase();
   return unit === "KD" || unit === "KWD" || unit === "د.ك" || unit === "د.ك.";
 }
 

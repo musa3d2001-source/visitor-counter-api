@@ -77,6 +77,10 @@ type Mode = "live" | "sandbox" | "off";
 function payments(mode: Mode) {
   process.env.PAYMENTS_MODE = mode === "off" ? "disabled" : mode;
   process.env.MYFATOORAH_LIVE_CONFIRMED = mode === "live" ? "true" : "false";
+  // وضع الإنتاج يقبل العنوان الرسمي و APP_URL حقيقيًا فقط
+  process.env.APP_URL = mode === "live" ? "https://farqad.com" : TEST_ENV.APP_URL;
+  if (mode === "live") delete process.env.MYFATOORAH_BASE_URL;
+  else process.env.MYFATOORAH_BASE_URL = TEST_ENV.MYFATOORAH_BASE_URL;
   resetEnvCache();
   resetPaymentMethodsCache();
 }
