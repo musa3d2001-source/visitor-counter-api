@@ -1,80 +1,59 @@
 import { NextResponse } from "next/server";
 import { LONG_JOB_STATEMENT_MS, withDbDeadline } from "@/server/db";
-import { getCurrentUser } from "@/server/auth/session";
-import { parseRange, reportByTeacher, reportOrdersForExport } from "@/server/admin/stats";
-import { filsToKwdString } from "@/lib/money";
-import { ORDER_STATUS_LABELS, type OrderStatus } from "@/lib/labels";
+import { getCurrentSession } from "@/server/auth/session";
+import { hitRateLimit } from "@/server/auth/rate-limit";
+import { refuseWithoutProof } from "@/server/auth/step-up";
+import { parseRange } from "@/server/admin/stats";
+import { openReportExport } from "@/server/admin/report-export";
+import { clientIp, isSameOriginRequest } from "@/server/http";
 import { withBusyGuard } from "@/server/busy-response";
 
 export const dynamic = "force-dynamic";
+/** أكبر تصدير صفحات قصيرة متتالية، وهذا سقف لا هدف */
+export const maxDuration = 120;
 
-function csvCell(v: unknown): string {
-  let s = v === null || v === undefined ? "" : String(v);
-  // منع حقن الصيغ في Excel
-  if (/^[=+\-@\t\r]/.test(s)) s = `'${s}`;
-  return `"${s.replace(/"/g, '""')}"`;
-}
+/** لكل مالك: عشرة ملفات في الساعة تكفي عملًا حقيقيًا، وتبطئ من يكرر سحب القائمة */
+const EXPORT_LIMIT = { limit: 10, windowSec: 60 * 60 };
 
-/** تصدير المالك قد يمر على كل الطلبات: مهمة طويلة صريحة بمهلة أطول من الطلبات العادية، ولها حد */
-function handleGET(req: Request) {
+const DENIED = { error: "غير مصرح" };
+
+/**
+ * التصدير POST فقط: رابط GET يكفي لتنزيله عرضًا، ويبقى في سجل المتصفح.
+ * المعايير في الرابط لأنها تواريخ فقط، فلا جسم للطلب يُقرأ. البيانات الشخصية تخرج بإثبات حديث، وتُسجل، وبحد لكل مالك.
+ */
+function handlePOST(req: Request) {
   return withDbDeadline(LONG_JOB_STATEMENT_MS, () => exportReport(req));
 }
 
-async function exportReport(req: Request) {
-  const user = await getCurrentUser();
-  if (!user || user.role !== "admin") return NextResponse.json({ error: "غير مصرح" }, { status: 403 });
+async function exportReport(req: Request): Promise<Response> {
+  if (!isSameOriginRequest(req)) return NextResponse.json(DENIED, { status: 403 });
+  const session = await getCurrentSession();
+  if (!session || session.mustChangePassword || session.needsTwoFactorEnrolment || session.user.role !== "admin") return NextResponse.json(DENIED, { status: 403 });
+  const adminId = session.user.id;
+  const ip = await clientIp().catch(() => "unknown");
+
+  const refusal = await refuseWithoutProof({ adminId, sessionId: session.sessionId, ip, command: "report.export" });
+  if (refusal) return NextResponse.json({ error: refusal.message, stepUp: refusal.need }, { status: 403 });
+
+  const limit = await hitRateLimit(`report-export:${adminId}`, EXPORT_LIMIT.limit, EXPORT_LIMIT.windowSec);
+  if (!limit.allowed) return NextResponse.json({ error: "طلبت تصديرات كثيرة. حاول بعد قليل." }, { status: 429, headers: { "Retry-After": String(limit.retryAfterSeconds) } });
+
   const url = new URL(req.url);
   const range = parseRange({
     from: url.searchParams.get("from") ?? undefined,
     to: url.searchParams.get("to") ?? undefined,
     test: url.searchParams.get("test") ?? undefined,
   });
-  if (url.searchParams.get("type") === "teachers") {
-    const rows = await reportByTeacher(range);
-    const header = ["المعلم", "عمليات البيع", "قيمة المبيعات (د.ك)", "حصة المعلم (د.ك)", "حصة المنصة من المؤهل (د.ك)"];
-    const lines = [header.map(csvCell).join(",")];
-    for (const r of rows) {
-      lines.push([r.teacherName, r.sold, filsToKwdString(r.revenueFils), filsToKwdString(r.teacherShareFils), filsToKwdString(r.platformShareFils)].map(csvCell).join(","));
-    }
-    return new NextResponse("\uFEFF" + lines.join("\r\n"), {
-      headers: {
-        "content-type": "text/csv; charset=utf-8",
-        "content-disposition": `attachment; filename="teachers-${range.fromDay}-to-${range.toDay}.csv"`,
-        "cache-control": "no-store",
-      },
-    });
-  }
-  const rows = await reportOrdersForExport(range);
-  const header = ["رقم الطلب", "تاريخ الدفع", "اسم العميل", "البريد", "الحالة", "المجموع (د.ك)", "الخصم (د.ك)", "الإجمالي (د.ك)", "كود الخصم", "تجريبي", "المنتجات"];
-  const lines = [header.map(csvCell).join(",")];
-  for (const r of rows) {
-    lines.push(
-      [
-        r.number,
-        r.paid_at ? new Date(r.paid_at).toISOString() : "",
-        r.customer_name,
-        r.customer_email,
-        ORDER_STATUS_LABELS[r.status as OrderStatus] ?? r.status,
-        filsToKwdString(r.subtotal_fils),
-        filsToKwdString(r.discount_fils),
-        filsToKwdString(r.total_fils),
-        r.coupon_code ?? "",
-        r.is_test ? "نعم" : "لا",
-        r.items ?? "",
-      ]
-        .map(csvCell)
-        .join(","),
-    );
-  }
-  const body = "﻿" + lines.join("\r\n");
-  return new NextResponse(body, {
+  const kind = url.searchParams.get("type") === "teachers" ? "teachers" : "orders";
+  const body = await openReportExport(kind, range, { adminId, ip });
+  return new Response(body, {
     headers: {
       "content-type": "text/csv; charset=utf-8",
-      "content-disposition": `attachment; filename="sales-${range.fromDay}-to-${range.toDay}.csv"`,
+      "content-disposition": `attachment; filename="${kind === "teachers" ? "teachers" : "sales"}-${range.fromDay}-to-${range.toDay}.csv"`,
       "cache-control": "no-store",
     },
   });
 }
 
 /** انشغال قاعدة البيانات: 503 مع Retry-After بدل خطأ أو تعليق */
-export const GET = withBusyGuard(handleGET);
+export const POST = withBusyGuard(handlePOST);

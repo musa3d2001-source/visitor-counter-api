@@ -134,9 +134,24 @@ export async function reportByGrade(r: ReportRange) {
   return rows.map((x) => ({ ...x, revenueFils: Number(x.revenue) }));
 }
 
-export async function reportOrdersForExport(r: ReportRange) {
+/** شروط التصدير في مكان واحد: العدد المعلن في سجل التدقيق يطابق ما تعيده الصفحات */
+export async function countReportOrders(r: ReportRange): Promise<number> {
+  const [row] = await sql<{ n: number }[]>`
+    select count(*)::int as n from orders o
+    where o.status in ('paid', 'refunded') and o.paid_at >= ${r.from} and o.paid_at < ${r.to} and (${r.includeTest} or not o.is_test)
+  `;
+  return row.n;
+}
+
+/**
+ * صفحة واحدة من طلبات التصدير. المؤشر (وقت الدفع، المعرّف) لا يتكرر ولا يتخطى طلبين دُفعا في اللحظة نفسها.
+ * الوقت يعود نصًا كاملًا: Date في JavaScript يقص الميكروثانية فيعيد صفوفًا أو يتخطاها.
+ */
+export async function reportOrdersPage(r: ReportRange, after: { paidAt: string; id: string } | null, limit: number) {
   return sql<
     {
+      id: string;
+      paid_cursor: string;
       number: string;
       paid_at: Date;
       customer_name: string;
@@ -150,12 +165,14 @@ export async function reportOrdersForExport(r: ReportRange) {
       items: string;
     }[]
   >`
-    select o.number, o.paid_at, o.customer_name, o.customer_email, o.status, o.subtotal_fils, o.discount_fils, o.total_fils,
+    select o.id, o.paid_at::text as paid_cursor, o.number, o.paid_at, o.customer_name, o.customer_email, o.status, o.subtotal_fils, o.discount_fils, o.total_fils,
       o.coupon_code, o.is_test,
       (select string_agg(oi.title, ' | ' order by oi.created_at) from order_items oi where oi.order_id = o.id) as items
     from orders o
     where o.status in ('paid', 'refunded') and o.paid_at >= ${r.from} and o.paid_at < ${r.to} and (${r.includeTest} or not o.is_test)
-    order by o.paid_at
+      ${after ? sql`and (o.paid_at, o.id) > (${after.paidAt}::timestamptz, ${after.id}::uuid)` : sql``}
+    order by o.paid_at, o.id
+    limit ${limit}
   `;
 }
 

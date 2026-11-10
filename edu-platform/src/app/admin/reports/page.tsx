@@ -1,6 +1,6 @@
 import { requireOwnerPage } from "@/server/auth/permissions";
 import Link from "next/link";
-import { Banknote, CalendarRange, ChartColumn, Download, GraduationCap, Layers, Package, Receipt, RotateCcw, ScrollText, Ticket, Wallet } from "lucide-react";
+import { Banknote, CalendarRange, ChartColumn, GraduationCap, Layers, Package, Receipt, RotateCcw, ScrollText, Ticket, Wallet } from "lucide-react";
 import { auditLog, parseRange, reportByDay, reportByGrade, reportByProduct, reportByTeacher, reportSummary } from "@/server/admin/stats";
 import { AdminPageHeader, Section, StatGrid, StatTile } from "@/components/admin/page-header";
 import { CellTitle, EmptyValue } from "@/components/admin/data-list";
@@ -14,6 +14,7 @@ import { ar, count, gradeVars, initial } from "@/lib/design";
 import { PRODUCT_TYPE_LABELS, type ProductType } from "@/lib/labels";
 import { formatDateTime } from "@/lib/utils";
 import { PageBand } from "../_components/overview/bands";
+import { ExportCsvButton } from "./_components/export-button";
 import { Kwd, OP, SALE } from "../_components/overview/money";
 
 export const metadata = { title: "التقارير" };
@@ -216,11 +217,7 @@ export default async function ReportsPage({ searchParams }: { searchParams: Prom
             </>
           }
           actions={
-            <Button asChild variant="primary" size="md">
-              <a href={`/api/admin/reports/export?${exportQs}`}>
-                <Download aria-hidden /> تصدير CSV
-              </a>
-            </Button>
+            <ExportCsvButton query={exportQs} variant="primary" size="md" testId="export-orders" />
           }
           className="mb-0"
         >
@@ -361,11 +358,7 @@ export default async function ReportsPage({ searchParams }: { searchParams: Prom
         tone="pink"
         flush
         actions={
-          <Button asChild variant="outline" size="sm">
-            <a href={`/api/admin/reports/export?${exportQs}&type=teachers`}>
-              <Download aria-hidden /> تصدير CSV
-            </a>
-          </Button>
+          <ExportCsvButton query={`${exportQs}&type=teachers`} variant="outline" size="sm" testId="export-teachers" />
         }
       >
         {byTeacher.length === 0 ? (
