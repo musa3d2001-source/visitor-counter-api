@@ -144,10 +144,22 @@ export type LaunchStep = {
   facts: string[];
   checklist?: readonly string[];
   manual?: { key: ManualKey; tick: { at: Date; by: string | null } | null; stale: boolean };
+  /**
+   * خطوة لا تُنجز إلا والدفع الحقيقي مفعّل لكل الزوار (التفعيل نفسه، والدفعة الصغيرة، وإشعاراتها).
+   * لا بوابة تقصر الدفع الحقيقي على المالك، فهذه خطوات اليوم الأول بعد التفعيل، لا شرطًا قبله
+   */
+  firstDay?: boolean;
 };
 
 export type LaunchVerdict = {
+  /** كل خطوة لازمة منجزة، ومنها خطوات اليوم الأول: الدفع الحقيقي يعمل وتحقق */
   ready: boolean;
+  /** كل خطوة لازمة قبل التفعيل منجزة: يجوز تفعيل الدفع الحقيقي الآن */
+  readyToSwitchOn: boolean;
+  /** خطوات اليوم الأول اللازمة المفتوحة */
+  firstDayOpen: { key: string; title: string }[];
+  beforeLiveTotal: number;
+  beforeLiveDone: number;
   blockingTotal: number;
   blockingDone: number;
   /** الخطوات اللازمة المفتوحة أو التي تعذر فحصها، بترتيب الصفحة */
@@ -602,6 +614,7 @@ function paymentSteps(f: LaunchFacts, ticks: LaunchTicks): Built[] {
     title: "الدفع الحقيقي (PAYMENTS_MODE=live)",
     state: liveOn ? "done" : "open",
     blocking: true,
+    firstDay: true,
     todo:
       p.mode === "live" && !p.enabled
         ? "صحح ما يمنع التفعيل كما في السبب أدناه، ثم أعد النشر."
@@ -640,6 +653,7 @@ function paymentSteps(f: LaunchFacts, ticks: LaunchTicks): Built[] {
     key: "webhooks_received",
     title: "وصول إشعارات البوابة",
     blocking: true,
+    firstDay: true,
     todo: "بعد الدفعة الحقيقية الصغيرة واستردادها تأكد أن إشعاري الدفع والاسترداد وصلا هنا، وإلا راجع إعداد Webhook ومفتاحه.",
     where: { label: "إعدادات المنصة ← بوابة الدفع", href: "/admin/settings" },
   };
@@ -659,13 +673,14 @@ function paymentSteps(f: LaunchFacts, ticks: LaunchTicks): Built[] {
     });
   }
 
-  steps.push(
-    manualStep("live_payment", ticks, {
+  steps.push({
+    ...manualStep("live_payment", ticks, {
       title: "دفعة حقيقية صغيرة واستردادها",
-      todo: "بعد تفعيل الدفع الحقيقي اشترِ أرخص منتج ببطاقتك، وتأكد أن الطلب مدفوع والمحتوى فُتح، ثم استرده في اليوم التالي وتأكد أن الاسترداد اكتمل.",
+      todo: "فور تفعيل الدفع الحقيقي اشترِ أرخص منتج ببطاقتك، وتأكد أن الطلب مدفوع والمحتوى فُتح، ثم استرده في اليوم التالي وتأكد أن الاسترداد اكتمل.",
       where: { label: "الموقع نفسه، ثم «الطلبات والمدفوعات»", href: "/admin/orders" },
     }),
-  );
+    firstDay: true,
+  });
   return steps;
 }
 
@@ -695,10 +710,15 @@ export function launchSteps(facts: LaunchFacts, ticks: LaunchTicks): LaunchStep[
 /** الحكم العام: «جاهز» فقط إذا كانت كل خطوة لازمة منجزة فعلًا */
 export function launchVerdict(steps: LaunchStep[]): LaunchVerdict {
   const blocking = steps.filter((step) => step.blocking);
-  const blockingOpen = blocking.filter((step) => step.state !== "done").map((step) => ({ key: step.key, title: step.title }));
+  const open = blocking.filter((step) => step.state !== "done");
+  const blockingOpen = open.map((step) => ({ key: step.key, title: step.title }));
   const manual = steps.filter((step) => step.kind === "manual" && step.state !== "na");
   return {
     ready: blocking.length > 0 && blockingOpen.length === 0,
+    readyToSwitchOn: blocking.some((step) => !step.firstDay) && open.every((step) => step.firstDay),
+    firstDayOpen: open.filter((step) => step.firstDay).map((step) => ({ key: step.key, title: step.title })),
+    beforeLiveTotal: blocking.filter((step) => !step.firstDay).length,
+    beforeLiveDone: blocking.filter((step) => !step.firstDay && step.state === "done").length,
     blockingTotal: blocking.length,
     blockingDone: blocking.length - blockingOpen.length,
     blockingOpen,

@@ -54,30 +54,55 @@ function Bidi({ text }: { text: string }) {
 /** أول الخطوات اللازمة المفتوحة، روابط تنزل إلى صفوفها */
 const SHOW_OPEN = 6;
 
+/**
+ * مرحلتان، لأن الدفع الحقيقي يُفتح لكل الزوار لحظة تفعيله ولا بوابة تقصره على المالك:
+ * ما قبل التفعيل شرط له، وخطوات اليوم الأول (التفعيل، ودفعتك الصغيرة، وإشعاراتها) لا تُنجز إلا بعده
+ */
+function verdictText(verdict: LaunchVerdict): { phase: "ready" | "first_day" | "before_live"; title: string; body: string } {
+  if (verdict.ready) {
+    return { phase: "ready", title: "المنصة جاهزة، والدفع الحقيقي يعمل", body: "كل خطوة لازمة منجزة على هذا النشر، ومنها دفعتك الحقيقية الصغيرة واستردادها. أبقِ هذه الصفحة مرجعك بعد أي تغيير في الإعدادات." };
+  }
+  if (verdict.readyToSwitchOn) {
+    return {
+      phase: "first_day",
+      title: "جاهزة لتفعيل الدفع الحقيقي",
+      body: "كل خطوة قبل التفعيل منجزة. التفعيل يفتح الدفع لكل الزوار في اللحظة نفسها، فأنجز خطوات اليوم الأول معًا: اضبط PAYMENTS_MODE=live، ثم اشترِ فورًا دفعتك الصغيرة، وتأكد من وصول إشعاري الدفع والاسترداد.",
+    };
+  }
+  return {
+    phase: "before_live",
+    title: "لا تفعّل الدفع الحقيقي بعد",
+    body: `أُنجزت ${ar(verdict.beforeLiveDone)} من ${ar(verdict.beforeLiveTotal)} خطوة لازمة قبل التفعيل. لا تضبط PAYMENTS_MODE=live قبل إنجازها كلها، وبعدها تأتي خطوات اليوم الأول.`,
+  };
+}
+
 function Verdict({ verdict }: { verdict: LaunchVerdict }) {
   const pct = verdict.blockingTotal > 0 ? Math.round((verdict.blockingDone / verdict.blockingTotal) * 100) : 0;
-  const rest = verdict.blockingOpen.length - SHOW_OPEN;
+  const text = verdictText(verdict);
+  // ما يُعرض أولًا: ما يمنع التفعيل، أو خطوات اليوم الأول إن لم يبق غيرها
+  const firstDay = new Set(verdict.firstDayOpen.map((step) => step.key));
+  const shown = text.phase === "first_day" ? verdict.firstDayOpen : verdict.blockingOpen.filter((step) => !firstDay.has(step.key));
+  const rest = shown.length - SHOW_OPEN;
+  const good = text.phase !== "before_live";
   return (
-    <Panel data-testid="launch-verdict" data-ready={verdict.ready ? "true" : "false"} className="space-y-4">
+    <Panel data-testid="launch-verdict" data-ready={verdict.ready ? "true" : "false"} data-phase={text.phase} className="space-y-4">
       <div className="flex items-start gap-3.5">
-        <ToneIcon tone={verdict.ready ? "green" : "coral"}>{verdict.ready ? <Rocket /> : <Hand />}</ToneIcon>
+        <ToneIcon tone={good ? "green" : "coral"}>{good ? <Rocket /> : <Hand />}</ToneIcon>
         <div className="min-w-0">
-          <h2 className="font-display text-[1.3rem] leading-snug font-black text-ink sm:text-[1.5rem]">{verdict.ready ? "المنصة جاهزة لتستقبل أول دفعة حقيقية" : "المنصة ليست جاهزة للدفع الحقيقي بعد"}</h2>
+          <h2 className="font-display text-[1.3rem] leading-snug font-black text-ink sm:text-[1.5rem]">{text.title}</h2>
           <p className="mt-1 text-[0.92rem] leading-7 text-ink-soft">
-            {verdict.ready
-              ? "كل خطوة لازمة منجزة على هذا النشر. أبقِ هذه الصفحة مرجعك بعد أي تغيير في الإعدادات."
-              : `أُنجزت ${ar(verdict.blockingDone)} من ${ar(verdict.blockingTotal)} خطوة لازمة. لا تقبل دفعًا حقيقيًا قبل إنجازها كلها.`}
+            <Bidi text={text.body} />
           </p>
         </div>
       </div>
       <div className="h-2.5 overflow-hidden rounded-full bg-mist" role="progressbar" aria-label="الخطوات اللازمة المنجزة" aria-valuemin={0} aria-valuemax={verdict.blockingTotal} aria-valuenow={verdict.blockingDone}>
         <div className={verdict.ready ? "h-full rounded-full bg-linear-to-l from-[#34d399] to-success" : "h-full rounded-full bg-linear-to-l from-brand-400 to-brand-600"} style={{ width: `${pct}%` }} />
       </div>
-      {verdict.blockingOpen.length > 0 ? (
+      {shown.length > 0 ? (
         <div>
-          <p className="font-display text-[0.9rem] font-extrabold text-ink">ما بقي من الخطوات اللازمة:</p>
+          <p className="font-display text-[0.9rem] font-extrabold text-ink">{text.phase === "first_day" ? "خطوات اليوم الأول بعد التفعيل:" : "ما بقي قبل التفعيل:"}</p>
           <ul className="mt-1.5 flex flex-wrap gap-2">
-            {verdict.blockingOpen.slice(0, SHOW_OPEN).map((step) => (
+            {shown.slice(0, SHOW_OPEN).map((step) => (
               <li key={step.key}>
                 <a
                   href={`#step-${step.key}`}
@@ -196,6 +221,7 @@ function StepRow({ step }: { step: LaunchStep }) {
       badges={
         <>
           <StatusPill tone={look.pill}>{look.label}</StatusPill>
+          {step.firstDay ? <StatusPill tone="info">اليوم الأول بعد التفعيل</StatusPill> : null}
           <StatusPill tone={step.kind === "manual" ? "violet" : "info"}>{step.kind === "manual" ? "تؤشر عليها بنفسك" : "يكشفها النظام"}</StatusPill>
         </>
       }

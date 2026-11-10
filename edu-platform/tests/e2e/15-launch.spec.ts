@@ -13,6 +13,8 @@ test("the owner sees every step and a verdict that is not ready, with no secret 
   await page.goto("/admin/launch");
   await expect(page.getByTestId("launch-page")).toBeVisible();
   await expect(page.getByTestId("launch-verdict")).toHaveAttribute("data-ready", "false");
+  await expect(page.getByTestId("launch-verdict")).toHaveAttribute("data-phase", "before_live");
+  await expect(page.getByTestId("launch-verdict")).toContainText("لا تفعّل الدفع الحقيقي بعد");
   expect(await page.getByTestId("launch-step").count()).toBeGreaterThanOrEqual(30);
   // يكشفها النظام من بيئة هذا الخادم
   await expect(page.locator(step("cron_secret"))).toHaveAttribute("data-state", "done");
@@ -25,6 +27,10 @@ test("the owner sees every step and a verdict that is not ready, with no secret 
     expect(html).not.toContain(secret);
   }
   await expectNoHorizontalOverflow(page);
+  for (const width of [390, 1440]) {
+    await page.setViewportSize({ width, height: 900 });
+    await expectNoHorizontalOverflow(page);
+  }
 });
 
 test.describe("manual ticks", () => {

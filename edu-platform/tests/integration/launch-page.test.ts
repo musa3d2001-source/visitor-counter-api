@@ -313,7 +313,11 @@ describe("the page", () => {
     expect(html).toContain("www.farqad-edu.com");
     expect(html).toContain("https://www.farqad-edu.com/api/payments/myfatoorah/webhook");
 
-    expect(html).toContain('data-testid="launch-verdict" data-ready="false"');
+    expect(html).toContain('data-testid="launch-verdict" data-ready="false" data-phase="before_live"');
+    // لا تقول الصفحة «لا تقبل دفعًا حقيقيًا قبل إنجازها كلها» عن خطوات لا تُنجز إلا بالدفع الحقيقي
+    expect(html).toContain("لا تفعّل الدفع الحقيقي بعد");
+    expect(html).not.toContain("لا تقبل دفعًا حقيقيًا قبل إنجازها كلها");
+    expect(html).toContain("اليوم الأول بعد التفعيل");
     for (const key of MANUAL_KEYS) expect(html, key).toContain(`data-key="${key}"`);
     expect(html).toContain('data-key="payment_mode" data-state="open" data-blocking="true"');
     expect(html).toContain('data-key="cron_secret" data-state="done"');

@@ -184,6 +184,44 @@ describe("the verdict cannot say ready while a blocking step is open", () => {
   });
 });
 
+describe("two phases, because live payments open to every family at once", () => {
+  /** كل شيء منجز ما عدا ما لا يُنجز إلا والدفع الحقيقي مفعّل */
+  function beforeSwitchingOn() {
+    const ticks = allTicked();
+    delete ticks.live_payment;
+    return evaluate((f) => {
+      f.payments = { ...f.payments, mode: "sandbox", environment: "sandbox" };
+      f.webhooks = { ...f.webhooks!, livePayment: null, liveRefund: null };
+    }, ticks);
+  }
+
+  it("says ready to switch on when only the steps that need live payments are open", () => {
+    const { verdict } = beforeSwitchingOn();
+    expect(verdict.ready).toBe(false);
+    expect(verdict.readyToSwitchOn).toBe(true);
+    expect(verdict.firstDayOpen.map((s) => s.key).sort()).toEqual(["live_payment", "payment_mode", "webhooks_received"]);
+    expect(verdict.beforeLiveDone).toBe(verdict.beforeLiveTotal);
+  });
+
+  it("the three first-day steps are exactly the ones that cannot be done before live", () => {
+    const { steps } = evaluate();
+    expect(steps.filter((s) => s.firstDay).map((s) => s.key).sort()).toEqual(["live_payment", "payment_mode", "webhooks_received"]);
+  });
+
+  it("is not ready to switch on while any other blocking step is open", () => {
+    const ticks = allTicked();
+    delete ticks.live_payment;
+    delete ticks.lawyer_review;
+    const { verdict } = evaluate((f) => (f.payments = { ...f.payments, mode: "sandbox", environment: "sandbox" }), ticks);
+    expect(verdict.readyToSwitchOn).toBe(false);
+    expect(verdict.beforeLiveDone).toBe(verdict.beforeLiveTotal - 1);
+  });
+
+  it("a complete deployment is both", () => {
+    expect(evaluate().verdict).toMatchObject({ ready: true, readyToSwitchOn: true, firstDayOpen: [] });
+  });
+});
+
 describe("a tick for an older wording", () => {
   it("reopens the step and says why", () => {
     const ticks = allTicked();
