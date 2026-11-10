@@ -133,24 +133,26 @@ export default async function OrderPage({ params, searchParams }: { params: Prom
             <span
               className={cn(
                 "grid size-24 shrink-0 place-items-center rounded-[1.8rem] bg-white shadow-[0_8px_0_rgb(0_0_0/0.14),0_24px_40px_-18px_rgb(0_0_0/0.5)] sm:size-28 [&_svg]:size-14",
-                order.status === "paid" ? "text-[#0b8462]" : order.status === "failed" ? "text-[#c23a2f]" : order.status === "pending" ? "text-[#c27c00]" : "text-[#5a3fc9]",
+                order.status === "paid" && !holds.length ? "text-[#0b8462]" : order.status === "failed" ? "text-[#c23a2f]" : order.status === "pending" ? "text-[#c27c00]" : "text-[#5a3fc9]",
               )}
               aria-hidden
             >
-              {order.status === "paid" ? <CircleCheck /> : order.status === "pending" ? <Clock /> : order.status === "failed" ? <XCircle /> : <Receipt />}
+              {order.status === "paid" && !holds.length ? <CircleCheck /> : order.status === "pending" || holds.length ? <Clock /> : order.status === "failed" ? <XCircle /> : <Receipt />}
             </span>
             <div className="min-w-0 flex-1">
               {order.status === "paid" ? (
                 <>
                   <h1 className="font-display text-[clamp(1.9rem,1.3rem+2.4vw,3rem)] leading-tight font-black">{holds.length ? ORDER_UNDER_REVIEW.heroTitle : "تم الدفع بنجاح"}</h1>
                   <p className="mt-2 text-[1.08rem] leading-8 text-white/90">{holds.length ? ORDER_UNDER_REVIEW.heroBody : "مشترياتك جاهزة الآن في مكتبتك."}</p>
-                  <div className="mt-6 flex flex-wrap justify-center gap-3 sm:justify-start">
-                    <Button asChild size="xl" variant="accent">
-                      <Link href="/library" data-testid="go-library">
-                        <BookOpen aria-hidden /> افتح مكتبتي
-                      </Link>
-                    </Button>
-                  </div>
+                  {holds.length ? null : (
+                    <div className="mt-6 flex flex-wrap justify-center gap-3 sm:justify-start">
+                      <Button asChild size="xl" variant="accent">
+                        <Link href="/library" data-testid="go-library">
+                          <BookOpen aria-hidden /> افتح مكتبتي
+                        </Link>
+                      </Button>
+                    </div>
+                  )}
                 </>
               ) : order.status === "pending" && !paymentsOn ? (
                 <>

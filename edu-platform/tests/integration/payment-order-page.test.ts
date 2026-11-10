@@ -102,6 +102,9 @@ describe("saying nothing was charged", () => {
     expect(html).toContain("هذا الطلب قيد المراجعة");
     // لا تُقال جملة الاكتمال عن طلب وصوله موقوف
     expect(html).not.toContain("مشترياتك جاهزة الآن في مكتبتك");
+    // ولا يُدعى إلى مكتبة منتجاته موقوفة فيها، ولا تظهر علامة نجاح
+    expect(html).not.toContain('data-testid="go-library"');
+    expect(html).not.toContain("lucide-circle-check");
   });
 
   it("appears once every invoice has been checked", async () => {
