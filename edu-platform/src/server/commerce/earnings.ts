@@ -379,7 +379,7 @@ export async function listPayouts(teacherId: string, db: Db = sql) {
 /** رفض تسوية لسبب يخص المالك، والإجراء يحوّله إلى رسالة مفهومة */
 export class PayoutRefused extends Error {
   constructor(
-    public readonly reason: "over_balance" | "bank_details" | "already_voided" | "void_reason" | "request_mismatch",
+    public readonly reason: "over_balance" | "stale_form" | "bank_details" | "already_voided" | "void_reason" | "request_mismatch",
     public readonly payableFils = 0,
   ) {
     super(`PAYOUT_REFUSED_${reason}`);
@@ -387,10 +387,17 @@ export class PayoutRefused extends Error {
   }
 }
 
+/** كم تسوية سُجلت لهذا المعلم، الملغاة معها. النموذج يحملها، فتُعرف الصفحة التي فُتحت قبل تسوية أحدث */
+export async function teacherPayoutCount(teacherId: string, db: Db = sql): Promise<number> {
+  const [row] = await db<{ n: number }[]>`select count(*)::int as n from teacher_payouts where teacher_id = ${teacherId}`;
+  return row.n;
+}
+
 /**
  * تسجيل تسوية يدوية (تحويل بنكي/نقدي تم خارج المنصة) — للمالك فقط.
- * المبلغ فوق الرصيد المستحق الآن يُرفض ما لم يؤكده المالك صراحة، والفحص تحت قفل صف المعلم حتى لا تمر تسويتان معًا.
- * requestId يصدر مرة واحدة مع النموذج: نقرتان أو إعادة إرسال بعد انقطاع تصل إلى التسوية الأولى ولا تكتب ثانية.
+ * المبلغ فوق الرصيد المستحق الآن يُرفض دائمًا، بلا خانة تجاوز. الفحص كله داخل معاملة واحدة تحت قفل صف المعلم، فلا تمر تسويتان معًا.
+ * requestId يصدر مرة واحدة مع النموذج: نقرتان أو زر الرجوع أو إعادة إرسال بعد انقطاع تصل إلى التسوية الأولى ولا تكتب ثانية.
+ * payoutsSeen لتبويبين مفتوحين: لكل تبويب requestId مختلف، فالثاني يُرفض لأن تسوية سُجلت بعد أن فُتحت صفحته.
  */
 export async function recordPayout(input: {
   requestId: string;
@@ -402,7 +409,7 @@ export async function recordPayout(input: {
   paidAt?: Date;
   ownerId: string;
   ip?: string;
-  confirmOverBalance?: boolean;
+  payoutsSeen?: number;
 }): Promise<{ id: string; repeated: boolean }> {
   if (!Number.isInteger(input.amountFils) || input.amountFils <= 0) throw new Error("INVALID_AMOUNT");
   if (looksLikeBankDetails(input.reference) || looksLikeBankDetails(input.note)) throw new PayoutRefused("bank_details");
@@ -414,9 +421,9 @@ export async function recordPayout(input: {
       if (earlier.teacher_id !== input.teacherId || earlier.amount_fils !== input.amountFils) throw new PayoutRefused("request_mismatch");
       return { id: earlier.id, repeated: true };
     }
+    if (input.payoutsSeen !== undefined && input.payoutsSeen !== (await teacherPayoutCount(input.teacherId, tx))) throw new PayoutRefused("stale_form");
     const { balanceFils } = await teacherBalance(input.teacherId, {}, tx);
-    const overByFils = Math.max(0, input.amountFils - Math.max(balanceFils, 0));
-    if (overByFils > 0 && !input.confirmOverBalance) throw new PayoutRefused("over_balance", balanceFils);
+    if (input.amountFils > Math.max(balanceFils, 0)) throw new PayoutRefused("over_balance", balanceFils);
     const [row] = await tx<{ id: string }[]>`
       insert into teacher_payouts (teacher_id, amount_fils, method, reference, note, paid_at, created_by, request_id)
       values (${input.teacherId}, ${input.amountFils}, ${input.method}, ${input.reference}, ${input.note}, ${input.paidAt ?? new Date()}, ${input.ownerId}, ${input.requestId})
@@ -429,7 +436,7 @@ export async function recordPayout(input: {
         entityType: "teacher",
         entityId: input.teacherId,
         reason: input.note || null,
-        metadata: { payoutId: row.id, amountFils: input.amountFils, method: input.method, reference: input.reference, payableFils: balanceFils, overByFils },
+        metadata: { payoutId: row.id, amountFils: input.amountFils, method: input.method, reference: input.reference, payableFils: balanceFils },
         ip: input.ip,
       },
       tx,

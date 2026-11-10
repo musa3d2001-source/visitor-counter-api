@@ -7,6 +7,7 @@ import { hashPassword } from "@/server/auth/password-core";
 import { createSession, validateSessionToken } from "@/server/auth/session";
 import { closeDb, resetDb, sql } from "../helpers/db";
 import { createTeacher, createUser, TEST_PASSWORD, type TestTeacher } from "../helpers/factories";
+import { provenOwner } from "../helpers/step-up";
 
 const ctx = vi.hoisted(() => ({ user: null as unknown, session: null as unknown }));
 vi.mock("next/cache", () => ({ revalidatePath: () => {} }));
@@ -188,6 +189,7 @@ describe("the owner's reset of a teacher password", () => {
   it("ends in the secret, as the one-time panel expects to read it", async () => {
     const t = await teacherWith(TEST_PASSWORD);
     ctx.user = staffSession(ownerId, ownerEmail, "admin");
+    ctx.session = { user: ctx.user, sessionId: (await provenOwner({ id: ownerId, email: ownerEmail })).sessionId, mustChangePassword: false, needsTwoFactorEnrolment: false };
     const res = await resetPasswordAction(null, form({ teacherId: t.id, confirmReset: "on" }));
     expect(res?.ok).toBe(true);
     const secret = res?.message?.match(/:\s*(\S+)$/)?.[1];

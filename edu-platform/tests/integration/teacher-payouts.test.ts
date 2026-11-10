@@ -9,15 +9,16 @@ import { listTeachersAdmin } from "@/server/admin/teachers";
 import { applyAcceptedRefund } from "../helpers/payment-flow";
 import { closeDb, resetDb, sql } from "../helpers/db";
 import { createTeacher, createUser, createVideoProduct, type TestTeacher } from "../helpers/factories";
+import { provenOwner } from "../helpers/step-up";
 
-const ctx = vi.hoisted(() => ({ user: null as unknown }));
+const ctx = vi.hoisted(() => ({ user: null as unknown, sessionId: "" }));
 vi.mock("@/server/http", async (original) => ({ ...(await original<typeof import("@/server/http")>()), clientIp: async () => "192.0.2.71", userAgent: async () => "t" }));
 vi.mock("next/cache", () => ({ revalidatePath: () => {} }));
 vi.mock("next/navigation", async (original) => ({ ...(await original<typeof import("next/navigation")>()), useRouter: () => ({ refresh() {} }), usePathname: () => "/admin/earnings" }));
 vi.mock("@/server/auth/session", async (original) => ({
   ...(await original<typeof import("@/server/auth/session")>()),
   getCurrentUser: async () => ctx.user,
-  getCurrentSession: async () => (ctx.user ? { user: ctx.user, mustChangePassword: false, needsTwoFactorEnrolment: false } : null),
+  getCurrentSession: async () => (ctx.user ? { user: ctx.user, sessionId: ctx.sessionId, mustChangePassword: false, needsTwoFactorEnrolment: false } : null),
 }));
 
 const { recordPayoutAction, voidPayoutAction } = await import("@/app/admin/teachers/actions");
@@ -28,6 +29,7 @@ let owner: Awaited<ReturnType<typeof createUser>>;
 beforeAll(async () => {
   await resetDb();
   owner = await createUser({ role: "admin" });
+  ctx.sessionId = (await provenOwner(owner)).sessionId;
 });
 afterAll(async () => {
   await closeDb();
@@ -44,8 +46,8 @@ async function sale(teacher: TestTeacher, priceFils: number, ageDays = 0, isTest
   if (ageDays) await sql`update teacher_earnings set created_at = now() - make_interval(days => ${ageDays}) where order_id = ${order.id}`;
   return order;
 }
-const pay = (teacherId: string, amountFils: number, extra: { confirmOverBalance?: boolean; reference?: string; note?: string; requestId?: string } = {}) =>
-  recordPayout({ requestId: extra.requestId ?? randomUUID(), teacherId, amountFils, method: "bank_transfer", reference: extra.reference ?? "TRX-9", note: extra.note ?? "تسوية", ownerId: owner.id, confirmOverBalance: extra.confirmOverBalance }).then((r) => r.id);
+const pay = (teacherId: string, amountFils: number, extra: { reference?: string; note?: string; requestId?: string; payoutsSeen?: number } = {}) =>
+  recordPayout({ requestId: extra.requestId ?? randomUUID(), teacherId, amountFils, method: "bank_transfer", reference: extra.reference ?? "TRX-9", note: extra.note ?? "تسوية", ownerId: owner.id, payoutsSeen: extra.payoutsSeen }).then((r) => r.id);
 const refusal = async (p: Promise<unknown>) => {
   const err = await p.then(
     () => null,
@@ -133,19 +135,37 @@ describe("التسوية فوق الرصيد", () => {
     expect(await teacherBalance(t.id)).toMatchObject({ paidFils: 1000, balanceFils: 0 });
   });
 
-  it("goes through when confirmed, and the audit says by how much it was over", async () => {
+  it("has no way around the balance, and the audit records what was owed", async () => {
     const t = await createTeacher({ shareBps: 5000 });
     await sale(t, 2000, 8);
-    await pay(t.id, 1500, { confirmOverBalance: true });
-    expect((await teacherBalance(t.id)).balanceFils).toBe(-500);
+    expect((await refusal(pay(t.id, 1500))).payableFils).toBe(1000);
+    expect(await listPayouts(t.id)).toHaveLength(0);
+    await pay(t.id, 1000);
+    expect((await teacherBalance(t.id)).balanceFils).toBe(0);
     const [log] = await payoutAudit(t.id, "teacher.payout");
-    expect(log.metadata).toMatchObject({ amountFils: 1500, payableFils: 1000, overByFils: 500 });
+    expect(log.metadata).toMatchObject({ amountFils: 1000, payableFils: 1000 });
     expect(log.actor_id).toBe(owner.id);
+  });
+
+  it("a form opened before another payout is refused, while its own repeat still answers with the first", async () => {
+    const t = await createTeacher({ shareBps: 5000 });
+    await sale(t, 8000, 8);
+    const firstTab = randomUUID();
+    await pay(t.id, 1000, { requestId: firstTab, payoutsSeen: 0 });
+    // تبويب ثانٍ فُتح قبل التسوية الأولى
+    expect((await refusal(pay(t.id, 1000, { payoutsSeen: 0 }))).reason).toBe("stale_form");
+    expect(await listPayouts(t.id)).toHaveLength(1);
+    // زر الرجوع في التبويب الأول: طلب بالمعرّف نفسه، فلا يكتب ثانية ولا يرفض
+    await expect(pay(t.id, 1000, { requestId: firstTab, payoutsSeen: 0 })).resolves.toBeTruthy();
+    expect(await listPayouts(t.id)).toHaveLength(1);
+    // صفحة فُتحت بعد التسوية تعرف العدد الجديد
+    await pay(t.id, 1000, { payoutsSeen: 1 });
+    expect(await listPayouts(t.id)).toHaveLength(2);
   });
 
   it("a negative balance counts in full against a later payout", async () => {
     const t = await createTeacher({ shareBps: 5000 });
-    await pay(t.id, 100, { confirmOverBalance: true });
+    await sql`insert into teacher_payouts (teacher_id, amount_fils, reference, created_by) values (${t.id}, 100, 'قديمة', ${owner.id})`;
     const err = await refusal(pay(t.id, 1));
     expect(err.payableFils).toBe(-100);
   });
@@ -206,7 +226,7 @@ describe("التسوية لا تُسجل مرتين", () => {
     const t = await createTeacher({ shareBps: 5000 });
     await sale(t, 8000, 8);
     ctx.user = { id: owner.id, email: owner.email, fullName: "المالك", phone: null, role: "admin", gradeId: null, isActive: true };
-    const fields = { requestId: randomUUID(), teacherId: t.id, amount: "1.000", method: "cash", reference: "", reason: "تسوية" };
+    const fields = { requestId: randomUUID(), payoutsSeen: "0", teacherId: t.id, amount: "1.000", method: "cash", reference: "", reason: "تسوية" };
     expect(await recordPayoutAction(null, form(fields))).toMatchObject({ ok: true, message: "تم تسجيل التسوية" });
     expect((await recordPayoutAction(null, form(fields)))?.message).toContain("ولم تُسجل مرة ثانية");
     expect(await listPayouts(t.id)).toHaveLength(1);
@@ -230,11 +250,19 @@ describe("التسوية لا تُسجل مرتين", () => {
     expect(await listPayouts(t.id)).toHaveLength(1);
   });
 
+  it("the form cannot be sent without the count it was opened with", async () => {
+    const t = await createTeacher({ shareBps: 5000 });
+    await sale(t, 8000, 8);
+    ctx.user = { id: owner.id, email: owner.email, fullName: "المالك", phone: null, role: "admin", gradeId: null, isActive: true };
+    expect((await recordPayoutAction(null, form({ requestId: randomUUID(), teacherId: t.id, amount: "1.000", method: "cash", reason: "تسوية" })))?.error).toContain("حدّث الصفحة");
+    expect(await listPayouts(t.id)).toHaveLength(0);
+  });
+
   it("the form cannot be sent without a request id", async () => {
     const t = await createTeacher({ shareBps: 5000 });
     await sale(t, 8000, 8);
     ctx.user = { id: owner.id, email: owner.email, fullName: "المالك", phone: null, role: "admin", gradeId: null, isActive: true };
-    expect((await recordPayoutAction(null, form({ teacherId: t.id, amount: "1.000", method: "cash", reason: "تسوية" })))?.error).toContain("حدّث الصفحة");
+    expect((await recordPayoutAction(null, form({ payoutsSeen: "0", teacherId: t.id, amount: "1.000", method: "cash", reason: "تسوية" })))?.error).toContain("حدّث الصفحة");
     expect(await listPayouts(t.id)).toHaveLength(0);
   });
 
@@ -293,7 +321,7 @@ describe("إلغاء التسوية", () => {
     const id = await pay(t.id, 100);
     ctx.user = { id: t.user!.id, email: t.user!.email, fullName: "معلم", phone: null, role: "teacher", gradeId: null, isActive: true };
     expect((await voidPayoutAction(null, form({ payoutId: id, reason: "محاولة" })))?.ok).toBeFalsy();
-    expect((await recordPayoutAction(null, form({ requestId: randomUUID(), teacherId: t.id, amount: "0.100", method: "cash", reason: "محاولة" })))?.ok).toBeFalsy();
+    expect((await recordPayoutAction(null, form({ requestId: randomUUID(), payoutsSeen: "1", teacherId: t.id, amount: "0.100", method: "cash", reason: "محاولة" })))?.ok).toBeFalsy();
     expect((await teacherBalance(t.id)).paidFils).toBe(100);
     expect(await listPayouts(t.id)).toHaveLength(1);
   });
@@ -302,6 +330,15 @@ describe("إلغاء التسوية", () => {
 describe("نموذج التسوية في صفحة المعلم", () => {
   const html = async (id: string) => renderToStaticMarkup(await TeacherAdminPage({ params: Promise.resolve({ id }), searchParams: Promise.resolve({}) }));
   const requestIdIn = (markup: string) => /name="requestId" value="([0-9a-f-]{36})"/.exec(markup)?.[1];
+
+  it("carries how many payouts the page knew about, and offers no way past the balance", async () => {
+    const t = await createTeacher({ shareBps: 5000 });
+    await sale(t, 8000, 8);
+    await pay(t.id, 1000);
+    const markup = await html(t.id);
+    expect(markup).toContain('name="payoutsSeen" value="1"');
+    expect(markup).not.toContain("confirmOverBalance");
+  });
 
   it("each render carries a new request id, so a second real payout is never taken for a repeat", async () => {
     const t = await createTeacher({ shareBps: 5000 });
@@ -314,18 +351,17 @@ describe("نموذج التسوية في صفحة المعلم", () => {
 });
 
 describe("الإجراء على الخادم", () => {
-  it("refuses an amount over the balance from a crafted request and asks for the confirmation", async () => {
+  it("refuses an amount over the balance from a crafted request, even carrying the old confirmation", async () => {
     const t = await createTeacher({ shareBps: 5000 });
     await sale(t, 2000, 8);
     const requestId = randomUUID();
-    const res = await recordPayoutAction(null, form({ requestId, teacherId: t.id, amount: "5.000", method: "bank_transfer", reference: "A1", reason: "تسوية" }));
+    const res = await recordPayoutAction(null, form({ requestId, payoutsSeen: "0", teacherId: t.id, amount: "5.000", method: "bank_transfer", reference: "A1", reason: "تسوية" }));
     expect(res?.error).toContain("1.000");
-    expect(res?.error).toContain("خانة التأكيد");
     expect(await listPayouts(t.id)).toHaveLength(0);
-    // الرفض لم يسجل شيئًا، فالنموذج نفسه يكمل بعد التأشير
-    const ok = await recordPayoutAction(null, form({ requestId, teacherId: t.id, amount: "5.000", method: "bank_transfer", reference: "A1", reason: "تسوية", confirmOverBalance: "on" }));
-    expect(ok?.ok).toBe(true);
-    expect((await teacherBalance(t.id)).balanceFils).toBe(-4000);
+    const crafted = await recordPayoutAction(null, form({ requestId, payoutsSeen: "0", teacherId: t.id, amount: "5.000", method: "bank_transfer", reference: "A1", reason: "تسوية", confirmOverBalance: "on" }));
+    expect(crafted?.ok).toBeFalsy();
+    expect(await listPayouts(t.id)).toHaveLength(0);
+    expect((await teacherBalance(t.id)).balanceFils).toBe(1000);
   });
 
   it("void through the action restores the balance; a garbage id is refused", async () => {

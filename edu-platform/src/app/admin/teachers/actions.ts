@@ -7,9 +7,11 @@ import type { ActionState } from "@/lib/action-state";
 import { emailSchema, fieldErrors, fullNameSchema } from "@/lib/validation";
 import { filsToKwdString, parseKwdToFils } from "@/lib/money";
 import { AdminError, adminAction, bool, int, isUuid, str } from "@/server/admin/common";
+import { assertFreshProof } from "@/server/auth/step-up";
 import {
   createTeacher,
   enableTeacherAccount,
+  getTeacherAdmin,
   resetTeacherPassword,
   setTeacherAccountActive,
   setTeacherCanUpload,
@@ -76,7 +78,9 @@ function parseTeacher(fd: FormData): TeacherInput {
 export async function createTeacherAction(_prev: ActionState, fd: FormData): Promise<ActionState> {
   let id: string | null = null;
   const res = await adminAction(async ({ adminId, ip }) => {
-    id = await createTeacher(parseTeacher(fd), adminId, ip);
+    const input = parseTeacher(fd);
+    if (input.revenueShareBps !== null) await assertFreshProof({ adminId, ip, command: "teacher.share" });
+    id = await createTeacher(input, adminId, ip);
   });
   if (id) {
     revalidatePath("/admin/teachers");
@@ -88,7 +92,10 @@ export async function createTeacherAction(_prev: ActionState, fd: FormData): Pro
 export async function updateTeacherAction(id: string, _prev: ActionState, fd: FormData): Promise<ActionState> {
   return adminAction(async ({ adminId, ip }) => {
     if (!isUuid(id)) throw new AdminError("المعلم غير موجود");
-    await updateTeacher(id, parseTeacher(fd), adminId, ip);
+    const input = parseTeacher(fd);
+    const current = await getTeacherAdmin(id);
+    if (current && current.revenue_share_bps !== input.revenueShareBps) await assertFreshProof({ adminId, ip, command: "teacher.share" });
+    await updateTeacher(id, input, adminId, ip);
     revalidatePath(`/admin/teachers/${id}`);
     revalidatePath("/admin/teachers");
     revalidatePath("/", "layout");
@@ -104,6 +111,7 @@ export async function enableAccountAction(_prev: ActionState, fd: FormData): Pro
     if (!isUuid(id)) throw new AdminError("طلب غير صالح");
     const parsed = accountSchema.safeParse({ email: str(fd, "email"), fullName: str(fd, "fullName") });
     if (!parsed.success) throw new AdminError("راجع البيانات", fieldErrors(parsed.error));
+    await assertFreshProof({ adminId, ip, command: "teacher.account_create" });
     const res = await enableTeacherAccount(id, { ...parsed.data, confirmLinkExisting: bool(fd, "confirmLinkExisting") }, adminId, ip);
     // لا نعيد تحميل الصفحة هنا حتى تبقى كلمة المرور ظاهرة للمالك (يحدّثها زر «تم»)
     const opening = res.linkedExisting
@@ -118,6 +126,7 @@ export async function resetPasswordAction(_prev: ActionState, fd: FormData): Pro
     const id = str(fd, "teacherId");
     if (!isUuid(id)) throw new AdminError("طلب غير صالح");
     if (!bool(fd, "confirmReset")) throw new AdminError("أكّد إعادة التعيين أولًا، فهي تُخرج المعلم من كل أجهزته");
+    await assertFreshProof({ adminId, ip, command: "teacher.account_reset" });
     const password = await resetTeacherPassword(id, adminId, ip);
     // لا نعيد تحميل الصفحة هنا حتى تبقى كلمة المرور ظاهرة للمالك (يحدّثها زر «تم»)
     return { ok: true, message: `تعمل مرة واحدة خلال ٢٤ ساعة، ثم يختار المعلم كلمته الخاصة. كلمة المرور المؤقتة، انسخها الآن ولن تظهر مرة أخرى: ${password}` };
@@ -128,6 +137,7 @@ export async function switchToManagedAction(_prev: ActionState, fd: FormData): P
   return adminAction(async ({ adminId, ip }) => {
     const id = str(fd, "teacherId");
     if (!isUuid(id)) throw new AdminError("طلب غير صالح");
+    await assertFreshProof({ adminId, ip, command: "teacher.account_remove" });
     await switchToManaged(id, adminId, ip);
     revalidatePath(`/admin/teachers/${id}`);
     revalidatePath("/admin/teachers");
@@ -142,6 +152,7 @@ export async function setAccountActiveAction(_prev: ActionState, fd: FormData): 
     if (!isUuid(id)) throw new AdminError("طلب غير صالح");
     if (reason.length < 3) throw new AdminError("اكتب سبب الإجراء");
     const active = str(fd, "active") === "1";
+    await assertFreshProof({ adminId, ip, command: "teacher.account_active" });
     await setTeacherAccountActive(id, active, adminId, reason, ip);
     revalidatePath(`/admin/teachers/${id}`);
     revalidatePath("/admin/teachers");
@@ -182,10 +193,13 @@ export async function recordPayoutAction(_prev: ActionState, fd: FormData): Prom
     const reference = str(fd, "reference").slice(0, 120);
     const note = str(fd, "reason").slice(0, 500);
     const requestId = str(fd, "requestId");
-    if (!isUuid(requestId)) throw new AdminError("حدّث الصفحة ثم سجّل التسوية من جديد");
+    const seenField = str(fd, "payoutsSeen");
+    const payoutsSeen = /^\d{1,6}$/.test(seenField) ? Number(seenField) : -1;
+    if (!isUuid(requestId) || payoutsSeen < 0) throw new AdminError("حدّث الصفحة ثم سجّل التسوية من جديد");
+    await assertFreshProof({ adminId, ip, command: "payout.record" });
     let repeated = false;
     try {
-      ({ repeated } = await recordPayout({ requestId, teacherId: id, amountFils: amount, method: method as "bank_transfer" | "cash" | "other", reference, note, ownerId: adminId, ip, confirmOverBalance: bool(fd, "confirmOverBalance") }));
+      ({ repeated } = await recordPayout({ requestId, teacherId: id, amountFils: amount, method: method as "bank_transfer" | "cash" | "other", reference, note, ownerId: adminId, ip, payoutsSeen }));
     } catch (err) {
       throw payoutError(err);
     }
@@ -199,6 +213,7 @@ export async function voidPayoutAction(_prev: ActionState, fd: FormData): Promis
   return adminAction(async ({ adminId, ip }) => {
     const id = str(fd, "payoutId");
     if (!isUuid(id)) throw new AdminError("طلب غير صالح");
+    await assertFreshProof({ adminId, ip, command: "payout.void" });
     let teacherId: string;
     try {
       teacherId = await voidPayout({ payoutId: id, reason: str(fd, "reason"), ownerId: adminId, ip });
@@ -214,8 +229,9 @@ export async function voidPayoutAction(_prev: ActionState, fd: FormData): Promis
 function payoutError(err: unknown) {
   if (!(err instanceof PayoutRefused)) return err;
   if (err.reason === "over_balance") {
-    return new AdminError(`المبلغ أكبر من الرصيد المستحق الآن (${filsToKwdString(Math.max(err.payableFils, 0))} د.ك). راجع المبلغ، أو أشّر خانة التأكيد لتسجيله دفعة زائدة.`);
+    return new AdminError(`المبلغ أكبر من الرصيد المستحق الآن (${filsToKwdString(Math.max(err.payableFils, 0))} د.ك). سجّل مبلغًا لا يتجاوزه.`);
   }
+  if (err.reason === "stale_form") return new AdminError("سُجلت تسوية أخرى لهذا المعلم بعد فتح هذه الصفحة، ولم تُسجل هذه. حدّث الصفحة وراجع الرصيد.");
   if (err.reason === "bank_details") return new AdminError("لا تكتب الآيبان أو بيانات الحساب البنكي هنا، فالمنصة لا تحفظها.");
   if (err.reason === "void_reason") return new AdminError("اكتب سبب الإلغاء");
   if (err.reason === "request_mismatch") return new AdminError("حدّث الصفحة ثم سجّل التسوية من جديد");

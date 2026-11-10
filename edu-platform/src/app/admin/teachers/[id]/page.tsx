@@ -381,19 +381,18 @@ export default async function TeacherAdminPage({ params, searchParams }: { param
           </p>
           <ConfirmButton
             action={recordPayoutAction}
-            hidden={{ teacherId: teacher.id, requestId: randomUUID() }}
+            hidden={{ teacherId: teacher.id, requestId: randomUUID(), payoutsSeen: String(payouts.length) }}
             label="تسجيل تسوية يدوية"
             icon={<Banknote aria-hidden />}
             variant="primary"
             size="md"
             title="تسجيل تسوية للمعلم"
-            description={`سجّل مبلغًا دفعته للمعلم خارج المنصة (تحويل بنكي أو نقدًا). لا تتم أي تحويلات تلقائية. الرصيد المستحق الآن ${filsToKwdString(Math.max(balance.balanceFils, 0))} د.ك، ولا يشمل ${filsToKwdString(balance.heldFils)} د.ك قيد فترة الاسترداد. لا تكتب الآيبان أو بيانات الحساب هنا، فالمنصة لا تحفظها.`}
+            description={`سجّل مبلغًا دفعته للمعلم خارج المنصة (تحويل بنكي أو نقدًا). لا تتم أي تحويلات تلقائية. الرصيد المستحق الآن ${filsToKwdString(Math.max(balance.balanceFils, 0))} د.ك، ولا يشمل ${filsToKwdString(balance.heldFils)} د.ك قيد فترة الاسترداد. المبلغ لا يتجاوز هذا الرصيد. لا تكتب الآيبان أو بيانات الحساب هنا، فالمنصة لا تحفظها.`}
             selectField={{ name: "method", label: "طريقة الدفع", options: Object.entries(METHOD_LABELS).map(([value, label]) => ({ value, label })) }}
             fields={[
               { name: "amount", label: "المبلغ (د.ك)", placeholder: filsToKwdString(Math.max(balance.balanceFils, 0)), ltr: true, testId: "payout-amount" },
               { name: "reference", label: "المرجع (رقم عملية التحويل)", ltr: true, testId: "payout-reference" },
             ]}
-            checkbox={{ name: "confirmOverBalance", label: "إن كان المبلغ أكبر من الرصيد المستحق الآن، أؤكد تسجيله دفعة زائدة، ويصبح رصيد المعلم سالبًا بالفرق.", testId: "payout-over-balance" }}
             requireReason
             reasonLabel="ملاحظة (إلزامي)"
             confirmLabel="تسجيل التسوية"
