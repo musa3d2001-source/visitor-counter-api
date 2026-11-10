@@ -1,6 +1,6 @@
 "use server";
 
-import { revalidatePath } from "next/cache";
+import { revalidatePath } from "@/server/platform/revalidate";
 import type { ActionState } from "@/lib/action-state";
 import { AdminError, adminAction, isUuid, str } from "@/server/admin/common";
 import { recheckFile, regenerateBadPreviews, scanUncheckedFiles } from "@/server/admin/content-health";

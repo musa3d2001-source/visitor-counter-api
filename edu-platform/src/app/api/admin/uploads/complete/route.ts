@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { revalidatePath } from "next/cache";
+import { revalidatePath } from "@/server/platform/revalidate";
 import { isSameOriginRequest } from "@/server/http";
 import { getActor, PermissionError } from "@/server/auth/permissions";
 import { AdminError } from "@/server/admin/common";

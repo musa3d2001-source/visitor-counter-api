@@ -1,6 +1,6 @@
 "use server";
 
-import { revalidatePath } from "next/cache";
+import { revalidatePath } from "@/server/platform/revalidate";
 import type { ActionState } from "@/lib/action-state";
 import { AdminError, bool, staffAction } from "@/server/admin/common";
 import { acceptTeacherAgreement } from "@/server/admin/teacher-agreement";

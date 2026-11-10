@@ -1,6 +1,6 @@
 "use server";
 
-import { revalidatePath } from "next/cache";
+import { revalidatePath } from "@/server/platform/revalidate";
 import { redirect } from "next/navigation";
 import type { ActionState } from "@/lib/action-state";
 import { formValues } from "@/lib/action-state";

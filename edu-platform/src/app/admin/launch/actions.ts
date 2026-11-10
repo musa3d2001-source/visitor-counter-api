@@ -1,6 +1,6 @@
 "use server";
 
-import { revalidatePath } from "next/cache";
+import { revalidatePath } from "@/server/platform/revalidate";
 import type { ActionState } from "@/lib/action-state";
 import { isManualKey } from "@/lib/launch";
 import { AdminError, adminAction, str } from "@/server/admin/common";

@@ -1,6 +1,6 @@
 "use server";
 
-import { revalidatePath } from "next/cache";
+import { revalidatePath } from "@/server/platform/revalidate";
 import type { ActionState } from "@/lib/action-state";
 import { describeSettingsChanges, readSettings, saveSettings, settingsChangeNeedsProof, settingsSchema, SETTINGS_LABELS, type PlatformSettings } from "@/server/platform/settings";
 import { audit } from "@/server/platform/audit";
