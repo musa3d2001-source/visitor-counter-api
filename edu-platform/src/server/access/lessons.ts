@@ -1,6 +1,6 @@
 import "server-only";
 import { sql } from "../db";
-import { hasProductAccess, isTeacherOfProduct } from "./entitlements";
+import { hasProductAccess, isTeacherOfProduct, ownedCte } from "./entitlements";
 import { EMBED_TOKEN_TTL_SECONDS, signedEmbedUrl } from "../video/bunny";
 import { closedVideoProductIds } from "../video/policy";
 import { getSettings } from "../platform/settings";
@@ -31,8 +31,9 @@ export type LessonAccess =
  *  - الدرس المجاني: لأي زائر إن كان المنتج منشورًا والدرس جاهزًا والفيديو غير مغلق (انظر video/policy)
  *  - غير ذلك: لمن يملك المنتج (مباشرة أو عبر باقة/دورة) وصلاحيته غير منتهية
  * الدرس غير الجاهز (قيد المعالجة) لا يُعرض للطلاب. إغلاق الفيديو لا يمس حق من اشترى.
+ * ownedProductIds: ما قرأه هذا الطلب نفسه من قاعدة البيانات للتو (readWatchContext)، فلا يُقرأ مرتين. لا يُمرر من أي ذاكرة.
  */
-export async function checkLessonAccess(lessonId: string, user: { id: string; role: string } | null): Promise<LessonAccess> {
+export async function checkLessonAccess(lessonId: string, user: { id: string; role: string } | null, known?: { ownedProductIds: ReadonlySet<string> }): Promise<LessonAccess> {
   if (!isUuid(lessonId)) return { ok: false, reason: "not_found" };
   const [l] = await sql<LessonRow[]>`
     select l.id, l.product_id, l.title, l.provider, l.video_ref, l.mime_type, l.size_bytes, l.duration_seconds,
@@ -46,8 +47,36 @@ export async function checkLessonAccess(lessonId: string, user: { id: string; ro
   if (l.processing_status !== "ready") return { ok: false, reason: "not_ready" };
   if (l.is_free_preview && l.product_status === "published" && !(await closedVideoProductIds(sql, [l.product_id], await getSettings())).size) return { ok: true, lesson: l, via: "free" };
   if (!user) return { ok: false, reason: "unauthenticated" };
-  if (await hasProductAccess(user.id, l.product_id)) return { ok: true, lesson: l, via: "owned" };
+  if (known ? known.ownedProductIds.has(l.product_id) : await hasProductAccess(user.id, l.product_id)) return { ok: true, lesson: l, via: "owned" };
   return { ok: false, reason: "forbidden" };
+}
+
+export type WatchContext = {
+  product: { id: string; slug: string; title: string; status: string };
+  /** المالك، أو معلم هذا المنتج نفسه */
+  staff: boolean;
+  owned: Set<string>;
+};
+
+/**
+ * ما يقرر الوصول إلى صفحة المشاهدة، بأمر واحد ومن قاعدة البيانات دائمًا: حالة المنتج، وهل المشاهد معلمه، وما يملكه الآن.
+ * قوائم الدروس وبياناتها تأتي بعده، أما هذا فلا يمر بأي ذاكرة بين الطلبات.
+ */
+export async function readWatchContext(productId: string, user: { id: string; role: string } | null): Promise<WatchContext | null> {
+  const userId = user?.id ?? null;
+  const [row] = await sql<{ id: string; slug: string; title: string; status: string; teaches: boolean; owned: string[] }[]>`
+    with recursive ${ownedCte(sql, userId)}
+    select p.id, p.slug, p.title, p.status,
+      exists (select 1 from teachers t where t.id = p.teacher_id and t.user_id = ${userId} and t.mode = 'self_managed') as teaches,
+      coalesce((select json_agg(distinct product_id) from owned), '[]'::json) as owned
+    from products p where p.id = ${productId}
+  `;
+  if (!row) return null;
+  return {
+    product: { id: row.id, slug: row.slug, title: row.title, status: row.status },
+    staff: user?.role === "admin" || (user?.role === "teacher" && row.teaches),
+    owned: new Set(row.owned),
+  };
 }
 
 export type Playback =

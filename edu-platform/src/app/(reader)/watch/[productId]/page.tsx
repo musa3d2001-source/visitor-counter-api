@@ -5,9 +5,10 @@ import { headers } from "next/headers";
 import { after } from "next/server";
 import { ArrowRight, ChevronLeft, ChevronRight, Clock, FileText, Keyboard, ListVideo, LogIn, ShoppingCart, Sparkles, UserRound } from "lucide-react";
 import { getCurrentUser } from "@/server/auth/session";
-import { accessibleProductIds, isTeacherOfProduct } from "@/server/access/entitlements";
-import { checkLessonAccess, playbackFor } from "@/server/access/lessons";
-import { getPlaylist, getProductBySlug, getProductFilesInfo, type LessonInfo } from "@/server/catalog/queries";
+import { checkLessonAccess, playbackFor, readWatchContext } from "@/server/access/lessons";
+import * as live from "@/server/catalog/queries";
+import type { LessonInfo } from "@/server/catalog/queries";
+import * as cached from "@/server/catalog/public-data";
 import { getSettings } from "@/server/platform/settings";
 import { sql } from "@/server/db";
 import { closedVideoProductIds } from "@/server/video/policy";
@@ -35,45 +36,52 @@ export default async function WatchPage({ params, searchParams }: { params: Prom
   const { productId } = await params;
   const sp = await searchParams;
   if (!isUuid(productId)) notFound();
-  const [product] = await sql<{ id: string; slug: string; title: string; status: string }[]>`
-    select id, slug, title, status from products where id = ${productId}
-  `;
-  if (!product) notFound();
-
   const user = await getCurrentUser();
-  const staff = user?.role === "admin" || (user?.role === "teacher" && (await isTeacherOfProduct(user.id, product.id)));
-  const owned = user ? await accessibleProductIds(user.id) : new Set<string>();
+  // ما يقرر الوصول يُقرأ من قاعدة البيانات في كل طلب
+  const context = await readWatchContext(productId, user);
+  if (!context) notFound();
+  const { product, staff, owned } = context;
   const ownsRoot = owned.has(product.id);
   // المنتجات غير المنشورة: للمالك والمعلم المسؤول، أو لمن اشتراها سابقًا (مخفية لاحقًا)
   if (product.status !== "published" && !staff && !ownsRoot) notFound();
 
-  const settings = await getSettings();
-  const playlist = await getPlaylist(product.id, { includeUnready: staff });
+  // قائمة الدروس وبيانات العرض لمنتج منشور عامة، فتبقى في الذاكرة وتغيير الدرس لا يعيد قراءتها. فتح الدرس نفسه يقرره checkLessonAccess
+  const publicView = !staff && product.status === "published";
+  const showFiles = ownsRoot || staff;
+  const [playlist, listedDetail, productFiles] = await Promise.all([
+    publicView ? cached.getPlaylist(product.id) : live.getPlaylist(product.id, { includeUnready: staff }),
+    publicView ? cached.getProductBySlug(product.slug) : live.getProductBySlug(product.slug, { includeUnpublished: true }),
+    !showFiles ? Promise.resolve([]) : publicView ? cached.getProductFilesInfo(product.id) : live.getProductFilesInfo(product.id),
+  ]);
   const lessons: LessonInfo[] = playlist.flatMap((g) => g.lessons);
-  // بيانات العرض فقط (المادة والصف والمعلم والسعر) — بعد اجتياز فحص الظهور أعلاه
-  const detail = await getProductBySlug(product.slug, { includeUnpublished: true });
-  const files = ownsRoot || staff ? (await getProductFilesInfo(product.id)).filter((f) => f.kind === "main") : [];
+  // بيانات العرض فقط (المادة والصف والمعلم والسعر) — بعد اجتياز فحص الظهور أعلاه. الصف أو المرحلة قد يكونان أُخفيا والمنتج منشور
+  const detail = listedDetail ?? (await live.getProductBySlug(product.slug, { includeUnpublished: true }));
+  const files = productFiles.filter((f) => f.kind === "main");
 
-  // الإغلاق يوقف البيع والمعاينات فقط: من يملك درسًا يكمله، والمالك والمعلم يراجعان المحتوى
-  const videoClosed = !staff && (await closedVideoProductIds(sql, [product.id], settings)).has(product.id);
-  const freeOpen = (l: LessonInfo) => l.isFreePreview && !videoClosed;
-  const canOpen = (l: LessonInfo) => staff || owned.has(l.productId) || freeOpen(l);
-
-  const progress = user && lessons.length
-    ? await sql<{ lesson_id: string; position_seconds: number; completed: boolean; updated_at: Date }[]>`
+  // الإغلاق يوقف البيع والمعاينات فقط: من يملك درسًا يكمله، والمالك والمعلم يراجعان المحتوى. من يملك كل الدروس لا يتأثر فلا داعي لفحصه
+  const ownsEveryLesson = lessons.length > 0 && lessons.every((l) => owned.has(l.productId));
+  const closedCheck = staff || ownsEveryLesson ? Promise.resolve(false) : getSettings().then((settings) => closedVideoProductIds(sql, [product.id], settings)).then((ids) => ids.has(product.id));
+  const progressRead = user && lessons.length
+    ? sql<{ lesson_id: string; position_seconds: number; completed: boolean; updated_at: Date }[]>`
         select lesson_id, position_seconds, completed, updated_at from lesson_progress
         where user_id = ${user.id} and lesson_id = any(${lessons.map((l) => l.id)}::uuid[])
         order by updated_at desc
       `
-    : [];
+    : Promise.resolve([]);
+  // عند تغيير الدرس يكون معروفًا من الرابط، ففحصه يجري مع القراءتين لا بعدهما
+  const requested = lessons.find((l) => l.id === sp.lesson) ?? null;
+  const knownOwnership = { ownedProductIds: owned };
+  const [videoClosed, progress, requestedAccess] = await Promise.all([closedCheck, progressRead, requested ? checkLessonAccess(requested.id, user, knownOwnership) : Promise.resolve(null)]);
+  const freeOpen = (l: LessonInfo) => l.isFreePreview && !videoClosed;
+  const canOpen = (l: LessonInfo) => staff || owned.has(l.productId) || freeOpen(l);
   const progressBy = new Map(progress.map((p) => [p.lesson_id, p]));
 
   // اختيار الدرس: المطلوب، أو آخر درس شاهده الطالب، أو أول درس متاح
-  let selected = lessons.find((l) => l.id === sp.lesson) ?? null;
+  let selected = requested;
   if (!selected && progress.length) selected = lessons.find((l) => l.id === progress[0].lesson_id && canOpen(l)) ?? null;
   if (!selected) selected = lessons.find(canOpen) ?? lessons[0] ?? null;
 
-  const access = selected ? await checkLessonAccess(selected.id, user) : null;
+  const access = selected ? (selected === requested ? requestedAccess : await checkLessonAccess(selected.id, user, knownOwnership)) : null;
   const idx = selected ? lessons.findIndex((l) => l.id === selected!.id) : -1;
   const next = idx >= 0 ? lessons.slice(idx + 1).find(canOpen) ?? null : null;
   const prev = idx > 0 ? [...lessons.slice(0, idx)].reverse().find(canOpen) ?? null : null;
