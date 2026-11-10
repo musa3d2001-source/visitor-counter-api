@@ -5,7 +5,7 @@ import { mkdir, readFile, rm, stat, writeFile, open } from "node:fs/promises";
 import { dirname, join, resolve, sep } from "node:path";
 import { Readable } from "node:stream";
 import { env } from "../env";
-import { assertSafeKey, type Bucket, type StorageDriver, type UploadTarget } from "./types";
+import { assertSafeKey, StorageNotFoundError, type Bucket, type StorageDriver, type UploadTarget } from "./types";
 
 /**
  * تخزين محلي على القرص — للتطوير والاختبار أو الاستضافة على خادم خاص.
@@ -82,6 +82,21 @@ export const localDriver: StorageDriver = {
   },
   async remove(bucket, key) {
     await rm(pathFor(bucket, key), { force: true });
+  },
+  async removeMany(bucket, keys) {
+    for (const key of keys) await rm(pathFor(bucket, key), { force: true });
+  },
+  async readStream(bucket, key) {
+    const p = pathFor(bucket, key);
+    let size: number;
+    try {
+      size = (await stat(p)).size;
+    } catch (err) {
+      const code = (err as NodeJS.ErrnoException).code;
+      if (code === "ENOENT" || code === "ENOTDIR") throw new StorageNotFoundError();
+      throw err;
+    }
+    return { stream: Readable.toWeb(createReadStream(p)) as unknown as ReadableStream<Uint8Array>, size };
   },
   async createUploadTarget(bucket, key, contentType, maxBytes, userId): Promise<UploadTarget> {
     const token = createLocalUploadToken({ b: bucket, k: key, t: contentType, m: maxBytes, u: userId, e: Date.now() + 30 * 60_000 });

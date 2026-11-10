@@ -188,6 +188,12 @@ export type StorageFetchLimits = {
 
 export const STORAGE_LIMITS: StorageFetchLimits = { controlMs: 10_000, transferMs: 60_000, idleMs: 15_000, maxDownloadBytes: 128 * 1024 * 1024 };
 
+/**
+ * بث ملف من التخزين إلى المتصفح (نسخة PDF مختومة أو الأصل للمالك): البث يسير بسرعة هاتف الطالب،
+ * فالمهلة الكلية قريبة من مهلة الدالة (300 ثانية) لا من مهلة النقل الداخلي، ويُقطع إن توقف 30 ثانية.
+ */
+export const DELIVERY_STREAM_LIMITS: OutboundOptions = { timeoutMs: 280_000, maxBytes: 128 * 1024 * 1024, idleMs: 30_000 };
+
 const CONTROL_BYTES = 1024 * 1024;
 
 /** هل الطلب تنزيل لملف كائن؟ GET على /object/... عدا info و sign و list */

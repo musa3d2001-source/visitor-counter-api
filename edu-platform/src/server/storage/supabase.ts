@@ -1,8 +1,8 @@
 import "server-only";
 import { createClient, type SupabaseClient } from "@supabase/supabase-js";
 import { env } from "../env";
-import { boundedFetch, STORAGE_LIMITS, storageFetch } from "../outbound";
-import { assertSafeKey, type Bucket, type StorageDriver, type UploadTarget } from "./types";
+import { boundedFetch, DELIVERY_STREAM_LIMITS, STORAGE_LIMITS, storageFetch } from "../outbound";
+import { assertSafeKey, StorageNotFoundError, type Bucket, type StorageDriver, type UploadTarget } from "./types";
 
 /**
  * Supabase Storage — يُستخدم من الخادم فقط بمفتاح service role.
@@ -80,6 +80,32 @@ export const supabaseDriver: StorageDriver = {
   async remove(bucket, key) {
     assertSafeKey(key);
     await sb().storage.from(bucketName(bucket)).remove([key]);
+  },
+  async removeMany(bucket, keys) {
+    if (keys.length === 0) return;
+    for (const key of keys) assertSafeKey(key);
+    const { error } = await sb().storage.from(bucketName(bucket)).remove(keys);
+    if (error) throw new Error(`storage remove failed: ${error.message}`);
+  },
+  async readStream(bucket, key) {
+    assertSafeKey(key);
+    // رابط موقّع قصير يستعمله الخادم وحده ولا يصل إلى المتصفح، ثم البث بمهلة التسليم لا مهلة التحكم
+    const { data, error } = await sb().storage.from(bucketName(bucket)).createSignedUrl(key, 60);
+    if (error || !data) {
+      if (error && isNotFoundError(error as { status?: unknown; statusCode?: unknown })) throw new StorageNotFoundError();
+      throw new Error(`storage sign failed: ${error?.message}`);
+    }
+    const res = await boundedFetch(data.signedUrl, undefined, DELIVERY_STREAM_LIMITS);
+    if (res.status === 404) {
+      await res.body?.cancel().catch(() => {});
+      throw new StorageNotFoundError();
+    }
+    if (!res.ok || !res.body) {
+      await res.body?.cancel().catch(() => {});
+      throw new Error(`storage stream failed: ${res.status}`);
+    }
+    const size = Number(res.headers.get("content-length"));
+    return { stream: res.body, size: Number.isFinite(size) && size > 0 ? size : null };
   },
   async createUploadTarget(bucket, key, contentType): Promise<UploadTarget> {
     assertSafeKey(key);

@@ -308,7 +308,7 @@ export async function getLibrary(userId: string): Promise<{ items: LibraryItem[]
 }
 
 export type FileAccess =
-  | { ok: true; file: { id: string; productId: string; storageKey: string; title: string; kind: "main" | "preview"; sizeBytes: number; checkStatus: string }; product: { id: string; title: string; isDownloadable: boolean; status: string } }
+  | { ok: true; file: { id: string; productId: string; storageKey: string; title: string; kind: "main" | "preview"; sizeBytes: number; pageCount: number | null; checkStatus: string }; product: { id: string; title: string; isDownloadable: boolean; status: string } }
   | { ok: false; reason: "not_found" | "unauthenticated" | "forbidden" };
 
 /**
@@ -327,13 +327,14 @@ export async function checkFileAccess(fileId: string, user: { id: string; role: 
       kind: "main" | "preview";
       check_status: string;
       size_bytes: string | number;
+      page_count: number | null;
       p_title: string;
       is_downloadable: boolean;
       status: string;
       preview_ok: boolean;
     }[]
   >`
-    select f.id, f.product_id, f.storage_key, f.title, f.kind, f.check_status, f.size_bytes, p.title as p_title, p.is_downloadable, p.status,
+    select f.id, f.product_id, f.storage_key, f.title, f.kind, f.check_status, f.size_bytes, f.page_count, p.title as p_title, p.is_downloadable, p.status,
       ${servablePreviewSql("f")} as preview_ok
     from product_files f join products p on p.id = f.product_id
     where f.id = ${fileId}
@@ -341,7 +342,7 @@ export async function checkFileAccess(fileId: string, user: { id: string; role: 
   if (!row) return { ok: false, reason: "not_found" };
   const result = {
     ok: true as const,
-    file: { id: row.id, productId: row.product_id, storageKey: row.storage_key, title: row.title, kind: row.kind, sizeBytes: Number(row.size_bytes), checkStatus: row.check_status },
+    file: { id: row.id, productId: row.product_id, storageKey: row.storage_key, title: row.title, kind: row.kind, sizeBytes: Number(row.size_bytes), pageCount: row.page_count, checkStatus: row.check_status },
     product: { id: row.product_id, title: row.p_title, isDownloadable: row.is_downloadable, status: row.status },
   };
   if (row.kind === "preview") {

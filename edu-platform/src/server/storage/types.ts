@@ -16,6 +16,13 @@ export interface StorageDriver {
   /** null فقط إن قال التخزين صراحة إن الملف غير موجود. أي عطل آخر يُرمى، حتى لا يوصف ملف سليم بأنه مفقود */
   stat(bucket: Bucket, key: string): Promise<{ size: number } | null>;
   remove(bucket: Bucket, key: string): Promise<void>;
+  /** حذف يقول إن فشل (remove يسكت عن الخطأ). حذف ما ليس موجودًا نجاح */
+  removeMany(bucket: Bucket, keys: string[]): Promise<void>;
+  /**
+   * بث الملف من التخزين دون تحميله كله في ذاكرة الدالة (نسخ PDF المختومة والأصل للمالك).
+   * يرمي StorageNotFoundError فقط إن قال التخزين صراحة إن الملف غير موجود.
+   */
+  readStream(bucket: Bucket, key: string): Promise<{ stream: ReadableStream<Uint8Array>; size: number | null }>;
   /** رابط رفع مباشر مؤقت (من المتصفح إلى التخزين) */
   createUploadTarget(bucket: Bucket, key: string, contentType: string, maxBytes: number, userId: string): Promise<UploadTarget>;
   /** رابط عام للصور (أغلفة، شعار) */
@@ -24,6 +31,13 @@ export interface StorageDriver {
   signedUrl(bucket: Bucket, key: string, expiresInSeconds: number): Promise<string | null>;
   /** قراءة جزء من الملف (لتشغيل الفيديو المحلي عبر Range) */
   readRange?(bucket: Bucket, key: string, start: number, end: number): Promise<ReadableStream<Uint8Array>>;
+}
+
+export class StorageNotFoundError extends Error {
+  constructor() {
+    super("storage object not found");
+    this.name = "StorageNotFoundError";
+  }
 }
 
 /** المفاتيح تُولَّد على الخادم فقط — هذا التحقق دفاع إضافي ضد Path Traversal */
