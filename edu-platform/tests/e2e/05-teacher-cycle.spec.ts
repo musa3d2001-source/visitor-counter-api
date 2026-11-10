@@ -351,6 +351,8 @@ test.describe("دورة المعلم الكاملة", () => {
       const original = p.viewportSize()!;
       const figure = p.getByTestId(testId);
       await expect(figure).toContainText(amount);
+      // قطعة بُثت ولم يكشفها React بعد موجودة في الصفحة ومخفية، وقياسها صفر
+      await expect(figure).toBeVisible();
       for (const width of [360, 390, 820, 1440]) {
         await p.setViewportSize({ width, height: 844 });
         const { hidden, lines } = await figure.evaluate((el) => {
