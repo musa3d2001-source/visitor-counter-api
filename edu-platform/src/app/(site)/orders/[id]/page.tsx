@@ -10,6 +10,8 @@ import { sql } from "@/server/db";
 import { getSettings } from "@/server/platform/settings";
 import { paymentsConfig } from "@/server/payments/service";
 import { orderConsentNeeds } from "@/server/platform/consent";
+import { healBuyerOrders } from "@/server/payments/heal";
+import { openOrderHolds } from "@/server/payments/holds";
 import { canSayNothingWasCharged, hasUnresolvedAttempt, type ExtraPaymentKind } from "@/server/payments/extras";
 import { cancelOrderAction, retryPaymentAction, refreshOrderStatusAction } from "../../checkout/actions";
 import { ContactLinks, PaymentUnavailableNotice, realContactLinks } from "@/components/site/payment-unavailable-notice";
@@ -67,25 +69,30 @@ export default async function OrderPage({ params, searchParams }: { params: Prom
   const user = await requireUser();
   const { id } = await params;
   const sp = await searchParams;
+  // قبل قراءة الطلب، والفحص يخص هذا الطلب وحده ويتحقق من ملكيته بنفسه
+  await healBuyerOrders({ userId: user.id, orderId: id });
   const found = await getUserOrder(id, user.id);
   if (!found) notFound();
   const { order, items } = found;
-  const settings = await getSettings();
-  const [payment] = await sql<{ payment_method: string | null; status: string; provider: string; gateway_invoice_id: string | null }[]>`
-    select payment_method, status, provider, gateway_invoice_id from payments where order_id = ${order.id} order by created_at desc limit 1
-  `;
-  // الدفعة التي أكملت الطلب، لا آخر محاولة ولا دفعة زائدة
-  const [settled] = await sql<{ gateway_payment_id: string | null; gateway_invoice_id: string | null; payment_method: string | null }[]>`
-    select p.gateway_payment_id, p.gateway_invoice_id, p.payment_method from payments p
-    where p.order_id = ${order.id} and p.provider = 'myfatoorah' and p.status in ('paid', 'refunded')
-      and not exists (select 1 from payment_extras e where e.payment_id = p.id and e.gateway_payment_id is null)
-    order by coalesce(p.paid_at, p.created_at) desc limit 1
-  `;
-  // الطالب يرى الاسترداد فقط بعد أن تقبله البوابة. المحاولات غير المؤكدة لا تخصه ولا تغير طلبه
-  const [refund] = await sql<{ status: string; amount_fils: number; accepted_at: Date | null; completed_at: Date | null; created_at: Date }[]>`
-    select status, amount_fils, accepted_at, completed_at, created_at from refunds
-    where order_id = ${order.id} and status in ('recorded', 'requested', 'completed') order by created_at desc limit 1
-  `;
+  const [settings, [payment], [settled], [refund], holds] = await Promise.all([
+    getSettings(),
+    sql<{ payment_method: string | null; status: string; provider: string; gateway_invoice_id: string | null }[]>`
+      select payment_method, status, provider, gateway_invoice_id from payments where order_id = ${order.id} order by created_at desc limit 1
+    `,
+    // الدفعة التي أكملت الطلب، لا آخر محاولة ولا دفعة زائدة
+    sql<{ gateway_payment_id: string | null; gateway_invoice_id: string | null; payment_method: string | null }[]>`
+      select p.gateway_payment_id, p.gateway_invoice_id, p.payment_method from payments p
+      where p.order_id = ${order.id} and p.provider = 'myfatoorah' and p.status in ('paid', 'refunded')
+        and not exists (select 1 from payment_extras e where e.payment_id = p.id and e.gateway_payment_id is null)
+      order by coalesce(p.paid_at, p.created_at) desc limit 1
+    `,
+    // الطالب يرى الاسترداد فقط بعد أن تقبله البوابة. المحاولات غير المؤكدة لا تخصه ولا تغير طلبه
+    sql<{ status: string; amount_fils: number; accepted_at: Date | null; completed_at: Date | null; created_at: Date }[]>`
+      select status, amount_fils, accepted_at, completed_at, created_at from refunds
+      where order_id = ${order.id} and status in ('recorded', 'requested', 'completed') order by created_at desc limit 1
+    `,
+    openOrderHolds({ orderId: order.id, limit: 1 }),
+  ]);
   const methodName = paymentMethodLabel(settled?.payment_method ?? payment?.payment_method) ?? (settled ? ORDER_PAYMENT_FALLBACK : null);
   const statusTone = order.status === "paid" ? "success" : order.status === "failed" ? "danger" : order.status === "pending" ? "warning" : "neutral";
   const heroKey = order.status === "paid" || order.status === "pending" || order.status === "failed" ? order.status : "other";
@@ -249,6 +256,12 @@ export default async function OrderPage({ params, searchParams }: { params: Prom
         {sp.from === "open-order" && unpaid ? (
           <Alert tone="info" className="mt-6 no-print" title="لديك طلب مفتوح لهذا المنتج">
             أكمل الدفع من هنا، أو ألغِ الطلب لتبدأ من جديد. لا ننشئ طلبًا ثانيًا حتى لا تدفع مرتين.
+          </Alert>
+        ) : null}
+
+        {holds.length ? (
+          <Alert tone="warning" className="mt-6 no-print" title="هذا الطلب قيد المراجعة" data-testid="order-on-hold">
+            وصلنا إشعار من جهة الدفع بخصوص هذه الدفعة، فأوقفنا الوصول إلى منتجات هذا الطلب مؤقتًا حتى نراجعها. لا حاجة إلى شرائها من جديد، وسنعيد الوصول أو نوضح لك النتيجة بعد المراجعة.
           </Alert>
         ) : null}
 

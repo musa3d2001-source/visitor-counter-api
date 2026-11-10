@@ -24,12 +24,12 @@ type Target = { id: string; order_id: string; gateway_invoice_id: string; user_i
 type Outcome = { kind: "verified"; result: VerifyResult } | { kind: "not_checked" } | { kind: "gateway_failed" };
 
 /** استعلام واحد على فهرس فريد: كل ما يكلفه رقم مجهول */
-async function findTarget(rowId: string | null, ids: string[]): Promise<Target | null> {
+async function findTarget(environment: string, rowId: string | null, ids: string[]): Promise<Target | null> {
   if (rowId === null && ids.length === 0) return null;
   const [row] = await sql<Target[]>`
     select p.id, p.order_id, p.gateway_invoice_id, o.user_id
     from payments p join orders o on o.id = p.order_id
-    where p.provider = 'myfatoorah' and p.gateway_invoice_id is not null
+    where p.provider = 'myfatoorah' and p.environment = ${environment} and p.gateway_invoice_id is not null
       and (p.id = ${rowId}::uuid or p.gateway_invoice_id = any(${ids}::text[]) or p.gateway_payment_id = any(${ids}::text[]))
     limit 1
   `;
@@ -53,13 +53,14 @@ async function handleGET(req: NextRequest) {
   const paymentId = url.searchParams.get("paymentId") ?? url.searchParams.get("PaymentId");
   const invoiceId = url.searchParams.get("Id");
   if (!ref && !paymentId && !invoiceId) return neutral("invalid");
-  if (!paymentsConfig().enabled) return neutral("checked");
+  const cfg = paymentsConfig();
+  if (!cfg.enabled) return neutral("checked");
 
   const rowId = readPaymentReturnRef(ref);
   const ids = [paymentId, invoiceId].filter((v): v is string => v !== null && GATEWAY_ID.test(v));
   let target: Target | null;
   try {
-    target = await findTarget(rowId, rowId ? [] : ids);
+    target = await findTarget(cfg.environment, rowId, rowId ? [] : ids);
   } catch (err) {
     if (isDatabaseBusy(err)) throw err;
     await reportError("payment-return:lookup", err);

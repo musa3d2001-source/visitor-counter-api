@@ -1,6 +1,6 @@
 import { afterAll, afterEach, beforeAll, describe, expect, it, vi } from "vitest";
 import { renderToStaticMarkup } from "react-dom/server";
-import { closeOrder, type OrderRow } from "@/server/commerce/orders";
+import { closeOrder, markOrderPaid, type OrderRow } from "@/server/commerce/orders";
 import { resetEnvCache } from "@/server/env";
 import { resetPaymentMethodsCache, verifyAndApplyPayment } from "@/server/payments/service";
 import { canSayNothingWasCharged } from "@/server/payments/extras";
@@ -93,6 +93,14 @@ describe("saying nothing was charged", () => {
     expect(await page(order)).toContain(NOTHING_CHARGED);
   });
 
+  it("tells the buyer plainly when the order is under review", async () => {
+    const { user, order } = await newOrder();
+    ctx.user = user;
+    await sql.begin((tx) => markOrderPaid(tx, { orderId: order.id, paidAmountFils: order.total_fils }));
+    await sql`insert into order_holds (order_id, kind, source_key) values (${order.id}, 'dispute', ${`dispute:${order.id}`})`;
+    expect(await page(order)).toContain("هذا الطلب قيد المراجعة");
+  });
+
   it("appears once every invoice has been checked", async () => {
     const { order, invoices } = await failedWithInvoices(2);
     await checkAll(invoices);
@@ -120,10 +128,17 @@ describe("saying nothing was charged", () => {
   it("does not appear when the checks are stale", async () => {
     const { order, invoices } = await failedWithInvoices(1);
     await checkAll(invoices);
-    // الفحص جاء بعد إنشاء الفاتورة، لكن مضى عليه أكثر من نصف ساعة
-    await sql`update payments set created_at = now() - interval '2 hours', last_checked_at = now() - interval '31 minutes' where order_id = ${order.id}`;
+    // الفحص جاء بعد إنشاء الفاتورة، لكن مضى عليه أكثر من نصف ساعة. العقد يمنع فحص الزيارة من تجديده: المطلوب هنا الجملة وحدها
+    await sql`update payments set created_at = now() - interval '2 hours', last_checked_at = now() - interval '31 minutes', reconcile_claimed_at = now() where order_id = ${order.id}`;
     expect(await page(order)).not.toContain(NOTHING_CHARGED);
     await sql`update payments set last_checked_at = now() - interval '29 minutes' where order_id = ${order.id}`;
+    expect(await page(order)).toContain(NOTHING_CHARGED);
+  });
+
+  it("a visit re-checks a stale invoice, and only then says nothing was charged", async () => {
+    const { order, invoices } = await failedWithInvoices(1);
+    await checkAll(invoices);
+    await sql`update payments set created_at = now() - interval '2 hours', last_checked_at = now() - interval '31 minutes', reconcile_claimed_at = null where order_id = ${order.id}`;
     expect(await page(order)).toContain(NOTHING_CHARGED);
   });
 

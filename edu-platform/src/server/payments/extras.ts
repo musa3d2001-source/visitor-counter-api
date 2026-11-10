@@ -125,11 +125,11 @@ export async function dismissExtraPayment(input: { extraId: string; adminId: str
  * extraId لسجل عملية بعينها عرفناه من البوابة. وبدونه يطابق سجل الفاتورة الكاملة فقط:
  * صف الدفع لا يصير مستردًا لأن إحدى عمليتيه استُردت، والدفعة التي أكملت الطلب ما زالت قائمة.
  */
-export async function applyExtraRefundEvent(db: Db, input: { invoiceId: string; refundId: string; status: string; amountFils: number | null; extraId?: string; amountMatchAllowed: boolean }): Promise<number> {
+export async function applyExtraRefundEvent(db: Db, input: { environment: string; invoiceId: string; refundId: string; status: string; amountFils: number | null; extraId?: string; amountMatchAllowed: boolean }): Promise<number> {
   const matches = await db<{ id: string; payment_id: string; state: ExtraPaymentState; order_id: string; gateway_payment_id: string | null }[]>`
     select e.id, e.payment_id, e.state, e.order_id, e.gateway_payment_id from payment_extras e
     join payments p on p.id = e.payment_id
-    where p.gateway_invoice_id = ${input.invoiceId}
+    where p.environment = ${input.environment} and p.gateway_invoice_id = ${input.invoiceId}
       and e.state not in ('refunded', 'dismissed')
       and ${input.extraId ? db`e.id = ${input.extraId}` : db`e.gateway_payment_id is null`}
       and (e.gateway_refund_id = ${input.refundId} or (${input.amountMatchAllowed} and e.gateway_refund_id is null and e.amount_fils = ${input.amountFils}))

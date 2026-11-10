@@ -9,7 +9,7 @@ import { hasProductAccess } from "@/server/access/entitlements";
 import { getDb } from "@/server/db";
 import { PurgeRefusedError, parsePurgeArgs, purgeRefusalReason, purgeTestOrders } from "../../scripts/purge-test-orders";
 import { closeDb, resetDb, sql } from "../helpers/db";
-import { activeEntitlements, createBundle, createCoupon, createProduct, createUser } from "../helpers/factories";
+import { activeEntitlements, createBundle, createCoupon, createProduct, createTeacher, createUser, createVideoProduct } from "../helpers/factories";
 import { TEST_DATABASE_URL } from "../test-env";
 
 const run = promisify(execFile);
@@ -70,7 +70,7 @@ describe("purgeTestOrders", () => {
     await scenario();
     const before = await snapshot();
     const out = await purgeTestOrders(getDb(), dry);
-    expect(out).toEqual({ database: expect.stringMatching(/test/), applied: false, testOrders: 3, revokedEntitlements: 1, keptEntitlements: 0, closedOrders: 2, expiredPayments: 1, deletedRedemptions: 1 });
+    expect(out).toEqual({ database: expect.stringMatching(/test/), applied: false, testOrders: 3, revokedEntitlements: 1, keptEntitlements: 0, closedOrders: 2, closedPaidOrders: 1, reversedEarnings: 0, expiredPayments: 1, deletedRedemptions: 1 });
     expect(await snapshot()).toBe(before);
     expect(parsePurgeArgs([])).toEqual({ apply: false, confirmDatabase: null });
   });
@@ -78,7 +78,7 @@ describe("purgeTestOrders", () => {
   it("--apply revokes test access, closes open test orders, removes their redemptions and leaves real orders alone", async () => {
     const s = await scenario();
     const out = await purgeTestOrders(getDb(), apply);
-    expect(out).toMatchObject({ applied: true, testOrders: 3, revokedEntitlements: 1, keptEntitlements: 0, closedOrders: 2, expiredPayments: 1, deletedRedemptions: 1 });
+    expect(out).toMatchObject({ applied: true, testOrders: 3, revokedEntitlements: 1, keptEntitlements: 0, closedOrders: 2, closedPaidOrders: 1, reversedEarnings: 0, expiredPayments: 1, deletedRedemptions: 1 });
 
     expect(await activeEntitlements(s.student.id)).toEqual([s.realProduct.id]);
     expect(await hasProductAccess(s.student.id, s.testProduct.id)).toBe(false);
@@ -89,8 +89,8 @@ describe("purgeTestOrders", () => {
     expect(await status(s.testFailed.id)).toBe("cancelled");
     expect(await payStatus(s.testOpen.id)).toEqual(["expired"]);
     expect(await payStatus(s.testFailed.id)).toEqual(["failed"]);
-    // الطلب التجريبي المدفوع يبقى سجلًا مدفوعًا (مستبعد أصلًا من التقارير) لكن بلا صلاحية
-    expect(await status(s.testPaid.id)).toBe("paid");
+    // تغيّر عمدًا (K019): الطلب التجريبي المدفوع يُغلق كاملًا، فلا يبقى طلب تجريبي مفتوح الأثر قبل الدفع الحقيقي
+    expect(await status(s.testPaid.id)).toBe("cancelled");
 
     expect(await status(s.realPaid.id)).toBe("paid");
     expect(await status(s.realOpen.id)).toBe("pending");
@@ -174,6 +174,61 @@ describe("purgeTestOrders", () => {
     const before = await snapshot();
     expect(await purgeTestOrders(getDb(), apply)).toMatchObject({ revokedEntitlements: 0, keptEntitlements: 0, closedOrders: 0, expiredPayments: 0, deletedRedemptions: 0 });
     expect(await snapshot()).toBe(before);
+  });
+});
+
+describe("closing test orders completely", () => {
+  it("records when and why an open test order was closed", async () => {
+    const s = await scenario();
+    await purgeTestOrders(sql, apply);
+    const [open] = await sql<{ status: string; closed_at: Date | null; closed_reason: string | null }[]>`select status, closed_at, closed_reason from orders where id = ${s.testOpen.id}`;
+    expect(open.status).toBe("cancelled");
+    expect(open.closed_at).not.toBeNull();
+    expect(open.closed_reason).toBe("expired");
+  });
+
+  it("closes a paid test order, keeps when it was paid, and reverses its earnings", async () => {
+    const student = await createUser();
+    const teacher = await createTeacher({ mode: "self_managed", shareBps: 5000 });
+    const product = await createVideoProduct({ teacherId: teacher.id, priceFils: 2000 });
+    const order = await createOrder({ user: student, productIds: [product.id], isTest: true });
+    await pay(order);
+    expect(await purgeTestOrders(sql, apply)).toMatchObject({ closedPaidOrders: 1, reversedEarnings: 1 });
+    const [row] = await sql<{ status: string; closed_at: Date | null; closed_reason: string | null; paid_at: Date | null }[]>`select status, closed_at, closed_reason, paid_at from orders where id = ${order.id}`;
+    expect(row).toMatchObject({ status: "cancelled", closed_reason: null });
+    expect(row.closed_at).not.toBeNull();
+    expect(row.paid_at).not.toBeNull();
+    expect(await sql`select status from teacher_earnings where order_id = ${order.id}`).toEqual([{ status: "reversed" }]);
+    expect(await activeEntitlements(student.id)).toEqual([]);
+  });
+
+  it("releases the claim on a payment it expires", async () => {
+    const s = await scenario();
+    await sql`update payments set reconcile_claimed_at = now() where order_id = ${s.testOpen.id}`;
+    await purgeTestOrders(sql, apply);
+    expect(await sql`select status, reconcile_claimed_at from payments where order_id = ${s.testOpen.id}`).toEqual([{ status: "expired", reconcile_claimed_at: null }]);
+  });
+
+  it("leaves a real open order alone", async () => {
+    const s = await scenario();
+    await purgeTestOrders(sql, apply);
+    const [row] = await sql<{ status: string; closed_at: Date | null }[]>`select status, closed_at from orders where id = ${s.realOpen.id}`;
+    expect(row).toEqual({ status: "pending", closed_at: null });
+  });
+
+  it("refuses, and changes nothing, when a test order carries a live payment", async () => {
+    const s = await scenario();
+    await sql`update payments set environment = 'live' where order_id = ${s.testOpen.id}`;
+    const before = await snapshot();
+    await expect(purgeTestOrders(sql, apply)).rejects.toBeInstanceOf(PurgeRefusedError);
+    await expect(purgeTestOrders(sql, dry)).rejects.toBeInstanceOf(PurgeRefusedError);
+    expect(await snapshot()).toBe(before);
+  });
+
+  it("is not stopped by a live payment on a real order", async () => {
+    const s = await scenario();
+    await sql`update payments set environment = 'live' where order_id = ${s.realOpen.id}`;
+    await expect(purgeTestOrders(sql, apply)).resolves.toMatchObject({ applied: true });
   });
 });
 

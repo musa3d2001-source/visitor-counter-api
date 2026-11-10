@@ -282,7 +282,7 @@ describe("verifyAndApplyPayment (server-side confirmation)", () => {
     const { url } = await startPayment(order, 1);
     const { paymentId } = await sim.pay(invoiceIdFromUrl(url), "success");
     await sql`update payments set environment = 'live' where order_id = ${order.id}`;
-    expect(await verifyAndApplyPayment({ paymentId })).toEqual({ state: "invalid", error: "بيئة الدفع لا تطابق" });
+    expect(await verifyAndApplyPayment({ paymentId })).toEqual({ state: "invalid", error: "فاتورة غير معروفة" });
   });
 
   it("malformed or unknown references", async () => {

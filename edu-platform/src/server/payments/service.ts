@@ -1,5 +1,6 @@
 import "server-only";
 import { createHash } from "node:crypto";
+import { after } from "next/server";
 import { sql, type Db } from "../db";
 import { env, isVercelDeployment, type Env } from "../env";
 import { filsToKwdString, kwdNumberToFils } from "@/lib/money";
@@ -42,6 +43,7 @@ import { scrubForOps } from "@/lib/redact";
 import { isDatabaseBusy } from "../db-busy";
 import { GATEWAY_REASONS, checkGatewayTarget, isGatewayPaymentPage } from "./gateway-hosts";
 import { paymentReturnRef } from "./return-ref";
+import { amountBand, freshInMemory, readSharedMethods, rememberMethods, resetMethodMemory, type PaymentMethodOption } from "./method-cache";
 
 /**
  * خدمة الدفع — قواعد حاسمة:
@@ -122,32 +124,80 @@ function client(cfg: Extract<PaymentsConfig, { enabled: true }>, timeoutMs?: num
   return new MyFatoorahClient({ baseUrl: cfg.baseUrl, apiKey: cfg.apiKey, timeoutMs });
 }
 
-// ذاكرة مؤقتة لوسائل الدفع (10 دقائق) لكل مبلغ: البوابة قد تعرض وسائل مختلفة بحسب المبلغ
-const METHODS_TTL_MS = 10 * 60_000;
-const METHODS_MAX_AMOUNTS = 64;
-const methodsCache = new Map<number, { at: number; methods: MfPaymentMethod[] }>();
+export type { PaymentMethodOption };
 
-export type PaymentMethodOption = { id: number; nameAr: string; code: string; imageUrl: string };
+const hostedOptions = (methods: MfPaymentMethod[]): PaymentMethodOption[] =>
+  methods.filter((m) => !m.IsDirectPayment).map((m) => ({ id: m.PaymentMethodId, nameAr: m.PaymentMethodAr || m.PaymentMethodEn, code: m.PaymentMethodCode, imageUrl: m.ImageUrl }));
 
-/** وسائل الدفع المفعّلة فعليًا في حساب التاجر (كي نت، بطاقات، Apple Pay...) */
+async function fetchMethods(cfg: Extract<PaymentsConfig, { enabled: true }>, amountFils: number, band: number, timeoutMs?: number): Promise<PaymentMethodOption[]> {
+  const options = hostedOptions(await client(cfg, timeoutMs).initiatePayment(filsToKwdString(amountFils)));
+  await rememberMethods(cfg.environment, band, options);
+  return options;
+}
+
+/**
+ * وسائل الدفع المفعّلة فعليًا في حساب التاجر، من ذاكرة هذه النسخة أو من البوابة. يرمي إن تعذر الوصول.
+ * startPayment يتحقق بها من الوسيلة المختارة، فلا تعتمد على نسخة قديمة مشتركة.
+ */
 export async function getPaymentMethods(amountFils: number, opts: { timeoutMs?: number } = {}): Promise<PaymentMethodOption[]> {
   const cfg = paymentsConfig();
   if (!cfg.enabled) return [];
   const amount = Math.max(amountFils, 100);
-  let cached = methodsCache.get(amount);
-  if (!cached || Date.now() - cached.at > METHODS_TTL_MS) {
-    cached = { at: Date.now(), methods: await client(cfg, opts.timeoutMs).initiatePayment(filsToKwdString(amount)) };
-    methodsCache.delete(amount);
-    if (methodsCache.size >= METHODS_MAX_AMOUNTS) methodsCache.delete(methodsCache.keys().next().value!);
-    methodsCache.set(amount, cached);
-  }
-  return cached.methods
-    .filter((m) => !m.IsDirectPayment)
-    .map((m) => ({ id: m.PaymentMethodId, nameAr: m.PaymentMethodAr || m.PaymentMethodEn, code: m.PaymentMethodCode, imageUrl: m.ImageUrl }));
+  const band = amountBand(amount);
+  return freshInMemory(cfg.environment, band) ?? fetchMethods(cfg, amount, band, opts.timeoutMs);
 }
 
 export function resetPaymentMethodsCache() {
-  methodsCache.clear();
+  resetMethodMemory();
+}
+
+/** صفحة الشراء لا تنتظر البوابة أكثر من هذا، وذلك فقط حين لا توجد أي نسخة محفوظة لهذه الشريحة */
+export const CHECKOUT_METHODS_DEADLINE_MS = 2_500;
+const refreshing = new Set<string>();
+
+export type CheckoutMethods = { methods: PaymentMethodOption[]; unavailable: boolean };
+
+/**
+ * ما تعرضه صفحة الشراء. لا ترمي ولا تتجاوز المهلة، ودائمًا يبقى طريق للدفع:
+ * ذاكرة النسخة، ثم النسخة المشتركة، وهي قديمة عرضناها وحدّثناها بعد الرد، ثم البوابة بمهلة قصيرة،
+ * وأخيرًا قائمة فارغة يتحول معها الزر إلى رابط الدفع العام، وصفحة البوابة تعرض ما هو متاح.
+ */
+export async function checkoutPaymentMethods(amountFils: number): Promise<CheckoutMethods> {
+  const cfg = paymentsConfig();
+  if (!cfg.enabled) return { methods: [], unavailable: false };
+  const amount = Math.max(amountFils, 100);
+  const band = amountBand(amount);
+  const local = freshInMemory(cfg.environment, band);
+  if (local) return { methods: local, unavailable: false };
+  let shared: Awaited<ReturnType<typeof readSharedMethods>> = null;
+  try {
+    shared = await readSharedMethods(cfg.environment, band);
+  } catch (err) {
+    if (isDatabaseBusy(err)) throw err;
+  }
+  if (shared?.fresh) return { methods: shared.methods, unavailable: false };
+  if (shared) {
+    refreshAfterResponse(cfg, amount, band);
+    return { methods: shared.methods, unavailable: false };
+  }
+  try {
+    return { methods: await fetchMethods(cfg, amount, band, CHECKOUT_METHODS_DEADLINE_MS), unavailable: false };
+  } catch (err) {
+    await reportError("checkout:payment-methods", err);
+    return { methods: [], unavailable: true };
+  }
+}
+
+function refreshAfterResponse(cfg: Extract<PaymentsConfig, { enabled: true }>, amount: number, band: number) {
+  const key = `${cfg.environment}:${band}`;
+  if (refreshing.has(key)) return;
+  refreshing.add(key);
+  const refresh = () => fetchMethods(cfg, amount, band, METHOD_CHECK_TIMEOUT_MS).catch(() => undefined).finally(() => refreshing.delete(key));
+  try {
+    after(refresh);
+  } catch {
+    void refresh();
+  }
 }
 
 /** مهلة قصيرة: إن لم تجب البوابة نذهب إلى رابط الدفع العام بدل أن يطول انتظار المشتري */
@@ -702,12 +752,12 @@ export async function verifyAndApplyPayment(key: { paymentId?: string; invoiceId
   const status = await client(cfg, opts.timeoutMs).getPaymentStatus(keyValue, key.paymentId ? "PaymentId" : "InvoiceId");
   // البوابة تعيد اسم العميل وبريده وهاتفه ورقم البطاقة كل مرة. نقرأ الرد كاملًا ولا نخزن منه إلا ما تحتاجه المراجعة
   const stored = redactGatewayStatus(status);
-  const [payment] = await sql<{ id: string; order_id: string; amount_fils: number; status: string; environment: string }[]>`
-    select id, order_id, amount_fils, status, environment from payments
-    where provider = 'myfatoorah' and gateway_invoice_id = ${String(status.InvoiceId)}
+  // البيئة جزء من هوية الفاتورة: رقم sandbox قد يطابق رقمًا حقيقيًا، ولا يُقرأ أحدهما مكان الآخر
+  const [payment] = await sql<{ id: string; order_id: string; amount_fils: number; status: string }[]>`
+    select id, order_id, amount_fils, status from payments
+    where provider = 'myfatoorah' and environment = ${cfg.environment} and gateway_invoice_id = ${String(status.InvoiceId)}
   `;
   if (!payment) return { state: "invalid", error: "فاتورة غير معروفة" };
-  if (payment.environment !== cfg.environment) return { state: "invalid", error: "بيئة الدفع لا تطابق" };
   const [order] = await sql<OrderRow[]>`select * from orders where id = ${payment.order_id}`;
   if (!order) return { state: "invalid", error: "الطلب غير موجود" };
 
@@ -890,7 +940,7 @@ export async function handleMyFatoorahWebhook(
       }
       result = `refund ${refundStatus}`;
     } else if (Number(body.Event.Code) === 6) {
-      result = await raiseDisputeAlert(body, eventKey);
+      result = await raiseDisputeAlert(body, eventKey, cfg.environment);
     }
   } catch (err) {
     // التفاصيل للمالك في سجل الأخطاء، بعد التنقية. من أرسل الحدث لا يرى منها شيئًا
@@ -1045,7 +1095,7 @@ export async function recheckExtraPayment(input: { extraId: string; adminId: str
   if (!found || !status) return { state: row.state };
   const refundId = String(found.RefundId);
   return sql.begin(async (db) => {
-    await applyExtraRefundEvent(db, { invoiceId, refundId, status, amountFils: row.amount_fils, extraId: row.id, amountMatchAllowed: true });
+    await applyExtraRefundEvent(db, { environment: cfg.environment, invoiceId, refundId, status, amountFils: row.amount_fils, extraId: row.id, amountMatchAllowed: true });
     const [now] = await db<{ state: ExtraPaymentState }[]>`select state from payment_extras where id = ${row.id}`;
     await audit({ actorId: input.adminId, action: "payment_extra.refund_rechecked", entityType: "payment_extra", entityId: row.id, metadata: { orderId: row.order_id, gatewayRefundId: refundId, gatewayStatus: found.RefundStatus, state: now.state }, ip: input.ip ?? null }, db);
     return { state: now.state };

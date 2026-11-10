@@ -7,11 +7,11 @@ import { requireUser } from "@/server/auth/guards";
 import { emailVerificationRequired, verifyEmailPath } from "@/server/auth/email-verification";
 import { computeCart, getCartIds } from "@/server/commerce/cart";
 import { evaluateCoupon } from "@/server/commerce/coupons";
-import { getPaymentMethods, paymentsConfig, type PaymentMethodOption } from "@/server/payments/service";
+import { checkoutPaymentMethods, paymentsConfig, type PaymentMethodOption } from "@/server/payments/service";
+import { healBuyerOrders } from "@/server/payments/heal";
 import { paymentPublicState } from "@/server/payments/public-state";
 import { paymentClaims } from "@/lib/site-truth";
 import { getSettings } from "@/server/platform/settings";
-import { reportError } from "@/server/platform/report-error";
 import { missingAccountConsents } from "@/server/platform/consent";
 import { Alert } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
@@ -34,6 +34,8 @@ export const maxDuration = 60;
 export default async function CheckoutPage({ searchParams }: { searchParams: Promise<{ coupon?: string }> }) {
   const user = await requireUser("/checkout");
   const sp = await searchParams;
+  // قبل حساب السلة: منتج اكتمل دفعه الآن لا يُعرض للشراء مرة ثانية
+  await healBuyerOrders({ userId: user.id });
   const cart = await computeCart(await getCartIds(), user.id);
   if (cart.payableLines.length === 0) redirect("/cart");
 
@@ -45,23 +47,20 @@ export default async function CheckoutPage({ searchParams }: { searchParams: Pro
   const saved = cart.payableLines.reduce((sum, l) => sum + (savings(l.priceFils, l.compareAtPriceFils)?.fils ?? 0), 0);
   const cfg = paymentsConfig();
   const claims = paymentClaims(paymentPublicState());
-  const settings = await getSettings();
-  if (total > 0 && cfg.enabled && (await emailVerificationRequired(user.id))) {
+  // قراءات مستقلة معًا، ووسائل الدفع لا تنتظر البوابة إلا إن لم توجد أي نسخة محفوظة، وبمهلة قصيرة
+  const [settings, mustVerifyEmail, missingConsents, offered] = await Promise.all([
+    getSettings(),
+    total > 0 && cfg.enabled ? emailVerificationRequired(user.id) : Promise.resolve(false),
+    missingAccountConsents(user.id),
+    cfg.enabled && total > 0 ? checkoutPaymentMethods(total) : Promise.resolve({ methods: [], unavailable: false }),
+  ]);
+  if (mustVerifyEmail) {
     redirect(verifyEmailPath(couponCode ? `/checkout?coupon=${encodeURIComponent(couponCode)}` : "/checkout"));
   }
 
-  const needsTerms = (await missingAccountConsents(user.id)).length > 0;
-
-  let methods: PaymentMethodOption[] = [];
-  let methodsError = false;
-  if (cfg.enabled && total > 0) {
-    try {
-      methods = await getPaymentMethods(total);
-    } catch (err) {
-      await reportError("checkout:payment-methods", err);
-      methodsError = true;
-    }
-  }
+  const needsTerms = missingConsents.length > 0;
+  const methods: PaymentMethodOption[] = offered.methods;
+  const methodsError = offered.unavailable;
 
   return (
     <>
