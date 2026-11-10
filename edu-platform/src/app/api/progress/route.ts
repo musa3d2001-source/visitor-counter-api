@@ -15,6 +15,14 @@ async function handlePOST(req: NextRequest) {
   if (!user) return NextResponse.json({ error: "unauthenticated" }, { status: 401 });
   const parsed = schema.safeParse(await req.json().catch(() => null));
   if (!parsed.success) return NextResponse.json({ error: "invalid" }, { status: 400 });
+  // الصف الموجود هو إذن التحديث التالي، كما في نبضة الدرس: أمر واحد عند كل قلبة صفحة بدل ثلاثة.
+  // من سُحب منه المنتج لا يحرك إلا رقم صفحته هو، والملف نفسه يحرسه مسار التسليم في كل فتح
+  const moved = await sql`
+    update reading_progress set last_page = ${parsed.data.page}, updated_at = now()
+    where user_id = ${user.id} and file_id = ${parsed.data.fileId}
+    returning file_id
+  `;
+  if (moved.length > 0) return NextResponse.json({ ok: true });
   const access = await checkFileAccess(parsed.data.fileId, user);
   if (!access.ok || access.file.kind !== "main") return NextResponse.json({ error: "forbidden" }, { status: 403 });
   await sql`

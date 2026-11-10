@@ -14,27 +14,24 @@ import { isUuid } from "@/lib/uuid";
  * الطالب إن أُزيل عنصر من الحاوية لاحقًا. القيد unique(user_id, product_id) يمنع التكرار.
  */
 
-/** استعلام فرعي: كل المنتجات التي يملكها الطالب حاليًا (مع الاحتواء المتداخل) */
-function ownedClosure(db: Db, userId: string) {
+/**
+ * جزء WITH RECURSIVE واحد لقاعدة الملكية كلها: غير مسحوبة وغير منتهية، مع الاحتواء المتداخل.
+ * expires_at مع كل صف، وnull يعني بلا انتهاء. userId الفارغ (زائر) لا يطابق شيئًا.
+ */
+export function ownedCte(db: Db, userId: string | null) {
   return db`
-    with recursive owned(product_id) as (
-      select e.product_id from entitlements e
+    owned(product_id, expires_at) as (
+      select e.product_id, e.expires_at from entitlements e
       where e.user_id = ${userId} and e.revoked_at is null and (e.expires_at is null or e.expires_at > now())
       union
-      select bi.product_id from owned o join bundle_items bi on bi.bundle_id = o.product_id
+      select bi.product_id, o.expires_at from owned o join bundle_items bi on bi.bundle_id = o.product_id
     )
-    select product_id from owned
   `;
 }
 
 export async function hasProductAccess(userId: string, productId: string, db: Db = sql): Promise<boolean> {
   const rows = await db<{ product_id: string }[]>`
-    with recursive owned(product_id) as (
-      select e.product_id from entitlements e
-      where e.user_id = ${userId} and e.revoked_at is null and (e.expires_at is null or e.expires_at > now())
-      union
-      select bi.product_id from owned o join bundle_items bi on bi.bundle_id = o.product_id
-    )
+    with recursive ${ownedCte(db, userId)}
     select product_id from owned where product_id = ${productId} limit 1
   `;
   return rows.length > 0;
@@ -42,19 +39,17 @@ export async function hasProductAccess(userId: string, productId: string, db: Db
 
 /** كل معرفات المنتجات التي يملكها الطالب (مباشرة أو عبر حاوية بأي عمق) */
 export async function accessibleProductIds(userId: string, db: Db = sql): Promise<Set<string>> {
-  const rows = (await ownedClosure(db, userId)) as unknown as { product_id: string }[];
+  const rows = await db<{ product_id: string }[]>`
+    with recursive ${ownedCte(db, userId)}
+    select distinct product_id from owned
+  `;
   return new Set(rows.map((r) => r.product_id));
 }
 
 /** أقرب تاريخ انتهاء فعّال لوصول الطالب إلى منتج (null = غير محدد) — للعرض فقط */
 export async function accessExpiry(userId: string, productId: string, db: Db = sql): Promise<{ has: boolean; expiresAt: Date | null }> {
   const rows = await db<{ expires_at: Date | null }[]>`
-    with recursive owned(product_id, expires_at) as (
-      select e.product_id, e.expires_at from entitlements e
-      where e.user_id = ${userId} and e.revoked_at is null and (e.expires_at is null or e.expires_at > now())
-      union
-      select bi.product_id, o.expires_at from owned o join bundle_items bi on bi.bundle_id = o.product_id
-    )
+    with recursive ${ownedCte(db, userId)}
     select expires_at from owned where product_id = ${productId}
   `;
   if (!rows.length) return { has: false, expiresAt: null };
@@ -223,9 +218,7 @@ export type LibraryItem = {
 
 /** محتويات مكتبة الطالب: كل المنتجات القابلة للوصول (عدا الباقات نفسها) مع ملفاتها وتقدم القراءة */
 export async function getLibrary(userId: string): Promise<{ items: LibraryItem[]; bundles: { id: string; title: string; slug: string }[] }> {
-  const ids = [...(await accessibleProductIds(userId))];
-  if (ids.length === 0) return { items: [], bundles: [] };
-  const products = await sql<
+  const productRows = sql<
     {
       id: string;
       slug: string;
@@ -242,33 +235,42 @@ export async function getLibrary(userId: string): Promise<{ items: LibraryItem[]
       last_watch: Date | null;
       teacher_name: string | null;
       teacher_slug: string | null;
+      expires_at: Date | null;
     }[]
   >`
+    with recursive ${ownedCte(sql, userId)},
+    access as (
+      -- حق بلا انتهاء يغلب، وإلا فأبعد تاريخ: القاعدة نفسها في accessExpiry
+      select product_id, case when bool_or(expires_at is null) then null else max(expires_at) end as expires_at
+      from owned group by product_id
+    )
     select p.id, p.slug, p.title, p.type, g.name as grade_name, g.level as grade_level, s.name as subject_name,
-      p.term, p.cover_key, p.is_downloadable, t.display_name as teacher_name, t.slug as teacher_slug,
+      p.term, p.cover_key, p.is_downloadable, t.display_name as teacher_name, t.slug as teacher_slug, a.expires_at,
       (select count(*)::int from lessons l where l.product_id = p.id and l.is_published and l.processing_status = 'ready') as lesson_count,
       (select count(*)::int from lessons l join lesson_progress lp on lp.lesson_id = l.id and lp.user_id = ${userId}
         where l.product_id = p.id and lp.completed) as watched_count,
       (select max(lp.updated_at) from lessons l join lesson_progress lp on lp.lesson_id = l.id and lp.user_id = ${userId}
         where l.product_id = p.id) as last_watch
-    from products p
+    from access a
+    join products p on p.id = a.product_id
     join grades g on g.id = p.grade_id
     left join subjects s on s.id = p.subject_id
     left join teachers t on t.id = p.teacher_id
-    where p.id = any(${ids}::uuid[]) and p.status not in ('draft', 'in_review')
+    where p.status not in ('draft', 'in_review')
     order by g.level, s.sort_order nulls first, p.sort_order, p.title
   `;
-  const expiries = new Map<string, Date | null>();
-  for (const id of ids) expiries.set(id, (await accessExpiry(userId, id)).expiresAt);
-  const files = await sql<
+  // استعلامان مستقلان معًا، عدد صفوف المكتبة لا يغير عدد الاستعلامات
+  const fileRows = sql<
     { id: string; product_id: string; title: string; page_count: number | null; last_page: number | null; updated_at: Date | null }[]
   >`
+    with recursive ${ownedCte(sql, userId)}
     select f.id, f.product_id, f.title, f.page_count, rp.last_page, rp.updated_at
     from product_files f
     left join reading_progress rp on rp.file_id = f.id and rp.user_id = ${userId}
-    where f.product_id = any(${ids}::uuid[]) and f.kind = 'main'
+    where f.product_id in (select product_id from owned) and f.kind = 'main'
     order by f.sort_order, f.created_at
   `;
+  const [products, files] = await Promise.all([productRows, fileRows]);
   const items: LibraryItem[] = [];
   const bundles: { id: string; title: string; slug: string }[] = [];
   for (const p of products) {
@@ -300,11 +302,27 @@ export async function getLibrary(userId: string): Promise<{ items: LibraryItem[]
       watchedCount: p.watched_count,
       teacherName: p.teacher_name,
       teacherSlug: p.teacher_slug,
-      expiresAt: expiries.get(p.id) ?? null,
+      expiresAt: p.expires_at,
       lastActivity: last,
     });
   }
   return { items, bundles };
+}
+
+export type ResumeLesson = { lesson_id: string; product_id: string; title: string; product_title: string; position_seconds: number; duration_seconds: number | null; completed: boolean };
+
+/** «تابع المشاهدة»: الدروس التي لم يكملها الطالب أولًا (الأحدث فالأقدم)، ثم آخر ما أكمله. من منتجات مكتبته الظاهرة فقط */
+export async function getResumeLessons(userId: string, limit = 3): Promise<ResumeLesson[]> {
+  return sql<ResumeLesson[]>`
+    with recursive ${ownedCte(sql, userId)}
+    select lp.lesson_id, l.product_id, l.title, p.title as product_title, lp.position_seconds, l.duration_seconds, lp.completed
+    from lesson_progress lp
+    join lessons l on l.id = lp.lesson_id and l.is_published and l.processing_status = 'ready'
+    join products p on p.id = l.product_id and p.status not in ('draft', 'in_review') and p.type <> 'bundle'
+    where lp.user_id = ${userId} and l.product_id in (select product_id from owned)
+    order by lp.completed asc, lp.updated_at desc
+    limit ${limit}
+  `;
 }
 
 export type FileAccess =
@@ -332,10 +350,13 @@ export async function checkFileAccess(fileId: string, user: { id: string; role: 
       is_downloadable: boolean;
       status: string;
       preview_ok: boolean;
+      owned: boolean;
     }[]
   >`
+    with recursive ${ownedCte(sql, user?.id ?? null)}
     select f.id, f.product_id, f.storage_key, f.title, f.kind, f.check_status, f.size_bytes, f.page_count, p.title as p_title, p.is_downloadable, p.status,
-      ${servablePreviewSql("f")} as preview_ok
+      ${servablePreviewSql("f")} as preview_ok,
+      exists (select 1 from owned o where o.product_id = f.product_id) as owned
     from product_files f join products p on p.id = f.product_id
     where f.id = ${fileId}
   `;
@@ -354,7 +375,7 @@ export async function checkFileAccess(fileId: string, user: { id: string; role: 
   if (!user) return { ok: false, reason: "unauthenticated" };
   if (user.role === "admin") return result;
   if (user.role === "teacher" && (await isTeacherOfProduct(user.id, row.product_id))) return result;
-  if (await hasProductAccess(user.id, row.product_id)) return result;
+  if (row.owned) return result;
   return { ok: false, reason: "forbidden" };
 }
 

@@ -2,8 +2,9 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { ArrowLeft, FileText, Package, PlayCircle, Receipt, Sparkles } from "lucide-react";
 import { requireUser } from "@/server/auth/guards";
-import { getLibrary, type LibraryItem } from "@/server/access/entitlements";
-import { coverUrl, listGrades } from "@/server/catalog/queries";
+import { getLibrary, getResumeLessons, type LibraryItem } from "@/server/access/entitlements";
+import { coverUrl } from "@/server/catalog/queries";
+import { listGrades } from "@/server/catalog/public-data";
 import { Button } from "@/components/ui/button";
 import { PageHeader, StatPill } from "@/components/ui/page-header";
 import { Eyebrow } from "@/components/ui/section-head";
@@ -12,7 +13,6 @@ import { subjectSlugFromName } from "@/components/site/card-parts";
 import { isVideoType, PRODUCT_TYPE_LABELS, type ProductType } from "@/lib/labels";
 import { ar, count, gradeClass, toneClass, W } from "@/lib/design";
 import { cn } from "@/lib/utils";
-import { sql } from "@/server/db";
 import { libraryNote } from "@/lib/site-truth";
 import { paymentPublicState } from "@/server/payments/public-state";
 import { healBuyerOrders } from "@/server/payments/heal";
@@ -27,7 +27,7 @@ export default async function LibraryPage({ searchParams }: { searchParams: Prom
   const sp = await searchParams;
   // قبل قراءة المكتبة: ما يُمنح الآن يظهر في هذه الزيارة نفسها
   await healBuyerOrders({ userId: user.id });
-  const { items, bundles } = await getLibrary(user.id);
+  const [{ items, bundles }, watching] = await Promise.all([getLibrary(user.id), getResumeLessons(user.id)]);
   const types = [...new Set(items.map((i) => i.type))] as ProductType[];
   const filter = types.includes(sp.type as ProductType) ? (sp.type as ProductType) : null;
   const shown = filter ? items.filter((i) => i.type === filter) : items;
@@ -39,19 +39,6 @@ export default async function LibraryPage({ searchParams }: { searchParams: Prom
     .sort((a, b) => +new Date(b.lastActivity!) - +new Date(a.lastActivity!))
     .slice(0, 3);
 
-  // «تابع المشاهدة»: الدروس التي لم يكملها الطالب أولًا (الأحدث فالأقدم)، ثم آخر ما أكمله
-  const ownedIds = items.map((i) => i.productId);
-  const watching = ownedIds.length
-    ? await sql<{ lesson_id: string; product_id: string; title: string; product_title: string; position_seconds: number; duration_seconds: number | null; completed: boolean }[]>`
-        select lp.lesson_id, l.product_id, l.title, p.title as product_title, lp.position_seconds, l.duration_seconds, lp.completed
-        from lesson_progress lp
-        join lessons l on l.id = lp.lesson_id and l.is_published and l.processing_status = 'ready'
-        join products p on p.id = l.product_id
-        where lp.user_id = ${user.id} and l.product_id = any(${ownedIds}::uuid[])
-        order by lp.completed asc, lp.updated_at desc
-        limit 3
-      `
-    : [];
   const grades = items.length === 0 ? await listGrades() : [];
 
   // التجميع: الصف ← المادة (للمذكرات)
