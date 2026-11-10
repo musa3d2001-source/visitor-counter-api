@@ -127,6 +127,7 @@ export const W = {
   session: { one: "جلسة", two: "جلستان", plural: "جلسات", acc: "جلسة", oneSuffix: "واحدة" },
   minute: { one: "دقيقة", two: "دقيقتان", plural: "دقائق", acc: "دقيقة", single: "دقيقة", oneSuffix: "واحدة" },
   hour: { one: "ساعة", two: "ساعتان", plural: "ساعات", acc: "ساعة", single: "ساعة", oneSuffix: "واحدة" },
+  second: { one: "ثانية", two: "ثانيتان", plural: "ثوانٍ", acc: "ثانية", single: "ثانية", oneSuffix: "واحدة" },
 } as const satisfies Record<string, CountWord>;
 
 /** المدة المختصرة: ثوانٍ قليلة تُعرض «أقل من دقيقة» بدل رقم مضلل */

@@ -10,7 +10,7 @@ export function SubmitButton({ children, pendingText, pending: forced, ...props 
   // pending من الخارج لنموذج يرسله الكود بنفسه، فلا يراه useFormStatus
   const pending = status.pending || Boolean(forced);
   return (
-    <Button type="submit" disabled={pending || props.disabled} aria-busy={pending} {...props}>
+    <Button type="submit" {...props} disabled={pending || props.disabled} aria-busy={pending}>
       {pending ? <LoaderCircle className="animate-spin" aria-hidden /> : null}
       {pending ? (pendingText ?? "جارٍ التنفيذ…") : children}
     </Button>

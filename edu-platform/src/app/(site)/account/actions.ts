@@ -42,7 +42,7 @@ export async function changePasswordAction(_prev: ActionState, fd: FormData): Pr
   if (!next.success) return { fieldErrors: { newPassword: next.error.issues[0].message } };
   if (fd.get("newPassword") !== fd.get("confirmPassword")) return { fieldErrors: { confirmPassword: "كلمتا المرور غير متطابقتين" } };
   const res = await changePassword(session.user.id, String(fd.get("currentPassword") ?? ""), next.data, session.sessionId);
-  if (!res.ok) return { fieldErrors: { [res.field]: res.error } };
+  if (!res.ok) return res.field ? { fieldErrors: { [res.field]: res.error } } : { error: res.error };
   return { ok: true, message: "تم تغيير كلمة المرور وتسجيل الخروج من الأجهزة الأخرى" };
 }
 

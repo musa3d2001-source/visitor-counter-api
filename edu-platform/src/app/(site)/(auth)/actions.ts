@@ -23,6 +23,8 @@ export async function loginAction(_prev: ActionState, fd: FormData): Promise<Act
   const res = await loginWithPassword(parsed.data.email, parsed.data.password, { ip: await clientIp(), userAgent: await userAgent(), deviceProof: await readLoginDeviceCookie() });
   if (res.deviceProof) await setLoginDeviceCookie(res.deviceProof);
   if (!res.ok) {
+    // رفض انشغال: الزر ينتظر المدة ويعرضها. Server Action لا تضبط ترويسات الرد، فمدة Retry-After تصل في الحالة نفسها
+    if (res.busy) return { error: res.error, values, retryAfter: res.retryAfter };
     if (!res.challenge) return { error: res.error, values };
     await setLoginChallengeCookie(res.challenge.token, res.challenge.expiresAt);
     redirect(`${TWO_FACTOR_LOGIN_PATH}?next=${encodeURIComponent(safeNextPath(fd.get("next") as string | null, "/admin"))}`);

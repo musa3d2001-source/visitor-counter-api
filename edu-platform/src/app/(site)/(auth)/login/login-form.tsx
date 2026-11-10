@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { useActionState } from "react";
+import { useActionState, useEffect, useRef, useState } from "react";
 import { KeyRound, LogIn, Mail, UserPlus } from "lucide-react";
 import { loginAction } from "../actions";
 import { Field, Input } from "@/components/ui/form";
@@ -9,13 +9,52 @@ import { Alert } from "@/components/ui/alert";
 import { SubmitButton } from "@/components/ui/submit-button";
 import { BIG_INPUT, IconInput, PasswordInput } from "../_components/auth-fields";
 import { OrDivider, SwitchCard } from "../_components/auth-bits";
+import { count, W } from "@/lib/design";
 
 export function LoginForm({ next }: { next: string }) {
+  // الدالة نفسها بلا تغليف: النموذج يعمل قبل أن تكتمل JavaScript على هاتف بطيء
   const [state, action] = useActionState(loginAction, null);
+  const formRef = useRef<HTMLFormElement>(null);
+  const typed = useRef("");
+
+  // المنصة مشغولة: الزر ينتظر المدة التي طلبها الخادم بدل أن يضيف محاولة أخرى إلى الزحام
+  const [seen, setSeen] = useState(state);
+  const [wait, setWait] = useState(state?.retryAfter ?? 0);
+  if (state !== seen) {
+    setSeen(state);
+    setWait(state?.retryAfter ?? 0);
+  }
+  useEffect(() => {
+    if (wait <= 0) return;
+    const timer = setTimeout(() => setWait((left) => left - 1), 1000);
+    return () => clearTimeout(timer);
+  }, [wait]);
+
+  // React يفرغ النموذج بعد كل إرسال. كلمة لم تُفحص أصلًا تبقى في مكانها، ولا تعود من الخادم أبدًا
+  useEffect(() => {
+    const field = formRef.current?.elements.namedItem("password");
+    if (state?.retryAfter && field instanceof HTMLInputElement && typed.current) field.value = typed.current;
+    typed.current = "";
+  }, [state]);
+
   return (
-    <form action={action} className="flex flex-col gap-5" noValidate>
+    <form
+      ref={formRef}
+      action={action}
+      onSubmit={(event) => {
+        typed.current = String(new FormData(event.currentTarget).get("password") ?? "");
+      }}
+      className="flex flex-col gap-5"
+      noValidate
+    >
       <input type="hidden" name="next" value={next} />
-      {state?.error ? <Alert tone="danger">{state.error}</Alert> : null}
+      {state?.error && state.retryAfter ? (
+        <Alert tone="warning" data-testid="login-busy" data-retry-after={state.retryAfter}>
+          {state.error}
+        </Alert>
+      ) : state?.error ? (
+        <Alert tone="danger">{state.error}</Alert>
+      ) : null}
       <Field label="البريد الإلكتروني" htmlFor="email" error={state?.fieldErrors?.email}>
         <IconInput icon={<Mail />} tone="teal">
           <Input
@@ -44,9 +83,15 @@ export function LoginForm({ next }: { next: string }) {
           </Link>
         </div>
       </div>
-      <SubmitButton size="xl" pendingText="جارٍ الدخول…" className="w-full">
-        تسجيل الدخول
-        <LogIn aria-hidden />
+      <SubmitButton size="xl" pendingText="جارٍ الدخول…" className="w-full" disabled={wait > 0}>
+        {wait > 0 ? (
+          <span data-testid="login-wait">{`أعد المحاولة بعد ${count(wait, W.second)}`}</span>
+        ) : (
+          <>
+            تسجيل الدخول
+            <LogIn aria-hidden />
+          </>
+        )}
       </SubmitButton>
       <OrDivider label="جديد على المنصة؟" />
       <SwitchCard

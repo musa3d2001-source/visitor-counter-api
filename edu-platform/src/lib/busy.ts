@@ -15,3 +15,10 @@ export const DB_BUSY_MESSAGE = "الضغط كبير على المنصة في ه�
 export function isBusyDigest(digest: string | undefined | null): boolean {
   return digest === DB_BUSY_DIGEST;
 }
+
+/** الثواني قبل إعادة محاولة دخول رُفض لأن فحوص كلمات المرور ممتلئة على هذه النسخة */
+export const HASH_BUSY_RETRY_AFTER_SECONDS = 5;
+/** ليست «كلمة مرور خاطئة»: لم تُفحص أصلًا ولم تُحتسب */
+export const LOGIN_BUSY_MESSAGE = "طلاب كثيرون يسجلون الدخول الآن، فلم نفحص كلمة مرورك بعد ولم تُحتسب هذه المحاولة عليك. أعد المحاولة بعد لحظات.";
+/** التسجيل وتغيير كلمة المرور وما شابه: رُفض الطلب قبل أن يتغير شيء */
+export const HASH_BUSY_MESSAGE = "المنصة مشغولة الآن ولم يُحفظ شيء بعد. أعد المحاولة بعد لحظات.";

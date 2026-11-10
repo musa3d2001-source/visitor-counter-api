@@ -12,6 +12,8 @@ export type ActionState = {
   secrets?: Record<string, string>;
   /** رفض الخادم هذا الأمر الحساس حتى يثبت المالك هويته بعامله الثاني، أو يسجّله إن لم يكن عنده */
   stepUp?: "proof" | "enrol";
+  /** الخادم مشغول ولم يعالج الطلب: الثواني قبل المحاولة التالية. Server Actions لا تضبط ترويسات الرد، فتصل هنا بدل Retry-After */
+  retryAfter?: number;
 } | null;
 
 export function formValues(fd: FormData, keys: string[]): Record<string, string> {

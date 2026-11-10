@@ -5,6 +5,8 @@ import { audit } from "../platform/audit";
 import { count, W } from "@/lib/design";
 import { clearRateLimit, hitRateLimit, reserveFailureSlot, type FailurePolicy } from "./rate-limit";
 import { verifyPassword } from "./password";
+import { HASH_BUSY_MESSAGE } from "@/lib/busy";
+import { HASH_BUSY_RETRY_AFTER_SECONDS, isHashBusy, withHashSlot } from "./hash-gate";
 import { createSessionIn, generateToken, hashToken, type SecondFactorMethod } from "./session";
 import {
   base32Encode,
@@ -53,6 +55,22 @@ const NOT_STRANDED = "لا يلزم هذا الإجراء لهذه الجلسة.
 
 type CodeContext = { ip?: string | null; purpose: "login" | "step_up" | "manage" };
 type Refused = { ok: false; error: string; retryAfter?: number };
+
+/** عدّاد الرموز ثم كلمة المرور، داخل دور التجزئة: من يُرفض لانشغال المنصة لم يُفحص، فلا يُحتسب عليه */
+async function checkPasswordWithSlot(key: string, userId: string, password: unknown): Promise<{ outcome: "correct" | "wrong" } | { outcome: "refused"; result: Refused }> {
+  try {
+    return await withHashSlot(async () => {
+      const slot = await reserveFailureSlot(key, CODE_FAILURES);
+      if (!slot.allowed) return { outcome: "refused" as const, result: { ok: false as const, error: waitMessage(slot.retryAfterSeconds), retryAfter: slot.retryAfterSeconds } };
+      const [user] = await sql<{ password_hash: string }[]>`select password_hash from users where id = ${userId}`;
+      if (!user || typeof password !== "string" || password.length > 128 || !(await verifyPassword(password, user.password_hash))) return { outcome: "wrong" as const };
+      return { outcome: "correct" as const };
+    });
+  } catch (err) {
+    if (isHashBusy(err)) return { outcome: "refused", result: { ok: false, error: HASH_BUSY_MESSAGE, retryAfter: HASH_BUSY_RETRY_AFTER_SECONDS } };
+    throw err;
+  }
+}
 
 function waitMessage(seconds: number) {
   const remaining = seconds < 60 ? "أقل من دقيقة" : count(Math.ceil(seconds / 60), W.minute);
@@ -185,11 +203,10 @@ export async function confirmTwoFactorEnrolment(input: { userId: string; session
   const parsed = parseSecondFactorCode(input.code);
   if (parsed?.kind !== "totp") return { ok: false, error: "أدخل الرمز المكوّن من ٦ أرقام الظاهر في تطبيق المصادقة." };
   const key = failureKey(input.userId);
-  const slot = await reserveFailureSlot(key, CODE_FAILURES);
-  if (!slot.allowed) return { ok: false, error: waitMessage(slot.retryAfterSeconds), retryAfter: slot.retryAfterSeconds };
   // ربط عامل ثانٍ بالحساب يحتاج كلمة المرور في هذه اللحظة: جلسة مسروقة وحدها لا تسجّل جوال غير صاحبه
-  const [user] = await sql<{ password_hash: string }[]>`select password_hash from users where id = ${input.userId}`;
-  if (!user || typeof input.password !== "string" || input.password.length > 128 || !(await verifyPassword(input.password, user.password_hash))) {
+  const check = await checkPasswordWithSlot(key, input.userId, input.password);
+  if (check.outcome === "refused") return check.result;
+  if (check.outcome === "wrong") {
     await audit({ actorId: input.userId, action: "two_factor.enrol_refused", entityType: "user", entityId: input.userId, metadata: { reason: "password" }, ip: input.ip ?? null });
     return { ok: false, error: "كلمة المرور غير صحيحة. اكتب كلمة مرور حسابك الحالية." };
   }
@@ -274,10 +291,9 @@ export async function isStrandedOnLastCode(userId: string, sessionId: string): P
 export async function restartTwoFactorAfterLastCode(input: { userId: string; sessionId: string; password: unknown; ip?: string | null }): Promise<{ ok: true } | Refused> {
   if (!(await isStrandedOnLastCode(input.userId, input.sessionId))) return { ok: false, error: NOT_STRANDED };
   const key = failureKey(input.userId);
-  const slot = await reserveFailureSlot(key, CODE_FAILURES);
-  if (!slot.allowed) return { ok: false, error: waitMessage(slot.retryAfterSeconds), retryAfter: slot.retryAfterSeconds };
-  const [user] = await sql<{ password_hash: string }[]>`select password_hash from users where id = ${input.userId}`;
-  if (!user || typeof input.password !== "string" || input.password.length > 128 || !(await verifyPassword(input.password, user.password_hash))) return { ok: false, error: "كلمة المرور غير صحيحة." };
+  const check = await checkPasswordWithSlot(key, input.userId, input.password);
+  if (check.outcome === "refused") return check.result;
+  if (check.outcome === "wrong") return { ok: false, error: "كلمة المرور غير صحيحة." };
 
   const done = await sql.begin(async (tx) => {
     await tx`select 1 from user_totp where user_id = ${input.userId} for update`;

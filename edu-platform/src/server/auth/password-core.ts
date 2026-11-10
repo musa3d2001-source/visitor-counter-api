@@ -46,9 +46,13 @@ export async function verifyPassword(password: string, stored: string): Promise<
   return actual.length === expected.length && timingSafeEqual(actual, expected);
 }
 
-/** تجزئة وهمية بنفس الكلفة لتوحيد زمن الاستجابة عند عدم وجود المستخدم */
-let dummyHash: string | null = null;
+/**
+ * تجزئة وهمية بنفس الكلفة لتوحيد زمن الاستجابة عند عدم وجود المستخدم.
+ * ثابتة لا تُحسب عند أول طلب: الحساب الكسول يجعل أول بريد غير مسجل في كل نسخة يكلف عمليتين بدل واحدة،
+ * وذلك فرق زمني يُقاس. ناتج كلمة عشوائية لم تُحفظ بنفس المعاملات، وليست سرًا.
+ */
+export const DUMMY_PASSWORD_HASH = "scrypt$32768$8$3$zKemjUx0MdApmOaVF7Rwvw==$SnZ4c9iA4ZF79l8VPO0mra/6JAKY78cI1aw0RZ64gG+LCSdB7tMzpWIhMLJAQFVI+lk7gMGTtZCBJgF8ccWv0A==";
+
 export async function burnPasswordTime(password: string) {
-  if (!dummyHash) dummyHash = await hashPassword("dummy-password-for-timing");
-  await verifyPassword(password, dummyHash);
+  await verifyPassword(password, DUMMY_PASSWORD_HASH);
 }

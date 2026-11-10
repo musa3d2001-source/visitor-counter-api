@@ -2,6 +2,8 @@ import "server-only";
 import { sql, type Db } from "../db";
 import { env } from "../env";
 import { burnPasswordTime, verifyPassword } from "./password";
+import { HASH_BUSY_MESSAGE } from "@/lib/busy";
+import { isHashBusy, withHashSlot } from "./hash-gate";
 import { generateToken, hashToken } from "./session";
 import { clearRateLimit, hitRateLimit } from "./rate-limit";
 import { constantTimeEqual } from "./two-factor-core";
@@ -174,15 +176,27 @@ export type CorrectionResult = { ok: true; message: string } | { ok: false; erro
  */
 export async function requestEmailCorrection(userId: string, email: string, currentPassword: string, ip: string): Promise<CorrectionResult> {
   if (!mailIsReal()) return { ok: false, error: "إرسال البريد غير مفعّل حاليًا." };
-  const [perUser, perIp] = await Promise.all([hitRateLimit(`verify:correct:user:${userId}`, CORRECTION.perUser, CORRECTION.windowSec), hitRateLimit(`verify:correct:ip:${ip}`, CORRECTION.perIp, CORRECTION.windowSec)]);
-  if (!perUser.allowed || !perIp.allowed) return { ok: false, error: "محاولات كثيرة. حاول بعد ساعة." };
-
-  const [u] = await sql<{ email: string; password_hash: string; email_verified_at: Date | null }[]>`select email, password_hash, email_verified_at from users where id = ${userId}`;
-  if (!u) {
-    await burnPasswordTime(currentPassword);
-    return { ok: false, error: "انتهت الجلسة، سجّل الدخول مرة أخرى" };
+  type Checked = { refused: CorrectionResult } | { user: { email: string; password_hash: string; email_verified_at: Date | null } };
+  let checked: Checked;
+  try {
+    // الحدود داخل الدور: من يُرفض لانشغال المنصة لم يُفحص، فلا يُحتسب عليه
+    checked = await withHashSlot(async (): Promise<Checked> => {
+      const [perUser, perIp] = await Promise.all([hitRateLimit(`verify:correct:user:${userId}`, CORRECTION.perUser, CORRECTION.windowSec), hitRateLimit(`verify:correct:ip:${ip}`, CORRECTION.perIp, CORRECTION.windowSec)]);
+      if (!perUser.allowed || !perIp.allowed) return { refused: { ok: false, error: "محاولات كثيرة. حاول بعد ساعة." } };
+      const [row] = await sql<{ email: string; password_hash: string; email_verified_at: Date | null }[]>`select email, password_hash, email_verified_at from users where id = ${userId}`;
+      if (!row) {
+        await burnPasswordTime(currentPassword);
+        return { refused: { ok: false, error: "انتهت الجلسة، سجّل الدخول مرة أخرى" } };
+      }
+      if (!(await verifyPassword(currentPassword, row.password_hash))) return { refused: { ok: false, error: "كلمة المرور غير صحيحة.", field: "currentPassword" } };
+      return { user: row };
+    });
+  } catch (err) {
+    if (isHashBusy(err)) return { ok: false, error: HASH_BUSY_MESSAGE };
+    throw err;
   }
-  if (!(await verifyPassword(currentPassword, u.password_hash))) return { ok: false, error: "كلمة المرور غير صحيحة.", field: "currentPassword" };
+  if ("refused" in checked) return checked.refused;
+  const u = checked.user;
   // بريد مؤكد، أو حساب له طلب مدفوع حقيقي: إيصالاته وصلت إلى هذا العنوان، فالتغيير بيد المالك
   if (!(await emailVerificationRequired(userId))) return { ok: false, error: "لا يمكن تغيير بريد هذا الحساب من هنا. تواصل مع إدارة المنصة." };
   if (u.email.toLowerCase() === email) {

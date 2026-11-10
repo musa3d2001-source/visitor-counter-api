@@ -2,6 +2,7 @@ import "server-only";
 import { sql } from "../db";
 import { adminTwoFactorRequired, env } from "../env";
 import { hashPassword, verifyPassword, burnPasswordTime } from "./password";
+import { HASH_BUSY_RETRY_AFTER_SECONDS, isHashBusy, withHashSlot } from "./hash-gate";
 import { loginFailurePrefix } from "./password-core";
 import { createSession, createSessionIn, generateToken, hashToken, InactiveAccountError, type SecondFactorMethod } from "./session";
 import { hitRateLimit, clearRateLimit, peekRateLimit, releaseFailureSlot, reserveFailureSlot, settleCorrectPassword, type FailurePolicy } from "./rate-limit";
@@ -14,14 +15,15 @@ import { audit } from "../platform/audit";
 import { consentMeta, recordedConsentVersion } from "../platform/consent";
 import { ACCOUNT_CONSENT_KINDS, GUARDIAN_ACCOUNT_ERROR, type ConsentKind } from "@/lib/consent";
 import { passwordPolicyError, type PasswordRole } from "@/lib/password-policy";
+import { HASH_BUSY_MESSAGE, LOGIN_BUSY_MESSAGE } from "@/lib/busy";
 import { count, W } from "@/lib/design";
 
 /** منطق المصادقة (بدون اعتماد على سياق الطلب لسهولة الاختبار) */
 
 export type AuthResult =
   | { ok: true; userId: string; token: string; expiresAt: Date; mustChangePassword?: boolean; needsTwoFactorEnrolment?: boolean; deviceProof?: string }
-  /** challenge: كلمة المرور صحيحة لكن الدخول لم يكتمل. لا جلسة بعد، فتجاهله يعني فشل الدخول */
-  | { ok: false; error: string; retryAfter?: number; challenge?: { token: string; expiresAt: Date }; deviceProof?: string };
+  /** challenge: كلمة المرور صحيحة لكن الدخول لم يكتمل. لا جلسة بعد، فتجاهله يعني فشل الدخول. busy: لم تُفحص كلمة المرور أصلًا */
+  | { ok: false; error: string; retryAfter?: number; busy?: boolean; challenge?: { token: string; expiresAt: Date }; deviceProof?: string };
 
 /**
  * حدود الدخول: تُحتسب الإخفاقات فقط، والدخول الناجح لا يُحتسب أبدًا.
@@ -56,6 +58,35 @@ function lockoutMessage(retryAfterSeconds: number) {
   return `تم إيقاف تسجيل الدخول مؤقتًا بسبب محاولات خاطئة متكررة. المدة المتبقية: ${remaining}.${mailIsReal() ? " ويمكنك استعادة كلمة المرور إن نسيتها." : ""}`;
 }
 
+type LoginUser = { id: string; password_hash: string; role: PasswordRole; is_active: boolean; must_change_password: boolean; temp_password_expires_at: Date | null };
+type LoginCheck = { outcome: "refused"; result: AuthResult } | { outcome: "wrong"; firstFailure: boolean } | { outcome: "correct"; user: LoginUser };
+
+/** الجزء الذي يجري داخل دور التجزئة: حجز عدّادات الإخفاق، ثم الحساب، ثم عملية scrypt واحدة في كل طريق */
+async function checkLoginPassword(email: string, password: string, failureKey: string, accountKey: string | null): Promise<LoginCheck> {
+  // السلوك واحد لبريد مسجل وغير مسجل: لا تأخير ولا رسالة تكشف وجود الحساب
+  const slot = await reserveFailureSlot(failureKey, LOGIN_FAILURES);
+  if (!slot.allowed) return { outcome: "refused", result: { ok: false, error: lockoutMessage(slot.retryAfterSeconds), retryAfter: slot.retryAfterSeconds } };
+
+  // بعد الزوج عن قصد: عنوان محجوب وحده لا يلمس عدّاد الحساب، فلا يطيل انتظار صاحبه من شبكة أخرى
+  if (accountKey) {
+    const ceiling = await reserveFailureSlot(accountKey, LOGIN_ACCOUNT_CEILING);
+    if (!ceiling.allowed) {
+      await releaseFailureSlot(failureKey);
+      return { outcome: "refused", result: { ok: false, error: lockoutMessage(ceiling.retryAfterSeconds), retryAfter: ceiling.retryAfterSeconds } };
+    }
+  }
+
+  const [user] = await sql<LoginUser[]>`
+    select id, password_hash, role, is_active, must_change_password, temp_password_expires_at from users where email = ${email}
+  `;
+  const firstFailure = slot.failures === 1;
+  if (!user) {
+    await burnPasswordTime(password);
+    return { outcome: "wrong", firstFailure };
+  }
+  return (await verifyPassword(password, user.password_hash)) ? { outcome: "correct", user } : { outcome: "wrong", firstFailure };
+}
+
 export async function loginWithPassword(email: string, password: string, meta: { ip: string; userAgent: string; deviceProof?: string }): Promise<AuthResult> {
   const failureKey = `${loginFailurePrefix(email)}${meta.ip}`;
   // تحت بادئة الحساب: الاستعادة وإعادة التعيين من المالك تمسحانه مع حدود الأزواج. لا عنوان اسمه «*»
@@ -67,32 +98,21 @@ export async function loginWithPassword(email: string, password: string, meta: {
     if (ipState.blocked) return { ok: false, error: "محاولات كثيرة. حاول مرة أخرى بعد قليل.", retryAfter: ipState.retryAfterSeconds };
   }
 
-  // السلوك واحد لبريد مسجل وغير مسجل: لا تأخير ولا رسالة تكشف وجود الحساب
-  const slot = await reserveFailureSlot(failureKey, LOGIN_FAILURES);
-  if (!slot.allowed) return { ok: false, error: lockoutMessage(slot.retryAfterSeconds), retryAfter: slot.retryAfterSeconds };
-
-  // بعد الزوج عن قصد: عنوان محجوب وحده لا يلمس عدّاد الحساب، فلا يطيل انتظار صاحبه من شبكة أخرى
-  if (!provedDevice) {
-    const ceiling = await reserveFailureSlot(accountKey, LOGIN_ACCOUNT_CEILING);
-    if (!ceiling.allowed) {
-      await releaseFailureSlot(failureKey);
-      return { ok: false, error: lockoutMessage(ceiling.retryAfterSeconds), retryAfter: ceiling.retryAfterSeconds };
-    }
+  // الدور قبل أي كتابة وقبل البحث عن الحساب: من يُرفض هنا لم يُفحص، فلا يُحتسب عليه ولا يختلف بين بريد مسجل وغير مسجل.
+  // والمكان يعود فور انتهاء الفحص: فتح الجلسة والعدادات بعده لا تحجز دور طالب آخر
+  let check: LoginCheck;
+  try {
+    check = await withHashSlot(() => checkLoginPassword(email, password, failureKey, provedDevice ? null : accountKey));
+  } catch (err) {
+    if (isHashBusy(err)) return { ok: false, error: LOGIN_BUSY_MESSAGE, retryAfter: HASH_BUSY_RETRY_AFTER_SECONDS, busy: true };
+    throw err;
   }
-
-  const failed = async (): Promise<AuthResult> => {
-    if (slot.failures === 1) await hitRateLimit(ipKey, LOGIN_IP.failingAccounts, LOGIN_IP.windowSec);
+  if (check.outcome === "refused") return check.result;
+  if (check.outcome === "wrong") {
+    if (check.firstFailure) await hitRateLimit(ipKey, LOGIN_IP.failingAccounts, LOGIN_IP.windowSec);
     return { ok: false, error: "البريد الإلكتروني أو كلمة المرور غير صحيحة." };
-  };
-
-  const [user] = await sql<{ id: string; password_hash: string; role: PasswordRole; is_active: boolean; must_change_password: boolean; temp_password_expires_at: Date | null }[]>`
-    select id, password_hash, role, is_active, must_change_password, temp_password_expires_at from users where email = ${email}
-  `;
-  if (!user) {
-    await burnPasswordTime(password);
-    return failed();
   }
-  if (!(await verifyPassword(password, user.password_hash))) return failed();
+  const { user } = check;
 
   // كلمة صحيحة: ليست إخفاقًا مهما كانت حالة الحساب بعدها
   await settleCorrectPassword(failureKey, provedDevice ? null : accountKey);
@@ -162,9 +182,18 @@ export async function registerStudent(
   const problem = passwordPolicyError("student", input.password, input.email);
   if (problem) return { ok: false, error: problem, field: "password" };
   // عنوان واحد قد يكون مدرسة كاملة: الحد يوقف الإغراق ولا يوقف صفًا يسجّل معًا
-  const limit = await hitRateLimit(`register:ip:${meta.ip}`, 200, 60 * 60);
-  if (!limit.allowed) return { ok: false, error: "محاولات تسجيل كثيرة من هذه الشبكة. حاول لاحقًا." };
-  const hash = await hashPassword(input.password);
+  // الحد داخل الدور: من يُرفض لانشغال المنصة لا يُحتسب على شبكته
+  let hash: string | null;
+  try {
+    hash = await withHashSlot(async () => {
+      const limit = await hitRateLimit(`register:ip:${meta.ip}`, 200, 60 * 60);
+      return limit.allowed ? hashPassword(input.password) : null;
+    });
+  } catch (err) {
+    if (isHashBusy(err)) return { ok: false, error: HASH_BUSY_MESSAGE };
+    throw err;
+  }
+  if (hash === null) return { ok: false, error: "محاولات تسجيل كثيرة من هذه الشبكة. حاول لاحقًا." };
   const [settings, grades] = await Promise.all([readSettings(), input.gradeId ? sql<{ id: string }[]>`select id from grades where id = ${input.gradeId} and is_published` : Promise.resolve([] as { id: string }[])]);
   const kinds: ConsentKind[] = [...ACCOUNT_CONSENT_KINDS, "guardian_account"];
   const versions = kinds.map((kind) => recordedConsentVersion(kind, settings));
@@ -246,19 +275,36 @@ export async function requestPasswordReset(email: string, ip: string): Promise<v
 export async function resetPassword(token: string, newPassword: string): Promise<{ ok: true } | { ok: false; error: string; field?: "password" }> {
   if (!token || token.length > 100) return { ok: false, error: "الرابط غير صالح." };
   const id = hashToken(token);
+  type TokenRow = { user_id: string; expires_at: Date; used_at: Date | null; role: PasswordRole; email: string };
+  const expired = { ok: false as const, error: "انتهت صلاحية الرابط أو سبق استخدامه. اطلب رابطًا جديدًا." };
+  const usable = (row: TokenRow | undefined): row is TokenRow => row !== undefined && !row.used_at && new Date(row.expires_at).getTime() >= Date.now() && row.role !== "admin";
+  const [seen] = await sql<TokenRow[]>`
+    select t.user_id, t.expires_at, t.used_at, u.role, u.email
+    from password_reset_tokens t join users u on u.id = t.user_id
+    where t.id = ${id}
+  `;
+  if (!usable(seen)) return expired;
+  // الرفض قبل استهلاك الرمز: الطالب يصحح كلمته بالرابط نفسه
+  const early = passwordPolicyError(seen.role, newPassword, seen.email);
+  if (early) return { ok: false, error: early, field: "password" };
+  // التجزئة قبل المعاملة: قد تنتظر دورها ثوانٍ، ولا يصح أن تمسك خلالها قفلًا واتصالًا
+  let hash: string;
+  try {
+    hash = await hashPassword(newPassword);
+  } catch (err) {
+    if (isHashBusy(err)) return { ok: false, error: HASH_BUSY_MESSAGE };
+    throw err;
+  }
   return sql.begin(async (tx) => {
-    const [row] = await tx<{ user_id: string; expires_at: Date; used_at: Date | null; role: PasswordRole; email: string }[]>`
+    // القفل ثم التحقق من جديد: الرابط يصلح مرة واحدة مهما تزامنت الطلبات أثناء التجزئة
+    const [row] = await tx<TokenRow[]>`
       select t.user_id, t.expires_at, t.used_at, u.role, u.email
       from password_reset_tokens t join users u on u.id = t.user_id
       where t.id = ${id} for update of t
     `;
-    if (!row || row.used_at || new Date(row.expires_at).getTime() < Date.now() || row.role === "admin") {
-      return { ok: false as const, error: "انتهت صلاحية الرابط أو سبق استخدامه. اطلب رابطًا جديدًا." };
-    }
-    // الرفض قبل استهلاك الرمز: الطالب يصحح كلمته بالرابط نفسه
+    if (!usable(row)) return expired;
     const problem = passwordPolicyError(row.role, newPassword, row.email);
     if (problem) return { ok: false as const, error: problem, field: "password" as const };
-    const hash = await hashPassword(newPassword);
     await tx`update users set password_hash = ${hash}, must_change_password = false, temp_password_expires_at = null where id = ${row.user_id}`;
     await tx`update password_reset_tokens set used_at = now() where user_id = ${row.user_id} and used_at is null`;
     await revokeEmailLinks(tx, row.user_id);
@@ -271,27 +317,37 @@ export async function resetPassword(token: string, newPassword: string): Promise
 /** محاولات كلمة المرور الحالية من جلسة مفتوحة: من سرق جلسة لا يخمّنها */
 const CHANGE_PASSWORD_FAILURES: FailurePolicy = { freeFailures: 5, firstDelaySeconds: 60, maxDelaySeconds: 15 * 60, forgetAfterSeconds: 60 * 60 };
 
-export type ChangePasswordResult = { ok: true } | { ok: false; error: string; field: "currentPassword" | "newPassword" };
+/** field غائب: رفض بلا فحص لأن المنصة مشغولة */
+export type ChangePasswordResult = { ok: true } | { ok: false; error: string; field?: "currentPassword" | "newPassword" };
 
 export async function changePassword(userId: string, current: string, next: string, keepSessionId: string): Promise<ChangePasswordResult> {
   const key = `pwchange:fail:${userId}`;
-  const slot = await reserveFailureSlot(key, CHANGE_PASSWORD_FAILURES);
-  if (!slot.allowed) return { ok: false, error: "محاولات كثيرة. حاول مرة أخرى بعد قليل.", field: "currentPassword" };
-  const [u] = await sql<{ password_hash: string; role: PasswordRole; email: string }[]>`select password_hash, role, email from users where id = ${userId}`;
-  if (!u || !(await verifyPassword(current, u.password_hash))) return { ok: false, error: "كلمة المرور الحالية غير صحيحة.", field: "currentPassword" };
-  await clearRateLimit(key);
-  const problem = passwordPolicyError(u.role, next, u.email);
-  if (problem) return { ok: false, error: problem, field: "newPassword" };
-  const hash = await hashPassword(next);
-  await sql.begin(async (tx) => {
-    await tx`update users set password_hash = ${hash} where id = ${userId}`;
-    await tx`update password_reset_tokens set used_at = now() where user_id = ${userId} and used_at is null`;
-    await revokeEmailLinks(tx, userId);
-    await tx`delete from sessions where user_id = ${userId} and id <> ${keepSessionId}`;
-    // خطوة كلمة مرور معلقة بالكلمة القديمة لا تكتمل بعد تغييرها
-    await tx`delete from login_challenges where user_id = ${userId}`;
-  });
-  return { ok: true };
+  try {
+    const check = await withHashSlot(async () => {
+      const slot = await reserveFailureSlot(key, CHANGE_PASSWORD_FAILURES);
+      if (!slot.allowed) return "limited" as const;
+      const [u] = await sql<{ password_hash: string; role: PasswordRole; email: string }[]>`select password_hash, role, email from users where id = ${userId}`;
+      return u && (await verifyPassword(current, u.password_hash)) ? u : ("wrong" as const);
+    });
+    if (check === "limited") return { ok: false, error: "محاولات كثيرة. حاول مرة أخرى بعد قليل.", field: "currentPassword" };
+    if (check === "wrong") return { ok: false, error: "كلمة المرور الحالية غير صحيحة.", field: "currentPassword" };
+    await clearRateLimit(key);
+    const problem = passwordPolicyError(check.role, next, check.email);
+    if (problem) return { ok: false, error: problem, field: "newPassword" };
+    const hash = await hashPassword(next);
+    await sql.begin(async (tx) => {
+      await tx`update users set password_hash = ${hash} where id = ${userId}`;
+      await tx`update password_reset_tokens set used_at = now() where user_id = ${userId} and used_at is null`;
+      await revokeEmailLinks(tx, userId);
+      await tx`delete from sessions where user_id = ${userId} and id <> ${keepSessionId}`;
+      // خطوة كلمة مرور معلقة بالكلمة القديمة لا تكتمل بعد تغييرها
+      await tx`delete from login_challenges where user_id = ${userId}`;
+    });
+    return { ok: true };
+  } catch (err) {
+    if (isHashBusy(err)) return { ok: false, error: HASH_BUSY_MESSAGE };
+    throw err;
+  }
 }
 
 export type ForcedChangeResult = { ok: true; token: string; expiresAt: Date } | { ok: false; error: string; field?: "password" };
@@ -303,16 +359,26 @@ export type ForcedChangeResult = { ok: true; token: string; expiresAt: Date } | 
  * فبدون ذلك يعود صاحبه إلى الدخول مباشرة بعد أن اختار كلمته.
  */
 export async function completeForcedPasswordChange(userId: string, next: string, meta: { ip: string; userAgent: string; sessionId?: string }): Promise<ForcedChangeResult> {
-  const limit = await hitRateLimit(`pwforced:user:${userId}`, 20, 15 * 60);
-  if (!limit.allowed) return { ok: false, error: "محاولات كثيرة. حاول مرة أخرى بعد قليل." };
-  const [u] = await sql<{ password_hash: string; role: PasswordRole; email: string; must_change_password: boolean }[]>`
-    select password_hash, role, email, must_change_password from users where id = ${userId}
-  `;
-  if (!u?.must_change_password) return { ok: false, error: "لا يلزم تغيير كلمة المرور لهذا الحساب." };
-  const problem = passwordPolicyError(u.role, next, u.email);
-  if (problem) return { ok: false, error: problem, field: "password" };
-  if (await verifyPassword(next, u.password_hash)) return { ok: false, error: "اختر كلمة مرور غير الكلمة المؤقتة.", field: "password" };
-  const hash = await hashPassword(next);
+  let hash: string;
+  try {
+    const refused = await withHashSlot(async (): Promise<ForcedChangeResult | null> => {
+      const limit = await hitRateLimit(`pwforced:user:${userId}`, 20, 15 * 60);
+      if (!limit.allowed) return { ok: false, error: "محاولات كثيرة. حاول مرة أخرى بعد قليل." };
+      const [u] = await sql<{ password_hash: string; role: PasswordRole; email: string; must_change_password: boolean }[]>`
+        select password_hash, role, email, must_change_password from users where id = ${userId}
+      `;
+      if (!u?.must_change_password) return { ok: false, error: "لا يلزم تغيير كلمة المرور لهذا الحساب." };
+      const problem = passwordPolicyError(u.role, next, u.email);
+      if (problem) return { ok: false, error: problem, field: "password" };
+      if (await verifyPassword(next, u.password_hash)) return { ok: false, error: "اختر كلمة مرور غير الكلمة المؤقتة.", field: "password" };
+      return null;
+    });
+    if (refused) return refused;
+    hash = await hashPassword(next);
+  } catch (err) {
+    if (isHashBusy(err)) return { ok: false, error: HASH_BUSY_MESSAGE };
+    throw err;
+  }
   const session = await sql.begin(async (tx) => {
     const updated = await tx`
       update users set password_hash = ${hash}, must_change_password = false, temp_password_expires_at = null

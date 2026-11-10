@@ -22,6 +22,7 @@ export function Alert({
   children?: React.ReactNode;
   className?: string;
   "data-testid"?: string;
+  "data-retry-after"?: number;
 }) {
   const { cls, icon, Icon } = tones[tone];
   return (
