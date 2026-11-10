@@ -4,6 +4,7 @@ import { siteFacts } from "@/server/platform/site-facts";
 import { publicHero, publicTagline } from "@/lib/site-truth";
 import { env } from "@/server/env";
 import { siteIndexable } from "@/server/platform/indexing";
+import { fontClassNames } from "./fonts";
 import "./globals.css";
 
 /** كل الصفحات ديناميكية (جلسات + CSP nonce لكل طلب) — البناء لا يحتاج قاعدة بيانات */
@@ -45,7 +46,7 @@ export default async function RootLayout({ children }: { children: React.ReactNo
   const s = await getPublicSettings();
   const style = { "--brand": s.primary_color, "--accent": s.accent_color } as React.CSSProperties;
   return (
-    <html lang="ar" dir="rtl" style={style} data-scroll-behavior="smooth">
+    <html lang="ar" dir="rtl" style={style} data-scroll-behavior="smooth" className={fontClassNames}>
       <body className="min-h-dvh bg-canvas font-sans text-ink">
         <a href="#main" className="sr-only focus:not-sr-only focus:fixed focus:start-3 focus:top-3 focus:z-50 focus:rounded-full focus:bg-surface focus:px-5 focus:py-2.5 focus:font-display focus:font-bold focus:shadow-lift">
           تخطَّ إلى المحتوى

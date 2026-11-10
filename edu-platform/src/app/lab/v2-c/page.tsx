@@ -35,11 +35,6 @@
  *   دعوة ختامية مشمسة + تذييل فيروزي داكن.
  * ─────────────────────────────────────────────────────────────────────────────
  */
-import "@fontsource-variable/cairo";
-import "@fontsource/tajawal/400.css";
-import "@fontsource/tajawal/500.css";
-import "@fontsource/tajawal/700.css";
-import "@fontsource/tajawal/800.css";
 import Link from "next/link";
 import type { CSSProperties } from "react";
 import {
