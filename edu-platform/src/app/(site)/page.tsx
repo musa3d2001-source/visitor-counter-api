@@ -92,6 +92,8 @@ export default async function HomePage() {
   const sortedBundles = [...bundles].sort((a, b) => (levelBySlug.get(a.gradeSlug) ?? 99) - (levelBySlug.get(b.gradeSlug) ?? 99));
   const [owned, bundleItems] = await Promise.all([user ? accessibleProductIds(user.id) : Promise.resolve(undefined), getBundleItemsFor(sortedBundles.map((b) => b.id))]);
   const subjectsByGrade = grades.map((g) => allSubjects.filter((x) => x.gradeId === g.id));
+  // لوحة واحدة في الصفحة: أول صف فيه مواد. بقية اللوحات يطلبها التبويب عند الحاجة
+  const firstPanel = subjectsByGrade.findIndex((list) => list.length > 0);
 
   const reviewIds = new Set([...examReviews, ...quizReviews].map((r) => r.id));
   const courses = videos.filter((v) => v.type === "video_course");
@@ -168,19 +170,16 @@ export default async function HomePage() {
               )}
             </section>
 
-            {grades.some((_, i) => (subjectsByGrade[i] ?? []).length) ? (
-              <SubjectExplorer
-                tabs={grades.map((g) => ({ id: g.id, level: g.level, num: ar(g.level), name: g.name, short: shortGrade(g.name) }))}
-                panels={grades.map((g, i) => (
-                  <SubjectGrid key={g.id}>
-                    {(subjectsByGrade[i] ?? []).map((x) => (
-                      <li key={x.id}>
-                        <SubjectTile subject={x} href={`/grades/${g.slug}/${x.slug}`} />
-                      </li>
-                    ))}
-                  </SubjectGrid>
-                ))}
-              />
+            {firstPanel >= 0 ? (
+              <SubjectExplorer tabs={grades.map((g) => ({ id: g.id, slug: g.slug, level: g.level, num: ar(g.level), name: g.name, short: shortGrade(g.name) }))} initial={firstPanel}>
+                <SubjectGrid>
+                  {subjectsByGrade[firstPanel].map((x) => (
+                    <li key={x.id}>
+                      <SubjectTile subject={x} href={`/grades/${grades[firstPanel].slug}/${x.slug}`} />
+                    </li>
+                  ))}
+                </SubjectGrid>
+              </SubjectExplorer>
             ) : null}
           </div>
         </div>
