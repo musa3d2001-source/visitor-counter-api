@@ -2,6 +2,7 @@ import { afterAll, afterEach, beforeAll, describe, expect, it } from "vitest";
 import { passwordPolicyError, STAFF_PASSWORD_MIN, STUDENT_PASSWORD_MIN } from "@/lib/password-policy";
 import { changePassword, completeForcedPasswordChange, loginWithPassword, requestPasswordReset, resetPassword } from "@/server/auth/service";
 import { createSession, hashToken, validateSessionToken } from "@/server/auth/session";
+import { hashPassword } from "@/server/auth/password-core";
 import { closeDb, resetDb, sql } from "../helpers/db";
 import { createUser, TEST_PASSWORD } from "../helpers/factories";
 
@@ -18,8 +19,36 @@ async function issueResetToken(userId: string, token = `token-${userId}`.slice(0
 
 describe("password policy rules", () => {
   it("students keep the eight character minimum", () => {
-    expect(passwordPolicyError("student", "a".repeat(STUDENT_PASSWORD_MIN))).toBeNull();
-    expect(passwordPolicyError("student", "a".repeat(STUDENT_PASSWORD_MIN - 1))).toBe("كلمة المرور يجب أن تكون ٨ أحرف على الأقل");
+    expect(passwordPolicyError("student", "blue-kite".slice(0, STUDENT_PASSWORD_MIN))).toBeNull();
+    expect(passwordPolicyError("student", "blue-kite".slice(0, STUDENT_PASSWORD_MIN - 1))).toBe("كلمة المرور يجب أن تكون ٨ أحرف على الأقل");
+  });
+
+  it.each(["12345678", "99887766", "٠٥٠١٢٣٤٥٦", "2012/05/14", "1234 5678", "aaaaaaaa", "abababab", "aabbccaa", "abcdefgh", "hgfedcba", "qwertyui", "asdfghjk", "!@#$%^&*", "ضصثقفغعه", "abcdabcd", "qwerqwer", "password", "Password1", "P@ssw0rd", "p@ssw0rd123", "Passw0rd!", "qwerty123", "ahmed2012", "Mohammed1", "football10", "iloveyou2", "محمد2012", "فاطمة1234", "1a2b3c4d"])(
+    "refuses the easy guess %s for a student, in words a child can act on",
+    (bad) => {
+      expect(passwordPolicyError("student", bad)).toContain("سهلة التخمين");
+    },
+  );
+
+  it.each(["blue kite 7", "my cat Lulu", "قمر فوق البحر", "sand4harbor", "Student-Pass-1", "kuwait city bus"])("accepts %s, with no demand for symbols or capitals", (good) => {
+    expect(passwordPolicyError("student", good)).toBeNull();
+  });
+
+  it("refuses a student password built on the account's own email", () => {
+    expect(passwordPolicyError("student", "khaled.m2012", "khaled.m@school.test")).toContain("سهلة التخمين");
+    expect(passwordPolicyError("student", "blue kite 7", "khaled.m@school.test")).toBeNull();
+  });
+
+  it("the student word list does not reach staff, so no teacher who passed before is sent to change", () => {
+    expect(passwordPolicyError("teacher", "Mohammed-Mohammed-2026", null)).toBeNull();
+  });
+
+  it("existing passwords are never re-judged at sign-in", async () => {
+    const hash = await hashPassword("12345678");
+    const u = await createUser();
+    await sql`update users set password_hash = ${hash} where id = ${u.id}`;
+    await expect(loginWithPassword(u.email, "12345678", { ip: "192.0.2.2", userAgent: "t" })).resolves.toMatchObject({ ok: true });
+    expect((await sql<{ must_change_password: boolean }[]>`select must_change_password from users where id = ${u.id}`)[0].must_change_password).toBe(false);
   });
 
   it.each(["teacher", "admin"] as const)("%s needs at least twelve characters, with a clear Arabic message", (role) => {

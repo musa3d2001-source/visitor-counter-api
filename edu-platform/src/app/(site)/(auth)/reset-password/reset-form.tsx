@@ -23,7 +23,7 @@ export function ResetForm({ token }: { token: string }) {
           </Link>
         </div>
       ) : null}
-      <Field label="كلمة المرور الجديدة" htmlFor="password" error={state?.fieldErrors?.password} hint="٨ أحرف على الأقل، و١٢ لحسابات المعلمين">
+      <Field label="كلمة المرور الجديدة" htmlFor="password" error={state?.fieldErrors?.password} hint="٨ أحرف على الأقل وليست أرقامًا فقط، و١٢ لحسابات المعلمين">
         <PasswordInput id="password" name="password" icon={<KeyRound />} autoComplete="new-password" dir="ltr" required minLength={8} />
       </Field>
       <Field label="تأكيد كلمة المرور" htmlFor="passwordConfirm" error={state?.fieldErrors?.passwordConfirm}>
