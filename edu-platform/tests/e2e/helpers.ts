@@ -1,6 +1,7 @@
 import { expect, type Page, type Browser } from "@playwright/test";
 import postgres from "postgres";
-import { E2E_ADMIN, E2E_DATABASE_URL, E2E_SINK_URL } from "./e2e-env";
+import { hotp, timeStep } from "../../src/server/auth/two-factor-core";
+import { E2E_ADMIN, E2E_ADMIN_TOTP_SECRET, E2E_DATABASE_URL, E2E_SINK_URL } from "./e2e-env";
 
 let _sql: postgres.Sql | null = null;
 export function db() {
@@ -42,8 +43,32 @@ export async function login(page: Page, email: string, password: string, next = 
   await page.waitForURL((u) => u.pathname === next || u.pathname.startsWith(next));
 }
 
+/** رمز جديد للمدير. الرحلات تتتابع أسرع من خطوة ٣٠ ثانية، فيُفتح حارس منع التكرار قبل كل رمز (العامل واحد، فلا تداخل) */
+export async function adminCode(): Promise<string> {
+  await db()`update user_totp set last_used_step = null where user_id = (select id from users where email = ${E2E_ADMIN.email})`;
+  await db()`delete from rate_limits where key like '2fa:%'`;
+  return hotp(E2E_ADMIN_TOTP_SECRET, timeStep(Date.now()));
+}
+
 export async function loginAdmin(page: Page) {
-  await login(page, E2E_ADMIN.email, E2E_ADMIN.password, "/admin");
+  await page.goto(`/login?next=${encodeURIComponent("/admin")}`);
+  await page.fill("#email", E2E_ADMIN.email);
+  await page.fill("#password", E2E_ADMIN.password);
+  await page.getByRole("button", { name: "تسجيل الدخول" }).click();
+  await page.waitForURL(/\/login\/two-factor/);
+  await page.getByTestId("two-factor-code").fill(await adminCode());
+  await page.getByTestId("two-factor-submit").click();
+  await page.waitForURL((u) => u.pathname.startsWith("/admin"));
+}
+
+/** أول أمر حساس في الجلسة يطلب الإثبات، ثم يكمل الأمر نفسه وحده بعد التأكيد */
+export async function passStepUp(page: Page) {
+  const sheet = page.getByTestId("step-up-sheet");
+  await expect(sheet).toBeVisible({ timeout: 15_000 });
+  await expect(sheet).toHaveAttribute("data-need", "proof");
+  await page.getByTestId("step-up-proof-code").fill(await adminCode());
+  await page.getByTestId("step-up-proof-submit").click();
+  await expect(sheet).toBeHidden({ timeout: 15_000 });
 }
 
 export async function newStudentPage(browser: Browser) {

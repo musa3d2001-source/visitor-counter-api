@@ -1,5 +1,5 @@
 import { test, expect, type Browser } from "@playwright/test";
-import { asDistinctClient, checkoutAndPay, db, expectNoHorizontalOverflow, login, loginAdmin, productBySlug, registerStudent, STUDENT_PASSWORD, uniqueEmail, waitForMailLink } from "./helpers";
+import { asDistinctClient, checkoutAndPay, db, expectNoHorizontalOverflow, login, loginAdmin, passStepUp, productBySlug, registerStudent, STUDENT_PASSWORD, uniqueEmail, waitForMailLink } from "./helpers";
 import { E2E_MAIL_BASE_URL } from "./e2e-env";
 
 /** الاستعادة بيد المالك (البريد غير مفعّل هنا)، وتأكيد البريد قبل أول دفع (خادم ثانٍ ببريد SMTP حقيقي إلى خادم اختبار محلي) */
@@ -24,6 +24,7 @@ async function issueReset(browser: Browser, email: string) {
   await owner.page.goto(`/admin/students/${await studentId(email)}`);
   await owner.page.fill("#reset-reason", "طلب ولي الأمر عبر واتساب");
   await owner.page.getByRole("button", { name: "إصدار رابط وكلمة مؤقتة" }).click();
+  await passStepUp(owner.page);
   await expect(owner.page.getByTestId("student-reset-secrets")).toBeVisible();
   await expectNoHorizontalOverflow(owner.page);
   const link = (await owner.page.getByTestId("student-reset-link").textContent())!.trim();
@@ -110,6 +111,7 @@ test.describe("الاستعادة بيد المالك والبريد غير مف
     await owner.page.fill("#correct-email", "admin-e2e@example.com");
     await owner.page.fill("#correct-reason", "خطأ إملائي");
     await owner.page.getByRole("button", { name: "حفظ البريد الصحيح" }).click();
+    await passStepUp(owner.page);
     await expect(owner.page.getByText("هذا البريد مستخدم في حساب آخر").first()).toBeVisible();
 
     await owner.page.fill("#correct-email", fixed);

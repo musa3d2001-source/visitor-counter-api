@@ -86,13 +86,22 @@ test.describe("التحقق بخطوتين الإلزامي للمالك", () =>
     }
     await page.setViewportSize({ width: 1366, height: 900 });
 
+    // ربط الجوال يحتاج كلمة المرور في لحظته
+    await page.getByTestId("two-factor-password").fill("not-the-password-at-all");
+    await page.getByTestId("two-factor-code").fill(hotp(secret, timeStep(Date.now())));
+    await page.getByTestId("two-factor-submit").click();
+    await expect(page.getByText("كلمة المرور غير صحيحة")).toBeVisible();
+    expect(await db()`select 1 from user_totp where user_id = ${owner.id} and enabled_at is not null`).toHaveLength(0);
+
     // رمز خاطئ لا يفعّل شيئًا
+    await page.getByTestId("two-factor-password").fill(PASSWORD);
     await page.getByTestId("two-factor-code").fill(notAValidCode(secret));
     await page.getByTestId("two-factor-submit").click();
     await expect(page.getByText("الرمز غير صحيح")).toBeVisible();
     expect(await db()`select 1 from user_totp where user_id = ${owner.id} and enabled_at is not null`).toHaveLength(0);
 
     // رمز صحيح: عشرة رموز استرداد تظهر مرة واحدة، والصفحة لا تعاد تحميلها فتضيع
+    await page.getByTestId("two-factor-password").fill(PASSWORD);
     await page.getByTestId("two-factor-code").fill(hotp(secret, timeStep(Date.now())));
     await page.getByTestId("two-factor-submit").click();
     const codes = page.getByTestId("recovery-codes").locator("li");
@@ -230,6 +239,7 @@ test.describe("الخطوة الثانية على الجوال", () => {
     await page.waitForURL("**/two-factor/setup");
     const secret = base32Decode((await page.getByTestId("totp-manual-key").textContent())!.replace(/\s/g, ""));
     await expectNoHorizontalOverflow(page);
+    await page.getByTestId("two-factor-password").fill(PASSWORD);
     await page.getByTestId("two-factor-code").fill(hotp(secret, timeStep(Date.now())));
     await page.getByTestId("two-factor-submit").click();
     const codes = page.getByTestId("recovery-codes").locator("li");

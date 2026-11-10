@@ -7,6 +7,8 @@ export const E2E_SIM_PORT = Number(process.env.E2E_SIM_PORT ?? 4010);
 export const E2E_DATABASE_URL = process.env.E2E_DATABASE_URL ?? "postgres://edu:edu_local_pw@localhost:5432/edu_e2e";
 export const E2E_STORAGE_DIR = resolve(__dirname, "../.tmp/e2e-storage");
 export const E2E_ADMIN = { email: "admin-e2e@example.com", password: "Admin-E2E-Pass-2026" };
+/** سر تطبيق المصادقة لمدير الاختبار: مسجَّل من البداية، فكل دخول وكل أمر حساس يمر بالخطوة الحقيقية */
+export const E2E_ADMIN_TOTP_SECRET = Buffer.from("e2e-admin-totp-secret-20b");
 export const E2E_SIM_KEY = "sim-key";
 export const E2E_BUNNY_PORT = Number(process.env.E2E_BUNNY_PORT ?? 4020);
 export const E2E_BUNNY = {

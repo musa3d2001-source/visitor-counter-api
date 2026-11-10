@@ -1,5 +1,5 @@
 import { test, expect, type Browser, type Page } from "@playwright/test";
-import { asDistinctClient, db, expectNoHorizontalOverflow, login, loginAdmin, productBySlug, registerStudent, STUDENT_PASSWORD, uniqueEmail } from "./helpers";
+import { asDistinctClient, db, expectNoHorizontalOverflow, login, loginAdmin, passStepUp, productBySlug, registerStudent, STUDENT_PASSWORD, uniqueEmail } from "./helpers";
 
 /** إقرار الدفع قبل كل فاتورة، وسؤال الحسابات الأقدم من السجل، وحذف بيانات الطالب بيد المالك */
 const SLUG = "g9-math-final-notes-t1";
@@ -151,6 +151,7 @@ test.describe("حذف بيانات الطالب", () => {
     await expect(submit).toBeEnabled();
     await expectNoHorizontalOverflow(owner.page);
     await submit.click();
+    await passStepUp(owner.page);
 
     await expect(owner.page.getByTestId("student-anonymized-note")).toBeVisible();
     await expect(owner.page.getByTestId("anonymize-start")).toHaveCount(0);

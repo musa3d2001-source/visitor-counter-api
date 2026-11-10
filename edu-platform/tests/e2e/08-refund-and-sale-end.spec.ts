@@ -1,5 +1,5 @@
 import { test, expect } from "@playwright/test";
-import { checkoutAndPay, db, expectNoHorizontalOverflow, loginAdmin, newStudentPage, productBySlug } from "./helpers";
+import { adminCode, checkoutAndPay, db, expectNoHorizontalOverflow, loginAdmin, newStudentPage, productBySlug } from "./helpers";
 
 test.describe("استرداد الطلب كاملًا عبر البوابة", () => {
   test.beforeEach(({}, info) => test.skip(info.project.name !== "desktop", "رحلة المالك مغطاة على الكمبيوتر"));
@@ -23,10 +23,11 @@ test.describe("استرداد الطلب كاملًا عبر البوابة", ()
     await page.goto(`/admin/orders/${orderId}`);
     // لا حقل مبلغ: الاسترداد دائمًا كامل قيمة الطلب
     await expect(page.locator('input[name="amount"]')).toHaveCount(0);
-    // التحقق بخطوتين غير مفعّل هنا: الصفحة تقول إن الأمر يخرج بلا رمز
-    await expect(page.getByTestId("step-up-off-note")).toBeVisible();
+    // المالك مسجَّل: لا تنبيه، ولكل استرداد رمزه
+    await expect(page.getByTestId("step-up-off-note")).toHaveCount(0);
     await page.getByRole("button", { name: "استرداد كامل المبلغ" }).click();
     await page.getByLabel("سبب الاسترداد (إلزامي)").fill("طلب ولي الأمر");
+    await page.getByTestId("step-up-code").fill(await adminCode());
     await page.getByRole("button", { name: "إرسال طلب الاسترداد" }).click();
 
     const row = page.getByTestId("refund-row");

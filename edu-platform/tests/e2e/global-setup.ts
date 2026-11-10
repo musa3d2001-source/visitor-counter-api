@@ -5,7 +5,8 @@ import { seedDemo, seedStructure } from "../../scripts/seed";
 import { seedDemoTeachers } from "../../scripts/demo-teachers";
 import { closeDemoBrowser } from "../../scripts/demo-pdf";
 import { hashPassword } from "../../src/server/auth/password-core";
-import { E2E_ADMIN, E2E_DATABASE_URL, E2E_STORAGE_DIR } from "./e2e-env";
+import { sealTotpSecret } from "../../src/server/auth/two-factor-core";
+import { E2E_ADMIN, E2E_ADMIN_TOTP_SECRET, E2E_DATABASE_URL, E2E_SERVER_ENV, E2E_STORAGE_DIR } from "./e2e-env";
 
 /**
  * يجهّز قاعدة بيانات E2E من الصفر قبل تشغيل الاختبارات:
@@ -32,10 +33,12 @@ export default async function globalSetup() {
     await seedDemo(sql, { publish: true, storageDir: E2E_STORAGE_DIR, academicYear: "2026-2027" });
     await seedDemoTeachers(sql, { publish: true, storageDir: E2E_STORAGE_DIR, academicYear: "2026-2027" });
     await closeDemoBrowser();
-    await sql`
+    const [owner] = await sql<{ id: string }[]>`
       insert into users (email, password_hash, full_name, role, email_verified_at)
       values (${E2E_ADMIN.email}, ${await hashPassword(E2E_ADMIN.password)}, 'مدير الاختبار', 'admin', now())
+      returning id
     `;
+    await sql`insert into user_totp (user_id, secret_ciphertext, enabled_at) values (${owner.id}, ${sealTotpSecret(E2E_ADMIN_TOTP_SECRET, E2E_SERVER_ENV.APP_SECRET, owner.id)}, now())`;
   } finally {
     await sql.end();
   }

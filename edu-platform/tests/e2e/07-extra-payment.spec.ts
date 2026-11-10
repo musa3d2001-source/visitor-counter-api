@@ -1,5 +1,5 @@
 import { test, expect } from "@playwright/test";
-import { db, loginAdmin, newStudentPage, productBySlug } from "./helpers";
+import { adminCode, db, loginAdmin, newStudentPage, productBySlug } from "./helpers";
 
 /** طالب يدفع الفاتورتين القديمة والجديدة ← تُسجل الثانية ولا تضيع ← المالك يستردها وحدها */
 test.describe("دفعة ثانية على طلب مدفوع", () => {
@@ -51,6 +51,7 @@ test.describe("دفعة ثانية على طلب مدفوع", () => {
 
     await row.getByRole("button", { name: "استرداد هذه الدفعة" }).click();
     await page.getByLabel("سبب الاسترداد (إلزامي)").fill("دفعة مكررة من الطالب");
+    await page.getByTestId("step-up-code").fill(await adminCode());
     await page.getByRole("button", { name: "إرسال طلب الاسترداد" }).click();
 
     await expect(page.getByTestId("extra-payment").filter({ hasText: firstInvoice })).toContainText("أُرسل للبوابة");

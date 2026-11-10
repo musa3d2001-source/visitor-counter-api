@@ -1,7 +1,7 @@
 import { test, expect, type Page } from "@playwright/test";
 import { mkdirSync, writeFileSync } from "node:fs";
 import { join, resolve } from "node:path";
-import { checkoutAndPay, db, login, loginAdmin, registerStudent } from "./helpers";
+import { checkoutAndPay, db, login, loginAdmin, passStepUp, registerStudent } from "./helpers";
 import { E2E_BUNNY } from "./e2e-env";
 import { hashPassword } from "../../src/server/auth/password-core";
 import { ar } from "../../src/lib/design";
@@ -63,6 +63,8 @@ test.describe("دورة المعلم الكاملة", () => {
     await page.check(`input[name="s:${subject.subject_id}"]`);
     await page.getByLabel("إظهار صفحة المعلم للطلاب").check();
     await page.getByRole("button", { name: "حفظ المعلم" }).click();
+    // تحديد النسبة أمر مالي: يطلب الإثبات، ثم يكمل الحفظ نفسه بما كُتب في النموذج
+    await passStepUp(page);
     await page.waitForURL(/\/admin\/teachers\/[0-9a-f-]{36}/);
     const teacherId = page.url().match(/teachers\/([0-9a-f-]{36})/)![1];
 
@@ -98,6 +100,7 @@ test.describe("دورة المعلم الكاملة", () => {
     expect((await tp.goto("/admin/settings"))?.status()).toBe(404);
     expect((await tp.goto("/admin/teachers"))?.status()).toBe(404);
     expect((await tp.goto("/admin/launch"))?.status()).toBe(404);
+    expect((await tp.goto("/admin/ops"))?.status()).toBe(404);
     await tp.goto("/admin/products/new");
     await tp.selectOption("#gradeId", subject.grade_id);
     await tp.selectOption("#subjectId", subject.subject_id);
@@ -244,6 +247,7 @@ test.describe("دورة المعلم الكاملة", () => {
     await page.check(`input[name="s:${subject.subject_id}"]`);
     await page.getByLabel("إظهار صفحة المعلم للطلاب").check();
     await page.getByRole("button", { name: "حفظ المعلم" }).click();
+    await passStepUp(page);
     await page.waitForURL(/\/admin\/teachers\/[0-9a-f-]{36}/);
     const teacherId = page.url().match(/teachers\/([0-9a-f-]{36})/)![1];
     const [tr] = await db()<{ mode: string; user_id: string | null }[]>`select mode, user_id from teachers where id = ${teacherId}`;
