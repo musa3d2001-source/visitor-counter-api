@@ -704,7 +704,18 @@
       "this_round": 23,
       "balance_before": 445.5,
       "balance_after": 422.5,
-      "v4_total": 117
+      "v4_total": 122.25,
+      "balance_after_s6_retake": 417.25
+    },
+    "s6_retake": {
+      "approved": "owner «1» (10 Nov ~07:45 UTC): redo the pool once for 5.25; if it fails again, drop version B",
+      "job_id": "758bcb6b-24df-4d4d-a7af-1affc195d881",
+      "quote": 5.25,
+      "balance_before": 422.5,
+      "balance_after": 417.25,
+      "file": "video/kling/s6-retake-kling-3s.mp4",
+      "prompt": "Static top-down tripod shot, the camera does not move, normal real-time speed. At the very start the ring drops flat onto the water and hits it within the first quarter of a second. On impact a low crown of clear, glassy water and sparkling droplets kicks outward all around the outer edge of the ring and falls back into the pool within half a second. The water inside the ring stays perfectly clear and transparent the whole time, and the small white floor tiles stay visible through it. Clear circular ripples spread outward across the pool and the sun caustics wobble; the ripples fade out before they reach the top third of the frame. The ring's shadow stays on the pool floor just below and to the lower right of the ring and moves with it. After the splash the ring bobs once and then floats almost still in the centre of the frame, turning only a few degrees; it never slides toward the top of the frame. No people, no cuts, no new objects, no text.",
+      "result": "FAILED again: the same white cloud fills the ring (about n12-n60) and rolls over its stripes (orange area 49.9k px at n0, 26.0k at n28); the ring drifts up from centre y 1266 (n0) to 956 (n72), its top crossing y 880 at about n36 and reaching y 736. Per the owner's rule, version B is dropped in this round."
     }
   }
 }
