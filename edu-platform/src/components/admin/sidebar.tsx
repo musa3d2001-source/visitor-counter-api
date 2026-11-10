@@ -144,7 +144,7 @@ function NavList({ role, pendingReview, onNavigate }: { role: StaffRole; pending
               const active = isActive(item, pathname);
               return (
                 <li key={href}>
-                  <Link
+                  <Link prefetch={false}
                     href={href}
                     onClick={onNavigate}
                     aria-current={active ? "page" : undefined}
@@ -233,7 +233,7 @@ function UserFoot({ adminName, role }: { adminName?: string; role: StaffRole }) 
         ) : (
           <span className="flex-1" />
         )}
-        <Link
+        <Link prefetch={false}
           href="/"
           target="_blank"
           title="عرض الموقع"
@@ -281,7 +281,7 @@ export function AdminSidebar({
     <aside className={cn(NIGHT, "sticky top-0 hidden h-dvh w-72 shrink-0 flex-col shadow-[-18px_0_40px_-28px_rgb(6_63_60/0.55)] lg:flex")}>
       <NightDecor />
       <div className="px-5 pt-5 pb-4">
-        <Link href="/admin" className="block rounded-2xl" aria-label={`${siteName}، ${roleLabel(role)}`}>
+        <Link prefetch={false} href="/admin" className="block rounded-2xl" aria-label={`${siteName}، ${roleLabel(role)}`}>
           <Brand siteName={siteName} role={role} logoUrl={logoUrl} as="span" />
         </Link>
       </div>
@@ -316,7 +316,7 @@ export function AdminMobileNav({
     .find((n) => isActive(n, pathname));
   return (
     <div className="glass sticky top-0 z-30 flex h-16 items-center gap-3 border-b border-line px-3 sm:px-5 lg:hidden">
-      <Link href="/admin" className="grid size-11 shrink-0 place-items-center rounded-[15px]" aria-label={`${siteName}، ${roleLabel(role)}`}>
+      <Link prefetch={false} href="/admin" className="grid size-11 shrink-0 place-items-center rounded-[15px]" aria-label={`${siteName}، ${roleLabel(role)}`}>
         {logoUrl ? (
           <span className="grid size-10 place-items-center overflow-hidden rounded-[13px] bg-white shadow-card">
             <Image src={logoUrl} alt="" width={40} height={40} className="size-full object-contain p-1" />

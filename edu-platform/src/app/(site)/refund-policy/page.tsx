@@ -40,7 +40,7 @@ export default async function RefundPolicyPage() {
           Icon: ClipboardList,
           body: (
             <p>
-              <Link href="/contact">تواصل معنا</Link> خلال {count(REFUND_HOLD_DAYS, W.day)} من الشراء مع رقم الطلب، وسنراجع الطلب ونرد عليك.
+              <Link prefetch={false} href="/contact">تواصل معنا</Link> خلال {count(REFUND_HOLD_DAYS, W.day)} من الشراء مع رقم الطلب، وسنراجع الطلب ونرد عليك.
             </p>
           ),
         },

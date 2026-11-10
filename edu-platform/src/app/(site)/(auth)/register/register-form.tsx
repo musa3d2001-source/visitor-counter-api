@@ -109,11 +109,11 @@ export function RegisterForm({ next, grades }: { next: string; grades: { id: str
           label={
             <>
               أوافق على{" "}
-              <Link href="/terms" target="_blank" className="font-bold text-brand-700 underline underline-offset-4">
+              <Link prefetch={false} href="/terms" target="_blank" className="font-bold text-brand-700 underline underline-offset-4">
                 الشروط والأحكام
               </Link>{" "}
               و
-              <Link href="/privacy" target="_blank" className="font-bold text-brand-700 underline underline-offset-4">
+              <Link prefetch={false} href="/privacy" target="_blank" className="font-bold text-brand-700 underline underline-offset-4">
                 سياسة الخصوصية
               </Link>
             </>

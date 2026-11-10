@@ -150,15 +150,15 @@ export default async function ReportsPage({ searchParams }: { searchParams: Prom
                       </TD>
                       <TD className="text-xs">
                         {r.entity_type === "order" && r.entity_id ? (
-                          <Link href={`/admin/orders/${r.entity_id}`} className="chip chip-mint hover:underline">
+                          <Link prefetch={false} href={`/admin/orders/${r.entity_id}`} className="chip chip-mint hover:underline">
                             طلب
                           </Link>
                         ) : r.entity_type === "product" && r.entity_id ? (
-                          <Link href={`/admin/products/${r.entity_id}`} className="chip chip-mint hover:underline">
+                          <Link prefetch={false} href={`/admin/products/${r.entity_id}`} className="chip chip-mint hover:underline">
                             منتج
                           </Link>
                         ) : r.entity_type === "user" && r.entity_id ? (
-                          <Link href={`/admin/students/${r.entity_id}`} className="chip chip-mint hover:underline">
+                          <Link prefetch={false} href={`/admin/students/${r.entity_id}`} className="chip chip-mint hover:underline">
                             مستخدم
                           </Link>
                         ) : (

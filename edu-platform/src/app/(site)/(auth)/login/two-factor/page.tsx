@@ -23,7 +23,7 @@ export default async function TwoFactorLoginPage({ searchParams }: { searchParam
     <AuthCard perks={perks} title="أدخل رمز التحقق" subtitle="افتح تطبيق المصادقة واكتب الرمز الظاهر فيه لإكمال الدخول">
       <TwoFactorLoginForm next={next} />
       <div className="mt-3 flex justify-center">
-        <Link href={`/login?next=${encodeURIComponent(next)}`} className="inline-flex min-h-11 items-center gap-1.5 rounded-xl px-3 text-[0.92rem] font-bold text-brand-700 underline-offset-4 hover:bg-brand-50 hover:underline">
+        <Link prefetch={false} href={`/login?next=${encodeURIComponent(next)}`} className="inline-flex min-h-11 items-center gap-1.5 rounded-xl px-3 text-[0.92rem] font-bold text-brand-700 underline-offset-4 hover:bg-brand-50 hover:underline">
           <ArrowRight className="size-4" aria-hidden />
           الرجوع إلى كلمة المرور
         </Link>

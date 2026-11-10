@@ -93,7 +93,7 @@ export default async function AdminOrdersPage({ searchParams }: { searchParams: 
                     <span className="num font-bold">{h.order_number}</span> · <span className="whitespace-nowrap">منذ {formatDateTime(h.held_at)}</span>
                   </p>
                 </div>
-                <Link href={`/admin/orders/${h.order_id}#hold-decision`} className="inline-flex min-h-11 items-center font-bold text-brand-700 hover:underline">
+                <Link prefetch={false} href={`/admin/orders/${h.order_id}#hold-decision`} className="inline-flex min-h-11 items-center font-bold text-brand-700 hover:underline">
                   افتح الطلب واتخذ القرار
                 </Link>
               </li>
@@ -122,7 +122,7 @@ export default async function AdminOrdersPage({ searchParams }: { searchParams: 
                     </p>
                     <p className="text-[0.84rem] leading-6 text-muted">
                       {a.order_id ? (
-                        <Link href={`/admin/orders/${a.order_id}`} className="num font-bold text-brand-700 hover:underline">
+                        <Link prefetch={false} href={`/admin/orders/${a.order_id}`} className="num font-bold text-brand-700 hover:underline">
                           {a.order_number}
                         </Link>
                       ) : (
@@ -234,7 +234,7 @@ export default async function AdminOrdersPage({ searchParams }: { searchParams: 
                     <Receipt />
                   </ToneIcon>
                   <div className="min-w-0">
-                    <Link href={`/admin/orders/${o.id}`} className="stretched num font-display text-[1.02rem] font-black text-ink hover:text-brand-700">
+                    <Link prefetch={false} href={`/admin/orders/${o.id}`} className="stretched num font-display text-[1.02rem] font-black text-ink hover:text-brand-700">
                       {o.number}
                     </Link>
                     <p className="text-[0.78rem] leading-5 text-muted">{formatDateTime(o.created_at)}</p>

@@ -17,7 +17,7 @@ export function ResetForm({ token }: { token: string }) {
       {state?.error ? (
         <div className="flex flex-col gap-3">
           <Alert tone="danger">{state.error}</Alert>
-          <Link href="/forgot-password" className="btn btn-outline btn-md w-full">
+          <Link prefetch={false} href="/forgot-password" className="btn btn-outline btn-md w-full">
             <RotateCcw aria-hidden />
             إرسال رابط جديد
           </Link>

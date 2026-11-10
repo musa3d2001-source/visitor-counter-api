@@ -58,7 +58,7 @@ export function LessonRows({
                       aria-hidden
                     />
                   ) : null}
-                  <Link
+                  <Link prefetch={false}
                     href={`/watch/${productId}?lesson=${l.id}`}
                     aria-current={current ? "true" : undefined}
                     className={cn(

@@ -147,13 +147,13 @@ export default async function TeacherAdminPage({ params, searchParams }: { param
         actions={
           <>
             <Button asChild size="md" variant="accent">
-              <Link href={`/admin/products/new?teacher=${teacher.id}`}>
+              <Link prefetch={false} href={`/admin/products/new?teacher=${teacher.id}`}>
                 <Plus aria-hidden /> إضافة محتوى لهذا المعلم
               </Link>
             </Button>
             {teacher.is_published ? (
               <Button asChild size="md" variant="outline">
-                <Link href={`/teachers/${teacher.slug}`} target="_blank">
+                <Link prefetch={false} href={`/teachers/${teacher.slug}`} target="_blank">
                   <ExternalLink aria-hidden /> الصفحة العامة
                 </Link>
               </Button>
@@ -322,7 +322,7 @@ export default async function TeacherAdminPage({ params, searchParams }: { param
         tone="gold"
         description={shareOn ? `حصة المعلم ${sharePct(teacher.revenue_share_bps!)} من صافي المبيعات المؤهلة (بعد الخصم والرسوم المعتمدة)` : "نظام الأرباح غير مفعّل لهذا المعلم، حدد نسبة في الملف لتفعيله للمبيعات القادمة."}
         actions={
-          <Link
+          <Link prefetch={false}
             href={includeTest ? `/admin/teachers/${id}` : `/admin/teachers/${id}?test=1`}
             className={cn(
               "inline-flex min-h-11 items-center gap-1.5 rounded-full px-4 font-display text-[0.85rem] font-extrabold ring-1 ring-inset transition-colors",
@@ -427,7 +427,7 @@ export default async function TeacherAdminPage({ params, searchParams }: { param
               {earnings.map((e) => (
                 <TR key={e.id}>
                   <TD>
-                    <Link href={`/admin/orders/${e.order_id}`} className="num font-display font-extrabold whitespace-nowrap text-brand-700 hover:underline">
+                    <Link prefetch={false} href={`/admin/orders/${e.order_id}`} className="num font-display font-extrabold whitespace-nowrap text-brand-700 hover:underline">
                       {e.order_number}
                     </Link>
                     <p className="text-xs text-muted">{formatDate(e.created_at)}</p>

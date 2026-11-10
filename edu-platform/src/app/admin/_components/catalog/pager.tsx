@@ -35,7 +35,7 @@ export function Pager({ page, pages, hrefFor, label = "الصفحات", classNam
       <ul className="flex flex-wrap items-center gap-1.5">
         <li>
           {page > 1 ? (
-            <Link href={hrefFor(page - 1)} rel="prev" className={cn(PILL, IDLE)}>
+            <Link prefetch={false} href={hrefFor(page - 1)} rel="prev" className={cn(PILL, IDLE)}>
               <ChevronRight className="size-4" aria-hidden /> السابقة
             </Link>
           ) : (
@@ -51,7 +51,7 @@ export function Pager({ page, pages, hrefFor, label = "الصفحات", classNam
             </li>
           ) : (
             <li key={n}>
-              <Link
+              <Link prefetch={false}
                 href={hrefFor(n)}
                 aria-current={n === page ? "page" : undefined}
                 aria-label={`صفحة ${ar(n)}`}
@@ -64,7 +64,7 @@ export function Pager({ page, pages, hrefFor, label = "الصفحات", classNam
         )}
         <li>
           {page < pages ? (
-            <Link href={hrefFor(page + 1)} rel="next" className={cn(PILL, IDLE)}>
+            <Link prefetch={false} href={hrefFor(page + 1)} rel="next" className={cn(PILL, IDLE)}>
               التالية <ChevronLeft className="size-4" aria-hidden />
             </Link>
           ) : (

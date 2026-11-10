@@ -108,12 +108,12 @@ export default async function AdminDashboard({ searchParams }: { searchParams: P
         actions={
           <>
             <Button asChild variant="accent" size="lg">
-              <Link href="/admin/products/new">
+              <Link prefetch={false} href="/admin/products/new">
                 <Plus aria-hidden /> إضافة منتج
               </Link>
             </Button>
             <Button asChild variant="light" size="md">
-              <Link href={qs({ test: includeTest ? undefined : "1" })}>
+              <Link prefetch={false} href={qs({ test: includeTest ? undefined : "1" })}>
                 <FlaskConical aria-hidden />
                 {includeTest ? "إخفاء البيانات التجريبية" : `إظهار البيانات التجريبية${totals.testPaidOrders ? ` (${ar(totals.testPaidOrders)})` : ""}`}
               </Link>
@@ -366,13 +366,13 @@ async function TeacherHome({ actor }: { actor: Extract<Actor, { kind: "teacher" 
           <>
             {actor.canUpload ? (
               <Button asChild variant="accent" size="lg">
-                <Link href="/admin/products/new">
+                <Link prefetch={false} href="/admin/products/new">
                   <Plus aria-hidden /> إضافة محتوى
                 </Link>
               </Button>
             ) : null}
             <Button asChild variant="light" size="md">
-              <Link href="/admin/earnings">
+              <Link prefetch={false} href="/admin/earnings">
                 <Wallet aria-hidden /> عرض أرباحي
               </Link>
             </Button>

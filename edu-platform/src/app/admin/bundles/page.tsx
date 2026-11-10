@@ -34,7 +34,7 @@ export default async function BundlesPage() {
           description="الباقات والدورات والوحدات التي تضم محتويات أخرى (فيديوهات ومذكرات). المشتري يحصل على كل المحتويات ولا تُكرر الصلاحيات."
           actions={
             <Button asChild variant="accent">
-              <Link href="/admin/products/new?type=bundle">
+              <Link prefetch={false} href="/admin/products/new?type=bundle">
                 <Plus aria-hidden /> باقة جديدة
               </Link>
             </Button>
@@ -48,7 +48,7 @@ export default async function BundlesPage() {
           description="أنشئ باقة مثل «باقة المراجعة النهائية» أو «باقة الصف كاملًا» ثم أضف إليها المذكرات."
           action={
             <Button asChild>
-              <Link href="/admin/products/new?type=bundle">إنشاء باقة</Link>
+              <Link prefetch={false} href="/admin/products/new?type=bundle">إنشاء باقة</Link>
             </Button>
           }
         />
@@ -99,7 +99,7 @@ export default async function BundlesPage() {
                         </span>
                       </p>
                       <h2 className="mt-2 font-display text-[1.1rem] leading-snug font-black text-ink">
-                        <Link href={`/admin/products/${b.id}`} className="stretched hover:text-brand-700">
+                        <Link prefetch={false} href={`/admin/products/${b.id}`} className="stretched hover:text-brand-700">
                           {b.title}
                         </Link>
                       </h2>
@@ -133,7 +133,7 @@ export default async function BundlesPage() {
                           </span>
                         </p>
                         <Button asChild size="sm" variant="soft" className="relative z-[2]">
-                          <Link href={`/admin/products/${b.id}`} aria-label={`تعديل ${b.title}`}>
+                          <Link prefetch={false} href={`/admin/products/${b.id}`} aria-label={`تعديل ${b.title}`}>
                             <Pencil aria-hidden /> تعديل
                           </Link>
                         </Button>

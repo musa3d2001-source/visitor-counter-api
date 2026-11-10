@@ -59,7 +59,7 @@ export default async function TeachersPage({ searchParams }: { searchParams: Pro
           description="ملفات المعلمين العامة، حساباتهم، صلاحيات الرفع، ونسب الأرباح"
           actions={
             <Button asChild variant="accent">
-              <Link href="/admin/teachers/new">
+              <Link prefetch={false} href="/admin/teachers/new">
                 <Plus aria-hidden /> إضافة معلم
               </Link>
             </Button>
@@ -80,7 +80,7 @@ export default async function TeachersPage({ searchParams }: { searchParams: Pro
             description="أضف معلمًا: يمكنك إدارة محتواه بنفسك، أو تفعيل حساب له ليرفع شروحه بنفسه."
             action={
               <Button asChild>
-                <Link href="/admin/teachers/new">إضافة معلم</Link>
+                <Link prefetch={false} href="/admin/teachers/new">إضافة معلم</Link>
               </Button>
             }
           />
@@ -116,7 +116,7 @@ export default async function TeachersPage({ searchParams }: { searchParams: Pro
                       </span>
                     </div>
                     <div className="flex flex-1 flex-col px-4 pt-3 pb-4">
-                      <Link href={`/admin/teachers/${t.id}`} className="stretched line-clamp-1 font-display text-[1.2rem] font-black text-ink hover:text-brand-700">
+                      <Link prefetch={false} href={`/admin/teachers/${t.id}`} className="stretched line-clamp-1 font-display text-[1.2rem] font-black text-ink hover:text-brand-700">
                         {t.display_name}
                       </Link>
                       {t.headline ? <p className="line-clamp-1 text-[0.85rem] text-muted">{t.headline}</p> : null}

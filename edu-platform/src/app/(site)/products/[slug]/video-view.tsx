@@ -155,7 +155,7 @@ export function VideoProductView({
               {product.teacher.headline ? <p className="text-sm leading-6 text-white/85">{product.teacher.headline}</p> : null}
             </div>
             {product.teacher.slug ? (
-              <Link href={`/teachers/${product.teacher.slug}`} data-testid="teacher-link" className="btn btn-3d btn-light btn-md shrink-0">
+              <Link prefetch={false} href={`/teachers/${product.teacher.slug}`} data-testid="teacher-link" className="btn btn-3d btn-light btn-md shrink-0">
                 صفحة المعلم
               </Link>
             ) : null}

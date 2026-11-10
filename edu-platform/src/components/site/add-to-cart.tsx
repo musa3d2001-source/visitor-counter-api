@@ -72,7 +72,7 @@ export function AddToCart({ productId, compact, className }: { productId: string
       {state?.ok ? (
         <p className="flex flex-wrap items-center gap-x-2 gap-y-1 rounded-2xl bg-success-50 px-3.5 py-2 font-display text-sm font-bold text-success animate-fade-up" role="status">
           <CircleCheck className="size-[1.1rem] shrink-0" aria-hidden /> {state.message}،{" "}
-          <Link href="/cart" className="inline-flex min-h-8 items-center font-extrabold underline decoration-2 underline-offset-4">
+          <Link prefetch={false} href="/cart" className="inline-flex min-h-8 items-center font-extrabold underline decoration-2 underline-offset-4">
             عرض السلة
           </Link>
         </p>

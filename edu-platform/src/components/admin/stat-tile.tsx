@@ -99,7 +99,7 @@ export function StatTile({
       </div>
       <p className="mt-3 font-display text-[0.9rem] leading-snug font-bold text-ink-soft">
         {href ? (
-          <Link href={href} className="stretched hover:text-[var(--tink)]">
+          <Link prefetch={false} href={href} className="stretched hover:text-[var(--tink)]">
             {label}
           </Link>
         ) : (

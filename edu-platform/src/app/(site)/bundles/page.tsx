@@ -70,7 +70,7 @@ export default async function BundlesPage() {
             {byGrade.map(({ grade }) => {
               const lv = grade.level ?? gradeLevelFromSlug(grade.slug);
               return (
-                <Link key={grade.id} href={`#g-${grade.slug}`} className={cn(s.jump, gradeClass(lv))}>
+                <Link prefetch={false} key={grade.id} href={`#g-${grade.slug}`} className={cn(s.jump, gradeClass(lv))}>
                   <span className={cn("num-tile", s.jumpNum)} aria-hidden>
                     {lv != null ? ar(lv) : <Sparkles className="size-4" />}
                   </span>

@@ -29,7 +29,7 @@ export function SubjectTile({
 }) {
   const label = countLabel ?? (x.productCount != null ? count(x.productCount, { ...W.product, none: "لا يوجد محتوى بعد" }) : "");
   return (
-    <Link href={href} className={cn(s.subj, layout === "row" && s.subjRow, toneClass(x.slug), className)}>
+    <Link prefetch={false} href={href} className={cn(s.subj, layout === "row" && s.subjRow, toneClass(x.slug), className)}>
       <span className={cn("icon-tile", s.subjIcon)} aria-hidden>
         <SubjectIcon slug={x.slug} name={x.icon} size={26} />
       </span>

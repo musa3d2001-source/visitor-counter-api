@@ -58,7 +58,7 @@ export default async function SharedAccessSignalsPage() {
               </ToneIcon>
               <div className="min-w-[min(100%,13rem)] flex-1">
                 <p className="flex flex-wrap items-center gap-1.5 font-display font-extrabold text-ink">
-                  <Link href={`/admin/students/${r.id}`} className="text-ink hover:text-brand-700 hover:underline">
+                  <Link prefetch={false} href={`/admin/students/${r.id}`} className="text-ink hover:text-brand-700 hover:underline">
                     {r.full_name}
                   </Link>
                   {r.is_active ? null : <StatusPill tone="danger">موقوف</StatusPill>}

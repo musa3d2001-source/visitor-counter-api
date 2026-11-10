@@ -71,7 +71,7 @@ export function BundleCard({ product: p, items, owned, level, showGrade = true, 
       <div className={s.bbody}>
         <Kicker>{[PRODUCT_TYPE_LABELS[p.type], showGrade ? p.gradeName : null].filter(Boolean).join(" · ")}</Kicker>
         <H className={s.btitle}>
-          <Link href={`/products/${p.slug}`} className="stretched rounded-[28px]">
+          <Link prefetch={false} href={`/products/${p.slug}`} className="stretched rounded-[28px]">
             {p.title}
           </Link>
         </H>
@@ -96,7 +96,7 @@ export function BundleWide({ product: p, items, owned, showGrade = true, heading
       <div className={s.bbody}>
         <Kicker>{[PRODUCT_TYPE_LABELS[p.type], showGrade ? p.gradeName : null].filter(Boolean).join(" · ")}</Kicker>
         <H className={cn(s.btitle, s.btitleLg)}>
-          <Link href={`/products/${p.slug}`} className="stretched rounded-[28px]">
+          <Link prefetch={false} href={`/products/${p.slug}`} className="stretched rounded-[28px]">
             {p.title}
           </Link>
         </H>

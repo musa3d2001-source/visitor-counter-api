@@ -36,7 +36,7 @@ export function TeacherCard({ teacher: t, anchor, headingLevel = 3, showDuration
         ) : null}
       </div>
       <H className={s.tname}>
-        <Link href={`/teachers/${t.slug}${anchor ? `#${anchor}` : ""}`} className="stretched rounded-[28px]">
+        <Link prefetch={false} href={`/teachers/${t.slug}${anchor ? `#${anchor}` : ""}`} className="stretched rounded-[28px]">
           {t.name}
         </Link>
       </H>

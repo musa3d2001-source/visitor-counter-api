@@ -143,11 +143,11 @@ export default async function AdminOrderPage({ params }: { params: Promise<{ id:
       {alerts.map((a) =>
         a.kind === "dispute" ? (
           <Alert key={a.id} tone="danger" title={`نزاع مفتوح على هذا الطلب: ${DISPUTE_TYPE_LABELS[a.details.type ?? ""] ?? "نزاع على دفعة"}`}>
-            الحالة لدى البوابة: {DISPUTE_STATUS_LABELS[a.details.status ?? ""] ?? a.details.status ?? "غير معروفة"}. {order.status === "paid" ? "الوصول والأرباح موقوفان حتى تقرر." : "الطلب غير مدفوع، فلا وصول يُوقف."} <Link href="/admin/orders#payment-alerts">كل تنبيهات الدفع</Link>
+            الحالة لدى البوابة: {DISPUTE_STATUS_LABELS[a.details.status ?? ""] ?? a.details.status ?? "غير معروفة"}. {order.status === "paid" ? "الوصول والأرباح موقوفان حتى تقرر." : "الطلب غير مدفوع، فلا وصول يُوقف."} <Link prefetch={false} href="/admin/orders#payment-alerts">كل تنبيهات الدفع</Link>
           </Alert>
         ) : (
           <Alert key={a.id} tone="danger" title="حدث استرداد من البوابة لم يُطبق تلقائيًا">
-            السبب: {REFUND_ALERT_REASON_LABELS[a.details.reason] ?? a.details.reason}. {a.details.reason === "amount_mismatch" && order.status === "paid" ? "الوصول والأرباح موقوفان حتى تقرر." : "لم يتغير الطلب ولا وصول الطالب."} راجعه في لوحة MyFatoorah. <Link href="/admin/orders#payment-alerts">كل تنبيهات الدفع</Link>
+            السبب: {REFUND_ALERT_REASON_LABELS[a.details.reason] ?? a.details.reason}. {a.details.reason === "amount_mismatch" && order.status === "paid" ? "الوصول والأرباح موقوفان حتى تقرر." : "لم يتغير الطلب ولا وصول الطالب."} راجعه في لوحة MyFatoorah. <Link prefetch={false} href="/admin/orders#payment-alerts">كل تنبيهات الدفع</Link>
           </Alert>
         ),
       )}
@@ -192,7 +192,7 @@ export default async function AdminOrderPage({ params }: { params: Promise<{ id:
               <li key={it.id} className="relative flex items-center gap-3 rounded-[1.2rem] border border-line bg-canvas/50 p-3 transition-colors hover:bg-canvas">
                 <TypeIcon type={it.product_type} />
                 <div className="min-w-0 flex-1">
-                  <Link href={`/admin/products/${it.product_id}`} className="line-clamp-2 font-display font-extrabold text-ink hover:text-brand-700">
+                  <Link prefetch={false} href={`/admin/products/${it.product_id}`} className="line-clamp-2 font-display font-extrabold text-ink hover:text-brand-700">
                     {it.title}
                   </Link>
                   <p className="text-[0.8rem] text-muted">{PRODUCT_TYPE_LABELS[it.product_type as ProductType] ?? it.product_type}</p>
@@ -232,7 +232,7 @@ export default async function AdminOrderPage({ params }: { params: Promise<{ id:
             <div className="flex items-center gap-3.5 rounded-[1.3rem] bg-violet-50/70 p-3">
               <PersonAvatar name={order.customer_name} size={56} ring />
               <div className="min-w-0 flex-1">
-                <Link href={`/admin/students/${order.user_id}`} className="font-display text-[1.05rem] font-black text-ink hover:text-brand-700">
+                <Link prefetch={false} href={`/admin/students/${order.user_id}`} className="font-display text-[1.05rem] font-black text-ink hover:text-brand-700">
                   {order.customer_name}
                 </Link>
                 <p className="text-[0.8rem] text-muted">المشتري</p>
@@ -265,7 +265,7 @@ export default async function AdminOrderPage({ params }: { params: Promise<{ id:
               ]}
             />
             <Button asChild variant="soft" size="sm" className="mt-4">
-              <Link href={`/admin/students/${order.user_id}`}>
+              <Link prefetch={false} href={`/admin/students/${order.user_id}`}>
                 <UserRound aria-hidden /> ملف الطالب
               </Link>
             </Button>

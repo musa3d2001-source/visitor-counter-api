@@ -155,6 +155,7 @@
   --animate-twinkle: twinkle 3.4s ease-in-out infinite;
   --animate-spin-slow: spin 60s linear infinite;
   --animate-shimmer: shimmer 1.6s ease-in-out infinite;
+  --animate-nav-progress: nav-progress 8s cubic-bezier(0.1, 0.7, 0.2, 1) forwards;
 
   @keyframes fade-up {
     from {
@@ -196,6 +197,15 @@
       scale: 0.75;
     }
   }
+  @keyframes nav-progress {
+    from {
+      transform: scaleX(0.08);
+    }
+    to {
+      transform: scaleX(0.9);
+    }
+  }
+
   @keyframes shimmer {
     from {
       background-position: 120% 0;

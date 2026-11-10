@@ -156,7 +156,7 @@ function StepFooter({ step }: { step: LaunchStep }) {
         <span className="min-w-0 break-words">
           <span className="font-bold text-ink">أين: </span>
           {step.where.href ? (
-            <Link href={step.where.href} className="font-bold text-brand-700 underline decoration-brand-300 underline-offset-4 hover:text-brand-800">
+            <Link prefetch={false} href={step.where.href} className="font-bold text-brand-700 underline decoration-brand-300 underline-offset-4 hover:text-brand-800">
               <Bidi text={step.where.label} />
             </Link>
           ) : (

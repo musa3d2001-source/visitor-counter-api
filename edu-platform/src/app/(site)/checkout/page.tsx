@@ -145,7 +145,7 @@ export default async function CheckoutPage({ searchParams }: { searchParams: Pro
                 </dd>
               </div>
             </dl>
-            <Link href="/cart" className="btn btn-ghost btn-sm mt-4 text-brand-800">
+            <Link prefetch={false} href="/cart" className="btn btn-ghost btn-sm mt-4 text-brand-800">
               <ArrowRight aria-hidden /> تعديل السلة
             </Link>
           </aside>

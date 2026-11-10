@@ -50,7 +50,7 @@ function LinkProblem({ title, body }: { title: string; body: string }) {
       <Alert tone="danger" title={title}>
         {body}
       </Alert>
-      <Link href="/forgot-password" className="btn btn-3d btn-primary btn-lg w-full">
+      <Link prefetch={false} href="/forgot-password" className="btn btn-3d btn-primary btn-lg w-full">
         <RotateCcw aria-hidden />
         إرسال رابط جديد
       </Link>

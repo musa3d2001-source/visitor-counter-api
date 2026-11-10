@@ -90,7 +90,7 @@ export default async function SubjectPage({ params, searchParams }: { params: Pr
         }
         actions={
           freeHref ? (
-            <Link href={freeHref} className="btn btn-3d btn-accent btn-lg">
+            <Link prefetch={false} href={freeHref} className="btn btn-3d btn-accent btn-lg">
               <Play aria-hidden className="fill-current" />
               شاهد درسًا مجانًا
             </Link>
@@ -118,7 +118,7 @@ export default async function SubjectPage({ params, searchParams }: { params: Pr
                   { label: "كل الفصول", href: base, active: term === null },
                   ...terms.map((t) => ({ label: t === 1 ? "الفصل الأول" : "الفصل الثاني", href: `${base}?term=${t}`, active: term === t })),
                 ].map((t) => (
-                  <Link key={t.href} href={t.href} aria-current={t.active ? "page" : undefined} className={cn(s.segItem, t.active && s.segActive)}>
+                  <Link prefetch={false} key={t.href} href={t.href} aria-current={t.active ? "page" : undefined} className={cn(s.segItem, t.active && s.segActive)}>
                     {t.label}
                   </Link>
                 ))}

@@ -38,7 +38,7 @@ export function MobileCheckoutBar({ targetId, totalFils, saved, label, href = "/
           <Kwd fils={totalFils} className="text-[1.45rem] leading-tight text-brand-800" unitClassName="text-[0.55em]" />
           {saved}
         </div>
-        <Link href={href} className="btn btn-3d btn-primary btn-lg shrink-0">
+        <Link prefetch={false} href={href} className="btn btn-3d btn-primary btn-lg shrink-0">
           {label}
           <ArrowLeft aria-hidden />
         </Link>

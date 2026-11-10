@@ -101,7 +101,7 @@ export function ClosingCta({ grades, facts }: { grades: HeroGrade[]; facts: Site
           <ul className={s.ctaGrades}>
             {grades.map((g) => (
               <li key={g.id}>
-                <Link href={`/grades/${g.slug}`} className={cn(s.ctaGrade, gradeClass(g.level))}>
+                <Link prefetch={false} href={`/grades/${g.slug}`} className={cn(s.ctaGrade, gradeClass(g.level))}>
                   <span className={s.ctaNum} aria-hidden>
                     {ar(g.level)}
                   </span>

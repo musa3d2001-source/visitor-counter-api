@@ -61,7 +61,7 @@ export default async function StudentsPage({ searchParams }: { searchParams: Pro
           description="حسابات الطلاب ومشترياتهم وصلاحياتهم"
           actions={
             <Button asChild variant="outline" size="md">
-              <Link href="/admin/students/shared-access">
+              <Link prefetch={false} href="/admin/students/shared-access">
                 <MapPin aria-hidden /> مؤشر تعدد العناوين
               </Link>
             </Button>
@@ -140,7 +140,7 @@ export default async function StudentsPage({ searchParams }: { searchParams: Pro
                       </div>
                     </div>
                     <div className="flex flex-1 flex-col px-4 pt-3 pb-4">
-                      <Link href={`/admin/students/${s.id}`} className="stretched line-clamp-1 font-display text-[1.12rem] font-black text-ink hover:text-brand-700">
+                      <Link prefetch={false} href={`/admin/students/${s.id}`} className="stretched line-clamp-1 font-display text-[1.12rem] font-black text-ink hover:text-brand-700">
                         {s.full_name}
                       </Link>
                       <p className="truncate text-end text-[0.8rem] leading-5 text-muted" dir="ltr">

@@ -17,7 +17,7 @@ export function PillTabs({ items, label, className }: { items: PillTab[]; label:
       <ul className="flex w-max gap-2">
         {items.map((it) => (
           <li key={it.href} style={toneStyle(it.tone ?? "teal")}>
-            <Link
+            <Link prefetch={false}
               href={it.href}
               aria-current={it.active ? "page" : undefined}
               className={cn(

@@ -24,7 +24,7 @@ export function Logo({
 }) {
   const light = tone === "light";
   return (
-    <Link href="/" className={cn("inline-flex min-h-12 shrink-0 items-center gap-2.5 rounded-2xl sm:gap-3", className)} aria-label={`${name}، الصفحة الرئيسية`}>
+    <Link prefetch={false} href="/" className={cn("inline-flex min-h-12 shrink-0 items-center gap-2.5 rounded-2xl sm:gap-3", className)} aria-label={`${name}، الصفحة الرئيسية`}>
       {logoUrl ? (
         <span className="grid shrink-0 place-items-center overflow-hidden rounded-[15px] bg-white shadow-card" style={{ width: size, height: size }}>
           <Image src={logoUrl} alt="" width={size} height={size} className="size-full object-contain p-1" />

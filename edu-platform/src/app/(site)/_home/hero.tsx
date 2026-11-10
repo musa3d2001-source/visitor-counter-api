@@ -81,7 +81,7 @@ export function HomeHero({
               </span>
             ) : null}
             {signedIn ? (
-              <Link href="/library" className={s.libLink}>
+              <Link prefetch={false} href="/library" className={s.libLink}>
                 <LibraryBig aria-hidden />
                 افتح مكتبتك
               </Link>
@@ -113,7 +113,7 @@ export function HomeHero({
                 </span>
               </a>
               {previewHref ? (
-                <Link href={previewHref} className={s.btnGhost}>
+                <Link prefetch={false} href={previewHref} className={s.btnGhost}>
                   <span className={s.btnPlay} aria-hidden>
                     <Play size={15} fill="currentColor" />
                   </span>
@@ -123,7 +123,7 @@ export function HomeHero({
             </div>
           ) : hasContact ? (
             <div className={s.heroCtas}>
-              <Link href="/contact" className={s.btnPrimary}>
+              <Link prefetch={false} href="/contact" className={s.btnPrimary}>
                 تواصل معنا
                 <span className={s.btnArrow} aria-hidden>
                   <ArrowLeft size={18} />
@@ -140,7 +140,7 @@ export function HomeHero({
               <ul className={s.quickList}>
                 {grades.map((g) => (
                   <li key={g.id}>
-                    <Link href={`/grades/${g.slug}`} className={cn(s.gbtn, gradeClass(g.level))}>
+                    <Link prefetch={false} href={`/grades/${g.slug}`} className={cn(s.gbtn, gradeClass(g.level))}>
                       <span className={s.gbtnNum} aria-hidden>
                         {ar(g.level)}
                       </span>

@@ -105,7 +105,7 @@ export function ExamTicket({
             </p>
           ) : null}
           <H className={s.ttitle}>
-            <Link href={`/products/${p.slug}`} id={titleId} className="stretched rounded-[22px]">
+            <Link prefetch={false} href={`/products/${p.slug}`} id={titleId} className="stretched rounded-[22px]">
               {p.title}
             </Link>
           </H>
@@ -115,7 +115,7 @@ export function ExamTicket({
         <div className={s.tstub}>
           {owned ? <OwnedChip /> : p.saleEnded ? <SaleEndedChip /> : <CompactPrice fils={p.priceFils} compareAt={p.compareAtPriceFils} />}
           {preview ? (
-            <Link href={preview} className={cn(s.footBtn, s.footBtnGold)} aria-describedby={titleId}>
+            <Link prefetch={false} href={preview} className={cn(s.footBtn, s.footBtnGold)} aria-describedby={titleId}>
               <Sparkles aria-hidden />
               معاينة مجانية
             </Link>

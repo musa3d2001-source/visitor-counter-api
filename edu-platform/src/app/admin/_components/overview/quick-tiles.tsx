@@ -37,7 +37,7 @@ export function QuickTiles({ items, label = "اختصارات سريعة", class
                   <ArrowLeft className="mt-1 size-4 text-[var(--tink)] opacity-0 transition-opacity group-hover:opacity-100" aria-hidden />
                 )}
               </div>
-              <Link href={it.href} className="stretched mt-auto pt-3 font-display text-[0.98rem] leading-snug font-black text-ink group-hover:text-[var(--tink)]">
+              <Link prefetch={false} href={it.href} className="stretched mt-auto pt-3 font-display text-[0.98rem] leading-snug font-black text-ink group-hover:text-[var(--tink)]">
                 {it.label}
               </Link>
               {it.sub ? <p className="mt-0.5 text-[0.8rem] leading-5 text-muted">{it.sub}</p> : null}

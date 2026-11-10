@@ -36,7 +36,7 @@ export function Panel({
 /** رابط «عرض الكل» بسهم (ضعه في actions الخاصة بـ Section) */
 export function MoreLink({ href, children, className }: { href: string; children: React.ReactNode; className?: string }) {
   return (
-    <Link
+    <Link prefetch={false}
       href={href}
       className={cn(
         "inline-flex min-h-11 items-center gap-1.5 rounded-full bg-brand-50 px-3.5 font-display text-[0.85rem] font-extrabold text-brand-800 transition-colors hover:bg-brand-100",
@@ -125,7 +125,7 @@ export function AdminNotice({
   className?: string;
 }) {
   return (
-    <Link
+    <Link prefetch={false}
       href={href}
       style={toneStyle(tone)}
       className={cn(

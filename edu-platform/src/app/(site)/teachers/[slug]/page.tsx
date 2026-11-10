@@ -211,7 +211,7 @@ export default async function TeacherPage({ params }: { params: Promise<Params> 
                       <p className={s.gsub}>{count(n, W.product)}</p>
                     </div>
                     {g.subjectSlug ? (
-                      <Link href={`/grades/${g.gradeSlug}/${g.subjectSlug}`} className="btn btn-3d btn-light btn-md">
+                      <Link prefetch={false} href={`/grades/${g.gradeSlug}/${g.subjectSlug}`} className="btn btn-3d btn-light btn-md">
                         كل محتوى المادة
                         <ArrowLeft aria-hidden />
                       </Link>
@@ -248,7 +248,7 @@ export default async function TeacherPage({ params }: { params: Promise<Params> 
         </>
       )}
       <p className="sr-only">
-        <Link href="/teachers">كل المعلمين</Link>
+        <Link prefetch={false} href="/teachers">كل المعلمين</Link>
       </p>
     </div>
   );

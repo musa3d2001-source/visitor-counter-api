@@ -62,11 +62,11 @@ export function ConfirmEmailForm({ token }: { token: string }) {
     return (
       <div className="flex flex-col gap-4" data-testid="email-confirmed">
         <Alert tone="success" title={state.message} />
-        <Link href="/checkout" className="btn btn-3d btn-primary btn-lg w-full">
+        <Link prefetch={false} href="/checkout" className="btn btn-3d btn-primary btn-lg w-full">
           <CreditCard aria-hidden />
           متابعة الشراء
         </Link>
-        <Link href="/library" className="btn btn-outline btn-md w-full">
+        <Link prefetch={false} href="/library" className="btn btn-outline btn-md w-full">
           <Library aria-hidden />
           مكتبتي
         </Link>
@@ -79,7 +79,7 @@ export function ConfirmEmailForm({ token }: { token: string }) {
       {state?.error ? (
         <div className="flex flex-col gap-3">
           <Alert tone="danger">{state.error}</Alert>
-          <Link href="/verify-email" className="btn btn-outline btn-md w-full">
+          <Link prefetch={false} href="/verify-email" className="btn btn-outline btn-md w-full">
             صفحة تأكيد البريد
           </Link>
         </div>

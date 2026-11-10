@@ -39,7 +39,7 @@ export function LoginForm({ next }: { next: string }) {
           <PasswordInput id="password" name="password" icon={<KeyRound />} autoComplete="current-password" dir="ltr" required aria-invalid={Boolean(state?.fieldErrors?.password)} />
         </Field>
         <div className="mt-1 flex justify-end">
-          <Link href="/forgot-password" className="inline-flex min-h-11 items-center rounded-xl px-2 text-[0.92rem] font-bold text-brand-700 underline-offset-4 hover:bg-brand-50 hover:underline">
+          <Link prefetch={false} href="/forgot-password" className="inline-flex min-h-11 items-center rounded-xl px-2 text-[0.92rem] font-bold text-brand-700 underline-offset-4 hover:bg-brand-50 hover:underline">
             نسيت كلمة المرور؟
           </Link>
         </div>

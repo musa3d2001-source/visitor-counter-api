@@ -35,7 +35,7 @@ export function NoteCard({ product: p, owned, showGrade = true, headingLevel = 3
       <div className={s.nbody}>
         {meta ? <Kicker>{meta}</Kicker> : null}
         <H className={s.ntitle}>
-          <Link href={`/products/${p.slug}`} className="stretched rounded-[18px]">
+          <Link prefetch={false} href={`/products/${p.slug}`} className="stretched rounded-[18px]">
             {p.title}
           </Link>
         </H>

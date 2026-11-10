@@ -98,7 +98,7 @@ function FooterCol({ title, links }: { title: string; links: FooterLink[] }) {
       <ul className="text-[0.98rem]">
         {links.map((l) => (
           <li key={l.href + l.label}>
-            <Link
+            <Link prefetch={false}
               href={l.href}
               className="inline-flex min-h-11 items-center text-white/78 transition-colors hover:text-[#FFD25E]"
               {...(l.href.startsWith("http") ? { target: "_blank", rel: "noopener noreferrer" } : {})}

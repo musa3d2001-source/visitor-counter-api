@@ -52,7 +52,7 @@ function UnhealedLine({ row, label, tone, now }: { row: UnhealedRow; label: stri
         </ToneIcon>
       }
       title={
-        <Link href={`/admin/orders/${row.order_id}`} className="num text-brand-700 hover:underline">
+        <Link prefetch={false} href={`/admin/orders/${row.order_id}`} className="num text-brand-700 hover:underline">
           {row.order_number}
         </Link>
       }
@@ -217,7 +217,7 @@ export default async function OpsPage() {
                     </ToneIcon>
                   }
                   title={
-                    <Link href={`/admin/products/${row.product_id}`} className="text-brand-700 hover:underline">
+                    <Link prefetch={false} href={`/admin/products/${row.product_id}`} className="text-brand-700 hover:underline">
                       {row.lesson_title}
                     </Link>
                   }

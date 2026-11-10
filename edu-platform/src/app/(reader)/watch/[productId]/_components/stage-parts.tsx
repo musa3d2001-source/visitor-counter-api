@@ -94,11 +94,11 @@ export function LockedStage({
             <p className="mt-5 font-display text-[clamp(1.45rem,1.1rem+1.4vw,2rem)] leading-tight font-black">سجّل الدخول لمشاهدة هذا الدرس</p>
             <p className="mt-2 text-[0.98rem] text-white/80">إذا اشتريت المحتوى، سجّل الدخول بنفس الحساب.</p>
             <div className="mt-6 flex flex-wrap items-center justify-center gap-3">
-              <Link href={loginHref} className="btn btn-3d btn-light btn-md">
+              <Link prefetch={false} href={loginHref} className="btn btn-3d btn-light btn-md">
                 <LogIn aria-hidden /> تسجيل الدخول
               </Link>
               {salesClosed ? null : (
-                <Link href={productHref} className="btn btn-3d btn-accent btn-md">
+                <Link prefetch={false} href={productHref} className="btn btn-3d btn-accent btn-md">
                   <ShoppingCart aria-hidden /> اشترِ للوصول لكل الدروس
                 </Link>
               )}
@@ -121,7 +121,7 @@ export function LockedStage({
             <p className="mt-5 font-display text-[clamp(1.45rem,1.1rem+1.4vw,2rem)] leading-tight font-black">هذا الدرس لمن اشترى المحتوى</p>
             <p className="mt-2 text-[0.98rem] text-white/80">اشترِ المحتوى للوصول لكل الدروس ومتابعة التقدم.</p>
             <div className="mt-6 flex flex-wrap items-center justify-center gap-3">
-              <Link href={productHref} className="btn btn-3d btn-accent btn-lg" data-testid="buy-from-locked">
+              <Link prefetch={false} href={productHref} className="btn btn-3d btn-accent btn-lg" data-testid="buy-from-locked">
                 <ShoppingCart aria-hidden /> اشترِ للوصول لكل الدروس
               </Link>
               {freeLesson ? <FreeLessonButton lesson={freeLesson} variant="light" /> : null}
@@ -140,7 +140,7 @@ export function LockedStage({
  */
 function FreeLessonButton({ lesson, variant }: { lesson: { href: string; title: string }; variant: "light" | "glass" }) {
   return (
-    <Link
+    <Link prefetch={false}
       href={lesson.href}
       title={lesson.title}
       className={cn(

@@ -67,7 +67,7 @@ export function VideoPosterArt({
           )}
           <span className="chip chip-glass absolute bottom-3 left-3 z-[3]">{typeLabel}</span>
           {play ? (
-            <Link href={play.href} className={s.vplay} data-testid={play.testId} aria-label={play.label}>
+            <Link prefetch={false} href={play.href} className={s.vplay} data-testid={play.testId} aria-label={play.label}>
               <span className={cn("play-dot", s.playBig)}>
                 <Play className="size-7 translate-x-[-2px] fill-current" aria-hidden />
               </span>

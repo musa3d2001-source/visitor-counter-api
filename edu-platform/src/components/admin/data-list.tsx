@@ -44,7 +44,7 @@ export function RankList({ items, className, grid = false }: { items: RankItem[]
           <span className="sr-only">المرتبة {ar(i + 1)}: </span>
           <div className="min-w-0 flex-1">
             {it.href ? (
-              <Link href={it.href} className="stretched line-clamp-2 font-display text-[0.95rem] leading-snug font-extrabold text-ink hover:text-brand-700">
+              <Link prefetch={false} href={it.href} className="stretched line-clamp-2 font-display text-[0.95rem] leading-snug font-extrabold text-ink hover:text-brand-700">
                 {it.title}
               </Link>
             ) : (
@@ -123,7 +123,7 @@ export function DataRow({
       {/* يحجز الجسم عرضًا أدنى فينزل الجانب (الكبسولات/المبالغ) إلى سطر خاص على الجوال بدل خنق العنوان */}
       <div className="min-w-[min(100%,13rem)] flex-1">
         {href ? (
-          <Link href={href} className="stretched line-clamp-2 font-display font-extrabold text-ink hover:text-brand-700">
+          <Link prefetch={false} href={href} className="stretched line-clamp-2 font-display font-extrabold text-ink hover:text-brand-700">
             {title}
           </Link>
         ) : (
@@ -150,7 +150,7 @@ export function CellTitle({ href, title, sub, className }: { href?: string; titl
   return (
     <div className={cn("min-w-0", className)}>
       {href ? (
-        <Link href={href} className="line-clamp-2 font-display font-extrabold text-ink hover:text-brand-700 hover:underline hover:decoration-brand-300 hover:underline-offset-4">
+        <Link prefetch={false} href={href} className="line-clamp-2 font-display font-extrabold text-ink hover:text-brand-700 hover:underline hover:decoration-brand-300 hover:underline-offset-4">
           {title}
         </Link>
       ) : (

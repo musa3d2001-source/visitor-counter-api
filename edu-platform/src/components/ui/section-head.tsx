@@ -62,7 +62,7 @@ export function SectionHead({
         {sub ? <p className={cn("mt-2 max-w-2xl text-[1.05rem] leading-8", light ? "text-white/85" : "text-muted")}>{sub}</p> : null}
       </div>
       {more ? (
-        <Link href={more.href} className="btn btn-3d btn-outline btn-md shrink-0 text-brand-700">
+        <Link prefetch={false} href={more.href} className="btn btn-3d btn-outline btn-md shrink-0 text-brand-700">
           {more.label}
           <ArrowLeft aria-hidden />
         </Link>

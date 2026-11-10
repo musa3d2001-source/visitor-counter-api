@@ -45,7 +45,7 @@ export function Breadcrumbs({
               <li className={cn("flex items-center gap-0.5 sm:gap-1", i === last ? "min-w-0" : "shrink-0", collapsible(i) && "max-sm:hidden")}>
                 {i > 0 ? <ChevronLeft className={cn("size-3.5 shrink-0", glass ? "text-white/70" : "text-muted/70")} aria-hidden /> : null}
                 {isLink ? (
-                  <Link
+                  <Link prefetch={false}
                     href={it.href!}
                     className={cn(
                       "-my-1 inline-flex min-h-11 items-center gap-1.5 rounded-full px-2 font-bold transition-colors",

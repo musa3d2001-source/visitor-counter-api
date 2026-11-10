@@ -147,7 +147,7 @@ export default async function OrderPage({ params, searchParams }: { params: Prom
                   {holds.length ? null : (
                     <div className="mt-6 flex flex-wrap justify-center gap-3 sm:justify-start">
                       <Button asChild size="xl" variant="accent">
-                        <Link href="/library" data-testid="go-library">
+                        <Link prefetch={false} href="/library" data-testid="go-library">
                           <BookOpen aria-hidden /> افتح مكتبتي
                         </Link>
                       </Button>
@@ -233,7 +233,7 @@ export default async function OrderPage({ params, searchParams }: { params: Prom
                   </p>
                   <div className="mt-6 flex flex-wrap justify-center gap-3 sm:justify-start">
                     <Button asChild size="lg" variant="light">
-                      <Link href={order.closed_reason === "already_owned" ? "/library" : "/cart"}>{order.closed_reason === "already_owned" ? "افتح مكتبتي" : "العودة إلى السلة"}</Link>
+                      <Link prefetch={false} href={order.closed_reason === "already_owned" ? "/library" : "/cart"}>{order.closed_reason === "already_owned" ? "افتح مكتبتي" : "العودة إلى السلة"}</Link>
                     </Button>
                   </div>
                 </>
@@ -307,7 +307,7 @@ export default async function OrderPage({ params, searchParams }: { params: Prom
           </Alert>
         ) : sp.error === "mode" ? (
           <Alert tone="danger" className="mt-6 no-print" title="لا يمكن إكمال دفع هذا الطلب">
-            أُنشئ هذا الطلب في وضع دفع مختلف عن الوضع الحالي، ولن يتغير ذلك بالتحديث. يمكنك إلغاء هذا الطلب ثم إنشاء طلب جديد من <Link href="/cart">السلة</Link>.
+            أُنشئ هذا الطلب في وضع دفع مختلف عن الوضع الحالي، ولن يتغير ذلك بالتحديث. يمكنك إلغاء هذا الطلب ثم إنشاء طلب جديد من <Link prefetch={false} href="/cart">السلة</Link>.
           </Alert>
         ) : sp.error === "review" ? (
           <Alert tone="warning" className="mt-6 no-print" title="لا يمكن تأكيد هذا الطلب تلقائيًا">
@@ -441,7 +441,7 @@ export default async function OrderPage({ params, searchParams }: { params: Prom
             <div className="mt-7 flex flex-wrap gap-3 no-print">
               <PrintButton />
               <Button asChild variant="outline">
-                <Link href="/account">كل طلباتي</Link>
+                <Link prefetch={false} href="/account">كل طلباتي</Link>
               </Button>
               {unpaid && paymentsOn ? (
                 <form action={cancelOrderAction}>
@@ -463,7 +463,7 @@ export default async function OrderPage({ params, searchParams }: { params: Prom
                 <NextStep n={3} tone="grade-8" title="فاتورتك محفوظة" text="تجدها دائمًا في صفحة «حسابي»." />
               </ol>
               <Button asChild variant="soft" className="mt-6 w-full">
-                <Link href="/library">
+                <Link prefetch={false} href="/library">
                   <Library aria-hidden /> مكتبتي
                 </Link>
               </Button>
@@ -485,7 +485,7 @@ export default async function OrderPage({ params, searchParams }: { params: Prom
                     تواصل عبر واتساب
                   </a>
                 ) : (
-                  <Link href="/contact">تواصل معنا</Link>
+                  <Link prefetch={false} href="/contact">تواصل معنا</Link>
                 )}
               </Button>
             </aside>

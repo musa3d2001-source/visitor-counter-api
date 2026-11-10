@@ -85,7 +85,7 @@ export default async function CouponsPage({ searchParams }: { searchParams: Prom
                   actions={
                     <>
                       <Button asChild size="sm" variant="soft">
-                        <Link href={`/admin/coupons/${c.id}`} aria-label={`تعديل ${c.code}`}>
+                        <Link prefetch={false} href={`/admin/coupons/${c.id}`} aria-label={`تعديل ${c.code}`}>
                           <Pencil aria-hidden /> تعديل
                         </Link>
                       </Button>

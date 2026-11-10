@@ -102,7 +102,7 @@ export function LessonTimeline({
               return (
                 <li key={l.id} data-testid={testIds ? "lesson-item" : undefined}>
                   {linkable ? (
-                    <Link href={`/watch/${productId}?lesson=${l.id}`} className={rowClass} aria-label={`${l.title}${open ? "" : "، مقفل"}`}>
+                    <Link prefetch={false} href={`/watch/${productId}?lesson=${l.id}`} className={rowClass} aria-label={`${l.title}${open ? "" : "، مقفل"}`}>
                       {inner}
                     </Link>
                   ) : (

@@ -98,7 +98,7 @@ export function PurchasePanel({
               <CircleCheck className="size-5 shrink-0" aria-hidden /> في مكتبتك
             </p>
             {owned.until ? <p className="mt-2 text-sm font-semibold text-ink-soft">متاح حتى {formatDate(owned.until)}</p> : null}
-            <Link href={owned.href} className="btn btn-3d btn-primary btn-lg mt-4 w-full">
+            <Link prefetch={false} href={owned.href} className="btn btn-3d btn-primary btn-lg mt-4 w-full">
               {owned.icon}
               {owned.label}
             </Link>
@@ -120,7 +120,7 @@ export function PurchasePanel({
           </>
         )}
         {preview ? (
-          <Link href={preview.href} className="btn btn-3d btn-accent btn-lg mt-3 w-full" data-testid={preview.testId}>
+          <Link prefetch={false} href={preview.href} className="btn btn-3d btn-accent btn-lg mt-3 w-full" data-testid={preview.testId}>
             {preview.icon}
             {preview.label}
           </Link>

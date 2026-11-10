@@ -61,7 +61,7 @@ export default async function AccountPage({ searchParams }: { searchParams: Prom
             <p className="lead mt-3 max-w-xl">طلباتك وفواتيرك وبياناتك في مكان واحد.</p>
             <div className="mt-7 flex flex-wrap items-center gap-3.5">
               <Button asChild size="lg">
-                <Link href="/library">
+                <Link prefetch={false} href="/library">
                   <Library aria-hidden /> مكتبتي
                 </Link>
               </Button>
@@ -122,7 +122,7 @@ export default async function AccountPage({ searchParams }: { searchParams: Prom
         {mustVerify ? (
           <Alert tone="warning" title="بريدك غير مؤكد" className="mb-6">
             <p>
-              تأكيده مطلوب قبل أول عملية دفع. <Link href="/verify-email?next=/account">أكّد بريدك</Link>
+              تأكيده مطلوب قبل أول عملية دفع. <Link prefetch={false} href="/verify-email?next=/account">أكّد بريدك</Link>
             </p>
           </Alert>
         ) : null}
@@ -135,7 +135,7 @@ export default async function AccountPage({ searchParams }: { searchParams: Prom
             grades={[]}
             actions={
               <Button asChild size="lg">
-                <Link href="/#grades">اختر صفك</Link>
+                <Link prefetch={false} href="/#grades">اختر صفك</Link>
               </Button>
             }
           />
@@ -159,7 +159,7 @@ export default async function AccountPage({ searchParams }: { searchParams: Prom
                 const look = STATUS_LOOK[o.status as keyof typeof STATUS_LOOK] ?? STATUS_LOOK.cancelled;
                 return (
                   <li key={o.id}>
-                    <Link
+                    <Link prefetch={false}
                       href={`/orders/${o.id}`}
                       className="group flex items-center gap-3.5 rounded-[1.4rem] border-2 border-line bg-field p-3 transition-[border-color,background-color,transform] hover:-translate-y-0.5 hover:border-brand-200 hover:bg-white sm:gap-4 sm:p-4 motion-reduce:hover:translate-y-0"
                     >

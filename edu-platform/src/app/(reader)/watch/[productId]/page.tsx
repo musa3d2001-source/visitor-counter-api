@@ -144,7 +144,7 @@ export default async function WatchPage({ params, searchParams }: { params: Prom
       {/* ───── الشريط العلوي الداكن ───── */}
       <header className="on-dark sticky top-0 z-40 border-b border-white/10 bg-[color-mix(in_oklab,var(--brand-deep)_93%,transparent)] text-white backdrop-blur-xl">
         <div className="mx-auto flex h-16 max-w-[88rem] items-center gap-2.5 px-3 sm:gap-4 sm:px-6 lg:px-8">
-          <Link
+          <Link prefetch={false}
             href={backHref}
             className="flex h-11 shrink-0 items-center gap-1.5 rounded-xl bg-white/10 px-3 font-display text-[0.92rem] font-extrabold ring-1 ring-white/15 transition-colors hover:bg-white/20"
           >
@@ -193,7 +193,7 @@ export default async function WatchPage({ params, searchParams }: { params: Prom
                 {user ? null : (
                   <>
                     إذا اشتريت هذا المحتوى سابقًا،{" "}
-                    <Link href={loginHref} className="font-bold text-[#ffd25e] underline decoration-2 underline-offset-4">
+                    <Link prefetch={false} href={loginHref} className="font-bold text-[#ffd25e] underline decoration-2 underline-offset-4">
                       سجّل الدخول
                     </Link>{" "}
                     لمتابعته.
@@ -277,7 +277,7 @@ export default async function WatchPage({ params, searchParams }: { params: Prom
                         {ar(lessons.length)}
                       </a>
                       {prev ? (
-                        <Link
+                        <Link prefetch={false}
                           href={watchHref(prev.id)}
                           className={cn(
                             "btn btn-3d btn-md h-12 shrink-0 bg-white/12 text-white shadow-[0_4px_0_rgb(0_0_0/0.3)] ring-1 ring-white/20 hover:bg-white/20",
@@ -288,11 +288,11 @@ export default async function WatchPage({ params, searchParams }: { params: Prom
                         </Link>
                       ) : null}
                       {next ? (
-                        <Link href={watchHref(next.id)} className="btn btn-3d btn-accent btn-md h-12 min-w-0 flex-1 lg:flex-none lg:px-6" data-testid="next-lesson">
+                        <Link prefetch={false} href={watchHref(next.id)} className="btn btn-3d btn-accent btn-md h-12 min-w-0 flex-1 lg:flex-none lg:px-6" data-testid="next-lesson">
                           الدرس التالي <ChevronLeft aria-hidden />
                         </Link>
                       ) : showBuy ? (
-                        <Link href={`/products/${product.slug}`} className="btn btn-3d btn-accent btn-md h-12 min-w-0 flex-1 lg:flex-none lg:px-6">
+                        <Link prefetch={false} href={`/products/${product.slug}`} className="btn btn-3d btn-accent btn-md h-12 min-w-0 flex-1 lg:flex-none lg:px-6">
                           <ShoppingCart aria-hidden /> اشترِ للوصول لكل الدروس
                         </Link>
                       ) : null}
@@ -351,7 +351,7 @@ export default async function WatchPage({ params, searchParams }: { params: Prom
                         {teacher.headline ? <p className="line-clamp-1 text-[0.88rem] text-ink-soft">{teacher.headline}</p> : null}
                       </div>
                       {teacher.slug ? (
-                        <Link href={`/teachers/${teacher.slug}`} className="btn btn-3d btn-outline btn-icon shrink-0 sm:h-auto sm:w-auto sm:min-h-11 sm:px-3.5 sm:text-[0.9rem]">
+                        <Link prefetch={false} href={`/teachers/${teacher.slug}`} className="btn btn-3d btn-outline btn-icon shrink-0 sm:h-auto sm:w-auto sm:min-h-11 sm:px-3.5 sm:text-[0.9rem]">
                           <UserRound aria-hidden />
                           <span className="sr-only sm:not-sr-only">صفحة المعلم</span>
                         </Link>
@@ -376,12 +376,12 @@ export default async function WatchPage({ params, searchParams }: { params: Prom
                       </h2>
                       {watchLibraryNote ? <p className="mt-1.5 text-[0.95rem] text-white/80">{watchLibraryNote}</p> : null}
                       {detail && detail.priceFils > 0 ? <Price fils={detail.priceFils} compareAt={detail.compareAtPriceFils} size="lg" tone="light" className="mt-3" /> : null}
-                      <Link href={`/products/${product.slug}`} className="btn btn-3d btn-accent btn-md mt-4 w-full">
+                      <Link prefetch={false} href={`/products/${product.slug}`} className="btn btn-3d btn-accent btn-md mt-4 w-full">
                         <ShoppingCart aria-hidden /> اشترِ للوصول لكل الدروس
                       </Link>
                       {!user ? (
                         <p className="mt-4 border-t border-white/15 pt-4 text-[0.92rem] text-white/85">
-                          <Link href={loginHref} className="font-bold text-[#ffd25e] underline decoration-2 underline-offset-4">
+                          <Link prefetch={false} href={loginHref} className="font-bold text-[#ffd25e] underline decoration-2 underline-offset-4">
                             سجّل الدخول
                           </Link>{" "}
                           ليُحفظ تقدمك وتكمل من حيث توقفت.
@@ -400,7 +400,7 @@ export default async function WatchPage({ params, searchParams }: { params: Prom
                       <ul className="mt-4 space-y-2.5">
                         {files.map((f) => (
                           <li key={f.id}>
-                            <Link
+                            <Link prefetch={false}
                               href={`/read/${f.id}`}
                               className="flex min-h-14 items-center gap-3 rounded-2xl border-2 border-line bg-field px-3.5 py-2.5 transition-colors hover:border-[color-mix(in_oklab,var(--b)_40%,white)] hover:bg-white"
                             >
@@ -423,12 +423,12 @@ export default async function WatchPage({ params, searchParams }: { params: Prom
                     <section className="relative overflow-hidden rounded-[1.75rem] bg-[linear-gradient(150deg,#fff3cf,#ffe39a)] p-5 shadow-card sm:p-6">
                       <p className="font-display text-[1.15rem] leading-snug font-black text-[#5a3b00]">احفظ تقدمك</p>
                       <p className="mt-1.5 text-[0.98rem] text-[#5a3b00]">
-                        <Link href={loginHref} className="font-bold underline decoration-2 underline-offset-4">
+                        <Link prefetch={false} href={loginHref} className="font-bold underline decoration-2 underline-offset-4">
                           سجّل الدخول
                         </Link>{" "}
                         ليُحفظ تقدمك وتكمل من حيث توقفت.
                       </p>
-                      <Link href={loginHref} className="btn btn-3d btn-primary btn-md mt-4">
+                      <Link prefetch={false} href={loginHref} className="btn btn-3d btn-primary btn-md mt-4">
                         <LogIn aria-hidden /> تسجيل الدخول
                       </Link>
                     </section>

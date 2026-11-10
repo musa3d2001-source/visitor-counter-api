@@ -57,7 +57,7 @@ export function ExtraPaymentsList({ extras, canRefund, showOrder, stepUp }: { ex
               <p className="text-[0.84rem] leading-6 text-muted">
                 {showOrder ? (
                   <>
-                    <Link href={`/admin/orders/${e.order_id}`} className="num font-bold text-brand-700 hover:underline">
+                    <Link prefetch={false} href={`/admin/orders/${e.order_id}`} className="num font-bold text-brand-700 hover:underline">
                       {e.order_number}
                     </Link>
                     {" · "}

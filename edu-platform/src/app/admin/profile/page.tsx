@@ -42,7 +42,7 @@ export default async function TeacherProfilePage() {
           actions={
             teacher.is_published ? (
               <Button asChild variant="primary" size="md">
-                <Link href={`/teachers/${teacher.slug}`} target="_blank">
+                <Link prefetch={false} href={`/teachers/${teacher.slug}`} target="_blank">
                   <ExternalLink aria-hidden /> صفحتي العامة
                 </Link>
               </Button>

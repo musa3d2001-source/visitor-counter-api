@@ -76,7 +76,7 @@ export function VideoCard({
         ) : null}
         {meta ? <Kicker>{meta}</Kicker> : null}
         <H className={cn(s.vtitle, fitTitle && s.vtitleFit)}>
-          <Link href={`/products/${p.slug}`} id={titleId} className="stretched">
+          <Link prefetch={false} href={`/products/${p.slug}`} id={titleId} className="stretched">
             {p.title}
           </Link>
         </H>
@@ -85,7 +85,7 @@ export function VideoCard({
         <div className={s.vfoot}>
           {owned ? <OwnedChip /> : p.saleEnded ? <SaleEndedChip /> : <CompactPrice fils={p.priceFils} compareAt={p.compareAtPriceFils} />}
           {preview ? (
-            <Link href={preview} className={s.footBtn} aria-describedby={titleId}>
+            <Link prefetch={false} href={preview} className={s.footBtn} aria-describedby={titleId}>
               <Play fill="currentColor" aria-hidden />
               شاهد مجانًا
             </Link>

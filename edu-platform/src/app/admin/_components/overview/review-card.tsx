@@ -64,7 +64,7 @@ export function ReviewCard({ item: p }: { item: ReviewItem }) {
             <span className="chip">{PRODUCT_TYPE_LABELS[p.type]}</span>
           </div>
           <h2 className="mt-2 font-display text-[1.15rem] leading-snug font-black text-ink">
-            <Link href={`/admin/products/${p.id}`} className="stretched line-clamp-2 hover:text-brand-700">
+            <Link prefetch={false} href={`/admin/products/${p.id}`} className="stretched line-clamp-2 hover:text-brand-700">
               {p.title}
             </Link>
           </h2>
@@ -112,7 +112,7 @@ export function ReviewCard({ item: p }: { item: ReviewItem }) {
           ) : null}
         </div>
         <Button asChild size="sm" variant="accent" className="relative z-[2]">
-          <Link href={`/admin/products/${p.id}#review-h`}>
+          <Link prefetch={false} href={`/admin/products/${p.id}#review-h`}>
             <BadgeCheck aria-hidden /> مراجعة
           </Link>
         </Button>

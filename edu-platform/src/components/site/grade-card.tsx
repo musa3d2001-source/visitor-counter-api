@@ -35,7 +35,7 @@ export function GradeCard({
 }) {
   const statLine = [stats?.subjects ? count(stats.subjects, W.subject) : null, stats?.products ? count(stats.products, W.product) : null].filter(Boolean).join(" · ");
   return (
-    <Link href={href ?? `/grades/${g.slug}`} className={cn("tile-3d", s.gcard, compact && s.gcompact, gradeClass(g.level), className)}>
+    <Link prefetch={false} href={href ?? `/grades/${g.slug}`} className={cn("tile-3d", s.gcard, compact && s.gcompact, gradeClass(g.level), className)}>
       <span className={s.gwin} aria-hidden>
         <span className={s.gnum}>{ar(g.level)}</span>
         <span className={s.gart}>

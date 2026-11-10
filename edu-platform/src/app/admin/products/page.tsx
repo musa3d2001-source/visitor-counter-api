@@ -168,7 +168,7 @@ export default async function AdminProductsPage({ searchParams }: { searchParams
           actions={
             canAdd ? (
               <Button asChild variant="accent">
-                <Link href="/admin/products/new">
+                <Link prefetch={false} href="/admin/products/new">
                   <Plus aria-hidden /> {owner ? "إضافة منتج" : "إضافة محتوى"}
                 </Link>
               </Button>
@@ -240,11 +240,11 @@ export default async function AdminProductsPage({ searchParams }: { searchParams
             action={
               filtered ? (
                 <Button asChild variant="outline">
-                  <Link href="/admin/products">إزالة التصفية</Link>
+                  <Link prefetch={false} href="/admin/products">إزالة التصفية</Link>
                 </Button>
               ) : canAdd ? (
                 <Button asChild>
-                  <Link href="/admin/products/new">إضافة منتج</Link>
+                  <Link prefetch={false} href="/admin/products/new">إضافة منتج</Link>
                 </Button>
               ) : null
             }
@@ -274,7 +274,7 @@ export default async function AdminProductsPage({ searchParams }: { searchParams
                   )}
                   {owner ? (
                     <Button asChild size="sm" variant={sorting ? "primary" : "soft"} className="min-h-11">
-                      <Link href={listHref({ page, sort: !sorting })}>
+                      <Link prefetch={false} href={listHref({ page, sort: !sorting })}>
                         {sorting ? <Check aria-hidden /> : <ArrowDownUp aria-hidden />}
                         {sorting ? "إنهاء تعديل الترتيب" : "تعديل الترتيب"}
                       </Link>
@@ -370,7 +370,7 @@ function ProductListRow({ p, owner, sorting, level }: { p: AdminProductRow; owne
                 {owner ? ` · ${p.teacher_name ?? "محتوى المنصة"}` : ""}
               </span>
             </p>
-            <Link href={`/admin/products/${p.id}`} className="stretched mt-0.5 line-clamp-2 font-display text-[1rem] leading-snug font-extrabold text-ink hover:text-brand-700">
+            <Link prefetch={false} href={`/admin/products/${p.id}`} className="stretched mt-0.5 line-clamp-2 font-display text-[1rem] leading-snug font-extrabold text-ink hover:text-brand-700">
               {p.title}
             </Link>
             {chips.length || (p.status === "draft" && p.review_note) ? (
@@ -448,7 +448,7 @@ function ProductListRow({ p, owner, sorting, level }: { p: AdminProductRow; owne
           ) : null}
           <div className="ms-auto flex items-center gap-1 lg:ms-0">
             <Button asChild size="icon" variant="ghost" title="تعديل">
-              <Link href={`/admin/products/${p.id}`} aria-label={`تعديل ${p.title}`}>
+              <Link prefetch={false} href={`/admin/products/${p.id}`} aria-label={`تعديل ${p.title}`}>
                 <Pencil aria-hidden />
               </Link>
             </Button>
@@ -459,7 +459,7 @@ function ProductListRow({ p, owner, sorting, level }: { p: AdminProductRow; owne
             ) : null}
             {p.status === "published" ? (
               <Button asChild size="icon" variant="ghost" title="عرض كما يراه الطالب">
-                <Link href={`/products/${p.slug}`} target="_blank" aria-label="عرض في الموقع">
+                <Link prefetch={false} href={`/products/${p.slug}`} target="_blank" aria-label="عرض في الموقع">
                   <Eye aria-hidden />
                 </Link>
               </Button>

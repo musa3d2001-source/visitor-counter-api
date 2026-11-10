@@ -23,7 +23,7 @@ export function ForgotForm() {
           <MailSearch className="mt-1 size-4.5 shrink-0 text-accent-700" aria-hidden />
           لم تصلك الرسالة؟ تحقّق من مجلد الرسائل غير المرغوب فيها، أو أعد المحاولة بعد قليل.
         </p>
-        <Link href="/login" className="btn btn-3d btn-primary btn-lg w-full">
+        <Link prefetch={false} href="/login" className="btn btn-3d btn-primary btn-lg w-full">
           <ArrowRight aria-hidden />
           العودة لتسجيل الدخول
         </Link>
@@ -43,7 +43,7 @@ export function ForgotForm() {
           إرسال رابط الاستعادة
           <Send className="-scale-x-100" aria-hidden />
         </SubmitButton>
-        <Link href="/login" className="mx-auto inline-flex min-h-11 items-center gap-1.5 rounded-xl px-3 text-[0.95rem] font-bold text-brand-700 hover:bg-brand-50">
+        <Link prefetch={false} href="/login" className="mx-auto inline-flex min-h-11 items-center gap-1.5 rounded-xl px-3 text-[0.95rem] font-bold text-brand-700 hover:bg-brand-50">
           <ArrowRight className="size-4.5" aria-hidden />
           العودة لتسجيل الدخول
         </Link>

@@ -87,7 +87,7 @@ export default async function AdminSecurityPage({ searchParams }: { searchParams
                 لم تفعّل التحقق بخطوتين على حسابك، فلن تعمل الاستردادات والتسويات وتصدير بيانات العملاء وباقي الأوامر الحساسة حتى تفعّله.
               </Alert>
               <Button asChild>
-                <Link href={TWO_FACTOR_SETUP_PATH}>
+                <Link prefetch={false} href={TWO_FACTOR_SETUP_PATH}>
                   <ShieldCheck aria-hidden /> تفعيل التحقق بخطوتين
                 </Link>
               </Button>

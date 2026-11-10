@@ -32,7 +32,7 @@ export default function AdminError({ error, reset }: { error: Error & { digest?:
           <RotateCcw aria-hidden /> إعادة المحاولة
         </Button>
         <Button asChild variant="outline" size="lg">
-          <Link href="/admin">
+          <Link prefetch={false} href="/admin">
             <House aria-hidden /> الرئيسية
           </Link>
         </Button>

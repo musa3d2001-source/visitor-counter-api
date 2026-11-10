@@ -85,7 +85,7 @@ export function FilterPill({
 }) {
   const tone = grade != null ? gradeClass(grade) : subjectSlug ? toneClass(subjectSlug) : "tone-brand";
   return (
-    <Link href={href} aria-current={active ? "page" : undefined} className={cn(s.fpill, active && s.fpillActive, tone)}>
+    <Link prefetch={false} href={href} aria-current={active ? "page" : undefined} className={cn(s.fpill, active && s.fpillActive, tone)}>
       {grade != null ? (
         <span className="num-tile" aria-hidden>
           {ar(grade)}

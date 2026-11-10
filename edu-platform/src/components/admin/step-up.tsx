@@ -140,7 +140,7 @@ export function StepUpProvider({ children }: { children: React.ReactNode }) {
                   </Button>
                 </AlertDialog.Cancel>
                 <Button asChild size="md">
-                  <Link href={TWO_FACTOR_SETUP_PATH} data-testid="step-up-enrol-link">
+                  <Link prefetch={false} href={TWO_FACTOR_SETUP_PATH} data-testid="step-up-enrol-link">
                     تفعيل التحقق بخطوتين
                   </Link>
                 </Button>

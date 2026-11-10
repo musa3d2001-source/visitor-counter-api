@@ -28,7 +28,7 @@ export function SwitchCard({ question, href, label, icon }: { question: string; 
         </span>
         {question}
       </span>
-      <Link href={href} className="btn btn-3d btn-outline btn-sm text-brand-700 max-sm:w-full">
+      <Link prefetch={false} href={href} className="btn btn-3d btn-outline btn-sm text-brand-700 max-sm:w-full">
         {label}
         <ArrowLeft aria-hidden />
       </Link>

@@ -350,7 +350,7 @@ export function HeroTeachers({ label, teachers, anchor }: { label: string; teach
       </h2>
       <div className={s.teachRow}>
         {teachers.map((t) => (
-          <Link key={t.id} href={`/teachers/${t.slug}${anchor ? `#${anchor}` : ""}`} data-testid="subject-teacher" className={s.teachChip}>
+          <Link prefetch={false} key={t.id} href={`/teachers/${t.slug}${anchor ? `#${anchor}` : ""}`} data-testid="subject-teacher" className={s.teachChip}>
             <TeacherAvatar name={t.name} photoUrl={t.photoUrl} size={40} subjectSlug={t.subjects[0]?.slug ?? null} decorative />
             <span className="whitespace-nowrap">{t.name}</span>
             <ArrowLeft aria-hidden />
@@ -380,7 +380,7 @@ export function SubjectCard({
 }) {
   const names = teachers.slice(0, 2).map((t) => shortName(t.name));
   return (
-    <Link href={href} className={cn("tile-3d", s.scard, toneClass(x.slug))}>
+    <Link prefetch={false} href={href} className={cn("tile-3d", s.scard, toneClass(x.slug))}>
       <span className={cn("poster", s.scover)} aria-hidden>
         <span className={s.sicon}>
           <SubjectIcon slug={x.slug} name={x.icon} size={26} strokeWidth={2.3} />

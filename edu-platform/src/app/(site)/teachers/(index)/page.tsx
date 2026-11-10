@@ -100,7 +100,7 @@ export default async function TeachersPage({ searchParams }: { searchParams: Pro
                   {filtered ? `${count(teachers.length, W.teacher)} في ${[subject?.name, grade?.name].filter(Boolean).join("، ")}` : `${count(teachers.length, W.teacher)} على المنصة`}
                 </p>
                 {filtered ? (
-                  <Link href="/teachers" className="btn btn-3d btn-outline btn-sm">
+                  <Link prefetch={false} href="/teachers" className="btn btn-3d btn-outline btn-sm">
                     <X aria-hidden />
                     إزالة التصفية
                   </Link>

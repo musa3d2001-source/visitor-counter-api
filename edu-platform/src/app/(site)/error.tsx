@@ -45,12 +45,12 @@ export default function SiteError({ error, reset }: { error: Error & { digest?: 
             <RotateCw aria-hidden />
             إعادة المحاولة
           </Button>
-          <Link href="/" className="btn btn-3d btn-outline btn-lg">
+          <Link prefetch={false} href="/" className="btn btn-3d btn-outline btn-lg">
             <House aria-hidden />
             الصفحة الرئيسية
           </Link>
         </div>
-        <Link href="/contact" className="mt-5 inline-flex min-h-11 items-center gap-1.5 rounded-xl px-3 font-display text-[0.95rem] font-bold text-brand-700 hover:bg-brand-50">
+        <Link prefetch={false} href="/contact" className="mt-5 inline-flex min-h-11 items-center gap-1.5 rounded-xl px-3 font-display text-[0.95rem] font-bold text-brand-700 hover:bg-brand-50">
           <MessagesSquare className="size-4.5" aria-hidden />
           تواصل معنا
         </Link>

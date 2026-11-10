@@ -21,7 +21,7 @@ export default async function ConfirmEmailPage({ searchParams }: { searchParams:
           <Alert tone="danger" title="الرابط غير صالح">
             افتح الرابط من الرسالة كما هو، أو اطلب رابطًا جديدًا.
           </Alert>
-          <Link href="/verify-email" className="btn btn-3d btn-primary btn-lg w-full">
+          <Link prefetch={false} href="/verify-email" className="btn btn-3d btn-primary btn-lg w-full">
             طلب رابط جديد
           </Link>
         </div>

@@ -24,9 +24,9 @@ export default async function ReadPage({ params }: { params: Promise<{ fileId: s
             <SpotArt kind="lock" />
           </div>
           <Alert tone="danger" title="لا تملك صلاحية فتح هذا الملف" className="mt-4 text-start">
-            إذا اشتريت هذه المذكرة بحساب آخر، سجّل الدخول به. <Link href="/library">العودة إلى مكتبتي</Link>
+            إذا اشتريت هذه المذكرة بحساب آخر، سجّل الدخول به. <Link prefetch={false} href="/library">العودة إلى مكتبتي</Link>
           </Alert>
-          <Link href="/library" className="btn btn-3d btn-primary btn-lg mt-6 w-full">
+          <Link prefetch={false} href="/library" className="btn btn-3d btn-primary btn-lg mt-6 w-full">
             <LibraryBig aria-hidden />
             مكتبتي
           </Link>

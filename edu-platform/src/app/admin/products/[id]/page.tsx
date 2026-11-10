@@ -229,7 +229,7 @@ export default async function EditProductPage({
           actions={
             owner || product.status === "published" ? (
               <Button asChild variant="outline" size="md">
-                <Link href={`/products/${product.slug}`} target="_blank">
+                <Link prefetch={false} href={`/products/${product.slug}`} target="_blank">
                   <Eye aria-hidden /> معاينة كما يراها الطالب
                 </Link>
               </Button>
@@ -312,7 +312,7 @@ export default async function EditProductPage({
           ) : owner ? (
             <>
               لا يستطيع الطلاب شراء هذا المنتج الآن. السبب وطريقة حله في{" "}
-              <Link href="/admin/content-health" className="font-bold underline">
+              <Link prefetch={false} href="/admin/content-health" className="font-bold underline">
                 سلامة المحتوى
               </Link>
               .
@@ -542,7 +542,7 @@ export default async function EditProductPage({
                   </ActionForm>
                 ) : (
                   <Alert tone="warning" title="اقبل اتفاقية المعلم أولًا" className="w-full" data-testid="agreement-needed">
-                    لإرسال المحتوى للمراجعة، اقرأ <Link href="/admin/agreement">اتفاقية المعلم</Link> واقبلها. مسودتك محفوظة وتبقى كما هي.
+                    لإرسال المحتوى للمراجعة، اقرأ <Link prefetch={false} href="/admin/agreement">اتفاقية المعلم</Link> واقبلها. مسودتك محفوظة وتبقى كما هي.
                   </Alert>
                 )
               ) : null}
@@ -667,7 +667,7 @@ export default async function EditProductPage({
                               ) : null}
                               <div className="flex flex-wrap items-center gap-2">
                                 <Button asChild variant="soft" size="sm">
-                                  <Link href={`/watch/${id}?lesson=${l.id}`} target="_blank">
+                                  <Link prefetch={false} href={`/watch/${id}?lesson=${l.id}`} target="_blank">
                                     <Eye aria-hidden /> مشاهدة
                                   </Link>
                                 </Button>
@@ -910,7 +910,7 @@ export default async function EditProductPage({
                           </>
                         ) : null}
                         <Button asChild variant="ghost" size="icon" title="فتح الملف">
-                          <Link href={`/read/${f.id}`} target="_blank" aria-label={`فتح ${f.title}`}>
+                          <Link prefetch={false} href={`/read/${f.id}`} target="_blank" aria-label={`فتح ${f.title}`}>
                             <Eye aria-hidden />
                           </Link>
                         </Button>
@@ -957,7 +957,7 @@ export default async function EditProductPage({
                     <p className="text-xs text-muted">{preview.page_count ? count(preview.page_count, W.page) : "عدد الصفحات غير معروف"}، متاحة للجميع بدون تسجيل</p>
                   </div>
                   <Button asChild variant="outline" size="sm">
-                    <Link href={`/preview/${preview.id}`} target="_blank">
+                    <Link prefetch={false} href={`/preview/${preview.id}`} target="_blank">
                       فتح
                     </Link>
                   </Button>
@@ -1000,7 +1000,7 @@ export default async function EditProductPage({
                       >
                         <AdminThumb type={it.type} subjectName={it.subject_name} gradeLevel={product.grade_level} size="sm" />
                         <div className="min-w-[min(100%,12rem)] flex-1">
-                          <Link href={`/admin/products/${it.product_id}`} className="line-clamp-2 font-display font-extrabold text-ink hover:text-brand-700">
+                          <Link prefetch={false} href={`/admin/products/${it.product_id}`} className="line-clamp-2 font-display font-extrabold text-ink hover:text-brand-700">
                             {it.title}
                           </Link>
                           <p className="text-xs text-muted">

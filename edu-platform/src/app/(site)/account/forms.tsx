@@ -123,7 +123,7 @@ export function DataRequests({ requests }: { requests: DataRequestView[] }) {
     <div className="flex flex-col gap-4">
       <p className="text-[0.95rem] leading-7 text-ink-soft">
         تصل طلباتك إلى إدارة المنصة فتراجعها بنفسها، ولا يحدث شيء تلقائيًا. وما يبقى بعد الحذف مذكور في{" "}
-        <Link href="/privacy#rights" className="font-bold text-brand-700 underline underline-offset-4">
+        <Link prefetch={false} href="/privacy#rights" className="font-bold text-brand-700 underline underline-offset-4">
           سياسة الخصوصية
         </Link>
         .

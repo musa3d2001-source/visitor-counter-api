@@ -12,7 +12,7 @@ export function CartLink({ count, stamp }: { count: number; stamp: string }) {
   useEffect(() => registerHeaderStamp(stamp), [stamp]);
   const shown = visibleCartCount(count, stamp, snapshot);
   return (
-    <Link
+    <Link prefetch={false}
       href="/cart"
       className="relative grid size-11 place-items-center rounded-[15px] border border-[rgb(23_32_38/0.07)] bg-white text-ink shadow-card transition-[transform,box-shadow] hover:-translate-y-px hover:shadow-lift sm:size-12"
       aria-label={`السلة (${ar(shown)})`}

@@ -27,7 +27,7 @@ export function GradeBand({ id, level, name, slug, bundles }: { id: string; leve
         </h2>
         <p className="mt-1 font-display font-bold text-white">{count(bundles, BUNDLE_WORD)} لهذا الصف</p>
       </div>
-      <Link href={`/grades/${slug}`} className={cn("btn btn-3d btn-light btn-md relative shrink-0", s.bandCta)}>
+      <Link prefetch={false} href={`/grades/${slug}`} className={cn("btn btn-3d btn-light btn-md relative shrink-0", s.bandCta)}>
         كل محتوى {name}
         <ArrowLeft aria-hidden />
       </Link>

@@ -166,7 +166,7 @@ export default async function ContactPage() {
           <ul className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
             {helpTiles(mailIsReal(), facts.payment).map(({ href, Icon, title, text, vars }) => (
               <li key={href} className="min-w-0">
-                <Link href={href} className="tile-3d group flex h-full items-start gap-4 p-5" style={vars}>
+                <Link prefetch={false} href={href} className="tile-3d group flex h-full items-start gap-4 p-5" style={vars}>
                   <span className="icon-tile [&_svg]:size-6">
                     <Icon aria-hidden />
                   </span>

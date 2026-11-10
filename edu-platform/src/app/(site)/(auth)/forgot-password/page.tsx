@@ -35,7 +35,7 @@ export default async function ForgotPasswordPage() {
             <p>إرسال البريد غير مفعّل على المنصة. تواصل مع إدارة المنصة بذكر بريد حسابك لتصدر لك رابطًا جديدًا.</p>
           )}
         </Alert>
-        <Link href="/login" className="btn btn-3d btn-primary btn-lg w-full">
+        <Link prefetch={false} href="/login" className="btn btn-3d btn-primary btn-lg w-full">
           <ArrowRight aria-hidden />
           العودة لتسجيل الدخول
         </Link>

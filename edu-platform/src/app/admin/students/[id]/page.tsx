@@ -201,7 +201,7 @@ export default async function StudentPage({ params }: { params: Promise<{ id: st
                 <div className="flex min-w-0 flex-wrap items-start gap-3 sm:flex-nowrap">
                   <TypeIcon type={e.type} size="md" />
                   <div className="min-w-0 flex-1 basis-[calc(100%-4rem)] sm:basis-auto">
-                    <Link href={`/admin/products/${e.product_id}`} className="line-clamp-2 font-display font-extrabold text-ink hover:text-brand-700">
+                    <Link prefetch={false} href={`/admin/products/${e.product_id}`} className="line-clamp-2 font-display font-extrabold text-ink hover:text-brand-700">
                       {e.title}
                     </Link>
                     <div className="mt-1.5 flex flex-wrap gap-1.5">
@@ -335,7 +335,7 @@ export default async function StudentPage({ params }: { params: Promise<{ id: st
                     {c.order_id ? (
                       <>
                         ، طلب{" "}
-                        <Link href={`/admin/orders/${c.order_id}`} className="font-bold text-brand-700 underline underline-offset-4">
+                        <Link prefetch={false} href={`/admin/orders/${c.order_id}`} className="font-bold text-brand-700 underline underline-offset-4">
                           <bdi className="num">{c.order_number}</bdi>
                         </Link>
                       </>

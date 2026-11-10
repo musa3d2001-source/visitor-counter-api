@@ -65,7 +65,7 @@ export function StudentAnonymize({ userId, email, blockers }: { userId: string; 
               {blockers.map((b, i) => (
                 <li key={`${b.kind}-${b.orderNumber}-${i}`}>
                   {ANONYMIZATION_BLOCKER_LABELS[b.kind]}:{" "}
-                  <Link href={`/admin/orders/${b.orderId}`} className="num inline-flex min-h-11 items-center font-bold underline underline-offset-4">
+                  <Link prefetch={false} href={`/admin/orders/${b.orderId}`} className="num inline-flex min-h-11 items-center font-bold underline underline-offset-4">
                     <bdi>{b.orderNumber}</bdi>
                   </Link>
                 </li>

@@ -202,7 +202,7 @@ export function PdfReader({ src, title, backHref, backLabel, initialPage = 1, wa
       {/* شريط القراءة العلوي: فيروزي داكن بخط قوس قزح */}
       <header className="bg-teal-night on-dark relative z-10 shrink-0 shadow-[0_10px_30px_-12px_rgb(0_0_0/0.6)]">
         <div className="flex h-16 items-center gap-2 px-2 sm:gap-3 sm:px-4">
-          <Link
+          <Link prefetch={false}
             href={backHref}
             className="inline-flex h-11 shrink-0 items-center gap-1.5 rounded-full border border-white/15 bg-white/10 px-3 font-display text-[0.92rem] font-bold text-white transition-colors hover:bg-white/18"
             aria-label={backLabel}
@@ -223,7 +223,7 @@ export function PdfReader({ src, title, backHref, backLabel, initialPage = 1, wa
             ) : null}
           </div>
           {cta ? (
-            <Link href={cta.href} className="btn btn-3d btn-accent btn-sm min-h-11 shrink-0 px-3 sm:px-3.5">
+            <Link prefetch={false} href={cta.href} className="btn btn-3d btn-accent btn-sm min-h-11 shrink-0 px-3 sm:px-3.5">
               <ShoppingCart aria-hidden />
               {cta.shortLabel ? (
                 <>
@@ -269,7 +269,7 @@ export function PdfReader({ src, title, backHref, backLabel, initialPage = 1, wa
                 <RotateCw aria-hidden />
                 حاول مرة أخرى
               </button>
-              <Link href={backHref} className="btn btn-3d btn-primary btn-md w-full">
+              <Link prefetch={false} href={backHref} className="btn btn-3d btn-primary btn-md w-full">
                 <ArrowRight aria-hidden />
                 {backLabel}
               </Link>
@@ -376,11 +376,11 @@ function PreviewEndCard({
         <Price fils={cta.priceFils} compareAt={cta.compareAtPriceFils} size="lg" className="mt-4 justify-center" />
       ) : null}
       <div className="mt-5 flex flex-col gap-3">
-        <Link href={cta.href} className="btn btn-3d btn-accent btn-lg w-full">
+        <Link prefetch={false} href={cta.href} className="btn btn-3d btn-accent btn-lg w-full">
           <ShoppingCart aria-hidden />
           {cta.label}
         </Link>
-        <Link href={backHref} className="btn btn-ghost btn-md w-full">
+        <Link prefetch={false} href={backHref} className="btn btn-ghost btn-md w-full">
           <ArrowRight aria-hidden />
           {backLabel}
         </Link>

@@ -76,7 +76,7 @@ export async function SiteHeader() {
             {range ? <span className="hidden md:inline">: {range}</span> : null}
           </p>
           {previewHref ? (
-            <Link
+            <Link prefetch={false}
               href={previewHref}
               className="inline-flex min-h-11 shrink-0 items-center gap-1 rounded-lg px-1.5 font-display font-extrabold text-[#FFD25E] underline-offset-4 hover:underline focus-visible:outline-offset-[-3px]"
             >
@@ -91,18 +91,18 @@ export async function SiteHeader() {
         <div className="mx-auto flex h-[4.25rem] max-w-7xl items-center gap-2 px-4 sm:h-[4.875rem] sm:gap-4 sm:px-6">
           <Logo name={settings.site_name} logoUrl={logoUrl} subtitle={stageName} size={44} />
           <nav aria-label="التنقل الرئيسي" className="ms-4 hidden items-center gap-0.5 lg:flex xl:ms-7">
-            <Link href="/#grades" className={navLink}>
+            <Link prefetch={false} href="/#grades" className={navLink}>
               الصفوف
             </Link>
-            <Link href="/teachers" className={navLink}>
+            <Link prefetch={false} href="/teachers" className={navLink}>
               المعلمون
             </Link>
-            <Link href="/bundles" className={navLink}>
+            <Link prefetch={false} href="/bundles" className={navLink}>
               الباقات
             </Link>
             {forUser(null, (user) =>
               user ? (
-                <Link href="/library" className={navLink}>
+                <Link prefetch={false} href="/library" className={navLink}>
                   مكتبتي
                 </Link>
               ) : null,
@@ -111,7 +111,7 @@ export async function SiteHeader() {
           <div className="ms-auto flex items-center gap-2 sm:gap-2.5">
             {forUser(null, (user) =>
               isStaff(user) ? (
-                <Link
+                <Link prefetch={false}
                   href="/admin"
                   className="hidden min-h-11 items-center gap-1.5 rounded-full px-3.5 font-display text-[0.92rem] font-bold text-ink-soft transition-colors hover:bg-brand-50 hover:text-brand-700 xl:inline-flex"
                 >
@@ -122,14 +122,14 @@ export async function SiteHeader() {
             <CartLink count={cartCount} stamp={randomUUID()} />
             {forUser(<Skeleton className="size-11 rounded-[15px] sm:size-12 md:w-[6.6rem]" />, (user) =>
               user ? (
-                <Link href="/account" className={cn("btn btn-3d btn-primary btn-icon sm:size-12 sm:rounded-[15px] md:w-auto md:px-4")} aria-label="حسابي">
+                <Link prefetch={false} href="/account" className={cn("btn btn-3d btn-primary btn-icon sm:size-12 sm:rounded-[15px] md:w-auto md:px-4")} aria-label="حسابي">
                   <UserRound aria-hidden />
                   <span className="hidden md:inline" aria-hidden>
                     حسابي
                   </span>
                 </Link>
               ) : (
-                <Link href="/login" className="btn btn-3d btn-primary btn-md min-h-11 px-4 sm:min-h-12 sm:rounded-[15px] sm:px-5">
+                <Link prefetch={false} href="/login" className="btn btn-3d btn-primary btn-md min-h-11 px-4 sm:min-h-12 sm:rounded-[15px] sm:px-5">
                   <LogIn className="hidden sm:block" aria-hidden />
                   دخول
                 </Link>

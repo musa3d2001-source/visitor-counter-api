@@ -93,7 +93,7 @@ export function MobileNav({
                 <ul className="mb-5 grid grid-cols-2 gap-2.5">
                   {grades.map((g) => (
                     <li key={g.href} className={gradeClass(g.level)}>
-                      <Link
+                      <Link prefetch={false}
                         href={g.href}
                         className="flex min-h-15 items-center gap-2.5 rounded-[1.1rem] border-2 border-[color-mix(in_oklab,var(--d)_14%,white)] bg-white p-2 font-display text-[0.95rem] leading-snug font-extrabold text-ink shadow-[0_4px_0_color-mix(in_oklab,var(--d)_60%,white)] transition-transform active:translate-y-0.5"
                       >
@@ -124,7 +124,7 @@ export function MobileNav({
                 const active = l.href === pathname;
                 return (
                   <li key={l.href}>
-                    <Link
+                    <Link prefetch={false}
                       href={l.href}
                       aria-current={active ? "page" : undefined}
                       className={cn(
@@ -145,7 +145,7 @@ export function MobileNav({
             {!signedIn && auth.length ? (
               <div className="mt-5 grid gap-3">
                 {auth.map((l, i) => (
-                  <Link key={l.href} href={l.href} className={cn("btn btn-3d btn-lg w-full", i === 0 ? "btn-primary" : "btn-outline")}>
+                  <Link prefetch={false} key={l.href} href={l.href} className={cn("btn btn-3d btn-lg w-full", i === 0 ? "btn-primary" : "btn-outline")}>
                     {l.label}
                   </Link>
                 ))}

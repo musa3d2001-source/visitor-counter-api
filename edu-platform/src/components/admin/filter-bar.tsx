@@ -72,7 +72,7 @@ export function FilterSubmit({ label = "تصفية", resetHref, active, classNam
       </Button>
       {resetHref && active ? (
         <Button asChild variant="outline" size="icon" className="size-12">
-          <Link href={resetHref} aria-label="إزالة التصفية" title="إزالة التصفية">
+          <Link prefetch={false} href={resetHref} aria-label="إزالة التصفية" title="إزالة التصفية">
             <RotateCcw aria-hidden />
           </Link>
         </Button>
@@ -114,7 +114,7 @@ export function Segmented({
   return (
     <nav aria-label={label} className={cn("inline-flex max-w-full gap-1 overflow-x-auto rounded-full bg-mist p-1 ring-1 ring-line ring-inset", className)}>
       {items.map((it, i) => (
-        <Link
+        <Link prefetch={false}
           key={i}
           href={it.href}
           aria-current={it.active ? "page" : undefined}

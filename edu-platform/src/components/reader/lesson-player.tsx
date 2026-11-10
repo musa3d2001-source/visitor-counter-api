@@ -709,7 +709,7 @@ function PlaybackEnded({ reason }: { reason: "session-ended" | "access-ended" })
         </span>
         <p className="font-display text-lg font-black sm:mt-3">{session ? "انتهت جلستك" : "هذا الدرس غير متاح لحسابك الآن"}</p>
         <p className="mt-1 text-sm text-white/80">{session ? "سجّل الدخول مجددًا لتكمل المشاهدة." : "ارجع إلى مكتبتك، وإن كان هذا خطأ فتواصل معنا."}</p>
-        <Link className="btn btn-3d btn-light btn-sm mt-3" href={session ? `/login?next=${encodeURIComponent(here)}` : "/library"}>
+        <Link prefetch={false} className="btn btn-3d btn-light btn-sm mt-3" href={session ? `/login?next=${encodeURIComponent(here)}` : "/library"}>
           {session ? <LogIn aria-hidden /> : null}
           {session ? "تسجيل الدخول" : "إلى مكتبتي"}
         </Link>

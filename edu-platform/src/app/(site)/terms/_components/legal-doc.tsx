@@ -197,7 +197,7 @@ export function LegalDoc({
                 <Sparkle className="absolute top-6 left-8 size-4" color="#FFE29A" />
                 <h2 className="font-display text-[1.35rem] font-black text-white">عندك سؤال عن هذه الصفحة؟</h2>
                 <p className="mt-1.5 max-w-md text-[0.98rem] leading-7 text-white/85">راسلنا وسنوضح لك أي نقطة قبل الشراء أو بعده.</p>
-                <Link href="/contact" className="btn btn-3d btn-accent btn-md mt-5">
+                <Link prefetch={false} href="/contact" className="btn btn-3d btn-accent btn-md mt-5">
                   <MessagesSquare aria-hidden />
                   تواصل معنا
                 </Link>
@@ -207,7 +207,7 @@ export function LegalDoc({
                   const o = PAGES[k];
                   return (
                     <li key={k}>
-                      <Link href={o.href} className="tile-3d group flex items-center gap-3.5 p-4" style={subjectVars(o.tone)}>
+                      <Link prefetch={false} href={o.href} className="tile-3d group flex items-center gap-3.5 p-4" style={subjectVars(o.tone)}>
                         <span className="icon-tile [&_svg]:size-5.5">
                           <o.Icon aria-hidden />
                         </span>

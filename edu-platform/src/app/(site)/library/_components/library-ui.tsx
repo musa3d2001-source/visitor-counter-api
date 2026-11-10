@@ -145,13 +145,13 @@ export function VideoLibraryCard({ item }: { item: LibraryItem }) {
         </div>
         <div className="mt-auto flex flex-wrap gap-2.5 pt-5">
           <Button asChild className="min-w-0 flex-1">
-            <Link href={`/watch/${item.productId}`} data-testid="open-video">
+            <Link prefetch={false} href={`/watch/${item.productId}`} data-testid="open-video">
               <Play className="fill-current" aria-hidden /> {item.watchedCount ? "تابع المشاهدة" : "ابدأ المشاهدة"}
             </Link>
           </Button>
           {item.files.length ? (
             <Button asChild variant="soft">
-              <Link href={`/read/${item.files[0].id}`} data-testid="open-attachment">
+              <Link prefetch={false} href={`/read/${item.files[0].id}`} data-testid="open-attachment">
                 <FileText aria-hidden /> الملف المرفق
               </Link>
             </Button>
@@ -188,7 +188,7 @@ export function NoteLibraryRow({ item }: { item: LibraryItem }) {
       <div className="shrink-0 border-t-2 border-dashed border-[var(--soft)] pt-3 sm:border-t-0 sm:pt-0">
         {item.type === "video_course" ? (
           <Button asChild size="sm">
-            <Link href={`/watch/${item.productId}`}>
+            <Link prefetch={false} href={`/watch/${item.productId}`}>
               <Play className="fill-current" aria-hidden /> شاهد الدروس
             </Link>
           </Button>
@@ -211,7 +211,7 @@ export function NoteLibraryRow({ item }: { item: LibraryItem }) {
                   </Button>
                 ) : null}
                 <Button asChild size="sm">
-                  <Link href={`/read/${f.id}`} data-testid="open-file">
+                  <Link prefetch={false} href={`/read/${f.id}`} data-testid="open-file">
                     <FileText aria-hidden /> {item.files.length > 1 ? f.title : "افتح المذكرة"}
                   </Link>
                 </Button>
@@ -228,7 +228,7 @@ export function NoteLibraryRow({ item }: { item: LibraryItem }) {
 export function ResumeFeatured({ r }: { r: ResumeEntry }) {
   const slug = itemSlug(r.item);
   return (
-    <Link
+    <Link prefetch={false}
       href={r.href}
       className={cn(
         "group grid gap-4 rounded-[1.75rem] bg-white p-2.5 text-ink shadow-pop transition-transform hover:-translate-y-1 sm:grid-cols-[minmax(0,1fr)_minmax(0,1.1fr)] sm:items-center sm:gap-6 motion-reduce:hover:translate-y-0",
@@ -275,7 +275,7 @@ export function ResumeFeatured({ r }: { r: ResumeEntry }) {
 export function ResumeRow({ r }: { r: ResumeEntry }) {
   const slug = itemSlug(r.item);
   return (
-    <Link
+    <Link prefetch={false}
       href={r.href}
       className="group flex items-center gap-3.5 rounded-[1.4rem] bg-white/10 p-3 ring-1 ring-white/15 transition-colors hover:bg-white/16"
       data-testid={r.kind === "video" ? "continue-watching-item" : "continue-reading-item"}

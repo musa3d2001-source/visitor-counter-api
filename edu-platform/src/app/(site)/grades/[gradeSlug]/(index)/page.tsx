@@ -95,7 +95,7 @@ export default async function GradePage({ params }: { params: Promise<{ gradeSlu
               </a>
             ) : null}
             {freeHref ? (
-              <Link href={freeHref} className="btn btn-3d btn-light btn-lg">
+              <Link prefetch={false} href={freeHref} className="btn btn-3d btn-light btn-lg">
                 <Play aria-hidden className="fill-current" />
                 شاهد درسًا مجانًا
               </Link>

@@ -100,7 +100,7 @@ export default async function LibraryPage({ searchParams }: { searchParams: Prom
         sub={items.length ? "كل ما اشتريته هنا، ويفتح من أي جهاز." : (libraryNote(paymentPublicState(), "libraryEmpty") ?? undefined)}
         actions={
           <Button asChild variant="outline">
-            <Link href="/account">
+            <Link prefetch={false} href="/account">
               <Receipt aria-hidden /> مشترياتي وفواتيري
             </Link>
           </Button>
@@ -125,12 +125,12 @@ export default async function LibraryPage({ searchParams }: { searchParams: Prom
             actions={
               <>
                 <Button asChild size="lg">
-                  <Link href="/#grades">
+                  <Link prefetch={false} href="/#grades">
                     اختر صفك <ArrowLeft aria-hidden />
                   </Link>
                 </Button>
                 <Button asChild size="lg" variant="outline">
-                  <Link href="/bundles">تصفح الباقات</Link>
+                  <Link prefetch={false} href="/bundles">تصفح الباقات</Link>
                 </Button>
               </>
             }
@@ -179,7 +179,7 @@ export default async function LibraryPage({ searchParams }: { searchParams: Prom
                 {types.length > 1 ? (
                   <nav aria-label="تصفية حسب النوع" className="-mx-4 flex gap-2 overflow-x-auto px-4 pt-1 pb-3 sm:mx-0 sm:flex-wrap sm:overflow-visible sm:px-0">
                     {[{ label: "الكل", href: "/library", active: !filter }, ...types.map((t) => ({ label: PRODUCT_TYPE_LABELS[t], href: `/library?type=${t}`, active: filter === t }))].map((t) => (
-                      <Link
+                      <Link prefetch={false}
                         key={t.href}
                         href={t.href}
                         aria-current={t.active ? "page" : undefined}

@@ -67,12 +67,12 @@ export default async function CartPage() {
             actions={
               <>
                 <Button asChild size="lg">
-                  <Link href="/#grades">
+                  <Link prefetch={false} href="/#grades">
                     اختر صفك <ArrowLeft aria-hidden />
                   </Link>
                 </Button>
                 <Button asChild size="lg" variant="outline">
-                  <Link href="/bundles">تصفح الباقات</Link>
+                  <Link prefetch={false} href="/bundles">تصفح الباقات</Link>
                 </Button>
               </>
             }
@@ -84,7 +84,7 @@ export default async function CartPage() {
                 <h2 id="cart-items" className="font-display text-[1.6rem] font-black sm:text-[1.9rem]">
                   في سلتك <span className="text-hl">{count(cart.lines.length, W.product)}</span>
                 </h2>
-                <Link href="/#grades" className="btn btn-ghost btn-sm text-brand-800">
+                <Link prefetch={false} href="/#grades" className="btn btn-ghost btn-sm text-brand-800">
                   أضف المزيد <ArrowLeft aria-hidden />
                 </Link>
               </div>
@@ -100,12 +100,12 @@ export default async function CartPage() {
                   return (
                     <li key={l.id} className={cn("tile-3d p-3 sm:p-4", toneClass(l.subjectSlug))}>
                       <div className="flex items-start gap-3.5 sm:items-center sm:gap-5">
-                        <Link href={`/products/${l.slug}`} tabIndex={-1} aria-hidden className="shrink-0">
+                        <Link prefetch={false} href={`/products/${l.slug}`} tabIndex={-1} aria-hidden className="shrink-0">
                           <ProductCover coverUrl={l.coverUrl} title={l.title} type={l.type} subjectName={l.subjectName} subjectSlug={l.subjectSlug} gradeName={l.gradeName} sizes="96px" compact className="size-[4.75rem] rounded-[1.1rem] sm:size-24 sm:rounded-[1.3rem]" />
                         </Link>
                         <div className="min-w-0 flex-1">
                           <span className="chip">{PRODUCT_TYPE_LABELS[l.type]}</span>
-                          <Link href={`/products/${l.slug}`} className="mt-1.5 block font-display text-[1.08rem] leading-snug font-extrabold text-ink hover:text-[var(--tink)] sm:text-[1.18rem]">
+                          <Link prefetch={false} href={`/products/${l.slug}`} className="mt-1.5 block font-display text-[1.08rem] leading-snug font-extrabold text-ink hover:text-[var(--tink)] sm:text-[1.18rem]">
                             {l.title}
                           </Link>
                           <Kicker className="mt-1">{meta}</Kicker>
@@ -163,7 +163,7 @@ export default async function CartPage() {
               </p>
               {cart.payableLines.length ? (
                 <Button asChild size="xl" className="mt-6 w-full whitespace-normal text-center max-sm:px-5 max-sm:text-[1.05rem]">
-                  <Link href="/checkout" id="cart-summary-cta" data-testid="go-checkout">
+                  <Link prefetch={false} href="/checkout" id="cart-summary-cta" data-testid="go-checkout">
                     {user ? "إتمام الشراء" : "سجّل الدخول وأتمم الشراء"}
                     <ArrowLeft aria-hidden />
                   </Link>
