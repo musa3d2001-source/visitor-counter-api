@@ -15,6 +15,7 @@ export default defineConfig({
       "@": r("./src"),
       "server-only": r("./tests/stubs/server-only.ts"),
       "next/headers": r("./tests/stubs/next-headers.ts"),
+      "next/font/local": r("./tests/stubs/next-font-local.ts"),
     },
   },
   test: {
