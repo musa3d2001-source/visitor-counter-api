@@ -47,7 +47,7 @@ beforeEach(async () => {
 });
 afterEach(() => {
   for (const [k, v] of Object.entries(TEST_ENV)) process.env[k] = v;
-  for (const k of ["VIDEO_PROVIDER", "BUNNY_STREAM_LIBRARY_ID", "BUNNY_STREAM_API_KEY", "BUNNY_STREAM_TOKEN_KEY", "BUNNY_STREAM_READONLY_API_KEY", "BUNNY_STREAM_CDN_HOSTNAME", "CRON_SECRET", "OPS_ALERT_EMAIL", "SMTP_PASSWORD", "SMTP_HOST", "SMTP_USER", "VERCEL_ENV"]) {
+  for (const k of ["VIDEO_PROVIDER", "BUNNY_STREAM_LIBRARY_ID", "BUNNY_STREAM_API_KEY", "BUNNY_STREAM_TOKEN_KEY", "BUNNY_STREAM_READONLY_API_KEY", "BUNNY_STREAM_CDN_HOSTNAME", "CRON_SECRET", "OPS_ALERT_EMAIL", "SMTP_PASSWORD", "SMTP_HOST", "SMTP_USER", "VERCEL_ENV", "SUPABASE_URL", "SUPABASE_SERVICE_ROLE_KEY"]) {
     if (!(k in TEST_ENV)) delete process.env[k];
   }
   resetEnvCache();
@@ -355,7 +355,8 @@ describe("the page", () => {
       OPS_ALERT_EMAIL: "sentinel-owner@farqad-edu.com",
       APP_URL: "https://sentinel-user:sentinel-url-pass@www.farqad-edu.com/?token=sentinel-query",
     };
-    Object.assign(process.env, SENTINELS, { VIDEO_PROVIDER: "bunny", VERCEL_ENV: "production" });
+    // نشر Vercel لا يبدأ بتخزين محلي (env-schema: deploymentProblems)، فالمحاكاة تستعمل Supabase كما في النشر الحقيقي
+    Object.assign(process.env, SENTINELS, { VIDEO_PROVIDER: "bunny", VERCEL_ENV: "production", STORAGE_DRIVER: "supabase", SUPABASE_URL: "https://sentinel-project.supabase.co", SUPABASE_SERVICE_ROLE_KEY: "sentinel-service-role-77ab" });
     resetEnvCache();
     const html = renderToStaticMarkup(await LaunchPage());
 

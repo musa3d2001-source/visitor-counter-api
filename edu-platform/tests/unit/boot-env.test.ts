@@ -1,7 +1,7 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { PHASE_PRODUCTION_BUILD } from "next/constants";
 import { register } from "@/instrumentation";
-import { env, opsAlertEmail, resetEnvCache } from "@/server/env";
+import { configWarnings, ENV_KEYS, env, opsAlertEmail, resetEnvCache } from "@/server/env";
 import nextConfig from "../../next.config";
 import { TEST_ENV } from "../test-env";
 
@@ -26,7 +26,7 @@ const DEPLOYED: Record<string, string> = {
   APP_URL: "https://preview-example.vercel.app",
 };
 
-const ENV_NAMES = [...new Set([...Object.keys(TEST_ENV), ...Object.keys(DEPLOYED), "CRON_SECRET", "OPS_ALERT_EMAIL", "NEXT_RUNTIME", "NEXT_PHASE", "VERCEL_ENV", "SITE_INDEXABLE", "MYFATOORAH_LIVE_CONFIRMED"])];
+const ENV_NAMES = [...new Set([...ENV_KEYS, ...Object.keys(TEST_ENV), ...Object.keys(DEPLOYED), "CRON_SECRET", "OPS_ALERT_EMAIL", "NEXT_RUNTIME", "NEXT_PHASE", "VERCEL_ENV", "SITE_INDEXABLE", "MYFATOORAH_LIVE_CONFIRMED"])];
 const saved = new Map<string, string | undefined>();
 
 function useEnv(values: Record<string, string>) {
@@ -223,5 +223,78 @@ describe("the build phase does not run the server check", () => {
     const { exit } = trapExit();
     await expect(register()).resolves.toBeUndefined();
     expect(exit).not.toHaveBeenCalled();
+  });
+});
+
+describe("a real deployment does not run on development defaults", () => {
+  it("the deployed set boots on Vercel Production and Preview", async () => {
+    for (const vercelEnv of ["production", "preview"]) {
+      useDeployedEnv({ VERCEL_ENV: vercelEnv });
+      const { exit } = trapExit();
+      await expect(register()).resolves.toBeUndefined();
+      expect(exit).not.toHaveBeenCalled();
+    }
+  });
+
+  it.each([
+    ["http://localhost:3000", "APP_URL"],
+    ["https://localhost", "APP_URL"],
+    ["http://127.0.0.1:3000", "APP_URL"],
+    ["http://www.example-school.com", "APP_URL"],
+  ])("refuses APP_URL=%s on Vercel, because reset and payment links would point there", async (url, name) => {
+    useDeployedEnv({ VERCEL_ENV: "production", APP_URL: url });
+    const trap = trapExit();
+    await expect(register()).rejects.toThrow("exit 1");
+    expect(trap.text()).toContain(name);
+    expect(() => nextConfig(PHASE_PRODUCTION_BUILD)).toThrow(name);
+  });
+
+  it("refuses local file storage on Vercel, where the disk is wiped", async () => {
+    useDeployedEnv({ VERCEL_ENV: "preview", STORAGE_DRIVER: "local" });
+    const trap = trapExit();
+    await expect(register()).rejects.toThrow("exit 1");
+    expect(trap.text()).toContain("STORAGE_DRIVER");
+  });
+
+  it("still boots off Vercel on localhost (local runs, E2E, the load harness)", async () => {
+    useDeployedEnv({ APP_URL: "http://localhost:3310", STORAGE_DRIVER: "local" });
+    const { exit } = trapExit();
+    await expect(register()).resolves.toBeUndefined();
+    expect(exit).not.toHaveBeenCalled();
+  });
+});
+
+describe("an empty value copied from .env.example means unset", () => {
+  it("empty addresses and words fall back to their defaults instead of stopping the server", async () => {
+    useDeployedEnv({ MYFATOORAH_BASE_URL: "", BUNNY_STREAM_EMBED_BASE: " ", SMTP_PORT: "", DATABASE_POOL_MAX: "" });
+    const { exit } = trapExit();
+    await expect(register()).resolves.toBeUndefined();
+    expect(exit).not.toHaveBeenCalled();
+    expect(env().DATABASE_POOL_MAX).toBe(5);
+  });
+});
+
+describe("the database fail-fast limits", () => {
+  it("default to 60 s idle, 10 s per statement and 8 s pool wait", () => {
+    useDeployedEnv();
+    expect(env()).toMatchObject({ DATABASE_IDLE_TIMEOUT_SECONDS: 60, DATABASE_STATEMENT_TIMEOUT_MS: 10_000, DATABASE_QUEUE_TIMEOUT_MS: 8_000 });
+    expect(configWarnings()).toEqual([]);
+  });
+
+  it("read a valid value", () => {
+    useDeployedEnv({ DATABASE_IDLE_TIMEOUT_SECONDS: "30", DATABASE_STATEMENT_TIMEOUT_MS: " 15000 ", DATABASE_QUEUE_TIMEOUT_MS: "4000" });
+    expect(env()).toMatchObject({ DATABASE_IDLE_TIMEOUT_SECONDS: 30, DATABASE_STATEMENT_TIMEOUT_MS: 15_000, DATABASE_QUEUE_TIMEOUT_MS: 4_000 });
+    expect(configWarnings()).toEqual([]);
+  });
+
+  it("an unreadable or out-of-range value keeps the default and is named for the owner, never a crash", async () => {
+    useDeployedEnv({ DATABASE_STATEMENT_TIMEOUT_MS: "ten seconds", DATABASE_QUEUE_TIMEOUT_MS: "5", DATABASE_IDLE_TIMEOUT_SECONDS: "99999999" });
+    const { exit } = trapExit();
+    await expect(register()).resolves.toBeUndefined();
+    expect(exit).not.toHaveBeenCalled();
+    expect(env()).toMatchObject({ DATABASE_IDLE_TIMEOUT_SECONDS: 60, DATABASE_STATEMENT_TIMEOUT_MS: 10_000, DATABASE_QUEUE_TIMEOUT_MS: 8_000 });
+    const warnings = configWarnings();
+    expect([...warnings].sort()).toEqual(["DATABASE_IDLE_TIMEOUT_SECONDS", "DATABASE_QUEUE_TIMEOUT_MS", "DATABASE_STATEMENT_TIMEOUT_MS"]);
+    expect(warnings.join(" ")).not.toMatch(/ten seconds|99999999/);
   });
 });

@@ -126,6 +126,15 @@ export default async function OpsPage() {
         </Alert>
       ) : null}
 
+      {config.unreadableVariables.length ? (
+        <Alert tone="warning" title="قيمة متغير لم تُقرأ فسرت القيمة الافتراضية" data-testid="ops-warning-env">
+          <p>
+            <span dir="ltr">{config.unreadableVariables.join("، ")}</span>
+            {": القيمة المضبوطة ليست رقمًا ضمن المدى المسموح، فيعمل الموقع بالقيمة الافتراضية. صحّحها أو احذفها في بيئة Production على Vercel ثم أعد النشر."}
+          </p>
+        </Alert>
+      ) : null}
+
       <StatGrid cols={3}>
         <StatTile label="وظائف تعمل كما يجب" tone={okJobs === jobs.length ? "green" : "gold"} icon={<CalendarClock />} value={<span className="num">{`${ar(okJobs)} من ${ar(jobs.length)}`}</span>} />
         <StatTile label="أخطاء ظهرت آخر ٢٤ ساعة" tone={errorsToday > 0 ? "coral" : "green"} icon={<ServerCrash />} value={<span className="num">{ar(errorsToday)}</span>} />

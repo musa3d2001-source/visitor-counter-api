@@ -24,6 +24,27 @@ const flag = (fallback: "true" | "false") =>
     .default(fallback)
     .transform((v) => v === "true");
 
+/** عدد صحيح داخل مدى. قيمة لا تُقرأ لا توقف الموقع: تسري القيمة الافتراضية ويظهر اسم المتغير للمالك في «صحة المنصة» */
+const LENIENT_INTS = {
+  /** الثواني التي يبقى فيها اتصال قاعدة البيانات الخامل مفتوحًا قبل إغلاقه */
+  DATABASE_IDLE_TIMEOUT_SECONDS: { min: 1, max: 3600, fallback: 60 },
+  /** أقصى مدة لأمر SQL واحد في طلب عادي، بالمللي ثانية. بعدها يُلغى ويرد الطلب «مشغول» */
+  DATABASE_STATEMENT_TIMEOUT_MS: { min: 1000, max: 120_000, fallback: 10_000 },
+  /** أقصى انتظار لاتصال شاغر في الحوض، بالمللي ثانية. بعده يرد الطلب «مشغول» بدل أن يعلق */
+  DATABASE_QUEUE_TIMEOUT_MS: { min: 500, max: 60_000, fallback: 8_000 },
+} as const;
+type LenientKey = keyof typeof LENIENT_INTS;
+
+function readLenientInt(value: unknown, key: LenientKey): number | undefined {
+  const { min, max } = LENIENT_INTS[key];
+  if (typeof value === "number") return Number.isInteger(value) && value >= min && value <= max ? value : undefined;
+  if (typeof value !== "string" || !/^\s*\d{1,9}\s*$/.test(value)) return undefined;
+  const n = Number(value);
+  return n >= min && n <= max ? n : undefined;
+}
+
+const lenientInt = (key: LenientKey) => z.preprocess((v) => readLenientInt(v, key), z.number().int().default(LENIENT_INTS[key].fallback));
+
 export const envSchema = z
   .object({
     NODE_ENV: z.enum(["development", "production", "test"]).default("development"),
@@ -32,6 +53,9 @@ export const envSchema = z
     DATABASE_POOL_MAX: z.coerce.number().int().min(1).max(50).default(5),
     /** true عند الاتصال عبر Supabase pooler (وضع transaction) */
     DATABASE_PGBOUNCER: flag("false"),
+    DATABASE_IDLE_TIMEOUT_SECONDS: lenientInt("DATABASE_IDLE_TIMEOUT_SECONDS"),
+    DATABASE_STATEMENT_TIMEOUT_MS: lenientInt("DATABASE_STATEMENT_TIMEOUT_MS"),
+    DATABASE_QUEUE_TIMEOUT_MS: lenientInt("DATABASE_QUEUE_TIMEOUT_MS"),
     /** سر لتوقيع الروابط المؤقتة (رفع الملفات المحلي) — 32 حرفًا على الأقل */
     APP_SECRET: z.string().min(32, "APP_SECRET يجب أن يكون 32 حرفًا على الأقل"),
 
@@ -138,6 +162,11 @@ const WORD_KEYS = [
 
 export function normaliseEnv(source: Record<string, string | undefined>): Record<string, string | undefined> {
   const out: Record<string, string | undefined> = { ...source };
+  // متغير أُنشئ في Vercel بقيمة فارغة، كما في سطر مثال، يعني «غير مضبوط»: لا يصح أن يوقف رابط فارغ الموقع كله
+  for (const key of ENV_KEYS) {
+    const value = out[key];
+    if (typeof value === "string" && value.trim() === "") out[key] = undefined;
+  }
   for (const key of WORD_KEYS) {
     const value = out[key];
     if (typeof value !== "string") continue;
@@ -145,6 +174,30 @@ export function normaliseEnv(source: Record<string, string | undefined>): Record
     out[key] = word === "" ? undefined : word;
   }
   return out;
+}
+
+/** هل هذا نشر على Vercel؟ Vercel يضبط VERCEL_ENV بنفسه على كل نشر */
+export function isVercelDeployment(e: Pick<Env, "VERCEL_ENV">): boolean {
+  return e.VERCEL_ENV === "production" || e.VERCEL_ENV === "preview";
+}
+
+function isLocalHost(host: string): boolean {
+  const h = host.toLowerCase().replace(/^\[|\]$/g, "");
+  return h === "localhost" || h.endsWith(".localhost") || h === "0.0.0.0" || h === "::1" || /^127\./.test(h);
+}
+
+/**
+ * قيم تطوير محلي لا يصح أن يعمل بها نشر حقيقي على Vercel: روابط البريد وعودة الدفع إلى localhost، أو ملفات على قرص يضيع مع كل نسخة.
+ * خارج Vercel (التشغيل المحلي، اختبارات E2E، أداة الحمل) لا تُرفض، فهناك localhost هو العنوان الصحيح.
+ */
+export function deploymentProblems(e: Env): string[] {
+  const problems: string[] = [];
+  if (e.STORAGE_DRIVER === "supabase" && (!e.SUPABASE_URL || !e.SUPABASE_SERVICE_ROLE_KEY)) problems.push("STORAGE_DRIVER=supabase يتطلب SUPABASE_URL و SUPABASE_SERVICE_ROLE_KEY");
+  if (!isVercelDeployment(e)) return problems;
+  const url = new URL(e.APP_URL);
+  if (url.protocol !== "https:" || isLocalHost(url.hostname)) problems.push("APP_URL على Vercel يجب أن يكون عنوان الموقع الحقيقي ويبدأ بـ https://");
+  if (e.STORAGE_DRIVER === "local") problems.push("STORAGE_DRIVER=local لا يصلح على Vercel لأن قرص الخادم يُمسح، اضبطه على supabase");
+  return problems;
 }
 
 /**
@@ -155,10 +208,17 @@ export function envProblems(source: Record<string, string | undefined>): string[
   const normalised = normaliseEnv(source);
   const parsed = envSchema.safeParse(normalised);
   if (!parsed.success) return parsed.error.issues.map((issue) => `${issue.path.join(".") || "env"}: ${issue.message}`);
-  const e = parsed.data;
   const problems: string[] = [];
   const bunny = bunnyConfigProblem(normalised);
   if (bunny) problems.push(bunny);
-  if (e.STORAGE_DRIVER === "supabase" && (!e.SUPABASE_URL || !e.SUPABASE_SERVICE_ROLE_KEY)) problems.push("STORAGE_DRIVER=supabase يتطلب SUPABASE_URL و SUPABASE_SERVICE_ROLE_KEY");
+  problems.push(...deploymentProblems(parsed.data));
   return problems;
+}
+
+/**
+ * متغيرات اختيارية بقيمة لا تُقرأ: الخادم يعمل بالقيمة الافتراضية، والمالك يرى الاسم في «صحة المنصة». الأسماء وحدها، بلا قيم
+ */
+export function envWarnings(source: Record<string, string | undefined>): string[] {
+  const normalised = normaliseEnv(source);
+  return (Object.keys(LENIENT_INTS) as LenientKey[]).filter((key) => normalised[key] !== undefined && readLenientInt(normalised[key], key) === undefined);
 }

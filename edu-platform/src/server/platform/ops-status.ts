@@ -1,6 +1,6 @@
 import "server-only";
 import { sql } from "../db";
-import { env, opsAlertEmail } from "../env";
+import { configWarnings, env, opsAlertEmail } from "../env";
 import { paymentsConfig } from "../payments/service";
 import { jobStatusOf, listJobHeartbeats, reconcileCadence, type JobHeartbeat, type JobStatus } from "./scheduled-jobs";
 
@@ -16,6 +16,8 @@ export type OpsConfig = {
   mailIsReal: boolean;
   /** الدفع الحقيقي مفعّل وجدول التسوية ما زال يوميًا: الدفعة التي ضاع إشعارها تنتظر يومًا كاملًا */
   liveWithDailyReconcile: boolean;
+  /** متغيرات اختيارية بقيمة لا تُقرأ، تعمل بقيمتها الافتراضية. الأسماء وحدها */
+  unreadableVariables: string[];
 };
 
 export function opsConfig(): OpsConfig {
@@ -26,6 +28,7 @@ export function opsConfig(): OpsConfig {
     alertEmailConfigured: opsAlertEmail() !== null,
     mailIsReal: e.MAIL_DRIVER === "smtp",
     liveWithDailyReconcile: cfg.enabled && cfg.environment === "live" && reconcileCadence() === "daily",
+    unreadableVariables: configWarnings(),
   };
 }
 
