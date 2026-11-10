@@ -1,10 +1,12 @@
 import Link from "next/link";
 import { randomUUID } from "node:crypto";
+import { Suspense, type ReactNode } from "react";
 import { ArrowLeft, LayoutDashboard, LogIn, UserRound } from "lucide-react";
 import { Sparkle } from "@/components/art";
 import { academicYearLabel } from "@/lib/design";
 import { cn } from "@/lib/utils";
-import { getCurrentUser } from "@/server/auth/session";
+import { getCurrentUser, hasSessionCookie } from "@/server/auth/session";
+import type { SessionUser } from "@/server/auth/session";
 import { getCartIds } from "@/server/commerce/cart";
 import { firstPreviewLesson, listGrades } from "@/server/catalog/public-data";
 import { getPublicSettings } from "@/server/platform/public-settings";
@@ -12,29 +14,46 @@ import { storage } from "@/server/storage";
 import { CartLink } from "./cart-link";
 import { Logo } from "./logo";
 import { MobileNav } from "./mobile-nav";
+import { Skeleton } from "@/components/ui/skeleton";
 
 const navLink =
   "inline-flex min-h-11 items-center rounded-full px-4 font-display text-[1rem] font-bold text-ink-soft transition-colors hover:bg-brand-50 hover:text-brand-700";
 
-/** رأس الموقع: شريط الإعلان (العام الدراسي الحقيقي) + رأس زجاجي كريمي لاصق */
+async function WithUser({ render }: { render: (user: SessionUser | null) => ReactNode }) {
+  return render(await getCurrentUser());
+}
+
+/**
+ * رأس الموقع: شريط الإعلان (العام الدراسي الحقيقي) + رأس زجاجي كريمي لاصق.
+ * كل ما فيه يأتي من الذاكرة أو الكوكي، فيصل مع أول بايت. ما يخص المسجل وحده يُبث بعده في أماكن محجوزة بمقاسها.
+ */
 export async function SiteHeader() {
-  const [user, cartIds, grades, settings, preview] = await Promise.all([
-    getCurrentUser(),
+  const [sessionCookie, cartIds, grades, settings, preview] = await Promise.all([
+    hasSessionCookie(),
     getCartIds(),
     listGrades(),
     getPublicSettings(),
     firstPreviewLesson().catch(() => null),
   ]);
   const logoUrl = settings.logo_key ? storage().publicUrl(settings.logo_key) : null;
-  const staff = user?.role === "admin" || user?.role === "teacher";
-  const links = [
+  const isStaff = (user: SessionUser | null) => user?.role === "admin" || user?.role === "teacher";
+  const links = (user: SessionUser | null) => [
     { href: "/", label: "الرئيسية" },
     { href: "/teachers", label: "المعلمون" },
     { href: "/bundles", label: "الباقات" },
     ...(user ? [{ href: "/library", label: "مكتبتي" }, { href: "/account", label: "حسابي" }] : [{ href: "/login", label: "تسجيل الدخول" }, { href: "/register", label: "إنشاء حساب" }]),
-    ...(staff ? [{ href: "/admin", label: "لوحة التحكم" }] : []),
+    ...(isStaff(user) ? [{ href: "/admin", label: "لوحة التحكم" }] : []),
     { href: "/#faq", label: "الأسئلة الشائعة" },
   ];
+  // بلا كوكي جلسة لا يوجد ما يُنتظر: شكل الزائر يُرسم مباشرة
+  const forUser = (fallback: ReactNode, render: (user: SessionUser | null) => ReactNode) =>
+    sessionCookie ? (
+      <Suspense fallback={fallback}>
+        <WithUser render={render} />
+      </Suspense>
+    ) : (
+      render(null)
+    );
   const stageName = grades[0]?.stageName;
   const first = grades[0];
   const last = grades[grades.length - 1];
@@ -81,42 +100,50 @@ export async function SiteHeader() {
             <Link href="/bundles" className={navLink}>
               الباقات
             </Link>
-            {user ? (
-              <Link href="/library" className={navLink}>
-                مكتبتي
-              </Link>
-            ) : null}
+            {forUser(null, (user) =>
+              user ? (
+                <Link href="/library" className={navLink}>
+                  مكتبتي
+                </Link>
+              ) : null,
+            )}
           </nav>
           <div className="ms-auto flex items-center gap-2 sm:gap-2.5">
-            {staff ? (
-              <Link
-                href="/admin"
-                className="hidden min-h-11 items-center gap-1.5 rounded-full px-3.5 font-display text-[0.92rem] font-bold text-ink-soft transition-colors hover:bg-brand-50 hover:text-brand-700 xl:inline-flex"
-              >
-                <LayoutDashboard className="size-4.5" aria-hidden /> لوحة التحكم
-              </Link>
-            ) : null}
-            <CartLink count={cartCount} stamp={randomUUID()} />
-            {user ? (
-              <Link href="/account" className={cn("btn btn-3d btn-primary btn-icon sm:size-12 sm:rounded-[15px] md:w-auto md:px-4")} aria-label="حسابي">
-                <UserRound aria-hidden />
-                <span className="hidden md:inline" aria-hidden>
-                  حسابي
-                </span>
-              </Link>
-            ) : (
-              <Link href="/login" className="btn btn-3d btn-primary btn-md min-h-11 px-4 sm:min-h-12 sm:rounded-[15px] sm:px-5">
-                <LogIn className="hidden sm:block" aria-hidden />
-                دخول
-              </Link>
+            {forUser(null, (user) =>
+              isStaff(user) ? (
+                <Link
+                  href="/admin"
+                  className="hidden min-h-11 items-center gap-1.5 rounded-full px-3.5 font-display text-[0.92rem] font-bold text-ink-soft transition-colors hover:bg-brand-50 hover:text-brand-700 xl:inline-flex"
+                >
+                  <LayoutDashboard className="size-4.5" aria-hidden /> لوحة التحكم
+                </Link>
+              ) : null,
             )}
-            <MobileNav
-              grades={grades.map((g) => ({ href: `/grades/${g.slug}`, label: g.name, level: g.level }))}
-              links={links}
-              siteName={settings.site_name}
-              subtitle={stageName}
-              signedIn={Boolean(user)}
-            />
+            <CartLink count={cartCount} stamp={randomUUID()} />
+            {forUser(<Skeleton className="size-11 rounded-[15px] sm:size-12 md:w-[6.6rem]" />, (user) =>
+              user ? (
+                <Link href="/account" className={cn("btn btn-3d btn-primary btn-icon sm:size-12 sm:rounded-[15px] md:w-auto md:px-4")} aria-label="حسابي">
+                  <UserRound aria-hidden />
+                  <span className="hidden md:inline" aria-hidden>
+                    حسابي
+                  </span>
+                </Link>
+              ) : (
+                <Link href="/login" className="btn btn-3d btn-primary btn-md min-h-11 px-4 sm:min-h-12 sm:rounded-[15px] sm:px-5">
+                  <LogIn className="hidden sm:block" aria-hidden />
+                  دخول
+                </Link>
+              ),
+            )}
+            {forUser(<Skeleton className="size-11 rounded-[15px] sm:size-12 lg:hidden" />, (user) => (
+              <MobileNav
+                grades={grades.map((g) => ({ href: `/grades/${g.slug}`, label: g.name, level: g.level }))}
+                links={links(user)}
+                siteName={settings.site_name}
+                subtitle={stageName}
+                signedIn={Boolean(user)}
+              />
+            ))}
           </div>
         </div>
       </header>
