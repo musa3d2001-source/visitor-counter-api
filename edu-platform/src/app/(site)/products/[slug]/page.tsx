@@ -150,7 +150,7 @@ export default async function ProductPage({ params }: { params: Promise<Params> 
   const term = shortTermLabel(product.term);
   const subjectsCount = new Set(bundleItems.map((i) => i.subjectSlug ?? i.subjectName ?? i.id)).size;
   const readOnly = !product.isDownloadable && !isBundle;
-  const readingText = product.isDownloadable ? "قابلة للتنزيل والطباعة بعد الشراء" : readOnly ? "تُقرأ داخل المنصة، ولا تُنزّل" : null;
+  const readingText = product.isDownloadable ? "قابلة للتنزيل والطباعة بعد الشراء" : readOnly ? "تُقرأ داخل المنصة، بلا زر تنزيل" : null;
   const accessText = accessPeriodText(product);
   const paymentLine = paymentClaims(paymentPublicState()).productLine;
   const libraryLine = productLibraryLine(paymentPublicState(), isBundle);

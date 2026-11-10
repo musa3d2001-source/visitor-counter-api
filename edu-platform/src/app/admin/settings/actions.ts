@@ -75,9 +75,21 @@ export async function saveSettingsAction(_p: ActionState, fd: FormData): Promise
         ...(before.fee_percent_bps !== parsed.data.fee_percent_bps || before.fee_fixed_fils !== parsed.data.fee_fixed_fils
           ? { fees: { from: [before.fee_percent_bps, before.fee_fixed_fils], to: [parsed.data.fee_percent_bps, parsed.data.fee_fixed_fils] } }
           : {}),
+        ...(before.watermark_enabled !== parsed.data.watermark_enabled ? { watermark: { from: before.watermark_enabled, to: parsed.data.watermark_enabled } } : {}),
       },
       ip,
     });
+    // إيقاف الختم يعني أن الملفات المدفوعة تُسلَّم بلا اسم المشتري: إجراء مستقل في السجل يسهل البحث عنه
+    if (before.watermark_enabled !== parsed.data.watermark_enabled && parsed.data.watermark_enabled !== undefined) {
+      await audit({
+        actorId: adminId,
+        action: parsed.data.watermark_enabled ? "settings.watermark_on" : "settings.watermark_off",
+        entityType: "settings",
+        entityId: "watermark_enabled",
+        metadata: { from: before.watermark_enabled, to: parsed.data.watermark_enabled },
+        ip,
+      });
+    }
     if (confirmsFeeRules) {
       await audit({
         actorId: adminId,
