@@ -40,13 +40,13 @@ MAX_STRETCH = 0.06
 
 # ----------------------------------------------------------------------------- mix levels (linear gains)
 G = dict(
-    voice=1.65, voice_stack=1.30,
-    hero808=0.40, hook808=0.38, land808=0.32, hero_kick=0.30, hero_clap=0.85, hook_clap=0.55,
-    kick=0.28, kick_full=0.26, soft_kick=0.26, clap=0.80, dum=0.36, tak=0.95, shaker=0.30,
-    bass=0.15, pad=0.18, ep=0.30, pluck=0.20,
-    tick=0.42, tick_talk=0.30, swarm=0.22, fall_tick=0.46, land_tick=0.46, tap=0.40,
-    crack=0.85, splash=0.42, crunch=0.55, clink=0.55, crackle=0.62, breath=0.40, sizzle=0.42, thump=0.55,
-    pop=0.42, burst=0.55, shock=0.55, whoosh=0.40, riser=0.30, inflate=0.30, zip=0.22, notepop=0.45, swell=0.55,
+    voice=1.95, voice_stack=1.60,
+    hero808=0.40, hook808=0.38, land808=0.42, hero_kick=0.30, hero_clap=0.85, hook_clap=0.42,
+    kick=0.28, kick_full=0.26, soft_kick=0.26, clap=0.90, dum=0.32, tak=0.95, shaker=0.30,
+    bass=0.13, pad=0.18, ep=0.36, pluck=0.20,
+    tick=0.50, tick_talk=0.30, swarm=0.22, fall_tick=0.46, land_tick=0.46, tap=0.40,
+    crack=0.85, splash=0.42, crunch=0.55, clink=0.55, crackle=0.62, breath=0.40, sizzle=0.42, thump=0.75,
+    pop=0.50, burst=0.55, shock=0.55, whoosh=0.40, riser=0.30, inflate=0.30, zip=0.22, notepop=0.45, swell=0.55,
     room=0.0,                                     # set by calibrate_room(): the dead beat sits at -40 dBFS
 )
 MUSIC_SC_DB = -6.0                                # music (and sound beds) side-chained under each voice
@@ -233,10 +233,12 @@ def bun_thump():
 
 
 def porthole_pop(f0, f1):
-    p = pop(f0, f1, 0.08)
-    cork = membrane(f1 * 0.5, 0.06, 0.012, pitch_drop=0.1, strike=0.6, strike_band=(1500, 6000)) * 0.4
-    y = np.zeros(max(len(p), len(cork))); y[:len(p)] += p; y[:len(cork)] += cork
-    return y
+    """A porthole opening: a short bright bubble pop with a cork click (short, so it reads over the end of «طشّ!»)."""
+    p = pop(f0, f1, 0.045) * 1.1
+    cork = membrane(f1 * 0.5, 0.05, 0.008, pitch_drop=0.1, strike=0.9, strike_band=(2000, 7000)) * 0.5
+    click = bp(noise(0.006), 2500, 8000) * env_exp(0.006, 0.001) * 0.6
+    y = np.zeros(max(len(p), len(cork))); y[:len(p)] += p; y[:len(cork)] += cork; y[:len(click)] += click
+    return fade(y, 0.0002, 0.01)
 
 
 def burst_pop(R, d=0.35):
@@ -496,7 +498,7 @@ A20 = dict(
     clink=138, crackle=165, breath=180, sizzle=(210, 225), bun=225, crunch=255,
     talk=285, mult=[330, 345, 360], build8=360, flood=375, duck=381, pocket=(386, 390), hero3=390,
     cta=450, band=[(450, 'kunafa'), (480, 'burger'), (510, 'oud'), (540, 'coffee')], pop2=457, thin=540,
-    swell=(588, 598), windup=588, room_window=(56, 71),
+    swell=(588, 598), windup=588, room_window=(56, 71), swarm=1.0,
 )
 A14 = dict(
     name='A14', frames=420, seed=1414,
@@ -510,7 +512,7 @@ A14 = dict(
     clink=138, crackle=165, breath=None, sizzle=(195, 210), bun=210, crunch=225,
     talk=255, mult=[270, 275, 280], build8=280, flood=285, duck=291, pocket=(296, 300), hero3=300,
     cta=315, band=[(315, 'kunafa'), (345, 'burger'), (375, 'coffee')], pop2=318, thin=375,
-    swell=(408, 418), windup=414, room_window=(56, 71),
+    swell=(408, 418), windup=414, room_window=(56, 71), swarm=2.0,   # ticks run under V2 here: +6 dB before the duck
 )
 CHORDS = {'D': ['D3', 'F#3', 'A3', 'D4'], 'Eb': ['Eb3', 'G3', 'Bb3', 'Eb4'], 'Gm': ['G2', 'D3', 'G3', 'Bb3']}
 ROOTS = {'D': (nf('D2'), nf('A1')), 'Eb': (nf('Eb2'), nf('Bb1')), 'Gm': (nf('G1'), nf('D2'))}
@@ -521,7 +523,9 @@ SHAKER = {'drain': (1, .6), 'full': (1, .7), 'peak': (1, 1.0), 'build': (1, .8),
 BASS_LEVEL = {'drain': .8, 'full': 1.0, 'peak': 1.0, 'talk': .9, 'build': 1.0, 'half': 1.0, 'calm': .55}
 CHORD_LEVEL = {'drain': .7, 'full': 1.0, 'peak': 1.0, 'half': .8, 'calm': .6, 'thin': .4}
 PAD_ONLY = {'drain', 'thin'}
-RIFF = [(10, 'A4'), (11, 'Bb4'), (12, 'A4'), (13, 'G4'), (14, 'F#4'), (15, 'Eb4')]   # a Hijaz turn on beats 3-4
+RIFF = {'D': [(10, 'A4'), (11, 'Bb4'), (12, 'A4'), (13, 'G4'), (14, 'F#4'), (15, 'Eb4')],   # a Hijaz turn on beats 3-4
+        'Eb': [(10, 'G4'), (11, 'Bb4'), (12, 'G4'), (13, 'F#4'), (14, 'Eb4'), (15, 'F#4')],
+        'Gm': [(10, 'D5'), (11, 'C5'), (12, 'Bb4'), (13, 'A4'), (14, 'G4'), (15, 'F#4')]}
 
 
 def style_at(V, f):
@@ -561,7 +565,7 @@ def score(V, VO):
     put(splash(R, 0.9), 5, 'sfx', 'ice enters the coffee: splash (n7 entry)', G['splash'])
     for i in range(3):
         put(wtick(NOTES[i]), 5 * i, 'sfx', f'typing tick {["right", "middle", "left"][i]} dot ({NOTES[i]:.1f} Hz)', G['tick'], TICK_PAN[i])
-    put(group_clap(15, 6, 0.3), 15, 'music', 'group clap on the voiced «حلو» (punch-in)', G['hook_clap'])
+    put(group_clap(15, 5, 0.22), 15, 'music', 'group clap on the voiced «حلو» (punch-in)', G['hook_clap'])
     put(splash(R, 0.6, 0.35, dark=True), 16, 'sfx', 'closer replay of the ice touching the coffee (dark plop)', G['splash'] * 0.7)
     put(VO['v1'], 0, 'voice', f'V1 «مشروعك حلو…» from 0.00 s; «حلو» starts {VO["info"]["V1"]["placed_closure_s"]:.3f} s', G['voice'])
 
@@ -599,7 +603,7 @@ def score(V, VO):
 
     # --- f105-134 portholes, clap f120 (in the groove), mirwas fill into f135
     for k, (f, p) in enumerate([(105, -0.5), (108, 0.0), (111, 0.5)]):
-        put(porthole_pop(330 + 40 * k, 900 + 110 * k), f, 'sfx', f'porthole pop {k + 1} (x {[270, 540, 810][k]})', G['pop'], p)
+        put(porthole_pop(520 + 60 * k, 1250 + 150 * k), f, 'hit', f'porthole pop {k + 1} (x {[270, 540, 810][k]})', G['pop'], p)
     note(120, 'clap f120 = groove clap (portholes cut to their next 15 frames)', 'music')
     for k, f in enumerate([127.5, 129.375, 131.25, 133.125]):
         put(mirwas_tak(), f, 'music', 'mirwas fill into f135' if k == 0 else None, G['tak'] * (0.45 + 0.15 * k))
@@ -640,7 +644,7 @@ def score(V, VO):
             note_ = NOTES[j % 3] * mul
             pan = TICK_PAN[j % 3] if k == 0 else R.uniform(-0.85, 0.85)
             put(wtick(note_, body=0.55 if k == 0 else 0.3, d=0.05 if k < 2 else 0.03), max(a, f), 'sfx', None,
-                G['swarm'] * (1.0 if k == 0 else 0.8 if k == 1 else 0.55), pan)
+                G['swarm'] * V['swarm'] * (1.0 if k == 0 else 0.8 if k == 1 else 0.55), pan)
         put(whoosh(0.16, 900, 5200, pan_from=0.0, pan_to=[0.5, -0.5, 0.2][k], peak=0.5), a, 'sfx',
             f'multiplication step {k + 1}: {3 ** (k + 2)} dots, {n} typing ticks at {per} per 15 f, pitch x{mul:.3f} (+{5 * k} st)', G['zip'])
     rise = fr(V['pocket'][0] - V['mult'][0])
@@ -662,8 +666,8 @@ def score(V, VO):
     # --- CTA: soft kick on each band cut, two-note pop on «بالخاص»
     for f, world in V['band']:
         put(soft_kick(), f, 'music', f'soft kick: band cuts to {world}', G['soft_kick'])
-    put(note_pop(nf('A5')), V['pop2'], 'sfx', 'two-note pop, note 1 A5 (synthesised)', G['notepop'], 0.1)
-    put(note_pop(nf('D6')), V['pop2'] + 3, 'sfx', 'two-note pop, note 2 D6', G['notepop'], -0.1)
+    put(note_pop(nf('A5')), V['pop2'], 'hit', 'two-note pop, note 1 A5 (synthesised)', G['notepop'], 0.1)
+    put(note_pop(nf('D6')), V['pop2'] + 3, 'hit', 'two-note pop, note 2 D6', G['notepop'], -0.1)
 
     # --- WIND-UP: reverse swell, then 2 frames of air into f0
     a, b = V['swell']
@@ -686,10 +690,11 @@ def groove(V, put, note, hero_frames):
             st = style_at(V, f)
             sw = 0.02 if s % 4 == 2 else 0.0
             hero = any(abs(f - h) < 0.01 for h in hero_frames)
+            in_tash = any(0 < f - h < 23 for h in hero_frames)                # «طشّ!» is speaking
             # mirwas
             if st in MIR_LEVEL and (s % 16) in MIR and (st not in MIR_ONLY or (s % 16) in MIR_ONLY[st]):
                 kind, v = MIR[s % 16]
-                if not (hero and kind == 'dum'):
+                if not (hero and kind == 'dum') and not (in_tash and kind == 'tak'):
                     x = mirwas_dum() if kind == 'dum' else mirwas_tak()
                     put(x, f, 'music', None, v * MIR_LEVEL[st] * (G['dum'] if kind == 'dum' else G['tak']), -0.1 if kind == 'tak' else 0.0, dt=sw)
             # kick
@@ -735,11 +740,11 @@ def groove(V, put, note, hero_frames):
             up = [nf(n) * 2 for n in CHORDS[chord][1:]]
             for beat, dd, v in [(0, 1.0, 0.75), (1.5, 0.35, 0.5), (2.5, 0.6, 0.62), (3.5, 0.3, 0.45)]:
                 ff = b0 + beat * 15
-                if fa - 1e-6 <= ff < fb and beat * 4 < nb * 4:
+                if fa - 1e-6 <= ff < fb and beat * 4 < nb * 4 and not any(abs(ff - h) < 0.01 for h in hero_frames):
                     for kk, fq in enumerate(up):
                         put(epiano(fq, dd, v), ff, 'music', None, G['ep'] * lvl, dt=0.008 * kk)
             if st == 'peak' and nb == 4:
-                for s, nm in RIFF:
+                for s, nm in RIFF[chord]:
                     ff = b0 + s * 3.75
                     if fa <= ff < fb:
                         put(pluck(nf(nm), 0.5, bright=0.5), ff, 'music', None, G['pluck'], 0.25)
@@ -750,6 +755,7 @@ def process(V, m):
     F = V['frames']; DUR = fr(F)
     key = m.bus('voice'); N = len(m.buf)
     sc = sidechain(key)
+    sc_band = sc ** (5.0 / 6.0)                                               # music 0.7-4 kHz: a further -5 dB
     mus = [(0, 0), (fr(44.5), 0), (fr(46), -90), (fr(72) - 0.003, -90), (fr(72), 0)]
     flood = [(fr(V['duck']) - 0.012, 0), (fr(V['duck']), -9), (fr(V['pocket'][0]) - 0.004, -9), (fr(V['pocket'][0]), -90),
              (fr(V['pocket'][1]) - 0.003, -90), (fr(V['pocket'][1]), 0)]
@@ -761,6 +767,7 @@ def process(V, m):
         x = drain_filter(x)
         x = x + reverb(hp(x, 250), decay=0.9, mix=1.0, tone=5000)[:len(x)] * 0.10     # the room, high-passed
         x = x * mus_auto[:, None] * sc[:, None]
+        band = bp(x, 700, 4000, order=2); x = x - band + band * sc_band[:, None]     # extra voice-band dip
         x = low_mono(x, 150, -2.5)
         x = x - lp(x, 120) * (1 - db(-4.0))                                       # low shelf -4 dB (phones)
         return peak_eq(peak_eq(x, 2500, 3.0, 0.8), 1000, 2.0, 0.9)
@@ -768,7 +775,7 @@ def process(V, m):
     m.process_bus('music', music_fx)
     sc_fx = sc ** (8.0 / 6.0)                                                  # sound beds: -8 dB under a voice
     m.process_bus('sfx', lambda x: low_mono(x * sfx_auto[:, None] * sc_fx[:, None], 150, 0.0))
-    m.process_bus('hit', lambda x: low_mono(x * sfx_auto[:, None], 150, 0.0))
+    m.process_bus('hit', lambda x: low_mono(x * sfx_auto[:, None] * sc[:, None], 150, 0.0))   # transients pass the 8 ms attack
     return sc
 
 
