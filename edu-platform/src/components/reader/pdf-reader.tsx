@@ -2,15 +2,16 @@
 
 import Link from "next/link";
 import { useCallback, useEffect, useRef, useState } from "react";
-import { ArrowRight, BookOpenText, Download, Eye, LoaderCircle, Maximize, Minus, Plus, ShieldCheck, ShoppingCart, TriangleAlert } from "lucide-react";
+import { ArrowRight, BookOpenText, Download, Eye, LoaderCircle, Maximize, Minus, Plus, RotateCw, ShieldCheck, ShoppingCart, TriangleAlert } from "lucide-react";
 import { ar } from "@/lib/design";
 import { Price } from "@/components/ui/price";
-import { readerErrorMessage } from "@/lib/reader-error";
+import { FILE_BUSY_MESSAGE, FILE_PREPARING_MESSAGE, readerErrorMessage, readerRetryDelaySeconds } from "@/lib/reader-error";
 import type { PDFDocumentProxy, PDFPageProxy } from "pdfjs-dist";
 
 /**
  * قارئ PDF مدمج ومتجاوب مبني على PDF.js:
- * - يرسم الصفحات عند ظهورها فقط (أداء أفضل على الأجهزة المتوسطة)
+ * - يرسم الصفحات القريبة من الشاشة فقط، ويحرر لوحات الرسم البعيدة (ملف من مئات الصفحات لا يملأ ذاكرة الهاتف)
+ * - يعرض نسبة التحميل، ويعيد المحاولة وحده حين يقول الخادم إنه مشغول (503 أو 429 مع Retry-After)
  * - طبقة علامة مائية فوق كل صفحة
  * - بدون طبقة نص قابلة للنسخ، وبدون زر تنزيل للمنتجات «للقراءة فقط»
  * - يحفظ آخر صفحة ويعيد الطالب إليها
@@ -38,8 +39,12 @@ type Props = {
 
 export function PdfReader({ src, title, backHref, backLabel, initialPage = 1, watermark, downloadHref, progressFileId, badge, variant = "full", cta }: Props) {
   const containerRef = useRef<HTMLDivElement>(null);
+  const listRef = useRef<HTMLDivElement>(null);
   const [doc, setDoc] = useState<PDFDocumentProxy | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [loaded, setLoaded] = useState<{ received: number; total: number | null }>({ received: 0, total: null });
+  const [waiting, setWaiting] = useState<{ message: string; seconds: number } | null>(null);
+  const [attempt, setAttempt] = useState(0);
   const [ratio, setRatio] = useState(1.414);
   const [zoom, setZoom] = useState(1);
   const [current, setCurrent] = useState(initialPage);
@@ -47,40 +52,64 @@ export function PdfReader({ src, title, backHref, backLabel, initialPage = 1, wa
   const lastSaved = useRef(initialPage);
   const scrolledInitially = useRef(false);
 
-  // تحميل المستند
+  // تحميل المستند: الطلب بأيدينا لا بيد pdf.js، لنعرف نسبة التحميل ونقرأ Retry-After عند الانشغال
   useEffect(() => {
     let cancelled = false;
+    const abort = new AbortController();
     let loadingTask: { destroy: () => Promise<void> } | null = null;
+    setError(null);
+    setDoc(null);
+    setLoaded({ received: 0, total: null });
+    const pause = (seconds: number) => new Promise<void>((resolve) => setTimeout(resolve, seconds * 1000));
     (async () => {
       try {
+        let bytes: Uint8Array | null = null;
+        for (let tries = 0; !bytes; tries++) {
+          const res = await fetch(src, { headers: { "x-reader": "1" }, credentials: "same-origin", signal: abort.signal });
+          if (!res.ok) {
+            const body = (await res.json().catch(() => ({}))) as { retry?: unknown; busy?: unknown };
+            const retryFlag = body.retry === true || body.busy === true;
+            const wait = readerRetryDelaySeconds(res.status, res.headers.get("retry-after"), retryFlag, tries);
+            if (wait === null) throw Object.assign(new Error("file request failed"), { status: res.status, retryable: retryFlag && res.headers.has("retry-after") });
+            setWaiting({ message: res.status === 429 ? FILE_PREPARING_MESSAGE : FILE_BUSY_MESSAGE, seconds: wait });
+            await pause(wait + Math.random());
+            if (cancelled) return;
+            setWaiting(null);
+            continue;
+          }
+          bytes = await readWithProgress(res, (received, total) => {
+            if (!cancelled) setLoaded({ received, total });
+          });
+        }
+        if (cancelled) return;
         const pdfjs = await import("pdfjs-dist");
         pdfjs.GlobalWorkerOptions.workerSrc = "/pdfjs/pdf.worker.min.mjs";
         const task = pdfjs.getDocument({
-          url: src,
-          httpHeaders: { "x-reader": "1" },
-          withCredentials: true,
-          disableAutoFetch: true,
+          data: bytes,
           cMapUrl: "/pdfjs/cmaps/",
           cMapPacked: true,
           standardFontDataUrl: "/pdfjs/standard_fonts/",
           wasmUrl: "/pdfjs/wasm/",
         });
         loadingTask = task;
-        const loaded = await task.promise;
+        const loadedDoc = await task.promise;
         if (cancelled) return;
-        const first = await loaded.getPage(1);
+        const first = await loadedDoc.getPage(1);
         const vp = first.getViewport({ scale: 1 });
         setRatio(vp.height / vp.width);
-        setDoc(loaded);
+        setDoc(loadedDoc);
       } catch (err) {
+        if (cancelled) return;
+        setWaiting(null);
         setError(readerErrorMessage(err));
       }
     })();
     return () => {
       cancelled = true;
+      abort.abort();
       void loadingTask?.destroy();
     };
-  }, [src]);
+  }, [src, attempt]);
 
   // عرض الحاوية (للتكيّف مع الشاشة)
   useEffect(() => {
@@ -97,9 +126,15 @@ export function PdfReader({ src, title, backHref, backLabel, initialPage = 1, wa
     if (!doc || scrolledInitially.current || width === 0) return;
     scrolledInitially.current = true;
     if (initialPage > 1) {
-      requestAnimationFrame(() => document.getElementById(`page-${initialPage}`)?.scrollIntoView({ block: "start" }));
+      requestAnimationFrame(() => {
+        const el = containerRef.current;
+        const list = listRef.current;
+        if (!el || !list) return;
+        const h = Math.round(Math.max(240, Math.min(el.clientWidth - 16, 900)) * ratio) + PAGE_GAP;
+        el.scrollTop = list.offsetTop + (Math.min(initialPage, doc.numPages) - 1) * h;
+      });
     }
-  }, [doc, width, initialPage]);
+  }, [doc, width, initialPage, ratio]);
 
   // حفظ التقدم
   useEffect(() => {
@@ -117,10 +152,41 @@ export function PdfReader({ src, title, backHref, backLabel, initialPage = 1, wa
     return () => clearTimeout(t);
   }, [current, progressFileId]);
 
-  const onVisible = useCallback((n: number) => setCurrent(n), []);
-
   const pageWidth = Math.max(240, Math.min(width - 16, 900) * zoom);
-  const pages = doc ? Array.from({ length: doc.numPages }, (_, i) => i + 1) : [];
+  const pageHeight = Math.round(pageWidth * ratio);
+  const stride = pageHeight + PAGE_GAP;
+  const numPages = doc?.numPages ?? 0;
+  // الصفحات المرسومة: ما يظهر على الشاشة وصفحتان قبله وبعده. البقية مساحة فارغة بلا لوحة رسم
+  const [range, setRange] = useState({ first: 1, last: 3 });
+
+  const measure = useCallback(() => {
+    const el = containerRef.current;
+    const list = listRef.current;
+    if (!el || !list || !numPages || stride <= 0) return;
+    const top = el.scrollTop - list.offsetTop;
+    const first = Math.min(numPages, Math.max(1, Math.floor(top / stride) + 1 - PAGE_BUFFER));
+    const last = Math.min(numPages, Math.max(first, Math.ceil((top + el.clientHeight) / stride) + PAGE_BUFFER));
+    setRange((r) => (r.first === first && r.last === last ? r : { first, last }));
+    setCurrent(Math.min(numPages, Math.max(1, Math.floor((top + el.clientHeight * 0.35) / stride) + 1)));
+  }, [numPages, stride]);
+
+  useEffect(() => {
+    const el = containerRef.current;
+    if (!el || !numPages) return;
+    let frame = 0;
+    const onScroll = () => {
+      cancelAnimationFrame(frame);
+      frame = requestAnimationFrame(measure);
+    };
+    measure();
+    el.addEventListener("scroll", onScroll, { passive: true });
+    return () => {
+      cancelAnimationFrame(frame);
+      el.removeEventListener("scroll", onScroll);
+    };
+  }, [measure, numPages]);
+
+  const pages = doc ? Array.from({ length: Math.max(0, Math.min(range.last, numPages) - range.first + 1) }, (_, i) => range.first + i) : [];
 
   const zoomOut = () => setZoom((z) => Math.max(0.6, +(z - 0.2).toFixed(1)));
   const zoomIn = () => setZoom((z) => Math.min(2.4, +(z + 0.2).toFixed(1)));
@@ -196,23 +262,45 @@ export function PdfReader({ src, title, backHref, backLabel, initialPage = 1, wa
               <TriangleAlert className="size-8" aria-hidden />
             </span>
             <p className="mt-4 font-display text-[1.1rem] font-extrabold">{error}</p>
-            <Link href={backHref} className="btn btn-3d btn-primary btn-md mt-5">
-              <ArrowRight aria-hidden />
-              {backLabel}
-            </Link>
+            <div className="mt-5 flex flex-col gap-3">
+              <button type="button" className="btn btn-3d btn-accent btn-md w-full" onClick={() => setAttempt((n) => n + 1)} data-testid="reader-retry">
+                <RotateCw aria-hidden />
+                حاول مرة أخرى
+              </button>
+              <Link href={backHref} className="btn btn-3d btn-primary btn-md w-full">
+                <ArrowRight aria-hidden />
+                {backLabel}
+              </Link>
+            </div>
           </div>
         ) : !doc ? (
           <div className="relative mt-24 flex flex-col items-center gap-4 text-white/85" role="status">
             <span className="grid size-16 place-items-center rounded-[1.25rem] bg-white/10 ring-1 ring-white/15">
               <LoaderCircle className="size-8 animate-spin text-[#ffc531]" aria-hidden />
             </span>
-            <p className="font-display text-[0.98rem] font-bold">جارٍ فتح الملف…</p>
+            {waiting ? (
+              <p className="max-w-xs text-center font-display text-[0.98rem] leading-7 font-bold" data-testid="reader-waiting">
+                {waiting.message}
+              </p>
+            ) : (
+              <p className="font-display text-[0.98rem] font-bold" data-testid="reader-loading">
+                جارٍ فتح الملف…
+                {loaded.total ? <span className="num ms-1.5 text-[#ffc531]">{ar(Math.min(100, Math.floor((loaded.received / loaded.total) * 100)))}٪</span> : null}
+              </p>
+            )}
+            {loaded.total && !waiting ? (
+              <span className="block h-1.5 w-48 overflow-hidden rounded-full bg-white/15" aria-hidden>
+                <span className="block h-full rounded-full bg-linear-to-l from-[#ffd25e] to-[#ffc531] transition-[width] duration-300" style={{ width: `${Math.min(100, (loaded.received / loaded.total) * 100)}%` }} />
+              </span>
+            ) : null}
           </div>
         ) : (
-          <div className="relative mx-auto flex flex-col items-center gap-4" dir="ltr">
-            {pages.map((n) => (
-              <PdfPage key={n} doc={doc} n={n} width={pageWidth} ratio={ratio} watermark={watermark} onVisible={onVisible} />
-            ))}
+          <div className="relative mx-auto flex flex-col items-center" dir="ltr">
+            <div ref={listRef} className="relative" style={{ width: pageWidth, height: numPages * stride - PAGE_GAP }}>
+              {pages.map((n) => (
+                <PdfPage key={n} doc={doc} n={n} width={pageWidth} height={pageHeight} top={(n - 1) * stride} watermark={watermark} />
+              ))}
+            </div>
             {preview && cta ? <PreviewEndCard cta={cta} backHref={backHref} backLabel={backLabel} /> : null}
           </div>
         )}
@@ -299,53 +387,44 @@ function PreviewEndCard({
   );
 }
 
-function PdfPage({
-  doc,
-  n,
-  width,
-  ratio,
-  watermark,
-  onVisible,
-}: {
-  doc: PDFDocumentProxy;
-  n: number;
-  width: number;
-  ratio: number;
-  watermark?: string;
-  onVisible: (n: number) => void;
-}) {
-  const ref = useRef<HTMLDivElement>(null);
+/** المسافة بين الصفحات، وعدد الصفحات المرسومة قبل الظاهر وبعده */
+const PAGE_GAP = 16;
+const PAGE_BUFFER = 2;
+
+/** يقرأ الجسم كله مع نسبة التحميل (حين يرسل الخادم Content-Length) */
+async function readWithProgress(res: Response, onProgress: (received: number, total: number | null) => void): Promise<Uint8Array> {
+  const declared = Number(res.headers.get("content-length"));
+  const total = Number.isFinite(declared) && declared > 0 ? declared : null;
+  if (!res.body) return new Uint8Array(await res.arrayBuffer());
+  const reader = res.body.getReader();
+  const chunks: Uint8Array[] = [];
+  let received = 0;
+  for (;;) {
+    const { done, value } = await reader.read();
+    if (done) break;
+    chunks.push(value);
+    received += value.byteLength;
+    onProgress(received, total);
+  }
+  const out = new Uint8Array(received);
+  let offset = 0;
+  for (const c of chunks) {
+    out.set(c, offset);
+    offset += c.byteLength;
+  }
+  return out;
+}
+
+/**
+ * صفحة واحدة. تُرسم حين تُركَّب (القائمة تركّب القريب من الشاشة فقط)، وتحرر لوحة الرسم وموارد الصفحة
+ * حين تبتعد فتُزال، فلا تتراكم لوحات بدقة 2x لكل صفحة مرت بها العين. تغيير التكبير يعيد رسم المركَّب فقط.
+ */
+function PdfPage({ doc, n, width, height, top, watermark }: { doc: PDFDocumentProxy; n: number; width: number; height: number; top: number; watermark?: string }) {
   const canvasRef = useRef<HTMLCanvasElement>(null);
-  const [near, setNear] = useState(false);
   const [rendered, setRendered] = useState(0);
 
   useEffect(() => {
-    const el = ref.current;
-    if (!el) return;
-    const io = new IntersectionObserver(
-      (entries) => {
-        for (const e of entries) {
-          if (e.isIntersecting) setNear(true);
-        }
-      },
-      { rootMargin: "800px 0px" },
-    );
-    const vis = new IntersectionObserver(
-      (entries) => {
-        for (const e of entries) if (e.isIntersecting && e.intersectionRatio > 0.35) onVisible(n);
-      },
-      { threshold: [0.35, 0.6] },
-    );
-    io.observe(el);
-    vis.observe(el);
-    return () => {
-      io.disconnect();
-      vis.disconnect();
-    };
-  }, [n, onVisible]);
-
-  useEffect(() => {
-    if (!near || !canvasRef.current || rendered === width) return;
+    if (!canvasRef.current || rendered === width) return;
     let cancelled = false;
     let task: ReturnType<PDFPageProxy["render"]> | null = null;
     (async () => {
@@ -354,7 +433,8 @@ function PdfPage({
       const base = page.getViewport({ scale: 1 });
       const dpr = Math.min(window.devicePixelRatio || 1, 2);
       const viewport = page.getViewport({ scale: (width / base.width) * dpr });
-      const canvas = canvasRef.current!;
+      const canvas = canvasRef.current;
+      if (!canvas) return;
       canvas.width = Math.floor(viewport.width);
       canvas.height = Math.floor(viewport.height);
       task = page.render({ canvas, viewport });
@@ -369,15 +449,30 @@ function PdfPage({
       cancelled = true;
       task?.cancel();
     };
-  }, [near, doc, n, width, rendered]);
+  }, [doc, n, width, rendered]);
+
+  // عند الإزالة: لوحة بحجم صفر تحرر ذاكرتها فورًا، و cleanup يحرر موارد الصفحة في pdf.js
+  useEffect(() => {
+    const canvas = canvasRef.current;
+    return () => {
+      if (canvas) {
+        canvas.width = 0;
+        canvas.height = 0;
+      }
+      void doc
+        .getPage(n)
+        .then((page) => page.cleanup())
+        .catch(() => {});
+    };
+  }, [doc, n]);
 
   return (
     <div
       id={`page-${n}`}
-      ref={ref}
-      className="relative overflow-hidden rounded-[4px] bg-white shadow-[0_18px_40px_-18px_rgb(0_0_0/0.7),0_0_0_1px_rgb(255_255_255/0.06)]"
-      style={{ width, height: Math.round(width * ratio) }}
+      className="absolute start-0 overflow-hidden rounded-[4px] bg-white shadow-[0_18px_40px_-18px_rgb(0_0_0/0.7),0_0_0_1px_rgb(255_255_255/0.06)]"
+      style={{ width, height, top }}
       aria-label={`صفحة ${ar(n)}`}
+      data-testid="reader-page"
     >
       <canvas ref={canvasRef} className="block h-full w-full" />
       {!rendered ? <div className="absolute inset-0 animate-pulse bg-[#f4efe6]" aria-hidden /> : null}
