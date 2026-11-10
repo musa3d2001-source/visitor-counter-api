@@ -1,6 +1,6 @@
 import "server-only";
 import { headers } from "next/headers";
-import { env } from "./env";
+import { env, isVercelDeployment } from "./env";
 
 /** عنوان IP للعميل (من رؤوس الوكيل الموثوق في Vercel) */
 export async function clientIp(): Promise<string> {
@@ -8,14 +8,32 @@ export async function clientIp(): Promise<string> {
   return ipFromHeaders(h);
 }
 
+function clean(value: string | null | undefined): string | null {
+  const v = value?.trim().slice(0, 64);
+  return v ? v : null;
+}
+
+function lastEntry(list: string | null): string | null {
+  if (!list) return null;
+  const parts = list.split(",").map((p) => p.trim()).filter(Boolean);
+  return clean(parts[parts.length - 1]);
+}
+
+/**
+ * عنوان الزائر لحدود المحاولات وسجلات الوصول. مصدر واحد لكل الكود.
+ *  - TRUST_PROXY معطل: لا نثق بأي ترويسة ("unknown").
+ *  - على Vercel: x-vercel-forwarded-for ثم x-real-ip ثم x-forwarded-for. Vercel يكتب هذه الثلاث بنفسه بعنوان من اتصل به
+ *    ولا يمرر قيمة أرسلها الزائر، وx-vercel-forwarded-for يبقى صحيحًا حتى لو وُضع وكيل آخر أمام Vercel.
+ *  - خارج Vercel (خلف وكيل عادي، أو أداة اختبار الضغط محليًا): آخر قيمة في X-Forwarded-For فقط، وهي ما أضافه الوكيل
+ *    الذي يتصل بنا مباشرة. أول قيمة يكتبها الزائر بنفسه، فلا تُستعمل أبدًا.
+ */
 export function ipFromHeaders(h: Headers): string {
-  if (env().TRUST_PROXY) {
-    const fwd = h.get("x-forwarded-for");
-    if (fwd) return fwd.split(",")[0]!.trim().slice(0, 64);
-    const real = h.get("x-real-ip");
-    if (real) return real.trim().slice(0, 64);
+  const e = env();
+  if (!e.TRUST_PROXY) return "unknown";
+  if (isVercelDeployment(e)) {
+    return clean(lastEntry(h.get("x-vercel-forwarded-for"))) ?? clean(h.get("x-real-ip")) ?? lastEntry(h.get("x-forwarded-for")) ?? "unknown";
   }
-  return "unknown";
+  return lastEntry(h.get("x-forwarded-for")) ?? clean(h.get("x-real-ip")) ?? "unknown";
 }
 
 export async function userAgent(): Promise<string> {
