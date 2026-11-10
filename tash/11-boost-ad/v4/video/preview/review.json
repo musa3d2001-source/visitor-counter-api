@@ -1,0 +1,327 @@
+{
+ "director": {
+  "verdict": "send after listed fixes",
+  "summary": "I watched the preview at 390 px wide (/tmp/claude-0/-home-user-visitor-counter-api/1e0f8dbb-d731-5965-a898-07519c7bdbc3/scratchpad/r6/review/director/phone390.mp4) and frame by frame at 1080x1920. I measured frame-to-frame differences, backdrop colour, bun and lens positions, and sharpness.\n\n**What works**\n- **Rhythm:** all 9 internal cuts land exactly on f150, 165, 180, 195, 210, 225, 240, 255 and 270. Every other frame-to-frame change stays at or below 7 levels, apart from the planned moves: the lens slides and drops and the bun drop. It does feel like a cut every half second on the beat.\n- **No flicker or colour jumps:** the backdrop drifts 3 levels at most inside a beat. Lime is a constant (198,255,0). The mp4 matches the rendered PNGs to within about 1.4 levels.\n- **Oud smoke:** the R3-12 fade looks natural. There is no hard ceiling and at most 1 level is left above y 880.\n- **Burger seeds:** none are left floating.\n- **Kunafa A to B:** the tray stays in place and the world around it turns lime. This match cut works well.\n- **Bun hang and drop:** the hang reads as a deliberate speed ramp and the drop is clean. On screen the bun top goes from y 892 (held f210-218) to 896, 910, 938, 973, 1010 and 1059 (f219-224). It speeds up steadily, falls straight (x 340-745) and stays 59 px or more below the tag.\n- **Instantly named at 390 px:** all four worlds read. Burger is the strongest. Kunafa reads as \"a sweet\" more than \"kunafa\".\n\n**What needs fixing (all zero-credit)**\n1. **Burger impact bounces up (f225-f235).** After the bun lands, it rises 19 px on screen in 3 frames and sways about 20 px each side. This is the \"burger moving upward\" the owner mocked before.\n2. **Burger lens entrance (f240-f241).** The first frame of the drop puts the burger lens behind «برجر؟» and against the word.\n3. **Coffee A repeats the crash.** f135-149 is the fifth showing of the same ice crash and crown in 5 s, and it ends on the n18 crown the owner is still judging.\n4. **Coffee lens (f150-164) is the weakest world.** It is the softest picture and still carries the R3-22c bean and streak, which were not retouched.\n\nThe lens entrances otherwise read as intentional:\n- **Coffee:** the rim shrinks while the picture stays still. It is subtle.\n- **Oud:** a clean slide-in, with no smear.\n\nThe other findings below are polish.\n\nNothing in the repository was changed; HANDOFF.md was not updated, because the repo is read-only for this role. Evidence is in /tmp/claude-0/-home-user-visitor-counter-api/1e0f8dbb-d731-5965-a898-07519c7bdbc3/scratchpad/r6/review/director/: crops/ and sheets/ (p_135.jpg … p_270.jpg, phone_keyframes.png).",
+  "findings": [
+   {
+    "id": "F1",
+    "frames": "f225-f239 (Burger B, n25,27…53 every second frame at 1.2x)",
+    "severity": "major",
+    "claim": "After the bun lands, it bounces up and sways side to side (jelly). This is the upward motion the owner has mocked before.",
+    "evidence": "Screen bun top at x 540: f225 1152, f226 1150, f227 1141, f228 1133 (19 px up in 3 frames), then f229 1138, f230 1148. In the source the whole bun rises 24 px from n25 to n31 (top 1118 to 1094; bun-on-patty line 1302 to 1279) and comes back by n35. Sideways shift against the settled n58, times 1.2: about +20 px right by f229-230, 26 px back left by f235, 13 px right again by f239. The current bump moves the image up 10 px on f225 and 5 px on f226. Crop: crops/burger_impact_f222_233.jpg (red guide line at y 1140).",
+    "fix": "Burger B f225-f239 = n57-n71 at 1:1. Measured from n57 to n63, the bun stays within 1 px of rest in x and y; the S3 review reports it calm through n72. Add n69-n71 to prep.py. Keep the 1.2x punch-in and the −10/−5 bump: with a still bun, the bump reads as the whole picture settling 10 px down. The landing then happens across the cut, sold by the punch-in, bump and thump. Burger C can stay n54-n68 or use n58-n72. The same n25-n53 every-second-frame range is planned for the f105-119 porthole and the f480-494 band; replace it there too."
+   },
+   {
+    "id": "F2",
+    "frames": "f240-f244 (Burger C lens drop)",
+    "severity": "major",
+    "claim": "On the cut frame the burger lens sits behind «برجر؟» and touches the word, so it reads as a glitch rather than a drop. Its motion slows down like a spring instead of falling.",
+    "evidence": "Lens centre y: 870, 1120, 1295, 1262, 1270. On f240 the rim spans y 530-1210, while the tag ink is y 629-823 (Paper shadow to 832) and the word ink ends at y 535. The bun sits right under the tag letters. On f241 the rim top (y 780) still overlaps the tag by about 50 px. Speed is 250 then 175 px per frame, slowing before the 25 px overshoot and 8 px rebound. Crop: crops/burgerC_entry_f239_244.jpg.",
+    "fix": "Clip the lens to y ≥ 850 during the entrance, so it drops out from under the tag line, and make it speed up: centre y f240 1030, f241 1150, f242 1286 (overshoot), f243 1266 (one bounce), f244 1270. Add vertical motion blur of about half the per-frame move (60-70 px) on f240-f241."
+   },
+   {
+    "id": "F3",
+    "frames": "f135-f149 (Coffee A, n4-n18)",
+    "severity": "major",
+    "claim": "Coffee A is the fifth showing of the same ice crash and crown in the first 5 s (f0-14, f15-29, f78-89, f105-119, f135-149). For an owner who called the earlier version ordinary, this repetition is the weakest point. It also ends on the n18 crown he has not yet reacted to.",
+    "evidence": "R3-21 remap. Frames: cubes fall f135-140, first contact about f140, splash visible f141, crown peak f149. The crown is about 30% wider than the glass: x 342-711 at y 1100-1234, against glass x 387-659 (R3-18d). The visual impact lands about 6 frames after the f135 kick. Crop: crops/coffeeA.jpg and crops/coffeeA_f149_100.jpg.",
+    "fix": "Take the recorded suggestion (section 15): oud f135-179, burger f180-224 (hang f180-188, drop f189-194, impact on f195), kunafa f225-254, coffee f255-284. Point the centre porthole and the f131-134 iris at S2 instead of S1. Same beat lengths, 0 credits. If the coffee stays first, at least put the ice crack sound on f140-141, not f135."
+   },
+   {
+    "id": "F4",
+    "frames": "f150-f164 (Coffee B lens, n68-n82 at 1.3x)",
+    "severity": "major",
+    "claim": "The coffee lens is the least appetising world: soft, murky beige, almost still, and the spec-required retouches are missing.",
+    "evidence": "Sharpness (Laplacian variance) in the product area: f160 = 7, against 20 for Coffee A, 128 oud lens, 312 Burger A, 890 burger lens and 589 kunafa lens. The 1.3x upscale softens an already soft settled tail. A dark bean shows at screen (370-385, 1110-1145) on every frame (330-370 dark px), visible at 390 px as a speck on the left wall. A bluish smear sits at about (550-580, 1150-1170). Both are listed in R3-22c as still to treat, and prep.py does not treat them. A wet splatter patch stays at the glass foot, about (350-440, 1470-1515), because prep.py's floor mask is a rectangle (x<372 or x>675 for y>1500, everything for y>1600) instead of the glass silhouette that R3-22e asks for. After the entrance the picture barely changes (frame difference 0.12-0.21). Crops: crops/coffeeB_f160_100.jpg, coffeeB_bean_200.jpg, coffeeB_floor_seam.jpg, phone_coffeeB_x3.png.",
+    "fix": "Retouch the bean (source 397-405, 1279-1300) and the streak (source 523-577, 1315-1375) on n68-n82 before scaling. Build the floor plate from n0 with a glass-silhouette mask feathered 4-6 px (R3-22e). Either drop the lens scale to about 1.1, or keep 1.3 and add an unsharp mask (radius about 1.5 px, amount about 60%) to the lens footage only. Optionally add a slow push-in from 1.00 to 1.03 over the beat."
+   },
+   {
+    "id": "F5",
+    "frames": "f154-164, f199-209, f245-254, f274-284 (all four lens beats); also f165-194 and f255-269",
+    "severity": "minor",
+    "claim": "Once each lens settles, the picture inside is close to a still image. From f150 to f209 the only product motion is the slow smoke, so the run can feel like a slideshow apart from the cuts and the type.",
+    "evidence": "Frame difference in y ≥ 850 after each entrance: coffee lens 0.12-0.21, oud lens 0.07-0.15, burger lens 0.22-0.47, kunafa lens 0.26-0.61. The only real action is the coffee crash (f135-149) and the burger drop and impact (f219-230).",
+    "fix": "Push in slowly inside each lens, from 1.00 to 1.04 over the 15 frames, about the lens centre (footage only, rim fixed). This reads as a natural camera move. Optionally do the same, 1.00 to 1.02, on Oud A and Kunafa A."
+   },
+   {
+    "id": "F6",
+    "frames": "f210-f218 (Burger A hang, n11 held)",
+    "severity": "minor",
+    "claim": "The hang is a pixel-identical freeze. On a phone it can read as a stalled video for 0.3 s before the drop. The drop itself reads as real.",
+    "evidence": "Frame difference in y ≥ 850 is 0.00 across f211-218. The drop f219-224 is good: the bun top moves 4, 14, 28, 35, 37 and 49 px per frame, straight down, landing across the cut on f225.",
+    "fix": "Add 1-2 levels of per-frame static grain during the hold (better still, across the whole film so held and settled frames still have life). Or push in very slowly, 1.00 to 1.01, during f210-218."
+   },
+   {
+    "id": "F7",
+    "frames": "f195-f198 (Oud C lens slide)",
+    "severity": "minor",
+    "claim": "The slide-in reads as intentional, but the 220 px jump from f195 to f196 has no smear and can strobe. Section 7 asks for a 3-frame smear.",
+    "evidence": "Lens centre x 200, 420, 520, 540; footage moves with the rim. No motion blur is rendered (mk_mid.mjs). Crop: crops/oud_coffee_entries.jpg.",
+    "fix": "Add horizontal blur to the lens layer of about half the per-frame move: about 110 px on f195, 50 px on f196, 10 px on f197."
+   },
+   {
+    "id": "F8",
+    "frames": "f150-f153 (Coffee B lens entrance)",
+    "severity": "minor",
+    "claim": "The intended 1.08-to-1.0 entrance is drawn as only the rim shrinking, while the footage stays fixed. It reads as a slight iris tightening, not a pop: clean but barely visible.",
+    "evidence": "Lens radius 367, 357, 347, 340 on f150-153; the footage scale stays 1.3 (mk_mid.mjs lens(... 340*s ...)).",
+    "fix": "Scale the footage with the rim (×1.08, ×1.05, ×1.02, ×1.00 about (540,1270)), or accept as is."
+   },
+   {
+    "id": "F9",
+    "frames": "f255-f271 (kunafa n30-n46)",
+    "severity": "minor",
+    "claim": "The R3-23 retouch of the dark squiggle on the tray floor was not applied. At 100-200% it looks like a hair beside the pastry.",
+    "evidence": "prep.py copies k0030-k0059 as delivered. A dark hair-like curve sits at about x 395-430, y 1110-1146 at the upper left of the tray floor on f255-f265 and is covered by syrup around f269-271. Crop: crops/kunafa_squiggle.jpg. Barely visible at 390 px.",
+    "fix": "Patch x 395-430, y 1118-1146 on n30-n46 from the clean tray floor (a later frame or a clone of the floor), as R3-23 specifies."
+   },
+   {
+    "id": "F10",
+    "frames": "f210-f224 (Burger A, footage drawn 30 px lower)",
+    "severity": "minor",
+    "claim": "The flat azure fill in the top 30 rows does not match the backdrop's left-to-right gradient, leaving a faint seam at y 30.",
+    "evidence": "Rows 0-29 are flat (32,168,252). Row 30 goes from (38,175,254) at x 10 to (25,158,245) at x 1070, a step of up to 10 levels on the right. It sits under the phone status bar, so the risk is low.",
+    "fix": "Extend row 30 upward column by column instead of using one flat colour."
+   },
+   {
+    "id": "F11",
+    "frames": "f223-f224 (n20, n22)",
+    "severity": "minor",
+    "claim": "At full size the falling bun's lower edge dissolves into haze with streaked seeds. It reads as melting more than as motion blur.",
+    "evidence": "Crops: crops/bun_n18_25.jpg and burger_impact_f222_233.jpg. It is on screen for only 1-2 frames before the cut and is not noticeable at 390 px.",
+    "fix": "Accept, or add an even vertical motion blur (about 20-30 px) over the whole bun on f223-f224, so the smear looks like blur, not a soft edge."
+   },
+   {
+    "id": "F12",
+    "frames": "f135-f284 (typing dots)",
+    "severity": "minor",
+    "claim": "The typing dots run at a 15-frame period, while section 5 specifies 30 frames with a 5-frame lag. It is not unnatural, but it should match the rest of the film.",
+    "evidence": "mk_mid.mjs: typing = sin(2π·f/15 − j·2π/3); amplitude 22 px.",
+    "fix": "Use the 30-frame period from section 5, unless 15 frames was chosen on purpose for this section; if so, record it in the spec."
+   }
+  ]
+ },
+ "layout": {
+  "findings": [
+   {
+    "id": "L1",
+    "frames": "f240-f241",
+    "severity": "blocker",
+    "claim": "The burger lens drops through the word and the tag. At f240 the burger sits under the tag «برجر؟», and at f241 the lens rim cuts through the tag.",
+    "evidence": "mk_mid.mjs dy keys [-400,-150,25,-8,0] give lens centres (540,870), (540,1120), (540,1295), (540,1262), (540,1270) on f240-f244. On f240 the lens top is y 530: the rim covers 2,664 px of «مشروعك» (y 530-555, x 413-667), and the Ink tag sits on the azure burger footage over 46,490 px. The bun top is at y 750, which is 73 px above the tag's fill bottom (y 823), so the tag touches the product. On f241 the lens top is y 780: the rim crosses the tag box (x 287-786) on rows 780-842, with 1,864 tag px over the footage (y 795-832). See review/layout/burger_drop.jpg. f242 onwards is clear. The lens also moves the burger up 33 px from f242 to f243 (y 1295 to 1262). The owner already mocked a burger that moved up.",
+    "fix": "Keep the lens top at y 856 or lower on every frame (tag full bottom 843 plus 6 px allowance), which means cy >= 1196. For example, change the f240-f244 keys to dy = [-74, -30, +10, -3, 0] (lens top y 856, 900, 940, 927, 930). This also cuts the upward bounce from 33 px to 13 px. Alternative: keep the long drop and add {t:'fill', color: LIME, clip:{x:0,y:0,w:1080,h:856}} after the two lens layers and before the tag on f240-f241, so the lens comes out from under the tag line."
+   },
+   {
+    "id": "L2",
+    "frames": "f255-f271",
+    "severity": "major",
+    "claim": "The dark squiggle on the kunafa tray floor was never retouched (R3-23 requires it up to n46). At 100% it reads like an insect leg on the food.",
+    "evidence": "src/k0030-k0059 are byte-identical to the default decode of s5-kling-3s.mp4 (mean diff 0.00), because prep.py copies the kunafa frames 'as delivered'. On f255 at (390-435, 1110-1150), 358 px are 60 or more levels darker than the tray floor: darkest (88,17,0) against a median of (199,117,55). It is fully visible on Kunafa A f255-f266 (n30-n41), shrinks by f269, and remains as a dark remnant inside the lens on f270-f271 (n45-n46, lens scale 1.0, same coordinates). See review/layout/retouch.jpg (f255, f266, f270).",
+    "fix": "In prep.py, retouch k0030-k0046 in source coordinates x 395-430, y 1118-1146. Fill with copper tray-floor texture sampled along the same radius from the tray centre (537.5,1272.5), as the S5 skeptic suggested, and leave the syrup crescent. Re-run the frames."
+   },
+   {
+    "id": "L3",
+    "frames": "f150-f164",
+    "severity": "major",
+    "claim": "The R3-22c leftovers in the settled coffee were never treated, and the 1.3x lens magnifies them: a dark bean inside the left glass wall and a grey-blue streak in the coffee layer.",
+    "evidence": "prep.py only applies the floor plate to c0068-c0082. The bean sits on screen at about (370-390, 1105-1155) on every lens frame: darkest px (99,31,3) against milk at (200,135,77). It comes from source (397-405, 1279-1300) under the 1.3x mapping about (523,1405) to (540,1270). The streak sits at about (545-610, 1150-1230), from source (523-577, 1315-1375, n56-n80). It is clear on f150-f160 and fainter by f164. See review/layout/retouch.jpg (f155, f164).",
+    "fix": "Add a retouch pass for c0068-c0082 in prep.py before the lens. Use despeck-style fill (tall-thin normalised convolution so the ribs carry through) at source (397-405, 1279-1300) and (523-577, 1315-1375). Re-render f150-f164."
+   },
+   {
+    "id": "L4",
+    "frames": "f242-f254",
+    "severity": "major",
+    "claim": "The burger is whole inside the lens but not centred: it sits 61 px low, and the board comes within 5 px of the rim.",
+    "evidence": "The burger and board mask on b0059 covers source x 176-903, y 1104-1605. At scale 0.72 about source (540,1270), that gives screen x 278-801, y 1150-1511, with centre y 1331 against the lens centre 1270. The farthest board pixel is 322.6 px from the centre, against an inner rim radius of 328 (5.4 px margin). The other lenses are fine. Coffee: glass about x 363-717, y 1030-1509, centred. Oud: box and bottle x 322-760, y 1056-1451, centre y 1254. Kunafa: tray x 308-767, y 1042-1503, concentric.",
+    "fix": "Use source point (540,1355) for the burger lens: lens('b', f-240+54, 0.72, 540, 1270+dy, 340, 540, 1355). Measured result: screen y 1089-1450, centre y 1270, farthest pixel 290.1 px (37.9 px clear of the rim). Keep scale 0.72."
+   },
+   {
+    "id": "L5",
+    "frames": "f180 (f181 marginal)",
+    "severity": "minor",
+    "claim": "On the oud punch-in cut, the word pulse (1.04) and the tag pulse (1.08) peak on the same frame. The word's Ink shadow merges with the keyline of the ط stem, and the tag shadow drops 9 px below the slot.",
+    "evidence": "f180 ink runs: at x 478-486 the Ink runs without a gap from y 543 to 568-599 (word shadow into tag keyline). On settled f183 there are 21 px of backdrop between them (word ends y 552, tag starts y 573-576), and on f181 there are 9 px. The f180 tag full extent bottom is y 849, which is 9 px under y 840 (R3-15 allows 6). On f181 it is 847. The fill stays inside the slot (x 261-807, y 567-829). See review/layout/f180_touch.jpg.",
+    "fix": "Change the Oud B tag pulse from k = [1.08,1.05,1.02] to [1.05,1.03,1.01]. The stem keyline top then sits at about y 564, 5 px under the word shadow at y 559, and the shadow bottom at about y 846."
+   },
+   {
+    "id": "L6",
+    "frames": "f135, f150, f165, f180, f195, f210, f225, f240, f255, f270",
+    "severity": "minor",
+    "claim": "The word is wider than BUILD-SPEC section 5 states. On the first frame of each cut, the 1.04 pulse pushes the glyph fill 4 px left of Zone A, and the keyline goes 12 px out (R3-15 allows 6).",
+    "evidence": "Settled «مشروعك» fill measures x 139-941, y 331-535 (802 px wide) on every frame, against the spec's 778 px at x 151-929. word.json's ink box at 172 px gives 804 px, so the path itself is wider. The pulse is exact on all 10 cuts (measured width ratios 1.0399 / 1.0262 / 1.0100 / 1.0000 on cut+0..3). It scales about the slot (715,352), so cut+0 fill spans x 116-950 and the keyline reaches x 108.",
+    "fix": "Either anchor the pulse at the word's centre (540,433) with slot = [540+175p, 433-81p] and move the dot centres with it (x = 540+(DOT_X-540)p, y = 433+(342+o-433)p): fill x 123-957, keyline within 6 px. Or cap the pulse at [1.025,1.015,1.005]: fill x 124.6, keyline x 116.6. Correct the section 5 W numbers to the measured x 139-941, y 331-535."
+   },
+   {
+    "id": "L7",
+    "frames": "f135-f284 (all)",
+    "severity": "minor",
+    "claim": "The typing motion runs at a 15 f period, but section 5 says 30 f.",
+    "evidence": "mk_mid.mjs typing() uses sin(2π·f/15 − j·2π/3), which gives a 15 f period with a 5 f lag. Measured dot tops match this code on all 150 frames (e.g. f138: 277/298/298, f145: 298/279/298). The highest ring edge is y 277, within the y 270 limit. mk_hook4.mjs uses the same 15 f, so the film is self-consistent; only the spec differs.",
+    "fix": "Choose one. To match the spec, change both generators to sin(2π·f/30 − j·π/3), which keeps the 5 f lag and the f600 = f0 phase. Otherwise change section 5 to 'period 15 f'."
+   },
+   {
+    "id": "L8",
+    "frames": "f210-f224",
+    "severity": "minor",
+    "claim": "Burger A's 30 px top band is a flat #20A8FC fill, while the footage's top row has a horizontal gradient, which leaves a faint step at y 30.",
+    "evidence": "Rows 0-29 are (32,168,252). Source row 0, drawn at y 30, runs from (38,175,254) at x 0 to (25,158,245) at x 1079. The step between rows 29 and 30 averages 3.9 levels, reaches 11 levels at x≈900, and is 5 or more levels on 637 of 1080 columns.",
+    "fix": "Replace {t:'fill', color:'#20A8FC'} with the same still drawn at dy 0 and clipped to the top 30 rows: full('b', n, {clip:{x:0,y:0,w:1080,h:30}}), placed under the dy:30 layer. This is an edge extension with no colour step."
+   },
+   {
+    "id": "L9",
+    "frames": "f225-f239",
+    "severity": "minor",
+    "claim": "In the 1.2x punch-in, the right end of the burger board enters the TikTok rail strip.",
+    "evidence": "Warm board pixels at x 961-978, y about 1547-1679 (609-739 px per frame) on every Burger B frame. The board's source extent is x 176-903, which maps to x 92-976 at 1.2x about (540,900). The pixels are wood, not readable and not a dot, so R3-15 / section 5 allow them. Every other frame is clean in x > 960, y 1100-1750: Lime field, or flat backdrop and floor.",
+    "fix": "Accept, or drop the Burger B punch-in to 1.155 or less so the board stays at x 960 or less. A smaller punch-in does not put the tag at risk (tag-to-product clearance on Burger B is 294 px or more)."
+   },
+   {
+    "id": "L10",
+    "frames": "f150-f152, f195",
+    "severity": "minor",
+    "claim": "The two lens entries do not behave as written. The coffee lens 'entering 1.08 to 1.0' scales only the aperture, and the oud slide starts with a third of the lens and part of the box off-screen, with no smear.",
+    "evidence": "On f150-f152 the rim measures r 367/357/347 (outer L/R 173/906, 183/896, 194/885) while the footage stays at 1.3x, so the picture holds still and the ring closes in like an iris. On f195 the lens centre is x 200: 140 px of the lens and about 19 px of the oud box (screen x from -19) are off the left edge. On f196 the centre is x 420 and the whole box is on screen. No motion blur is drawn on any of these frames.",
+    "fix": "For f150-f152, pass the footage scale as 1.3*s with r = 340*s so the lens and its contents pop together. For f195, either accept the slide or add the 3 f smear the spec calls for (e.g. two extra copies of the lens at alpha 0.35 offset by -60 px and -120 px in x)."
+   }
+  ],
+  "verdict": "send after listed fixes",
+  "summary": "I checked all 150 frames of the f135-f284 preview. Most of the layout, Arabic and colour rules hold, but four problems need fixing before the owner sees it.\n\n**Must fix:**\n- **L1:** At f240-f241 the burger lens drops through «مشروعك» and «برجر؟», and the tag sits on the burger.\n- **L2:** The kunafa squiggle (R3-23) was not retouched. It shows on f255-f271 and looks like an insect leg.\n- **L3:** The coffee bean and streak (R3-22c) were not retouched, and the 1.3x lens magnifies them on f150-f164.\n- **L4:** The burger in the lens sits 61 px low, with only 5 px between the board and the rim. Moving the source point to (540,1355) centres it with 38 px clear.\n\n**Minor:**\n- **L5:** At f180 the word's shadow touches the tag's keyline.\n- **L6:** The word's 1.04 pulse leaves Zone A by 4 px on the first frame of each cut.\n- **L7:** The dots type on a 15-frame period; the spec says 30.\n- **L8:** There is a faint colour step at y 30 on Burger A.\n- **L9:** The board's right edge enters the TikTok rail on Burger B.\n- **L10:** The two lens entries do not move as the spec describes.\n\n**What passed (measured):**\n- **Colour rules:** correct on every frame. On footage the word is Paper with an 8 px Ink keyline and +8 shadow, the tag is Lime with a 10 px Ink keyline, and the dots are Lime with an Ink ring and shadow. On Lime the word is Ink with a 6 px Paper keyline, the tag is Ink with a Paper shadow, and the dots are Ink with an 8 px Paper ring. The brand colours come out of the encode within 1-3 levels.\n- **Footage colour:** the rendered footage is identical to the prepared source frames. Those frames match the clip decodes exactly: the coffee from the 10-bit HEVC decoded as BT.709, the Kling clips with the default BT.601 decode. The BT.601 decode matches the start stills within about 2 levels; BT.709 would push green up by 17. After the encode, footage differs from the render by under 0.5 levels on average and at most about 1.9 levels mean absolute.\n- **Pulse and dots:** the word pulse is exactly 1.04 / 1.025 / 1.01 / 1.00 on all 10 cuts. The dot positions match the generator on all 150 frames, and no dot rises above y 277.\n- **Tags:** spelling, joining and the dots of each letter are right, «؟» is at the left end, and the tilt measures 4.0° about (540,757). The glyph fill stays inside x 150-930, y 560-840: «قهوة؟» 217-849 × 580-819, «عطر؟» 282-787 × 582-824, «برجر؟» 297-766 × 629-823, «حلويات؟» 171-894 × 583-804.\n- **Tag clearance:** on footage frames the product never comes closer than 50 px to the tag. The closest is the Burger A bun top at y 884.\n- **Lens:** outer radius 340 at (540,1270) with a 12 px rim. The coffee, oud and kunafa products are whole and centred.\n- **TikTok rail:** only the Burger B board edge enters x > 960, y 1100-1750.\n\nI did not update tash/HANDOFF.md because this review step was read-only; the orchestrating session should record the result there. My measurement scripts and the evidence images (burger_drop.jpg, retouch.jpg, f180_touch.jpg, lens4.jpg, tags.jpg, cuts.jpg) are in /tmp/claude-0/-home-user-visitor-counter-api/1e0f8dbb-d731-5965-a898-07519c7bdbc3/scratchpad/r6/review/layout."
+ },
+ "skeptic": {
+  "verdicts": [
+   {
+    "id": "D-F1",
+    "verdict": "confirmed",
+    "reason": "Measured the screen bun top at x 500-580: f225 1151, f226 1149, f227 1140, f228 1132, f229 1136, f230 1147, then 1145 at rest. That is 19 px up over f225-f228. In the source the bun top at x 540 goes from 1121 (n25) to 1101 (n31), with rest at 1108-1109. On n31 and n33 (f228 and f229) a blue gap opens under the bun's left edge: the whole bun lifts off the cheese, so this is more than the dome re-inflating. Tracking the dome against f239 gives a lateral shift of -10 (f225), +14 (f229), -16 (f235) and 0 (f239), a swing of about 30 px. Source n56-n72 all sit within 3 px in x and 1 px in y of n58. That is calm, though not '1 px' as claimed. The proposed fix holds.",
+    "better_fix": "As proposed: Burger B = n57-n71 at 1:1, keeping the 1.2x punch-in and the -10/-5 bump. In prep.py change the burger range to range(25, 72) (it now stops at n68). Do not keep n25 as a single impact frame: going from n25 to n57 pops the bun top 14 px up on screen in one frame. Shot B becomes nearly still, so pair it with the D-F5 slow push-in. Also replace the f480-494 band. The f105-119 porthole is optional, because at 0.31 scale the bounce is about 7 px."
+   },
+   {
+    "id": "D-F2",
+    "verdict": "confirmed",
+    "reason": "Inner lens extent: y 542-1197 on f240 (centre 870), y 793-1447 on f241, centres 1295, 1262 and 1270 on f242-f244. With the 1.04 pulse on f240, the word ink ends at y 543 (no ink from 544). The rim top at y 530 therefore merges with the bottom of «مشروعك» over about 13 rows. In the full-size crop the ج and ر of «برجر؟» sit on the bun. On f241 the rim crosses the tag's descenders. The motion is ease-out (250, 175, then 33 up), not a fall. Rejecting the proposed fix: clipping at y 850 gives a flat-topped circle on plain lime with nothing visibly covering it, which reads as a mask error. Its own keys (1286 to 1266) still bounce the burger 20 px upward.",
+    "better_fix": "Keep the rim top at y 856 or lower on every frame (cy 1196 or more) and make the move speed up: cy f240 1196, f241 1224, f242 1276, f243 1268, f244 1270. The moves are +28, +52, -8, +2, so the burger goes up by only 8 px. Optionally add vertical blur of about half the move to the lens layer on f241-f242 (15-25 px). Combine with the L-L4 source point."
+   },
+   {
+    "id": "D-F3",
+    "verdict": "confirmed",
+    "reason": "From the spec rows (R3-21/R3-22b): the crash and crown are on screen at f0-14, f15-29, f78-89 (repaint circles), f105-119 (centre porthole) and f135-149. That is five times. Coffee A measured: cubes fall f135-f140, the splash first widens on f141 (x 335-695), and the crown on f149 spans x 341-712 at y 1100-1234 against the glass at x 386-664 (1.33x). Per HANDOFF, the owner has not reacted to the n18-crown remap yet, and he said he likes falling ice (\"الثلج لما يطيح\"). So repeating it is a creative risk, not a defect.",
+    "better_fix": "The recorded reorder (oud, burger, kunafa, coffee) is reasonable, but it does not lower the count: the crash becomes the fifth showing at f255. It also changes rows outside this preview (porthole and iris). This is a director call, not a reason to hold the preview. A zero-credit way to lower the count: give the centre porthole f105-134 to S2 (move S1 to the right window, or show S1 settled there). Then Coffee A at f135 is the fourth showing and the full-frame crash comes after a 2-second gap. If coffee stays first, put the ice crack on f140-141."
+   },
+   {
+    "id": "D-F4",
+    "verdict": "confirmed",
+    "reason": "Bean on screen at (371-391, 1099-1148) on f150-f164, darkest (97,31,5), and it changes shape by f164 (it stretches into a tail). The blue-grey smear in the centre (about 540-600, 1150-1200) is clear on f150-f157. Both are the same kind of mark the owner already saw as worms. Wet splatter at the glass foot is visible inside the lens. Its source area (about x 372-445, y 1555-1595) is not covered by prep.py's rectangle (x<372 or x>675 for y>1500, or y>1600). Softness: for the same content, the Laplacian variance falls from 26 in source n78 to 9 on f160, so the 1.3x upscale cuts detail about 3x. The cross-world numbers (7 against 890) compare a smooth latte with sesame seeds and overstate the gap. Frame difference after the entrance is 0.12-0.21 (confirmed).",
+    "better_fix": "Retouch box: the bean maps back to source x 393-408, y 1274-1311, which is larger than the R3-22c box (397-405, 1279-1300). Pad it to x 390-412, y 1270-1315 and use despeck.py's tall-thin normalised fill on c0068-c0082. Build the floor plate with a glass-silhouette mask, feathered 4-6 px (R3-22e). Keep 1.3x and sharpen the lens footage only (unsharp radius about 1.5, amount about 60%). Dropping to 1.1x shrinks the glass to about 300 px wide in a 656 px lens."
+   },
+   {
+    "id": "D-F5",
+    "verdict": "confirmed",
+    "reason": "Mean absolute difference in y 850 and below, after each entrance: coffee lens 0.12-0.21, oud lens 0.07-0.15, burger lens 0.12-0.47, kunafa lens 0.25-0.61, Oud A/B 0.31-0.60. The cuts every 15 f, the typing dots and the pulse still carry the rhythm, so this is minor.",
+    "better_fix": "A 1.00 to 1.03-1.04 push-in about the lens centre (footage only, rim fixed) on the coffee and oud lenses first. Add it to Burger B too if D-F1 is applied, because that shot then becomes still."
+   },
+   {
+    "id": "D-F6",
+    "verdict": "confirmed",
+    "reason": "Difference in y 850 and below is 0.00 on f211-f218 (n11 held). The typing dots still move above the word on every frame, so the screen does not look frozen. Low risk.",
+    "better_fix": "1-2 levels of per-frame grain over the whole film, or a 1.00 to 1.01 push-in during f210-218."
+   },
+   {
+    "id": "D-F7",
+    "verdict": "confirmed",
+    "reason": "Lens centre x is 200, 420, 520, 540 on f195-f198, a 220 px jump between f195 and f196. mk_mid.mjs draws no blur. On f195 the box is cut by the left edge. That is acceptable on the first frame of a slide.",
+    "better_fix": "Directional blur along x on the lens group (rim and footage) of about half the move: about 110 px on f196, 50 px on f197, 10 px on f198. Do not use ghost copies."
+   },
+   {
+    "id": "D-F8",
+    "verdict": "confirmed",
+    "reason": "In mk_mid.mjs only the radius is multiplied by s (340*s) and the footage scale stays 1.3. In the f149-f153 sheet the glass is the same size on every frame while the ring closes in.",
+    "better_fix": "Pass the footage scale as 1.3*s with r = 340*s, so the lens and its picture pop together."
+   },
+   {
+    "id": "D-F9",
+    "verdict": "confirmed",
+    "reason": "Duplicate of L-L2. At 2x the squiggle at about (395-430, 1115-1145) looks like a bent dark hair or insect leg on f255-f266, then morphs into the syrup crescent on f268-f272.",
+    "better_fix": "See L-L2."
+   },
+   {
+    "id": "D-F10",
+    "verdict": "confirmed",
+    "reason": "Duplicate of L-L8. Rows 0-29 are (32,168,252). Row 30 runs from (38,175,254) to (25,158,245). The step peaks at 11 levels near x 900 and is 5 or more on 637 columns. It sits under the status bar.",
+    "better_fix": "L-L8's clipped dy-0 copy, or replicate row 30 upward."
+   },
+   {
+    "id": "D-F11",
+    "verdict": "confirmed",
+    "reason": "On f224 (n22) the bun's lower edge is hazy and the seeds are streaked. f223 is mildly hazy. It is on screen for one or two frames before the cut and reads close enough to motion blur.",
+    "better_fix": "Accept."
+   },
+   {
+    "id": "D-F12",
+    "verdict": "confirmed",
+    "reason": "typing() uses sin(2π·f/15 − j·2π/3): a 15 f period with a 5 f lag. Section 5 says 30 f. The hook generators in video/final (mk_hook3.mjs, mk_hook4.mjs) use the same 15 f, and those hook previews have already been sent to the owner.",
+    "better_fix": "Change section 5 to 'period 15 f, 5 f lag', not the code, so the film stays the same as what the owner has seen."
+   },
+   {
+    "id": "L-L1",
+    "verdict": "confirmed",
+    "reason": "Same measurements as D-F2. The lens centre is (540,870) on f240: the rim merges with the word's bottom ink (y 543 at the 1.04 pulse) and the tag letters sit on the bun. On f241 the rim crosses the tag. From f242 it is clear. The lens moves the burger up 33 px between f242 and f243.",
+    "better_fix": "The keys proposed here are fine, but they ease out. Prefer cy 1196, 1224, 1276, 1268, 1270 (ease in, 8 px rebound). Do not use the lime fill-clip alternative: a flat cut across the lens on plain lime reads as a glitch."
+   },
+   {
+    "id": "L-L2",
+    "verdict": "confirmed",
+    "reason": "In x 385-440, y 1105-1155, pixels 60 or more levels darker than the region median: 626 on f255, 640 on f260, 457 on f266, 300 on f268, 198 on f270, 102 on f271. Darkest (88,17,0) against a median of (199,117,48). prep.py copies k0030-k0059 untouched.",
+    "better_fix": "Mask by darkness (pixels 40 or more levels darker than a local median, dilated 2 px) rather than filling the whole box, so the pastry edge and the bright syrup crescent of n41-n46 survive. Fill by cloning the tray floor rotated a few degrees about (537.5,1272.5) on k0030-k0046. The kunafa uses scale 1.0, so screen and source coordinates are the same."
+   },
+   {
+    "id": "L-L3",
+    "verdict": "confirmed",
+    "reason": "Same as D-F4: the bean is at screen (371-391, 1099-1148) on all lens frames, darkest (97-106, 31-43, 3-10). The blue-grey streak shows on f150-f157 and is fainter by f164. prep.py applies only the floor plate to c0068-c0082.",
+    "better_fix": "As proposed, with the source bean box padded to x 390-412, y 1270-1315. Fix the floor-plate mask in the same pass (glass silhouette, R3-22e)."
+   },
+   {
+    "id": "L-L4",
+    "verdict": "confirmed",
+    "reason": "Warm product pixels inside the f250 lens: x 281-794, y 1154-1507 (centre y about 1330). They reach my 322 px test radius, so the board touches the inner rim. In the four-lens sheet the burger also looks clearly smaller than the coffee, oud and kunafa, which fill their lenses.",
+    "better_fix": "Source point (540,1355) as proposed (moves the picture 61 px up; the farthest board point is about 289 px from the centre). Optionally raise the scale to about 0.78: the farthest point is then about 314 px, 14 px clear of the rim, and the burger fills the lens like the others."
+   },
+   {
+    "id": "L-L5",
+    "verdict": "confirmed",
+    "reason": "Fewest backdrop rows between the word and the tag, over x 440-560: 0 on f180 (at x 475, touching), 7 on f181, 14 on f182, 20 on f183. Tag ink bottom: 849, 847, 845, 843. f180 is 3 px past the 6 px allowance.",
+    "better_fix": "k = [1.05, 1.03, 1.01] as proposed."
+   },
+   {
+    "id": "L-L6",
+    "verdict": "confirmed",
+    "reason": "Measured word fill: x 139-941, y 331-535 settled. On cut+0 (f150, f165, f210): x 116-950, keyline and shadow x 108-966; cut+1 x 124-947. The fill is 4 px outside Zone A and the keyline 12 px out, for one frame per cut. Not visible; it is a rule breach only.",
+    "better_fix": "The simplest fix is to cap the pulse at about 1.025/1.015/1.005, which keeps the anchor at the dot slot so the ش stays under the dots. Correct the section 5 W numbers to x 139-941, y 331-535."
+   },
+   {
+    "id": "L-L7",
+    "verdict": "confirmed",
+    "reason": "Same code as D-F12. Every hook generator, including video/final mk_hook3/mk_hook4 already shown to the owner, uses 15 f.",
+    "better_fix": "Change the spec to 15 f rather than both generators."
+   },
+   {
+    "id": "L-L8",
+    "verdict": "confirmed",
+    "reason": "Step from row 29 to row 30: mean 5.5, maximum 11 levels at x 900, 5 or more on 637 columns. It is under the platform status bar.",
+    "better_fix": "As proposed (clipped dy-0 copy under the dy-30 layer), or replicate row 30. Low priority."
+   },
+   {
+    "id": "L-L9",
+    "verdict": "confirmed",
+    "reason": "Board pixels cross x 960 on every Burger B frame, at about x 960-967, y 1552-1602 (150-243 px with my stricter warm threshold; the finding's looser count goes to x 978). This is wood and not readable, so the rail rule allows it.",
+    "better_fix": "Accept. If D-F1 changes the frames, check it again."
+   },
+   {
+    "id": "L-L10",
+    "verdict": "confirmed",
+    "reason": "Coffee: the rim is r 367/357/347 while the footage stays at 1.3x (the glass is the same size on f150-f153). Oud: the f195 centre is at x 200, the box is cut by the left edge, and there is no blur. The partial off-screen first frame is normal for a slide.",
+    "better_fix": "Coffee: footage scale 1.3*s. Oud: real directional blur (about 110/50/10 px). Two alpha-0.35 ghost copies would read as a strobe or echo, not a smear."
+   }
+  ],
+  "overall": "Not yet. Send it to the owner after these zero-credit fixes and a re-render: (1) Burger C entrance f240-f244: keep the lens top at y 856 or lower and use ease-in keys (L-L1/D-F2); today the tag sits on the bun and the rim hits the word. (2) Burger B f225-f239 = n57-n71 (D-F1); on f228-f229 the bun lifts off the cheese and sways about 30 px, the upward motion he mocked. (3) Coffee lens f150-f164: retouch the bean (padded box) and the streak, and replace the rectangular floor plate with the glass-silhouette mask (L-L3/D-F4). (4) Kunafa f255-f271: remove the squiggle (L-L2). (5) Burger lens source point (540,1355) (L-L4). Unsharp mask on the coffee lens and footage scaling on the coffee lens entrance are worth doing in the same pass. Everything else is minor or a spec edit. The D-F3 reorder is the director's call and does not need to block sending. Scratch evidence: /tmp/claude-0/-home-user-visitor-counter-api/1e0f8dbb-d731-5965-a898-07519c7bdbc3/scratchpad/r6/review/skeptic (bun_contact_225_230.jpg, src_bun_n25_58.jpg, burgerC_240_241_full.jpg, coffee_bean_streak.jpg, coffee_floor.jpg, kunafa_squiggle.jpg, f180_touch.jpg, lenses4.jpg).\""
+ }
+}
