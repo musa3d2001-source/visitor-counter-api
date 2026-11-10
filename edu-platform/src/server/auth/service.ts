@@ -3,8 +3,8 @@ import { sql } from "../db";
 import { adminTwoFactorRequired, env } from "../env";
 import { hashPassword, verifyPassword, burnPasswordTime } from "./password";
 import { loginFailurePrefix } from "./password-core";
-import { createSession, createSessionIn, generateToken, hashToken, type SecondFactorMethod } from "./session";
-import { hitRateLimit, clearRateLimit, peekRateLimit, reserveFailureSlot, type FailurePolicy } from "./rate-limit";
+import { createSession, createSessionIn, generateToken, hashToken, InactiveAccountError, type SecondFactorMethod } from "./session";
+import { hitRateLimit, clearRateLimit, peekRateLimit, releaseFailureSlot, reserveFailureSlot, settleCorrectPassword, type FailurePolicy } from "./rate-limit";
 import { completeLoginChallenge, startLoginChallenge, twoFactorIsActive, type CompleteChallengeResult } from "./two-factor";
 import { revokeEmailLinks } from "./email-verification";
 import { issueDeviceProof, verifyDeviceProof } from "./device-proof";
@@ -44,6 +44,8 @@ const LOGIN_IP = { failingAccounts: 100, windowSec: 15 * 60 };
 const MUST_CHANGE_SESSION_MS = 60 * 60 * 1000;
 
 export { loginFailurePrefix };
+
+const ACCOUNT_SUSPENDED: AuthResult = { ok: false, error: "هذا الحساب موقوف. تواصل مع الدعم." };
 
 function lockoutMessage(retryAfterSeconds: number) {
   const remaining = retryAfterSeconds < 60 ? "أقل من دقيقة" : count(Math.ceil(retryAfterSeconds / 60), W.minute);
@@ -108,15 +110,20 @@ export async function loginWithPassword(email: string, password: string, meta: {
     `;
     if (claimed.length === 0) return { ok: false, error: "انتهت صلاحية كلمة المرور المؤقتة أو سبق استخدامها. تواصل مع إدارة المنصة لتصدر لك واحدة جديدة." };
   }
-  if (user.must_change_password) {
-    const s = await createSession(user.id, meta, { ttlMs: MUST_CHANGE_SESSION_MS });
-    return { ok: true, userId: user.id, token: s.token, expiresAt: s.expiresAt, mustChangePassword: true, deviceProof };
+  try {
+    if (user.must_change_password) {
+      const s = await createSession(user.id, meta, { ttlMs: MUST_CHANGE_SESSION_MS });
+      return { ok: true, userId: user.id, token: s.token, expiresAt: s.expiresAt, mustChangePassword: true, deviceProof };
+    }
+    const s = await createSession(user.id, meta);
+    // إلزامي وغير مسجَّل: الجلسة لا تفتح إلا صفحة التسجيل (انظر getCurrentUser)
+    return { ok: true, userId: user.id, token: s.token, expiresAt: s.expiresAt, needsTwoFactorEnrolment: user.role === "admin" && adminTwoFactorRequired(), deviceProof };
+  } catch (err) {
+    // أُوقف الحساب بين فحص كلمة المرور وفتح الجلسة
+    if (err instanceof InactiveAccountError) return ACCOUNT_SUSPENDED;
+    throw err;
   }
-  const s = await createSession(user.id, meta);
-  // إلزامي وغير مسجَّل: الجلسة لا تفتح إلا صفحة التسجيل (انظر getCurrentUser)
-  return { ok: true, userId: user.id, token: s.token, expiresAt: s.expiresAt, needsTwoFactorEnrolment: user.role === "admin" && adminTwoFactorRequired(), deviceProof };
 }
-
 /** الخطوة الثانية لدخول المدير. جلسة كلمة المرور المؤقتة تُحترم بعد الرمز كما قبله */
 export async function completeTwoFactorLogin(token: string | undefined, code: unknown, meta: { ip: string; userAgent: string }): Promise<CompleteChallengeResult> {
   return completeLoginChallenge({ token, code, ip: meta.ip, userAgent: meta.userAgent, mustChangeTtlMs: MUST_CHANGE_SESSION_MS });

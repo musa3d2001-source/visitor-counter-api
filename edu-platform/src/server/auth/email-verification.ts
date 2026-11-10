@@ -72,6 +72,17 @@ export async function revokeEmailLinks(db: Db, userId: string) {
 }
 
 /**
+ * كل ما يفتح الحساب أو يغيّره: الجلسات وروابط الاستعادة والبريد وخطوات الدخول المعلقة.
+ * يُستدعى داخل معاملة الإيقاف نفسها، فلا لحظة يكون فيها الحساب موقوفًا وشيء من هذا يعمل.
+ */
+export async function closeAccountAccess(db: Db, userId: string) {
+  await db`delete from sessions where user_id = ${userId}`;
+  await db`update password_reset_tokens set used_at = now() where user_id = ${userId} and used_at is null`;
+  await revokeEmailLinks(db, userId);
+  await db`delete from login_challenges where user_id = ${userId}`;
+}
+
+/**
  * ينشئ رابطًا ويرسله. الروابط السابقة لا تبطل إلا بعد نجاح الإرسال، فلا يخسر الطالب رابطًا يعمل.
  * verifiedPasswordHash: الهاش الذي تحققنا منه للتو. الإدراج مشروط ببقائه هو نفسه، وبصمته تُحفظ مع الرابط،
  * فتغيير كلمة المرور في أي لحظة بعد الفحص يبطل الرابط ولو سبق الإدراج نفسه.

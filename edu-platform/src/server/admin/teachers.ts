@@ -3,7 +3,7 @@ import { sql, type Db } from "../db";
 import { storage } from "../storage";
 import { audit } from "../platform/audit";
 import { hashPassword } from "../auth/password";
-import { revokeEmailLinks } from "../auth/email-verification";
+import { closeAccountAccess, revokeEmailLinks } from "../auth/email-verification";
 import { loginFailurePrefix } from "../auth/service";
 import { saleLines, teacherBalance, teacherSalesSummary } from "../commerce/earnings";
 import { mailIsReal, redactSecrets, sendMail } from "../platform/mailer";
@@ -320,9 +320,14 @@ export async function switchToManaged(teacherId: string, ownerId: string, ip?: s
 export async function setTeacherAccountActive(teacherId: string, active: boolean, ownerId: string, reason: string, ip?: string) {
   const t = await getTeacherAdmin(teacherId);
   if (!t?.user_id) throw new AdminError("لا يوجد حساب دخول لهذا المعلم");
-  await sql`update users set is_active = ${active} where id = ${t.user_id} and role = 'teacher'`;
-  if (!active) await sql`delete from sessions where user_id = ${t.user_id}`;
-  await audit({ actorId: ownerId, action: active ? "teacher.account_enable" : "teacher.account_disable", entityType: "teacher", entityId: teacherId, reason, ip });
+  const userId = t.user_id;
+  // معاملة واحدة: الإيقاف وإغلاق الجلسات والروابط وسجل التدقيق تتم كلها أو لا يتم شيء
+  await sql.begin(async (tx) => {
+    const updated = await tx`update users set is_active = ${active} where id = ${userId} and role = 'teacher' and anonymized_at is null returning id`;
+    if (updated.length === 0) throw new AdminError("لا يوجد حساب دخول لهذا المعلم");
+    if (!active) await closeAccountAccess(tx, userId);
+    await audit({ actorId: ownerId, action: active ? "teacher.account_enable" : "teacher.account_disable", entityType: "teacher", entityId: teacherId, reason, ip }, tx);
+  });
 }
 
 export async function setTeacherCanUpload(teacherId: string, canUpload: boolean, ownerId: string, ip?: string) {

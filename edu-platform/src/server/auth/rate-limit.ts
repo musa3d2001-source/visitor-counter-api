@@ -80,6 +80,27 @@ export async function reserveFailureSlot(key: string, policy: FailurePolicy): Pr
 }
 
 /**
+ * يعيد محاولة حُجزت ولم تكن إخفاقًا. إنقاص لا مسح: نجاح صاحب الحساب لا يهب من يخمّن من شبكات أخرى رصيدًا جديدًا.
+ * المفتاح لا يبقى بعدّاد صفر، فآخر محاولة محجوزة تحذفه.
+ */
+export async function releaseFailureSlot(key: string) {
+  await sql`
+    with gone as (delete from rate_limits where key = ${key} and count <= 1)
+    update rate_limits set count = count - 1 where key = ${key} and count > 1
+  `;
+}
+
+/** عند كلمة مرور صحيحة: يمسح حد الزوج ويعيد حجز الحساب في أمر واحد، لأن هذا هو أكثر مسار تحت الحمل */
+export async function settleCorrectPassword(pairKey: string, accountKey: string | null) {
+  if (accountKey === null) return clearRateLimit(pairKey);
+  await sql`
+    with cleared as (delete from rate_limits where key = ${pairKey}),
+    gone as (delete from rate_limits where key = ${accountKey} and count <= 1)
+    update rate_limits set count = count - 1 where key = ${accountKey} and count > 1
+  `;
+}
+
+/**
  * يحذف دفعة محدودة من الحدود المنتهية منذ يوم على الأقل، ويعيد عدد ما حذف.
  * الدفعة MATERIALIZED تُحسب مرة واحدة: داخل IN قد يعيد المخطط تنفيذها لكل صف، فيتخطى القفل ما حذفه الأمر نفسه ويتجاوز الحد.
  */

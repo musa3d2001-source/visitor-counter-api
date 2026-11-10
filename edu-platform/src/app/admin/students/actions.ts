@@ -4,7 +4,7 @@ import { revalidatePath } from "next/cache";
 import type { ActionState } from "@/lib/action-state";
 import { sql } from "@/server/db";
 import { adminGrant, adminRevoke } from "@/server/access/entitlements";
-import { invalidateAllUserSessions } from "@/server/auth/session";
+import { closeAccountAccess } from "@/server/auth/email-verification";
 import { audit } from "@/server/platform/audit";
 import { mailIsReal } from "@/server/platform/mailer";
 import { AdminError, adminAction, isUuid, str } from "@/server/admin/common";
@@ -126,10 +126,12 @@ export async function setActiveAction(_p: ActionState, fd: FormData): Promise<Ac
     const [target] = await sql<{ anonymized_at: Date | null }[]>`select anonymized_at from users where id = ${userId}`;
     if (target?.anonymized_at) throw new AdminError(ANONYMIZED_ACCOUNT_ERROR);
     await assertFreshProof({ adminId, ip, command: "student.active" });
-    const [u] = await sql<{ role: string }[]>`update users set is_active = ${active} where id = ${userId} returning role`;
-    if (!u) throw new AdminError("المستخدم غير موجود");
-    if (!active) await invalidateAllUserSessions(userId);
-    await audit({ actorId: adminId, action: active ? "user.activate" : "user.suspend", entityType: "user", entityId: userId, reason, ip });
+    await sql.begin(async (tx) => {
+      const [u] = await tx<{ role: string }[]>`update users set is_active = ${active} where id = ${userId} returning role`;
+      if (!u) throw new AdminError("المستخدم غير موجود");
+      if (!active) await closeAccountAccess(tx, userId);
+      await audit({ actorId: adminId, action: active ? "user.activate" : "user.suspend", entityType: "user", entityId: userId, reason, ip }, tx);
+    });
     revalidatePath(`/admin/students/${userId}`);
     revalidatePath("/admin/students");
     return { ok: true, message: active ? "تم تفعيل الحساب" : "تم إيقاف الحساب وتسجيل خروجه من كل الأجهزة" };

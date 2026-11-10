@@ -10,13 +10,26 @@ import { adminTwoFactorRequired, env } from "../env";
  * - الرمز العشوائي (256 بت) في كوكي httpOnly، وقاعدة البيانات تحفظ SHA-256 له فقط.
  * - مدة الجلسة 30 يومًا مع تجديد تلقائي عند الاستخدام بعد مرور 15 يومًا.
  * - جلسة المدير ١٢ ساعة من لحظة الدخول، بلا تجديد.
+ * - جلسة المعلم ٧ أيام من لحظة الدخول، بلا تجديد: حسابه يصل إلى أرباحه ومحتواه، وليس عليه عامل ثانٍ بعد.
  * - الطالب ٣ جلسات فعالة على الأكثر، والدخول الجديد يُخرج الأقدم.
  */
 export const SESSION_COOKIE = "session";
 export const SESSION_DAYS = 30;
 const RENEW_AFTER_DAYS = 15;
 export const ADMIN_SESSION_MS = 12 * 60 * 60 * 1000;
+export const TEACHER_SESSION_MS = 7 * 86400_000;
 export const STUDENT_ACTIVE_SESSIONS = 3;
+
+/** عمر مطلق يُحسب من وقت الدخول ولا يتجدد. الدور الذي لا يرد هنا جلسته متجددة */
+const ABSOLUTE_SESSION_MS: Partial<Record<SessionUser["role"], number>> = { admin: ADMIN_SESSION_MS, teacher: TEACHER_SESSION_MS };
+
+/** حساب موقوف لا تُفتح له جلسة، ولو أُوقف بعد فحص كلمة المرور بلحظة */
+export class InactiveAccountError extends Error {
+  constructor() {
+    super("account is suspended");
+    this.name = "InactiveAccountError";
+  }
+}
 
 export type SessionUser = {
   id: string;
@@ -47,13 +60,16 @@ type SessionOptions = { ttlMs?: number; twoFactorVerified?: boolean; twoFactorMe
  * وقت الإنشاء من clock_timestamp لا now: ترتيب «الأقدم» هو ترتيب الحصول على القفل، فلا تُطرد آخر جلسة دخلت.
  */
 export async function createSessionIn(db: Db, userId: string, meta: SessionMeta = {}, options: SessionOptions = {}) {
-  const [user] = await db<{ role: SessionUser["role"]; anonymized_at: Date | null }[]>`select role, anonymized_at from users where id = ${userId} for no key update`;
+  const [user] = await db<{ role: SessionUser["role"]; anonymized_at: Date | null; is_active: boolean }[]>`select role, anonymized_at, is_active from users where id = ${userId} for no key update`;
   // حُذفت بيانات الحساب بين فحص كلمة المرور وهذا القفل
   if (!user || user.anonymized_at) throw new Error("createSession: unknown user");
+  // القفل ينتظر معاملة الإيقاف ثم يرى قيمتها: لا تولد جلسة بعد الإيقاف فتعود للعمل عند إعادة التفعيل
+  if (!user.is_active) throw new InactiveAccountError();
   const token = generateToken();
   const id = hashToken(token);
   const requestedMs = options.ttlMs ?? SESSION_DAYS * 86400_000;
-  const expiresAt = new Date(Date.now() + (user.role === "admin" ? Math.min(requestedMs, ADMIN_SESSION_MS) : requestedMs));
+  const absolute = ABSOLUTE_SESSION_MS[user.role];
+  const expiresAt = new Date(Date.now() + (absolute === undefined ? requestedMs : Math.min(requestedMs, absolute)));
   if (user.role === "student") {
     // الفعالة أولًا ثم الأحدث: المنتهية تقع في الذيل فتُحذف قبل أي جلسة تعمل
     await db`
@@ -122,16 +138,17 @@ export async function validateSessionToken(token: string): Promise<{ user: Sessi
   const row = rows[0];
   if (!row) return null;
   const isAdmin = row.role === "admin";
-  // الحد يُحسب من وقت الدخول أيضًا: جلسات المدير الأقدم من هذا الإصدار كتبت انتهاءً بعد ٣٠ يومًا
-  let expiresAt = new Date(isAdmin ? Math.min(new Date(row.expires_at).getTime(), new Date(row.session_created_at).getTime() + ADMIN_SESSION_MS) : new Date(row.expires_at).getTime());
+  const absolute = ABSOLUTE_SESSION_MS[row.role];
+  // الحد يُحسب من وقت الدخول أيضًا: جلسات المدير والمعلم الأقدم من هذا الإصدار كتبت انتهاءً بعد ٣٠ يومًا
+  let expiresAt = new Date(absolute === undefined ? new Date(row.expires_at).getTime() : Math.min(new Date(row.expires_at).getTime(), new Date(row.session_created_at).getTime() + absolute));
   // جلسة مدير لم تمر بالعامل الثاني لا تعمل على حساب فعّله، مهما كان الطريق الذي فتحها
   const missingSecondFactor = isAdmin && row.two_factor_enabled && !row.two_factor_at;
   if (expiresAt.getTime() <= Date.now() || !row.is_active || missingSecondFactor) {
     await sql`delete from sessions where id = ${id}`;
     return null;
   }
-  // جلسة كلمة المرور المؤقتة قصيرة عن قصد ولا تُجدَّد، ولا جلسة المدير
-  if (!isAdmin && !row.must_change_password && expiresAt.getTime() - Date.now() < (SESSION_DAYS - RENEW_AFTER_DAYS) * 86400_000) {
+  // جلسة كلمة المرور المؤقتة قصيرة عن قصد ولا تُجدَّد، ولا جلسة لها عمر مطلق
+  if (absolute === undefined && !row.must_change_password && expiresAt.getTime() - Date.now() < (SESSION_DAYS - RENEW_AFTER_DAYS) * 86400_000) {
     expiresAt = new Date(Date.now() + SESSION_DAYS * 86400_000);
     await sql`update sessions set expires_at = ${expiresAt} where id = ${id}`;
   }
