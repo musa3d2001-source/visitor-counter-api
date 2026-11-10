@@ -2,6 +2,7 @@ import "server-only";
 import { randomUUID } from "node:crypto";
 import { sql, type Db } from "../db";
 import { storage } from "../storage";
+import { doomFileCopies, sweepDoomedCopies } from "../access/delivery";
 import { extractPreview, PdfUnusableError, PreviewNotIsolatedError, rebuildCustomPreview } from "../access/pdf";
 import { ensureProductFilesChecked, FILE_PROBLEM_LABELS, FLAGGED_STATUSES, recordFileCheck, statusForProblem, type FileCheckStatus, type FlaggedStatus } from "../access/file-check";
 import { audit } from "../platform/audit";
@@ -686,6 +687,7 @@ export async function deleteOrArchiveProduct(id: string, actor: Actor, ip?: stri
   const files = await getProductFiles(id);
   const lessons = await sql<{ provider: string; video_ref: string; thumbnail_key: string | null }[]>`select provider, video_ref, thumbnail_key from lessons where product_id = ${id}`;
   await sql`delete from products where id = ${id}`;
+  await dropStampedCopies(files.map((f) => f.id));
   for (const f of files) await storage().remove("private", f.storage_key).catch(() => {});
   for (const l of lessons) {
     if (l.provider === "file") await storage().remove("private", l.video_ref).catch(() => {});
@@ -795,6 +797,12 @@ export async function regenerateAutoPreview(productId: string, opts: { replaceCu
   return "generated";
 }
 
+/** نسخ الطلاب المختومة من ملف حُذف: بيانات شخصية لا حاجة لها. الحذف من التخزين بأفضل جهد، وما بقي تكنسه المهمة اليومية */
+async function dropStampedCopies(fileIds: string[]) {
+  await doomFileCopies(fileIds);
+  await sweepDoomedCopies(100).catch((err) => reportError("pdf.stamped_sweep", err));
+}
+
 export async function deleteProductFile(productId: string, fileId: string, actor: Actor) {
   await assertProductAccess(actor, productId, "edit");
   const [f] = await sql<{ id: string; kind: string; storage_key: string; title: string; is_auto_preview: boolean }[]>`
@@ -809,6 +817,7 @@ export async function deleteProductFile(productId: string, fileId: string, actor
     }
   }
   await sql`delete from product_files where id = ${fileId}`;
+  await dropStampedCopies([fileId]);
   await storage().remove("private", f.storage_key).catch(() => {});
   await audit({ actorId: actor.userId, action: "product.file_delete", entityType: "product", entityId: productId, metadata: { fileId, title: f.title, kind: f.kind } });
   if (f.kind === "main" || (f.kind === "preview" && !f.is_auto_preview)) await regenerateAutoPreview(productId);

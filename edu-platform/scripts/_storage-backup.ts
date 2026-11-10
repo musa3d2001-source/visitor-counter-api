@@ -266,7 +266,8 @@ export async function runBackup(db: postgres.Sql, store: ObjectStore, opts: { ap
   const [{ n: bunnyLessons }] = await db<{ n: number }[]>`select count(*)::int as n from lessons where provider = 'bunny'`;
 
   const listings = new Map<Bucket, Map<string, StoredObject>>();
-  for (const bucket of BUCKETS) listings.set(bucket, new Map((await store.list(bucket)).filter((object) => !object.key.endsWith(".part")).map((object) => [object.key, object])));
+  // النسخ المختومة بيانات شخصية يعاد إنتاجها عند الفتح التالي: لا تدخل النسخة الاحتياطية ولا تُعد يتيمة
+  for (const bucket of BUCKETS) listings.set(bucket, new Map((await store.list(bucket)).filter((object) => !object.key.endsWith(".part") && !object.key.startsWith("stamped/")).map((object) => [object.key, object])));
 
   const report: BackupReport = {
     applied: opts.apply,

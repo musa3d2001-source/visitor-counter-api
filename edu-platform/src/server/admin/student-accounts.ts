@@ -114,6 +114,8 @@ export async function correctStudentEmail(input: { studentId: string; newEmail: 
       requireLiveStudent(u);
       if (u!.email.toLowerCase() === email) throw new AdminError("هذا هو البريد الحالي للطالب", { email: "هذا هو البريد الحالي للطالب" });
       await tx`update users set email = ${email}, email_verified_at = null where id = ${input.studentId}`;
+      // النسخ المختومة تحمل البريد القديم: تُحذف ويُختم الملف من جديد عند الفتح التالي
+      await tx`update stamped_copies set state = 'doomed' where user_id = ${input.studentId} and state <> 'doomed'`;
       // رابط صدر للعنوان القديم لا يعمل بعد التصحيح
       await tx`update password_reset_tokens set used_at = now() where user_id = ${input.studentId} and used_at is null`;
       await revokeEmailLinks(tx, input.studentId);

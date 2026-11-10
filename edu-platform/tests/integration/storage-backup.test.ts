@@ -119,6 +119,15 @@ describe("the backup", () => {
     expect(manifest.objects.find((o) => o.key === key)).toMatchObject({ bucket: "private", size: 8, sha256: sha("main-pdf"), contentType: "application/pdf", referenced: true });
   });
 
+  it("leaves each buyer's stamped copy out: it is personal data the next open makes again", async () => {
+    await productWithFile();
+    write(source, "private", "stamped/11111111-2222-3333-4444-555555555555.pdf", "stamped for one buyer");
+    const report = await backup();
+    expect(report.orphans).toEqual([]);
+    expect(manifestOf(out).objects.map((o) => o.key)).not.toContain("stamped/11111111-2222-3333-4444-555555555555.pdf");
+    expect(existsSync(join(out, "private/stamped"))).toBe(false);
+  });
+
   it("copies files nobody refers to as well, and reports them", async () => {
     write(source, "private", "orphans/lost.pdf", "orphan");
     const report = await backup();

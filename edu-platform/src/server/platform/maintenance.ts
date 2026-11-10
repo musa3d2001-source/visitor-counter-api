@@ -2,6 +2,10 @@ import "server-only";
 import { IP_SIGNAL } from "../admin/access-signals";
 import { pruneRateLimits } from "../auth/rate-limit";
 import { LONG_JOB_STATEMENT_MS, sql, withDbDeadline } from "../db";
+import { env } from "../env";
+import { STAMPED_CACHE_BUDGET_BYTES, STAMPED_COPY_IDLE_DAYS, sweepDoomedCopies } from "../access/delivery";
+import { sweepUploadTickets } from "../admin/uploads";
+import { reportError } from "./report-error";
 
 /**
  * تنظيف يومي للجداول التي تكبر مع الزيارات، بدفعات صغيرة حتى لا يطول قفل أو تتجاوز الدالة مهلتها.
@@ -22,7 +26,17 @@ const TIME_BUDGET_MS = 30_000;
 
 const deleted = (query: PromiseLike<{ count: number }>) => query.then((result) => result.count);
 
-export type PruneReport = { rateLimits: number; sessions: number; accessLogs: number; errorEvents: number; finished: boolean };
+export type PruneReport = {
+  rateLimits: number;
+  sessions: number;
+  accessLogs: number;
+  errorEvents: number;
+  /** نسخ PDF مختومة حُذفت من التخزين (بلا استخدام، أو لملف تغير أو حُذف، أو لحساب أُغلق) */
+  stampedCopies: number;
+  /** كائنات رُفعت ولم يُؤكد رفعها خلال يوم */
+  unconfirmedUploads: number;
+  finished: boolean;
+};
 
 /** مهمة طويلة صريحة: مهلة الأمر الواحد فيها أطول من مهلة الطلبات العادية، ويبقى لها حد */
 export function runDataPruning(): Promise<PruneReport> {
@@ -83,5 +97,51 @@ async function prune(): Promise<PruneReport> {
       delete from error_events e using batch where e.id = batch.id
     `),
   );
-  return { rateLimits, sessions, accessLogs, errorEvents, finished };
+  // التخزين قد يتعثر: يُسجل للمالك ويكمل التنظيف غدًا، ولا يُفشل ما سبق من حذف
+  const stampedCopies = await pruneStampedCopies(() => Date.now() - started > TIME_BUDGET_MS).catch(async (err) => {
+    await reportError("prune:stamped-copies", err);
+    return { removed: 0, finished: false };
+  });
+  if (!stampedCopies.finished) finished = false;
+
+  const uploads = await sweepUploadTickets({ batch: 200, deadline: started + TIME_BUDGET_MS }).catch(async (err) => {
+    await reportError("prune:upload-tickets", err);
+    return { removed: 0, forgotten: 0, finished: false };
+  });
+  if (!uploads.finished) finished = false;
+
+  return { rateLimits, sessions, accessLogs, errorEvents, stampedCopies: stampedCopies.removed, unconfirmedUploads: uploads.removed, finished };
+}
+
+/**
+ * النسخ المختومة بيانات شخصية: تُعلَّم للحذف ثم تُحذف كائناتها وصفوفها.
+ * تُعلَّم: ما لم يُفتح منذ STAMPED_COPY_IDLE_DAYS، وما يخص ملفًا حُذف أو تغير مفتاحه، وما يخص حسابًا معطلًا أو محذوف البيانات،
+ * وختمًا مات قبل أن يكتمل، وما زاد على ميزانية التخزين (الأقدم استعمالًا أولًا).
+ */
+async function pruneStampedCopies(outOfTime: () => boolean): Promise<{ removed: number; finished: boolean }> {
+  await sql`
+    update stamped_copies c set state = 'doomed'
+    where c.state <> 'doomed' and (
+      (c.state = 'ready' and c.last_used_at < now() - make_interval(days => ${STAMPED_COPY_IDLE_DAYS}))
+      or (c.state = 'stamping' and c.lease_until < now() - interval '1 hour')
+      or not exists (select 1 from product_files f where f.id = c.file_id and f.storage_key = c.file_version)
+      or not exists (select 1 from users u where u.id = c.user_id and u.is_active and u.anonymized_at is null)
+    )
+  `;
+  const budget = env().STORAGE_PLAN === "paid" ? STAMPED_CACHE_BUDGET_BYTES.paid : STAMPED_CACHE_BUDGET_BYTES.free;
+  await sql`
+    update stamped_copies set state = 'doomed' where id in (
+      select id from (
+        select id, sum(size_bytes) over (order by last_used_at desc, id) as running from stamped_copies where state = 'ready'
+      ) ranked where running > ${budget}
+    )
+  `;
+  let removed = 0;
+  for (let round = 0; round < MAX_ROUNDS * 5; round++) {
+    if (outOfTime()) return { removed, finished: false };
+    const n = await sweepDoomedCopies(100);
+    removed += n;
+    if (n < 100) return { removed, finished: true };
+  }
+  return { removed, finished: false };
 }

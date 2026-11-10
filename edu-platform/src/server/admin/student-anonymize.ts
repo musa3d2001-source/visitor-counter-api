@@ -5,6 +5,8 @@ import { IN_PROGRESS_GRACE_MINUTES, INVOICE_TTL_MINUTES } from "../payments/limi
 import { ANONYMIZATION_BLOCKER_LABELS, ANONYMIZED_PASSWORD_HASH, anonymizedEmail, anonymizedName, redactGatewayStatus, redactWebhookPayload, type AnonymizationBlocker } from "@/lib/anonymize";
 import { displayPhone } from "@/lib/phone";
 import { AdminError } from "./common";
+import { doomUserCopies, sweepDoomedCopies } from "../access/delivery";
+import { reportError } from "../platform/report-error";
 import { enforceOwnerLimits } from "./student-accounts";
 
 /**
@@ -47,7 +49,7 @@ export async function anonymizeStudent(input: { studentId: string; adminId: stri
   await enforceOwnerLimits("owner-anonymize", input.adminId, input.studentId);
   const id = input.studentId;
 
-  return sql.begin(async (tx) => {
+  const result = await sql.begin(async (tx) => {
     const [user] = await tx<{ email: string; full_name: string; phone: string | null; role: string; anonymized_at: Date | null }[]>`
       select email, full_name, phone, role, anonymized_at from users where id = ${id} for no key update
     `;
@@ -107,6 +109,8 @@ export async function anonymizeStudent(input: { studentId: string; adminId: stri
       emailLog: (await tx`delete from email_log where lower(to_email) = any(${lowerEmails}::text[])`).count,
       entitlementsRevoked: 0,
       ordersAnonymized: orders.length,
+      // نسخ المذكرات المختومة ببريده: لا تُستعمل بعد هذه المعاملة، وكائناتها تُحذف بعدها مباشرة
+      stampedCopies: await doomUserCopies(id, tx),
     };
     await tx`delete from user_totp where user_id = ${id}`;
     await tx`delete from user_recovery_codes where user_id = ${id}`;
@@ -184,4 +188,7 @@ export async function anonymizeStudent(input: { studentId: string; adminId: stri
     await audit({ actorId: input.adminId, action: "student.anonymized", entityType: "user", entityId: id, reason: scrub(input.reason), metadata: { ...counts }, ip: input.ip ?? null }, tx);
     return { alreadyAnonymized: false };
   });
+  // بعد المعاملة: حذف الكائنات من التخزين. إن تعثر يحذفها التنظيف اليومي، فالصفوف معلَّمة ولا تُسلَّم
+  if (!result.alreadyAnonymized) await sweepDoomedCopies(500).catch((err) => reportError("anonymize:stamped-copies", err));
+  return result;
 }

@@ -204,6 +204,8 @@ export async function confirmEmailToken(token: string, ip: string): Promise<{ ok
       if (changesAddress) {
         // روابط الاستعادة خرجت إلى العنوان القديم
         await tx`update password_reset_tokens set used_at = now() where user_id = ${row.user_id} and used_at is null`;
+        // النسخ المختومة تحمل البريد القديم: تُحذف ويُختم الملف من جديد عند الفتح التالي
+        await tx`update stamped_copies set state = 'doomed' where user_id = ${row.user_id} and state <> 'doomed'`;
         await audit({ actorId: row.user_id, action: "user.email_corrected_by_student", entityType: "user", entityId: row.user_id, metadata: { from: row.current_email, to: row.email }, ip }, tx);
       }
       return { ok: true as const, previousEmail: changesAddress ? row.current_email : null };
