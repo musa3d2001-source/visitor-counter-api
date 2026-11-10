@@ -1,5 +1,5 @@
 {
-  "revision": "2 (after red-team), 9 Nov 2026; plan only, nothing approved, no video; 4 credits spent outside this plan on two opener still candidates (see tash/HANDOFF.md section 7)",
+  "revision": "2 (after red-team), 9 Nov 2026; plan only, nothing approved, no video; 4 credits spent outside this plan on two opener still candidates (see tash/HANDOFF.md section 7); 10 Nov: stills round done (see stills_round), storyboard round 3 in storyboard/r3",
   "prices": {
     "still_2k": 2,
     "kling_pro_per_s": 1.75,
@@ -615,5 +615,67 @@
     },
     "not_in_reserve": "a second 1080p Seedance take (64) needs the owner's OK first",
     "floor": "the reserve never goes under 34 without the owner"
+  },
+  "stills_round": {
+    "date": "2026-11-09",
+    "approved_by_owner": "«كمل» = the seven plan stills for 14 credits + the full storyboard; nothing else",
+    "model": "nano_banana_pro 2k 9:16, 2 credits each, use_unlim false",
+    "jobs": [
+      {
+        "shot": "S1",
+        "job_id": "b81dafa2-5968-47d5-82a6-56f24147af0c",
+        "status": "completed",
+        "fit": "sb/stills/s1_fit.png"
+      },
+      {
+        "shot": "S1-alt",
+        "job_id": "93047b7d-204c-43db-8ec9-7526a52c9707",
+        "status": "completed",
+        "fit": "sb/stills/s1alt_fit.png"
+      },
+      {
+        "shot": "S5",
+        "job_id": "35864966-2417-43e0-ae92-f47a3afe3e41",
+        "status": "completed",
+        "fit": "sb/stills/s5_fit.png"
+      },
+      {
+        "shot": "S2",
+        "job_id": "a821c8e0-b7f2-4815-a3c5-ac6e9b834e66",
+        "status": "completed",
+        "fit": "sb/stills/s2_fit.png"
+      },
+      {
+        "shot": "S3",
+        "job_id": "17123f38-6bd7-4c69-9cba-0a9051d0d272",
+        "status": "nsfw (filter false positive; no image; not charged)"
+      },
+      {
+        "shot": "S3-alt",
+        "job_id": "1be96824-a25e-4c52-aeb9-1e72ec5ffef3",
+        "status": "completed",
+        "fit": "sb/stills/s3alt_fit.png"
+      },
+      {
+        "shot": "S6",
+        "job_id": "0462a3e3-6e66-497a-af2e-eddde0712148",
+        "status": "completed",
+        "fit": "sb/stills/s6_fit.png"
+      },
+      {
+        "shot": "S3 re-run",
+        "job_id": "795a5015-579a-4227-a356-96252aec9347",
+        "status": "completed",
+        "fit": "sb/stills/s3_fit.png (backdrop graded locally to #1EA7FF)"
+      }
+    ],
+    "credits": {
+      "this_round": 14,
+      "v4_total": 18,
+      "balance_after": 521.5,
+      "left_under_cap_200": 182
+    },
+    "local_fit": "All seven stills ignored the layout percentages. sb/fit_stills.py scales each picture down, puts the product in the hero box and continues the backdrop (0 credits, no product pixel repainted). The per-still transforms are the CFG table in that file. Extra: S2 smoke faded above y 880; S3 backdrop graded; S6 backdrop extended by tile repetition.",
+    "s3_rerun_note": "The first S3 prompt was blocked by the content filter. Re-run prompt (changes: 'Toasted glossy brioche bottom bun' -> 'Toasted brioche bottom bun'; the hovering-bun sentence reworded; 'the top bun is no higher than 50%' -> 'the floating bun top is no higher than 50%'): A finished beef smash burger on a plain round wooden board. Toasted brioche bottom bun, two thin beef patties with deep-brown seared lacy crisp edges, two slices of melted orange cheddar draping over the edges, caramelised onions and a little pale sauce. The top half of the bun, toasted golden-brown and densely covered with white sesame seeds, floats level a short distance above the burger as if about to land, with a few sesame seeds in the air beside it. The board sits between 66% and 84% of the frame height and the floating bun top is no higher than 50%. Flat seamless azure-blue (#1EA7FF) surface and backdrop. Slightly high eye-level camera, 85 mm lens look, f/8. Clean, appetising and fully cooked: no raw meat, no pink mince, no lettuce, no tomato, no wrapper, no skewer, no smoke. Photoreal commercial product photograph, vertical 9:16. One hard key light from the upper left, crisp hard shadow falling to the lower right, everything in sharp focus. Flat seamless single-colour background with no horizon line and no gradient. The top 46% of the frame is completely empty background. The subject stays inside the middle 45% of the frame width and between 48% and 84% of the frame height. No text, no letters, no numbers, no logos, no labels, no packaging print, no watermark, no hands, no people, no faces, no lime-green or yellow-green objects."
   }
 }

@@ -1,0 +1,778 @@
+{
+ "title": "طشّ · الإعلان الجديد · الخيارات",
+ "frames": [
+  {
+   "id": "o1_opener_1",
+   "tc": "البداية · خيار ١",
+   "note": "خيار ١ للبداية: كوب طويل مضلّع وثلج طايح فوقه.",
+   "layers": [
+    {
+     "t": "still",
+     "src": "/_stills/s1_fit.png"
+    },
+    {
+     "t": "text",
+     "s": "حلو…",
+     "size": 200,
+     "x": 540,
+     "y": 757,
+     "w": 800,
+     "fill": "lime",
+     "stroke": "ink",
+     "lw": 20,
+     "shadow": {
+      "dx": 10,
+      "dy": 10,
+      "color": "ink"
+     },
+     "rot": -4
+    },
+    {
+     "t": "word",
+     "key": "mashrou3ak",
+     "size": 172,
+     "slot": [
+      715,
+      352
+     ],
+     "fill": "paper",
+     "stroke": "ink",
+     "lw": 16,
+     "shadow": {
+      "dx": 8,
+      "dy": 8,
+      "color": "ink"
+     },
+     "dots": false
+    },
+    {
+     "t": "dot",
+     "x": 629,
+     "y": 348,
+     "r": 44,
+     "fill": "ink"
+    },
+    {
+     "t": "dot",
+     "x": 623,
+     "y": 342,
+     "r": 40,
+     "fill": "lime",
+     "ring": {
+      "color": "ink",
+      "lw": 8
+     }
+    },
+    {
+     "t": "dot",
+     "x": 721,
+     "y": 338,
+     "r": 44,
+     "fill": "ink"
+    },
+    {
+     "t": "dot",
+     "x": 715,
+     "y": 332,
+     "r": 40,
+     "fill": "lime",
+     "ring": {
+      "color": "ink",
+      "lw": 8
+     }
+    },
+    {
+     "t": "dot",
+     "x": 813,
+     "y": 326,
+     "r": 44,
+     "fill": "ink"
+    },
+    {
+     "t": "dot",
+     "x": 807,
+     "y": 320,
+     "r": 40,
+     "fill": "lime",
+     "ring": {
+      "color": "ink",
+      "lw": 8
+     }
+    }
+   ]
+  },
+  {
+   "id": "o2_opener_2",
+   "tc": "البداية · خيار ٢",
+   "note": "خيار ٢ للبداية: كوب قصير عريض، الثلج أكبر وأقرب.",
+   "layers": [
+    {
+     "t": "still",
+     "src": "/_stills/s1alt_fit.png"
+    },
+    {
+     "t": "text",
+     "s": "حلو…",
+     "size": 200,
+     "x": 540,
+     "y": 757,
+     "w": 800,
+     "fill": "lime",
+     "stroke": "ink",
+     "lw": 20,
+     "shadow": {
+      "dx": 10,
+      "dy": 10,
+      "color": "ink"
+     },
+     "rot": -4
+    },
+    {
+     "t": "word",
+     "key": "mashrou3ak",
+     "size": 172,
+     "slot": [
+      715,
+      352
+     ],
+     "fill": "paper",
+     "stroke": "ink",
+     "lw": 16,
+     "shadow": {
+      "dx": 8,
+      "dy": 8,
+      "color": "ink"
+     },
+     "dots": false
+    },
+    {
+     "t": "dot",
+     "x": 629,
+     "y": 348,
+     "r": 44,
+     "fill": "ink"
+    },
+    {
+     "t": "dot",
+     "x": 623,
+     "y": 342,
+     "r": 40,
+     "fill": "lime",
+     "ring": {
+      "color": "ink",
+      "lw": 8
+     }
+    },
+    {
+     "t": "dot",
+     "x": 721,
+     "y": 338,
+     "r": 44,
+     "fill": "ink"
+    },
+    {
+     "t": "dot",
+     "x": 715,
+     "y": 332,
+     "r": 40,
+     "fill": "lime",
+     "ring": {
+      "color": "ink",
+      "lw": 8
+     }
+    },
+    {
+     "t": "dot",
+     "x": 813,
+     "y": 326,
+     "r": 44,
+     "fill": "ink"
+    },
+    {
+     "t": "dot",
+     "x": 807,
+     "y": 320,
+     "r": 40,
+     "fill": "lime",
+     "ring": {
+      "color": "ink",
+      "lw": 8
+     }
+    }
+   ]
+  },
+  {
+   "id": "o3_burger_1",
+   "tc": "البرجر · خيار ١",
+   "note": "خيار ١ للبرجر: الخبزة بالهوا وتطيح مع الضربة (حركة أقوى).",
+   "layers": [
+    {
+     "t": "still",
+     "src": "/_stills/s3_fit.png"
+    },
+    {
+     "t": "text",
+     "s": "برجر؟",
+     "size": 200,
+     "x": 540,
+     "y": 757,
+     "w": 800,
+     "fill": "lime",
+     "stroke": "ink",
+     "lw": 20,
+     "shadow": {
+      "dx": 10,
+      "dy": 10,
+      "color": "ink"
+     },
+     "rot": -4
+    },
+    {
+     "t": "word",
+     "key": "mashrou3ak",
+     "size": 172,
+     "slot": [
+      715,
+      352
+     ],
+     "fill": "paper",
+     "stroke": "ink",
+     "lw": 16,
+     "shadow": {
+      "dx": 8,
+      "dy": 8,
+      "color": "ink"
+     },
+     "dots": false
+    },
+    {
+     "t": "dot",
+     "x": 629,
+     "y": 348,
+     "r": 44,
+     "fill": "ink"
+    },
+    {
+     "t": "dot",
+     "x": 623,
+     "y": 342,
+     "r": 40,
+     "fill": "lime",
+     "ring": {
+      "color": "ink",
+      "lw": 8
+     }
+    },
+    {
+     "t": "dot",
+     "x": 721,
+     "y": 338,
+     "r": 44,
+     "fill": "ink"
+    },
+    {
+     "t": "dot",
+     "x": 715,
+     "y": 332,
+     "r": 40,
+     "fill": "lime",
+     "ring": {
+      "color": "ink",
+      "lw": 8
+     }
+    },
+    {
+     "t": "dot",
+     "x": 813,
+     "y": 326,
+     "r": 44,
+     "fill": "ink"
+    },
+    {
+     "t": "dot",
+     "x": 807,
+     "y": 320,
+     "r": 40,
+     "fill": "lime",
+     "ring": {
+      "color": "ink",
+      "lw": 8
+     }
+    }
+   ]
+  },
+  {
+   "id": "o4_burger_2",
+   "tc": "البرجر · خيار ٢",
+   "note": "خيار ٢ للبرجر: برجر جاهز والجبن يسيل (أهدى).",
+   "layers": [
+    {
+     "t": "still",
+     "src": "/_stills/s3alt_fit.png"
+    },
+    {
+     "t": "text",
+     "s": "برجر؟",
+     "size": 200,
+     "x": 540,
+     "y": 757,
+     "w": 800,
+     "fill": "lime",
+     "stroke": "ink",
+     "lw": 20,
+     "shadow": {
+      "dx": 10,
+      "dy": 10,
+      "color": "ink"
+     },
+     "rot": -4
+    },
+    {
+     "t": "word",
+     "key": "mashrou3ak",
+     "size": 172,
+     "slot": [
+      715,
+      352
+     ],
+     "fill": "paper",
+     "stroke": "ink",
+     "lw": 16,
+     "shadow": {
+      "dx": 8,
+      "dy": 8,
+      "color": "ink"
+     },
+     "dots": false
+    },
+    {
+     "t": "dot",
+     "x": 629,
+     "y": 348,
+     "r": 44,
+     "fill": "ink"
+    },
+    {
+     "t": "dot",
+     "x": 623,
+     "y": 342,
+     "r": 40,
+     "fill": "lime",
+     "ring": {
+      "color": "ink",
+      "lw": 8
+     }
+    },
+    {
+     "t": "dot",
+     "x": 721,
+     "y": 338,
+     "r": 44,
+     "fill": "ink"
+    },
+    {
+     "t": "dot",
+     "x": 715,
+     "y": 332,
+     "r": 40,
+     "fill": "lime",
+     "ring": {
+      "color": "ink",
+      "lw": 8
+     }
+    },
+    {
+     "t": "dot",
+     "x": 813,
+     "y": 326,
+     "r": 44,
+     "fill": "ink"
+    },
+    {
+     "t": "dot",
+     "x": 807,
+     "y": 320,
+     "r": 40,
+     "fill": "lime",
+     "ring": {
+      "color": "ink",
+      "lw": 8
+     }
+    }
+   ]
+  },
+  {
+   "id": "o5_burger_1_lens",
+   "tc": "البرجر ١ داخل النقطة",
+   "note": "خيار ١ داخل النقطة: اللوح أعرض من الدائرة وينقص من الصوبين.",
+   "layers": [
+    {
+     "t": "fill",
+     "color": "lime"
+    },
+    {
+     "t": "still",
+     "src": "/_stills/s3_fit.png",
+     "clip": {
+      "type": "circle",
+      "x": 540,
+      "y": 1270,
+      "r": 340
+     },
+     "dy": 0
+    },
+    {
+     "t": "dot",
+     "x": 540,
+     "y": 1270,
+     "r": 334,
+     "fill": null,
+     "ring": {
+      "color": "ink",
+      "lw": 12
+     }
+    },
+    {
+     "t": "text",
+     "s": "برجر؟",
+     "size": 200,
+     "x": 540,
+     "y": 757,
+     "w": 800,
+     "fill": "ink",
+     "shadow": {
+      "dx": 10,
+      "dy": 10,
+      "color": "paper"
+     },
+     "rot": -4
+    },
+    {
+     "t": "word",
+     "key": "mashrou3ak",
+     "size": 172,
+     "slot": [
+      715,
+      352
+     ],
+     "fill": "ink",
+     "stroke": "paper",
+     "lw": 12,
+     "shadow": null,
+     "dots": false
+    },
+    {
+     "t": "dot",
+     "x": 623,
+     "y": 342,
+     "r": 40,
+     "fill": "ink",
+     "ring": {
+      "color": "paper",
+      "lw": 8
+     }
+    },
+    {
+     "t": "dot",
+     "x": 715,
+     "y": 332,
+     "r": 40,
+     "fill": "ink",
+     "ring": {
+      "color": "paper",
+      "lw": 8
+     }
+    },
+    {
+     "t": "dot",
+     "x": 807,
+     "y": 320,
+     "r": 40,
+     "fill": "ink",
+     "ring": {
+      "color": "paper",
+      "lw": 8
+     }
+    }
+   ]
+  },
+  {
+   "id": "o6_burger_2_lens",
+   "tc": "البرجر ٢ داخل النقطة",
+   "note": "خيار ٢ داخل النقطة: البرجر كامل داخل الدائرة.",
+   "layers": [
+    {
+     "t": "fill",
+     "color": "lime"
+    },
+    {
+     "t": "still",
+     "src": "/_stills/s3alt_fit.png",
+     "clip": {
+      "type": "circle",
+      "x": 540,
+      "y": 1270,
+      "r": 340
+     },
+     "dy": 0
+    },
+    {
+     "t": "dot",
+     "x": 540,
+     "y": 1270,
+     "r": 334,
+     "fill": null,
+     "ring": {
+      "color": "ink",
+      "lw": 12
+     }
+    },
+    {
+     "t": "text",
+     "s": "برجر؟",
+     "size": 200,
+     "x": 540,
+     "y": 757,
+     "w": 800,
+     "fill": "ink",
+     "shadow": {
+      "dx": 10,
+      "dy": 10,
+      "color": "paper"
+     },
+     "rot": -4
+    },
+    {
+     "t": "word",
+     "key": "mashrou3ak",
+     "size": 172,
+     "slot": [
+      715,
+      352
+     ],
+     "fill": "ink",
+     "stroke": "paper",
+     "lw": 12,
+     "shadow": null,
+     "dots": false
+    },
+    {
+     "t": "dot",
+     "x": 623,
+     "y": 342,
+     "r": 40,
+     "fill": "ink",
+     "ring": {
+      "color": "paper",
+      "lw": 8
+     }
+    },
+    {
+     "t": "dot",
+     "x": 715,
+     "y": 332,
+     "r": 40,
+     "fill": "ink",
+     "ring": {
+      "color": "paper",
+      "lw": 8
+     }
+    },
+    {
+     "t": "dot",
+     "x": 807,
+     "y": 320,
+     "r": 40,
+     "fill": "ink",
+     "ring": {
+      "color": "paper",
+      "lw": 8
+     }
+    }
+   ]
+  },
+  {
+   "id": "o7_b20_f000",
+   "tc": "نسخة B · f0",
+   "note": "النسخة الثانية للاختبار: نفس الإعلان بس يبدأ بالشاليه (حلقة السباحة تطيح بالماي).",
+   "layers": [
+    {
+     "t": "still",
+     "src": "/_stills/s6_fit.png"
+    },
+    {
+     "t": "word",
+     "key": "mashrou3ak",
+     "size": 172,
+     "slot": [
+      715,
+      352
+     ],
+     "fill": "paper",
+     "stroke": "ink",
+     "lw": 16,
+     "shadow": {
+      "dx": 8,
+      "dy": 8,
+      "color": "ink"
+     },
+     "dots": false
+    },
+    {
+     "t": "dot",
+     "x": 629,
+     "y": 348,
+     "r": 44,
+     "fill": "ink"
+    },
+    {
+     "t": "dot",
+     "x": 623,
+     "y": 342,
+     "r": 40,
+     "fill": "lime",
+     "ring": {
+      "color": "ink",
+      "lw": 8
+     }
+    },
+    {
+     "t": "dot",
+     "x": 721,
+     "y": 338,
+     "r": 44,
+     "fill": "ink"
+    },
+    {
+     "t": "dot",
+     "x": 715,
+     "y": 332,
+     "r": 40,
+     "fill": "lime",
+     "ring": {
+      "color": "ink",
+      "lw": 8
+     }
+    },
+    {
+     "t": "dot",
+     "x": 813,
+     "y": 326,
+     "r": 44,
+     "fill": "ink"
+    },
+    {
+     "t": "dot",
+     "x": 807,
+     "y": 320,
+     "r": 40,
+     "fill": "lime",
+     "ring": {
+      "color": "ink",
+      "lw": 8
+     }
+    }
+   ]
+  },
+  {
+   "id": "o8_b20_f010",
+   "tc": "نسخة B · f10",
+   "note": "النسخة الثانية: تطلع «شاليه؟» بدل «حلو…» والماي يطش.",
+   "layers": [
+    {
+     "t": "still",
+     "src": "/_stills/s6_fit.png"
+    },
+    {
+     "t": "text",
+     "s": "شاليه؟",
+     "size": 200,
+     "x": 540,
+     "y": 757,
+     "w": 800,
+     "fill": "lime",
+     "stroke": "ink",
+     "lw": 20,
+     "shadow": {
+      "dx": 10,
+      "dy": 10,
+      "color": "ink"
+     },
+     "rot": -4
+    },
+    {
+     "t": "word",
+     "key": "mashrou3ak",
+     "size": 172,
+     "slot": [
+      715,
+      352
+     ],
+     "fill": "paper",
+     "stroke": "ink",
+     "lw": 16,
+     "shadow": {
+      "dx": 8,
+      "dy": 8,
+      "color": "ink"
+     },
+     "dots": false
+    },
+    {
+     "t": "dot",
+     "x": 629,
+     "y": 336,
+     "r": 44,
+     "fill": "ink"
+    },
+    {
+     "t": "dot",
+     "x": 623,
+     "y": 330,
+     "r": 40,
+     "fill": "lime",
+     "ring": {
+      "color": "ink",
+      "lw": 8
+     }
+    },
+    {
+     "t": "dot",
+     "x": 721,
+     "y": 326,
+     "r": 44,
+     "fill": "ink"
+    },
+    {
+     "t": "dot",
+     "x": 715,
+     "y": 320,
+     "r": 40,
+     "fill": "lime",
+     "ring": {
+      "color": "ink",
+      "lw": 8
+     }
+    },
+    {
+     "t": "dot",
+     "x": 813,
+     "y": 342,
+     "r": 44,
+     "fill": "ink"
+    },
+    {
+     "t": "dot",
+     "x": 807,
+     "y": 336,
+     "r": 40,
+     "fill": "lime",
+     "ring": {
+      "color": "ink",
+      "lw": 8
+     }
+    }
+   ]
+  }
+ ]
+}
