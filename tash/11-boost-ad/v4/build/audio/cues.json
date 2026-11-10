@@ -663,13 +663,13 @@
    {
     "frame": 457.0,
     "t": 15.2333,
-    "bus": "sfx",
+    "bus": "hit",
     "what": "two-note pop, note 1 A5 (synthesised)"
    },
    {
     "frame": 460.0,
     "t": 15.3333,
-    "bus": "sfx",
+    "bus": "hit",
     "what": "two-note pop, note 2 D6"
    },
    {
@@ -724,14 +724,14 @@
   "checks": {
    "lufs": -14.0,
    "true_peak_dbtp": -2.3,
-   "share_below_150": 0.29,
-   "share_500_6k": 0.2852,
+   "share_below_150": 0.2899,
+   "share_500_6k": 0.2856,
    "room_tone_dbfs": -40.0,
    "voice_over_bed_db": {
     "V1 «مشروعك حلو…»": 8.6,
     "V3 «طشّ!» f90": 7.2,
-    "V2 «شنو حسابهم؟!»": 9.1,
-    "V3 x3 «طشّ!»": 7.9
+    "V2 «شنو حسابهم؟!»": 9.0,
+    "V3 x3 «طشّ!»": 7.8
    },
    "seam_jump": 0.0009,
    "passed": true
@@ -1262,13 +1262,13 @@
    {
     "frame": 318.0,
     "t": 10.6,
-    "bus": "sfx",
+    "bus": "hit",
     "what": "two-note pop, note 1 A5 (synthesised)"
    },
    {
     "frame": 321.0,
     "t": 10.7,
-    "bus": "sfx",
+    "bus": "hit",
     "what": "two-note pop, note 2 D6"
    },
    {
