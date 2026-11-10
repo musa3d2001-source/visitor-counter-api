@@ -52,6 +52,8 @@ const nextConfig: NextConfig = {
       },
       // الصفحات تأخذ CSP بـ nonce من proxy.ts؛ ردود API لا يمر عليها proxy فتأخذ سياسة ثابتة صارمة هنا
       { source: API_CSP_SOURCE, headers: [{ key: "Content-Security-Policy", value: STRICT_CSP }] },
+      // robots لا يتغير إلا بنشر جديد، والنشر الجديد يفرغ ذاكرة الشبكة. خريطة الموقع عمدًا بلا هذا السطر: حذف منتج يظهر فيها خلال دقيقة
+      { source: "/robots.txt", headers: [{ key: "Vercel-CDN-Cache-Control", value: "public, s-maxage=3600" }] },
       { source: "/api/:path*", headers: noIndex },
       { source: "/admin/:path*", headers: noIndex },
       { source: "/library/:path*", headers: noIndex },

@@ -42,6 +42,8 @@ export const E2E_SERVER_ENV: Record<string, string> = {
   // الخادم هنا NODE_ENV=production مع بوابة محاكاة: السماح صريح ومقصود
   ALLOW_SANDBOX_ON_PRODUCTION: "true",
   TRUST_PROXY: "true",
+  // الرحلات تعدّل قاعدة البيانات مباشرة وتتوقع الأثر فورًا. مسار الذاكرة له خادمه في 22-public-cache
+  PUBLIC_CACHE_SECONDS: "0",
   // حساب المدير في بقية الرحلات بلا تحقق بخطوتين. المسار الإلزامي يغطيه 10-admin-two-factor على خادم مستقل
   ADMIN_2FA_REQUIRED: "false",
   CRON_SECRET: E2E_CRON_SECRET,
@@ -64,6 +66,17 @@ export const E2E_TWO_FACTOR_BASE_URL = `http://localhost:${E2E_TWO_FACTOR_PORT}`
 export const E2E_TWO_FACTOR_SERVER_ENV: Record<string, string> = Object.fromEntries(
   Object.entries({ ...E2E_SERVER_ENV, PORT: String(E2E_TWO_FACTOR_PORT), APP_URL: E2E_TWO_FACTOR_BASE_URL }).filter(([key]) => key !== "ADMIN_2FA_REQUIRED"),
 );
+
+export const E2E_PUBLIC_CACHE_PORT = Number(process.env.E2E_PUBLIC_CACHE_PORT ?? 3103);
+export const E2E_PUBLIC_CACHE_BASE_URL = `http://localhost:${E2E_PUBLIC_CACHE_PORT}`;
+
+/** خادم بذاكرة عامة مفعلة بعمر قصير. بقية الخوادم بلا ذاكرة لأن رحلاتها تعدّل قاعدة البيانات وتتوقع الأثر فورًا */
+export const E2E_PUBLIC_CACHE_SERVER_ENV: Record<string, string> = {
+  ...E2E_SERVER_ENV,
+  PORT: String(E2E_PUBLIC_CACHE_PORT),
+  APP_URL: E2E_PUBLIC_CACHE_BASE_URL,
+  PUBLIC_CACHE_SECONDS: "5",
+};
 
 /** خادم ثانٍ من البناء نفسها وقاعدة البيانات نفسها، ببريد SMTP حقيقي إلى خادم اختبار محلي */
 export const E2E_MAIL_SERVER_ENV: Record<string, string> = {

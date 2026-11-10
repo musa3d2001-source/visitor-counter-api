@@ -1,5 +1,5 @@
 import { defineConfig, devices } from "@playwright/test";
-import { E2E_BASE_URL, E2E_BUNNY, E2E_BUNNY_PORT, E2E_MAIL_BASE_URL, E2E_MAIL_SERVER_ENV, E2E_SERVER_ENV, E2E_SIM_KEY, E2E_SIM_PORT, E2E_SINK_URL, E2E_SMTP_PORT, E2E_TWO_FACTOR_BASE_URL, E2E_TWO_FACTOR_SERVER_ENV, E2E_WEBHOOK_SECRET } from "./tests/e2e/e2e-env";
+import { E2E_BASE_URL, E2E_BUNNY, E2E_BUNNY_PORT, E2E_MAIL_BASE_URL, E2E_MAIL_SERVER_ENV, E2E_PUBLIC_CACHE_BASE_URL, E2E_PUBLIC_CACHE_SERVER_ENV, E2E_SERVER_ENV, E2E_SIM_KEY, E2E_SIM_PORT, E2E_SINK_URL, E2E_SMTP_PORT, E2E_TWO_FACTOR_BASE_URL, E2E_TWO_FACTOR_SERVER_ENV, E2E_WEBHOOK_SECRET } from "./tests/e2e/e2e-env";
 
 /**
  * اختبارات E2E (Playwright) — تعمل على Chromium المثبت مسبقًا بقياسات iPhone و iPad والكمبيوتر.
@@ -68,6 +68,14 @@ export default defineConfig({
       command: `npx next start -p ${E2E_MAIL_SERVER_ENV.PORT}`,
       url: `${E2E_MAIL_BASE_URL}/robots.txt`,
       env: E2E_MAIL_SERVER_ENV,
+      reuseExistingServer: false,
+      timeout: 120_000,
+    },
+    {
+      // الذاكرة العامة مفعلة بعمر قصير: 22-public-cache
+      command: `npx next start -p ${E2E_PUBLIC_CACHE_SERVER_ENV.PORT}`,
+      url: `${E2E_PUBLIC_CACHE_BASE_URL}/robots.txt`,
+      env: E2E_PUBLIC_CACHE_SERVER_ENV,
       reuseExistingServer: false,
       timeout: 120_000,
     },
