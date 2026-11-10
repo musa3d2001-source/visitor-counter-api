@@ -646,6 +646,17 @@
     "balance_before": 521.5,
     "balance_after": 509.5,
     "result": "video/draft1/s1alt-draft-480p.mp4 (480x854, 24 fps, 97 frames, 4.04 s)",
-    "finalise_quote_1080p": "64 (get_cost with draft_job_id, 10 Nov; not spent)"
+    "finalise_quote_1080p": "64 (get_cost with draft_job_id, 10 Nov; not spent)",
+    "final": {
+      "approved_by_owner": "«موافق» on 10 Nov (~04:45 UTC) to finalise this draft at 1080p for 64, accepting that the gates the draft missed are fixed in the edit",
+      "first_call": "rejected by validation (422: empty prompt); no job, no charge (balance stayed 509.5)",
+      "call": "seedance_2_5 with draft_job_id 840a3b5a-eaf0-4971-a083-2180dc48dfe8 and the draft's own prompt, mode, start image and settings, resolution 1080p",
+      "job_id": "8fc9ad29-ffcb-490f-ac8d-714901dbdf78",
+      "quote_before": 64,
+      "balance_before": 509.5,
+      "balance_after": 445.5,
+      "result": "video/final/s1alt-final-1080p-hevc.mp4 (as delivered: HEVC 10-bit, 1080x1920, 24 fps, 97 frames, 4.04 s); video/final/s1alt-final-1080p.mp4 is an H.264 copy for phones",
+      "same_take_as_draft": "yes: per-frame SSIM against the draft 0.963-0.978 (whole frame), 0.85-0.91 (hero box); same 97 frames, same motion"
+    }
   }
 }
