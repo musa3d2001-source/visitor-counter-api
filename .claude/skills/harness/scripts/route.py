@@ -2,10 +2,9 @@
 """Deterministic model router for the harness skill.
 
 Reads the routing contract (routing.yaml), the work item's stated signals
-(from TASK.md or flags), its assets, and the failed cycles recorded in
-TASK.md, and prints which per-tier subagent should run the item at which
-effort. No model call is made here: the router matches stated signals to a
-written rule.
+(from TASK.md or flags), its assets, and the cycles recorded in TASK.md, and
+prints which per-tier subagent should run the item at which effort. No model
+call is made here: the router matches stated signals to a written rule.
 
 Subcommands
   route     route one work item (first cycle, or the next rung after a FAIL)
@@ -34,6 +33,10 @@ LOG_EXTS = {".log", ".out", ".err", ".trace"}
 SKIP_DIRS = {".git", "node_modules", ".harness", "__pycache__", ".venv", "venv", "dist", "build", ".next"}
 MAX_WALK_FILES = 20000
 BYTES_PER_TOKEN = 4
+UNSURE = "unsure"
+PLACEHOLDERS = {"", "none", "-", "n/a", "na", "tbd", "todo", "?", "unknown", "no", "false"}
+EDIT_TOOLS = ("Edit", "Write", "NotebookEdit")
+NESTING_TOOLS = ("Agent", "Skill")
 
 
 class ContractError(ValueError):
@@ -45,13 +48,18 @@ class ContractError(ValueError):
 # --------------------------------------------------------------------------
 
 def _strip_comment(line: str) -> str:
+    """Drop a trailing '# comment'. A quote only opens a quoted scalar when it
+    starts the value (after ':', '-', '[' or ','), so apostrophes inside words
+    are plain characters."""
     out, quote = [], None
     for i, ch in enumerate(line):
         if quote:
             if ch == quote:
                 quote = None
         elif ch in "\"'":
-            quote = ch
+            before = "".join(out).rstrip()
+            if before == "" or before[-1] in ":-[,":
+                quote = ch
         elif ch == "#" and (i == 0 or line[i - 1] in " \t"):
             break
         out.append(ch)
@@ -62,7 +70,7 @@ def _scalar(text: str):
     s = text.strip()
     if s == "":
         return None
-    if s[0] == s[-1] and s[0] in "\"'" and len(s) >= 2:
+    if len(s) >= 2 and s[0] == s[-1] and s[0] in "\"'":
         return s[1:-1]
     if s.startswith("[") and s.endswith("]"):
         inner = s[1:-1].strip()
@@ -95,9 +103,9 @@ def parse_yaml_subset(text: str):
             lines.append((len(body) - len(body.lstrip(" ")), body.strip()))
 
     def block(i: int, indent: int):
-        if i < len(lines) and lines[i][1].startswith("- "):
+        if i < len(lines) and (lines[i][1].startswith("- ") or lines[i][1] == "-"):
             items = []
-            while i < len(lines) and lines[i][0] == indent and lines[i][1].startswith("- "):
+            while i < len(lines) and lines[i][0] == indent and (lines[i][1].startswith("- ") or lines[i][1] == "-"):
                 items.append(_scalar(lines[i][1][2:]))
                 i += 1
             return items, i
@@ -113,6 +121,8 @@ def parse_yaml_subset(text: str):
                 mapping[key] = _scalar(value)
             elif i < len(lines) and lines[i][0] > indent:
                 mapping[key], i = block(i, lines[i][0])
+            elif i < len(lines) and lines[i][0] == indent and lines[i][1].startswith("- "):
+                mapping[key], i = block(i, indent)  # YAML allows a list at the key's indent
             else:
                 mapping[key] = None
         return mapping, i
@@ -130,32 +140,52 @@ def load_yaml(text: str):
         import yaml  # type: ignore
     except ImportError:
         return parse_yaml_subset(text)
-    return yaml.safe_load(text)
+    try:
+        return yaml.safe_load(text)
+    except yaml.YAMLError as exc:
+        raise ContractError(f"invalid YAML: {exc}")
 
 
 def norm_kind(kind: str) -> str:
     return re.sub(r"\s+", " ", re.sub(r"[-_]+", " ", str(kind))).strip().lower()
 
 
-ROUTE_RE = re.compile(r"^\s*(\w+)\s*(?:@\s*(\w+))?\s*$")
+ROUTE_RE = re.compile(r"^\s*([\w-]+)\s*(?:@\s*(\w+))?\s*$")
 RULE_RE = re.compile(r"^(?P<kinds>.+?)\s*(?:->|→)\s*(?P<model>\w+)(?:\s*@\s*(?P<effort>\w+))?(?:\s+if\s+(?P<cond>\w+))?\s*$")
 
 
 def parse_route(text: str, default_effort: str = "medium"):
     m = ROUTE_RE.match(str(text))
     if not m:
-        raise ContractError(f"expected 'model @ effort', got {text!r}")
+        raise ContractError(f"expected 'name @ effort', got {text!r}")
     return m.group(1).lower(), (m.group(2) or default_effort).lower()
 
 
-def parse_prices(text: str):
+def _num(value, key: str, kind=float):
+    try:
+        return kind(str(value).strip().lstrip("$"))
+    except (TypeError, ValueError):
+        raise ContractError(f"{key}: expected a number, got {value!r}")
+
+
+def parse_prices(text, key: str = "prices"):
     parts = [p.strip() for p in str(text).split("/")]
     if len(parts) not in (2, 3):
-        raise ContractError(f"expected 'input / output [/ cache read]', got {text!r}")
-    nums = [float(p) for p in parts]
+        raise ContractError(f"{key}: expected 'input / output [/ cache read]', got {text!r}")
+    nums = [_num(p, key) for p in parts]
     if len(nums) == 2:
         nums.append(nums[0] * 0.1)
     return {"input": nums[0], "output": nums[1], "cache_read": nums[2]}
+
+
+def core_model_id(model_id: str) -> str:
+    """'us.anthropic.claude-opus-5-5-20260101-v1:0[1m]' -> 'claude-opus-5-5'."""
+    low = (model_id or "").lower()
+    m = re.search(r"claude-[a-z0-9.-]+", low)
+    core = m.group(0) if m else low
+    core = re.sub(r"-v\d+(:\d+)?$", "", core)
+    core = re.sub(r"[-@]\d{8}$", "", core)
+    return core
 
 
 @dataclass
@@ -183,6 +213,9 @@ class Contract:
     prices: dict
     long_context: dict
     keywords: dict
+    model_ids: dict = field(default_factory=dict)
+    fast_multiplier: float = 2.0
+    unavailable: set = field(default_factory=set)   # runtime: tiers not usable this session
     path: str = ""
 
     @property
@@ -197,15 +230,38 @@ class Contract:
     def agent_for(self, tier: str) -> str:
         return self.agents.get(tier, f"worker-{tier}")
 
+    def tier_of_agent(self, agent: str) -> str | None:
+        return next((t for t, a in self.agents.items() if a == agent), None)
+
     def tier_of_model(self, model_id: str) -> str | None:
-        """Map a model id such as claude-sonnet-5-5 to a ladder tier."""
-        low = (model_id or "").lower()
+        """Map a served model id to the tier whose prices apply. With a
+        `models:` section the match is exact (dates and platform prefixes
+        ignored); an id it does not list is unpriced rather than guessed."""
+        if not model_id:
+            return None
+        low = model_id.lower()
+        if low in self.ladder:
+            return low
+        if self.model_ids:
+            core = core_model_id(model_id)
+            for tier, ids in self.model_ids.items():
+                if core in ids:
+                    return tier
+            return None
         if "mythos" in low and "fable" in self.ladder:
             return "fable"
         for tier in self.ladder:
             if tier in low:
                 return tier
         return None
+
+
+def _as_list(value) -> list:
+    if value is None:
+        return []
+    if isinstance(value, list):
+        return [str(v).strip() for v in value if v is not None and str(v).strip()]
+    return [w.strip() for w in str(value).split(",") if w.strip()]
 
 
 def contract_from_dict(data: dict, path: str = "") -> Contract:
@@ -218,9 +274,12 @@ def contract_from_dict(data: dict, path: str = "") -> Contract:
         m = RULE_RE.match(str(text))
         if not m:
             raise ContractError(f"cannot parse rule {text!r} (want 'a | b -> model @ effort [if scoped]')")
+        cond = (m.group("cond") or "").lower() or None
+        if cond not in (None, "scoped"):
+            raise ContractError(f"rule {text!r}: unknown condition 'if {cond}' (only 'if scoped' exists)")
         kinds = [norm_kind(k) for k in m.group("kinds").split("|") if k.strip()]
         rules.append(Rule(re.sub(r"\s+", " ", str(text)).strip(), kinds, m.group("model").lower(),
-                          (m.group("effort") or default[1]).lower(), m.group("cond")))
+                          (m.group("effort") or default[1]).lower(), cond))
     esc = r.get("escalation") or {}
     guards = r.get("guards") or {}
     no_edits = set()
@@ -231,29 +290,25 @@ def contract_from_dict(data: dict, path: str = "") -> Contract:
             raise ContractError(f"guards.code_edits must read 'never on <tier>[, <tier>]', got {ce!r}")
         no_edits = {t.strip().lower() for t in re.split(r"[,|]", m.group(1)) if t.strip()}
     scoped = {"max_files": 5, "max_repos": 1, "max_source_tokens": 100000}
-    scoped.update(r.get("scoped") or {})
-    prices = {k: parse_prices(v) for k, v in (r.get("prices") or {}).items()}
+    for k, v in (r.get("scoped") or {}).items():
+        scoped[k] = _num(v, f"scoped.{k}", int)
+    prices = {str(k).lower(): parse_prices(v, f"prices.{k}") for k, v in (r.get("prices") or {}).items()}
     long_context = {}
     for tier, text in (r.get("long_context") or {}).items():
         m = re.match(r"^\s*(\d+)\s*(?:->|→)\s*(.+)$", str(text))
         if not m:
             raise ContractError(f"long_context.{tier} must read 'N -> in / out / cache read'")
-        long_context[tier] = {"threshold": int(m.group(1)), **parse_prices(m.group(2))}
-    keywords = {}
-    for kind, words in (r.get("keywords") or {}).items():
-        if isinstance(words, list):
-            items = words
-        else:
-            items = str(words).split(",")
-        keywords[norm_kind(kind)] = [w.strip().lower() for w in items if str(w).strip()]
-    validator = parse_route(r.get("validator", "validator @ medium"))
+        long_context[str(tier).lower()] = {"threshold": int(m.group(1)), **parse_prices(m.group(2), f"long_context.{tier}")}
+    keywords = {norm_kind(kind): [w.lower() for w in _as_list(words)]
+                for kind, words in (r.get("keywords") or {}).items()}
+    model_ids = {str(t).lower(): [core_model_id(i) for i in _as_list(ids)] for t, ids in (r.get("models") or {}).items()}
     return Contract(
         default=default,
         rules=rules,
         ladder=[str(t).lower() for t in (r.get("ladder") or ["haiku", "sonnet", "opus", "fable"])],
         agents={str(k).lower(): str(v) for k, v in (r.get("agents") or {}).items()},
-        validator=validator,
-        max_cycles=int(esc.get("max_cycles", 3)),
+        validator=parse_route(r.get("validator", "validator @ medium")),
+        max_cycles=_num(esc.get("max_cycles", 3), "escalation.max_cycles", int),
         order=[str(s).lower() for s in (esc.get("order") or ["verify", "effort", "model"])],
         max_effort=str(esc.get("max_effort", "high")).lower(),
         restart_effort=str(esc.get("restart_effort", "medium")).lower(),
@@ -262,6 +317,8 @@ def contract_from_dict(data: dict, path: str = "") -> Contract:
         prices=prices,
         long_context=long_context,
         keywords=keywords,
+        model_ids=model_ids,
+        fast_multiplier=_num(r.get("fast_mode_multiplier", 2), "fast_mode_multiplier"),
         path=path,
     )
 
@@ -291,7 +348,8 @@ def _sections(text: str):
     return sections
 
 
-def _table_rows(lines):
+def _table(lines):
+    """(header, rows) of the first markdown table in lines."""
     rows, header = [], None
     for line in lines:
         s = line.strip()
@@ -306,11 +364,12 @@ def _table_rows(lines):
         if all(re.fullmatch(r":?-{2,}:?", c) for c in cells if c):
             continue
         rows.append(dict(zip(header, cells)))
-    return rows
+    return header, rows
 
 
 def parse_task(text: str) -> dict:
-    """Return {'title', 'items': {id: {...}}, 'cycles': [...], 'acceptance': [...]}."""
+    """Return {'title', 'items': {id: {...}}, 'cycles': [...], 'cycles_header', 'acceptance': [...]}."""
+    text = text.replace("\r\n", "\n")
     title = ""
     for line in text.splitlines():
         m = re.match(r"^#\s+(?:Task:\s*)?(.*)$", line)
@@ -329,12 +388,12 @@ def parse_task(text: str) -> dict:
         if f and current:
             key = norm_kind(f.group(1)).replace(" ", "_")
             items[current].setdefault(key, f.group(2).strip())
-    cycles = _table_rows(secs.get("cycles", []))
+    header, cycles = _table(secs.get("cycles", []))
     for row in cycles:
         if "item" in row:
             row["item"] = row["item"].upper()
     acceptance = [l.strip()[2:].strip() for l in secs.get("acceptance criteria", []) if l.strip().startswith(("- ", "* "))]
-    return {"title": title, "items": items, "cycles": cycles, "acceptance": acceptance}
+    return {"title": title, "items": items, "cycles": cycles, "cycles_header": header, "acceptance": acceptance}
 
 
 def _split_list(value) -> list:
@@ -349,15 +408,16 @@ def _split_list(value) -> list:
 
 
 def _count(value):
-    """'3' -> 3; 'a.js, b.js' -> 2; None/'?'/'unknown' -> None."""
+    """'3' -> 3; 'a.js, b.js' -> 2; 'none' -> 0; None / '?' / 'many' -> None."""
     if value is None:
         return None
-    s = str(value).strip()
-    if s.lower() in ("", "?", "unknown", "tbd"):
+    s = str(value).strip().strip("`")
+    low = s.lower()
+    if low in ("", "?", "unknown", "tbd", "many", "several", "some", "lots", "a few", "few"):
         return None
-    if s.lower() in ("none", "0", "-"):
+    if low in ("none", "-", "0"):
         return 0
-    m = re.match(r"^~?(\d+)\b", s)
+    m = re.fullmatch(r"~?(\d+)\+?(\s+\w+)?", s)
     if m:
         return int(m.group(1))
     return len(_split_list(s))
@@ -366,12 +426,23 @@ def _count(value):
 def _truthy(value):
     if value is None:
         return None
-    s = str(value).strip().lower()
-    if s in ("yes", "y", "true", "1", "on"):
+    m = re.match(r"^\W*([a-z]+)", str(value).strip().lower())
+    if not m:
+        return None
+    word = m.group(1)
+    if word in ("yes", "y", "true", "on"):
         return True
-    if s in ("no", "n", "false", "0", "off", "none"):
+    if word in ("no", "n", "false", "off", "none"):
         return False
     return None
+
+
+def has_check(value) -> bool:
+    items = _split_list(value)
+    if not items:
+        return False
+    first = items[0].strip("`").strip().lower()
+    return first not in PLACEHOLDERS and not first.startswith("(")
 
 
 # --------------------------------------------------------------------------
@@ -388,10 +459,13 @@ class Assets:
     truncated: bool = False
 
 
-def _is_log(path: Path) -> bool:
-    if path.suffix.lower() in LOG_EXTS:
+def _is_log(rel: Path) -> bool:
+    """A log by extension (app.log, app.log.1, run.out) or by living in a
+    log/logs directory inside the asset - never by the name of a source file."""
+    name = rel.name.lower()
+    if rel.suffix.lower() in LOG_EXTS or re.search(r"\.log(\.\d+)?$", name):
         return True
-    return any(re.search(r"(^|[^a-z])logs?([^a-z]|$)", part.lower()) for part in path.parts[-3:])
+    return any(part.lower() in ("log", "logs") for part in rel.parts[:-1])
 
 
 def inspect_assets(paths, root: Path | None = None) -> Assets:
@@ -405,6 +479,7 @@ def inspect_assets(paths, root: Path | None = None) -> Assets:
         if not p.exists():
             a.missing.append(str(raw))
             continue
+        base = p.parent if p.is_file() else p
         files = [p] if p.is_file() else []
         if p.is_dir():
             for dirpath, dirnames, filenames in os.walk(p):
@@ -426,7 +501,11 @@ def inspect_assets(paths, root: Path | None = None) -> Assets:
             if f.suffix.lower() in IMAGE_EXTS:
                 a.images += 1
                 continue
-            if _is_log(f):
+            try:
+                rel = f.relative_to(base)
+            except ValueError:
+                rel = Path(f.name)
+            if _is_log(rel):
                 a.logs += 1
             a.source_tokens += size // BYTES_PER_TOKEN
     return a
@@ -444,6 +523,7 @@ class Signals:
     edits_code: bool | None = None
     computer_use: bool = False
     has_check: bool = False
+    user_override: bool = False
     images: int = 0
     logs: int = 0
     source_tokens: int = 0
@@ -468,7 +548,7 @@ def infer_kinds(request: str, contract: Contract) -> list:
 def is_scoped(sig: Signals, contract: Contract) -> tuple:
     why = []
     lim = contract.scoped
-    if (sig.spec or "").lower() not in ("clear", "clear spec", "spec"):
+    if (sig.spec or "").strip().lower() not in ("clear", "clear spec"):
         why.append("spec is not stated as clear" if not sig.spec else f"spec is {sig.spec}")
     if sig.files is not None and sig.files > int(lim["max_files"]):
         why.append(f"{sig.files} files > {lim['max_files']}")
@@ -490,6 +570,10 @@ def _effort_index(effort: str) -> int:
         raise ContractError(f"unknown effort {effort!r}; use one of {EFFORTS}")
 
 
+def _rank(contract: Contract, tier: str) -> int:
+    return contract.ladder.index(tier) if tier in contract.ladder else -1
+
+
 def escalate(model: str, effort: str, has_check: bool, contract: Contract) -> dict:
     """Next rung after a failed check, following escalation.order."""
     for step in contract.order:
@@ -500,161 +584,194 @@ def escalate(model: str, effort: str, has_check: bool, contract: Contract) -> di
             nxt = EFFORTS[_effort_index(effort) + 1]
             return {"action": "raise_effort", "model": model, "effort": nxt,
                     "why": f"raise effort one level: {effort} -> {nxt}"}
-        if step == "model":
-            if model in contract.ladder and contract.ladder.index(model) + 1 < len(contract.ladder):
-                nxt = contract.ladder[contract.ladder.index(model) + 1]
-                return {"action": "next_model", "model": nxt, "effort": contract.restart_effort,
-                        "why": f"move one model up: {model} -> {nxt} at {contract.restart_effort}"}
+        if step == "model" and model in contract.ladder:
+            above = [t for t in contract.ladder[contract.ladder.index(model) + 1:] if t not in contract.unavailable]
+            if above:
+                skipped = contract.ladder[contract.ladder.index(model) + 1:contract.ladder.index(above[0])]
+                note = f" (skipping unavailable {', '.join(skipped)})" if skipped else ""
+                return {"action": "next_model", "model": above[0], "effort": contract.restart_effort,
+                        "why": f"move one model up: {model} -> {above[0]} at {contract.restart_effort}{note}"}
     return {"action": "blocked", "model": model, "effort": effort,
             "why": f"no rung left above {model} @ {effort}"}
+
+
+def _available(model: str, effort: str, edits: bool | None, contract: Contract):
+    """Swap an unavailable tier for the nearest usable one: up the ladder first
+    (never cheaper than the rule asked for), else down - but never onto a tier
+    the code-edit guard forbids - at max effort. None if nothing is usable."""
+    if model not in contract.unavailable:
+        return model, effort, None
+    ladder = contract.ladder
+    i = _rank(contract, model)
+    for t in ladder[i + 1:]:
+        if t not in contract.unavailable:
+            return t, effort, f"{model} unavailable -> {t} (next tier up)"
+    for t in reversed(ladder[:max(i, 0)]):
+        if t in contract.unavailable or (edits is not False and t in contract.no_code_edits):
+            continue
+        return t, contract.max_effort, f"{model} unavailable and nothing above -> {t} @ {contract.max_effort}"
+    return None
 
 
 def route(sig: Signals, contract: Contract) -> dict:
     reasons, warnings = [], []
     known = set(contract.known_kinds)
     stated = [norm_kind(k) for k in sig.kinds if str(k).strip()]
+    unsure = UNSURE in stated
+    stated = [k for k in stated if k != UNSURE]
     unknown = [k for k in stated if k not in known]
     if unknown:
-        warnings.append(f"kind(s) not in the contract, ignored: {', '.join(unknown)}")
-    kinds = [k for k in stated if k in known]
+        warnings.append(f"kind(s) not in the contract, treated as unsure: {', '.join(unknown)}")
+    explicit = [k for k in stated if k in known]
     inferred = False
-    if kinds:
-        reasons.append(f"stated kind: {', '.join(kinds)}")
-    else:
-        kinds = infer_kinds(sig.request or sig.title, contract)
-        if kinds:
-            inferred = True
-            reasons.append(f"kind inferred from request words: {', '.join(kinds)}")
-
+    kinds: list = []
     scoped, not_scoped_why = is_scoped(sig, contract)
-    reasons.append("scoped" if scoped else "not scoped (" + "; ".join(not_scoped_why) + ")")
 
-    if not kinds and sig.logs:
-        kinds = ["read logs"]
-        reasons.append(f"{sig.logs} log file(s) and no stated kind -> read logs")
-    if not kinds and scoped:
-        kinds = ["scoped fix"]
-        reasons.append("scoped item with no stated kind -> scoped fix")
+    if unsure or (stated and not explicit):
+        reasons.append("kind is unsure -> default")
+    else:
+        if explicit:
+            reasons.append(f"stated kind: {', '.join(explicit)}")
+        else:
+            explicit = infer_kinds(sig.request or sig.title, contract)
+            if explicit:
+                inferred = True
+                reasons.append(f"kind inferred from request words: {', '.join(explicit)}")
+        reasons.append("scoped" if scoped else "not scoped (" + "; ".join(not_scoped_why) + ")")
+        kinds = list(explicit)
+        if not kinds and sig.logs:
+            kinds = ["read logs"]
+            reasons.append(f"{sig.logs} log file(s) and no stated kind -> read logs")
+        if not kinds and scoped:
+            kinds = ["scoped fix"]
+            reasons.append("scoped item with no stated kind -> scoped fix")
+        implicit = []
+        if sig.images:
+            implicit.append("images")
+        if sig.computer_use:
+            implicit.append("computer use")
+        if sig.repos is not None and sig.repos > int(contract.scoped["max_repos"]):
+            implicit.append("multi pr feature")
+        for k in implicit:
+            if k not in kinds:
+                kinds.append(k)
+        if implicit:
+            reasons.append(f"asset/repo signals add: {', '.join(implicit)}")
 
-    implicit = []
-    if sig.images:
-        implicit.append("images")
-    if sig.computer_use:
-        implicit.append("computer use")
-    if sig.repos is not None and sig.repos > int(contract.scoped["max_repos"]):
-        implicit.append("multi pr feature")
-    for k in implicit:
-        if k not in kinds:
-            kinds.append(k)
-    if implicit:
-        reasons.append(f"asset/repo signals add: {', '.join(implicit)}")
-
-    def candidates():
-        for idx, rule in enumerate(contract.rules):
-            if not set(rule.kinds) & set(kinds):
-                continue
-            if rule.condition == "scoped" and not scoped:
-                reasons.append(f"skip rule {idx + 1} ({rule.text}): needs scoped")
-                continue
-            yield idx, rule
-
-    matches = list(candidates())
-    skipped_guard = []
-    chosen = None
+    matches = []
+    for idx, rule in enumerate(contract.rules):
+        if not set(rule.kinds) & set(kinds):
+            continue
+        if rule.condition == "scoped" and not scoped:
+            reasons.append(f"skip rule {idx + 1} ({rule.text}): needs scoped")
+            continue
+        matches.append((idx, rule))
 
     def guard_ok(rule):
-        return not (sig.edits_code and rule.model in contract.no_code_edits)
+        # Fails closed: a guarded tier needs edits_code stated as "no".
+        return not (rule.model in contract.no_code_edits and sig.edits_code is not False)
 
-    if inferred and len({r.model for _, r in matches}) > 1:
-        # Free-text request that names several kinds on different tiers: the
-        # request is compound. Take the most capable tier and ask for a split.
-        ladder = contract.ladder
-        ok = [(i, r) for i, r in matches if guard_ok(r)]
-        skipped_guard = [(i, r) for i, r in matches if not guard_ok(r)]
+    ok = [(i, r) for i, r in matches if guard_ok(r)]
+    skipped_guard = [(i, r) for i, r in matches if not guard_ok(r)]
+    explicit_tiers = {r.model for _, r in matches if set(r.kinds) & set(explicit)}
+    chosen = None
+    if len(explicit) > 1 and len(explicit_tiers) > 1:
+        # Several kinds on different tiers: the item is compound. Never route it
+        # cheaper than its hardest kind, and ask for a split.
         if ok:
-            chosen = max(ok, key=lambda m: ladder.index(m[1].model) if m[1].model in ladder else -1)
-            warnings.append("request names kinds on several tiers; split it into work items "
-                            "so the cheap parts route cheap")
-    else:
-        for i, r in matches:
-            if guard_ok(r):
-                chosen = (i, r)
-                break
-            skipped_guard.append((i, r))
+            chosen = max(ok, key=lambda m: _rank(contract, m[1].model))
+        warnings.append("this names kinds on several tiers; split it into one-kind work items "
+                        "so the cheap parts route cheap" if inferred else
+                        "state one kind per item; split this item so each part routes on its own")
+    elif ok:
+        chosen = ok[0]
     for i, r in skipped_guard:
-        reasons.append(f"guard: code edits never on {r.model} -> skip rule {i + 1} ({r.text})")
+        why = "edits code" if sig.edits_code else "does not state edits_code: no"
+        reasons.append(f"guard: item {why}, so no {r.model} -> skip rule {i + 1} ({r.text})")
+    if skipped_guard and sig.edits_code is None:
+        warnings.append("edits_code not stated; haiku rules need `edits_code: no`, so the guard routed above haiku")
 
     if chosen:
         idx, rule = chosen
         model, effort, rule_text = rule.model, rule.effort, f"rule {idx + 1}: {rule.text}"
     elif skipped_guard:
-        # Only guarded rules matched: run on the cheapest tier the guard allows.
         _, rule = skipped_guard[0]
         allowed = [t for t in contract.ladder if t not in contract.no_code_edits]
-        start = contract.ladder.index(rule.model) if rule.model in contract.ladder else 0
-        above = [t for t in allowed if contract.ladder.index(t) > start] or allowed
+        above = [t for t in allowed if _rank(contract, t) > _rank(contract, rule.model)] or allowed
         model, effort = above[0], rule.effort
-        rule_text = f"guard floor: code edits never on {rule.model} -> {model}"
+        rule_text = f"guard floor: no code edits on {rule.model} -> {model}"
     else:
         model, effort = contract.default
         rule_text = "default (no rule matched; when unsure, start here)"
-    if sig.edits_code is None:
-        warnings.append("edits_code not stated; the haiku guard could not be checked")
 
-    return {
-        "model": model,
-        "effort": effort,
-        "agent": contract.agent_for(model),
-        "rule": rule_text,
-        "kinds": kinds,
-        "scoped": scoped,
-        "reasons": reasons,
-        "warnings": warnings,
-    }
+    out = {"model": model, "effort": effort, "rule": rule_text, "kinds": kinds, "scoped": scoped,
+           "reasons": reasons, "warnings": warnings}
+    swap = _available(model, effort, sig.edits_code, contract)
+    if swap is None:
+        out.update(blocked=f"{model} is unavailable and no usable tier remains")
+    else:
+        out["model"], out["effort"], note = swap
+        if note:
+            out["rule"] += f"; fallback: {note}"
+            warnings.append(f"fallback: {note}")
+    out["agent"] = contract.agent_for(out["model"])
+    return out
 
 
 def route_item(sig: Signals, contract: Contract, cycles: list | None = None) -> dict:
-    """Route an item, taking the failed cycles in TASK.md into account."""
+    """Route an item, taking its rows in TASK.md's Cycles table into account."""
     base = route(sig, contract)
     rows = [c for c in (cycles or []) if sig.item and c.get("item", "").upper() == sig.item.upper()]
     verdicts = [str(c.get("verdict", "")).strip().upper() for c in rows]
     failed = [c for c, v in zip(rows, verdicts) if v == "FAIL"]
-    out = {"item": sig.item, **base, "cycle": len(failed) + 1, "status": "route", "failed_cycles": len(failed)}
-    if "PASS" in verdicts:
-        out.update(status="done", cycle=len(rows), next="nothing to do: the item already passed")
+    out = {"item": sig.item, **base, "cycle": len(rows) + 1, "status": "route", "failed_cycles": len(failed)}
+    if base.get("blocked"):
+        out.update(status="blocked", next=f"{base['blocked']}: mark the item blocked and report it")
+        return out
+    if verdicts and verdicts[-1] == "PASS":
+        out.update(status="done", cycle=len(rows), next="nothing to do: the item's last cycle passed")
         return out
     if not failed:
         out["next"] = f"dispatch to {out['agent']} at effort {out['effort']}"
         return out
     if len(failed) >= contract.max_cycles:
-        out.update(status="blocked", cycle=len(failed),
+        out.update(status="blocked", cycle=len(rows),
                    next=f"{len(failed)} failed cycles (max {contract.max_cycles}): mark the item blocked and report it")
         return out
     last = failed[-1]
     last_model = str(last.get("model") or "").strip().lower()
     if last_model not in contract.ladder:
-        last_model = contract.tier_of_model(last_model) or contract.tier_of_model(str(last.get("agent", ""))) or base["model"]
+        last_model = (contract.tier_of_model(last_model) or contract.tier_of_agent(str(last.get("agent", "")))
+                      or base["model"])
     last_effort = str(last.get("effort") or base["effort"]).strip().lower()
     if last_effort not in EFFORTS:
         last_effort = base["effort"]
-    step = escalate(last_model, last_effort, sig.has_check, contract)
-    ladder = contract.ladder
-    if step["action"] != "blocked" and step["model"] in ladder and base["model"] in ladder \
-            and ladder.index(step["model"]) < ladder.index(base["model"]):
+    # Did the failed cycle's worker have a check it could run? (the Cycles row
+    # records it; older tables without the column fall back to the item now)
+    had_check = _truthy(last.get("check")) if "check" in last else sig.has_check
+    step = escalate(last_model, last_effort, bool(had_check), contract)
+    if (step["action"] != "blocked" and not sig.user_override
+            and _rank(contract, step["model"]) < _rank(contract, base["model"])):
         # The item's signals changed after the failed cycle (e.g. it turned out
-        # to edit code). Never escalate to a tier below what the item routes to now.
+        # to edit code): never climb from below what the item routes to now.
         step = {"action": "reroute", "model": base["model"], "effort": base["effort"],
                 "why": f"signals now route to {base['model']} ({base['rule']}), above the failed {last_model}"}
+    if step["action"] in ("raise_effort", "add_check") and step["model"] in contract.unavailable:
+        step = escalate(step["model"], contract.max_effort, True, contract)
     out["escalation"] = step
     if step["action"] == "blocked":
         out.update(status="blocked", model=last_model, effort=last_effort, agent=contract.agent_for(last_model),
                    next=f"{step['why']}: mark the item blocked and report it")
         return out
     out.update(status="escalate", model=step["model"], effort=step["effort"], agent=contract.agent_for(step["model"]))
-    out["rule"] = f"escalation after cycle {len(failed)} ({last_model} @ {last_effort} failed): {step['why']}"
+    out["rule"] = f"escalation after cycle {len(rows)} ({last_model} @ {last_effort} failed): {step['why']}"
     if step["action"] == "add_check":
-        out["next"] = (f"write a `check:` command into the item that the worker can run itself, "
-                       f"then re-dispatch to {out['agent']} at {out['effort']}")
+        if sig.has_check:
+            out["next"] = (f"the item now has a check; re-dispatch to {out['agent']} at {out['effort']} "
+                           f"with the validator's evidence")
+        else:
+            out["next"] = (f"write a `check:` command into the item that the worker can run itself, "
+                           f"then re-dispatch to {out['agent']} at {out['effort']}")
     else:
         out["next"] = f"re-dispatch to {out['agent']} at effort {out['effort']} with the validator's evidence"
     return out
@@ -675,7 +792,8 @@ def signals_from_item(item: dict) -> Signals:
         repos=_count(item.get("repos")),
         edits_code=_truthy(item.get("edits_code")),
         computer_use=bool(_truthy(item.get("computer_use"))),
-        has_check=bool(_split_list(item.get("check"))),
+        has_check=has_check(item.get("check")),
+        user_override="user override" in str(item.get("route") or "").lower(),
     )
 
 
@@ -685,6 +803,47 @@ def find_project_root(start: Path | None = None) -> Path:
         if (p / ".claude").is_dir() or (p / ".git").exists():
             return p
     return here
+
+
+def read_frontmatter(path: Path) -> dict:
+    text = path.read_text(encoding="utf-8").replace("\r\n", "\n")
+    m = re.match(r"^---\n(.*?)\n---", text, re.S)
+    if not m:
+        return {}
+    try:
+        data = load_yaml(m.group(1))
+    except ContractError:
+        data = None
+    return data if isinstance(data, dict) else {}
+
+
+def agent_tier(agent: str, contract: Contract, root: Path | None = None) -> str | None:
+    """Tier of a subagent: from the contract, else from its file's `model:`."""
+    tier = contract.tier_of_agent(agent)
+    if tier:
+        return tier
+    # The project's agents first, then the .claude/agents next to this skill
+    # (the same folder for a project skill; ~/.claude/agents for a user skill).
+    for agents_dir in ((root or find_project_root()) / ".claude" / "agents", SKILL_DIR.parent.parent / "agents"):
+        f = agents_dir / f"{agent}.md"
+        if f.exists():
+            model = str(read_frontmatter(f).get("model") or "")
+            return contract.tier_of_model(model) if model else None
+    return None
+
+
+def tool_available(fm: dict, tool: str) -> bool:
+    tools = fm.get("tools")
+    allowed = None if tools in (None, "", "*") else set(_as_list(tools))
+    denied = set(_as_list(fm.get("disallowedTools")))
+    return (allowed is None or tool in allowed) and tool not in denied
+
+
+def parse_unavailable(values) -> set:
+    out = set()
+    for v in values or []:
+        out |= {t.strip().lower() for t in str(v).split(",") if t.strip()}
+    return out
 
 
 def cmd_route(args, contract: Contract) -> dict:
@@ -728,8 +887,11 @@ def cmd_route(args, contract: Contract) -> dict:
     out["signals"] = {
         "stated_kinds": sig.kinds, "spec": sig.spec, "files": sig.files, "repos": sig.repos,
         "edits_code": sig.edits_code, "computer_use": sig.computer_use, "has_check": sig.has_check,
-        "images": sig.images, "logs": sig.logs, "source_tokens_est": sig.source_tokens,
+        "user_override": sig.user_override, "images": sig.images, "logs": sig.logs,
+        "source_tokens_est": sig.source_tokens,
     }
+    if contract.unavailable:
+        out["signals"]["unavailable"] = sorted(contract.unavailable)
     if assets.missing:
         out["warnings"].append(f"asset(s) not found: {', '.join(assets.missing)}")
     if assets.truncated:
@@ -739,16 +901,14 @@ def cmd_route(args, contract: Contract) -> dict:
     return out
 
 
-def cmd_check(contract: Contract, root: Path) -> list:
-    problems = []
+def cmd_check(contract: Contract, root: Path) -> tuple:
+    problems, notes = [], []
     tiers = set(contract.ladder)
     for r in contract.rules:
         if r.model not in tiers:
             problems.append(f"rule '{r.text}': model {r.model} is not on the ladder {contract.ladder}")
         if r.effort not in EFFORTS:
             problems.append(f"rule '{r.text}': effort {r.effort} is not one of {EFFORTS}")
-        if r.condition not in (None, "scoped"):
-            problems.append(f"rule '{r.text}': unknown condition 'if {r.condition}'")
     if contract.default[0] not in tiers:
         problems.append(f"default model {contract.default[0]} is not on the ladder")
     for e in (contract.default[1], contract.max_effort, contract.restart_effort, contract.validator[1]):
@@ -763,6 +923,8 @@ def cmd_check(contract: Contract, root: Path) -> list:
     for t in contract.ladder:
         if t not in contract.prices:
             problems.append(f"prices: no price for {t}")
+        if contract.model_ids and t not in contract.model_ids:
+            problems.append(f"models: no model id listed for {t}, so its messages would be unpriced")
     for k in contract.keywords:
         if k not in contract.known_kinds:
             problems.append(f"keywords: '{k}' is not a kind used by any rule")
@@ -774,30 +936,39 @@ def cmd_check(contract: Contract, root: Path) -> list:
         if not f.exists():
             problems.append(f"subagent file missing: {f}")
             continue
-        head = f.read_text(encoding="utf-8").split("---")
-        fm = head[1] if len(head) > 2 else ""
-        m = re.search(r"^model:\s*(\S+)", fm, re.M)
-        if tier in tiers and (not m or m.group(1).strip().lower() != tier):
-            problems.append(f"{f.name}: frontmatter model should be '{tier}', found {m.group(1) if m else 'none'}")
-        if tier in contract.no_code_edits:
-            tools_line = re.search(r"^(disallowedTools|tools):\s*(.*)$", fm, re.M)
-            text = tools_line.group(0) if tools_line else ""
-            if not tools_line or (tools_line.group(1) == "tools" and re.search(r"\b(Edit|Write)\b", text)) or \
-               (tools_line.group(1) == "disallowedTools" and not re.search(r"\bEdit\b", text)):
-                problems.append(f"{f.name}: guard says no code edits on {tier}, but Edit/Write are not blocked")
-    return problems
+        fm = read_frontmatter(f)
+        model = str(fm.get("model") or "").strip().lower()
+        if tier in tiers and model != tier:
+            problems.append(f"{f.name}: frontmatter model should be '{tier}', found '{model or 'none'}'")
+        for tool in NESTING_TOOLS:
+            if tool_available(fm, tool):
+                problems.append(f"{f.name}: {tool} is available; workers must not start their own "
+                                f"subagents or skills (they would run unrouted and unlogged)")
+        if tier in contract.no_code_edits or tier == "(validator)":
+            for tool in EDIT_TOOLS:
+                if tool_available(fm, tool):
+                    problems.append(f"{f.name}: {tool} is available, but this agent must not edit files")
+            if tool_available(fm, "Bash"):
+                notes.append(f"{f.name}: keeps Bash; read-only shell use rests on its prompt and the "
+                             f"orchestrator's git status check")
+        if fm.get("tools") in (None, ""):
+            notes.append(f"{f.name}: no tools allowlist, so it inherits every session tool (including MCP "
+                         f"servers), which enlarges each dispatch's prompt")
+    return problems, notes
 
 
 def main(argv=None):
     ap = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     ap.add_argument("--contract", help="routing contract (default: routing.yaml next to the skill)")
+    ap.add_argument("--unavailable", action="append",
+                    help="tier(s) this account cannot use right now, e.g. fable (comma-separated or repeated)")
     sub = ap.add_subparsers(dest="cmd", required=True)
 
     r = sub.add_parser("route", help="route one work item")
-    r.add_argument("--task", help="TASK.md to read the item's signals and failed cycles from")
+    r.add_argument("--task", help="TASK.md to read the item's signals and cycles from")
     r.add_argument("--item", help="work item id in TASK.md, e.g. W2")
     r.add_argument("--request", help="request text (used to infer the kind when none is stated)")
-    r.add_argument("--kind", action="append", help="stated kind (repeatable or comma-separated)")
+    r.add_argument("--kind", action="append", help="stated kind (repeatable or comma-separated), or 'unsure'")
     r.add_argument("--spec", choices=["clear", "open"], help="clear spec or open-ended")
     r.add_argument("--files", type=int, help="number of files the item touches")
     r.add_argument("--repos", type=int, help="number of repos the item touches")
@@ -807,7 +978,7 @@ def main(argv=None):
     r.add_argument("--computer-use", action="store_true")
     r.add_argument("--has-check", action="store_true", help="the worker already has a check it can run")
     r.add_argument("--asset", action="append", help="asset path (file or dir), repeatable")
-    r.add_argument("--images", type=int, help="number of images attached in chat (not on disk)")
+    r.add_argument("--images", type=int, help="images the worker will see that are not listed as asset paths")
     r.add_argument("--source-tokens", type=int, help="extra source material in tokens (e.g. pasted text)")
     r.add_argument("--root", help="base directory for relative asset paths (default: cwd)")
     r.add_argument("--brief", action="store_true", help="one line instead of JSON")
@@ -827,6 +998,7 @@ def main(argv=None):
     except (OSError, ContractError) as exc:
         print(f"route.py: cannot load contract: {exc}", file=sys.stderr)
         return 2
+    contract.unavailable = parse_unavailable(args.unavailable)
 
     try:
         if args.cmd == "route":
@@ -843,13 +1015,15 @@ def main(argv=None):
             for i, rule in enumerate(contract.rules, 1):
                 cond = f"  (if {rule.condition})" if rule.condition else ""
                 print(f"{i}. {' | '.join(rule.kinds)} -> {rule.model} @ {rule.effort}{cond}")
-            print(f"default: {contract.default[0]} @ {contract.default[1]}")
+            print(f"default: {contract.default[0]} @ {contract.default[1]}   (kind: {UNSURE} goes here directly)")
             return 0
         if args.cmd == "check":
             root = Path(args.root) if args.root else find_project_root()
-            problems = cmd_check(contract, root)
+            problems, notes = cmd_check(contract, root)
             for p in problems:
                 print(f"- {p}")
+            for n in notes:
+                print(f"  note: {n}")
             print("contract OK" if not problems else f"{len(problems)} problem(s)")
             return 0 if not problems else 1
     except ContractError as exc:

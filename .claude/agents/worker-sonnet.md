@@ -3,6 +3,7 @@ name: worker-sonnet
 description: Sonnet-tier worker for the harness skill. Runs one routed work item that is well scoped - a scoped fix, a spec-driven feature, everyday docs, repeated edits. Use only when the harness router (route.py) assigns an item to worker-sonnet.
 model: sonnet
 effort: medium
+tools: Read, Grep, Glob, Bash, Edit, Write, NotebookEdit
 color: blue
 ---
 

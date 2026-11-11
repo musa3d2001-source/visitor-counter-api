@@ -51,6 +51,15 @@ routing:
     fable: worker-fable
   validator: validator @ medium   # read-only checker (.claude/agents/validator.md)
 
+  # Model ids each tier's prices apply to (dates and platform prefixes are
+  # ignored). The ledger leaves any other id unpriced instead of guessing -
+  # an older model in the same family has different prices.
+  models:
+    haiku: claude-haiku-5-5
+    sonnet: claude-sonnet-5-5
+    opus: claude-opus-5-5
+    fable: claude-fable-5-2, claude-mythos-5-2
+
   # USD per million tokens - input / output / cache read. Claude API list
   # prices. Cache writes cost input x 1.25 (5-minute) or x 2 (1-hour).
   # Haiku's cache-read price is assumed at 0.1x input; check your price sheet.
@@ -61,9 +70,11 @@ routing:
     fable: 8 / 40 / 0.20
   long_context:                   # prompts above N tokens bill at these prices
     haiku: 100000 -> 0.50 / 2.50 / 0.05
+  fast_mode_multiplier: 2         # fast mode (Opus 5.5, Fable 5.2) bills 2x standard
 
-  # Words in a request that state a kind. Used only when a work item does not
-  # state its kind. Each kind also matches its own name.
+  # Words in a request that state a kind. Used only when a work item states
+  # no kind (`kind: unsure` skips them and goes to the default). Each kind
+  # also matches its own name.
   keywords:
     classify: classify, categorize, categorise, label, triage
     tag: tag, tags, tagging
@@ -79,7 +90,7 @@ routing:
     debugging: debug, bug, crash, flaky, regression, root cause, failing, broken, why does
     images: screenshot, image, mockup, diagram, photo
     computer use: computer use, click through, browser, ui automation, desktop app
-    migration: migrate, migration, port to, upgrade from, move from, convert to
+    migration: migrate, migrating, migration, upgrade from, rewrite in, port the codebase
     architecture: architecture, architect, redesign, system design, rearchitect
     deep research: research, investigate, compare options, literature, survey
     quant analysis: quant, quantitative, statistics, statistical, regression analysis, forecast, backtest

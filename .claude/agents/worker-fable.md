@@ -3,6 +3,7 @@ name: worker-fable
 description: Fable-tier worker for the harness skill. Runs one routed work item that is the hardest open-ended technical work - migrations, architecture, deep research, quantitative analysis. Use only when the harness router (route.py) assigns an item to worker-fable.
 model: fable
 effort: medium
+tools: Read, Grep, Glob, Bash, Edit, Write, NotebookEdit, WebFetch, WebSearch
 color: orange
 ---
 
