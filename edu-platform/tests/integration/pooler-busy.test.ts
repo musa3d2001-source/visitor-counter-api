@@ -1,5 +1,5 @@
 import { afterAll, afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import { closeDb, DatabaseBusyError, isDatabaseBusy, sql } from "@/server/db";
+import { closeDb, DatabaseBusyError, dbTestHooks, isDatabaseBusy, sql } from "@/server/db";
 import { resetEnvCache } from "@/server/env";
 import { pendingSaturation, resetSaturationForTests } from "@/server/platform/saturation";
 import { startFakePooler, type FakePooler, type FakePoolerMode } from "../mocks/fake-pooler";
@@ -27,6 +27,7 @@ async function useFakePooler(mode: FakePoolerMode) {
 beforeEach(() => resetSaturationForTests({ holdWrites: true }));
 
 afterEach(async () => {
+  dbTestHooks.cancelGraceMs = 2_000;
   await closeDb();
   await pooler?.close();
   pooler = null;
@@ -102,5 +103,44 @@ describe("a pooler that refuses new clients", () => {
     expect(isDatabaseBusy(error)).toBe(false);
     expect((error as { code?: string }).code).toBe("XX000");
     expect(pendingSaturation()).toEqual({});
+  });
+});
+
+describe("a transaction whose BEGIN the pooler holds", () => {
+  it("gives up at its start deadline with busy, and its body never runs even when BEGIN arrives later", async () => {
+    const fake = await useFakePooler({ kind: "hold-begin" });
+    dbTestHooks.cancelGraceMs = 200;
+    let ran = false;
+    const { ms, error, timedOut } = await settle(
+      sql.begin(async (tx) => {
+        ran = true;
+        await tx`insert into nothing values (1)`;
+      }),
+      4_000,
+    );
+    expect(timedOut, "the transaction waited past its deadline").toBe(false);
+    expect(error).toBeInstanceOf(DatabaseBusyError);
+    expect((error as DatabaseBusyError).reason).toBe("queue");
+    // ٦٠٠ مللي ثانية انتظار الحوض + ٢٠٠ مهلة إضافية
+    expect(ms).toBeGreaterThanOrEqual(700);
+    expect(ms).toBeLessThan(2_000);
+    expect(fake.queries.some((q) => /^begin\b/i.test(q))).toBe(true);
+
+    // يصل BEGIN متأخرًا: يُتراجع عن المعاملة فورًا، ولا يُرسل شيء من داخلها
+    fake.releaseBegin();
+    const deadline = Date.now() + 3_000;
+    while (!fake.queries.some((q) => /^rollback\b/i.test(q)) && Date.now() < deadline) await new Promise((r) => setTimeout(r, 20));
+    expect(fake.queries.filter((q) => /^rollback\b/i.test(q))).toHaveLength(1);
+    expect(ran).toBe(false);
+    expect(fake.parsed.join(" ")).not.toMatch(/insert|set_config/);
+    // الانشغال عُدّ مرة واحدة، لا مرة للمستدعي ومرة للتراجع المتأخر
+    expect(pendingSaturation()).toEqual({ db_pool_wait: 1 });
+  });
+
+  it("a BEGIN the pooler answers with its checkout timeout is busy", async () => {
+    await useFakePooler({ kind: "fail-begin", code: "XX000", message: "(ECHECKOUTTIMEOUT) unable to check out connection from the pool after 15000ms in Transaction mode" });
+    const { error, timedOut } = await settle(sql.begin(async () => undefined), 4_000);
+    expect(timedOut).toBe(false);
+    expect(isDatabaseBusy(error)).toBe(true);
   });
 });

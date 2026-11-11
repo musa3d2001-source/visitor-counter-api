@@ -17,6 +17,7 @@ export { DatabaseBusyError, isDatabaseBusy } from "./db-busy";
  *  2) داخل كل معاملة: set_config(..., true) أي SET LOCAL لمهلة الأمر ولمهلة الخمول داخل المعاملة. يعمل عبر
  *     Supabase pooler بوضع transaction لأن المعاملة كلها على اتصال خادم واحد، وينتهي أثره مع نهايتها.
  *     (SET على مستوى الجلسة لا يصلح هناك: الاتصال يتبدل بين المعاملات).
+ *     وقبل ذلك مهلة بدء في العميل من لحظة طلب المعاملة حتى تبدأ فعلًا، لأن BEGIN قد ينتظر عند الـ pooler (guardedBegin).
  *  3) الأمر المنفرد خارج المعاملات: مهلة في العميل ترسل طلب إلغاء عند انتهائها، وإن لم يصل الرد خلال مهلة قصيرة إضافية
  *     (pooler لا يمرر الإلغاء مثلًا) يُرفض الوعد للمستدعي فورًا. الاتصال نفسه يبقى مشغولًا حتى يرد الخادم، فيصطدم ما بعده
  *     بالحد الأول ويرد «مشغول» بدل أن يعلق.
@@ -141,25 +142,63 @@ function isTemplateCall(args: unknown[]): boolean {
 
 type TxFn = (tx: unknown) => unknown;
 
-/** sql.begin مع مهلة SET LOCAL في أول المعاملة، وأخطاء الانشغال بالنوع الواحد */
+/** رفض داخلي: مهلة بدء المعاملة انتهت قبل أن تبدأ، فلا تُنفذ الدالة ويتراجع postgres.js عن BEGIN */
+const START_ABANDONED = Symbol("transaction start abandoned");
+
+/**
+ * sql.begin مع مهلتين وأخطاء الانشغال بالنوع الواحد:
+ *  - مهلة البدء في العميل، من لحظة طلب المعاملة: انتظار اتصال في الحوض، وفتحه، وBEGIN، وضبط SET LOCAL.
+ *    عبر Supavisor بوضع transaction لا يُحجز اتصال خادم إلا مع أول رسالة (BEGIN)، وإن كانت كلها مشغولة ينتظر هناك
+ *    حتى pool_checkout_timeout (١٥ ثانية في حوادث Supabase المنشورة) قبل أن يرد، وstatement_timeout لم يُضبط بعد.
+ *    عند انتهائها يأخذ المستدعي DatabaseBusyError("queue") فورًا، ولا تُنفذ دالته أبدًا: إن بدأت المعاملة لاحقًا يُتراجع عنها.
+ *  - داخلها: set_config(..., true) أي SET LOCAL لمهلة الأمر ومهلة الخمول، كما في رأس الملف.
+ */
 function guardedBegin(db: Sql) {
   return (...args: unknown[]) => {
     const fn = args[args.length - 1] as TxFn;
     const mode = args.length > 1 ? (args[0] as string) : null;
     const statementMs = currentStatementMs();
     const idleMs = Math.max(MIN_IDLE_IN_TRANSACTION_MS, statementMs);
+    // انتظار الحوض محدود أصلًا بـ queue_timeout، والمهلة الإضافية تغطي فتح الاتصال وBEGIN خلف الـ pooler
+    const startMs = env().DATABASE_QUEUE_TIMEOUT_MS + dbTestHooks.cancelGraceMs;
+    let phase: "starting" | "running" | "abandoned" | "settled" = "starting";
+    // دالة لا مقارنة مباشرة: المهلة تغير phase بين انتظارين، وTypeScript لا يرى ذلك
+    const abandonedNow = () => phase === "abandoned";
+    let timer: ReturnType<typeof setTimeout> | undefined;
+    const abandoned = new Promise<never>((_, reject) => {
+      timer = setTimeout(() => {
+        if (phase !== "starting") return;
+        phase = "abandoned";
+        reject(new DatabaseBusyError("queue"));
+      }, startMs);
+      timer.unref?.();
+    });
     const run = async (tx: unknown) => {
+      if (abandonedNow()) throw START_ABANDONED;
       const t = tx as (strings: TemplateStringsArray, ...values: unknown[]) => Promise<unknown>;
       await t`select set_config('statement_timeout', ${String(statementMs)}, true), set_config('idle_in_transaction_session_timeout', ${String(idleMs)}, true)`;
+      if (abandonedNow()) throw START_ABANDONED;
+      phase = "running";
+      clearTimeout(timer);
       const out = fn(tx);
       // postgres.js ينفذ مصفوفة أوامر معادة من الدالة، فنحفظ هذا السلوك
       return Array.isArray(out) ? Promise.all(out) : out;
     };
     const begin = db.begin as unknown as (...a: unknown[]) => Promise<unknown>;
     const started = mode === null ? begin.call(db, run) : begin.call(db, mode, run);
-    return started.catch((err: unknown) => {
-      throw toBusyError(err);
-    });
+    const finished = started.then(
+      (value) => {
+        phase = "settled";
+        return value;
+      },
+      (err: unknown) => {
+        // المستدعي أخذ جوابه عند انتهاء مهلة البدء: ما يصل بعدها لا يُعد انشغالًا مرة ثانية
+        if (abandonedNow()) return undefined;
+        phase = "settled";
+        throw toBusyError(err);
+      },
+    );
+    return Promise.race([finished, abandoned]).finally(() => clearTimeout(timer));
   };
 }
 
