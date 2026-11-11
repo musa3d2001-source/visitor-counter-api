@@ -220,6 +220,43 @@ describe("stamped copies are condemned in bounded batches", () => {
     expect(states.find((r) => r.id === evicted.id)?.state ?? "gone").not.toBe("ready");
   });
 
+  // البند V5: نسخ جهزها المالك هذا الأسبوع وتتسع لها المساحة كلها لا يُخرج التنظيف منها شيئًا، ولو تجاوزت ٩٠٪
+  it("copies prepared this week for current buyers that fill 95% of the space all survive the nightly prune", async () => {
+    const { product, file } = await ownedFile("الصف كله قبل الامتحان");
+    for (let i = 0; i < 19; i++) {
+      const buyer = await createUser();
+      await sql`insert into entitlements (user_id, product_id, source) values (${buyer.id}, ${product.id}, 'manual')`;
+      await addCopy(buyer.id, file, 0.05, i + 1, 1);
+    }
+    const before = await readyIds();
+    expect(before).toHaveLength(19);
+    await runDataPruning();
+    expect(await readyIds()).toEqual(before);
+  });
+
+  it("prepared copies beyond the whole space go least recently used first, down to the space and not to 90%", async () => {
+    const { product, file } = await ownedFile("أكثر من المساحة");
+    for (let g = 1; g <= 5; g++) {
+      const buyer = await createUser();
+      await sql`insert into entitlements (user_id, product_id, source) values (${buyer.id}, ${product.id}, 'manual')`;
+      await addCopy(buyer.id, file, 0.3, g, 1);
+    }
+    const newestThree = (await readyIds()).slice(0, 3);
+    await runDataPruning();
+    // ٣ × ٣٠٪ = ٩٠٪ تبقى، والرابعة (١٢٠٪) أول ما يتجاوز المساحة
+    expect(await readyIds()).toEqual(newestThree);
+  });
+
+  it("unprotected copies go first and only down to 90%, then the prepared ones are left whole", async () => {
+    const { file, owner } = await ownedFile("خليط");
+    const [prepared] = await addCopy(owner.id, file, 0.7, 30, 1);
+    const [recentIdle] = await addCopy(owner.id, file, 0.15, 1, 10);
+    await addCopy(owner.id, file, 0.15, 2, 10);
+    await runDataPruning();
+    // المحمية ٧٠٪ أولًا، ثم الأحدث استعمالًا من غيرها: ٨٥٪ تبقى، و١٠٠٪ تتجاوز ٩٠٪ فتخرج رغم أنها تحت المساحة كلها
+    expect((await readyIds()).sort()).toEqual([prepared.id, recentIdle.id].sort());
+  });
+
   it("over the budget, a copy opened in the last quarter hour is not condemned, since its link may be in a student's hands", async () => {
     const user = await createUser();
     const product = await createProduct({ title: "نسخة مفتوحة الآن" });

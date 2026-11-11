@@ -29,7 +29,10 @@ export const EXPIRED_TOKEN_GRACE_DAYS = 1;
 export const PRUNE_BATCH_SIZE = 2_000;
 const MAX_ROUNDS = 10;
 const TIME_BUDGET_MS = 30_000;
-/** التنظيف اليومي ينزل بالنسخ المختومة إلى هذا الجزء من مساحتها، فلا يكون كل حفظ في اليوم التالي إخراجًا لنسخة أخرى */
+/**
+ * التنظيف اليومي ينزل بالنسخ المختومة غير المحمية إلى هذا الجزء من مساحتها، فلا يكون كل حفظ في اليوم التالي إخراجًا لنسخة أخرى.
+ * المحمية (protectedCopySql) لا تنزل تحت المساحة كلها: نسخ جهزها المالك وتتسع لها المساحة لا يُخرج منها شيء (البند V5)
+ */
 export const STAMPED_COPY_LOW_WATER = 0.9;
 
 const deleted = (query: PromiseLike<{ count: number }>) => query.then((result) => result.count);
@@ -191,18 +194,21 @@ async function pruneStampedCopies(inBatches: (statement: () => PromiseLike<numbe
       update stamped_copies c set state = 'doomed' from batch where c.id = batch.id
     `),
   );
-  // فوق المساحة (القرار F24): ينزل إلى ٩٠٪ منها بترتيب الإخراج نفسه في makeRoom (المحمية آخرًا، والأقدم استعمالًا أولًا)،
-  // فيبقى مكان لنسخ اليوم دون أن يُخرج كل حفظ نسخة أخرى. نسخة فُتحت في آخر ربع ساعة لا تُمس
-  const keep = Math.floor(stampedCopyBudgetBytes() * STAMPED_COPY_LOW_WATER);
+  // فوق المساحة (القرار F24، البند V5): ترتيب الإخراج نفسه في makeRoom (المحمية آخرًا، والأقدم استعمالًا أولًا).
+  // غير المحمية تنزل إلى ٩٠٪ من المساحة، فيبقى مكان لنسخ اليوم دون أن يُخرج كل حفظ نسخة أخرى. المحمية (جُهزت هذا الأسبوع
+  // لمشترٍ ما زال يملك المنتج) لا تُمس تحت المساحة نفسها: نسخ جهزها المالك قبل الامتحان وتتسع لها المساحة تبقى كلها.
+  // نسخة فُتحت في آخر ربع ساعة لا تُمس
+  const budget = stampedCopyBudgetBytes();
+  const keep = Math.floor(budget * STAMPED_COPY_LOW_WATER);
   await inBatches(
     () => deleted(sql`
       with batch as materialized (
         select c.id from stamped_copies c
         where c.state = 'ready' and c.last_used_at < now() - make_interval(mins => ${STAMPED_COPY_IN_USE_MINUTES}) and c.id in (
           select id from (
-            select c.id, sum(c.size_bytes) over (order by ${protectedCopySql()} desc, c.last_used_at desc, c.id desc) as running
-            from stamped_copies c where c.state = 'ready'
-          ) ranked where running > ${keep}
+            select c.id, c.protected, sum(c.size_bytes) over (order by c.protected desc, c.last_used_at desc, c.id desc) as running
+            from (select c.id, c.size_bytes, c.last_used_at, ${protectedCopySql()} as protected from stamped_copies c where c.state = 'ready') c
+          ) ranked where running > ${budget} or (running > ${keep} and not ranked.protected)
         )
         limit ${PRUNE_BATCH_SIZE} for update of c skip locked
       )
