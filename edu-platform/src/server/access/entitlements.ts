@@ -5,6 +5,7 @@ import { audit } from "../platform/audit";
 import { isContainerType, isVideoType } from "@/lib/labels";
 import { isUuid } from "@/lib/uuid";
 import { DRAIN_BUDGET_MS, enqueueGrantCopies, forgetRevokedCopies, scheduleStampDrain } from "./stamp-queue";
+import type { SqlValue } from "./copy-key";
 
 /**
  * صلاحيات الوصول:
@@ -28,6 +29,33 @@ export function ownedCte(db: Db, userId: string | null) {
       select bi.product_id, o.expires_at from owned o join bundle_items bi on bi.bundle_id = o.product_id
     )
   `;
+}
+
+/**
+ * شرط SQL: هل يفتح هذا الحساب هذا الملف الرئيسي بقاعدة checkFileAccess لغير المدير؟ يملك منتجه (صلاحية نشطة عليه
+ * أو على حاوية تضمه بأي عمق، وهي قاعدة ownedCte نفسها مقروءة من الملف صعودًا) أو هو معلمه بإدارة ذاتية.
+ * يُقرأ لصف واحد (حفظ النسخة المختومة في delivery.ts) ولكل صف (التنظيف اليومي)، فيقبل معاملًا أو مرجع عمود.
+ * المدير يأخذ الأصل ولا نسخة له، فلا يدخل هنا. tests/integration/copy-access-rule.test.ts يطابقه بـ checkFileAccess.
+ */
+export function mainFileAccessSql(db: Db, userId: SqlValue, fileId: SqlValue) {
+  return db`(
+    exists (
+      with recursive anc(product_id) as (
+        select f.product_id from product_files f where f.id = ${fileId}
+        union
+        select bi.bundle_id from anc a join bundle_items bi on bi.product_id = a.product_id
+      )
+      select 1 from anc a join entitlements e on e.product_id = a.product_id
+      where e.user_id = ${userId} and e.revoked_at is null and (e.expires_at is null or e.expires_at > now())
+    )
+    or exists (
+      select 1 from product_files f
+      join products p on p.id = f.product_id
+      join teachers t on t.id = p.teacher_id
+      join users tu on tu.id = t.user_id
+      where f.id = ${fileId} and t.user_id = ${userId} and t.mode = 'self_managed' and tu.role = 'teacher'
+    )
+  )`;
 }
 
 export async function hasProductAccess(userId: string, productId: string, db: Db = sql): Promise<boolean> {

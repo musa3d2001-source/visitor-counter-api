@@ -38,7 +38,7 @@ export type DrainReport = { prepared: number; alreadyReady: number; dropped: num
 
 type ClaimedJob = { id: string; user_id: string; attempts: number };
 type FileRow = { id: string; product_id: string; storage_key: string; kind: "main" | "preview"; size_bytes: string; page_count: number | null; check_status: string };
-type UserRow = { id: string; email: string; role: string; is_active: boolean; anonymized_at: Date | null };
+type UserRow = { id: string; email: string; role: string; is_active: boolean; anonymized_at: Date | null; file_current: boolean };
 
 const scopeSql = (scope: DrainScope) => sql`
   ${scope.userId ? sql`and user_id = ${scope.userId}` : sql``}
@@ -159,7 +159,17 @@ async function drainFile(fileId: string, jobs: ClaimedJob[], token: string, dead
         await giveBack(jobs.slice(i).map((j) => j.id), token);
         return true;
       }
-      const [u] = await sql<UserRow[]>`select id, email, role, is_active, anonymized_at from users where id = ${job.user_id}`;
+      // الملف يُفحص مع كل مهمة لا مرة للدفعة (البند V3): ملف حُذف أثناء الدفعة لا يُختم منه ما بقي من أصله في الذاكرة،
+      // ونسخة له بدّلت مفتاحها تُقرأ من جديد. مهامه تعود (أو حُذفت معه)، وتأخذها الجولة التالية بصف الملف الجديد
+      const [u] = await sql<UserRow[]>`
+        select u.id, u.email, u.role, u.is_active, u.anonymized_at,
+          exists (select 1 from product_files f where f.id = ${file.id} and f.storage_key = ${file.storageKey}) as file_current
+        from users u where u.id = ${job.user_id}
+      `;
+      if (u && !u.file_current) {
+        await giveBack(jobs.slice(i).map((j) => j.id), token);
+        return false;
+      }
       if (!u || !u.is_active || u.anonymized_at || u.role === "admin" || !(await hasProductAccess(u.id, file.productId))) {
         await done(job.id, token);
         report.dropped++;
@@ -182,9 +192,16 @@ async function drainFile(fileId: string, jobs: ClaimedJob[], token: string, dead
           await done(job.id, token);
           report.prepared++;
         } else {
-          // خُتمت ولم تُحفظ (التخزين رفض): لا أحد يقرؤها هنا، فتُحرر وتُعاد المهمة لاحقًا
+          // لم تُحفظ: لا أحد يقرؤها هنا، فتُحرر
           await produced.shared.open().cancel();
-          if (await failed(job, token, "not_kept")) report.failed++;
+          if (produced.refused && !(await hasProductAccess(u.id, file.productId))) {
+            // سُحب الوصول أثناء الختم (استرداد أو تعليق أو سحب، البند V3): حُذف كائنها، والمهمة لا تُعاد
+            await done(job.id, token);
+            report.dropped++;
+          } else if (await failed(job, token, "not_kept")) {
+            // التخزين رفض، أو تغيّر البريد أو أُخذ العقد أثناء الختم: تُعاد المهمة لاحقًا بما هو قائم حينها
+            report.failed++;
+          }
         }
       } catch (err) {
         if (err instanceof StampInProgressError) {

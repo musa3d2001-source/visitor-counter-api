@@ -11,6 +11,7 @@ import { assertStampCapacity, withStampSlot } from "./stamp-gate";
 import { reserveStampMemory, type MemoryLease } from "./stamp-memory";
 import { protectedCopySql, stampedCopyBudgetBytes, STAMPED_COPY_IN_USE_MINUTES } from "./copy-store";
 import { identityLines, identityOrderSql, stampCacheKey, type Lines } from "./copy-key";
+import { mainFileAccessSql } from "./entitlements";
 
 /**
  * تسليم ملفات PDF. الصلاحية والحساب يُفحصان قبل هذا الملف في كل طلب (checkFileAccess و getCurrentUser)،
@@ -281,29 +282,43 @@ function sweepSoon(limit: number) {
 }
 
 /**
+ * نتيجة الحفظ: kept حُفظت وصارت جاهزة. not_stored تعذر رفعها إلى التخزين (تُعاد المحاولة لاحقًا).
+ * refused تغيّر شيء بين فحص الصلاحية وانتهاء الختم (الوصول أو الملف أو البريد أو العقد)، فحُذف كائنها. المفرّغ
+ * يسقط مهمتها إن لم يعد صاحبها يملك المنتج، ويعيدها لاحقًا غير ذلك (stamp-jobs.ts).
+ */
+type Kept = "kept" | "not_stored" | "refused";
+
+/**
  * يحفظ النسخة ويعلّمها جاهزة. يُعلَّم الصف جاهزًا فقط إن كان ما زال عقدنا ولم يُعلَّم للحذف، وإن كان البريد المختوم
- * ما زال بريد الحساب والحساب فعالًا (البند R011): غير ذلك يُحذف الكائن الذي رُفع للتو، فلا تبقى نسخة لا يجدها وعد الحذف.
+ * ما زال بريد الحساب والحساب فعالًا (البند R011)، والملف ما زال بنسخته التي خُتمت، والحساب ما زال يفتح هذا الملف
+ * بقاعدة checkFileAccess نفسها (mainFileAccessSql: مالك مباشرة أو عبر حاوية، أو معلمه بإدارة ذاتية) (البندان V2 و V3).
+ * الصلاحية فُحصت قبل الختم، والختم يأخذ ثواني: استرداد أو سحب أو حذف ملف التزم بينهما لم يجد صف العقد ليعلّمه للحذف
+ * إن سبقه، وهذا الفحص يمسكه. غير ذلك يُحذف الكائن الذي رُفع للتو، فلا تبقى نسخة لا يجدها وعد الحذف.
+ * ما يبقى بعده: سحب لم يلتزم بعد لحظة هذا الأمر (معاملته مفتوحة) ولم يجد صف العقد. نافذته بين أمرين في معاملة السحب،
+ * أقصر من أي ختم، والتنظيف اليومي (maintenance.ts) يعلّم للحذف كل نسخة لم يعد صاحبها يفتح ملفها.
  * أي تعثر في الحفظ لا يمنع تسليم ما خُتم: الحفظ تسريع لا شرط.
  */
-async function keepCopy(claimId: string, token: string, objectKey: string, bytes: Uint8Array, stampedEmail: string): Promise<boolean> {
+async function keepCopy(claimId: string, token: string, objectKey: string, bytes: Uint8Array, stampedEmail: string): Promise<Kept> {
   await makeRoom(bytes.length).catch((err) => reportError("files:stamped-copy-evict", err));
   try {
     // نسخة شخصية: لا يحفظها متصفح ولا شبكة بين رابط وآخر
     await storage().put("private", objectKey, bytes, "application/pdf", { cacheSeconds: 0 });
   } catch (err) {
     await reportError("files:stamped-copy-store", err);
-    return false;
+    return "not_stored";
   }
   const done = await sql`
     update stamped_copies c set state = 'ready', size_bytes = ${bytes.length}, holder = null, lease_until = null, last_used_at = now()
     where c.id = ${claimId} and c.holder = ${token} and c.state = 'stamping'
       and exists (select 1 from users u where u.id = c.user_id and u.email = ${stampedEmail} and u.is_active and u.anonymized_at is null)
+      and exists (select 1 from product_files f where f.id = c.file_id and f.storage_key = c.file_version)
+      and ${mainFileAccessSql(sql, sql`c.user_id`, sql`c.file_id`)}
   `;
-  if (done.count === 1) return true;
+  if (done.count === 1) return "kept";
   await storage()
     .removeMany("private", [objectKey])
     .catch((err) => reportError("files:stamped-copy-orphan", err));
-  return false;
+  return "refused";
 }
 
 /** بايتات نسخة لم تُحفظ، يقرؤها صاحب الطلب ومن انضم إليه على هذه النسخة. تبقى محسوبة حتى يُغلق آخر بث أو يُلغى */
@@ -336,7 +351,8 @@ function shareBytes(bytes: Uint8Array, lease: MemoryLease): SharedBytes {
   };
 }
 
-type Produced = { kind: "kept"; objectKey: string; size: number | null } | { kind: "bytes"; shared: SharedBytes };
+/** refused: رفض keepCopy حفظها لأن شيئًا تغيّر أثناء الختم. غير ذلك تعذر الحفظ نفسه */
+type Produced = { kind: "kept"; objectKey: string; size: number | null } | { kind: "bytes"; shared: SharedBytes; refused: boolean };
 
 /**
  * يختم نسخة هذا المشتري ويحفظها (البندان R007 و R016):
@@ -370,7 +386,8 @@ export async function produceCopy(
     // الأصل لم يعد لازمًا: لا يبقى محسوبًا (ولا مرجعًا) أثناء الرفع
     original = null;
     lease.resize(stamped.length);
-    if (await keepCopy(claimId, token, objectKey, stamped, user.email)) {
+    const kept = await keepCopy(claimId, token, objectKey, stamped, user.email);
+    if (kept === "kept") {
       claimId = null;
       if (opts.clearQueuedJob) {
         await sql`delete from stamp_jobs where user_id = ${user.id} and file_id = ${file.id} and (holder is null or lease_until < now())`.catch((err) =>
@@ -383,7 +400,7 @@ export async function produceCopy(
     await releaseClaim(claimId, token);
     claimId = null;
     handedOver = true;
-    return { kind: "bytes", shared: shareBytes(stamped, lease) };
+    return { kind: "bytes", shared: shareBytes(stamped, lease), refused: kept === "refused" };
   } finally {
     if (!handedOver) lease.release();
     if (claimId) await releaseClaim(claimId, token);

@@ -5,7 +5,7 @@ import { ACCESS_LOG_RETENTION_DAYS, ERROR_EVENT_RETENTION_DAYS, EXPIRED_TOKEN_GR
 import { SATURATION_RETENTION_DAYS } from "@/server/platform/saturation";
 import { stampedCopyBudgetBytes } from "@/server/access/delivery";
 import { closeDb, resetDb, sql } from "../helpers/db";
-import { createProduct, createUser } from "../helpers/factories";
+import { createBundle, createProduct, createTeacher, createUser } from "../helpers/factories";
 
 const count = async (table: "rate_limits" | "sessions" | "access_logs" | "error_events") => (await sql<{ n: number }[]>`select count(*)::int as n from ${sql(table)}`)[0].n;
 
@@ -176,39 +176,44 @@ describe("stamped copies are condemned in bounded batches", () => {
     expect(await sql`select 1 from stamped_copies where state = 'ready'`).toHaveLength(0);
   });
 
-  // القرار F24: التنظيف ينزل إلى ٩٠٪ من المساحة لا إلى حدها، فنسختان من ٤٠٪ تبقيان والثالثة (١٢٠٪) تخرج.
-  // كان الاختبار بنسخ من ٥٠٪ تبقى منها اثنتان عند ١٠٠٪ بالضبط؛ تغيّر الحجم لأن الحد المقصود تغيّر، والترتيب كما هو
-  it("copies over the storage budget go oldest first down to 90%, and the newest stay", async () => {
-    const user = await createUser();
-    const product = await createProduct({ title: "ميزانية النسخ" });
-    const [file] = await sql<{ id: string; storage_key: string }[]>`select id, storage_key from product_files where id = ${product.previewFileId}`;
-    const part = Math.floor(stampedCopyBudgetBytes() * 0.4);
-    await sql`
-      insert into stamped_copies (cache_key, user_id, file_id, file_version, object_key, size_bytes, state, last_used_at)
-      select md5(g::text) || md5(g::text), ${user.id}, ${file.id}, ${file.storage_key}, 'stamped/' || gen_random_uuid() || '.pdf', ${part}, 'ready', now() - make_interval(hours => g)
-      from generate_series(1, 5) g
-    `;
-    const newestTwo = await sql<{ id: string }[]>`select id from stamped_copies order by last_used_at desc limit 2`;
+  /** ملف رئيسي لمنتج جديد، ومشترٍ يملكه (صلاحية مباشرة): نسخه لا تخرج بقاعدة «لم يعد يفتح ملفه» */
+  async function ownedFile(title: string) {
+    const product = await createProduct({ title });
+    const [file] = await sql<{ id: string; storage_key: string }[]>`select id, storage_key from product_files where id = ${product.mainFileId}`;
+    const owner = await createUser();
+    await sql`insert into entitlements (user_id, product_id, source) values (${owner.id}, ${product.id}, 'manual')`;
+    return { product, file, owner };
+  }
+
+  /** نسخة جاهزة بحجم جزء من المساحة. preparedDaysAgo فوق STAMPED_COPY_PROTECT_DAYS يجعلها غير محمية */
+  const addCopy = (userId: string, file: { id: string; storage_key: string }, share: number, usedHoursAgo: number, preparedDaysAgo: number) => sql<{ id: string }[]>`
+    insert into stamped_copies (cache_key, user_id, file_id, file_version, object_key, size_bytes, state, created_at, last_used_at)
+    values (md5(random()::text) || md5(random()::text), ${userId}, ${file.id}, ${file.storage_key}, 'stamped/' || gen_random_uuid() || '.pdf',
+      ${Math.floor(stampedCopyBudgetBytes() * share)}, 'ready', now() - make_interval(days => ${preparedDaysAgo}), now() - make_interval(hours => ${usedHoursAgo}))
+    returning id
+  `;
+  const readyIds = async () => (await sql<{ id: string }[]>`select id from stamped_copies where state = 'ready' order by last_used_at desc`).map((r) => r.id);
+
+  // القرار F24: التنظيف ينزل بغير المحمية إلى ٩٠٪ من المساحة لا إلى حدها، فنسختان من ٤٠٪ تبقيان والثالثة (١٢٠٪) تخرج.
+  // كان الاختبار بنسخ من ٥٠٪ تبقى منها اثنتان عند ١٠٠٪ بالضبط؛ تغيّر الحجم لأن الحد المقصود تغيّر، والترتيب كما هو.
+  // البند V5 والقاعدة اليومية «لم يعد يفتح ملفه» غيّرا الإعداد لا المقصود: النسخ هنا لمشترٍ يملك المنتج، وجُهزت قبل ١٠ أيام
+  // فهي غير محمية (كانت قبلهما لحساب بلا صلاحية على ملف المعاينة، وهذا اليوم يُحذف بقاعدة الصلاحية وحدها)
+  it("unprotected copies over the storage budget go oldest first down to 90%, and the newest stay", async () => {
+    const { file, owner } = await ownedFile("ميزانية النسخ");
+    for (let g = 1; g <= 5; g++) await addCopy(owner.id, file, 0.4, g, 10);
+    const newestTwo = (await readyIds()).slice(0, 2);
     await runDataPruning();
-    const left = await sql<{ id: string }[]>`select id from stamped_copies where state = 'ready' order by last_used_at desc`;
-    expect(left.map((r) => r.id)).toEqual(newestTwo.map((r) => r.id));
+    expect(await readyIds()).toEqual(newestTwo);
   });
 
   it("over the budget, a copy prepared this week for a current buyer outlives an idle one opened more recently", async () => {
-    const product = await createProduct({ title: "نسخ محمية" });
-    const [file] = await sql<{ id: string; storage_key: string }[]>`select id, storage_key from product_files where id = ${product.mainFileId}`;
-    const buyer = await createUser();
-    const former = await createUser();
-    await sql`insert into entitlements (user_id, product_id, source) values (${buyer.id}, ${product.id}, 'manual')`;
-    const part = Math.floor(stampedCopyBudgetBytes() * 0.6);
-    const add = (userId: string, hoursAgo: number) => sql<{ id: string }[]>`
-      insert into stamped_copies (cache_key, user_id, file_id, file_version, object_key, size_bytes, state, created_at, last_used_at)
-      values (md5(random()::text) || md5(random()::text), ${userId}, ${file.id}, ${file.storage_key}, 'stamped/' || gen_random_uuid() || '.pdf', ${part}, 'ready', now() - interval '1 day', now() - make_interval(hours => ${hoursAgo}))
-      returning id
-    `;
-    // المحمية فُتحت قبل ٥ ساعات، وغير المحمية (لمن لم يعد يملك المنتج) قبل ساعتين: المحمية تبقى مع ذلك
-    const [kept] = await add(buyer.id, 5);
-    const [evicted] = await add(former.id, 2);
+    const { product, file, owner: buyer } = await ownedFile("نسخ محمية");
+    // صاحب النسخة الأخرى يملك المنتج أيضًا، لكن نسخته جُهزت قبل ١٠ أيام فلم تعد محمية: الترتيب وحده يخرجها
+    const other = await createUser();
+    await sql`insert into entitlements (user_id, product_id, source) values (${other.id}, ${product.id}, 'manual')`;
+    // المحمية فُتحت قبل ٥ ساعات، وغير المحمية قبل ساعتين: المحمية تبقى مع ذلك
+    const [kept] = await addCopy(buyer.id, file, 0.6, 5, 1);
+    const [evicted] = await addCopy(other.id, file, 0.6, 2, 10);
     await runDataPruning();
     const states = await sql<{ id: string; state: string }[]>`select id, state from stamped_copies where id in (${kept.id}, ${evicted.id})`;
     expect(Object.fromEntries(states.map((r) => [r.id, r.state]))).toMatchObject({ [kept.id]: "ready" });
@@ -226,6 +231,93 @@ describe("stamped copies are condemned in bounded batches", () => {
     `;
     await runDataPruning();
     expect(await sql`select 1 from stamped_copies where state = 'ready'`).toHaveLength(1);
+  });
+});
+
+// البنود V1 و V2 و V3: كل طريق يسحب الوصول دون أن يعلّم النسخ (تعليق ثم استرداد، تنظيف طلبات الاختبار، انتهاء المدة،
+// سحب التزم أثناء ختم) ينتهي هنا: نسخة لم يعد صاحبها يفتح ملفها بقاعدة checkFileAccess تُحذف في الجولة اليومية
+describe("the nightly prune removes copies whose owner can no longer open the file", () => {
+  async function copyFor(userId: string, product: { mainFileId: string | null }, usedMinutesAgo = 60) {
+    const [file] = await sql<{ id: string; storage_key: string }[]>`select id, storage_key from product_files where id = ${product.mainFileId}`;
+    const [c] = await sql<{ id: string }[]>`
+      insert into stamped_copies (cache_key, user_id, file_id, file_version, object_key, size_bytes, state, last_used_at)
+      values (md5(random()::text) || md5(random()::text), ${userId}, ${file.id}, ${file.storage_key}, 'stamped/' || gen_random_uuid() || '.pdf', 100, 'ready', now() - make_interval(mins => ${usedMinutesAgo}))
+      returning id
+    `;
+    return c.id;
+  }
+  const grant = (userId: string, productId: string) => sql`insert into entitlements (user_id, product_id, source) values (${userId}, ${productId}, 'manual')`;
+  const stateOf = async (id: string) => (await sql<{ state: string }[]>`select state from stamped_copies where id = ${id}`)[0]?.state ?? "gone";
+
+  it("a copy whose access was revoked without its copies being forgotten is removed, row and object", async () => {
+    const product = await createProduct();
+    const buyer = await createUser();
+    await grant(buyer.id, product.id);
+    const copy = await copyFor(buyer.id, product);
+    // سحب لم يمر بـ forgetRevokedCopies: تعليق دفعة، أو تنظيف طلبات الاختبار، أو سحب التزم أثناء الختم
+    await sql`update entitlements set revoked_at = now(), revoke_reason = 'تعليق: مراجعة دفعة' where user_id = ${buyer.id}`;
+    const report = await runDataPruning();
+    expect(await stateOf(copy)).toBe("gone");
+    expect(report.stampedCopies).toBe(1);
+  });
+
+  it("a copy whose access ran out is removed", async () => {
+    const product = await createProduct();
+    const buyer = await createUser();
+    await sql`insert into entitlements (user_id, product_id, source, expires_at) values (${buyer.id}, ${product.id}, 'manual', now() - interval '1 day')`;
+    const copy = await copyFor(buyer.id, product);
+    await runDataPruning();
+    expect(await stateOf(copy)).toBe("gone");
+  });
+
+  it("keeps every copy whose owner still opens the file: direct, through a bundle at any depth, an item added to the bundle later, the self-managed teacher", async () => {
+    const note = await createProduct();
+    const inner = await createBundle({ items: [note.id] });
+    const outer = await createBundle({ items: [inner.id] });
+    const later = await createProduct();
+    const direct = await createUser();
+    await grant(direct.id, note.id);
+    const viaOuter = await createUser();
+    await grant(viaOuter.id, outer.id);
+    // اشترى الباقة قبل أن يُضاف إليها الملف: لا صلاحية مباشرة عليه، والقاعدة الديناميكية تعطيه إياه
+    const viaLater = await createUser();
+    await grant(viaLater.id, inner.id);
+    await sql`insert into bundle_items (bundle_id, product_id, sort_order) values (${inner.id}, ${later.id}, 9)`;
+    const teacher = await createTeacher({ mode: "self_managed" });
+    await sql`update products set teacher_id = ${teacher.id} where id = ${note.id}`;
+    const kept = [await copyFor(direct.id, note), await copyFor(viaOuter.id, note), await copyFor(viaLater.id, later), await copyFor(teacher.user!.id, note)];
+    // الحالتان المقابلتان: معلم بإدارة ذاتية لمنتج غيره، ومعلم له حساب لكن منتجه تديره المنصة
+    const otherTeacher = await createTeacher({ mode: "self_managed" });
+    const managedNote = await createProduct();
+    const managed = await createTeacher({ mode: "managed", withUser: true });
+    await sql`update products set teacher_id = ${managed.id} where id = ${managedNote.id}`;
+    const strangers = [await copyFor(otherTeacher.user!.id, note), await copyFor(managed.user!.id, managedNote)];
+    await runDataPruning();
+    for (const id of kept) expect(await stateOf(id)).toBe("ready");
+    for (const id of strangers) expect(await stateOf(id)).toBe("gone");
+  });
+
+  it("revoking the bundle removes the copies reached through it, while a direct owner of the same note keeps theirs", async () => {
+    const note = await createProduct();
+    const bundle = await createBundle({ items: [note.id] });
+    const viaBundle = await createUser();
+    await grant(viaBundle.id, bundle.id);
+    const alsoDirect = await createUser();
+    await grant(alsoDirect.id, bundle.id);
+    await grant(alsoDirect.id, note.id);
+    const [lost, still] = [await copyFor(viaBundle.id, note), await copyFor(alsoDirect.id, note)];
+    await sql`update entitlements set revoked_at = now() where product_id = ${bundle.id}`;
+    await runDataPruning();
+    expect(await stateOf(lost)).toBe("gone");
+    expect(await stateOf(still)).toBe("ready");
+  });
+
+  it("a copy opened in the last quarter hour waits for the next run, since its link may be in a student's hands", async () => {
+    const product = await createProduct();
+    const former = await createUser();
+    const copy = await copyFor(former.id, product, 2);
+    await runDataPruning();
+    expect(await stateOf(copy)).toBe("ready");
   });
 });
 

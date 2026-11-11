@@ -13,6 +13,7 @@ import type { Actor } from "@/server/auth/permissions";
 import { deleteProductFile } from "@/server/admin/products";
 import { createOrder, type OrderRow } from "@/server/commerce/orders";
 import { resetEnvCache } from "@/server/env";
+import { placeOrderHold } from "@/server/payments/holds";
 import { storage } from "@/server/storage";
 import { READER_DELIVERY_HEADER } from "@/lib/reader-error";
 import { closeDb, resetDb, sql } from "../helpers/db";
@@ -72,6 +73,11 @@ async function buyer(product: TestProduct, existing?: Awaited<ReturnType<typeof 
   await confirmPaid(order);
   return { user, order };
 }
+
+/** تعليق على الطلب كما يضعه نزاع من البوابة (payments/holds.ts): يسحب الوصول ولا يمس النسخ ولا المهام */
+const hold = (order: OrderRow) =>
+  sql.begin((tx) => placeOrderHold(tx, { orderId: order.id, paymentId: null, kind: "dispute", sourceKey: `test-${randomUUID()}`, status: "PENDING", amountFils: null }));
+const stored = (key: string) => existsSync(resolve(TEST_STORAGE_DIR, "private", key));
 
 /** ملف رئيسي ثانٍ في المنتج نفسه، بمحتوى مختلف */
 async function addMainFile(productId: string, label = "Second part"): Promise<string> {
@@ -348,6 +354,69 @@ describe("F23: draining", () => {
     expect(await drain([p.mainFileId!])).toMatchObject({ skipped: "watermark_off" });
     expect(stamp).not.toHaveBeenCalled();
     expect(await jobsOf([p.mainFileId!])).toEqual([]);
+  });
+
+  it("a refund that lands after the drainer checked ownership and before it took the copy keeps nothing (V3)", async () => {
+    const p = await createProduct();
+    const { order } = await buyer(p);
+    // يُقرأ الأصل بعد فحص الملكية وقبل صف العقد: الاسترداد هنا لم يجد نسخة يعلّمها للحذف
+    const realRead = storage().read;
+    vi.spyOn(storage(), "read").mockImplementation(async (...args) => {
+      await applyAcceptedRefund(order.id, admin.id, "استرداد");
+      return realRead(...args);
+    });
+    const put = vi.spyOn(storage(), "put");
+    expect(await drain([p.mainFileId!])).toMatchObject({ prepared: 0, dropped: 1 });
+    expect(await readyCopies(p.mainFileId!)).toEqual([]);
+    expect(put).toHaveBeenCalledTimes(1);
+    expect(stored(put.mock.calls[0][1])).toBe(false);
+  });
+
+  it("a hold placed while the drainer stamps keeps nothing and drops the job, since the buyer no longer owns the note (V3)", async () => {
+    const p = await createProduct();
+    const { order } = await buyer(p);
+    const real = pdf.watermarkPdf;
+    vi.spyOn(pdf, "watermarkPdf").mockImplementation(async (...args) => {
+      expect(await hold(order)).toBe(true);
+      return real(...args);
+    });
+    const put = vi.spyOn(storage(), "put");
+    expect(await drain([p.mainFileId!])).toMatchObject({ prepared: 0, dropped: 1, failed: 0 });
+    expect(await readyCopies(p.mainFileId!)).toEqual([]);
+    expect(await jobsOf([p.mainFileId!])).toEqual([]);
+    expect(stored(put.mock.calls[0][1])).toBe(false);
+  });
+
+  it("a copy whose address changed during the stamp is not kept, and its job waits to be stamped with the new address", async () => {
+    const p = await createProduct();
+    const { user } = await buyer(p);
+    const real = pdf.watermarkPdf;
+    vi.spyOn(pdf, "watermarkPdf").mockImplementationOnce(async (...args) => {
+      await sql`update users set email = ${`moved-${randomUUID().slice(0, 8)}@example.com`} where id = ${user.id}`;
+      return real(...args);
+    });
+    expect(await drain([p.mainFileId!])).toMatchObject({ prepared: 0, dropped: 0 });
+    expect(await readyCopies(p.mainFileId!)).toEqual([]);
+    expect(await jobsOf([p.mainFileId!])).toMatchObject([{ last_error: "not_kept", holder: null, due: false }]);
+    await sql`update stamp_jobs set not_before = now() where user_id = ${user.id}`;
+    expect(await drain([p.mainFileId!])).toMatchObject({ prepared: 1 });
+  });
+
+  it("a file deleted during a batch stamps nothing more from the original already read (V3)", async () => {
+    const p = await createProduct();
+    await addMainFile(p.id);
+    await buyer(p);
+    await buyer(p);
+    const real = pdf.watermarkPdf;
+    const stamp = vi.spyOn(pdf, "watermarkPdf").mockImplementationOnce(async (...args) => {
+      await deleteProductFile(p.id, p.mainFileId!, owner);
+      return real(...args);
+    });
+    const put = vi.spyOn(storage(), "put");
+    await drain([p.mainFileId!]);
+    expect(stamp).toHaveBeenCalledTimes(1);
+    expect(await sql`select 1 from stamped_copies where file_id = ${p.mainFileId} and state <> 'doomed'`).toEqual([]);
+    for (const call of put.mock.calls) expect(stored(call[1])).toBe(false);
   });
 
   it("one drain is scheduled per scope while one is pending on this instance", async () => {

@@ -9,11 +9,12 @@ import { configureStampGateForTests, StampBusyError, stampGateState } from "@/se
 import { configureStampMemoryForTests, reserveStampMemory, stampMemoryState } from "@/server/access/stamp-memory";
 import { hitRateLimit } from "@/server/auth/rate-limit";
 import { createOrder, type OrderRow } from "@/server/commerce/orders";
+import { placeOrderHold } from "@/server/payments/holds";
 import { storage } from "@/server/storage";
 import { createLocalCopyToken } from "@/server/storage/local";
 import { READER_DELIVERY_HEADER } from "@/lib/reader-error";
 import { closeDb, resetDb, sql } from "../helpers/db";
-import { createProduct, createUser, type TestProduct } from "../helpers/factories";
+import { createBundle, createProduct, createTeacher, createUser, type TestProduct } from "../helpers/factories";
 import { applyAcceptedRefund, confirmPaid } from "../helpers/payment-flow";
 import { TEST_STORAGE_DIR } from "../test-env";
 
@@ -391,5 +392,64 @@ describe("R011: a copy finished after its file or address changed is not left be
     const copies = await copiesOf(p.mainFileId!);
     expect(copies.filter((c) => c.state === "ready")).toHaveLength(0);
     for (const c of copies) expect(existsSync(privatePath(c.object_key))).toBe(false);
+  });
+});
+
+describe("V2: a copy is kept only for someone who can still open its file", () => {
+  /** يفتح ويوقف الختم، ثم يغيّر ما يُعطى أثناءه، ثم يكمل */
+  async function changeWhileStamping(fileId: string, as: Who, change: () => Promise<unknown>) {
+    const { spy, release } = holdStamps();
+    const pending = open(fileId, as, LINK);
+    await vi.waitFor(() => expect(spy).toHaveBeenCalledTimes(1));
+    await change();
+    release();
+    return pending;
+  }
+
+  it.each([
+    // التعليق يسحب الوصول ولا يعرف النسخ؛ والانتهاء لا يمر بشيء. كلاهما مثل استرداد التزم قبل أن يوجد صف العقد
+    ["a hold is placed on the order", (order: OrderRow) =>
+      sql.begin((tx) => placeOrderHold(tx, { orderId: order.id, paymentId: null, kind: "dispute", sourceKey: `test-${randomUUID()}`, status: "PENDING", amountFils: null }))],
+    ["the access runs out", (order: OrderRow) => sql`update entitlements set expires_at = now() - interval '1 second' where order_id = ${order.id}`],
+  ] as const)("when %s during the stamp, this open gets its copy, nothing is kept, and the next open is refused", async (_what, change) => {
+    const p = await createProduct();
+    const { user, order } = await buyer(p);
+    const res = await changeWhileStamping(p.mainFileId!, user, () => change(order));
+    // الصلاحية فُحصت قبل الختم: ما خُتم يصل لهذا الطلب وحده، ثم لا يبقى
+    expect(res.status).toBe(200);
+    expect(res.headers.get("content-type")).toBe("application/pdf");
+    expect(await stampedText(await bytesOf(res))).toContain(user.email);
+    const copies = await copiesOf(p.mainFileId!);
+    expect(copies.filter((c) => c.state === "ready")).toHaveLength(0);
+    for (const c of copies) expect(existsSync(privatePath(c.object_key))).toBe(false);
+    expect((await open(p.mainFileId!, user, LINK)).status).toBe(403);
+  });
+
+  it("a file whose stored version changed during the stamp keeps no copy of the old version", async () => {
+    const p = await createProduct();
+    const { user } = await buyer(p);
+    const res = await changeWhileStamping(p.mainFileId!, user, () => sql`update product_files set storage_key = ${`products/${p.id}/${randomUUID()}.pdf`} where id = ${p.mainFileId}`);
+    expect(res.status).toBe(200);
+    await bytesOf(res);
+    const copies = await copiesOf(p.mainFileId!);
+    expect(copies.filter((c) => c.state === "ready")).toHaveLength(0);
+    for (const c of copies) expect(existsSync(privatePath(c.object_key))).toBe(false);
+  });
+
+  it("the self-managed teacher of the note, and a buyer of a bundle that gained the note later, keep their copies", async () => {
+    const p = await createProduct();
+    const teacher = await createTeacher({ mode: "self_managed" });
+    await sql`update products set teacher_id = ${teacher.id} where id = ${p.id}`;
+    expect((await open(p.mainFileId!, teacher.user!, LINK)).status).toBe(200);
+
+    const bundle = await createBundle({ items: [(await createProduct()).id] });
+    const { user } = await buyer(bundle);
+    await sql`insert into bundle_items (bundle_id, product_id, sort_order) values (${bundle.id}, ${p.id}, 1)`;
+    expect((await open(p.mainFileId!, user, LINK)).status).toBe(200);
+
+    expect((await copiesOf(p.mainFileId!)).map((c) => c.state)).toEqual(["ready", "ready"]);
+    const stamp = vi.spyOn(pdf, "watermarkPdf");
+    for (const who of [teacher.user!, user]) expect((await open(p.mainFileId!, who, LINK)).status).toBe(200);
+    expect(stamp).not.toHaveBeenCalled();
   });
 });

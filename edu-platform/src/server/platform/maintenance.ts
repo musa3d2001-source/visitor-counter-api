@@ -3,6 +3,7 @@ import { IP_SIGNAL } from "../admin/access-signals";
 import { pruneRateLimits } from "../auth/rate-limit";
 import { LONG_JOB_STATEMENT_MS, sql, withDbDeadline } from "../db";
 import { protectedCopySql, stampedCopyBudgetBytes, STAMPED_COPY_IDLE_DAYS, STAMPED_COPY_IN_USE_MINUTES, sweepDoomedCopies } from "../access/delivery";
+import { mainFileAccessSql } from "../access/entitlements";
 import { sweepUploadTickets } from "../admin/uploads";
 import { dailyVideoCheck, type DailyVideoReport } from "../video/service";
 import { reportError } from "./report-error";
@@ -167,9 +168,12 @@ async function prune(): Promise<PruneReport> {
 /**
  * النسخ المختومة بيانات شخصية: تُعلَّم للحذف ثم تُحذف كائناتها وصفوفها.
  * تُعلَّم: ما لم يُفتح منذ STAMPED_COPY_IDLE_DAYS، وما يخص ملفًا حُذف أو تغير مفتاحه، وما يخص حسابًا معطلًا أو محذوف البيانات،
- * وختمًا مات قبل أن يكتمل، وما زاد على ميزانية التخزين (الأقدم استعمالًا أولًا).
+ * وختمًا مات قبل أن يكتمل، وما لم يعد صاحبه يفتح ملفه، وما زاد على ميزانية التخزين (الأقدم استعمالًا أولًا).
  */
 async function pruneStampedCopies(inBatches: (statement: () => PromiseLike<number>) => Promise<number>, outOfTime: () => boolean): Promise<{ removed: number; finished: boolean }> {
+  // نسخة لم يعد صاحبها يفتح ملفها بقاعدة checkFileAccess (mainFileAccessSql): الشبكة الأخيرة لكل طريق يسحب الوصول دون أن
+  // يعلّم النسخ (تعليق ثم استرداد، وتنظيف طلبات الاختبار، وانتهاء مدة الوصول، وسحب التزم أثناء ختم: البنود V1 و V2 و V3).
+  // فتسري وعود سياسة الخصوصية عند تشغيل هذه المهمة مهما كان الطريق. نسخة فُتحت في آخر ربع ساعة تُترك لجولة الغد
   await inBatches(
     () => deleted(sql`
       with batch as materialized (
@@ -179,6 +183,8 @@ async function pruneStampedCopies(inBatches: (statement: () => PromiseLike<numbe
           or (c.state = 'stamping' and c.lease_until < now() - interval '1 hour')
           or not exists (select 1 from product_files f where f.id = c.file_id and f.storage_key = c.file_version)
           or not exists (select 1 from users u where u.id = c.user_id and u.is_active and u.anonymized_at is null)
+          or (c.state = 'ready' and c.last_used_at < now() - make_interval(mins => ${STAMPED_COPY_IN_USE_MINUTES})
+              and not ${mainFileAccessSql(sql, sql`c.user_id`, sql`c.file_id`)})
         )
         limit ${PRUNE_BATCH_SIZE} for update of c skip locked
       )
