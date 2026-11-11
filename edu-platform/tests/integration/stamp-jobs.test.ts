@@ -13,7 +13,8 @@ import type { Actor } from "@/server/auth/permissions";
 import { deleteProductFile } from "@/server/admin/products";
 import { createOrder, type OrderRow } from "@/server/commerce/orders";
 import { resetEnvCache } from "@/server/env";
-import { placeOrderHold } from "@/server/payments/holds";
+import { openOrderHolds, placeOrderHold } from "@/server/payments/holds";
+import { recordMoneyReturned } from "@/server/payments/refunds";
 import { storage } from "@/server/storage";
 import { READER_DELIVERY_HEADER } from "@/lib/reader-error";
 import { closeDb, resetDb, sql } from "../helpers/db";
@@ -470,6 +471,45 @@ describe("F23: a replaced file and a refund", () => {
     await sweepDoomedCopies(100);
     expect(existsSync(resolve(TEST_STORAGE_DIR, "private", kept.object_key))).toBe(false);
     expect(await sql`select 1 from stamped_copies where user_id = ${user.id}`).toHaveLength(0);
+  });
+
+  const settlements: [string, (order: OrderRow) => Promise<void>][] = [
+    ["the owner records that the money came back", async (order) => {
+      const [h] = await openOrderHolds({ orderId: order.id });
+      expect(await recordMoneyReturned({ holdId: h.id, adminId: admin.id, reason: "خسرنا النزاع" })).toBe("recorded");
+    }],
+    ["a full refund goes through", async (order) => {
+      await applyAcceptedRefund(order.id, admin.id, "استرداد");
+    }],
+  ];
+  it.each(settlements)("after a hold, when %s, the kept copies and the queued jobs go as with any refund (V1)", async (_how, settle) => {
+    const p = await createProduct();
+    const second = await addMainFile(p.id);
+    const { user, order } = await buyer(p);
+    await drain([p.mainFileId!]);
+    const [kept] = await readyCopies(p.mainFileId!);
+    expect(await hold(order)).toBe(true);
+    // التعليق يسحب الوصول ويترك النسخة والمهمة: قد يُرفع فيعود كل شيء كما كان
+    expect(await readyCopies(p.mainFileId!)).toHaveLength(1);
+    expect(await jobsOf([second])).toHaveLength(1);
+
+    await settle(order);
+    expect(await jobsOf([p.mainFileId!, second])).toEqual([]);
+    expect(await readyCopies(p.mainFileId!)).toEqual([]);
+    await sweepDoomedCopies(100);
+    expect(stored(kept.object_key)).toBe(false);
+    expect(await sql`select 1 from stamped_copies where user_id = ${user.id}`).toHaveLength(0);
+  });
+
+  it("a refund of another order leaves alone the copies of a held one, whose hold may still be lifted (V1)", async () => {
+    const [p, q] = [await createProduct(), await createProduct()];
+    const { user, order: held } = await buyer(p);
+    const { order: other } = await buyer(q, user);
+    await drain([p.mainFileId!, q.mainFileId!]);
+    expect(await hold(held)).toBe(true);
+    await applyAcceptedRefund(other.id, admin.id, "استرداد");
+    expect(await readyCopies(q.mainFileId!)).toEqual([]);
+    expect(await readyCopies(p.mainFileId!)).toEqual([expect.objectContaining({ user_id: user.id })]);
   });
 
   it("an owner's revoke does the same", async () => {

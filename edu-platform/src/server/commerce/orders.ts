@@ -3,6 +3,8 @@ import { sql, type Db } from "../db";
 import { computeCart } from "./cart";
 import { evaluateCoupon } from "./coupons";
 import { grantProduct, revokeProduct } from "../access/entitlements";
+import { forgetRevokedCopies } from "../access/stamp-queue";
+import { HOLD_REVOKE_REASON } from "../payments/holds";
 import { audit } from "../platform/audit";
 import { recordEarnings, reverseEarnings, saleTermsFor } from "./earnings";
 import { readSettings } from "../platform/settings";
@@ -345,6 +347,13 @@ export async function applyRefundToOrder(
     `;
     if (rows.length) revoked += await revokeProduct(db, { userId: order.user_id, productId: it.product_id, revokedBy: input.actorId, reason: `استرداد: ${input.reason}` });
   }
+  // طلب عُلّق قبل استرداده (payments/holds.ts): التعليق سحب صلاحياته ولم يمس نسخه المختومة ولا مهام تجهيزها، فلم يجد
+  // الحلقة أعلاه ما تسحبه. الاسترداد يحذفها هنا كما يحذفها revokeProduct، وفاءً بوعد سياسة الخصوصية (البند V1)
+  const held = await db<{ product_id: string }[]>`
+    select distinct product_id from entitlements
+    where user_id = ${order.user_id} and order_id = ${order.id} and revoked_at is not null and revoke_reason = ${HOLD_REVOKE_REASON}
+  `;
+  await forgetRevokedCopies(db, order.user_id, held.map((r) => r.product_id));
   const reversedEarnings = await reverseEarnings(db, order.id, input.reason);
   await audit(
     {
