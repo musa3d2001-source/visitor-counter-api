@@ -29,14 +29,57 @@ beforeEach(() => {
   actor.fail = null;
 });
 
+/** كل رمز يعده db-busy.ts انشغالًا، بالسبب الذي يُعد به في «صحة المنصة». رمز يُضاف هناك بلا سطر هنا يُسقط الاختبار التالي */
+const BUSY_BY_CODE: [string, string][] = [
+  ["QUEUE_TIMEOUT", "queue"],
+  ["57014", "statement"],
+  ["25P03", "idle_in_transaction"],
+  ["CONNECT_TIMEOUT", "connect"],
+  ["53300", "unavailable"],
+  ["57P03", "unavailable"],
+  ["57P01", "unavailable"],
+  ["57P02", "unavailable"],
+  ["ECONNREFUSED", "unavailable"],
+  ["ECONNRESET", "unavailable"],
+  ["ETIMEDOUT", "unavailable"],
+  ["EPIPE", "unavailable"],
+  ["EAI_AGAIN", "unavailable"],
+  ["CONNECTION_CLOSED", "unavailable"],
+];
+
+/**
+ * رفض الـ pooler: الرمز عام، والسبب في النص. النصوص كما يبنيها Supavisor (lib/supavisor/error.ex) و PgBouncer (src/client.c و src/janitor.c)
+ */
+const BUSY_BY_MESSAGE: [string, string, string][] = [
+  ["XX000", "(EMAXCONN) max client connections reached, limit: 400", "unavailable"],
+  ["XX000", "(EMAXCONNSESSION) max clients reached in session mode - max clients are limited to pool_size: 15", "unavailable"],
+  ["XX000", "(EMAXPOOLSREACHED) max pools count reached", "unavailable"],
+  ["XX000", "(ECHECKOUTTIMEOUT) unable to check out connection from the pool after 15000ms in Transaction mode", "queue"],
+  ["XX000", "(ECHECKOUTRETRIES) failed to check out a connection after multiple retries", "queue"],
+  ["XX000", "(EDBHANDLEREXITED) DbHandler exited, reason: :shutdown", "unavailable"],
+  ["XX000", "(ECIRCUITBREAKER) too many failed attempts to connect to the database, new connections are temporarily blocked", "unavailable"],
+  ["XX000", "Max client connections reached", "unavailable"],
+  ["08P01", "no more connections allowed (max_client_conn)", "unavailable"],
+  ["08P01", "client connections exceeded (max_db_client_connections)", "unavailable"],
+  ["08P01", "client connections exceeded (max_user_client_connections)", "unavailable"],
+  ["08P01", "query_wait_timeout", "queue"],
+];
+
+/** أخطاء تبقى عطلًا يراه المالك: إعداد خاطئ لا يُصلحه الانتظار */
+const NOT_BUSY: [string, string][] = [
+  ["XX000", "(ETENANTNOTFOUND) Tenant or user not found"],
+  ["XX000", "(ECIRCUITBREAKER) too many authentication errors, new connections are temporarily blocked"],
+  ["XX000", "(EPOOLCHECKOUT) pool checkout failed: :badarg"],
+  ["XX000", "internal error"],
+  ["08P01", "server login has been failing, cached error: password authentication failed (server_login_retry)"],
+  ["08P01", "invalid packet"],
+  ["28P01", "password authentication failed for user \"postgres\""],
+  ["ENOTFOUND", "getaddrinfo ENOTFOUND db.wrong-project.supabase.co"],
+  ["23505", "max client connections reached"],
+];
+
 describe("the one busy error", () => {
-  it.each([
-    ["QUEUE_TIMEOUT", "queue"],
-    ["57014", "statement"],
-    ["25P03", "idle_in_transaction"],
-    ["CONNECT_TIMEOUT", "connect"],
-    ["53300", "unavailable"],
-  ])("code %s becomes DatabaseBusyError(%s) with a fixed message and digest", (code, reason) => {
+  it.each(BUSY_BY_CODE)("code %s becomes DatabaseBusyError(%s) with a fixed message and digest", (code, reason) => {
     const original = Object.assign(new Error("select secret from somewhere where x = 'value'"), { code });
     const err = toBusyError(original) as DatabaseBusyError;
     expect(err).toBeInstanceOf(DatabaseBusyError);
@@ -44,6 +87,32 @@ describe("the one busy error", () => {
     expect(err.digest).toBe(DB_BUSY_DIGEST);
     expect(err.message).toBe(`database busy: ${reason}`);
     expect(err.cause).toBe(original);
+  });
+
+  it.each(BUSY_BY_MESSAGE)("pooler refusal %s %s becomes DatabaseBusyError(%s), the pooler's text left behind", (code, text, reason) => {
+    const original = Object.assign(new Error(text), { code, severity_local: "FATAL" });
+    const err = toBusyError(original) as DatabaseBusyError;
+    expect(err).toBeInstanceOf(DatabaseBusyError);
+    expect(err.reason).toBe(reason);
+    expect(err.message).toBe(`database busy: ${reason}`);
+    expect(err.message).not.toContain(text);
+  });
+
+  it.each(NOT_BUSY)("%s %s stays the error it is", (code, text) => {
+    const original = Object.assign(new Error(text), { code });
+    expect(toBusyError(original)).toBe(original);
+    expect(isDatabaseBusy(original)).toBe(false);
+  });
+
+  it("every code db-busy.ts maps is in the table above", () => {
+    const source = readFileSync(join(process.cwd(), "src", "server", "db-busy.ts"), "utf8");
+    const block = /const BUSY_CODES[^{]*\{([\s\S]*?)\n\};/.exec(source)![1];
+    const mapped = [...block.matchAll(/^\s*"?([A-Z0-9_]+)"?:\s*"/gm)].map((m) => m[1]);
+    expect(mapped.length).toBeGreaterThan(10);
+    expect([...mapped].sort()).toEqual(BUSY_BY_CODE.map(([code]) => code).sort());
+    const tags = [.../const SUPAVISOR_BUSY[^{]*\{([\s\S]*?)\n\};/.exec(source)![1].matchAll(/^\s*([A-Z_]+):\s*"/gm)].map((m) => m[1]);
+    expect(tags.length).toBeGreaterThan(4);
+    for (const tag of tags) expect(BUSY_BY_MESSAGE.some(([, text]) => text.startsWith(`(${tag})`)), tag).toBe(true);
   });
 
   it("leaves other errors alone", () => {
