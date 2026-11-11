@@ -104,7 +104,7 @@ waits on it. With checks written up front, the default three cycles are:
 - A FAIL found later (the final validation) is logged against the item with
   `ledger.py step --item W# --verdict FAIL`; it reopens the item as a failed
   cycle of its last run and counts toward the three.
-- `STATUS: STUCK` replies are not cycles; the second one on an item blocks it.
+- `STATUS: STUCK` replies are not cycles; a second one from the same agent on an item blocks it.
 
 ## The subagents
 
@@ -112,7 +112,7 @@ waits on it. With checks written up front, the default three cycles are:
 |---|---|---|
 | `worker-haiku.md` | haiku | Read, Grep, Glob, Bash — no edit tools; shell read-only by instruction |
 | `worker-sonnet.md` | sonnet | Read, Grep, Glob, Bash, Edit, Write, NotebookEdit |
-| `worker-opus.md` | opus | everything except Agent and Skill (keeps MCP tools for computer use and images) |
+| `worker-opus.md` | opus | Read, Grep, Glob, Bash, Edit, Write, NotebookEdit, WebFetch, WebSearch (images need only Read; add your computer-use MCP tools here if you route computer use) |
 | `worker-fable.md` | fable | Read, Grep, Glob, Bash, Edit, Write, NotebookEdit, WebFetch, WebSearch |
 | `validator.md` | sonnet | Read, Grep, Glob, Bash — read-only by instruction |
 
@@ -142,9 +142,10 @@ API message on the tier of the model that served it:
   counted but not priced.
 - The effort recorded is the one the run actually used (from the transcript),
   with a warning when it differs from the routed effort.
-- The orchestrator's own cost comes from the main session transcript, inside
-  the windows opened by `ledger.py start` (and `start --resume`) and closed by
-  the next start or the task's last ledger entry.
+- The orchestrator's own cost comes from the main transcript of the session
+  that opened each window: `ledger.py start` (or `start --resume`) opens one,
+  and it closes at the task's last ledger entry before the next start (the
+  summary adds one when it runs).
 - The single-model comparison prices the same messages on each tier, over the
   steps that were measured from transcripts. It is a price-only comparison:
   another model would have used a different number of tokens and cycles.

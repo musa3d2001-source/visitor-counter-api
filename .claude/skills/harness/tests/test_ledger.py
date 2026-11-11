@@ -289,7 +289,7 @@ class LedgerTest(unittest.TestCase):
     def test_cycles_table_is_written_by_its_own_header(self):
         self.task_path.write_text(TASK.replace(
             "| item | cycle | agent | model | effort | check | verdict | cost | note |\n|---|---|---|---|---|---|---|---|---|",
-            "| item | verdict | model | effort | note |\n|---|---|---|---|---|"), encoding="utf-8")
+            "| item | verdict | check | model | effort | note |\n|---|---|---|---|---|---|"), encoding="utf-8")
         self.run_cli("start", "--title", "x")
         self.run_cli("cycle", "--item", "W2", "--worker", "worker-sonnet", "--effort", "medium", "--verdict", "FAIL",
                      "--validator", "none", "--worker-tokens", "10,1", "--note", "n")
@@ -338,6 +338,147 @@ class LedgerTest(unittest.TestCase):
                                    ts="2999-01-01T00:00:00Z", sidechain=False) + "\n")
         _, out, _ = self.run_cli("summary", "--format", "json")
         self.assertEqual(json.loads(out)["orchestrator"]["messages"], 1)
+
+    # ---- round 2 -----------------------------------------------------------
+
+    def test_resume_by_task_id_recorded_in_task_md(self):
+        _, a, _ = self.run_cli("start", "--title", "add reset endpoint")
+        tid = json.loads(a)["task"]
+        self.run_cli("cycle", "--item", "W2", "--worker", "worker-sonnet", "--verdict", "FAIL", "--validator", "none",
+                     "--worker-tokens", "10,1")
+        self.assertEqual(self.task()["task_id"], tid)          # stamped once something was logged
+        self.run_cli("start", "--title", "something else entirely")
+        _, b, _ = self.run_cli("start", "--resume")
+        self.assertEqual(json.loads(b)["task"], tid)          # TASK.md title differs from the start title
+        _, out, _ = self.run_cli("summary", "--format", "json", "--no-session")
+        self.assertEqual(len(json.loads(out)["steps"]), 1)
+
+    def test_resume_without_recorded_id_falls_back_to_latest(self):
+        _, a, _ = self.run_cli("start", "--title", "x")
+        _, b, _ = self.run_cli("start", "--resume")
+        self.assertEqual(json.loads(a)["task"], json.loads(b)["task"])
+        self.assertIn("note", json.loads(b))
+
+    def test_unavailable_after_the_subcommand(self):
+        self.run_cli("start", "--title", "x")
+        self.task_path.write_text(TASK.replace("- kind: scoped fix", "- kind: migration"), encoding="utf-8")
+        code, out, err = self.run_cli("cycle", "--item", "W2", "--worker", "worker-opus", "--effort", "high",
+                                      "--verdict", "FAIL", "--validator", "none", "--worker-tokens", "10,1",
+                                      "--unavailable", "fable")
+        self.assertEqual(code, 0, err)
+        self.assertEqual(json.loads(out)["next"]["agent"], "worker-opus")
+
+    def test_final_fail_reopens_several_items_once(self):
+        self.run_cli("start", "--title", "x")
+        for item in ("W2", "W3"):
+            self.run_cli("cycle", "--item", item, "--worker", "worker-sonnet", "--verdict", "PASS",
+                         "--validator", "none", "--worker-tokens", "10,1")
+        self.add_agent("vf", "validator", "Harness final validation: x", {"input_tokens": 1000, "output_tokens": 0})
+        code, out, err = self.run_cli("step", "--name", "final-validation", "--agent", "validator", "--role",
+                                      "validator", "--item", "W2,W3", "--verdict", "FAIL")
+        self.assertEqual(code, 0, err)
+        data = json.loads(out)
+        self.assertEqual(set(data["items"]), {"W2", "W3"})
+        task = self.task()
+        self.assertEqual([c["verdict"] for c in task["cycles"]], ["PASS", "PASS", "FAIL", "FAIL"])
+        steps = [r for r in ledger.read_ledger(Path(".harness/ledger.jsonl")) if r.get("name") == "final-validation"]
+        self.assertEqual(len(steps), 1)
+        # the same run named again is not billed twice
+        _, out, _ = self.run_cli("step", "--name", "again", "--agent", "validator", "--agent-id", "vf")
+        self.assertEqual(json.loads(out)["step"]["cost_usd"], 0.0)
+
+    def test_blocked_item_is_not_reopened(self):
+        self.run_cli("start", "--title", "x")
+        self.run_cli("cycle", "--item", "W2", "--worker", "worker-sonnet", "--verdict", "PASS", "--validator", "none",
+                     "--worker-tokens", "10,1")
+        ledger.set_item_field(self.task_path, "W2", "status", "blocked")
+        _, out, _ = self.run_cli("step", "--name", "final-validation", "--agent", "validator", "--item", "W2",
+                                 "--verdict", "FAIL", "--tokens", "10,1")
+        self.assertEqual(json.loads(out)["item_status"], "blocked")
+        self.assertEqual(len(self.task()["cycles"]), 1)
+
+    def test_marker_is_the_first_line_only(self):
+        self.run_cli("start", "--title", "x")
+        self.add_agent("a3", "worker-sonnet", "Harness work item W3: Docs\nContext: W2's brief began "
+                       "'Harness work item W2: Rename'", {"input_tokens": 3000, "output_tokens": 0})
+        self.add_agent("a2", "worker-sonnet", "Harness work item W2: Rename", {"input_tokens": 2000, "output_tokens": 0})
+        _, out, _ = self.run_cli("cycle", "--item", "W2", "--worker", "worker-sonnet", "--verdict", "PASS",
+                                 "--validator", "none")
+        self.assertEqual(json.loads(out)["worker"]["agent_id"], "a2")
+
+    def test_fallback_never_takes_another_items_run(self):
+        self.run_cli("start", "--title", "x")
+        self.add_agent("v3", "validator", "Harness validation W3: Docs", {"input_tokens": 1, "output_tokens": 1})
+        self.add_agent("w1", "worker-haiku", "Harness work item W1: Find", {"input_tokens": 1, "output_tokens": 1},
+                       model="claude-haiku-5-5")
+        code, _, err = self.run_cli("cycle", "--item", "W1", "--worker", "worker-haiku", "--verdict", "PASS")
+        self.assertEqual(code, 2)                      # forgot --validator none: W3's validator is not taken
+        self.assertIn("nothing logged", err)
+
+    def test_unfinished_runs_are_flagged(self):
+        self.run_cli("start", "--title", "x")
+        t = self.add_agent("w", "worker-sonnet", "Harness work item W2: x", {"input_tokens": 1, "output_tokens": 1})
+        meta = t.with_name("agent-w.meta.json")
+        meta.write_text(json.dumps({"agentType": "worker-sonnet"}), encoding="utf-8")   # no finished key yet
+        _, out, _ = self.run_cli("cycle", "--item", "W2", "--worker", "worker-sonnet", "--verdict", "PASS",
+                                 "--validator", "none")
+        self.assertTrue(any("not finished" in w for w in json.loads(out)["warnings"]))
+
+    def test_freeform_after_blocks_dependents(self):
+        self.task_path.write_text(TASK.replace("- after: W2\n", "- after: W2 (needs the new key) and W1\n"),
+                                  encoding="utf-8")
+        self.run_cli("start", "--title", "x")
+        for _ in range(3):
+            self.run_cli("cycle", "--item", "W2", "--worker", "worker-sonnet", "--verdict", "FAIL",
+                         "--validator", "none", "--worker-tokens", "10,1")
+        self.assertEqual(self.task()["items"]["W3"]["status"], "blocked")
+
+    def test_stuck_counts_per_agent_and_writes_retry(self):
+        self.run_cli("start", "--title", "x")
+        _, out, _ = self.run_cli("step", "--name", "W1 stuck", "--agent", "worker-haiku", "--item", "W1",
+                                 "--verdict", "STUCK", "--tokens", "10,1")
+        self.assertEqual(self.task()["items"]["W1"]["status"], "retry")
+        _, out, _ = self.run_cli("step", "--name", "W1 stuck", "--agent", "worker-sonnet", "--item", "W1",
+                                 "--verdict", "STUCK", "--tokens", "10,1")
+        self.assertEqual(json.loads(out)["item_status"], "retry")      # rerouted tier gets its own retry
+
+    def test_cycle_next_names_the_action(self):
+        self.run_cli("start", "--title", "x")
+        _, out, _ = self.run_cli("cycle", "--item", "W2", "--worker", "worker-sonnet", "--effort", "medium",
+                                 "--verdict", "FAIL", "--validator", "none", "--worker-tokens", "10,1")
+        self.assertEqual(json.loads(out)["next"]["action"], "raise_effort")
+
+    def test_header_without_effort_is_refused(self):
+        self.task_path.write_text(TASK.replace("| effort |", "| e |"), encoding="utf-8")
+        self.run_cli("start", "--title", "x")
+        code, _, err = self.run_cli("cycle", "--item", "W2", "--worker", "worker-sonnet", "--verdict", "FAIL",
+                                    "--validator", "none", "--worker-tokens", "10,1")
+        self.assertEqual(code, 2)
+        self.assertIn("effort", err)
+
+    def test_windows_close_at_own_rows_and_per_session(self):
+        rows = [
+            {"ts": "2026-01-01T09:00:00Z", "kind": "start", "task": "t-1", "title": "t", "session": "sA"},
+            {"ts": "2026-01-01T09:10:00Z", "kind": "summary", "task": "t-1"},          # --plan ended
+            {"ts": "2026-01-01T11:00:00Z", "kind": "start", "task": "t-1", "title": "t", "resume": True,
+             "session": SID},
+            {"ts": "2026-01-01T11:10:00Z", "kind": "step", "task": "t-1", "item": "W1", "cost_usd": 0.0},
+        ]
+        Path(".harness/ledger.jsonl").write_text("\n".join(json.dumps(r) for r in rows) + "\n", encoding="utf-8")
+        other = self.cfg / "projects" / "-proj" / "sA"
+        other.mkdir(parents=True)
+        other.with_suffix(".jsonl").write_text(assistant_row(
+            "p", "claude-opus-5-5", {"input_tokens": 1_000_000, "output_tokens": 0}, ts="2026-01-01T09:05:00Z",
+            sidechain=False) + "\n", encoding="utf-8")
+        self.sessdir.with_suffix(".jsonl").write_text("\n".join([
+            assistant_row("u", "claude-opus-5-5", {"input_tokens": 50_000_000, "output_tokens": 0},
+                          ts="2026-01-01T10:00:00Z", sidechain=False),               # unrelated, between windows
+            assistant_row("r", "claude-opus-5-5", {"input_tokens": 1_000_000, "output_tokens": 0},
+                          ts="2026-01-01T11:05:00Z", sidechain=False)]) + "\n", encoding="utf-8")
+        _, out, _ = self.run_cli("summary", "--format", "json", "--task", "t-1")
+        s = json.loads(out)
+        self.assertEqual(s["orchestrator"]["messages"], 2)
+        self.assertAlmostEqual(s["orchestrator"]["cost_usd"], 8.0)
 
 
 if __name__ == "__main__":

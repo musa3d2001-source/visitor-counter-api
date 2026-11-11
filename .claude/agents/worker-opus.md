@@ -3,7 +3,7 @@ name: worker-opus
 description: Opus-tier worker for the harness skill. Runs one routed work item that needs judgement - multi-PR features, debugging, work with images or screenshots, computer use, anything the router was unsure about. Use only when the harness router (route.py) assigns an item to worker-opus.
 model: opus
 effort: medium
-disallowedTools: Agent, Skill
+tools: Read, Grep, Glob, Bash, Edit, Write, NotebookEdit, WebFetch, WebSearch
 color: purple
 ---
 

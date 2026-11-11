@@ -32,7 +32,7 @@ from pathlib import Path
 sys.dont_write_bytecode = True  # keep the skill folder free of __pycache__
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 from route import (  # noqa: E402
-    Contract, ContractError, _split_list, agent_tier, has_check, load_contract, parse_task,
+    Contract, ContractError, agent_tier, deps_of, has_check, load_contract, parse_task,
     parse_unavailable, route_item, signals_from_item,
 )
 
@@ -40,7 +40,10 @@ HARNESS_DIR = Path(".harness")
 TASK_FILE = HARNESS_DIR / "TASK.md"
 LEDGER_FILE = HARNESS_DIR / "ledger.jsonl"
 CYCLE_COLUMNS = ["item", "cycle", "agent", "model", "effort", "check", "verdict", "cost", "note"]
-MAX_STUCK = 2
+REQUIRED_COLUMNS = {"item", "model", "effort", "check", "verdict"}
+MAX_STUCK = 2          # STUCK replies from the same agent on one item before it is blocked
+HARNESS_LINE = re.compile(r"^\s*(?:\*\*)?Harness (?:(work item|validation) ([A-Za-z]*\d+[A-Za-z0-9]*)\b|(final validation))",
+                          re.I)
 
 
 class LedgerError(Exception):
@@ -48,7 +51,7 @@ class LedgerError(Exception):
 
 
 def now_utc() -> dt.datetime:
-    return dt.datetime.now(dt.timezone.utc).replace(microsecond=0)
+    return dt.datetime.now(dt.timezone.utc)
 
 
 def iso(t: dt.datetime) -> str:
@@ -83,9 +86,13 @@ def project_slug(cwd: Path) -> str:
     return re.sub(r"[^A-Za-z0-9]", "-", str(cwd.resolve()))
 
 
-def session_dirs() -> list:
+def current_session_id() -> str | None:
+    return os.environ.get("CLAUDE_CODE_SESSION_ID") or os.environ.get("CLAUDE_SESSION_ID")
+
+
+def session_dirs(sid: str | None = None) -> list:
     root = projects_dir()
-    sid = os.environ.get("CLAUDE_CODE_SESSION_ID") or os.environ.get("CLAUDE_SESSION_ID")
+    sid = sid or current_session_id()
     if sid:
         found = [p for p in root.glob(f"*/{sid}") if p.is_dir()]
         if found:
@@ -95,8 +102,8 @@ def session_dirs() -> list:
     return sorted(dirs, key=lambda p: p.stat().st_mtime, reverse=True)
 
 
-def main_transcripts() -> list:
-    return [d.with_suffix(".jsonl") for d in session_dirs() if d.with_suffix(".jsonl").exists()]
+def main_transcripts(sid: str | None = None) -> list:
+    return [d.with_suffix(".jsonl") for d in session_dirs(sid) if d.with_suffix(".jsonl").exists()]
 
 
 def _meta(transcript: Path) -> dict:
@@ -148,6 +155,10 @@ def first_user_text(transcript: Path) -> str:
     return ""
 
 
+def first_line(transcript: Path) -> str:
+    return next((l for l in first_user_text(transcript).splitlines() if l.strip()), "")
+
+
 def agent_id_of(transcript: Path) -> str:
     m = re.match(r"agent-(.+)\.jsonl$", transcript.name)
     return m.group(1) if m else transcript.stem
@@ -173,21 +184,28 @@ def find_transcript(agent_type: str, exclude_ids: set, marker: str | None = None
                 cands.append(t)
     if not cands:
         return None, warnings
+    def finished(t):
+        meta = _meta(t)
+        return not meta or meta.get("finished") is True   # Claude Code writes finished: true at the end
+
     if marker:
-        rx = re.compile(marker)
-        matched = [t for t in cands if rx.search(first_user_text(t))]
+        rx = re.compile(r"^\s*(?:\*\*)?" + marker, re.I)
+        matched = [t for t in cands if rx.match(first_line(t))]
         if matched:
-            finished = [t for t in matched if _meta(t).get("finished") is not False]
-            pool = finished or matched
+            pool = [t for t in matched if finished(t)] or matched
             pick = min(pool, key=lambda p: p.stat().st_mtime)
             if len(matched) > 1:
-                warnings.append(f"{len(matched)} unlogged {agent_type} runs match /{marker}/; logged the oldest "
+                warnings.append(f"{len(matched)} unlogged {agent_type} runs match this item; logged the oldest "
                                 f"({agent_id_of(pick)}) - log the others with their own command")
-            if _meta(pick).get("finished") is False:
+            if not finished(pick):
                 warnings.append(f"{agent_type} run {agent_id_of(pick)} has not finished; its cost is partial")
             return pick, warnings
-        warnings.append(f"no unlogged {agent_type} run has a brief matching /{marker}/; "
-                        f"used the newest {agent_type} run - start each brief with the line SKILL.md gives")
+        # No run names this item. Never take a run whose brief names another item.
+        cands = [t for t in cands if not HARNESS_LINE.match(first_line(t))]
+        if not cands:
+            return None, warnings
+        warnings.append(f"no unlogged {agent_type} run starts with the brief line for this item; used the newest "
+                        f"unlabelled {agent_type} run - start each brief with the line SKILL.md gives")
     return max(cands, key=lambda p: p.stat().st_mtime), warnings
 
 
@@ -342,10 +360,32 @@ def _cycles_bounds(lines: list):
 
 def cycles_header_problem(task_file: Path) -> str | None:
     header = parse_task(task_file.read_text(encoding="utf-8"))["cycles_header"]
-    if header and not {"item", "verdict"} <= set(header):
-        return (f"{task_file}: the Cycles table header needs at least 'item' and 'verdict' columns "
+    if header and not REQUIRED_COLUMNS <= set(header):
+        missing = ", ".join(sorted(REQUIRED_COLUMNS - set(header)))
+        return (f"{task_file}: the Cycles table header lacks {missing}; escalation reads them "
                 f"(expected: | {' | '.join(CYCLE_COLUMNS)} |)")
     return None
+
+
+def stamp_task_id(task_file: Path, task_id: str) -> None:
+    """Record the ledger's task id in TASK.md, under its title, once."""
+    text = task_file.read_text(encoding="utf-8").replace("\r\n", "\n")
+    if re.search(r"<!--\s*harness-task:", text):
+        return
+    lines = text.splitlines()
+    at = next((i + 1 for i, l in enumerate(lines) if l.startswith("# ")), 0)
+    lines.insert(at, f"<!-- harness-task: {task_id} -->")
+    task_file.write_text("\n".join(lines) + "\n", encoding="utf-8")
+
+
+def task_id_for(ledger: list, task_file: Path) -> str:
+    """The task a cycle or step belongs to: TASK.md's recorded id, else the
+    latest start (callers stamp it into TASK.md once something is logged)."""
+    if task_file.exists():
+        tid = parse_task(task_file.read_text(encoding="utf-8")).get("task_id")
+        if tid:
+            return tid
+    return current_task(ledger, task_file)[0]
 
 
 def append_cycle_row(task_file: Path, values: dict) -> None:
@@ -400,7 +440,7 @@ def block_dependents(task_file: Path, blocked_id: str) -> list:
         for iid, item in items.items():
             if iid in blocked or (item.get("status") or "todo").lower() in ("done", "blocked"):
                 continue
-            deps = {d.upper() for d in _split_list(item.get("after"))} & blocked
+            deps = deps_of(item.get("after"), set(items)) & blocked
             if deps:
                 hit = (iid, sorted(deps)[0])
                 break
@@ -440,6 +480,11 @@ def measure(agent: str, contract: Contract, logged: set, *, agent_id=None, trans
     else:
         path, warns = find_transcript(agent, logged, marker)
     out["warnings"] += warns
+    if path and path.exists() and agent_id_of(path) in logged:
+        out["warnings"].append(f"run {agent_id_of(path)} is already in the ledger; not counted again")
+        out.update(found=True, agent_id=None, duplicate_of=agent_id_of(path), source=f"duplicate:{path}",
+                   model=None, tier=None, effort=effort, tokens={}, cost_usd=0.0)
+        return out
     if path and path.exists():
         s = summarize_messages(read_usage(path), contract)
         tier = contract.tier_of_model(s["model"] or "") or None
@@ -491,6 +536,7 @@ def _after_verdict(task_file: Path, item_id: str, contract: Contract, verdict: s
     else:
         nxt = route_item(signals_from_item(task["items"][item_id]), contract, task["cycles"])
         out["next"] = {k: nxt.get(k) for k in ("status", "agent", "effort", "rule", "next")}
+        out["next"]["action"] = (nxt.get("escalation") or {}).get("action") or nxt["status"]
         status = "blocked" if nxt["status"] == "blocked" else "retry"
     set_item_field(task_file, item_id, "status", status)
     out["item_status"] = status
@@ -506,25 +552,41 @@ def _after_verdict(task_file: Path, item_id: str, contract: Contract, verdict: s
 def cmd_start(args, contract):
     ledger_path, task_file = Path(args.ledger), Path(args.task_file)
     ledger = read_ledger(ledger_path)
-    task_id, title, resumed = None, args.title, False
+    starts = [r for r in ledger if r.get("kind") == "start"]
+    task_id, title, resumed, note = None, args.title, False, None
     if args.resume:
-        want = slugify(parse_task(task_file.read_text(encoding="utf-8"))["title"]) if task_file.exists() else None
-        for row in reversed(ledger):
-            if row.get("kind") == "start" and (want is None or slugify(row.get("title", "")) == want):
+        recorded = parse_task(task_file.read_text(encoding="utf-8")).get("task_id") if task_file.exists() else None
+        by_title = slugify(args.title) if args.title else None
+        for row in reversed(starts):
+            if (recorded and row["task"] == recorded) or (not recorded and by_title
+                                                           and slugify(row.get("title", "")) == by_title):
                 task_id, title, resumed = row["task"], row.get("title", title), True
                 break
+        if not task_id and recorded:
+            task_id, title, resumed = recorded, title or recorded, True
+            note = "TASK.md names a task this ledger has no start for; resuming it under that id"
+        if not task_id and starts and not by_title:
+            task_id, title, resumed = starts[-1]["task"], starts[-1].get("title", ""), True
+            note = f"TASK.md records no task id; resumed the latest task in the ledger ({task_id})"
+        if not task_id:
+            raise LedgerError("nothing to resume: no task in the ledger matches; start a new one with --title")
     if not title:
-        raise LedgerError("start needs --title (or --resume with an existing task)")
+        raise LedgerError("start needs --title (or --resume)")
     if not task_id:
         task_id = f"{slugify(title)}-{now_utc():%Y%m%d-%H%M%S}"
-        taken = {r.get("task") for r in ledger if r.get("kind") == "start"}
+        taken = {r.get("task") for r in starts}
         n, base_id = 2, task_id
         while task_id in taken:
             task_id, n = f"{base_id}-{n}", n + 1
     append_ledger(ledger_path, {"ts": iso(now_utc()), "kind": "start", "task": task_id, "title": title,
-                                "resume": resumed})
-    print(json.dumps({"task": task_id, "resumed": resumed, "ledger": str(ledger_path),
-                      "task_file": str(task_file), "task_file_exists": task_file.exists()}, indent=2))
+                                "resume": resumed, "session": current_session_id()})
+    if task_file.exists() and resumed:
+        stamp_task_id(task_file, task_id)
+    out = {"task": task_id, "resumed": resumed, "ledger": str(ledger_path), "task_file": str(task_file),
+           "task_file_exists": task_file.exists()}
+    if note:
+        out["note"] = note
+    print(json.dumps(out, indent=2))
     return 0
 
 
@@ -540,7 +602,7 @@ def cmd_cycle(args, contract):
     if item_id not in task["items"]:
         raise LedgerError(f"item {item_id} not in {task_file} (have: {', '.join(task['items'])})")
     ledger = read_ledger(ledger_path)
-    task_id, _ = current_task(ledger, task_file)
+    task_id = task_id_for(ledger, task_file)
     logged = {r.get("agent_id") for r in ledger if r.get("agent_id")}
     rows_for_item = [c for c in task["cycles"] if c.get("item") == item_id]
     cycle_no = len(rows_for_item) + 1
@@ -574,6 +636,7 @@ def cmd_cycle(args, contract):
         total += validator["cost_usd"] or 0.0
         out["validator"] = validator
 
+    stamp_task_id(task_file, task_id)
     tier = worker.get("tier") or contract.tier_of_agent(args.worker) or "?"
     append_cycle_row(task_file, {
         "item": item_id, "cycle": cycle_no, "agent": args.worker, "model": tier,
@@ -589,24 +652,30 @@ def cmd_cycle(args, contract):
 def cmd_step(args, contract):
     ledger_path, task_file = Path(args.ledger), Path(args.task_file)
     ledger = read_ledger(ledger_path)
-    task_id, _ = current_task(ledger, task_file)
+    task_id = task_id_for(ledger, task_file)
     logged = {r.get("agent_id") for r in ledger if r.get("agent_id")}
-    item_id = (args.item or "").upper() or None
+    items = [i.strip().upper() for i in re.split(r"[,\s]+", args.item or "") if i.strip()]
     verdict = (args.verdict or "").upper() or None
-    if item_id or verdict in ("FAIL", "STUCK"):
+    task = None
+    if items or verdict in ("FAIL", "STUCK"):
         if not task_file.exists():
             raise LedgerError(f"{task_file} not found")
         task = parse_task(task_file.read_text(encoding="utf-8"))
-        if verdict in ("FAIL", "STUCK") and not item_id:
+        if verdict in ("FAIL", "STUCK") and not items:
             raise LedgerError(f"--verdict {verdict} needs --item")
-        if item_id not in task["items"]:
-            raise LedgerError(f"item {item_id} not in {task_file}")
+        if verdict == "STUCK" and len(items) > 1:
+            raise LedgerError("a STUCK reply belongs to one item")
+        missing = [i for i in items if i not in task["items"]]
+        if missing:
+            raise LedgerError(f"item(s) {', '.join(missing)} not in {task_file}")
         if verdict == "FAIL":
             problem = cycles_header_problem(task_file)
             if problem:
                 raise LedgerError(problem)
-            if not [c for c in task["cycles"] if c.get("item") == item_id]:
-                raise LedgerError(f"item {item_id} has no cycle to reopen; log its work with `cycle` first")
+            never = [i for i in items if not [c for c in task["cycles"] if c.get("item") == i]]
+            if never:
+                raise LedgerError(f"item(s) {', '.join(never)} have no cycle to reopen; log their work with `cycle`")
+    item_id = items[0] if len(items) == 1 else None
     if args.marker:
         marker = args.marker
     elif args.agent == contract.validator[0]:
@@ -621,31 +690,45 @@ def cmd_step(args, contract):
     if not m["found"]:
         raise LedgerError(f"nothing logged: no unlogged {args.agent} transcript found. Rerun with --agent-id ID "
                           f"or --transcript PATH, or as a fallback --tokens IN,OUT (or --total-tokens N).")
-    row = _row({"ts": iso(now_utc()), "task": task_id, "item": item_id, "cycle": None, "name": args.name},
-               args.role, m, verdict)
-    append_ledger(ledger_path, row)
-    out = {"step": row}
+    row = _row({"ts": iso(now_utc()), "task": task_id, "item": ",".join(items) or None, "cycle": None,
+                "name": args.name}, args.role, m, verdict)
+    out = {"step": row, "items": {}}
+    if task is not None:
+        stamp_task_id(task_file, task_id)
 
-    if item_id and verdict == "FAIL":
-        # A later check (e.g. the final validation) failed an item that had
-        # passed: record it as a failed cycle of that item's last run.
-        last = [c for c in task["cycles"] if c.get("item") == item_id][-1]
-        cyc = len([c for c in task["cycles"] if c.get("item") == item_id]) + 1
-        append_cycle_row(task_file, {
-            "item": item_id, "cycle": cyc, "agent": last.get("agent", "?"), "model": last.get("model", "?"),
-            "effort": last.get("effort", "?"), "check": last.get("check", ""), "verdict": "FAIL",
-            "cost": f"${(m['cost_usd'] or 0.0):.4f}", "note": f"{args.name}: {args.note or 'failed'}"})
-        out.update(_after_verdict(task_file, item_id, contract, "FAIL"))
-    elif item_id and verdict == "STUCK":
-        stuck = sum(1 for r in read_ledger(ledger_path)
-                    if r.get("task") == task_id and r.get("item") == item_id and r.get("verdict") == "STUCK")
+    if verdict == "FAIL":
+        # A later check (e.g. the final validation) failed items that had
+        # passed: record a failed cycle of each item's last run. The run's
+        # cost is in the ledger once; the Cycles rows carry it on the first item.
+        for n, iid in enumerate(items):
+            rows_i = [c for c in task["cycles"] if c.get("item") == iid]
+            if (task["items"][iid].get("status") or "").lower() == "blocked":
+                out["items"][iid] = {"item_status": "blocked", "next": "already blocked: report it, do not reopen"}
+                continue
+            last = rows_i[-1]
+            append_cycle_row(task_file, {
+                "item": iid, "cycle": len(rows_i) + 1, "agent": last.get("agent", "?"),
+                "model": last.get("model", "?"), "effort": last.get("effort", "?"), "check": last.get("check", ""),
+                "verdict": "FAIL", "cost": f"${(m['cost_usd'] or 0.0) if n == 0 else 0.0:.4f}",
+                "note": f"{args.name} ({args.agent}): {args.note or 'failed'}"})
+            out["items"][iid] = _after_verdict(task_file, iid, contract, "FAIL")
+            if len(items) == 1:
+                row["cycle"] = len(rows_i) + 1
+    elif verdict == "STUCK":
+        stuck = 1 + sum(1 for r in ledger if r.get("task") == task_id and r.get("item") == item_id
+                        and r.get("verdict") == "STUCK" and r.get("agent") == args.agent)
         if stuck >= MAX_STUCK:
             set_item_field(task_file, item_id, "status", "blocked")
-            out.update(item_status="blocked", also_blocked=block_dependents(task_file, item_id),
-                       next=f"{item_id} was stuck {stuck} times: report it as blocked")
+            out["items"][item_id] = {"item_status": "blocked", "also_blocked": block_dependents(task_file, item_id),
+                                     "next": f"{args.agent} was stuck on {item_id} {stuck} times: report it as blocked"}
         else:
-            out.update(item_status="retry", next=f"fix the cause and re-dispatch {item_id} "
-                                                 f"(one more STUCK blocks it)")
+            set_item_field(task_file, item_id, "status", "retry")
+            out["items"][item_id] = {"item_status": "retry",
+                                     "next": f"fix the cause and re-dispatch {item_id} (a second STUCK from "
+                                             f"{args.agent} blocks it; rerouting to another tier starts afresh)"}
+    append_ledger(ledger_path, row)
+    if item_id and item_id in out["items"]:
+        out.update(out["items"][item_id])
     out["warnings"] = m["warnings"]
     print(json.dumps(out, indent=2))
     return 0
@@ -660,22 +743,23 @@ def _fmt_tokens(t: dict) -> str:
 
 
 def _windows(ledger: list, task_id: str):
-    """Orchestrator time windows for a task: each start (or resume) row opens
-    one; it closes at the next start row of any task, else at this task's last
-    row in it (else it is still open)."""
+    """Orchestrator time windows for a task, as (begin, end, session). Each start
+    (or resume) row opens one. It closes at this task's last row before the next
+    start of any task; with no row of its own in between, at that next start;
+    with neither, it is still open (None)."""
     out = []
     for i, row in enumerate(ledger):
         if row.get("kind") != "start" or row.get("task") != task_id:
             continue
-        begin = parse_ts(row["ts"])
-        end = None
+        begin, own_last, next_start = parse_ts(row["ts"]), None, None
         for later in ledger[i + 1:]:
             if later.get("kind") == "start":
-                end = parse_ts(later["ts"])
+                next_start = parse_ts(later.get("ts"))
                 break
             if later.get("task") == task_id and parse_ts(later.get("ts")):
-                end = parse_ts(later["ts"])
-        out.append((begin, end))
+                own_last = later
+        end = parse_ts(own_last["ts"]) if own_last else next_start
+        out.append((begin, end, row.get("session"), own_last))
     return out
 
 
@@ -688,15 +772,19 @@ def cmd_summary(args, contract):
     session = None
     if not args.all and not args.no_session:
         windows = _windows(ledger, task_id)
-        if windows and windows[-1][1] is None:
-            # Close an open window now, so a later summary does not count
-            # unrelated work done in this session afterwards.
-            mark = {"ts": iso(now_utc()), "kind": "summary", "task": task_id}
-            append_ledger(ledger_path, mark)
-            windows[-1] = (windows[-1][0], parse_ts(mark["ts"]))
+        if windows:
+            begin, end, sid, own_last = windows[-1]
+            later_start = any(r.get("kind") == "start" and parse_ts(r.get("ts")) and parse_ts(r["ts"]) > begin
+                              for r in ledger)
+            if not later_start and not (own_last and own_last.get("kind") == "summary"):
+                # The task's newest window: close it now, so the work up to this
+                # summary counts and later, unrelated work in the session does not.
+                mark = {"ts": iso(now_utc()), "kind": "summary", "task": task_id}
+                append_ledger(ledger_path, mark)
+                windows[-1] = (begin, parse_ts(mark["ts"]), sid, mark)
         msgs = []
-        for t in main_transcripts():
-            for begin, end in windows:
+        for begin, end, sid, _ in windows:
+            for t in main_transcripts(sid):
                 msgs += read_usage(t, since=begin, until=end, main_only=True)
         if msgs:
             session = summarize_messages(msgs, contract)
@@ -721,6 +809,7 @@ def cmd_summary(args, contract):
     cf = {t: round(sum(r["cost_as"].get(t, 0.0) for r in comparable), 4) for t in contract.ladder}
     cf_routed = round(sum(r["cost_usd"] for r in comparable), 4)
     result = {
+        "steps_partly_priced": sum(1 for r in rows if r.get("cost_usd") is not None and r.get("unpriced_messages")),
         "task": "all" if args.all else task_id,
         "steps": rows,
         "by_model": {k: {"steps": v["steps"], "cost_usd": round(v["cost_usd"], 4)} for k, v in by_tier.items()},
@@ -743,6 +832,8 @@ def cmd_summary(args, contract):
     print("|---|---|---|---|---|---|---|---|---|---|")
     for n, r in enumerate(rows, 1):
         cost = "?" if r.get("cost_usd") is None else f"${r['cost_usd']:.4f}" + ("~" if r.get("estimate") else "")
+        if r.get("cost_usd") is not None and r.get("unpriced_messages"):
+            cost += "+?"
         label = r.get("item") or r.get("name") or "-"
         if r.get("item") and r.get("name"):
             label = f"{r['item']} ({r['name']})"
@@ -762,8 +853,12 @@ def cmd_summary(args, contract):
     print()
     for iid, by in blocked:
         print(f"- blocked: {iid}" + (f" (waits on {by})" if by else ""))
-    if unknown or estimated:
-        print(f"\n_{unknown} step(s) without a measured cost, {estimated} estimated._")
+    partial = sum(1 for r in rows if r.get("cost_usd") is not None and r.get("unpriced_messages"))
+    if unknown or estimated or partial:
+        print(f"\n_{unknown} step(s) without a measured cost, {estimated} estimated, {partial} only partly priced "
+              f"(messages on models the contract does not price). The total leaves those out._")
+    if rows and not comparable:
+        print("\nNo step was measured from a transcript, so there is no single-model comparison.")
     if comparable:
         print("\nSame subagent messages priced on one model (price only - another model would have used "
               "different tokens and cycles):")
@@ -778,14 +873,17 @@ def main(argv=None):
     ap.add_argument("--contract", help="routing contract (default: routing.yaml next to the skill)")
     ap.add_argument("--ledger", default=str(LEDGER_FILE))
     ap.add_argument("--task-file", default=str(TASK_FILE))
-    ap.add_argument("--unavailable", action="append", help="tier(s) this account cannot use (for the next rung)")
+    ap.add_argument("--unavailable", action="append", dest="unavailable_top",
+                    help="tier(s) this account cannot use (for the next rung)")
+    common = argparse.ArgumentParser(add_help=False)
+    common.add_argument("--unavailable", action="append", dest="unavailable_sub", help=argparse.SUPPRESS)
     sub = ap.add_subparsers(dest="cmd", required=True)
 
-    s = sub.add_parser("start", help="open a task, or --resume the one in TASK.md")
+    s = sub.add_parser("start", help="open a task, or --resume the one in TASK.md", parents=[common])
     s.add_argument("--title")
     s.add_argument("--resume", action="store_true", help="keep the existing task id (TASK.md's task)")
 
-    c = sub.add_parser("cycle", help="record one worker cycle and its verdict")
+    c = sub.add_parser("cycle", help="record one worker cycle and its verdict", parents=[common])
     c.add_argument("--item", required=True)
     c.add_argument("--worker", required=True, help="subagent type, e.g. worker-sonnet")
     c.add_argument("--effort", help="effort the worker was dispatched at")
@@ -800,11 +898,11 @@ def main(argv=None):
         c.add_argument(f"--{who}-tokens", help="IN,OUT when no transcript is available")
         c.add_argument(f"--{who}-total-tokens", type=int, help="token count from the Agent result (rough estimate)")
 
-    st = sub.add_parser("step", help="record another step")
+    st = sub.add_parser("step", help="record another step", parents=[common])
     st.add_argument("--name", required=True, help="e.g. 'W2 stuck', 'final-validation'")
     st.add_argument("--agent", required=True)
     st.add_argument("--role", default="worker")
-    st.add_argument("--item", help="the item this step belongs to")
+    st.add_argument("--item", help="the item(s) this step belongs to; a FAIL may name several (W2,W3)")
     st.add_argument("--effort")
     st.add_argument("--verdict", type=str.upper, choices=["PASS", "FAIL", "STUCK"],
                     help="FAIL with --item reopens the item as a failed cycle; STUCK counts toward blocking it")
@@ -815,7 +913,7 @@ def main(argv=None):
     st.add_argument("--tokens", help="IN,OUT when no transcript is available")
     st.add_argument("--total-tokens", type=int)
 
-    sm = sub.add_parser("summary", help="per-step table and totals")
+    sm = sub.add_parser("summary", help="per-step table and totals", parents=[common])
     sm.add_argument("--task", help="task id (default: the current task)")
     sm.add_argument("--all", action="store_true", help="every task in the ledger")
     sm.add_argument("--format", choices=["md", "json"], default="md")
@@ -827,7 +925,7 @@ def main(argv=None):
     except (OSError, ContractError) as exc:
         print(f"ledger.py: cannot load contract: {exc}", file=sys.stderr)
         return 2
-    contract.unavailable = parse_unavailable(args.unavailable)
+    contract.unavailable = parse_unavailable((args.unavailable_top or []) + (getattr(args, "unavailable_sub", None) or []))
     if args.cmd == "cycle" and args.validator is None:
         args.validator = contract.validator[0]
     try:

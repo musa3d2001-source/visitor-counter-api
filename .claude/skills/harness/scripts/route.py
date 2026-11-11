@@ -388,12 +388,14 @@ def parse_task(text: str) -> dict:
         if f and current:
             key = norm_kind(f.group(1)).replace(" ", "_")
             items[current].setdefault(key, f.group(2).strip())
+    marker = re.search(r"<!--\s*harness-task:\s*(\S+)\s*-->", text)
     header, cycles = _table(secs.get("cycles", []))
     for row in cycles:
         if "item" in row:
             row["item"] = row["item"].upper()
     acceptance = [l.strip()[2:].strip() for l in secs.get("acceptance criteria", []) if l.strip().startswith(("- ", "* "))]
-    return {"title": title, "items": items, "cycles": cycles, "cycles_header": header, "acceptance": acceptance}
+    return {"title": title, "task_id": marker.group(1) if marker else None, "items": items, "cycles": cycles,
+            "cycles_header": header, "acceptance": acceptance}
 
 
 def _split_list(value) -> list:
@@ -438,11 +440,20 @@ def _truthy(value):
 
 
 def has_check(value) -> bool:
-    items = _split_list(value)
-    if not items:
+    """True when the field holds a command the worker can run, not a
+    placeholder ('none.', 'no check', 'TBD', '(validator reads it)')."""
+    text = str(value or "").strip().strip("`").strip()
+    if not text or text.startswith("("):
         return False
-    first = items[0].strip("`").strip().lower()
-    return first not in PLACEHOLDERS and not first.startswith("(")
+    m = re.match(r"^[^A-Za-z0-9./]*([A-Za-z0-9./_-]+)", text)
+    first = (m.group(1) if m else "").lower().rstrip(".")
+    return bool(first) and first not in PLACEHOLDERS and first not in ("validator", "judgement", "judgment")
+
+
+def deps_of(value, known: set) -> set:
+    """Item ids named in an `after:` value ('W1, W3', 'W1 and W3', '[W1]')."""
+    ids = {t.upper() for t in re.findall(r"\b[A-Za-z]*\d+[A-Za-z0-9]*\b", str(value or ""))}
+    return ids & {k.upper() for k in known}
 
 
 # --------------------------------------------------------------------------
@@ -479,7 +490,11 @@ def inspect_assets(paths, root: Path | None = None) -> Assets:
         if not p.exists():
             a.missing.append(str(raw))
             continue
-        base = p.parent if p.is_file() else p
+        try:
+            p.resolve().relative_to(root.resolve())
+            base = root.resolve()
+        except ValueError:
+            base = p.resolve().parent
         files = [p] if p.is_file() else []
         if p.is_dir():
             for dirpath, dirnames, filenames in os.walk(p):
@@ -502,7 +517,7 @@ def inspect_assets(paths, root: Path | None = None) -> Assets:
                 a.images += 1
                 continue
             try:
-                rel = f.relative_to(base)
+                rel = f.resolve().relative_to(base)
             except ValueError:
                 rel = Path(f.name)
             if _is_log(rel):
@@ -524,6 +539,8 @@ class Signals:
     computer_use: bool = False
     has_check: bool = False
     user_override: bool = False
+    status: str = ""
+    blocked_by: str = ""
     images: int = 0
     logs: int = 0
     source_tokens: int = 0
@@ -673,13 +690,27 @@ def route(sig: Signals, contract: Contract) -> dict:
 
     ok = [(i, r) for i, r in matches if guard_ok(r)]
     skipped_guard = [(i, r) for i, r in matches if not guard_ok(r)]
-    explicit_tiers = {r.model for _, r in matches if set(r.kinds) & set(explicit)}
+    default_rule = Rule("default", [], contract.default[0], contract.default[1])
+
+    def floor(rule):
+        # the tier a rule lands on once the guard has had its say
+        if guard_ok(rule):
+            return rule
+        allowed = [t for t in contract.ladder if t not in contract.no_code_edits
+                   and _rank(contract, t) > _rank(contract, rule.model)]
+        return Rule(f"guard floor for {rule.text}", rule.kinds, allowed[0] if allowed else rule.model, rule.effort)
+
+    # What each named kind would route to on its own; a kind with no usable rule
+    # (unknown, or an `if scoped` rule on an unscoped item) counts as the default.
+    options = [next((r for _, r in matches if k in r.kinds), default_rule) for k in explicit]
+    options += [default_rule for _ in unknown]
     chosen = None
-    if len(explicit) > 1 and len(explicit_tiers) > 1:
-        # Several kinds on different tiers: the item is compound. Never route it
-        # cheaper than its hardest kind, and ask for a split.
-        if ok:
-            chosen = max(ok, key=lambda m: _rank(contract, m[1].model))
+    if len(options) > 1 and len({o.model for o in options}) > 1:
+        # Compound item: never route it cheaper than its hardest part.
+        pool = [floor(o) for o in options] + [floor(r) for _, r in matches]
+        best = max(pool, key=lambda o: _rank(contract, o.model))
+        idx = next((i for i, r in enumerate(contract.rules) if r is best), None)
+        chosen = (idx, best)
         warnings.append("this names kinds on several tiers; split it into one-kind work items "
                         "so the cheap parts route cheap" if inferred else
                         "state one kind per item; split this item so each part routes on its own")
@@ -693,7 +724,8 @@ def route(sig: Signals, contract: Contract) -> dict:
 
     if chosen:
         idx, rule = chosen
-        model, effort, rule_text = rule.model, rule.effort, f"rule {idx + 1}: {rule.text}"
+        label = f"rule {idx + 1}: {rule.text}" if idx is not None else rule.text
+        model, effort, rule_text = rule.model, rule.effort, label
     elif skipped_guard:
         _, rule = skipped_guard[0]
         allowed = [t for t in contract.ladder if t not in contract.no_code_edits]
@@ -727,6 +759,10 @@ def route_item(sig: Signals, contract: Contract, cycles: list | None = None) -> 
     out = {"item": sig.item, **base, "cycle": len(rows) + 1, "status": "route", "failed_cycles": len(failed)}
     if base.get("blocked"):
         out.update(status="blocked", next=f"{base['blocked']}: mark the item blocked and report it")
+        return out
+    if sig.status == "blocked":
+        why = f"it waits on {sig.blocked_by}, which is blocked" if sig.blocked_by else "TASK.md marks it blocked"
+        out.update(status="blocked", cycle=len(rows), next=f"{why}: report it, do not dispatch")
         return out
     if verdicts and verdicts[-1] == "PASS":
         out.update(status="done", cycle=len(rows), next="nothing to do: the item's last cycle passed")
@@ -794,6 +830,8 @@ def signals_from_item(item: dict) -> Signals:
         computer_use=bool(_truthy(item.get("computer_use"))),
         has_check=has_check(item.get("check")),
         user_override="user override" in str(item.get("route") or "").lower(),
+        status=str(item.get("status") or "").strip().lower(),
+        blocked_by=str(item.get("blocked_by") or "").strip(),
     )
 
 
@@ -960,11 +998,13 @@ def cmd_check(contract: Contract, root: Path) -> tuple:
 def main(argv=None):
     ap = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     ap.add_argument("--contract", help="routing contract (default: routing.yaml next to the skill)")
-    ap.add_argument("--unavailable", action="append",
+    ap.add_argument("--unavailable", action="append", dest="unavailable_top",
                     help="tier(s) this account cannot use right now, e.g. fable (comma-separated or repeated)")
+    common = argparse.ArgumentParser(add_help=False)
+    common.add_argument("--unavailable", action="append", dest="unavailable_sub", help=argparse.SUPPRESS)
     sub = ap.add_subparsers(dest="cmd", required=True)
 
-    r = sub.add_parser("route", help="route one work item")
+    r = sub.add_parser("route", help="route one work item", parents=[common])
     r.add_argument("--task", help="TASK.md to read the item's signals and cycles from")
     r.add_argument("--item", help="work item id in TASK.md, e.g. W2")
     r.add_argument("--request", help="request text (used to infer the kind when none is stated)")
@@ -983,7 +1023,7 @@ def main(argv=None):
     r.add_argument("--root", help="base directory for relative asset paths (default: cwd)")
     r.add_argument("--brief", action="store_true", help="one line instead of JSON")
 
-    e = sub.add_parser("escalate", help="next rung after a failed check")
+    e = sub.add_parser("escalate", help="next rung after a failed check", parents=[common])
     e.add_argument("--model", required=True)
     e.add_argument("--effort", required=True)
     e.add_argument("--has-check", action="store_true")
@@ -998,7 +1038,7 @@ def main(argv=None):
     except (OSError, ContractError) as exc:
         print(f"route.py: cannot load contract: {exc}", file=sys.stderr)
         return 2
-    contract.unavailable = parse_unavailable(args.unavailable)
+    contract.unavailable = parse_unavailable((args.unavailable_top or []) + (getattr(args, "unavailable_sub", None) or []))
 
     try:
         if args.cmd == "route":

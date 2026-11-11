@@ -15,7 +15,7 @@ conversation, so anything they need goes here or in the item.>
 ## Acceptance criteria
 - AC1: <observable result> — check: `<command that exits 0 on success>`
 - AC2: <observable result> — check: `<command>`
-- AC3: <a criterion that needs judgement> — check: validator reads <file/area>
+- AC3: <a criterion that needs judgement> (judgement: the validator reads <file/area>)
 
 ## Work items
 
@@ -51,7 +51,9 @@ conversation, so anything they need goes here or in the item.>
 |---|---|---|---|---|---|---|---|---|
 ```
 
-`ledger.py` fills the Cycles table; you don't write rows by hand.
+`ledger.py` fills the Cycles table; you don't write rows by hand. The first time it logs, it also
+adds a `<!-- harness-task: <id> -->` line under the title; leave it there, since
+`ledger.py start --resume` finds the task by it.
 
 ## Fields
 

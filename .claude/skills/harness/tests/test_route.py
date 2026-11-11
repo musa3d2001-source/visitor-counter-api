@@ -413,5 +413,50 @@ class Cli(unittest.TestCase):
             self.assertIn("Agent is available", out)
 
 
+class RoundTwo(unittest.TestCase):
+    def test_blocked_status_is_respected(self):
+        sig = Signals(item="W3", kinds=["everyday docs"], edits_code=True, status="blocked", blocked_by="W2")
+        out = route_item(sig, CONTRACT, [])
+        self.assertEqual(out["status"], "blocked")
+        self.assertIn("W2", out["next"])
+
+    def test_compound_with_an_unscoped_kind_counts_as_default(self):
+        out = r(kinds=["search", "scoped fix"], spec="open", edits_code=False)
+        self.assertEqual(out["model"], "opus")
+        self.assertTrue(any("one kind per item" in w for w in out["warnings"]))
+
+    def test_extra_unknown_kind_does_not_lower_the_route(self):
+        self.assertEqual(r(kinds=["search", "vibes"], edits_code=False)["model"], "opus")
+
+    def test_has_check_placeholder_variants(self):
+        for v in ("none.", "None.", "none - validator reads it", "no check", "validator reads server.js",
+                  "(judgement: the validator reads server.js)"):
+            self.assertFalse(route.has_check(v), v)
+        for v in ("`node --test`", "npm test", "./run-checks.sh", "grep -n x a.js"):
+            self.assertTrue(route.has_check(v), v)
+
+    def test_logs_folder_as_the_asset(self):
+        with tempfile.TemporaryDirectory() as d:
+            p = Path(d)
+            (p / "logs").mkdir()
+            (p / "logs" / "run.txt").write_text("x")
+            (p / "logs" / "out.json").write_text("{}")
+            self.assertEqual(route.inspect_assets(["logs"], p).logs, 2)
+            self.assertEqual(route.inspect_assets(["logs/run.txt"], p).logs, 1)
+
+    def test_deps_of(self):
+        known = {"W1", "W2", "W3"}
+        self.assertEqual(route.deps_of("W1 and W3", known), {"W1", "W3"})
+        self.assertEqual(route.deps_of("[W1]", known), {"W1"})
+        self.assertEqual(route.deps_of("none", known), set())
+
+    def test_unavailable_after_the_subcommand(self):
+        buf = io.StringIO()
+        with redirect_stdout(buf):
+            code = route.main(["route", "--kind", "migration", "--edits-code", "--brief", "--unavailable", "fable"])
+        self.assertEqual(code, 0)
+        self.assertIn("worker-opus @ high", buf.getvalue())
+
+
 if __name__ == "__main__":
     unittest.main()
