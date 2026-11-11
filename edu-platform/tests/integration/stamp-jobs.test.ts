@@ -66,8 +66,8 @@ async function flushAfter() {
   while (afterQueue.length) await afterQueue.shift()!();
 }
 
-async function buyer(product: TestProduct): Promise<{ user: Awaited<ReturnType<typeof createUser>>; order: OrderRow }> {
-  const user = await createUser();
+async function buyer(product: TestProduct, existing?: Awaited<ReturnType<typeof createUser>>): Promise<{ user: Awaited<ReturnType<typeof createUser>>; order: OrderRow }> {
+  const user = existing ?? (await createUser());
   const order = await createOrder({ user, productIds: [product.id], isTest: true, consent: { guardianDeclared: true, termsAccepted: true, meta: { ip: null, userAgent: null } } });
   await confirmPaid(order);
   return { user, order };
@@ -179,6 +179,39 @@ describe("F23: what fills the queue", () => {
     expect(await enqueueBuyerCopies([p.mainFileId!], "owner")).toBe(0);
     expect(await jobsOf([p.mainFileId!])).toEqual([]);
     expect(user.id).toBeTruthy();
+  });
+
+  it("buying a bundle that holds a note the buyer already owns queues that note again: its copy now carries the bundle's order (V4)", async () => {
+    const p = await createProduct();
+    const { user, order: first } = await buyer(p);
+    await drain([p.mainFileId!]);
+    expect(await stampPrepProgress(p.id)).toMatchObject({ buyers: 1, wanted: 1, ready: 1, queued: 0 });
+
+    const bundle = await createBundle({ items: [p.id] });
+    const { order: second } = await buyer(bundle, user);
+    expect(second.number).not.toBe(first.number);
+    // صلاحية المذكرة لم تتغير (من الطلب الأول)، لكن الفتح يختمها الآن برقم طلب الباقة: النسخة الجاهزة ليست التي يسلّمها
+    expect(await jobsOf([p.mainFileId!])).toMatchObject([{ user_id: user.id, reason: "grant" }]);
+    expect(await stampPrepProgress(p.id)).toMatchObject({ buyers: 1, wanted: 1, ready: 0, queued: 1 });
+
+    expect(await drain([p.mainFileId!])).toMatchObject({ prepared: 1 });
+    expect(await stampPrepProgress(p.id)).toMatchObject({ ready: 1, queued: 0 });
+    // وما جُهز هو بالضبط ما يأخذه الفتح: لا ختم عند الفتح
+    const stamp = stampSpy();
+    expect((await openAs(p.mainFileId!, user)).status).toBe(200);
+    expect(stamp).not.toHaveBeenCalled();
+  });
+
+  it("a grant that queues again a job a drainer holds frees it, so that drainer's finish does not remove it (V4)", async () => {
+    const p = await createProduct();
+    const { user } = await buyer(p);
+    const inFlight = randomUUID();
+    await sql`update stamp_jobs set holder = ${inFlight}, lease_until = now() + interval '5 minutes' where user_id = ${user.id}`;
+    await buyer(await createBundle({ items: [p.id] }), user);
+    expect(await jobsOf([p.mainFileId!])).toMatchObject([{ reason: "grant", holder: null, due: true, attempts: 0 }]);
+    // المفرّغ الذي كان يختم بالهوية القديمة ينهي مهمته (done يطابق حاملها): لا يجدها، فتبقى للهوية الجديدة
+    expect((await sql`delete from stamp_jobs where user_id = ${user.id} and holder = ${inFlight}`).count).toBe(0);
+    expect(await jobsOf([p.mainFileId!])).toHaveLength(1);
   });
 });
 
@@ -419,6 +452,26 @@ describe("F23: the owner's button", () => {
     expect((await readyCopies(p.mainFileId!)).map((c) => c.user_id).sort()).toEqual(buyers.map((b) => b.user.id).sort());
     expect(await prepareCopiesAction(null, form({ productId: p.id }))).toMatchObject({ ok: true, message: "كل نسخ المشترين الحاليين جاهزة" });
     expect(await stampPrepProgress(p.id)).toMatchObject({ buyers: 2, wanted: 2, ready: 2, queued: 0 });
+  });
+
+  it("counts as ready only the copy an open would serve now: an older stamp format or address is queued again (V4)", async () => {
+    const p = await createProduct();
+    const { user } = await buyer(p);
+    await drain([p.mainFileId!]);
+    expect(await stampPrepProgress(p.id)).toMatchObject({ wanted: 1, ready: 1 });
+
+    // نسخة بشكل ختم أقدم: الملف ونسخته والحساب كما هي، والمفتاح غيره
+    await sql`update stamped_copies set cache_key = md5(cache_key) || md5(md5(cache_key)) where user_id = ${user.id} and state = 'ready'`;
+    expect(await stampPrepProgress(p.id)).toMatchObject({ wanted: 1, ready: 0 });
+    expect(await enqueueBuyerCopies([p.mainFileId!], "owner")).toBe(1);
+    expect(await drain([p.mainFileId!])).toMatchObject({ prepared: 1 });
+    expect(await stampPrepProgress(p.id)).toMatchObject({ ready: 1, queued: 0 });
+    expect(await enqueueBuyerCopies([p.mainFileId!], "owner")).toBe(0);
+
+    // بريد تغيّر بعد التجهيز: الفتح يختم بالبريد الجديد
+    await sql`update users set email = ${`moved-${randomUUID().slice(0, 8)}@example.com`} where id = ${user.id}`;
+    expect(await stampPrepProgress(p.id)).toMatchObject({ ready: 0 });
+    expect(await enqueueBuyerCopies([p.mainFileId!], "owner")).toBe(1);
   });
 
   it("is refused while the stamp is off, and for a product with no PDF", async () => {

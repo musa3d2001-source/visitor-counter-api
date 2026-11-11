@@ -1,5 +1,5 @@
 import "server-only";
-import { createHash, randomUUID } from "node:crypto";
+import { randomUUID } from "node:crypto";
 import { after } from "next/server";
 import { sql, type Db } from "../db";
 import { storage, StorageNotFoundError } from "../storage";
@@ -10,6 +10,7 @@ import { getPdfPageCount, PdfUnusableError, watermarkPdf } from "./pdf";
 import { assertStampCapacity, withStampSlot } from "./stamp-gate";
 import { reserveStampMemory, type MemoryLease } from "./stamp-memory";
 import { protectedCopySql, stampedCopyBudgetBytes, STAMPED_COPY_IN_USE_MINUTES } from "./copy-store";
+import { identityLines, identityOrderSql, stampCacheKey, type Lines } from "./copy-key";
 
 /**
  * تسليم ملفات PDF. الصلاحية والحساب يُفحصان قبل هذا الملف في كل طلب (checkFileAccess و getCurrentUser)،
@@ -27,8 +28,8 @@ import { protectedCopySql, stampedCopyBudgetBytes, STAMPED_COPY_IN_USE_MINUTES }
  *  - المعاينة المجانية: نسخة واحدة في ذاكرة النسخة لكل ملف معاينة، والمتصفح يعيد استعمالها (ترويسات المسار).
  */
 
-/** رقم شكل الختم: يتغير إذا تغير نصه أو موضعه في stampDocument، فلا تُعاد نسخة بالشكل القديم */
-export const STAMP_FORMAT_VERSION = 2;
+// رقم شكل الختم وهوية العلامة ومفتاح النسخة في ملف خفيف (copy-key.ts) يقرؤه عدّاد الجاهزية أيضًا، وتُصدَّر من هنا كما كانت
+export { identityLines, stampCacheKey, STAMP_FORMAT_VERSION, type WatermarkIdentity } from "./copy-key";
 /** عقد الختم بين نسخ الخادم: أطول من القراءة وانتظار المكان (20 ثانية) والختم (90 ثانية) والحفظ معًا */
 export const STAMP_LEASE_SECONDS = 180;
 // المساحة وقواعد الإخراج في ملف خفيف بلا pdf-lib (copy-store.ts)، وتُصدَّر من هنا أيضًا لمن اعتاد استيرادها من التسليم
@@ -85,32 +86,6 @@ export type PdfStream = { kind: "stream"; body: ReadableStream<Uint8Array>; size
 /** نسخة مختومة محفوظة لهذا المشتري: المسار يصدر لها رابطًا موقّعًا قصير العمر بعد تسجيل الوصول */
 export type PdfCopy = { kind: "copy"; objectKey: string; size: number | null };
 export type PdfDelivery = PdfStream | PdfCopy;
-
-type Lines = { primary: string; secondary: string };
-
-export type WatermarkIdentity = { orderNumber: string | null; lines: Lines };
-
-/**
- * بيانات العلامة المائية: بريد المشتري ورقم الطلب الذي منح الصلاحية وتاريخ دفعه، أو مرجع الحساب لمن لا طلب له.
- * ثابتة ما لم يتغير الطلب أو البريد، فتصلح مفتاحًا للنسخة المحفوظة (تاريخ اليوم كان يغيّرها كل يوم).
- */
-export function identityLines(user: { id: string; email: string }, order: { number: string; paidAt: Date | string | null } | null): WatermarkIdentity {
-  const ref = order?.number ?? `U-${user.id.slice(0, 8).toUpperCase()}`;
-  const date = order?.paidAt ? new Date(order.paidAt).toISOString().slice(0, 10) : null;
-  return {
-    orderNumber: order?.number ?? null,
-    lines: {
-      primary: `${user.email}  ${ref}`,
-      secondary: [`Licensed to ${user.email}`, ref, date, "Personal use only"].filter(Boolean).join(" | "),
-    },
-  };
-}
-
-/** مفتاح النسخة المختومة: الملف ونسخته، والحساب، ورقم الطلب، وكل ما يحدد شكل الختم ونصه */
-export function stampCacheKey(input: { fileId: string; fileVersion: string; userId: string; orderNumber: string | null; lines: Lines; format?: number }): string {
-  const parts = [input.format ?? STAMP_FORMAT_VERSION, input.fileId, input.fileVersion, input.userId, input.orderNumber ?? "", input.lines.primary, input.lines.secondary];
-  return createHash("sha256").update(JSON.stringify(parts)).digest("hex");
-}
 
 /**
  * تحويل البايتات إلى Stream (الاستجابات المتدفقة لا تخضع لحد 4.5MB في Vercel).
@@ -206,20 +181,15 @@ type CopyRow = { id: string; cacheKey: string; objectKey: string; size: number |
 
 /**
  * هوية العلامة والنسخ المحفوظة لهذا الحساب وهذا الملف بنسخته الحالية، وهل له مهمة تجهيز في الطابور، في أمر واحد.
- * الطلب الذي يُختم به: أحدث طلب منح صلاحية على المنتج نفسه أو على باقة تضمه مباشرة، ولم تُسحب صلاحيته.
+ * الطلب الذي يُختم به: أحدث طلب منح صلاحية على المنتج نفسه أو على باقة تضمه مباشرة، ولم تُسحب صلاحيته (identityOrderSql،
+ * القاعدة نفسها التي يعدّ بها المالك النسخ الجاهزة).
  */
 export async function identityAndCopies(user: DeliveryUser, file: DeliverableFile) {
   const [row] = await sql<{ number: string | null; paid_at: Date | null; copies: CopyRow[] | null; queued: boolean }[]>`
     select ord.number, ord.paid_at, cp.copies,
       exists (select 1 from stamp_jobs j where j.user_id = ${user.id} and j.file_id = ${file.id}) as queued
     from (select 1) as one
-    left join lateral (
-      select o.number, o.paid_at from entitlements e join orders o on o.id = e.order_id
-      where e.user_id = ${user.id} and e.revoked_at is null
-        and (e.product_id = ${file.productId}
-             or e.product_id in (select bundle_id from bundle_items where product_id = ${file.productId}))
-      order by o.paid_at desc nulls last limit 1
-    ) ord on true
+    left join lateral (${identityOrderSql(sql, user.id, file.productId)}) ord on true
     left join lateral (
       select json_agg(json_build_object(
         'id', c.id, 'cacheKey', c.cache_key, 'objectKey', c.object_key, 'size', c.size_bytes,

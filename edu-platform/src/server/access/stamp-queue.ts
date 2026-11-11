@@ -2,10 +2,11 @@ import "server-only";
 import { after } from "next/server";
 import { sql, type Db } from "../db";
 import { reportError } from "../platform/report-error";
+import { identityLines, identityOrderSql, stampCacheKey } from "./copy-key";
 
 /**
  * طابور النسخ المختومة المجهزة قبل الفتح (القرار F23): «اختم الملف F للمشتري U». الجدول stamp_jobs في ترحيل 0014.
- * هذا الملف خفيف عمدًا (SQL فقط): يستورده منح الصلاحية والاسترداد ورفع الملفات دون أن يحمّلوا pdf-lib.
+ * هذا الملف خفيف عمدًا (SQL وبصمة مفتاح النسخة فقط): يستورده منح الصلاحية والاسترداد ورفع الملفات دون أن يحمّلوا pdf-lib.
  * التفريغ نفسه في stamp-jobs.ts ويُحمَّل عند الحاجة فقط.
  */
 
@@ -31,34 +32,69 @@ export const PARKED_DAYS = 365;
 
 export type PrepProgress = { buyers: number; wanted: number; ready: number; queued: number; failed: number };
 
+type BuyerCopy = { userId: string; fileId: string; ready: boolean };
+
+/**
+ * كل مشترٍ يملك الآن كل ملف من هذه الملفات الرئيسية (مباشرة أو عبر حاوية تضم منتجه بأي عمق، غير مسحوبة ولا منتهية،
+ * وحسابه فعال وليس مالكًا)، وهل نسخته الجاهزة هي التي يسلّمها الفتح الآن (البند V4).
+ * «جاهزة» تعني مفتاح النسخة نفسه الذي يحسبه التسليم (identityAndCopies): الملف ونسخته وشكل الختم ورقم الطلب الذي
+ * يُختم به الآن والبريد. نسخة بشكل ختم قديم، أو برقم طلب أقدم بعد شراء باقة تضم الملف، لا تُحسب جاهزة ولا تمنع تجهيزها.
+ * المفتاح بصمة SHA-256 تُحسب هنا بالدالة نفسها (copy-key.ts)، لا بنسخة منها في SQL.
+ */
+async function buyerCopies(fileIds: string[]): Promise<BuyerCopy[]> {
+  if (fileIds.length === 0) return [];
+  const rows = await sql<{ user_id: string; file_id: string; email: string; storage_key: string; number: string | null; paid_at: Date | null; keys: string[] | null }[]>`
+    with recursive files as (
+      select f.id, f.product_id, f.storage_key from product_files f where f.id = any(${fileIds}::uuid[]) and f.kind = 'main'
+    ),
+    holders(file_id, product_id) as (
+      select id, product_id from files
+      union
+      select h.file_id, bi.bundle_id from holders h join bundle_items bi on bi.product_id = h.product_id
+    ),
+    pairs as (
+      select distinct e.user_id, h.file_id from holders h
+      join entitlements e on e.product_id = h.product_id and e.revoked_at is null and (e.expires_at is null or e.expires_at > now())
+    )
+    select p.user_id, p.file_id, u.email, f.storage_key, ord.number, ord.paid_at,
+      (select array_agg(c.cache_key) from stamped_copies c
+        where c.user_id = p.user_id and c.file_id = p.file_id and c.file_version = f.storage_key and c.state = 'ready') as keys
+    from pairs p
+    join files f on f.id = p.file_id
+    join users u on u.id = p.user_id and u.is_active and u.anonymized_at is null and u.role <> 'admin'
+    left join lateral (${identityOrderSql(sql, sql`p.user_id`, sql`f.product_id`)}) ord on true
+  `;
+  return rows.map((r) => {
+    const identity = identityLines({ id: r.user_id, email: r.email }, r.number ? { number: r.number, paidAt: r.paid_at } : null);
+    const key = stampCacheKey({ fileId: r.file_id, fileVersion: r.storage_key, userId: r.user_id, orderNumber: identity.orderNumber, lines: identity.lines });
+    return { userId: r.user_id, fileId: r.file_id, ready: (r.keys ?? []).includes(key) };
+  });
+}
+
 /**
  * تقدم تجهيز نسخ منتج للمالك: كم مشتريًا يملكه الآن (مباشرة أو عبر حاوية)، وكم نسخة يلزم (مشترٍ × ملف رئيسي)،
- * وكم منها جاهز بنسخة الملف الحالية، وكم في الطابور، وكم توقف بعد STAMP_JOB_MAX_ATTEMPTS. أعداد فقط، لا أسماء ولا عناوين.
+ * وكم منها جاهز بالنسخة التي يسلّمها الفتح الآن (buyerCopies)، وكم في الطابور، وكم توقف بعد STAMP_JOB_MAX_ATTEMPTS.
+ * أعداد فقط، لا أسماء ولا عناوين.
  */
 export async function stampPrepProgress(productId: string): Promise<PrepProgress> {
-  const [row] = await sql<PrepProgress[]>`
-    with recursive files as (
-      select id, storage_key from product_files where product_id = ${productId} and kind = 'main'
-    ),
-    holders(product_id) as (
-      select ${productId}::uuid
-      union
-      select bi.bundle_id from holders h join bundle_items bi on bi.product_id = h.product_id
-    ),
-    buyers as (
-      select distinct e.user_id from holders h
-      join entitlements e on e.product_id = h.product_id and e.revoked_at is null and (e.expires_at is null or e.expires_at > now())
-      join users u on u.id = e.user_id and u.is_active and u.anonymized_at is null and u.role <> 'admin'
-    )
-    select
-      (select count(*)::int from buyers) as buyers,
-      (select count(*)::int from buyers, files) as wanted,
-      (select count(distinct (c.user_id, c.file_id))::int from stamped_copies c join files f on f.id = c.file_id and c.file_version = f.storage_key
-        where c.state = 'ready' and c.user_id in (select user_id from buyers)) as ready,
-      (select count(*)::int from stamp_jobs j where j.file_id in (select id from files) and j.not_before < now() + make_interval(days => ${PARKED_DAYS})) as queued,
-      (select count(*)::int from stamp_jobs j where j.file_id in (select id from files) and j.not_before >= now() + make_interval(days => ${PARKED_DAYS})) as failed
-  `;
-  return row ?? { buyers: 0, wanted: 0, ready: 0, queued: 0, failed: 0 };
+  const fileIds = await mainFileIds(productId);
+  if (fileIds.length === 0) return { buyers: 0, wanted: 0, ready: 0, queued: 0, failed: 0 };
+  const [pairs, [jobs]] = await Promise.all([
+    buyerCopies(fileIds),
+    sql<{ queued: number; failed: number }[]>`
+      select
+        count(*) filter (where j.not_before < now() + make_interval(days => ${PARKED_DAYS}))::int as queued,
+        count(*) filter (where j.not_before >= now() + make_interval(days => ${PARKED_DAYS}))::int as failed
+      from stamp_jobs j where j.file_id = any(${fileIds}::uuid[])
+    `,
+  ]);
+  return {
+    buyers: new Set(pairs.map((p) => p.userId)).size,
+    wanted: pairs.length,
+    ready: pairs.filter((p) => p.ready).length,
+    queued: jobs?.queued ?? 0,
+    failed: jobs?.failed ?? 0,
+  };
 }
 
 type Savepointable = Db & { savepoint?: <T>(cb: (tx: Db) => Promise<T>) => Promise<T> };
@@ -80,6 +116,8 @@ async function bestEffort(db: Db, label: string, work: (tx: Db) => Promise<unkno
 /**
  * يضع في الطابور نسخة كل ملف رئيسي من هذه المنتجات لهذا المشتري، في معاملة المنح نفسها: لا تضيع مهمة لمنح ثبت،
  * ولا تبقى مهمة لمنح تراجع. منح مكرر (إعادة إشعار الدفع) لا يصل هنا لأن grantProduct لا يعيد ما لم يتغير.
+ * مهمة موجودة يأخذها مفرّغ الآن تُترك له حرة: المنح قد غيّر هوية الختم (رقم طلب أحدث)، فما يختمه ذلك المفرّغ
+ * بالهوية القديمة لا يحذفها حين ينتهي (done يطابق حاملها)، وتأخذها جولة تالية بالهوية الجديدة.
  */
 export async function enqueueGrantCopies(db: Db, userId: string, productIds: string[]): Promise<void> {
   if (productIds.length === 0) return;
@@ -87,32 +125,25 @@ export async function enqueueGrantCopies(db: Db, userId: string, productIds: str
     insert into stamp_jobs (user_id, file_id, reason)
     select ${userId}, f.id, 'grant' from product_files f
     where f.product_id = any(${productIds}::uuid[]) and f.kind = 'main'
-    on conflict (user_id, file_id) do update set not_before = now(), attempts = 0, last_error = null
+    on conflict (user_id, file_id) do update set not_before = now(), attempts = 0, last_error = null, holder = null, lease_until = null
   `);
 }
 
 /**
- * يضع في الطابور نسخ كل مشترٍ يملك الآن هذه الملفات الرئيسية: مباشرة أو عبر حاوية تضم منتجها بأي عمق،
- * غير مسحوبة ولا منتهية، وحسابه فعال، وليست له نسخة جاهزة من هذا الملف بنسخته الحالية. المالك يأخذ الأصل فلا نسخة له.
+ * يضع في الطابور نسخ كل مشترٍ يملك الآن هذه الملفات الرئيسية (buyerCopies) وليست له النسخة التي يسلّمها الفتح الآن:
+ * لا نسخة، أو نسخة بشكل ختم قديم أو برقم طلب لم يعد هو الذي يُختم به (البند V4). المالك يأخذ الأصل فلا نسخة له.
  * الضغط مرتين لا يكرر شيئًا: مهمة واحدة لكل مشترٍ وملف، وما جُهز لا يعود. مهمة متوقفة بعد محاولاتها تُعاد من الصفر.
- * القاعدة هنا للترتيب فقط: المفرّغ يفحص الملكية من جديد (hasProductAccess) قبل كل ختم.
+ * القاعدة هنا للترتيب فقط: المفرّغ يفحص الملكية والنسخة من جديد قبل كل ختم.
  */
 export async function enqueueBuyerCopies(fileIds: string[], reason: Exclude<StampJobReason, "grant">): Promise<number> {
-  if (fileIds.length === 0) return 0;
+  const missing = (await buyerCopies(fileIds)).filter((p) => !p.ready);
+  if (missing.length === 0) return 0;
+  // ملف أو حساب حُذف بين القراءة والكتابة يُترك، فلا يُفشل المفتاح الأجنبي الدفعة كلها
   const rows = await sql`
-    with recursive holders(file_id, storage_key, product_id) as (
-      select f.id, f.storage_key, f.product_id from product_files f where f.id = any(${fileIds}::uuid[]) and f.kind = 'main'
-      union
-      select h.file_id, h.storage_key, bi.bundle_id from holders h join bundle_items bi on bi.product_id = h.product_id
-    )
     insert into stamp_jobs (user_id, file_id, reason)
-    select distinct e.user_id, h.file_id, ${reason}
-    from holders h
-    join entitlements e on e.product_id = h.product_id and e.revoked_at is null and (e.expires_at is null or e.expires_at > now())
-    join users u on u.id = e.user_id and u.is_active and u.anonymized_at is null and u.role <> 'admin'
-    where not exists (
-      select 1 from stamped_copies c where c.user_id = e.user_id and c.file_id = h.file_id and c.file_version = h.storage_key and c.state = 'ready'
-    )
+    select t.user_id, t.file_id, ${reason}
+    from unnest(${missing.map((p) => p.userId)}::uuid[], ${missing.map((p) => p.fileId)}::uuid[]) as t(user_id, file_id)
+    where exists (select 1 from product_files f where f.id = t.file_id) and exists (select 1 from users u where u.id = t.user_id)
     on conflict (user_id, file_id) do update set reason = excluded.reason, not_before = now(), attempts = 0, last_error = null
   `;
   return rows.count;

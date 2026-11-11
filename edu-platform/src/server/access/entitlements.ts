@@ -125,14 +125,15 @@ export async function grantProduct(db: Db, input: GrantInput): Promise<{ granted
     if (rows.length) granted.push(productId);
   };
 
+  const closure = isContainerType(product.type) ? await containerClosure(db, product.id) : [];
   await upsert(product.id, input.source, null);
-  if (isContainerType(product.type)) {
-    for (const itemId of await containerClosure(db, product.id)) await upsert(itemId, "bundle", product.id);
-  }
+  for (const itemId of closure) await upsert(itemId, "bundle", product.id);
   // نسخ المشتري المختومة تُجهز بعد الرد (القرار F23)، فلا يكون أول فتح له ختمًا وقت الامتحان.
-  // منح لم يغيّر شيئًا (إعادة إشعار الدفع) لا يضع شيئًا في الطابور
+  // منح لم يغيّر شيئًا (إعادة إشعار الدفع) لا يضع شيئًا في الطابور.
+  // حاوية مُنحت الآن تغيّر هوية ختم ما بداخلها حتى إن لم تتغير صلاحيته هو (مذكرة يملكها من طلب أقدم: نسختها تُختم
+  // الآن برقم طلب الباقة، identityAndCopies)، فيدخل الطابور كل ما فيها. المفرّغ يتخطى ما بقيت نسخته صالحة (البند V4)
   if (granted.length > 0) {
-    await enqueueGrantCopies(db, input.userId, granted);
+    await enqueueGrantCopies(db, input.userId, granted.includes(product.id) ? [product.id, ...closure] : granted);
     scheduleStampDrain({ userId: input.userId }, DRAIN_BUDGET_MS.afterGrant);
   }
   return { granted, expiresAt };
