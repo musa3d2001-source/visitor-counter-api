@@ -4,7 +4,7 @@ import { tmpdir } from "node:os";
 import { join, resolve } from "node:path";
 import { promisify } from "node:util";
 import { afterAll, beforeEach, describe, expect, it } from "vitest";
-import { createOrder, markOrderPaid, type OrderRow } from "@/server/commerce/orders";
+import { completeFreeOrder, createOrder, markOrderPaid, type OrderRow } from "@/server/commerce/orders";
 import { hasProductAccess } from "@/server/access/entitlements";
 import { getDb } from "@/server/db";
 import { PurgeRefusedError, parsePurgeArgs, purgeRefusalReason, purgeTestOrders } from "../../scripts/purge-test-orders";
@@ -70,7 +70,7 @@ describe("purgeTestOrders", () => {
     await scenario();
     const before = await snapshot();
     const out = await purgeTestOrders(getDb(), dry);
-    expect(out).toEqual({ database: expect.stringMatching(/test/), applied: false, testOrders: 3, revokedEntitlements: 1, keptEntitlements: 0, closedOrders: 2, closedPaidOrders: 1, reversedEarnings: 0, expiredPayments: 1, deletedRedemptions: 1 });
+    expect(out).toEqual({ database: expect.stringMatching(/test/), applied: false, testOrders: 3, revokedEntitlements: 1, keptEntitlements: 0, closedOrders: 2, closedPaidOrders: 1, reversedEarnings: 0, expiredPayments: 1, deletedRedemptions: 1, untaggedFreeOrders: 0 });
     expect(await snapshot()).toBe(before);
     expect(parsePurgeArgs([])).toEqual({ apply: false, confirmDatabase: null });
   });
@@ -174,6 +174,52 @@ describe("purgeTestOrders", () => {
     const before = await snapshot();
     expect(await purgeTestOrders(getDb(), apply)).toMatchObject({ revokedEntitlements: 0, keptEntitlements: 0, closedOrders: 0, expiredPayments: 0, deletedRedemptions: 0 });
     expect(await snapshot()).toBe(before);
+  });
+});
+
+describe("free orders are real orders, even while payments are in sandbox (R003)", () => {
+  /** طلب مجاني بكوبون ١٠٠٪ أكمله الطالب، كما يحدث في صفحة الشراء */
+  async function freeOrder(isTest: boolean) {
+    const student = await createUser();
+    const product = await createProduct({ priceFils: 2000 });
+    const coupon = await createCoupon({ kind: "percent", value: 100 });
+    const order = await createOrder({ user: student, productIds: [product.id], couponCode: coupon.code, isTest });
+    await completeFreeOrder(order.id, student.id);
+    return { student, product, coupon, order };
+  }
+
+  it("an order with nothing to pay is never tagged test; one with money in sandbox still is", async () => {
+    const { order } = await freeOrder(true);
+    expect(order).toMatchObject({ total_fils: 0, is_test: false });
+    const student = await createUser();
+    const paid = await createOrder({ user: student, productIds: [(await createProduct({ priceFils: 1500 })).id], isTest: true });
+    expect(paid).toMatchObject({ total_fils: 1500, is_test: true });
+  });
+
+  it("a free order tagged test before the fix keeps its order, access and coupon use; the purge only removes the tag", async () => {
+    const { student, product, coupon, order } = await freeOrder(false);
+    // كما كان يُنشأ قبل R003 والدفع في وضع التجربة
+    await sql`update orders set is_test = true where id = ${order.id}`;
+    await sql`update teacher_earnings set is_test = true where order_id = ${order.id}`;
+    const test = await scenario();
+
+    const before = await snapshot();
+    const plan = await purgeTestOrders(getDb(), dry);
+    expect(plan).toMatchObject({ testOrders: 3, revokedEntitlements: 1, keptEntitlements: 0, closedPaidOrders: 1, deletedRedemptions: 1, untaggedFreeOrders: 1 });
+    expect(await snapshot()).toBe(before);
+
+    expect(await purgeTestOrders(getDb(), apply)).toMatchObject({ testOrders: 3, revokedEntitlements: 1, keptEntitlements: 0, closedPaidOrders: 1, deletedRedemptions: 1, untaggedFreeOrders: 1 });
+    expect(await status(order.id)).toBe("paid");
+    expect(await activeEntitlements(student.id)).toEqual([product.id]);
+    expect(await hasProductAccess(student.id, product.id)).toBe(true);
+    expect(await sql`select 1 from coupon_redemptions where order_id = ${order.id} and coupon_id = ${coupon.id}`).toHaveLength(1);
+    expect((await sql<{ is_test: boolean }[]>`select is_test from orders where id = ${order.id}`)[0].is_test).toBe(false);
+    expect(await sql`select 1 from teacher_earnings where order_id = ${order.id} and is_test`).toHaveLength(0);
+    // والطلب التجريبي المدفوع بجانبه أُغلق كالمعتاد
+    expect(await status(test.testPaid.id)).toBe("cancelled");
+
+    expect(await purgeTestOrders(getDb(), apply)).toMatchObject({ revokedEntitlements: 0, closedPaidOrders: 0, deletedRedemptions: 0, untaggedFreeOrders: 0 });
+    expect(await status(order.id)).toBe("paid");
   });
 });
 

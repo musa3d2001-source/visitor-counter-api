@@ -5,6 +5,8 @@
  *   - يرفض العمل، حتى في المعاينة، إن وُجدت دفعة بيئتها live على طلب موسوم تجريبيًا: هذا تناقض لا يُحسم بسكريبت
  *   - يحذف استخدامات الكوبونات المرتبطة بها حتى تعود حدود الكوبون كما كانت
  * لا يمس الطلبات الحقيقية. الطلب التجريبي المسترد يبقى مستردًا، فهو مغلق أصلًا.
+ * الطلب التجريبي هو ما فيه مال يُدفع في بيئة التجربة (R003). الطلب المجاني (٠ د.ك، أو بكوبون ١٠٠٪) لم يمر بالبوابة، فهو حقيقي
+ * ولو وُسم تجريبيًا قبل هذا الإصلاح: يبقى هو ووصوله واستخدام كوبونه، ويُزال عنه الوسم عند التنفيذ (untaggedFreeOrders).
  *
  * الاستخدام:
  *   npm run payments:purge-test-orders                        معاينة فقط (الافتراضي، قراءة دون أي تعديل)
@@ -32,6 +34,8 @@ export type PurgeReport = {
   reversedEarnings: number;
   expiredPayments: number;
   deletedRedemptions: number;
+  /** طلبات مجانية وُسمت تجريبية قبل R003: حقيقية، فلا يُغلق منها شيء، ويُزال عنها الوسم عند التنفيذ */
+  untaggedFreeOrders: number;
 };
 
 export class PurgeRefusedError extends Error {
@@ -60,22 +64,26 @@ type Plan = {
   reversedEarnings: number;
   expiredPayments: string[];
   redemptions: number;
+  freeTagged: string[];
 };
 
+/** طلب تجريبي: موسوم تجريبيًا وفيه مال. alias اسم جدول orders في الاستعلام */
+const testOrder = (db: Db, alias: string) => db`(${db(alias)}.is_test and ${db(alias)}.total_fils > 0)`;
+
 async function buildPlan(db: Db): Promise<Plan> {
-  const [{ n: testOrders }] = await db<{ n: number }[]>`select count(*)::int as n from orders where is_test`;
+  const [{ n: testOrders }] = await db<{ n: number }[]>`select count(*)::int as n from orders o where ${testOrder(db, "o")}`;
   const entitlements = await db<Plan["entitlements"]>`
     with recursive covered(order_id, user_id, paid_at, root, product_id) as (
       select o.id, o.user_id, o.paid_at, oi.product_id, oi.product_id
       from orders o join order_items oi on oi.order_id = o.id
-      where o.status = 'paid' and not o.is_test
+      where o.status = 'paid' and not ${testOrder(db, "o")}
       union
       select c.order_id, c.user_id, c.paid_at, c.root, bi.product_id
       from covered c join bundle_items bi on bi.bundle_id = c.product_id
     )
     select e.id, e.product_id, real.order_id as real_order_id, real.root as real_root
     from entitlements e
-    join orders t on t.id = e.order_id and t.is_test
+    join orders t on t.id = e.order_id and ${testOrder(db, "t")}
     left join lateral (
       select c.order_id, c.root from covered c
       where c.user_id = e.user_id and c.product_id = e.product_id
@@ -84,18 +92,28 @@ async function buildPlan(db: Db): Promise<Plan> {
     ) real on true
     where e.revoked_at is null
   `;
-  const closedOrders = await db<{ id: string }[]>`select id from orders where is_test and status in ('pending', 'failed')`;
-  const closedPaidOrders = await db<{ id: string }[]>`select id from orders where is_test and status = 'paid'`;
+  const closedOrders = await db<{ id: string }[]>`select o.id from orders o where ${testOrder(db, "o")} and o.status in ('pending', 'failed')`;
+  const closedPaidOrders = await db<{ id: string }[]>`select o.id from orders o where ${testOrder(db, "o")} and o.status = 'paid'`;
   const [{ n: reversedEarnings }] = await db<{ n: number }[]>`
-    select count(*)::int as n from teacher_earnings te join orders o on o.id = te.order_id where o.is_test and o.status = 'paid' and te.status = 'active'
+    select count(*)::int as n from teacher_earnings te join orders o on o.id = te.order_id where ${testOrder(db, "o")} and o.status = 'paid' and te.status = 'active'
   `;
   const expiredPayments = await db<{ id: string }[]>`
-    select p.id from payments p join orders o on o.id = p.order_id where o.is_test and p.status in ('initiated', 'pending')
+    select p.id from payments p join orders o on o.id = p.order_id where ${testOrder(db, "o")} and p.status in ('initiated', 'pending')
   `;
   const [{ n: redemptions }] = await db<{ n: number }[]>`
-    select count(*)::int as n from coupon_redemptions r join orders o on o.id = r.order_id where o.is_test
+    select count(*)::int as n from coupon_redemptions r join orders o on o.id = r.order_id where ${testOrder(db, "o")}
   `;
-  return { entitlements: [...entitlements], testOrders, closedOrders: closedOrders.map((r) => r.id), closedPaidOrders: closedPaidOrders.map((r) => r.id), reversedEarnings, expiredPayments: expiredPayments.map((r) => r.id), redemptions };
+  const freeTagged = await db<{ id: string }[]>`select o.id from orders o where o.is_test and o.total_fils = 0`;
+  return {
+    entitlements: [...entitlements],
+    testOrders,
+    closedOrders: closedOrders.map((r) => r.id),
+    closedPaidOrders: closedPaidOrders.map((r) => r.id),
+    reversedEarnings,
+    expiredPayments: expiredPayments.map((r) => r.id),
+    redemptions,
+    freeTagged: freeTagged.map((r) => r.id),
+  };
 }
 
 function report(database: string, applied: boolean, plan: Plan): PurgeReport {
@@ -110,6 +128,7 @@ function report(database: string, applied: boolean, plan: Plan): PurgeReport {
     reversedEarnings: plan.reversedEarnings,
     expiredPayments: plan.expiredPayments.length,
     deletedRedemptions: plan.redemptions,
+    untaggedFreeOrders: plan.freeTagged.length,
   };
 }
 
@@ -159,9 +178,14 @@ export async function purgeTestOrders(sql: postgres.Sql, opts: PurgeOptions): Pr
       await tx`update order_holds set released_at = now(), resolution = 'released' where order_id = any(${plan.closedPaidOrders}::uuid[]) and released_at is null`;
     }
     if (plan.expiredPayments.length) await tx`update payments set status = 'expired', reconcile_claimed_at = null where id = any(${plan.expiredPayments}::uuid[])`;
-    await tx`delete from coupon_redemptions r using orders o where o.id = r.order_id and o.is_test`;
+    await tx`delete from coupon_redemptions r using orders o where o.id = r.order_id and ${testOrder(tx, "o")}`;
+    // آخرًا، بعد كل ما سبق: الطلب المجاني حقيقي، فلا يبقى موسومًا ولا تبقى أرباحه (صفرية) خارج التقارير
+    if (plan.freeTagged.length) {
+      await tx`update orders set is_test = false where id = any(${plan.freeTagged}::uuid[]) and is_test and total_fils = 0`;
+      await tx`update teacher_earnings set is_test = false where order_id = any(${plan.freeTagged}::uuid[]) and is_test`;
+    }
     const out = report(database, true, plan);
-    if (out.revokedEntitlements || out.keptEntitlements || out.closedOrders || out.closedPaidOrders || out.expiredPayments || out.deletedRedemptions) {
+    if (out.revokedEntitlements || out.keptEntitlements || out.closedOrders || out.closedPaidOrders || out.expiredPayments || out.deletedRedemptions || out.untaggedFreeOrders) {
       await tx`
         insert into audit_logs (actor_id, action, entity_type, reason, metadata)
         values (null, 'payments.purge_test_orders', 'system', 'purge-test-orders script', ${tx.json(out as never)})

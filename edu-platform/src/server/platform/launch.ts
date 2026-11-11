@@ -86,14 +86,17 @@ async function webhooksFact(): Promise<LaunchFacts["webhooks"]> {
   return { lastValidAt: delivery.lastValid?.at ?? null, livePayment: at("1"), liveRefund: at("2"), dispute: dispute.at, rejectedLast24h: delivery.rejectedLast24h };
 }
 
-/** ما يبقى بعد أمر purge-test-orders: هذه الأعداد كلها صفر بعده مباشرة */
+/**
+ * ما يبقى بعد أمر purge-test-orders: هذه الأعداد كلها صفر بعده مباشرة.
+ * بالتعريف نفسه الذي يعمل به الأمر: الطلب المجاني حقيقي ولو وُسم تجريبيًا قبل R003، فلا يُعد هنا
+ */
 async function testOrdersFact(): Promise<LaunchFacts["testOrders"]> {
   const [row] = await sql<NonNullable<LaunchFacts["testOrders"]>[]>`
     select
-      (select count(*)::int from orders where is_test and status in ('pending', 'failed')) as "openOrders",
-      (select count(*)::int from payments p join orders o on o.id = p.order_id where o.is_test and p.status in ('initiated', 'pending')) as "openPayments",
-      (select count(*)::int from entitlements e join orders o on o.id = e.order_id where o.is_test and e.revoked_at is null) as entitlements,
-      (select count(*)::int from coupon_redemptions r join orders o on o.id = r.order_id where o.is_test) as redemptions
+      (select count(*)::int from orders where is_test and total_fils > 0 and status in ('pending', 'failed')) as "openOrders",
+      (select count(*)::int from payments p join orders o on o.id = p.order_id where o.is_test and o.total_fils > 0 and p.status in ('initiated', 'pending')) as "openPayments",
+      (select count(*)::int from entitlements e join orders o on o.id = e.order_id where o.is_test and o.total_fils > 0 and e.revoked_at is null) as entitlements,
+      (select count(*)::int from coupon_redemptions r join orders o on o.id = r.order_id where o.is_test and o.total_fils > 0) as redemptions
   `;
   return row;
 }

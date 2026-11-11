@@ -7,7 +7,7 @@ import { resetEnvCache } from "@/server/env";
 import { launchFacts, launchStatus, launchTicks, setLaunchCheck } from "@/server/platform/launch";
 import { purgeTestOrders } from "../../scripts/purge-test-orders";
 import { closeDb, resetDb, sql } from "../helpers/db";
-import { acceptAgreement, createBundle, createProduct, createTeacher, createUser } from "../helpers/factories";
+import { acceptAgreement, createBundle, createCoupon, createProduct, createTeacher, createUser } from "../helpers/factories";
 import { TEST_ENV } from "../test-env";
 
 /**
@@ -121,6 +121,17 @@ describe("facts read from the database", () => {
     expect((await launchStatus()).steps.find((s) => s.key === "test_orders")!.state).toBe("open");
 
     await purgeTestOrders(getDb(), { apply: true });
+    expect((await launchFacts()).testOrders).toEqual({ openOrders: 0, openPayments: 0, entitlements: 0, redemptions: 0 });
+    expect((await launchStatus()).steps.find((s) => s.key === "test_orders")!.state).toBe("done");
+  });
+
+  it("a free order tagged test before R003 is not a trace of test orders", async () => {
+    const student = await createUser();
+    const product = await createProduct({ priceFils: 2000 });
+    const coupon = await createCoupon({ kind: "percent", value: 100 });
+    const free = await createOrder({ user: student, productIds: [product.id], couponCode: coupon.code, isTest: false });
+    await pay(free);
+    await sql`update orders set is_test = true where id = ${free.id}`;
     expect((await launchFacts()).testOrders).toEqual({ openOrders: 0, openPayments: 0, entitlements: 0, redemptions: 0 });
     expect((await launchStatus()).steps.find((s) => s.key === "test_orders")!.state).toBe("done");
   });

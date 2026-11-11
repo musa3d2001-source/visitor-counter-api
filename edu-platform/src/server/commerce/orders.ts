@@ -153,10 +153,13 @@ export async function createOrder(input: {
       if (total > 0 && !input.consent.guardianDeclared) missing.push("guardianDeclaration");
       if (missing.length) throw new ConsentRequiredError(missing);
     }
+    // is_test يعني أن المال في الطلب يُدفع في بيئة تجربة البوابة (R003). الطلب المجاني لا يمر بالبوابة ولا مال فيه، فهو حقيقي دائمًا
+    // ولو أُنشئ والدفع في وضع التجربة، ولا يمسه تنظيف الطلبات التجريبية قبل التحول إلى الدفع الحقيقي
+    const isTest = input.isTest && total > 0;
     const [order] = await tx<OrderRow[]>`
       insert into orders (user_id, subtotal_fils, discount_fils, total_fils, coupon_id, coupon_code, is_test,
                           customer_name, customer_email, customer_phone, fee_bps, fee_fixed_fils, earnings_snapshot_at)
-      values (${input.user.id}, ${cart.subtotalFils}, ${discountFils}, ${total}, ${couponId}, ${couponCode}, ${input.isTest},
+      values (${input.user.id}, ${cart.subtotalFils}, ${discountFils}, ${total}, ${couponId}, ${couponCode}, ${isTest},
               ${input.user.fullName}, ${input.user.email}, ${input.user.phone}, ${settings.fee_percent_bps}, ${settings.fee_fixed_fils}, now())
       returning *
     `;
