@@ -12,13 +12,14 @@ import { reportError } from "./report-error";
  * Vercel لا يعيد المحاولة عند الفشل، وتسليمه غير مضمون فقد يفوّت التشغيل أو يكرره، فكل وظيفة هنا آمنة للتكرار والجولة التالية تكمل ما فات.
  * الجدول في vercel.json، وشرحه وتغييره بعد الترقية إلى Pro في README.
  */
-export const SCHEDULED_JOBS = ["reconcile-payments", "expire-orders", "prune-data"] as const;
+export const SCHEDULED_JOBS = ["reconcile-payments", "expire-orders", "prune-data", "prepare-copies"] as const;
 export type JobName = (typeof SCHEDULED_JOBS)[number];
 
 export const JOB_LABELS: Record<JobName, { title: string; description: string }> = {
   "reconcile-payments": { title: "تسوية المدفوعات", description: "تسأل بوابة الدفع عن الفواتير المفتوحة والاستردادات التي لم تُحسم." },
   "expire-orders": { title: "إغلاق الطلبات المنتهية", description: "تغلق الطلبات غير المدفوعة بعد انتهاء مدتها، ولا تغلق طلبًا لم تُفحص فواتيره." },
   "prune-data": { title: "تنظيف البيانات القديمة", description: "تحذف حدود المحاولات والجلسات والروابط المنتهية وسجلات الوصول القديمة والنسخ المختومة غير المستعملة والرفع الذي لم يكتمل." },
+  "prepare-copies": { title: "تجهيز النسخ المختومة", description: "تختم نسخ المشترين التي بقيت في الطابور بعد الشراء أو رفع ملف جديد، حتى لا يُختم الملف عند فتحه." },
 };
 
 /** ليست عقد الدالة وحدها: أطول من maxDuration بهامش، فموت الدالة يحرر الوظيفة في الجولة التالية */

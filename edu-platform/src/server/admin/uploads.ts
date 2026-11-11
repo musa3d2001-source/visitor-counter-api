@@ -6,6 +6,7 @@ import { storage, newStorageKey, sniffMime, storageFileCap, toMb, uploadLimitByt
 import { inspectPdf, PreviewNotIsolatedError, rebuildCustomPreview, StampDeadlineError } from "../access/pdf";
 import { UPLOAD_REJECTION } from "../access/file-check";
 import { StampBusyError, withStampSlot } from "../access/stamp-gate";
+import { DRAIN_BUDGET_MS, enqueueBuyerCopies, scheduleStampDrain } from "../access/stamp-queue";
 import { hitRateLimit } from "../auth/rate-limit";
 import { STAMP_LIMIT_REASON } from "@/lib/pdf-limits";
 import { audit } from "../platform/audit";
@@ -448,6 +449,12 @@ export async function completeUpload(input: z.infer<typeof completeSchema>, acto
         return "unreadable";
       });
       previewNote = result === "busy" ? PREVIEW_BUSY_NOTE : (PREVIEW_RESULT_NOTE[result] ?? "");
+      // نسخ كل من يملك المنتج الآن تُجهز بعد الرد (القرار F23): ملف جديد أو بديل لا يُختم لكل مشترٍ عند أول فتح
+      const queued = await enqueueBuyerCopies([fileId], "new_file").catch(async (err) => {
+        await reportError("upload:stamp-jobs", err);
+        return 0;
+      });
+      if (queued > 0) scheduleStampDrain({ fileIds: [fileId] }, DRAIN_BUDGET_MS.afterUpload);
     }
     await audit({ actorId: actor.userId, action: `product.file_upload`, entityType: "product", entityId: productId, metadata: { fileId, kind: input.target, title, pages: pageCount, size: stat.size } });
     return { id: fileId, message: `تم رفع «${title}» (${pageCount} صفحة)${previewNote}` };

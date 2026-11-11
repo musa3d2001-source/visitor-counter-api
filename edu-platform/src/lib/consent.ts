@@ -13,7 +13,7 @@
  */
 export const CONSENT_VERSIONS = {
   terms: "2026-11-draft-4",
-  privacy: "2026-11-draft-7",
+  privacy: "2026-11-draft-8",
   guardian_purchase: "2026-11-draft-1",
   teacher_agreement: "2026-11-draft-1",
   guardian_account: "2026-11-draft-1",

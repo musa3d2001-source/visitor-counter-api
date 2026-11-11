@@ -4,6 +4,7 @@ import { servablePreviewSql } from "./preview-rule";
 import { audit } from "../platform/audit";
 import { isContainerType, isVideoType } from "@/lib/labels";
 import { isUuid } from "@/lib/uuid";
+import { DRAIN_BUDGET_MS, enqueueGrantCopies, forgetRevokedCopies, scheduleStampDrain } from "./stamp-queue";
 
 /**
  * صلاحيات الوصول:
@@ -128,6 +129,12 @@ export async function grantProduct(db: Db, input: GrantInput): Promise<{ granted
   if (isContainerType(product.type)) {
     for (const itemId of await containerClosure(db, product.id)) await upsert(itemId, "bundle", product.id);
   }
+  // نسخ المشتري المختومة تُجهز بعد الرد (القرار F23)، فلا يكون أول فتح له ختمًا وقت الامتحان.
+  // منح لم يغيّر شيئًا (إعادة إشعار الدفع) لا يضع شيئًا في الطابور
+  if (granted.length > 0) {
+    await enqueueGrantCopies(db, input.userId, granted);
+    scheduleStampDrain({ userId: input.userId }, DRAIN_BUDGET_MS.afterGrant);
+  }
   return { granted, expiresAt };
 }
 
@@ -136,12 +143,14 @@ export async function revokeProduct(
   db: Db,
   input: { userId: string; productId: string; revokedBy: string | null; reason: string },
 ): Promise<number> {
-  const rows = await db<{ id: string }[]>`
+  const rows = await db<{ id: string; product_id: string }[]>`
     update entitlements set revoked_at = now(), revoked_by = ${input.revokedBy}, revoke_reason = ${input.reason}
     where user_id = ${input.userId} and revoked_at is null
       and (product_id = ${input.productId} or (via_bundle_id = ${input.productId} and source = 'bundle'))
-    returning id
+    returning id, product_id
   `;
+  // مهام تجهيز نسخه تُلغى ونسخه المختومة من هذه المنتجات تُعلَّم للحذف، في المعاملة نفسها
+  await forgetRevokedCopies(db, input.userId, [...new Set(rows.map((r) => r.product_id))]);
   return rows.length;
 }
 

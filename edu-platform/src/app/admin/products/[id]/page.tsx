@@ -22,6 +22,7 @@ import {
   RefreshCw,
   RotateCcw,
   Send,
+  Stamp,
   Trash2,
   Undo2,
   Upload,
@@ -29,6 +30,8 @@ import {
 import { requireStaff } from "@/server/auth/permissions";
 import { bundleCandidates, catalogOptions, getAdminProduct, getBundleItemsAdmin, getLessonsAdmin, getProductFiles, isExtremeShare, productTeacherShares, publishBlockers, teacherOptions } from "@/server/admin/products";
 import { FILE_PROBLEM_LABELS, isFlagged, type FlaggedStatus } from "@/server/access/file-check";
+import { stampPrepProgress } from "@/server/access/stamp-queue";
+import { getSettings } from "@/server/platform/settings";
 import { saleStopReason } from "@/server/commerce/cart";
 import { videoHostingBlocked } from "@/server/video/policy";
 import { recheckFileAction } from "../../content-health/actions";
@@ -43,7 +46,7 @@ import { FileUploader } from "@/components/admin/file-uploader";
 import { LessonUploader } from "@/components/admin/lesson-uploader";
 import { ActionForm } from "@/components/admin/action-form";
 import { ConfirmButton, QuickAction } from "@/components/admin/confirm-button";
-import { AutoSyncLessons } from "@/components/admin/auto-sync";
+import { AutoRefresh, AutoSyncLessons } from "@/components/admin/auto-sync";
 import { ToneIcon } from "@/components/admin/icon-tile";
 import { Alert } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
@@ -68,6 +71,7 @@ import {
   deleteProductAction,
   moveFileAction,
   moveLessonAction,
+  prepareCopiesAction,
   regeneratePreviewAction,
   removeBundleItemAction,
   removeCoverAction,
@@ -86,8 +90,12 @@ import { isUuid } from "@/lib/uuid";
 
 export const metadata = { title: "تعديل المحتوى" };
 
-/** إجراءات هذه الصفحة تفحص ملفات المنتج قبل نشره، وقد تكون كبيرة */
-export const maxDuration = 60;
+/**
+ * إجراءات هذه الصفحة تفحص ملفات المنتج قبل نشره، وقد تكون كبيرة. «تجهيز النسخ الآن» يعمل بعد الرد (after) داخل هذه المهلة،
+ * فهي 300 ثانية: الحد الأعلى على Hobby مع Fluid compute (https://vercel.com/docs/functions/configuring-functions/duration).
+ * المهلة سقف لا وقت يُدفع: الإجراءات الأخرى تنتهي كما كانت.
+ */
+export const maxDuration = 300;
 
 function fmtSize(n: number) {
   return n > 1024 * 1024 ? `${(n / 1024 / 1024).toFixed(1)} م.ب` : `${Math.max(1, Math.round(n / 1024))} ك.ب`;
@@ -159,6 +167,8 @@ export default async function EditProductPage({
   const shareExtreme = shares.filter((t) => isExtremeShare(t.share_bps));
   const shareSummary = shares.map((t) => `${t.display_name}: ${t.share_bps === null ? "بلا نسبة" : `${ar(t.share_bps / 100)}٪`}`).join("، ");
   const mainFiles = files.filter((f) => f.kind === "main");
+  // نسخ المشترين المختومة: للمالك وحده، ولا معنى لها والعلامة المائية معطلة (الطالب يقرأ الأصل)
+  const prep = owner && isPdf && mainFiles.length > 0 && (await getSettings()).watermark_enabled ? await stampPrepProgress(id) : null;
   const preview = files.find((f) => f.kind === "preview");
   const previewProblem = preview ? previewIssue(preview, mainFiles[0]) : null;
   const previewAllowance = maxPreviewPages(mainFiles[0]?.page_count);
@@ -935,6 +945,42 @@ export default async function EditProductPage({
                 <EmptyInline icon={<FileText />} className="mt-4">
                   لم يُرفع أي ملف بعد.
                 </EmptyInline>
+              ) : null}
+              {prep ? (
+                <div className="mt-4 rounded-[1.25rem] border-2 border-[rgb(23_32_38/0.07)] bg-mist/60 p-3" data-testid="prepare-copies">
+                  <div className="flex flex-wrap items-center gap-3">
+                    <ToneIcon tone="teal" size="sm">
+                      <Stamp />
+                    </ToneIcon>
+                    <div className="min-w-0 flex-1 basis-60 text-sm">
+                      <p className="font-display font-extrabold text-ink">نسخ المشترين المختومة</p>
+                      <p className="text-xs leading-relaxed text-muted">
+                        كل مشترٍ يقرأ نسخة تحمل بريده. تُجهَّز بعد الشراء وعند رفع ملف جديد وفي جولة يومية، ومن يفتح الملف قبل تجهيز نسخته تُختم له عند الفتح. جهّزها قبل موعد يفتح فيه الطلاب الملف معًا.
+                      </p>
+                    </div>
+                    <QuickAction action={prepareCopiesAction} hidden={{ productId: id }} icon={<Stamp aria-hidden />} label="تجهيز النسخ الآن" variant="soft" size="md" />
+                  </div>
+                  <p className="mt-3 flex flex-wrap items-center gap-1.5 text-xs">
+                    <span className="chip min-h-6 bg-surface px-2 text-[0.72rem] text-ink-soft" data-testid="prepare-copies-ready">
+                      جاهزة <span className="num font-bold text-ink">{ar(prep.ready)}</span> من <span className="num font-bold text-ink">{ar(prep.wanted)}</span>
+                    </span>
+                    {prep.queued > 0 ? (
+                      <span className="chip min-h-6 bg-surface px-2 text-[0.72rem] text-ink-soft" data-testid="prepare-copies-queued">
+                        في الطابور <span className="num font-bold text-ink">{ar(prep.queued)}</span>
+                      </span>
+                    ) : null}
+                    {prep.failed > 0 ? (
+                      <span className="chip min-h-6 bg-surface px-2 text-[0.72rem] font-bold text-danger" data-testid="prepare-copies-failed">
+                        تعذر تجهيزها <span className="num">{ar(prep.failed)}</span>، اضغط «تجهيز النسخ الآن» لإعادة المحاولة
+                      </span>
+                    ) : null}
+                  </p>
+                  {prep.queued > 0 ? (
+                    <div className="mt-2">
+                      <AutoRefresh active label="يجري التجهيز في الخلفية، والأرقام تتحدث تلقائيًا…" />
+                    </div>
+                  ) : null}
+                </div>
               ) : null}
             </Section>
           ) : null}

@@ -13,8 +13,10 @@ import { requestConsentMeta } from "@/server/platform/consent";
 import { storage } from "@/server/storage";
 import { assertProductAccess, PermissionError, type Actor } from "@/server/auth/permissions";
 import { syncLessonStatus } from "@/server/video/service";
-import { AdminError, bool, int, isUuid, staffAction, str } from "@/server/admin/common";
+import { AdminError, adminAction, bool, int, isUuid, staffAction, str } from "@/server/admin/common";
 import { hitRateLimit } from "@/server/auth/rate-limit";
+import { getSettings } from "@/server/platform/settings";
+import { DRAIN_BUDGET_MS, enqueueBuyerCopies, mainFileIds, scheduleStampDrain } from "@/server/access/stamp-queue";
 import { PREVIEW_POLICY } from "@/lib/preview-policy";
 import { isVideoType } from "@/lib/labels";
 import {
@@ -407,6 +409,31 @@ export async function regeneratePreviewAction(_prev: ActionState, fd: FormData):
 
 /** ١٠ توليدات لكل حساب في ١٠ دقائق: أكثر مما يحتاجه من يصلح معاينة، وأقل من أن يكون حملًا */
 const PREVIEW_REGEN_LIMIT = { count: 10, windowSeconds: 10 * 60 };
+
+/**
+ * «جهّز النسخ الآن» (القرار F23): نسخة مختومة لكل من يملك هذا المنتج الآن ولم تُجهز نسخته بعد، قبل موعد يفتح فيه الطلاب
+ * الملف معًا. للمالك وحده، ويُسجل. الضغط مرتين لا يكرر شيئًا: مهمة واحدة لكل مشترٍ وملف، وما جُهز لا يُعاد.
+ * يبدأ التفريغ بعد الرد بميزانية DRAIN_BUDGET_MS.ownerButton، والباقي يكمله ضغط آخر أو الجولة اليومية أو فتح الطالب نفسه.
+ */
+export async function prepareCopiesAction(_prev: ActionState, fd: FormData): Promise<ActionState> {
+  return adminAction(async ({ adminId, ip }) => {
+    const productId = str(fd, "productId");
+    if (!isUuid(productId)) throw new AdminError("طلب غير صالح");
+    const limit = await hitRateLimit(`prepare-copies:${adminId}`, PREPARE_COPIES_LIMIT.count, PREPARE_COPIES_LIMIT.windowSeconds);
+    if (!limit.allowed) throw new AdminError("ضغطت كثيرًا. التجهيز يعمل في الخلفية، فحدّث الصفحة بعد دقائق لترى تقدمه.");
+    if (!(await getSettings()).watermark_enabled) throw new AdminError("العلامة المائية معطلة، فالطلاب يقرؤون الملف الأصلي ولا نسخ مختومة تُجهز.");
+    const fileIds = await mainFileIds(productId);
+    if (fileIds.length === 0) throw new AdminError("لا توجد ملفات PDF في هذا المنتج بعد.");
+    const queued = await enqueueBuyerCopies(fileIds, "owner");
+    if (queued > 0) scheduleStampDrain({ fileIds }, DRAIN_BUDGET_MS.ownerButton);
+    await audit({ actorId: adminId, action: "product.prepare_copies", entityType: "product", entityId: productId, metadata: { files: fileIds.length, queued }, ip });
+    revalidatePath(`/admin/products/${productId}`);
+    return { ok: true, message: queued > 0 ? `بدأ تجهيز ${ar(queued)} نسخة في الخلفية` : "كل نسخ المشترين الحاليين جاهزة" };
+  });
+}
+
+/** ٢٠ ضغطة لكل ١٠ دقائق: الضغطة الواحدة تعمل نحو ٣ دقائق في الخلفية، فلا حاجة لأكثر */
+const PREPARE_COPIES_LIMIT = { count: 20, windowSeconds: 10 * 60 };
 
 export async function removeCoverAction(_prev: ActionState, fd: FormData): Promise<ActionState> {
   return staffAction(async ({ actor }) => {

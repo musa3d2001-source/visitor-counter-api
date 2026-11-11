@@ -49,7 +49,7 @@ test.describe("the live server", () => {
   });
 
   test("scheduled jobs refuse without the secret", async ({ request }) => {
-    for (const path of ["/api/cron/reconcile-payments", "/api/cron/expire-orders", "/api/cron/prune-data"]) {
+    for (const path of ["/api/cron/reconcile-payments", "/api/cron/expire-orders", "/api/cron/prune-data", "/api/cron/prepare-copies"]) {
       expect((await request.get(path)).status(), path).toBe(401);
       expect((await request.get(path, { headers: { authorization: "Bearer wrong-wrong-wrong-wrong" } })).status(), path).toBe(401);
     }

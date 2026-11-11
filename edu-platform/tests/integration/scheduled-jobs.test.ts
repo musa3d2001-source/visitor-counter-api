@@ -3,6 +3,7 @@ import { resolve } from "node:path";
 import { afterAll, afterEach, beforeAll, beforeEach, describe, expect, it, vi } from "vitest";
 import { GET as expireOrders } from "@/app/api/cron/expire-orders/route";
 import { GET as pruneData } from "@/app/api/cron/prune-data/route";
+import { GET as prepareCopies } from "@/app/api/cron/prepare-copies/route";
 import { GET as reconcilePayments } from "@/app/api/cron/reconcile-payments/route";
 import { resetEnvCache } from "@/server/env";
 import { closeExpiredOrders } from "@/server/payments/reconcile";
@@ -17,6 +18,7 @@ const ROUTES = [
   ["/api/cron/reconcile-payments", reconcilePayments],
   ["/api/cron/expire-orders", expireOrders],
   ["/api/cron/prune-data", pruneData],
+  ["/api/cron/prepare-copies", prepareCopies],
 ] as const;
 
 const request = (path: string, authorization?: string) => new Request(`http://localhost:3000${path}`, { headers: authorization ? { authorization } : {} });
