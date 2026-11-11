@@ -42,6 +42,12 @@ const nextConfig: NextConfig = {
       // رفع الملفات لا يمر عبر Server Actions (يتم بروابط رفع مباشرة)، لذلك نُبقي الحد صغيرًا
       bodySizeLimit: "2mb",
     },
+    // البند R021: الافتراضي يدمج وحدات CSS للموقع (الرئيسية والمنتج والتصفح والمعلمين والباقات والبطاقات) في ملف واحد
+    // تحمّله كل صفحة منها. «graph» (Turbopack وحده) يزن البايتات مقابل الطلبات، و requestCost هو ما يساويه طلب إضافي
+    // بالبايت (الافتراضي نحو 20000، فتبقى الوحدات الصغيرة مدموجة). المرجع: node_modules/next/dist/docs/01-app/
+    // 03-api-reference/05-config/01-next-config-js/cssChunking.md. لا صنف من وحدة يقع مع صنف من وحدة أخرى على عنصر واحد
+    // إلا شبكات browse المضاعفة (.x.x) فوق catalog، فترتيب التحميل بين الملفات لا يغير شكل الصفحة (tests/unit/css-split.test.ts)
+    cssChunking: { type: "graph", requestCost: 8_000 },
   },
   images: {
     localPatterns: [{ pathname: "/media/**" }, { pathname: "/brand/**" }],

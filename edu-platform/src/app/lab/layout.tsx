@@ -1,5 +1,7 @@
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
+// المختبر يعرض مكونات اللوحة والموقع معًا، فيأخذ ورقة اللوحة الكاملة (البند R021)
+import "../admin/admin.css";
 
 export const metadata: Metadata = { title: "مختبر التصميم", robots: { index: false, follow: false } };
 

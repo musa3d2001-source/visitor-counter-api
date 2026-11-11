@@ -1,0 +1,13 @@
+/*
+ * ورقة لوحة التحكم والمختبر (البند R021). تُستورد من admin/layout.tsx و lab/layout.tsx فقط، فتُحمَّل بعد globals.css.
+ *
+ * فيها أصناف Tailwind لكل ملفات المشروع (الاكتشاف التلقائي بلا @source not)، لا لملفات اللوحة وحدها، وفي الطبقة utilities نفسها:
+ * كل صنف على عنصر في اللوحة له نسخة هنا، وهذه النسخ تأتي بعد نسخ ورقة الموقع وبترتيب Tailwind نفسه، فلا يتغير أي تعارض
+ * بين صنفين (مثل hidden مع md:flex) عما كان عليه حين كانت الورقة واحدة. ورقة جزئية لملفات اللوحة وحدها كانت ستقلب بعضها.
+ * بلا preflight ولا base ولا components: تلك في globals.css المحملة في كل صفحة. الرموز من ../theme.css، فتُعرَّف هنا
+ * متغيرات الألوان التي لا تستعملها إلا اللوحة (ورقة الموقع لا تعرّف إلا ما تستعمله).
+ */
+@layer theme, base, components, utilities;
+@import "tailwindcss/theme.css" layer(theme);
+@import "../theme.css";
+@import "tailwindcss/utilities.css" layer(utilities);

@@ -41,7 +41,8 @@ describe("site fonts", () => {
   });
 
   it("names both families the design tokens use, and limits each file to its script", () => {
-    const css = read("src/app/globals.css");
+    // رموز الخطوط (--font-sans و --font-display) في theme.css منذ فصل ورقة اللوحة (البند R021)
+    const css = read("src/app/theme.css");
     for (const family of ["Tajawal", "Cairo Variable"]) {
       expect(fonts).toContain(`value: "${family}"`);
       expect(css).toContain(`"${family}"`);

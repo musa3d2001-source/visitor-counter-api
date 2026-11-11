@@ -10,6 +10,8 @@ import { AdminMobileNav, AdminSidebar } from "@/components/admin/sidebar";
 import { SandboxBanner } from "@/components/site/sandbox-banner";
 import { StepUpProvider } from "@/components/admin/step-up";
 import { isOwnerOnlyPath } from "@/lib/admin-paths";
+// أصناف Tailwind للوحة، بعد ورقة الموقع (البند R021، انظر admin.css)
+import "./admin.css";
 
 export const metadata: Metadata = {
   title: { default: "لوحة التحكم", template: "%s | لوحة التحكم" },
