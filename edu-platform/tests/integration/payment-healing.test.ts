@@ -259,13 +259,16 @@ describe("the reconciler's queue", () => {
   });
 
   it("calls it a failure only when the gateway answered nothing", () => {
-    const base = { mode: "sandbox", claimed: 0, checked: 0, paid: 0, flagged: 0, invalid: 0, errors: 0, skipped: 0, stoppedEarly: false, closed: 0, abandonedClaims: 0, refundsChecked: 0, refundsResolved: 0, refundErrors: 0 } as const;
+    const base = { mode: "sandbox", claimed: 0, checked: 0, paid: 0, flagged: 0, invalid: 0, errors: 0, unknownAtGateway: 0, skipped: 0, stoppedEarly: false, closed: 0, abandonedClaims: 0, refundsChecked: 0, refundsResolved: 0, refundErrors: 0 } as const;
     expect(reconcileFailure(base)).toBeNull();
     expect(reconcileFailure({ ...base, errors: 3, stoppedEarly: true })).not.toBeNull();
     expect(reconcileFailure({ ...base, errors: 1, checked: 2 })).toBeNull();
     // انتهاء الوقت ليس عطلًا في البوابة
     expect(reconcileFailure({ ...base, checked: 9, skipped: 3, stoppedEarly: true })).toBeNull();
     expect(reconcileFailure({ ...base, refundsChecked: 2, refundErrors: 2 })).not.toBeNull();
+    // فواتير لا تعرفها البوابة بجانب فواتير فُحصت: الجولة سليمة. وحدها: تنبيه، فقد يكون الحساب أو البيئة خاطئًا
+    expect(reconcileFailure({ ...base, unknownAtGateway: 12, checked: 5 })).toBeNull();
+    expect(reconcileFailure({ ...base, unknownAtGateway: 3 })).not.toBeNull();
   });
 });
 

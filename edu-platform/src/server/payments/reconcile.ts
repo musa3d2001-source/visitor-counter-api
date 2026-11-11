@@ -5,6 +5,7 @@ import { ORDER_LIFETIME_HOURS } from "./limits";
 import { isDatabaseBusy } from "../db-busy";
 import { reportError } from "../platform/report-error";
 import { claimDueInvoices, releaseClaims } from "./invoice-queue";
+import { isUnknownAtGateway } from "./myfatoorah";
 import { paymentsConfig, recheckExtraPayment, recheckOrderRefund, verifyAndApplyPayment } from "./service";
 
 /**
@@ -46,6 +47,8 @@ export type ReconcileReport = {
   flagged: number;
   invalid: number;
   errors: number;
+  /** أجابت البوابة أنها لا تعرف الفاتورة: تبقى بعقدها حتى الجولة التالية ولا تُعد فحصًا، ولا توقف الجولة */
+  unknownAtGateway: number;
   /** مُطالب بها ولم تُفحص، وأُعيدت إلى الطابور */
   skipped: number;
   stoppedEarly: boolean;
@@ -59,8 +62,11 @@ export type ReconcileReport = {
 /** نص الفشل، أو null: فشل الجولة يعني أن البوابة لم تجب عن شيء مما سُئلت عنه. جولة لا شيء مستحق فيها نجاح */
 export function reconcileFailure(report: ReconcileReport): string | null {
   const failed = report.errors + report.refundErrors;
-  const answered = report.checked + report.invalid + report.refundsChecked - report.refundErrors;
-  return failed > 0 && answered === 0 ? "لم تجب بوابة الدفع عن أي فاتورة" : null;
+  const known = report.checked + report.invalid + report.refundsChecked - report.refundErrors;
+  if (failed > 0 && known + report.unknownAtGateway === 0) return "لم تجب بوابة الدفع عن أي فاتورة";
+  // البوابة تعمل ولا تعرف شيئًا مما سُئلت عنه: غالبًا حساب أو بيئة خاطئة، فيستحق تنبيه المالك
+  if (report.unknownAtGateway > 0 && known === 0) return "بوابة الدفع لا تعرف أيًا من الفواتير التي سُئلت عنها";
+  return null;
 }
 
 type EnabledConfig = Extract<ReturnType<typeof paymentsConfig>, { enabled: true }>;
@@ -91,6 +97,14 @@ async function drainLane(cfg: EnabledConfig, lane: "unverified" | "settled", rep
           if (result.state === "paid" && result.changed) report.paid++;
           if (result.state === "flagged") report.flagged++;
         } catch (err) {
+          // البوابة أجابت ولا تعرف الفاتورة: لا نحسبها عطلًا يوقف الجولة، وإلا أوقفت بضع فواتير مجهولة في رأس الطابور كل جولة
+          // فلم يُفحص ما خلفها أبدًا. تبقى بعقدها فلا تتكرر في الجولة نفسها، ولا يُكتب last_checked_at لأنها لم تُفحص
+          if (isUnknownAtGateway(err)) {
+            failures.consecutive = 0;
+            report.unknownAtGateway++;
+            await reportError("reconcile:unknown-invoice", err);
+            continue;
+          }
           unanswered.push(row.id);
           if (isDatabaseBusy(err)) {
             busy = err;
@@ -129,6 +143,7 @@ export async function runPaymentReconciliation(opts: { budgetMs?: number } = {})
     flagged: 0,
     invalid: 0,
     errors: 0,
+    unknownAtGateway: 0,
     skipped: 0,
     stoppedEarly: false,
     closed: 0,

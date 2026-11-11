@@ -272,6 +272,33 @@ describe("re-checking open invoices", () => {
     expect(body.errors + body.skipped).toBe(6);
   });
 
+  it("invoices the gateway does not know never stop the run or hide the ones behind them", async () => {
+    // دفعة كاملة في رأس الطابور بأرقام لم تصدرها البوابة، وخلفها فاتورة حقيقية دُفعت
+    const unknown = await manyOpenInvoices(RECONCILE_BATCH_SIZE);
+    let fake = 990_000_000;
+    for (const order of unknown) await sql`update payments set gateway_invoice_id = ${String(fake++)}, last_checked_at = null, created_at = now() - interval '1 hour' where order_id = ${order.id}`;
+    const { order, invoice } = await openInvoice();
+    await sim.pay(invoice, "success");
+    sim.state.requests.length = 0;
+
+    const res = await call(`Bearer ${SECRET}`);
+    expect(res.status).toBe(200);
+    expect(await res.json()).toMatchObject({ unknownAtGateway: RECONCILE_BATCH_SIZE, paid: 1, errors: 0, stoppedEarly: false });
+    expect((await orderRow(order.id)).status).toBe("paid");
+    // لم تُفحص فعلًا: لا تُعد فحصًا أخيرًا، ولا تتكرر في الجولة نفسها
+    const rows = await sql<{ last_checked_at: Date | null }[]>`select p.last_checked_at from payments p where p.order_id = any(${unknown.map((o) => o.id)}::uuid[])`;
+    expect(rows.every((r) => r.last_checked_at === null)).toBe(true);
+    expect(statusCalls(sim)).toBe(RECONCILE_BATCH_SIZE + 1);
+  });
+
+  it("a run where the gateway knows none of the invoices is reported to the owner", async () => {
+    const [only] = await manyOpenInvoices(1);
+    await sql`update payments set gateway_invoice_id = '990100000' where order_id = ${only.id}`;
+    const res = await call(`Bearer ${SECRET}`);
+    expect(res.status).toBe(502);
+    expect(await res.json()).toMatchObject({ unknownAtGateway: 1, checked: 0, errors: 0 });
+  });
+
   it("one bad invoice among good ones is still a 200", async () => {
     const orders = await manyOpenInvoices(3);
     const [row] = await paymentRows(orders[1].id);
