@@ -168,6 +168,7 @@ export async function launchFacts(): Promise<LaunchFacts> {
 
   return {
     deployment: { vercelEnv: e.VERCEL_ENV ? e.VERCEL_ENV : null },
+    database: { poolMax: e.DATABASE_POOL_MAX, pooled: e.DATABASE_PGBOUNCER },
     migrations,
     appUrl: e.APP_URL,
     indexing: { indexable: siteIndexable(), disabledBySetting: !e.SITE_INDEXABLE },

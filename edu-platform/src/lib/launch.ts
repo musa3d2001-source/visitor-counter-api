@@ -27,6 +27,7 @@ const LEGAL_VERSION = Object.entries({ ...CONSENT_VERSIONS, ...LEGAL_PAGE_VERSIO
 export const MANUAL_VERSIONS = {
   vercel_pro: "1",
   supabase_pro: "1",
+  db_pool_capacity: "1",
   restore_drill: "1",
   uptime_monitor: "1",
   commercial_license: "1",
@@ -63,6 +64,21 @@ export const SANDBOX_PASS_CHECKS = [
 
 export { REQUIRED_MIGRATIONS };
 
+/**
+ * حد عملاء الـ pooler (Supavisor) لكل حجم حوسبة في Supabase، أي الاتصالات القادمة من نسخ الخادم كلها معًا.
+ * https://supabase.com/docs/guides/platform/compute-and-disk (قُرئ 2026-11-11). Nano للخطة المجانية فقط.
+ */
+export const SUPABASE_POOLER_CLIENTS = { Micro: 200, Small: 400, Medium: 600, Large: 800 } as const;
+export type SupabaseComputeSize = keyof typeof SUPABASE_POOLER_CLIENTS;
+/** النسبة التي لا يتجاوزها مجموع حوض النسخ في الذروة: الباقي للوحة Supabase والسكربتات والنسخ التي تُغلق اتصالاتها */
+export const POOLER_HEADROOM = 0.8;
+
+/** أعلى عدد نسخ خادم في الذروة يسمح به كل حجم حوسبة، إن فتحت كل نسخة poolMax اتصالًا */
+export function poolInstancesAllowed(poolMax: number): Record<SupabaseComputeSize, number> {
+  const per = Math.max(1, Math.floor(poolMax));
+  return Object.fromEntries(Object.entries(SUPABASE_POOLER_CLIENTS).map(([size, clients]) => [size, Math.floor((clients * POOLER_HEADROOM) / per)])) as Record<SupabaseComputeSize, number>;
+}
+
 // ---------------------------------------------------------------------------
 // الحقائق والتأشيرات
 // ---------------------------------------------------------------------------
@@ -77,6 +93,8 @@ export type SellerField = "legal_name" | "license_number" | "address" | "mail_pr
  */
 export type LaunchFacts = {
   deployment: { vercelEnv: string | null };
+  /** DATABASE_POOL_MAX الفعلي على هذا النشر، وهل الاتصال عبر الـ pooler بوضع transaction (DATABASE_PGBOUNCER) */
+  database: { poolMax: number; pooled: boolean };
   migrations: { applied: string[] } | null;
   /** APP_URL كما هو. لا يُعرض منه إلا النطاق */
   appUrl: string;
@@ -270,6 +288,23 @@ function hostingSteps(f: LaunchFacts, ticks: LaunchTicks): Built[] {
       title: "خطة Supabase Pro",
       todo: "رقِّ مؤسسة Supabase إلى خطة Pro، لأن الخطة المجانية بلا نسخ احتياطية يومية، وPro تحفظ نسخ آخر ٧ أيام.",
       where: { label: "Supabase ← Organization ← Billing" },
+    }),
+  );
+
+  // النظام لا يرى حجم حوسبة Supabase ولا عدد نسخ Vercel في الذروة: خطوة يدوية تعرض الحساب بقيمة هذا النشر
+  const allowed = poolInstancesAllowed(f.database.poolMax);
+  steps.push(
+    manualStep("db_pool_capacity", ticks, {
+      title: "سعة اتصالات قاعدة البيانات",
+      todo: "اختر في Supabase حجم حوسبة Small أو أكبر، واضبط DATABASE_POOL_MAX=3 في Vercel، وتأكد أن أعلى عدد نسخ في الذروة × DATABASE_POOL_MAX لا يتجاوز ٨٠٪ من حد عملاء الـ pooler لحجمك، ثم أشّر.",
+      where: { label: "Supabase ← Project Settings ← Compute and Disk، و DATABASE_POOL_MAX في Vercel ← Settings ← Environment Variables" },
+      facts: [
+        `اتصالات كل نسخة على هذا النشر (DATABASE_POOL_MAX): ${ar(f.database.poolMax)}.`,
+        `أعلى عدد نسخ في الذروة بهذه القيمة، لكل حجم حوسبة (وبين القوسين حد عملاء الـ pooler له): ${(Object.keys(SUPABASE_POOLER_CLIENTS) as SupabaseComputeSize[]).map((size) => `${size} ${ar(allowed[size])} (${ar(SUPABASE_POOLER_CLIENTS[size])})`).join("، ")}.`,
+        ...(f.database.poolMax === 1 ? ["القيمة ١ لا تقلل مجموع الاتصالات على Vercel وتبطئ الطلبات المتزامنة، فاجعلها ٣."] : []),
+        ...(f.database.pooled ? [] : ["DATABASE_PGBOUNCER ليس true على هذا النشر، والحساب أعلاه لاتصال يمر بالـ pooler بوضع transaction (المنفذ 6543)."]),
+        "النظام لا يرى حجم حوسبة Supabase ولا عدد نسخ Vercel في الذروة، فتأكد منهما بنفسك ثم أشّر.",
+      ],
     }),
   );
 

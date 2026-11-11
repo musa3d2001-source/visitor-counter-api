@@ -2,7 +2,7 @@ import { readdirSync } from "node:fs";
 import { resolve } from "node:path";
 import { describe, expect, it } from "vitest";
 import { CONSENT_VERSIONS, LEGAL_PAGE_VERSIONS } from "@/lib/consent";
-import { MANUAL_KEYS, MANUAL_VERSIONS, REQUIRED_MIGRATIONS, appUrlCheck, isManualKey, launchSteps, launchVerdict, type LaunchFacts, type LaunchStep, type LaunchTicks, type ManualKey } from "@/lib/launch";
+import { MANUAL_KEYS, MANUAL_VERSIONS, REQUIRED_MIGRATIONS, SUPABASE_POOLER_CLIENTS, appUrlCheck, isManualKey, launchSteps, launchVerdict, poolInstancesAllowed, type LaunchFacts, type LaunchStep, type LaunchTicks, type ManualKey } from "@/lib/launch";
 
 /**
  * حكم صفحة الإطلاق: لا يقول «جاهزة» ما دامت خطوة لازمة واحدة مفتوحة أو تعذر فحصها.
@@ -13,6 +13,7 @@ const at = (iso: string) => new Date(iso);
 function perfectFacts(): LaunchFacts {
   return {
     deployment: { vercelEnv: "production" },
+    database: { poolMax: 3, pooled: true },
     migrations: { applied: [...REQUIRED_MIGRATIONS] },
     appUrl: "https://www.farqad-edu.com",
     indexing: { indexable: true, disabledBySetting: false },
@@ -82,6 +83,45 @@ describe("a complete deployment", () => {
       expect(s.where.label.trim().length, s.key).toBeGreaterThan(2);
       expect(s.todo, s.key).not.toMatch(/—/);
     }
+  });
+});
+
+describe("the database connection capacity step", () => {
+  it("allows, per Supabase compute size, peak instances times the pool at or below 80% of the pooler's clients", () => {
+    expect(SUPABASE_POOLER_CLIENTS).toEqual({ Micro: 200, Small: 400, Medium: 600, Large: 800 });
+    expect(poolInstancesAllowed(3)).toEqual({ Micro: 53, Small: 106, Medium: 160, Large: 213 });
+    expect(poolInstancesAllowed(5)).toEqual({ Micro: 32, Small: 64, Medium: 96, Large: 128 });
+    for (const poolMax of [1, 2, 3, 5, 7, 10, 50]) {
+      for (const [size, instances] of Object.entries(poolInstancesAllowed(poolMax))) {
+        const clients = SUPABASE_POOLER_CLIENTS[size as keyof typeof SUPABASE_POOLER_CLIENTS];
+        expect(instances * poolMax).toBeLessThanOrEqual(clients * 0.8);
+        expect((instances + 1) * poolMax).toBeGreaterThan(clients * 0.8);
+      }
+    }
+  });
+
+  it("is a manual hosting step after the Supabase plan, with this deployment's value and the numbers per size", () => {
+    const { steps, step } = evaluate();
+    const keys = steps.map((s) => s.key);
+    expect(keys.indexOf("db_pool_capacity")).toBe(keys.indexOf("supabase_pro") + 1);
+    expect(step("db_pool_capacity")).toMatchObject({ group: "hosting", kind: "manual", blocking: true, state: "done", title: "سعة اتصالات قاعدة البيانات" });
+    expect(step("db_pool_capacity").todo).toMatch(/Small.*DATABASE_POOL_MAX=3.*٨٠٪/);
+    expect(step("db_pool_capacity").where.label).toContain("Compute and Disk");
+    const facts = step("db_pool_capacity").facts.join(" ");
+    expect(facts).toContain("(DATABASE_POOL_MAX): ٣.");
+    expect(facts).toContain("Micro ٥٣ (٢٠٠)، Small ١٠٦ (٤٠٠)، Medium ١٦٠ (٦٠٠)، Large ٢١٣ (٨٠٠)");
+    expect(facts).not.toMatch(/[0-9]{2,}/);
+    expect(facts).not.toContain("القيمة ١");
+    expect(facts).not.toContain("DATABASE_PGBOUNCER");
+  });
+
+  it("follows the value actually deployed, and warns about a pool of one or a connection that skips the pooler", () => {
+    const { step } = evaluate((f) => (f.database = { poolMax: 1, pooled: false }));
+    const facts = step("db_pool_capacity").facts.join(" ");
+    expect(facts).toContain("(DATABASE_POOL_MAX): ١.");
+    expect(facts).toContain("Micro ١٦٠ (٢٠٠)");
+    expect(facts).toContain("القيمة ١ لا تقلل مجموع الاتصالات");
+    expect(facts).toContain("DATABASE_PGBOUNCER ليس true");
   });
 });
 
