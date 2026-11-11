@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { ChevronLeft, CircleCheck, Clock, FileLock2, GraduationCap, KeyRound, Library, LogOut, Mail, Receipt, UserRound, XCircle } from "lucide-react";
 import { requireUser } from "@/server/auth/guards";
+import { healBuyerOrders } from "@/server/payments/heal";
 import { listUserOrders } from "@/server/commerce/orders";
 import { emailVerificationRequired } from "@/server/auth/email-verification";
 import { listGrades } from "@/server/catalog/public-data";
@@ -41,6 +42,8 @@ const STATUS_LOOK = {
 export default async function AccountPage({ searchParams }: { searchParams: Promise<{ payment?: string }> }) {
   const user = await requireUser("/account");
   const sp = await searchParams;
+  // عودة من الدفع لم تُفحص في صفحة العودة (رقم بلا مرجع، أو حد العنوان): نفحص طلب صاحب الجلسة قبل قراءة طلباته، فلا يحجب حد عنوان دفعة حقيقية (F15، R002)
+  if (sp.payment === "checked" || sp.payment === "rate") await healBuyerOrders({ userId: user.id });
   const [orders, grades, mustVerify, dataRequests] = await Promise.all([listUserOrders(user.id), listGrades(), emailVerificationRequired(user.id), user.role === "student" ? myDataRequests(user.id) : Promise.resolve([])]);
   const myGrade = grades.find((g) => g.id === user.gradeId) ?? null;
 

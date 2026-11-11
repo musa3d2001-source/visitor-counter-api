@@ -28,6 +28,7 @@ vi.mock("next/navigation", () => ({
 }));
 
 const { default: LibraryPage } = await import("@/app/(site)/library/page");
+const { default: AccountPage } = await import("@/app/(site)/account/page");
 
 const CRON = "cron-secret-0123456789abcdef";
 let sim: Simulator;
@@ -94,6 +95,19 @@ describe("healing on the buyer's visit", () => {
       expect(source.indexOf("await healBuyerOrders(")).toBeGreaterThan(-1);
       expect(source.indexOf("await healBuyerOrders(")).toBeLessThan(source.indexOf(read));
     }
+  });
+
+  it("a return the return page did not check is checked on the account page it lands on (F15, R002)", async () => {
+    const { user, product, order, invoice } = await openInvoice();
+    await sim.pay(invoice, "success");
+    ctx.user = user;
+    // زيارة عادية لصفحة حسابي لا تسأل البوابة
+    await AccountPage({ searchParams: Promise.resolve({}) }).then(renderToStaticMarkup);
+    expect(statusCalls(sim)).toBe(0);
+    const html = await AccountPage({ searchParams: Promise.resolve({ payment: "rate" }) }).then(renderToStaticMarkup);
+    expect((await orderRow(order.id)).status).toBe("paid");
+    expect(await activeEntitlements(user.id)).toEqual([product.id]);
+    expect(html).toContain("مدفوع");
   });
 
   it("leaves an invoice younger than a minute alone: the buyer is still on the payment page", async () => {

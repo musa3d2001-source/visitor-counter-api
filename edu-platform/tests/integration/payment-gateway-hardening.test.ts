@@ -6,7 +6,8 @@ import { getPaymentMethods, handleMyFatoorahWebhook, paymentsConfig, requestOrde
 import { MyFatoorahClient, MyFatoorahError, signWebhookV2 } from "@/server/payments/myfatoorah";
 import { applyRefundEvent } from "@/server/payments/refunds";
 import { paymentReturnRef, readPaymentReturnRef } from "@/server/payments/return-ref";
-import { RING_WRITES_PER_ADDRESS, RING_WRITES_PER_MINUTE, WEBHOOK_REJECTIONS_PER_ADDRESS, resetPaymentReturnGate, resetWebhookGate } from "@/server/payments/webhook-gate";
+import { RING_WRITES_PER_ADDRESS, RING_WRITES_PER_MINUTE, UNKNOWN_RETURNS_PER_ADDRESS, WEBHOOK_REJECTIONS_PER_ADDRESS, resetPaymentReturnGate, resetWebhookGate } from "@/server/payments/webhook-gate";
+import { getDb } from "@/server/db";
 import { resetEnvCache } from "@/server/env";
 import { paymentFailureMessage } from "@/lib/payment-failure";
 import { startSimulator, type Simulator } from "../mocks/myfatoorah-simulator";
@@ -78,6 +79,20 @@ function setEnv(values: Record<string, string | undefined>) {
 
 const pathOf = (res: Response) => new URL(res.headers.get("location")!).pathname + new URL(res.headers.get("location")!).search;
 const callReturn = (url: string, ip = "198.51.100.7", cookie?: string) => returnGET(new NextRequest(url, { headers: { "x-forwarded-for": ip, ...(cookie ? { cookie } : {}) } }));
+/** عدد الاستعلامات التي أرسلها التطبيق أثناء fn */
+async function countStatements<T>(fn: () => Promise<T>): Promise<{ out: T; n: number }> {
+  const db = getDb();
+  let n = 0;
+  (db.options as { debug?: unknown }).debug = () => {
+    n++;
+  };
+  try {
+    return { out: await fn(), n };
+  } finally {
+    (db.options as { debug?: unknown }).debug = undefined;
+  }
+}
+
 const creditedOrders = (orderId: string) => sql<{ n: number }[]>`select count(*)::int as n from entitlements where order_id = ${orderId}`.then(([r]) => r.n);
 
 /** طلب مدفوع لدى البوابة ولم يصلنا تأكيده بعد، ورابط العودة كما يبنيه المتصفح */
@@ -595,6 +610,43 @@ describe("payment return", () => {
     const res = await callReturn(redirectUrl, "198.51.100.50");
     expect(pathOf(res)).toBe(`/orders/${order.id}?from=payment`);
     expect((await orderRow(order.id)).status).toBe("paid");
+  });
+
+  it("an unknown id costs one lookup before the limit and none after it, and a real return from that address is still verified", async () => {
+    const ip = "198.51.100.51";
+    const first = await countStatements(() => callReturn(`${BASE}/payment/return?paymentId=08080001`, ip));
+    expect(pathOf(first.out)).toBe(checked);
+    expect(first.n).toBe(1);
+    for (let i = 1; i < UNKNOWN_RETURNS_PER_ADDRESS; i++) await callReturn(`${BASE}/payment/return?paymentId=0808${i}`, ip);
+
+    // بعد الحد: لا استعلام، ولا للمرجع المزور (ليس مرجعًا)
+    const shed = await countStatements(() => callReturn(`${BASE}/payment/return?paymentId=08089999&Id=08089999`, ip));
+    expect(pathOf(shed.out)).toBe("/account?payment=rate");
+    expect(shed.n).toBe(0);
+    const forged = await countStatements(() => callReturn(`${BASE}/payment/return?ref=11111111-1111-4111-8111-111111111111.AAAAAAAAAAAAAAAAAAAAAA&paymentId=08089998`, ip));
+    expect(pathOf(forged.out)).toBe("/account?payment=rate");
+    expect(forged.n).toBe(0);
+    // عنوان آخر لا يتأثر
+    expect((await countStatements(() => callReturn(`${BASE}/payment/return?paymentId=08089997`, "198.51.100.52"))).n).toBe(1);
+
+    // العودة الحقيقية من البوابة تحمل المرجع، فلا يمسها حد العنوان
+    const { order, user, redirectUrl } = await paidAtGateway();
+    ctx.userId = user.id;
+    const res = await callReturn(redirectUrl, ip);
+    expect(pathOf(res)).toBe(`/orders/${order.id}?from=payment`);
+    expect((await orderRow(order.id)).status).toBe("paid");
+  });
+
+  it("replays of one return past its limit cost one read and no write on the shared counter", async () => {
+    const { order, user, redirectUrl } = await paidAtGateway();
+    ctx.userId = user.id;
+    for (let i = 0; i < 30; i++) await callReturn(redirectUrl);
+    sim.state.requests.length = 0;
+    const replay = await countStatements(() => callReturn(redirectUrl));
+    expect(pathOf(replay.out)).toBe(`/orders/${order.id}?from=payment`);
+    expect(replay.n).toBe(1);
+    expect(statusCalls(sim)).toBe(0);
+    expect(await creditedOrders(order.id)).toBe(1);
   });
 
   it("a school behind one address: every real return is verified", async () => {

@@ -1,7 +1,7 @@
 import { NextResponse, type NextRequest } from "next/server";
 import { paymentsConfig, verifyAndApplyPayment, type VerifyResult } from "@/server/payments/service";
 import { readPaymentReturnRef } from "@/server/payments/return-ref";
-import { unknownReturnRefused } from "@/server/payments/webhook-gate";
+import { returnChecksExhausted, unknownReturnRefused, unknownReturnsExhausted } from "@/server/payments/webhook-gate";
 import { hitRateLimit } from "@/server/auth/rate-limit";
 import { getCurrentUser } from "@/server/auth/session";
 import { ipFromHeaders } from "@/server/http";
@@ -40,7 +40,10 @@ async function findTarget(environment: string, rowId: string | null, ids: string
  * صفحة العودة من بوابة الدفع (CallBackUrl / ErrorUrl). طلب GET بلا جلسة يغيّر الحالة، بتصميم البوابة نفسها. لذلك:
  *  - الوصول إليها ليس دليلًا على الدفع: نسأل البوابة من الخادم، وعن فاتورتنا نحن فقط.
  *  - رقم لا يخص فاتورة عندنا يكلف استعلامًا واحدًا ولا يصل إلى البوابة أبدًا، وهو وحده يخضع لحد العنوان.
- *  - رقم حقيقي يُتحقق منه دائمًا: مدرسة أو شبكة جوال خلف عنوان واحد لا تُحجب.
+ *    بعد الحد لا يكلف شيئًا (R002): عودة بلا مرجع موقّع صحيح من عنوان استنفده تُرد قبل أي استعلام.
+ *  - العودة التي تصنعها البوابة تحمل مرجعنا الموقّع، فلا يمسها حد العنوان أبدًا: مدرسة أو شبكة جوال خلف عنوان واحد لا تُحجب.
+ *    رقم حقيقي بلا مرجع (رابط كُتب يدويًا) من عنوان تجاوز حده لا يُفحص هنا، بل بجلسة صاحبه: صفحة حسابي التي نوجهه إليها
+ *    وصفحة طلبه تفحصان طلبه المفتوح، ومعهما Webhook والجولة اليومية (F15).
  *  - لا يعرف رقم الطلب إلا صاحبه. أي زائر آخر يرى صفحة محايدة، والدفعة تُطبق في الحالتين.
  *  - بعد تسجيل الدفعة لا يقدر شيء على قلب الصفحة إلى خطأ: ما يأتي بعدها كله داخل حماية.
  */
@@ -57,6 +60,9 @@ async function handleGET(req: NextRequest) {
   if (!cfg.enabled) return neutral("checked");
 
   const rowId = readPaymentReturnRef(ref);
+  const ip = ipFromHeaders(req.headers);
+  // قبل أي استعلام، ولما لا يحمل مرجعًا صحيحًا فقط: المرجع فحص HMAC بلا قاعدة بيانات
+  if (rowId === null && unknownReturnsExhausted(ip)) return neutral("rate");
   const ids = [paymentId, invoiceId].filter((v): v is string => v !== null && GATEWAY_ID.test(v));
   let target: Target | null;
   try {
@@ -66,7 +72,7 @@ async function handleGET(req: NextRequest) {
     await reportError("payment-return:lookup", err);
     return neutral("error");
   }
-  if (!target) return neutral(unknownReturnRefused(ipFromHeaders(req.headers)) ? "rate" : "checked");
+  if (!target) return neutral(unknownReturnRefused(ip) ? "rate" : "checked");
 
   let outcome: Outcome;
   try {
@@ -81,6 +87,8 @@ async function handleGET(req: NextRequest) {
 }
 
 async function verifyTarget(target: Target, focusPaymentId: string | undefined): Promise<Outcome> {
+  // قبل العداد المشترك: إعادة إرسال المرجع نفسه بعد حده في هذه النسخة لا تكتب في صفه. صفحة الطلب تفحص بجلسة صاحبه
+  if (returnChecksExhausted(target.id, CHECKS_PER_PAYMENT, CHECKS_WINDOW_SECONDS * 1000)) return { kind: "not_checked" };
   let allowed = true;
   try {
     allowed = (await hitRateLimit(`payreturn:${target.id}`, CHECKS_PER_PAYMENT, CHECKS_WINDOW_SECONDS)).allowed;

@@ -71,15 +71,46 @@ export function admitRejectionWrite(ip: string, now = Date.now()): boolean {
   return true;
 }
 
-const UNKNOWN_RETURNS_PER_ADDRESS = 30;
+export const UNKNOWN_RETURNS_PER_ADDRESS = 30;
 const unknownReturns = new Map<string, { startedAt: number; count: number }>();
+const returnChecks = new Map<string, { startedAt: number; count: number }>();
 
 export function resetPaymentReturnGate() {
   unknownReturns.clear();
+  returnChecks.clear();
 }
 
 /**
- * عودة من الدفع برقم لا يخص أي فاتورة عندنا. يُحتسب بعد البحث عن الرقم، فرقم حقيقي لا يمر من هنا أبدًا،
+ * يُسأل قبل البحث عن الرقم (R002)، ولا يغيّر شيئًا: عنوان استنفد حده من الأرقام المجهولة في هذه الدقيقة
+ * يُرد عليه دون أي استعلام. لا يُسأل عن عودة تحمل مرجعًا موقّعًا صحيحًا، وهي كل عودة تصنعها البوابة.
+ */
+export function unknownReturnsExhausted(ip: string, now = Date.now()): boolean {
+  if (!usable(ip)) return false;
+  const entry = unknownReturns.get(ip);
+  return entry !== undefined && now - entry.startedAt < WINDOW_MS && entry.count >= UNKNOWN_RETURNS_PER_ADDRESS;
+}
+
+/**
+ * فحوص سجل دفع واحد من هذه النسخة. يُحتسب قبل العداد المشترك في قاعدة البيانات، فإعادة إرسال المرجع نفسه بعد حده
+ * لا تكتب في صف العداد مع كل طلب. عدد النسخة لا يزيد عن العدد الكلي، فلا يرفض ما يقبله العداد المشترك إلا عند تعاقب نافذتين. true: تجاوز الحد.
+ */
+export function returnChecksExhausted(paymentRowId: string, limit: number, windowMs: number, now = Date.now()): boolean {
+  let entry = returnChecks.get(paymentRowId);
+  if (entry && now - entry.startedAt >= windowMs) {
+    returnChecks.delete(paymentRowId);
+    entry = undefined;
+  }
+  if (!entry) {
+    if (returnChecks.size >= MAX_TRACKED) returnChecks.delete(returnChecks.keys().next().value!);
+    entry = { startedAt: now, count: 0 };
+    returnChecks.set(paymentRowId, entry);
+  }
+  entry.count++;
+  return entry.count > limit;
+}
+
+/**
+ * عودة من الدفع برقم لا يخص أي فاتورة عندنا. يُحتسب بعد البحث عن الرقم، فرقم حقيقي لا يُحتسب أبدًا،
  * ومدرسة أو شبكة جوال خلف عنوان واحد لا يحجب أحد أبناؤها الآخر عن التحقق من دفعته. true: تجاوز الحد.
  */
 export function unknownReturnRefused(ip: string, now = Date.now()): boolean {
