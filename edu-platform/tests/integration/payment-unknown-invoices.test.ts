@@ -3,6 +3,7 @@ import { UnknownInvoiceError, resetPaymentMethodsCache, verifyAndApplyPayment } 
 import { reconcileFailure, runPaymentReconciliation } from "@/server/payments/reconcile";
 import { claimDueInvoices, releaseClaims } from "@/server/payments/invoice-queue";
 import { healBuyerOrders } from "@/server/payments/heal";
+import { unhealedOrders } from "@/server/payments/unhealed";
 import { resolvePaymentAlert } from "@/server/payments/monitoring";
 import { anonymizationBlockers } from "@/server/admin/student-anonymize";
 import { resetEnvCache } from "@/server/env";
@@ -288,6 +289,21 @@ describe("unknown invoices never sit at the head of the queue", () => {
     sim.state.requests.length = 0;
     expect(await healBuyerOrders({ userId: made.user.id, orderId: made.order.id })).toBe("paid");
     expect(sim.state.requests.filter((r) => r.path === "/v2/GetPaymentStatus").map((r) => (r.body as { Key: string }).Key)).toEqual([String(invoiceIdOf(firstUrl))]);
+  });
+
+  it("the owner's ops list names it, after the invoices the gateway knows", async () => {
+    const unknown = await orderWithUnknownInvoice();
+    await aged(unknown.order.id, 30);
+    await verifyAndApplyPayment({ invoiceId: String(unknown.invoice) }).catch(() => undefined);
+    const known = await newOrder();
+    await startPayment(known.order, null);
+    await aged(known.order.id, 20);
+    const { unverified } = await unhealedOrders();
+    const mine = unverified.filter((r) => r.order_id === unknown.order.id || r.order_id === known.order.id);
+    expect(mine.map((r) => [r.order_id, r.unknown_at_gateway])).toEqual([
+      [known.order.id, false],
+      [unknown.order.id, true],
+    ]);
   });
 
   it("a run whose only due row was already answered unknown is a 200, a newly unknown row is a 502", async () => {
