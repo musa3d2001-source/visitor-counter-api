@@ -36,9 +36,24 @@ export function configureStampGateForTests(next: Partial<typeof limits> | null) 
   limits = { ...STAMP_GATE_DEFAULTS, ...(next ?? {}) };
 }
 
-function refusal() {
+/** رفض «مشغول» واحد لكل ما يحمي ذاكرة النسخة: المكان والطابور هنا، والبايتات في stamp-memory.ts */
+export function stampBusyRefusal() {
   noteSaturation("stamp_shed");
   return new StampBusyError(limits.retryAfterSeconds);
+}
+const refusal = stampBusyRefusal;
+
+/**
+ * فحص سريع قبل قراءة الأصل من التخزين: طابور ممتلئ يُرفض الآن، بدل أن يُنزَّل الملف ثم يُرفض عند باب المكان.
+ * ليس حجزًا: acquire يبقى الحكم الأخير.
+ */
+export function assertStampCapacity() {
+  if (active >= limits.slots && waiting.length >= limits.queue) throw refusal();
+}
+
+/** هل ينتظر أحد مكانًا الآن؟ تجهيز النسخ في الخلفية يتنحى عن الطلاب حين يكون الجواب نعم */
+export function stampGateContended() {
+  return waiting.length > 0;
 }
 
 function acquire(): Promise<void> {

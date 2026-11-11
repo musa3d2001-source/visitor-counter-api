@@ -2,8 +2,7 @@ import "server-only";
 import { IP_SIGNAL } from "../admin/access-signals";
 import { pruneRateLimits } from "../auth/rate-limit";
 import { LONG_JOB_STATEMENT_MS, sql, withDbDeadline } from "../db";
-import { env } from "../env";
-import { STAMPED_CACHE_BUDGET_BYTES, STAMPED_COPY_IDLE_DAYS, sweepDoomedCopies } from "../access/delivery";
+import { protectedCopySql, stampedCopyBudgetBytes, STAMPED_COPY_IDLE_DAYS, STAMPED_COPY_IN_USE_MINUTES, sweepDoomedCopies } from "../access/delivery";
 import { sweepUploadTickets } from "../admin/uploads";
 import { dailyVideoCheck, type DailyVideoReport } from "../video/service";
 import { reportError } from "./report-error";
@@ -29,6 +28,8 @@ export const EXPIRED_TOKEN_GRACE_DAYS = 1;
 export const PRUNE_BATCH_SIZE = 2_000;
 const MAX_ROUNDS = 10;
 const TIME_BUDGET_MS = 30_000;
+/** التنظيف اليومي ينزل بالنسخ المختومة إلى هذا الجزء من مساحتها، فلا يكون كل حفظ في اليوم التالي إخراجًا لنسخة أخرى */
+export const STAMPED_COPY_LOW_WATER = 0.9;
 
 const deleted = (query: PromiseLike<{ count: number }>) => query.then((result) => result.count);
 
@@ -184,15 +185,18 @@ async function pruneStampedCopies(inBatches: (statement: () => PromiseLike<numbe
       update stamped_copies c set state = 'doomed' from batch where c.id = batch.id
     `),
   );
-  const budget = env().STORAGE_PLAN === "paid" ? STAMPED_CACHE_BUDGET_BYTES.paid : STAMPED_CACHE_BUDGET_BYTES.free;
+  // فوق المساحة (القرار F24): ينزل إلى ٩٠٪ منها بترتيب الإخراج نفسه في makeRoom (المحمية آخرًا، والأقدم استعمالًا أولًا)،
+  // فيبقى مكان لنسخ اليوم دون أن يُخرج كل حفظ نسخة أخرى. نسخة فُتحت في آخر ربع ساعة لا تُمس
+  const keep = Math.floor(stampedCopyBudgetBytes() * STAMPED_COPY_LOW_WATER);
   await inBatches(
     () => deleted(sql`
       with batch as materialized (
         select c.id from stamped_copies c
-        where c.state = 'ready' and c.id in (
+        where c.state = 'ready' and c.last_used_at < now() - make_interval(mins => ${STAMPED_COPY_IN_USE_MINUTES}) and c.id in (
           select id from (
-            select id, sum(size_bytes) over (order by last_used_at desc, id) as running from stamped_copies where state = 'ready'
-          ) ranked where running > ${budget}
+            select c.id, sum(c.size_bytes) over (order by ${protectedCopySql()} desc, c.last_used_at desc, c.id desc) as running
+            from stamped_copies c where c.state = 'ready'
+          ) ranked where running > ${keep}
         )
         limit ${PRUNE_BATCH_SIZE} for update of c skip locked
       )

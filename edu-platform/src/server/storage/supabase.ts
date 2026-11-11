@@ -2,7 +2,7 @@ import "server-only";
 import { createClient, type SupabaseClient } from "@supabase/supabase-js";
 import { env } from "../env";
 import { boundedFetch, DELIVERY_STREAM_LIMITS, STORAGE_LIMITS, storageFetch } from "../outbound";
-import { assertSafeKey, StorageNotFoundError, type Bucket, type StorageDriver, type UploadTarget } from "./types";
+import { assertSafeKey, assertStampedCopyKey, StorageNotFoundError, type Bucket, type StorageDriver, type UploadTarget } from "./types";
 
 /**
  * Supabase Storage — يُستخدم من الخادم فقط بمفتاح service role.
@@ -43,9 +43,10 @@ export function isNotFoundError(error: { status?: unknown; statusCode?: unknown 
 
 export const supabaseDriver: StorageDriver = {
   name: "supabase",
-  async put(bucket, key, data, contentType) {
+  async put(bucket, key, data, contentType, options) {
     assertSafeKey(key);
-    const { error } = await sb().storage.from(bucketName(bucket)).upload(key, data, { contentType, upsert: false });
+    const cacheControl = options?.cacheSeconds === undefined ? undefined : String(options.cacheSeconds);
+    const { error } = await sb().storage.from(bucketName(bucket)).upload(key, data, { contentType, upsert: false, ...(cacheControl ? { cacheControl } : {}) });
     if (error) throw new Error(`storage upload failed: ${error.message}`);
   },
   async read(bucket, key) {
@@ -127,5 +128,19 @@ export const supabaseDriver: StorageDriver = {
     const { data, error } = await sb().storage.from(bucketName(bucket)).createSignedUrl(key, expiresInSeconds);
     if (error || !data) return null;
     return data.signedUrl;
+  },
+  async stampedCopyUrl(key, expiresInSeconds, downloadName) {
+    assertSafeKey(key);
+    assertStampedCopyKey(key, expiresInSeconds);
+    // Storage يرفض توقيع كائن غير موجود، فالرابط دليل وجوده أيضًا. التعثر هنا null: المسار يبث النسخة بنفسه
+    const { data, error } = await sb().storage.from(bucketName("private")).createSignedUrl(key, expiresInSeconds);
+    if (error || !data) return null;
+    if (downloadName === null) return data.signedUrl;
+    // download يضيفه Storage إلى Content-Disposition (attachment مع filename*=UTF-8). نضيفه بأنفسنا مرة واحدة مرمّزًا:
+    // خيار download في supabase-js يمرر الرابط كله في encodeURI بعد ترميزه، فيُرمَّز الاسم العربي مرتين
+    // (node_modules/@supabase/storage-js/dist/index.mjs، createSignedUrl، الإصدار المثبت في package-lock).
+    const url = new URL(data.signedUrl);
+    url.searchParams.set("download", downloadName);
+    return url.toString();
   },
 };

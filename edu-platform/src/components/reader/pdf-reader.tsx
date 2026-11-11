@@ -5,7 +5,7 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import { ArrowRight, BookOpenText, Download, Eye, LoaderCircle, Maximize, Minus, Plus, RotateCw, ShieldCheck, ShoppingCart, TriangleAlert } from "lucide-react";
 import { ar } from "@/lib/design";
 import { Price } from "@/components/ui/price";
-import { FILE_BUSY_MESSAGE, FILE_PREPARING_MESSAGE, readerErrorMessage, readerRetryDelaySeconds } from "@/lib/reader-error";
+import { FILE_BUSY_MESSAGE, FILE_PREPARING_MESSAGE, READER_DELIVERY_HEADER, readerErrorMessage, readerRetryDelaySeconds, type FileLinkAnswer } from "@/lib/reader-error";
 import type { PDFDocumentProxy, PDFPageProxy } from "pdfjs-dist";
 
 /**
@@ -64,8 +64,13 @@ export function PdfReader({ src, title, backHref, backLabel, initialPage = 1, wa
     (async () => {
       try {
         let bytes: Uint8Array | null = null;
+        // نسختك المحفوظة تصل رابطًا لدقيقة واحدة (القرار F22). إن تعذر اتباعه تُطلب مرة واحدة عبر الموقع نفسه
+        let viaSite = false;
+        const onProgress = (received: number, total: number | null) => {
+          if (!cancelled) setLoaded({ received, total });
+        };
         for (let tries = 0; !bytes; tries++) {
-          const res = await fetch(src, { headers: { "x-reader": "1" }, credentials: "same-origin", signal: abort.signal });
+          const res = await fetch(viaSite ? streamThroughSite(src) : src, { headers: { "x-reader": "1", [READER_DELIVERY_HEADER]: "url" }, credentials: "same-origin", signal: abort.signal });
           if (!res.ok) {
             const body = (await res.json().catch(() => ({}))) as { retry?: unknown; busy?: unknown };
             const retryFlag = body.retry === true || body.busy === true;
@@ -77,9 +82,21 @@ export function PdfReader({ src, title, backHref, backLabel, initialPage = 1, wa
             setWaiting(null);
             continue;
           }
-          bytes = await readWithProgress(res, (received, total) => {
-            if (!cancelled) setLoaded({ received, total });
-          });
+          if (!viaSite && (res.headers.get("content-type") ?? "").includes("application/json")) {
+            const link = (await res.json().catch(() => ({}))) as Partial<FileLinkAnswer>;
+            try {
+              if (typeof link.url !== "string") throw new Error("no link");
+              // بلا كوكي ولا عنوان الصفحة ولا ذاكرة متصفح: الرابط وحده هو الإذن، وعمره دقيقة
+              const copy = await fetch(link.url, { credentials: "omit", cache: "no-store", referrerPolicy: "no-referrer", signal: abort.signal });
+              if (!copy.ok) throw new Error("link refused");
+              bytes = await readWithProgress(copy, onProgress);
+            } catch (err) {
+              if (abort.signal.aborted) throw err;
+              viaSite = true;
+            }
+            continue;
+          }
+          bytes = await readWithProgress(res, onProgress);
         }
         if (cancelled) return;
         const pdfjs = await import("pdfjs-dist");
@@ -392,6 +409,13 @@ function PreviewEndCard({
 /** المسافة بين الصفحات، وعدد الصفحات المرسومة قبل الظاهر وبعده */
 const PAGE_GAP = 16;
 const PAGE_BUFFER = 2;
+
+/** الطلب نفسه عبر الموقع، ببايتات تمر بالخادم بدل الرابط: لشبكة تحجب التخزين أو رابط انتهى قبل أن يبدأ التنزيل */
+function streamThroughSite(src: string): string {
+  const url = new URL(src, window.location.href);
+  url.searchParams.set("via", "stream");
+  return `${url.pathname}${url.search}`;
+}
 
 /** يقرأ الجسم كله مع نسبة التحميل (حين يرسل الخادم Content-Length) */
 async function readWithProgress(res: Response, onProgress: (received: number, total: number | null) => void): Promise<Uint8Array> {

@@ -7,7 +7,7 @@ import { supabaseDriver } from "./supabase";
 import type { StorageDriver } from "./types";
 
 export type { Bucket, StorageDriver, UploadTarget } from "./types";
-export { StorageNotFoundError } from "./types";
+export { StorageNotFoundError, STAMPED_COPY_URL_MAX_SECONDS } from "./types";
 
 export function storage(): StorageDriver {
   return env().STORAGE_DRIVER === "supabase" ? supabaseDriver : localDriver;

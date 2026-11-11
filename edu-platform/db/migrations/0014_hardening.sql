@@ -227,3 +227,33 @@ alter table orders drop constraint if exists orders_closed_reason_check;
 alter table orders add constraint orders_closed_reason_check check (closed_reason is null or closed_reason in ('expired', 'student_cancelled', 'already_owned', 'coupon_unavailable', 'product_ended', 'unverifiable')) not valid;
 alter table orders validate constraint orders_closed_reason_check;
 set local lock_timeout = default;
+
+-- =====================================================================
+-- نسخ مختومة تُجهز قبل الفتح (مرحلة delivery-scale، القرار F23، البنود R012 و R029)
+-- طابور «اختم الملف F للمشتري U» حتى لا يختم ليل الامتحان أحد:
+--   يُملأ عند منح صلاحية، وعند رفع ملف رئيسي لمنتج له مشترون، وبزر المالك «جهّز نسخ المشترين».
+--   يفرغه بعد الرد (after) منح الصلاحية، والمهمة اليومية، وزر المالك، وفتح الطالب نفسه حين يجد مهمته في الطابور.
+-- صف واحد لكل (مشترٍ، ملف). holder و lease_until عقد من يعمل عليه الآن (SKIP LOCKED مع العقد: لا يختم اثنان المهمة نفسها)،
+-- not_before موعد المحاولة التالية بعد تعثر، و last_error رمز قصير ثابت من الكود لا نص خطأ ولا بيانات.
+-- معرفان فقط، ويُحذف الصف تلقائيًا مع الحساب أو الملف.
+-- جدول جديد لا يعرفه الكود القديم. المفتاحان الأجنبيان يأخذان قفلًا قصيرًا على users و product_files،
+-- فمهلة القفل القصيرة تمنع طابورًا خلفه. إن انتهت يفشل الترحيل كله دون أثر، وتعيد تشغيله.
+-- =====================================================================
+set local lock_timeout = '5s';
+create table if not exists stamp_jobs (
+  id uuid primary key default gen_random_uuid(),
+  user_id uuid not null references users(id) on delete cascade,
+  file_id uuid not null references product_files(id) on delete cascade,
+  reason text not null check (reason in ('grant', 'new_file', 'owner')),
+  not_before timestamptz not null default now(),
+  attempts int not null default 0 check (attempts >= 0),
+  last_error text check (last_error is null or last_error ~ '^[a-z_]{1,40}$'),
+  holder uuid,
+  lease_until timestamptz,
+  created_at timestamptz not null default now(),
+  unique (user_id, file_id)
+);
+set local lock_timeout = default;
+create index if not exists stamp_jobs_due on stamp_jobs (not_before);
+create index if not exists stamp_jobs_file on stamp_jobs (file_id);
+alter table stamp_jobs enable row level security;

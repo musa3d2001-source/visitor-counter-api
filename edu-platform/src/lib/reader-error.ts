@@ -10,6 +10,21 @@ export const FILE_TOO_MANY_OPENS_MESSAGE = "فتحت ملفات كثيرة في 
 /** انتهت محاولات القارئ التلقائية والخادم ما زال مشغولًا */
 export const FILE_STILL_BUSY_MESSAGE = "المنصة مشغولة الآن. حاول فتح الملف مرة أخرى بعد دقيقة.";
 
+/** ترويسة يرسلها القارئ: يقبل رابطًا مؤقتًا لنسخته بدل البايتات (القرار F22). قارئ قديم بلا هذه الترويسة يأخذ البايتات كما كان */
+export const READER_DELIVERY_HEADER = "x-reader-delivery";
+
+/** جواب مسار الملفات للقارئ حين تكون نسخته محفوظة: رابط لدقيقة واحدة يتبعه دون كوكي */
+export type FileLinkAnswer = { url: string; size: number | null; expiresIn: number };
+
+/**
+ * رمز ثابت في كل رد JSON من مسار الملفات (البند R017): يفرّق الانشغال المؤقت عن الملف المعيب دون قراءة نص الرسالة.
+ * busy و preparing: مؤقت، مع Retry-After و retry: true. too_many_opens: حد الفتح، مع Retry-After و retry: false.
+ * repair: الملف نفسه يحتاج إصلاحًا من الإدارة (503 بلا Retry-After). الباقي رفض نهائي لهذا الطلب.
+ * انشغال قاعدة البيانات يمر بالرد الموحد للمنصة (busy: true مع Retry-After) ولا يحمل code.
+ */
+export const FILE_ANSWER_CODES = ["busy", "preparing", "too_many_opens", "repair", "signin", "denied", "not_found", "read_only", "open_from_library", "failed"] as const;
+export type FileAnswerCode = (typeof FILE_ANSWER_CODES)[number];
+
 /**
  * retryable: الخادم أرسل Retry-After (انشغال أو تجهيز). 503 بلا Retry-After يعني ملفًا معيبًا،
  * وإعادة المحاولة لا تفيده.

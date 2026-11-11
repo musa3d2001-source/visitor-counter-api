@@ -5,7 +5,7 @@ import { mkdir, readFile, rm, stat, writeFile, open } from "node:fs/promises";
 import { dirname, join, resolve, sep } from "node:path";
 import { Readable } from "node:stream";
 import { env } from "../env";
-import { assertSafeKey, StorageNotFoundError, type Bucket, type StorageDriver, type UploadTarget } from "./types";
+import { assertSafeKey, assertStampedCopyKey, StorageNotFoundError, type Bucket, type StorageDriver, type UploadTarget } from "./types";
 
 /**
  * تخزين محلي على القرص — للتطوير والاختبار أو الاستضافة على خادم خاص.
@@ -49,6 +49,41 @@ export function verifyLocalUploadToken(token: string): LocalUploadClaims | null 
     return null;
   }
 }
+
+/**
+ * رابط النسخة المختومة في التخزين المحلي (بديل الرابط الموقّع في Supabase، للاختبارات وأداة الحمل والتشغيل المحلي).
+ * k: مفتاح النسخة، e: الانتهاء بالمللي ثانية، d: اسم التنزيل أو null. موقّع بـ APP_SECRET في مجال منفصل عن رموز الرفع،
+ * فرمز رفع لا يصلح رابط نسخة ولا العكس. لا جلسة ولا كوكي: الرابط نفسه هو الإذن، كما في رابط Supabase.
+ */
+export type LocalCopyClaims = { k: string; e: number; d: string | null };
+
+function signCopy(payload: string) {
+  return createHmac("sha256", env().APP_SECRET).update(`local-copy:${payload}`).digest("base64url");
+}
+
+export function createLocalCopyToken(claims: LocalCopyClaims): string {
+  const payload = Buffer.from(JSON.stringify(claims)).toString("base64url");
+  return `${payload}.${signCopy(payload)}`;
+}
+
+export function verifyLocalCopyToken(token: string): LocalCopyClaims | null {
+  const [payload, sig, extra] = token.split(".");
+  if (!payload || !sig || extra !== undefined) return null;
+  const expected = Buffer.from(signCopy(payload));
+  const actual = Buffer.from(sig);
+  if (expected.length !== actual.length || !timingSafeEqual(expected, actual)) return null;
+  try {
+    const claims = JSON.parse(Buffer.from(payload, "base64url").toString()) as LocalCopyClaims;
+    if (typeof claims.e !== "number" || claims.e < Date.now()) return null;
+    assertStampedCopyKey(claims.k, 1);
+    return claims;
+  } catch {
+    return null;
+  }
+}
+
+/** مسار الرابط المحلي: تحت /api/files/ فيأخذ سياسة المحتوى نفسها التي يأخذها مسار الملفات */
+export const LOCAL_COPY_PATH = "/api/files/stamped";
 
 export const localDriver: StorageDriver = {
   name: "local",
@@ -111,6 +146,13 @@ export const localDriver: StorageDriver = {
   },
   async signedUrl() {
     return null;
+  },
+  async stampedCopyUrl(key, expiresInSeconds, downloadName) {
+    assertStampedCopyKey(key, expiresInSeconds);
+    // كما في Supabase: لا رابط لكائن غير موجود
+    if (!(await localDriver.stat("private", key))) return null;
+    const token = createLocalCopyToken({ k: key, e: Date.now() + expiresInSeconds * 1000, d: downloadName });
+    return `${LOCAL_COPY_PATH}?t=${encodeURIComponent(token)}`;
   },
   async readRange(bucket, key, start, end) {
     const stream = createReadStream(pathFor(bucket, key), { start, end });

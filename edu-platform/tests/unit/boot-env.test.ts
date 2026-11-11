@@ -299,6 +299,31 @@ describe("the public data cache lifetime", () => {
   });
 });
 
+describe("the space for stamped copies (STAMPED_COPY_BUDGET_GB)", () => {
+  it("is unset on the deployed set, follows STORAGE_PLAN, and asks nothing of the owner", () => {
+    useDeployedEnv();
+    expect(env().STAMPED_COPY_BUDGET_GB).toBe(0);
+    expect(configWarnings()).toEqual([]);
+  });
+
+  it("reads a whole number of GB", () => {
+    useDeployedEnv({ STAMPED_COPY_BUDGET_GB: "80" });
+    expect(env().STAMPED_COPY_BUDGET_GB).toBe(80);
+    expect(configWarnings()).toEqual([]);
+  });
+
+  it("an unreadable or negative value falls back to the plan and is named for the owner, never a crash", async () => {
+    for (const bad of ["sixty", "-5", "1.5", "100001"]) {
+      useDeployedEnv({ STAMPED_COPY_BUDGET_GB: bad });
+      const { exit } = trapExit();
+      await expect(register()).resolves.toBeUndefined();
+      expect(exit).not.toHaveBeenCalled();
+      expect(env().STAMPED_COPY_BUDGET_GB).toBe(0);
+      expect(configWarnings()).toEqual(["STAMPED_COPY_BUDGET_GB"]);
+    }
+  });
+});
+
 describe("the database pool on Vercel (Fluid compute)", () => {
   const { DATABASE_POOL_MAX: _pool, ...withoutPool } = DEPLOYED;
   const useVercel = (patch: Record<string, string> = {}) => useEnv({ ...withoutPool, NODE_ENV: "production", NEXT_RUNTIME: "nodejs", VERCEL_ENV: "production", ...patch });

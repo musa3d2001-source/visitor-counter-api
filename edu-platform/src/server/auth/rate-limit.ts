@@ -32,6 +32,14 @@ export async function peekRateLimit(key: string, limit: number) {
   };
 }
 
+/**
+ * يعيد محاولة واحدة احتُسبت في النافذة الحالية (رد «مشغول» لم يُسلَّم فيه شيء، البند R010).
+ * لا يغير موعد انتهاء النافذة، ولا ينزل العدّاد تحت الصفر، ولا يمس نافذة انتهت.
+ */
+export async function refundRateLimit(key: string) {
+  await sql`update rate_limits set count = greatest(count - 1, 0) where key = ${key} and reset_at > now()`;
+}
+
 export async function clearRateLimit(key: string) {
   await sql`delete from rate_limits where key = ${key}`;
 }

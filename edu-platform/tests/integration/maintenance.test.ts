@@ -3,7 +3,7 @@ import { afterAll, afterEach, beforeAll, beforeEach, describe, expect, it, vi } 
 import { IP_SIGNAL, listAccountIpSignals } from "@/server/admin/access-signals";
 import { ACCESS_LOG_RETENTION_DAYS, ERROR_EVENT_RETENTION_DAYS, EXPIRED_TOKEN_GRACE_DAYS, PRUNE_BATCH_SIZE, runDataPruning } from "@/server/platform/maintenance";
 import { SATURATION_RETENTION_DAYS } from "@/server/platform/saturation";
-import { STAMPED_CACHE_BUDGET_BYTES } from "@/server/access/delivery";
+import { stampedCopyBudgetBytes } from "@/server/access/delivery";
 import { closeDb, resetDb, sql } from "../helpers/db";
 import { createProduct, createUser } from "../helpers/factories";
 
@@ -176,20 +176,56 @@ describe("stamped copies are condemned in bounded batches", () => {
     expect(await sql`select 1 from stamped_copies where state = 'ready'`).toHaveLength(0);
   });
 
-  it("copies over the storage budget go oldest first, and the newest stay", async () => {
+  // القرار F24: التنظيف ينزل إلى ٩٠٪ من المساحة لا إلى حدها، فنسختان من ٤٠٪ تبقيان والثالثة (١٢٠٪) تخرج.
+  // كان الاختبار بنسخ من ٥٠٪ تبقى منها اثنتان عند ١٠٠٪ بالضبط؛ تغيّر الحجم لأن الحد المقصود تغيّر، والترتيب كما هو
+  it("copies over the storage budget go oldest first down to 90%, and the newest stay", async () => {
     const user = await createUser();
     const product = await createProduct({ title: "ميزانية النسخ" });
     const [file] = await sql<{ id: string; storage_key: string }[]>`select id, storage_key from product_files where id = ${product.previewFileId}`;
-    const half = Math.ceil(STAMPED_CACHE_BUDGET_BYTES.free / 2);
+    const part = Math.floor(stampedCopyBudgetBytes() * 0.4);
     await sql`
       insert into stamped_copies (cache_key, user_id, file_id, file_version, object_key, size_bytes, state, last_used_at)
-      select md5(g::text) || md5(g::text), ${user.id}, ${file.id}, ${file.storage_key}, 'stamped/' || gen_random_uuid() || '.pdf', ${half}, 'ready', now() - make_interval(hours => g)
+      select md5(g::text) || md5(g::text), ${user.id}, ${file.id}, ${file.storage_key}, 'stamped/' || gen_random_uuid() || '.pdf', ${part}, 'ready', now() - make_interval(hours => g)
       from generate_series(1, 5) g
     `;
     const newestTwo = await sql<{ id: string }[]>`select id from stamped_copies order by last_used_at desc limit 2`;
     await runDataPruning();
     const left = await sql<{ id: string }[]>`select id from stamped_copies where state = 'ready' order by last_used_at desc`;
     expect(left.map((r) => r.id)).toEqual(newestTwo.map((r) => r.id));
+  });
+
+  it("over the budget, a copy prepared this week for a current buyer outlives an idle one opened more recently", async () => {
+    const product = await createProduct({ title: "نسخ محمية" });
+    const [file] = await sql<{ id: string; storage_key: string }[]>`select id, storage_key from product_files where id = ${product.mainFileId}`;
+    const buyer = await createUser();
+    const former = await createUser();
+    await sql`insert into entitlements (user_id, product_id, source) values (${buyer.id}, ${product.id}, 'manual')`;
+    const part = Math.floor(stampedCopyBudgetBytes() * 0.6);
+    const add = (userId: string, hoursAgo: number) => sql<{ id: string }[]>`
+      insert into stamped_copies (cache_key, user_id, file_id, file_version, object_key, size_bytes, state, created_at, last_used_at)
+      values (md5(random()::text) || md5(random()::text), ${userId}, ${file.id}, ${file.storage_key}, 'stamped/' || gen_random_uuid() || '.pdf', ${part}, 'ready', now() - interval '1 day', now() - make_interval(hours => ${hoursAgo}))
+      returning id
+    `;
+    // المحمية فُتحت قبل ٥ ساعات، وغير المحمية (لمن لم يعد يملك المنتج) قبل ساعتين: المحمية تبقى مع ذلك
+    const [kept] = await add(buyer.id, 5);
+    const [evicted] = await add(former.id, 2);
+    await runDataPruning();
+    const states = await sql<{ id: string; state: string }[]>`select id, state from stamped_copies where id in (${kept.id}, ${evicted.id})`;
+    expect(Object.fromEntries(states.map((r) => [r.id, r.state]))).toMatchObject({ [kept.id]: "ready" });
+    expect(states.find((r) => r.id === evicted.id)?.state ?? "gone").not.toBe("ready");
+  });
+
+  it("over the budget, a copy opened in the last quarter hour is not condemned, since its link may be in a student's hands", async () => {
+    const user = await createUser();
+    const product = await createProduct({ title: "نسخة مفتوحة الآن" });
+    const [file] = await sql<{ id: string; storage_key: string }[]>`select id, storage_key from product_files where id = ${product.previewFileId}`;
+    const over = stampedCopyBudgetBytes() * 2;
+    await sql`
+      insert into stamped_copies (cache_key, user_id, file_id, file_version, object_key, size_bytes, state, last_used_at)
+      values (md5('in-use') || md5('in-use'), ${user.id}, ${file.id}, ${file.storage_key}, 'stamped/' || gen_random_uuid() || '.pdf', ${over}, 'ready', now() - interval '1 minute')
+    `;
+    await runDataPruning();
+    expect(await sql`select 1 from stamped_copies where state = 'ready'`).toHaveLength(1);
   });
 });
 

@@ -191,15 +191,32 @@ describe("نسخة لكل مشترٍ", () => {
     expect(await stampedText(await bytesOf(res))).toContain(user.email);
   });
 
-  it("when the cache budget is spent the file is still stamped and delivered, only not kept", async () => {
+  /**
+   * تغير عمدًا (القرار F24، البند R009): كان السقف الممتلئ يمنع حفظ النسخة، فيُختم الملف من جديد في كل فتح ليلة الامتحان.
+   * الآن تُخرج النسخة الأقدم استعمالًا لإفساح المكان، وتُحفظ الجديدة.
+   */
+  it("when the cache budget is spent the oldest idle copy makes room, and the new copy is kept", async () => {
     const p = await createProduct();
     const { user } = await buyer(p);
     const filler = randomUUID();
-    await sql`insert into stamped_copies (cache_key, user_id, file_id, file_version, object_key, size_bytes, state) values (${"f".repeat(64)}, ${user.id}, ${p.previewFileId}, 'x', ${`stamped/${filler}.pdf`}, ${200 * 1024 * 1024}, 'ready')`;
+    await sql`insert into stamped_copies (cache_key, user_id, file_id, file_version, object_key, size_bytes, state, last_used_at) values (${"f".repeat(64)}, ${user.id}, ${p.previewFileId}, 'x', ${`stamped/${filler}.pdf`}, ${200 * 1024 * 1024}, 'ready', now() - interval '2 hours')`;
     const res = await open(p.mainFileId!, user);
     expect(res.status).toBe(200);
     expect(await stampedText(await bytesOf(res))).toContain(user.email);
-    expect((await copiesOf(p.mainFileId!)).filter((c) => c.state === "ready")).toHaveLength(0);
+    expect((await copiesOf(p.mainFileId!)).filter((c) => c.state === "ready")).toHaveLength(1);
+    const [old] = await sql<{ state: string }[]>`select state from stamped_copies where object_key = ${`stamped/${filler}.pdf`}`;
+    expect(old?.state ?? "gone").not.toBe("ready");
+    await sql`delete from stamped_copies where object_key = ${`stamped/${filler}.pdf`}`;
+  });
+
+  it("a copy opened in the last minutes is never evicted to make room, and the new copy is kept anyway", async () => {
+    const p = await createProduct();
+    const { user } = await buyer(p);
+    const filler = randomUUID();
+    await sql`insert into stamped_copies (cache_key, user_id, file_id, file_version, object_key, size_bytes, state, last_used_at) values (${"e".repeat(64)}, ${user.id}, ${p.previewFileId}, 'x', ${`stamped/${filler}.pdf`}, ${200 * 1024 * 1024}, 'ready', now() - interval '1 minute')`;
+    expect((await open(p.mainFileId!, user)).status).toBe(200);
+    expect((await sql<{ state: string }[]>`select state from stamped_copies where object_key = ${`stamped/${filler}.pdf`}`)[0].state).toBe("ready");
+    expect((await copiesOf(p.mainFileId!)).filter((c) => c.state === "ready")).toHaveLength(1);
     await sql`delete from stamped_copies where object_key = ${`stamped/${filler}.pdf`}`;
   });
 });
@@ -300,11 +317,14 @@ describe("الختم تحت الضغط", () => {
     expect(spy).toHaveBeenCalledTimes(2);
 
     const overflow = await open(p.mainFileId!, d.user);
+    release();
     expect(overflow.status).toBe(503);
-    expect(overflow.headers.get("retry-after")).toBe("9");
+    // تغير عمدًا (البند R017): Retry-After يحمل تشتيتًا بين القيمة وضعفها، فلا يعود كل من رُدّ في اللحظة نفسها معًا
+    const retryAfter = Number(overflow.headers.get("retry-after"));
+    expect(retryAfter).toBeGreaterThanOrEqual(9);
+    expect(retryAfter).toBeLessThanOrEqual(18);
     expect(await overflow.json()).toMatchObject({ retry: true });
 
-    release();
     const done = await Promise.all([...running, queued]);
     expect(done.map((r) => r.status)).toEqual([200, 200, 200]);
     expect(await stampedText(await bytesOf(done[2]))).toContain(c.user.email);

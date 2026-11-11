@@ -34,6 +34,8 @@ const LENIENT_INTS = {
   DATABASE_QUEUE_TIMEOUT_MS: { min: 500, max: 60_000, fallback: 8_000 },
   /** عمر البيانات العامة في ذاكرة الخادم بالثواني. ٥٥ حدًا أعلى ليبقى ظهور تعديل المالك داخل دقيقة شاملًا وقت عرض الصفحة. صفر يوقفها */
   PUBLIC_CACHE_SECONDS: { min: 0, max: 55, fallback: 55 },
+  /** المساحة القصوى للنسخ المختومة في التخزين بالجيجابايت (القرار F24). صفر أو غير مضبوط: حسب STORAGE_PLAN (access/copy-store.ts) */
+  STAMPED_COPY_BUDGET_GB: { min: 0, max: 100_000, fallback: 0 },
 } as const;
 type LenientKey = keyof typeof LENIENT_INTS;
 
@@ -73,6 +75,7 @@ export const envSchema = z
     STORAGE_PLAN: z.enum(["free", "paid"]).default("free"),
     /** حد صريح للملف الواحد بالميجابايت، يطابق «Global file size limit» في إعدادات Storage. يتقدم على الخطة */
     STORAGE_MAX_FILE_MB: z.preprocess((v) => (v === "" ? undefined : v), z.coerce.number().int().min(1).max(8192).optional()),
+    STAMPED_COPY_BUDGET_GB: lenientInt("STAMPED_COPY_BUDGET_GB"),
 
     /** disabled: لا دفع إلكتروني | sandbox: بيئة اختبار MyFatoorah | live: إنتاج */
     PAYMENTS_MODE: z.enum(["disabled", "sandbox", "live"]).default("disabled"),
