@@ -2,7 +2,7 @@ import "server-only";
 import { sql } from "../db";
 import { env } from "../env";
 import { isAnonymizedEmail } from "@/lib/anonymize";
-import { redactSecrets } from "@/lib/redact";
+import { redactSecrets, scrubForOps } from "@/lib/redact";
 
 /**
  * إرسال البريد:
@@ -11,6 +11,8 @@ import { redactSecrets } from "@/lib/redact";
  *
  * قاعدة: كل ما يصل إلى email_log أو إلى سجل الخادم يمر على redactSecrets،
  * فرمز رابط الاستعادة أو التأكيد لا يوجد خامًا إلا في الرسالة نفسها.
+ * ونص فشل الإرسال من خادم البريد لا نعرف شكله: كثيرًا ما يقتبس عنوان المستلم (وهو غالبًا بريد طالب قاصر)،
+ * فيمر على scrubForOps قبل سجل الخادم وقبل email_log، كأي نص خطأ آخر. سجلات Vercel لا يصلها حذف بيانات الطالب.
  */
 export type MailMessage = { to: string; subject: string; text: string; html?: string; template: string };
 
@@ -54,7 +56,7 @@ export async function sendMail(msg: MailMessage): Promise<boolean> {
     `;
     return true;
   } catch (err) {
-    const message = redactSecrets(err instanceof Error ? err.message : String(err));
+    const message = scrubForOps(err instanceof Error ? err.message : String(err), 500);
     console.error("[mail] send failed", msg.template, message);
     await sql`
       insert into email_log (to_email, subject, template, status, error)

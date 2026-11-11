@@ -10,7 +10,7 @@ export type SinkMessage = { from: string; to: string[]; subject: string; text: s
 export type SmtpSink = {
   port: number;
   messages: SinkMessage[];
-  /** المستلمون التالون يُرفضون برد 550، كما يفعل خادم بريد حقيقي */
+  /** المستلمون التالون يُرفضون برد 550 يقتبس عنوانهم، كما يفعل خادم بريد حقيقي */
   rejectNext(count?: number): void;
   /** هذا العنوان وحده يُرفض حتى clear، لاختبار فشل رسالة واحدة بين عدة رسائل */
   rejectAddress(address: string): void;
@@ -98,11 +98,12 @@ export async function startSmtpSink(port = 0): Promise<SmtpSink> {
           envelope = { from: address(line), to: [] };
           reply("250 2.1.0 ok");
         } else if (verb === "RCPT") {
+          // كما يرد Postfix: الرفض يقتبس العنوان نفسه، فيصل إلى نص الخطأ عند المرسل
           if (rejectedAddresses.has(address(line))) {
-            reply("550 5.1.1 recipient rejected");
+            reply(`550 5.1.1 <${address(line)}>: Recipient address rejected: User unknown`);
           } else if (reject > 0) {
             reject -= 1;
-            reply("550 5.1.1 recipient rejected");
+            reply(`550 5.1.1 <${address(line)}>: Recipient address rejected: User unknown`);
           } else {
             envelope.to.push(address(line));
             reply("250 2.1.5 ok");

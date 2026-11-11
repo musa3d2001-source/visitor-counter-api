@@ -126,6 +126,24 @@ describe("email_log never holds a raw reset token", () => {
     await expectNoRawToken();
   });
 
+  it("a rejection that quotes the student's address keeps the address out of the server log and the stored reason", async () => {
+    realMail();
+    const address = "sara.k.student@farqad.test";
+    sink.rejectAddress(address);
+    const logged = vi.spyOn(console, "error").mockImplementation(() => {});
+    await expect(sendMail({ to: address, subject: "تأكيد البريد", text: "t", template: "email_verification" })).resolves.toBe(false);
+    const printed = logged.mock.calls.flat().map(String).join(" ");
+    expect(printed).toContain("[mail] send failed");
+    expect(printed).toContain("550");
+    expect(printed).not.toContain(address);
+    expect(printed).not.toContain("sara.k.student");
+    const [row] = await sql<{ error: string; status: string }[]>`select error, status from email_log where to_email = ${address}`;
+    expect(row.status).toBe("failed");
+    expect(row.error).toContain("550");
+    expect(row.error).toContain("[email]");
+    expect(row.error).not.toContain("sara.k.student");
+  });
+
   it("an error message that quotes a link is redacted before it is stored", async () => {
     realMail();
     const token = "ZyXwVuTsRqPoNmLkJiHgFeDcBa9876543210_-AbCd0";
