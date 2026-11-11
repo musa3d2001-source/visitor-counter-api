@@ -3,9 +3,9 @@ import { ar } from "@/lib/design";
 import { z } from "zod";
 import { sql, type Db } from "../db";
 import { storage, newStorageKey, sniffMime, storageFileCap, toMb, uploadLimitBytes, UPLOAD_RULES, type UploadKind } from "../storage";
-import { inspectPdf, PreviewNotIsolatedError, rebuildCustomPreview } from "../access/pdf";
+import { inspectPdf, PreviewNotIsolatedError, rebuildCustomPreview, StampDeadlineError } from "../access/pdf";
 import { UPLOAD_REJECTION } from "../access/file-check";
-import { withStampSlot } from "../access/stamp-gate";
+import { StampBusyError, withStampSlot } from "../access/stamp-gate";
 import { hitRateLimit } from "../auth/rate-limit";
 import { STAMP_LIMIT_REASON } from "@/lib/pdf-limits";
 import { audit } from "../platform/audit";
@@ -282,6 +282,7 @@ const PREVIEW_RESULT_NOTE: Partial<Record<PreviewResult, string>> = {
   unreadable: ". تعذر توليد المعاينة، ولّدها من قسم المعاينة",
   not_isolated: ". تعذر تجهيز معاينة آمنة من هذا الملف، فلن تظهر له معاينة",
 };
+const PREVIEW_BUSY_NOTE = ". الخادم مشغول بملفات الطلاب الآن فلم تُولَّد المعاينة، ولّدها من قسم المعاينة بعد قليل";
 
 /** التأكيد قد يصل مرتين إذا ضاع رد الخادم على الشبكة: النتيجة نفسها في المرتين */
 export async function completeUpload(input: z.infer<typeof completeSchema>, actor: Actor) {
@@ -376,7 +377,8 @@ export async function completeUpload(input: z.infer<typeof completeSchema>, acto
       try {
         return { inspection, isolated: (await rebuildCustomPreview(bytes)).bytes, isolationFailed: false };
       } catch (err) {
-        if (!(err instanceof PreviewNotIsolatedError)) throw err;
+        // بضع صفحات لا تحتاج مهلة البناء كلها: تجاوزها يعني ملفًا لا يُعرض بأمان، كفشل العزل
+        if (!(err instanceof PreviewNotIsolatedError) && !(err instanceof StampDeadlineError)) throw err;
         await reportError("upload:preview-not-isolated", err);
         return { inspection, isolated: null, isolationFailed: true };
       }
@@ -439,11 +441,13 @@ export async function completeUpload(input: z.infer<typeof completeSchema>, acto
     let previewNote = "";
     if (input.target === "main") {
       // الملف الرئيسي نجح رفعه وتسجيله. تعثر المعاينة لا يُفشل الرفع، ويقال للرافع
-      const result = await regenerateAutoPreview(productId!).catch(async (err): Promise<PreviewResult> => {
+      const result = await regenerateAutoPreview(productId!).catch(async (err): Promise<PreviewResult | "busy"> => {
+        // أماكن الختم مشغولة بملفات الطلاب الآن: ليس عيبًا في الملف ولا خطأ يُسجل
+        if (err instanceof StampBusyError) return "busy";
         await reportError("upload:preview-generation", err);
         return "unreadable";
       });
-      previewNote = PREVIEW_RESULT_NOTE[result] ?? "";
+      previewNote = result === "busy" ? PREVIEW_BUSY_NOTE : (PREVIEW_RESULT_NOTE[result] ?? "");
     }
     await audit({ actorId: actor.userId, action: `product.file_upload`, entityType: "product", entityId: productId, metadata: { fileId, kind: input.target, title, pages: pageCount, size: stat.size } });
     return { id: fileId, message: `تم رفع «${title}» (${pageCount} صفحة)${previewNote}` };

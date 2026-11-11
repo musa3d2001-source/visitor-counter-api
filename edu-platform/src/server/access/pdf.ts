@@ -162,8 +162,11 @@ function pointOnPage(box: VisibleBox, viewX: number, viewY: number) {
   return { x: box.x + viewX, y: box.y + viewY };
 }
 
-/** أول count صفحة، معزولة عن بقية الملف. يتحقق من النتيجة بعد حفظها، فلا يخرج ملف لم يثبت عزله */
-async function buildIsolatedPreview(src: PDFDocument, count: number, label: boolean): Promise<Uint8Array> {
+/**
+ * أول count صفحة، معزولة عن بقية الملف. يتحقق من النتيجة بعد حفظها، فلا يخرج ملف لم يثبت عزله.
+ * المهلة تُفحص في الحفظ وفي قراءة النتيجة للتحقق كما في الختم (البند R008)، فلا يبقى بناء معاينة يعمل بلا نهاية.
+ */
+async function buildIsolatedPreview(src: PDFDocument, count: number, label: boolean, deadline: Deadline): Promise<Uint8Array> {
   try {
     isolatePages(
       src.context,
@@ -171,6 +174,7 @@ async function buildIsolatedPreview(src: PDFDocument, count: number, label: bool
     );
     const out = await PDFDocument.create();
     const copied = await out.copyPages(src, Array.from({ length: count }, (_, i) => i));
+    deadline.check();
     for (const p of copied) out.addPage(p);
     if (label) {
       const font = await out.embedFont(StandardFonts.HelveticaBold);
@@ -185,30 +189,35 @@ async function buildIsolatedPreview(src: PDFDocument, count: number, label: bool
     }
     out.setTitle("Preview");
     out.setProducer("edu-platform");
-    const saved = await out.save();
-    assertIsolated(await PDFDocument.load(saved, { updateMetadata: false }), count);
+    const saved = await saveWithDeadline(out, deadline, 500);
+    assertIsolated(await loadWithDeadline(saved, deadline), count);
     return saved;
   } catch (err) {
-    if (err instanceof PreviewNotIsolatedError) throw err;
+    if (err instanceof PreviewNotIsolatedError || err instanceof StampDeadlineError) throw err;
     await reportError("pdf:preview-isolation", err);
     throw new PreviewNotIsolatedError("could not rebuild pages");
   }
 }
 
-/** يطبق قاعدة المعاينة على الملف الفعلي. null: الملف أقصر من أن تكون له معاينة */
-export async function extractPreview(bytes: Uint8Array, pages: number): Promise<{ bytes: Uint8Array; pageCount: number } | null> {
-  const src = await openForEditing(bytes);
+/**
+ * يطبق قاعدة المعاينة على الملف الفعلي. null: الملف أقصر من أن تكون له معاينة.
+ * بمهلة الفحص عند الرفع نفسها: ما يُفتح ويُختم تجريبيًا فيها يُبنى منه بضع صفحات فيها. تجاوزها StampDeadlineError
+ */
+export async function extractPreview(bytes: Uint8Array, pages: number, budgetMs = TRIAL_STAMP_BUDGET_MS): Promise<{ bytes: Uint8Array; pageCount: number } | null> {
+  const deadline = deadlineIn(budgetMs);
+  const src = await openForEditing(bytes, deadline);
   const allowed = maxPreviewPages(src.getPageCount());
   if (allowed === 0) return null;
   const count = Math.min(Math.max(1, pages), allowed);
-  return { bytes: await buildIsolatedPreview(src, count, true), pageCount: count };
+  return { bytes: await buildIsolatedPreview(src, count, true, deadline), pageCount: count };
 }
 
 /** معاينة رفعها صاحب الملف: تُبنى من جديد بالطريقة نفسها، فقد تحمل صفحات مخفية أو روابط لبقية عمله */
-export async function rebuildCustomPreview(bytes: Uint8Array): Promise<{ bytes: Uint8Array; pageCount: number }> {
-  const src = await openForEditing(bytes);
+export async function rebuildCustomPreview(bytes: Uint8Array, budgetMs = TRIAL_STAMP_BUDGET_MS): Promise<{ bytes: Uint8Array; pageCount: number }> {
+  const deadline = deadlineIn(budgetMs);
+  const src = await openForEditing(bytes, deadline);
   const count = src.getPageCount();
-  return { bytes: await buildIsolatedPreview(src, count, false), pageCount: count };
+  return { bytes: await buildIsolatedPreview(src, count, false, deadline), pageCount: count };
 }
 
 /** الختم نفسه يستخدمه التسليم والفحص عند الرفع، فلا يختلف ما نجرّبه عما يصل للطالب */

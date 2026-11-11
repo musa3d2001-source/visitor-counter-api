@@ -4,7 +4,10 @@ import { cache } from "react";
 import { sql, type Db } from "../db";
 import { storage } from "../storage";
 import { doomFileCopies, sweepDoomedCopies } from "../access/delivery";
-import { extractPreview, PdfUnusableError, PreviewNotIsolatedError, rebuildCustomPreview } from "../access/pdf";
+import { extractPreview, PdfUnusableError, PreviewNotIsolatedError, rebuildCustomPreview, StampDeadlineError } from "../access/pdf";
+import { assertStampCapacity, StampBusyError, STAMP_GATE_DEFAULTS, withStampSlot } from "../access/stamp-gate";
+import { reserveStampMemory } from "../access/stamp-memory";
+import { noteSaturation } from "../platform/saturation";
 import { ensureProductFilesChecked, FILE_PROBLEM_LABELS, FLAGGED_STATUSES, recordFileCheck, statusForProblem, type FileCheckStatus, type FlaggedStatus } from "../access/file-check";
 import { audit } from "../platform/audit";
 import { reportError } from "../platform/report-error";
@@ -360,7 +363,7 @@ export async function updateProduct(id: string, input: ProductInput, actor: Acto
       where id = ${id} and teacher_id = ${actor.teacherId} and status = 'draft'
     `;
     await audit({ actorId: actor.userId, action: "product.update", entityType: "product", entityId: id, metadata: { by: "teacher", proposedPriceFils: input.proposedPriceFils } });
-    if (current.preview_pages !== input.previewPages) await regenerateAutoPreview(id);
+    if (current.preview_pages !== input.previewPages) await refreshAutoPreview(id);
     return;
   }
 
@@ -410,7 +413,7 @@ export async function updateProduct(id: string, input: ProductInput, actor: Acto
     entityId: id,
     metadata: changes,
   });
-  if (current.preview_pages !== input.previewPages) await regenerateAutoPreview(id);
+  if (current.preview_pages !== input.previewPages) await refreshAutoPreview(id);
 }
 
 /**
@@ -736,11 +739,28 @@ export async function firstMainFile(productId: string): Promise<{ id: string; st
 
 export type PreviewResult = "custom" | "repaired" | "generated" | "none" | "too_short" | "unreadable" | "not_isolated";
 
+/**
+ * بناء المعاينة يحمل الملف كله في الذاكرة ويعيد بناء صفحاته: عمل بحجم الختم، فيمر بما يمر به الختم (البند R008).
+ * طابور ممتلئ أو ذاكرة النسخة ممتلئة: StampBusyError قبل أي قراءة. القراءة من التخزين خارج المكان المحدود،
+ * والبناء وحده داخله، بمهلة TRIAL_STAMP_BUDGET_MS (pdf.ts). لا يُستدعى من داخل مكان آخر، فلا ينتظر نفسه.
+ */
+async function withPreviewCapacity<T>(storageKey: string, sizeBytes: number, build: (bytes: Uint8Array) => Promise<T>): Promise<T> {
+  assertStampCapacity();
+  const lease = reserveStampMemory(sizeBytes * 2);
+  try {
+    const bytes = await storage().read("private", storageKey);
+    lease.resize(bytes.length * 2);
+    return await withStampSlot(() => build(bytes));
+  } finally {
+    lease.release();
+  }
+}
+
 /** معاينة مخصصة قديمة ضمن القاعدة: تُبنى نسختها المعزولة وتبقى مكانها، فهي اختيار صاحب المحتوى */
 async function repairCustomPreview(productId: string, custom: AdminFile): Promise<PreviewResult> {
   let rebuilt: Awaited<ReturnType<typeof rebuildCustomPreview>>;
   try {
-    rebuilt = await rebuildCustomPreview(await storage().read("private", custom.storage_key));
+    rebuilt = await withPreviewCapacity(custom.storage_key, custom.size_bytes, (bytes) => rebuildCustomPreview(bytes));
   } catch (err) {
     if (!(err instanceof PreviewNotIsolatedError) && !(err instanceof PdfUnusableError)) throw err;
     await reportError("preview:custom-not-isolated", err);
@@ -760,6 +780,7 @@ async function repairCustomPreview(productId: string, custom: AdminFile): Promis
  * توليد المعاينة المجانية تلقائيًا من أول ملف رئيسي، ضمن قاعدة المعاينة الواحدة.
  * لا يلمس المعاينة المرفوعة يدويًا إلا بطلب replaceCustom.
  * المعاينة الجديدة تُصنع أولًا، ثم تُستبدل بالقديمة في معاملة واحدة، فلا يضيع الموجود عند تعثر التوليد.
+ * أماكن الختم مشغولة الآن: StampBusyError ولا يتغير شيء، والمستدعي يقول ذلك لصاحب الطلب (البند R008).
  */
 export async function regenerateAutoPreview(productId: string, opts: { replaceCustom?: boolean; keepRepairable?: boolean } = {}): Promise<PreviewResult> {
   const files = await getProductFiles(productId);
@@ -769,50 +790,71 @@ export async function regenerateAutoPreview(productId: string, opts: { replaceCu
   if (custom && (!opts.replaceCustom || (opts.keepRepairable && previewIssue(custom, firstMain) === "not_isolated"))) {
     return custom.pages_isolated ? "custom" : repairCustomPreview(productId, custom);
   }
-
-  const swapPreviews = async (next: { key: string; bytes: number; pages: number; sourceId: string } | null) => {
-    const old = await sql.begin(async (tx) => {
-      await tx`select 1 from products where id = ${productId} for update`;
-      const removed = await tx<{ storage_key: string }[]>`
-        delete from product_files where product_id = ${productId} and kind = 'preview' and (is_auto_preview or ${opts.replaceCustom === true}) returning storage_key
-      `;
-      if (next) {
-        await tx`
-          insert into product_files (product_id, kind, title, storage_key, original_name, mime_type, size_bytes, page_count, is_auto_preview, check_status, checked_at, source_file_id, pages_isolated)
-          values (${productId}, 'preview', 'معاينة مجانية', ${next.key}, 'preview.pdf', 'application/pdf', ${next.bytes}, ${next.pages}, true, 'ok', now(), ${next.sourceId}, true)
-        `;
-      }
-      return removed;
-    });
-    for (const o of old) await storage().remove("private", o.storage_key).catch(() => {});
-  };
+  const replaceCustom = opts.replaceCustom === true;
 
   if (!p || p.preview_pages <= 0 || !firstMain) {
-    await swapPreviews(null);
+    await swapPreviews(productId, null, replaceCustom);
     return "none";
   }
   let preview: Awaited<ReturnType<typeof extractPreview>>;
   try {
-    preview = await extractPreview(await storage().read("private", firstMain.storage_key), p.preview_pages);
+    preview = await withPreviewCapacity(firstMain.storage_key, firstMain.size_bytes, (bytes) => extractPreview(bytes, p.preview_pages));
   } catch (err) {
     // لم يثبت العزل: لا تُسلَّم معاينة، والملف الرئيسي نفسه ليس معيبًا فلا يُعلَّم
     if (err instanceof PreviewNotIsolatedError) {
       await reportError("preview:not-isolated", err);
       return "not_isolated";
     }
+    // ملف نجح فحصه لا يتلف وحده: تجاوز المهلة الآن سببه الضغط على الخادم، فلا يُعلَّم ويُعامل كالانشغال
+    if (err instanceof StampDeadlineError && firstMain.check_status === "ok") {
+      noteSaturation("stamp_deadline");
+      throw new StampBusyError(STAMP_GATE_DEFAULTS.retryAfterSeconds);
+    }
     if (!(err instanceof PdfUnusableError)) throw err;
     await recordFileCheck(firstMain.id, statusForProblem(err.problem));
-    await swapPreviews(null);
+    await swapPreviews(productId, null, replaceCustom);
     return "unreadable";
   }
   if (!preview) {
-    await swapPreviews(null);
+    await swapPreviews(productId, null, replaceCustom);
     return "too_short";
   }
   const key = `previews/${productId}/${randomUUID()}.pdf`;
   await storage().put("private", key, preview.bytes, "application/pdf");
-  await swapPreviews({ key, bytes: preview.bytes.length, pages: preview.pageCount, sourceId: firstMain.id });
+  await swapPreviews(productId, { key, bytes: preview.bytes.length, pages: preview.pageCount, sourceId: firstMain.id }, replaceCustom);
   return "generated";
+}
+
+/** المعاينة الجديدة (أو لا شيء) مكان التلقائية، ومكان المخصصة أيضًا إن طُلب. في معاملة واحدة على قفل المنتج */
+async function swapPreviews(productId: string, next: { key: string; bytes: number; pages: number; sourceId: string } | null, replaceCustom: boolean) {
+  const old = await sql.begin(async (tx) => {
+    await tx`select 1 from products where id = ${productId} for update`;
+    const removed = await tx<{ storage_key: string }[]>`
+      delete from product_files where product_id = ${productId} and kind = 'preview' and (is_auto_preview or ${replaceCustom}) returning storage_key
+    `;
+    if (next) {
+      await tx`
+        insert into product_files (product_id, kind, title, storage_key, original_name, mime_type, size_bytes, page_count, is_auto_preview, check_status, checked_at, source_file_id, pages_isolated)
+        values (${productId}, 'preview', 'معاينة مجانية', ${next.key}, 'preview.pdf', 'application/pdf', ${next.bytes}, ${next.pages}, true, 'ok', now(), ${next.sourceId}, true)
+      `;
+    }
+    return removed;
+  });
+  for (const o of old) await storage().remove("private", o.storage_key).catch(() => {});
+}
+
+/**
+ * بعد حذف ملف أو تغيير ترتيب الملفات أو عدد صفحات المعاينة: المعاينة التلقائية القائمة لم تعد صحيحة.
+ * إن كانت أماكن الختم مشغولة الآن تُزال بدل أن تبقى من ملف حُذف أو بصفحات أكثر مما اختاره صاحب المحتوى،
+ * ويولّدها من قسم المعاينة بعد قليل (البند R008). التغيير نفسه تم، فلا يُرد خطأ.
+ */
+async function refreshAutoPreview(productId: string): Promise<void> {
+  try {
+    await regenerateAutoPreview(productId);
+  } catch (err) {
+    if (!(err instanceof StampBusyError)) throw err;
+    await swapPreviews(productId, null, false);
+  }
 }
 
 /** نسخ الطلاب المختومة من ملف حُذف: بيانات شخصية لا حاجة لها. الحذف من التخزين بأفضل جهد، وما بقي تكنسه المهمة اليومية */
@@ -838,7 +880,7 @@ export async function deleteProductFile(productId: string, fileId: string, actor
   await dropStampedCopies([fileId]);
   await storage().remove("private", f.storage_key).catch(() => {});
   await audit({ actorId: actor.userId, action: "product.file_delete", entityType: "product", entityId: productId, metadata: { fileId, title: f.title, kind: f.kind } });
-  if (f.kind === "main" || (f.kind === "preview" && !f.is_auto_preview)) await regenerateAutoPreview(productId);
+  if (f.kind === "main" || (f.kind === "preview" && !f.is_auto_preview)) await refreshAutoPreview(productId);
   if (f.kind === "main") await refreshPageCount(productId);
 }
 
@@ -853,7 +895,7 @@ export async function moveProductFile(productId: string, fileId: string, dir: "u
   await sql.begin(async (tx) => {
     for (let i = 0; i < reordered.length; i++) await tx`update product_files set sort_order = ${i} where id = ${reordered[i].id}`;
   });
-  if (idx === 0 || swapWith === 0) await regenerateAutoPreview(productId);
+  if (idx === 0 || swapWith === 0) await refreshAutoPreview(productId);
 }
 
 export async function renameProductFile(productId: string, fileId: string, title: string, actor: Actor) {

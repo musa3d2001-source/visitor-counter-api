@@ -89,3 +89,20 @@ describe("حد الختم", () => {
     await expect(watermarkPdf(await blankPages(STAMP_MAX_PAGES + 1), LINES)).rejects.toMatchObject({ name: "PdfUnusableError", problem: "over_limit" });
   });
 });
+
+/** البند R008: بناء المعاينة يحمل الملف كله ويعيد بناء صفحاته، فله مهلة كما للختم */
+describe("building a preview has a deadline too", () => {
+  it("a preview past its budget stops with StampDeadlineError, not as a broken or unisolated file", async () => {
+    const { extractPreview, rebuildCustomPreview } = await import("@/server/access/pdf");
+    const bytes = await blankPages(300);
+    await expect(extractPreview(bytes, 3, 0)).rejects.toBeInstanceOf(StampDeadlineError);
+    await expect(rebuildCustomPreview(bytes, 0)).rejects.toBeInstanceOf(StampDeadlineError);
+  });
+
+  it("the same file within budget gives its preview", async () => {
+    const { extractPreview, TRIAL_STAMP_BUDGET_MS } = await import("@/server/access/pdf");
+    expect(TRIAL_STAMP_BUDGET_MS).toBe(30_000);
+    const preview = await extractPreview(await blankPages(30), 3, 60_000);
+    expect(preview?.pageCount).toBe(3);
+  });
+});

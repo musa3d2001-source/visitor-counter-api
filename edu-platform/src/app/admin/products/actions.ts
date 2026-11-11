@@ -14,6 +14,7 @@ import { storage } from "@/server/storage";
 import { assertProductAccess, PermissionError, type Actor } from "@/server/auth/permissions";
 import { syncLessonStatus } from "@/server/video/service";
 import { AdminError, bool, int, isUuid, staffAction, str } from "@/server/admin/common";
+import { hitRateLimit } from "@/server/auth/rate-limit";
 import { PREVIEW_POLICY } from "@/lib/preview-policy";
 import { isVideoType } from "@/lib/labels";
 import {
@@ -378,6 +379,9 @@ export async function regeneratePreviewAction(_prev: ActionState, fd: FormData):
     const productId = str(fd, "productId");
     if (!isUuid(productId)) throw new AdminError("طلب غير صالح");
     await assertProductAccess(actor, productId, "edit");
+    // كل توليد يحمل الملف الرئيسي كله في الذاكرة (البند R008): حد لكل حساب، فلا تصير الضغطات المتكررة حملًا على الخادم
+    const limit = await hitRateLimit(`preview-regen:${actor.userId}`, PREVIEW_REGEN_LIMIT.count, PREVIEW_REGEN_LIMIT.windowSeconds);
+    if (!limit.allowed) throw new AdminError("طلبت توليد المعاينة مرات كثيرة. حاول مرة أخرى بعد دقائق.");
     const r = await regenerateAutoPreview(productId, { replaceCustom: str(fd, "dropCustom") === "1" });
     await audit({ actorId: actor.userId, action: "product.preview_regenerate", entityType: "product", entityId: productId, metadata: { result: r } });
     revalidatePath(`/admin/products/${productId}`);
@@ -400,6 +404,9 @@ export async function regeneratePreviewAction(_prev: ActionState, fd: FormData):
     };
   });
 }
+
+/** ١٠ توليدات لكل حساب في ١٠ دقائق: أكثر مما يحتاجه من يصلح معاينة، وأقل من أن يكون حملًا */
+const PREVIEW_REGEN_LIMIT = { count: 10, windowSeconds: 10 * 60 };
 
 export async function removeCoverAction(_prev: ActionState, fd: FormData): Promise<ActionState> {
   return staffAction(async ({ actor }) => {
