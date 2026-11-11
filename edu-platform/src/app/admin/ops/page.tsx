@@ -216,6 +216,14 @@ export default async function OpsPage() {
         </Alert>
       ) : null}
 
+      {config.liveOnFreeStoragePlan ? (
+        <Alert tone="warning" title="الدفع الحقيقي مفعّل وخطة التخزين ما زالت مجانية" data-testid="ops-warning-storage-plan">
+          <p>
+            STORAGE_PLAN على هذا النشر free، فمساحة نسخ الطلاب المختومة {ar(150)} ميجابايت وحد الملف {ar(50)} ميجابايت، فتُختم نسخ كثيرة من جديد عند فتحها. بعد ترقية Supabase إلى Pro اضبط STORAGE_PLAN=paid في بيئة Production على Vercel ثم أعد النشر، كما في خطوة «خطة Supabase Pro» في صفحة الإطلاق.
+          </p>
+        </Alert>
+      ) : null}
+
       {config.unreadableVariables.length ? (
         <Alert tone="warning" title="قيمة متغير لم تُقرأ فسرت القيمة الافتراضية" data-testid="ops-warning-env">
           <p>

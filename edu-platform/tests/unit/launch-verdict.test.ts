@@ -38,6 +38,7 @@ function perfectFacts(): LaunchFacts {
     teachers: { selling: 2, missingShare: 0, missingAgreement: 0, managedSelling: 1 },
     content: { unchecked: 0, flagged: 0, badPreviews: 0 },
     video: { provider: "bunny", allowFileVideo: false, hostingBlocked: false, bunnyKeys: true, bunnyCdnHost: true, paidWithoutStreaming: 0 },
+    storage: { driver: "supabase", plan: "paid", copyBudgetBytes: 60 * 1024 ** 3 },
   };
 }
 
@@ -122,6 +123,51 @@ describe("the database connection capacity step", () => {
     expect(facts).toContain("Micro ١٦٠ (٢٠٠)");
     expect(facts).toContain("القيمة ١ لا تقلل مجموع الاتصالات");
     expect(facts).toContain("DATABASE_PGBOUNCER ليس true");
+  });
+});
+
+/** R028: ترقية Supabase وحدها لا تغير شيئًا في التطبيق ما دام STORAGE_PLAN=free، فلا تُحسب الخطوة منجزة */
+describe("the Supabase Pro step", () => {
+  it("asks for STORAGE_PLAN=paid after the upgrade, and shows the copy space and the transfer quota of this deployment", () => {
+    const { step } = evaluate();
+    expect(MANUAL_VERSIONS.supabase_pro).toBe("2");
+    expect(step("supabase_pro")).toMatchObject({ group: "hosting", kind: "manual", blocking: true, state: "done" });
+    expect(step("supabase_pro").todo).toContain("STORAGE_PLAN=paid في Vercel وأعد النشر");
+    const facts = step("supabase_pro").facts.join(" ");
+    expect(facts).toContain("مساحة النسخ المختومة: ٦٠GB");
+    expect(facts).toContain("حصة النقل");
+    expect(facts).not.toMatch(/[0-9]{2,}/);
+  });
+
+  it("stays open while storage is Supabase on the free plan, even when ticked", () => {
+    const { step, verdict } = evaluate((f) => (f.storage = { driver: "supabase", plan: "free", copyBudgetBytes: 150 * 1024 ** 2 }));
+    expect(step("supabase_pro").state).toBe("open");
+    expect(step("supabase_pro").facts[0]).toContain("STORAGE_PLAN ما زال free");
+    expect(step("supabase_pro").facts.join(" ")).toContain("١٥٠MB");
+    expect(verdict.ready).toBe(false);
+    expect(verdict.blockingOpen.map((s) => s.key)).toEqual(["supabase_pro"]);
+  });
+
+  it("is open, not done, when nobody ticked it, and says why when the plan is free", () => {
+    const ticks = allTicked();
+    delete ticks.supabase_pro;
+    const { step } = evaluate((f) => (f.storage = { driver: "supabase", plan: "free", copyBudgetBytes: 150 * 1024 ** 2 }), ticks);
+    expect(step("supabase_pro").state).toBe("open");
+    expect(step("supabase_pro").facts[0]).toContain("STORAGE_PLAN ما زال free");
+  });
+
+  it("follows the tick alone when files are not stored in Supabase", () => {
+    const { step } = evaluate((f) => (f.storage = { driver: "local", plan: "free", copyBudgetBytes: 150 * 1024 ** 2 }));
+    expect(step("supabase_pro").state).toBe("done");
+    expect(step("supabase_pro").facts.join(" ")).not.toContain("STORAGE_PLAN ما زال free");
+  });
+
+  it("goes back to open when it was ticked for the earlier text of the step", () => {
+    const ticks = allTicked();
+    ticks.supabase_pro = { ...ticks.supabase_pro!, version: "1" };
+    const { step } = evaluate(() => {}, ticks);
+    expect(step("supabase_pro").state).toBe("open");
+    expect(step("supabase_pro").manual?.stale).toBe(true);
   });
 });
 

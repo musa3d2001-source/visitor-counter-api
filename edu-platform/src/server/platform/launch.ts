@@ -1,6 +1,7 @@
 import "server-only";
 import { CONSENT_VERSIONS } from "@/lib/consent";
 import { MANUAL_VERSIONS, REQUIRED_MIGRATIONS, launchSteps, launchVerdict, type LaunchFacts, type LaunchStep, type LaunchTick, type LaunchTicks, type LaunchVerdict, type ManualKey, type SellerField } from "@/lib/launch";
+import { stampedCopyBudgetBytes } from "../access/copy-store";
 import { contentHealthCounts } from "../admin/content-health";
 import { unsellableProductIds } from "../commerce/cart";
 import { sql } from "../db";
@@ -216,6 +217,7 @@ export async function launchFacts(): Promise<LaunchFacts> {
       bunnyCdnHost: filled(e.BUNNY_STREAM_CDN_HOSTNAME),
       paidWithoutStreaming,
     },
+    storage: { driver: e.STORAGE_DRIVER, plan: e.STORAGE_PLAN, copyBudgetBytes: stampedCopyBudgetBytes() },
   };
 }
 

@@ -8,7 +8,8 @@ import { paymentsConfig } from "@/server/payments/service";
 import { webhookDeliveryStatus } from "@/server/payments/monitoring";
 import { bunnyConfigured } from "@/server/video/bunny";
 import { videoHostingBlocked } from "@/server/video/policy";
-import { count } from "@/lib/design";
+import { ar, count } from "@/lib/design";
+import { stampedCopyBudgetBytes } from "@/server/access/copy-store";
 import { WEBHOOK_REJECTION_LABELS } from "@/lib/labels";
 import { filsToKwdString } from "@/lib/money";
 import { formatDateTime } from "@/lib/utils";
@@ -60,6 +61,11 @@ export default async function SettingsPage() {
   const webhookUrl = `${e.APP_URL.replace(/\/$/, "")}/api/payments/myfatoorah/webhook`;
   const callbackUrl = `${e.APP_URL.replace(/\/$/, "")}/payment/return`;
   const modeLabel = { disabled: "معطّل", sandbox: "بيئة اختبار (Sandbox)", live: "إنتاج (Live)" }[e.PAYMENTS_MODE];
+  // مساحة النسخ المختومة (F24): على Supabase بالخطة المجانية تتسع لنسخ قليلة، فتُحذف الأقدم ويُعاد ختمها عند فتحها
+  const copyBudget = stampedCopyBudgetBytes();
+  const copySpaceOk = e.STORAGE_DRIVER !== "supabase" || e.STORAGE_PLAN === "paid" || e.STAMPED_COPY_BUDGET_GB > 0;
+  const copySpaceSize = copyBudget >= 1024 ** 3 ? `${ar(Math.round(copyBudget / 1024 ** 3))} جيجابايت` : `${ar(Math.round(copyBudget / 1024 ** 2))} ميجابايت`;
+  const copySpaceText = e.STAMPED_COPY_BUDGET_GB > 0 ? `${copySpaceSize} (STAMPED_COPY_BUDGET_GB)` : copySpaceOk ? copySpaceSize : `${copySpaceSize} فقط، حتى STORAGE_PLAN=paid`;
 
   return (
     <div className="space-y-6">
@@ -173,6 +179,7 @@ export default async function SettingsPage() {
               <Row label="مزود التخزين" ok text={e.STORAGE_DRIVER === "supabase" ? "Supabase Storage" : "تخزين محلي"} />
               <Row label="حد ملف PDF" ok={storageCap.source !== "free_plan"} text={uploadLimitLabel("pdf")} />
               <Row label="حد ملف الفيديو المخزن" ok={storageCap.source !== "free_plan"} text={uploadLimitLabel("video")} />
+              <Row label="مساحة نسخ الطلاب المختومة" ok={copySpaceOk} text={copySpaceText} />
               <Row label="البريد" ok={e.MAIL_DRIVER === "smtp"} text={e.MAIL_DRIVER === "smtp" ? "SMTP" : "سجل داخلي، لا يصل لأحد"} />
             </ul>
           </Section>

@@ -26,7 +26,7 @@ const LEGAL_VERSION = Object.entries({ ...CONSENT_VERSIONS, ...LEGAL_PAGE_VERSIO
  */
 export const MANUAL_VERSIONS = {
   vercel_pro: "1",
-  supabase_pro: "1",
+  supabase_pro: "2",
   db_pool_capacity: "1",
   restore_drill: "1",
   uptime_monitor: "1",
@@ -130,6 +130,8 @@ export type LaunchFacts = {
   teachers: { selling: number; missingShare: number; missingAgreement: number; managedSelling: number } | null;
   content: { unchecked: number; flagged: number; badPreviews: number } | null;
   video: { provider: "file" | "bunny"; allowFileVideo: boolean; hostingBlocked: boolean; bunnyKeys: boolean; bunnyCdnHost: boolean; paidWithoutStreaming: number | null };
+  /** STORAGE_DRIVER و STORAGE_PLAN على هذا النشر، ومساحة نسخ الطلاب المختومة الناتجة عنهما (أو عن STAMPED_COPY_BUDGET_GB) */
+  storage: { driver: "local" | "supabase"; plan: "free" | "paid"; copyBudgetBytes: number };
 };
 
 export type LaunchTick = { done: boolean; version: string; changedAt: Date; changedBy: string | null };
@@ -271,6 +273,28 @@ function manualStep(
   };
 }
 
+const storageSize = (bytes: number) => (bytes >= 1024 ** 3 ? `${ar(Math.round(bytes / 1024 ** 3))}GB` : `${ar(Math.round(bytes / 1024 ** 2))}MB`);
+
+/**
+ * خطة Supabase Pro (البند R028): الترقية وحدها لا تكفي، فالتطبيق يقرأ الخطة من STORAGE_PLAN. ما دام التخزين Supabase
+ * والقيمة free تبقى الخطوة مفتوحة ولو أُشّر عليها: مساحة نسخ الطلاب المختومة 150MB وحد الملف 50MB.
+ */
+function supabaseProStep(f: LaunchFacts, ticks: LaunchTicks): Built {
+  const step = manualStep("supabase_pro", ticks, {
+    title: "خطة Supabase Pro",
+    todo: `رقِّ مؤسسة Supabase إلى خطة Pro، لأن الخطة المجانية بلا نسخ احتياطية يومية، وPro تحفظ نسخ آخر ٧ أيام. ثم اضبط STORAGE_PLAN=paid في Vercel وأعد النشر، وإلا بقيت مساحة نسخ الطلاب المختومة ${ar(150)}MB وحد الملف ${ar(50)}MB.`,
+    where: { label: "Supabase ← Organization ← Billing، و STORAGE_PLAN في Vercel ← Settings ← Environment Variables" },
+    facts: [
+      `التخزين على هذا النشر: ${f.storage.driver === "supabase" ? "Supabase" : "محلي"}، والخطة حسب STORAGE_PLAN: ${f.storage.plan === "paid" ? "مدفوعة" : "مجانية"}، ومساحة النسخ المختومة: ${storageSize(f.storage.copyBudgetBytes)}.`,
+      `كل مذكرة يفتحها طالب يحمّلها متصفحه من Supabase مباشرة، فتُحسب على حصة النقل في خطتك (Pro يشمل ${ar(250)}GB في الشهر).`,
+    ],
+  });
+  if (f.storage.driver !== "supabase" || f.storage.plan !== "free" || step.state === "na") return step;
+  // الترقية دون STORAGE_PLAN=paid لا تغير شيئًا في التطبيق: لا تُحسب الخطوة منجزة ولو أُشّر عليها
+  const facts = ["STORAGE_PLAN ما زال free على هذا النشر: اضبطه paid بعد الترقية وأعد النشر.", ...step.facts];
+  return { ...step, state: step.state === "done" ? "open" : step.state, facts };
+}
+
 // ---------------------------------------------------------------------------
 // المجموعات
 // ---------------------------------------------------------------------------
@@ -284,11 +308,7 @@ function hostingSteps(f: LaunchFacts, ticks: LaunchTicks): Built[] {
       todo: "رقِّ فريق Vercel إلى خطة Pro، لأن خطة Hobby للاستخدام الشخصي غير التجاري فقط ولا تشغّل الوظائف المجدولة إلا مرة في اليوم.",
       where: { label: "Vercel ← Settings ← Billing" },
     }),
-    manualStep("supabase_pro", ticks, {
-      title: "خطة Supabase Pro",
-      todo: "رقِّ مؤسسة Supabase إلى خطة Pro، لأن الخطة المجانية بلا نسخ احتياطية يومية، وPro تحفظ نسخ آخر ٧ أيام.",
-      where: { label: "Supabase ← Organization ← Billing" },
-    }),
+    supabaseProStep(f, ticks),
   );
 
   // النظام لا يرى حجم حوسبة Supabase ولا عدد نسخ Vercel في الذروة: خطوة يدوية تعرض الحساب بقيمة هذا النشر

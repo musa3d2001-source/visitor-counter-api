@@ -10,6 +10,7 @@ import { closeExpiredOrders } from "@/server/payments/reconcile";
 import { resetErrorReporterForTests } from "@/server/platform/report-error";
 import { JOB_STALE_AFTER_HOURS, jobStatusOf, listJobHeartbeats, reconcileCadence, resetOpsWatchdogForTests, runOpsWatchdog, runOpsWatchdogAfterResponse, runScheduledJob, SCHEDULED_JOBS, serveCron } from "@/server/platform/scheduled-jobs";
 import { opsConfig, opsSummary } from "@/server/platform/ops-status";
+import * as paymentsService from "@/server/payments/service";
 import { closeDb, resetDb, sql } from "../helpers/db";
 import { makeStale, newOrder, orderRow } from "../helpers/payment-flow";
 
@@ -290,6 +291,34 @@ describe("the status the owner sees", () => {
     const summary = await opsSummary();
     expect(summary.cronConfigured).toBe(false);
     expect(summary.alertEmailConfigured).toBe(false);
+  });
+
+  // البند R028: الترقية دون STORAGE_PLAN=paid لا تغير شيئًا في التطبيق، فيُقال ذلك للمالك ما دام الدفع الحقيقي مفعّلًا
+  it("warns when live payments run with Supabase storage still on STORAGE_PLAN=free, and only then", () => {
+    const live = { enabled: true, environment: "live", baseUrl: "https://api.myfatoorah.com", apiKey: "k", webhookSecret: "w", simulator: false } as const;
+    const spy = vi.spyOn(paymentsService, "paymentsConfig").mockReturnValue(live);
+    const saved = { STORAGE_DRIVER: process.env.STORAGE_DRIVER, STORAGE_PLAN: process.env.STORAGE_PLAN, SUPABASE_URL: process.env.SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY: process.env.SUPABASE_SERVICE_ROLE_KEY };
+    const set = (patch: Record<string, string>) => {
+      Object.assign(process.env, patch);
+      resetEnvCache();
+    };
+    try {
+      set({ STORAGE_DRIVER: "supabase", STORAGE_PLAN: "free", SUPABASE_URL: "https://example.supabase.co", SUPABASE_SERVICE_ROLE_KEY: "service-role-placeholder" });
+      expect(opsConfig().liveOnFreeStoragePlan).toBe(true);
+      set({ STORAGE_PLAN: "paid" });
+      expect(opsConfig().liveOnFreeStoragePlan).toBe(false);
+      set({ STORAGE_DRIVER: "local", STORAGE_PLAN: "free" });
+      expect(opsConfig().liveOnFreeStoragePlan).toBe(false);
+      set({ STORAGE_DRIVER: "supabase" });
+      spy.mockReturnValue({ ...live, environment: "sandbox" });
+      expect(opsConfig().liveOnFreeStoragePlan).toBe(false);
+    } finally {
+      for (const [k, v] of Object.entries(saved)) {
+        if (v === undefined) delete process.env[k];
+        else process.env[k] = v;
+      }
+      resetEnvCache();
+    }
   });
 
   it("a secret too short to work is reported as not configured", () => {

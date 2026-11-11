@@ -19,6 +19,11 @@ export type OpsConfig = {
   mailIsReal: boolean;
   /** الدفع الحقيقي مفعّل وجدول التسوية ما زال يوميًا: الدفعة التي ضاع إشعارها تنتظر يومًا كاملًا */
   liveWithDailyReconcile: boolean;
+  /**
+   * الدفع الحقيقي مفعّل والتخزين Supabase و STORAGE_PLAN ما زال free (البند R028): مساحة نسخ الطلاب المختومة 150MB
+   * وحد الملف 50MB، ولو رُقّيت خطة Supabase، فتُختم النسخ من جديد كثيرًا ليلة الامتحان
+   */
+  liveOnFreeStoragePlan: boolean;
   /** متغيرات اختيارية بقيمة لا تُقرأ، تعمل بقيمتها الافتراضية. الأسماء وحدها */
   unreadableVariables: string[];
 };
@@ -31,6 +36,7 @@ export function opsConfig(): OpsConfig {
     alertEmailConfigured: opsAlertEmail() !== null,
     mailIsReal: e.MAIL_DRIVER === "smtp",
     liveWithDailyReconcile: cfg.enabled && cfg.environment === "live" && reconcileCadence() === "daily",
+    liveOnFreeStoragePlan: cfg.enabled && cfg.environment === "live" && e.STORAGE_DRIVER === "supabase" && e.STORAGE_PLAN === "free",
     unreadableVariables: configWarnings(),
   };
 }
