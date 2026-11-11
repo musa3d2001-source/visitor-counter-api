@@ -1,0 +1,7 @@
+schema_version: "1.1"
+name: plan-only-migration
+expected_outcome: |
+  Plan mode. The orchestrator writes .harness/TASK.md with work items, routes
+  every item with route.py, and shows a plan table (item, kind, route, why).
+  The migration item routes to worker-fable; a read-only discovery item routes
+  to worker-haiku. No subagent is dispatched and no source file changes.

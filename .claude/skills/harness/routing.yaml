@@ -1,0 +1,85 @@
+# Routing contract for the harness skill.
+#
+# A model setting says what the session runs on. This contract says which
+# signals pick the model for each step. scripts/route.py reads it; nothing
+# else decides. Edit it when the ledger shows a rule is wrong.
+#
+# Format: a small YAML subset (maps, `- item` lists, [a, b] lists, # comments).
+# Rule strings must not contain a colon followed by a space.
+
+routing:
+  default: opus @ medium          # when unsure, start on Opus at medium
+
+  # First match wins, top to bottom. A rule matches when the work item states
+  # (or the router infers) one of its kinds. `if scoped` rules also need the
+  # scoped test below to pass. Asset signals add kinds on their own:
+  # images -> "images", computer use -> "computer use", more repos than
+  # scoped.max_repos -> "multi-PR feature".
+  rules:
+    - classify | tag | extract            -> haiku  @ medium
+    - search | read logs | summarize      -> haiku  @ medium   # always as a subagent
+    - images | computer use               -> opus   @ medium
+    - migration | architecture            -> fable  @ medium
+    - deep research | quant analysis      -> fable  @ medium
+    - multi-PR feature | debugging        -> opus   @ medium
+    - scoped fix | spec-driven feature    -> sonnet @ medium   if scoped
+    - everyday docs | repeated tasks      -> sonnet @ medium
+
+  # "Scoped" = the item states `spec: clear`, and every count it states stays
+  # within these limits. A missing spec is not a clear spec. A scoped item
+  # with no stated kind is treated as a "scoped fix".
+  scoped:
+    max_files: 5
+    max_repos: 1
+    max_source_tokens: 100000     # above this the assets count as large
+
+  escalation:
+    max_cycles: 3                 # three failed cycles -> the item is blocked
+    order: [verify, effort, model]
+    max_effort: high              # raise effort one level at a time, up to high
+    restart_effort: medium        # a model step starts the next model lower
+
+  guards:
+    code_edits: never on haiku    # an item that edits code skips haiku rules
+
+  ladder: [haiku, sonnet, opus, fable]   # escalation climbs one rung at a time
+
+  agents:                         # per-tier subagents in .claude/agents/
+    haiku: worker-haiku
+    sonnet: worker-sonnet
+    opus: worker-opus
+    fable: worker-fable
+  validator: validator @ medium   # read-only checker (.claude/agents/validator.md)
+
+  # USD per million tokens - input / output / cache read. Claude API list
+  # prices. Cache writes cost input x 1.25 (5-minute) or x 2 (1-hour).
+  # Haiku's cache-read price is assumed at 0.1x input; check your price sheet.
+  prices:
+    haiku: 0.10 / 0.50 / 0.01
+    sonnet: 2 / 10 / 0.10
+    opus: 4 / 20 / 0.20
+    fable: 8 / 40 / 0.20
+  long_context:                   # prompts above N tokens bill at these prices
+    haiku: 100000 -> 0.50 / 2.50 / 0.05
+
+  # Words in a request that state a kind. Used only when a work item does not
+  # state its kind. Each kind also matches its own name.
+  keywords:
+    classify: classify, categorize, categorise, label, triage
+    tag: tag, tags, tagging
+    extract: extract, pull out, parse out, scrape
+    search: search, find, locate, where is, where are, grep, list all, recall
+    read logs: logs, log file, log output, stack trace, traceback, test output
+    summarize: summarize, summarise, summary, tl;dr, digest, recap
+    scoped fix: fix, rename, typo, bump, tweak, small change, one-line
+    spec-driven feature: implement, add endpoint, add a flag, add support, per the spec, acceptance criteria
+    everyday docs: docs, readme, docstring, changelog, comment, documentation
+    repeated tasks: every file, each file, across all, bulk, repeat, boilerplate
+    multi-PR feature: multi-PR, several PRs, multiple PRs, across repos, several repos, cross-repo
+    debugging: debug, bug, crash, flaky, regression, root cause, failing, broken, why does
+    images: screenshot, image, mockup, diagram, photo
+    computer use: computer use, click through, browser, ui automation, desktop app
+    migration: migrate, migration, port to, upgrade from, move from, convert to
+    architecture: architecture, architect, redesign, system design, rearchitect
+    deep research: research, investigate, compare options, literature, survey
+    quant analysis: quant, quantitative, statistics, statistical, regression analysis, forecast, backtest
