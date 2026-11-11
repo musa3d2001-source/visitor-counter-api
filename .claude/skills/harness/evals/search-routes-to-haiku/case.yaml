@@ -1,0 +1,8 @@
+schema_version: "1.1"
+name: search-routes-to-haiku
+expected_outcome: |
+  A read-only search request. The orchestrator writes .harness/TASK.md with a
+  search item marked edits_code no, routes it with route.py to worker-haiku at
+  medium, dispatches worker-haiku without a model override, checks the result
+  itself (validator none), logs the cycle with ledger.py, and reports the
+  server.js lines (process.env.PORT and the ./db.json path) with a ledger table.

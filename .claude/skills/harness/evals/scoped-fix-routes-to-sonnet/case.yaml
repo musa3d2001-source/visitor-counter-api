@@ -1,0 +1,8 @@
+schema_version: "1.1"
+name: scoped-fix-routes-to-sonnet
+expected_outcome: |
+  A small, clearly specified code change. TASK.md has acceptance criteria with
+  runnable checks; the code-editing item states spec clear and edits_code yes
+  and routes to worker-sonnet (never worker-haiku); the validator subagent
+  checks it; ledger.py logs worker and validator cost; server.js gains a
+  /reset route that writes visits 0; the report shows the ledger table.
