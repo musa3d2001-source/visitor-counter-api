@@ -557,6 +557,115 @@ describe("the lesson page's access read", () => {
     expect(withSet.statements).toHaveLength(1);
     expect(withoutSet.statements).toHaveLength(2);
   });
+
+  it("brings the viewer's progress in the same statement, newest first, for this product's lessons only (R019)", async () => {
+    const { readWatchContext } = await import("@/server/access/lessons");
+    const user = await createUser();
+    const a = await createVideoProduct({ lessons: 2 });
+    const b = await createVideoProduct({ lessons: 1 });
+    const course = await createContainer({ type: "video_course", items: [a.id, b.id] });
+    const elsewhere = await createVideoProduct({ lessons: 1 });
+    const watched = (lessonId: string, secondsAgo: number, position: number, completed = false) =>
+      sql`insert into lesson_progress (user_id, lesson_id, position_seconds, completed, updated_at) values (${user.id}, ${lessonId}, ${position}, ${completed}, now() - make_interval(secs => ${secondsAgo}::int))`;
+    await watched(a.lessonIds[0], 30, 10);
+    await watched(b.lessonIds[0], 5, 20, true);
+    await watched(elsewhere.lessonIds[0], 1, 30);
+    const viewer = { id: user.id, role: user.role };
+
+    const { out, statements } = await statementsOf(() => readWatchContext(course.id, viewer));
+    expect(statements).toHaveLength(1);
+    expect(out!.progress).toEqual([
+      { lesson_id: b.lessonIds[0], position_seconds: 20, completed: true },
+      { lesson_id: a.lessonIds[0], position_seconds: 10, completed: false },
+    ]);
+    // الأمر المنفصل الذي حلّ محله، على دروس القائمة نفسها
+    const replaced = await sql<{ lesson_id: string; position_seconds: number; completed: boolean }[]>`
+      select lesson_id, position_seconds, completed from lesson_progress
+      where user_id = ${user.id} and lesson_id = any(${[...a.lessonIds, ...b.lessonIds]}::uuid[]) order by updated_at desc
+    `;
+    expect(out!.progress).toEqual(replaced.map((r) => ({ ...r })));
+    expect((await readWatchContext(a.id, viewer))!.progress.map((p) => p.lesson_id)).toEqual([a.lessonIds[0]]);
+    const stranger = await createUser();
+    expect((await readWatchContext(course.id, { id: stranger.id, role: stranger.role }))!.progress).toEqual([]);
+    expect((await readWatchContext(course.id, null))!.progress).toEqual([]);
+  });
+
+  it("an owner's free lesson is decided from what the request already read: no settings, no closure (R019)", async () => {
+    const { checkLessonAccess } = await import("@/server/access/lessons");
+    await videosOff();
+    const user = await createUser();
+    const video = await createVideoProduct({ lessons: 2, freePreviewIndex: 0 });
+    await grantProduct(sql, { userId: user.id, productId: video.id, source: "manual", grantedBy: null, reason: "t" });
+    const viewer = { id: user.id, role: user.role };
+    const withSet = await statementsOf(() => checkLessonAccess(video.lessonIds[0], viewer, { ownedProductIds: new Set([video.id]) }));
+    const withoutSet = await statementsOf(() => checkLessonAccess(video.lessonIds[0], viewer));
+    expect(withSet.out).toMatchObject({ ok: true, via: "owned" });
+    expect(withoutSet.out).toMatchObject({ ok: true, via: "owned" });
+    expect(withSet.statements).toHaveLength(1);
+    expect(withoutSet.statements).toHaveLength(4);
+    // الإغلاق لا يفتح لغير المالك ما أغلقه المالك
+    expect(await checkLessonAccess(video.lessonIds[0], viewer, { ownedProductIds: new Set() })).toEqual({ ok: false, reason: "forbidden" });
+  });
+
+  it("the page's one closure read answers every lesson check, and agrees with a fresh check for every viewer (R019)", async () => {
+    const { checkLessonAccess, readClosedVideo, readWatchContext } = await import("@/server/access/lessons");
+    const owner = await createUser();
+    const stranger = await createUser();
+    const a = await createVideoProduct({ lessons: 2, freePreviewIndex: 0 });
+    const b = await createVideoProduct({ lessons: 2, freePreviewIndex: 0 });
+    const course = await createContainer({ type: "video_course", items: [a.id, b.id] });
+    await grantProduct(sql, { userId: owner.id, productId: a.id, source: "manual", grantedBy: null, reason: "t" });
+    const lessonIds = [...a.lessonIds, ...b.lessonIds];
+    const viewers = [null, { id: stranger.id, role: stranger.role }, { id: owner.id, role: owner.role }];
+
+    for (const closed of [false, true]) {
+      if (closed) await videosOff();
+      for (const viewer of viewers) {
+        const ctx = (await readWatchContext(course.id, viewer))!;
+        const read = await statementsOf(async () => {
+          const closure = readClosedVideo([course.id, a.id, b.id]);
+          await closure.ids;
+          return closure;
+        });
+        expect(read.statements.length, "settings, then one closure statement when anything can be closed").toBe(closed ? 2 : 1);
+        const known = { ownedProductIds: ctx.owned, closed: read.out };
+        for (const id of lessonIds) {
+          const fast = await statementsOf(() => checkLessonAccess(id, viewer, known));
+          const fresh = await checkLessonAccess(id, viewer);
+          expect(fast.statements, `${closed} ${viewer?.id} ${id}`).toHaveLength(1);
+          expect({ ok: fast.out.ok, reason: fast.out.ok ? null : fast.out.reason }).toEqual({ ok: fresh.ok, reason: fresh.ok ? null : fresh.reason });
+        }
+      }
+    }
+    // المغلق لا يُفتح مجانًا لمن لا يملكه، ومن يملكه يكمل
+    const ownerCtx = (await readWatchContext(course.id, { id: owner.id, role: owner.role }))!;
+    const known = { ownedProductIds: ownerCtx.owned, closed: readClosedVideo([course.id, a.id, b.id]) };
+    expect(await checkLessonAccess(a.lessonIds[1], { id: owner.id, role: owner.role }, known)).toMatchObject({ ok: true, via: "owned" });
+    expect(await checkLessonAccess(b.lessonIds[0], { id: owner.id, role: owner.role }, known)).toEqual({ ok: false, reason: "forbidden" });
+    expect(await checkLessonAccess(b.lessonIds[0], null, { ownedProductIds: new Set(), closed: known.closed })).toEqual({ ok: false, reason: "unauthenticated" });
+  });
+
+  it("a product the page's closure read did not cover is checked fresh, never assumed open (R019)", async () => {
+    const { checkLessonAccess, readClosedVideo } = await import("@/server/access/lessons");
+    await videosOff();
+    const video = await createVideoProduct({ lessons: 1, freePreviewIndex: 0 });
+    const other = await createVideoProduct({ lessons: 1 });
+    const closure = readClosedVideo([other.id]);
+    expect([...(await closure.ids)]).toEqual([other.id]);
+    const { out, statements } = await statementsOf(() => checkLessonAccess(video.lessonIds[0], null, { ownedProductIds: new Set(), closed: closure }));
+    expect(out).toEqual({ ok: false, reason: "unauthenticated" });
+    expect(statements).toHaveLength(3);
+  });
+
+  it("the watch page reads nothing of its own: every read goes through the functions whose budgets are tested here (R019)", () => {
+    const page = readFileSync(resolve(__dirname, "../../src/app/(reader)/watch/[productId]/page.tsx"), "utf8");
+    expect(page).not.toMatch(/@\/server\/db|closedVideoProductIds|getSettings|lesson_progress|hasProductAccess/);
+    expect(page.match(/readWatchContext\(/g)).toHaveLength(1);
+    expect(page.match(/readClosedVideo\(/g)).toHaveLength(1);
+    const checks = [...page.matchAll(/checkLessonAccess\(([^)]*)\)/g)].map((m) => m[1]);
+    expect(checks.length).toBeGreaterThan(0);
+    for (const args of checks) expect(args).toMatch(/,\s*known$/);
+  });
 });
 
 describe("best sellers on the grade page (R030)", () => {

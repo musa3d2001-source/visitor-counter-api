@@ -5,13 +5,10 @@ import { headers } from "next/headers";
 import { after } from "next/server";
 import { ArrowRight, ChevronLeft, ChevronRight, Clock, FileText, Keyboard, ListVideo, LogIn, ShoppingCart, Sparkles, UserRound } from "lucide-react";
 import { getCurrentUser } from "@/server/auth/session";
-import { checkLessonAccess, playbackFor, readWatchContext } from "@/server/access/lessons";
+import { checkLessonAccess, playbackFor, readClosedVideo, readWatchContext } from "@/server/access/lessons";
 import * as live from "@/server/catalog/queries";
 import type { LessonInfo } from "@/server/catalog/queries";
 import * as cached from "@/server/catalog/public-data";
-import { getSettings } from "@/server/platform/settings";
-import { sql } from "@/server/db";
-import { closedVideoProductIds } from "@/server/video/policy";
 import { LessonPlayer } from "@/components/reader/lesson-player";
 import { LessonsPanel } from "@/components/reader/lessons-panel";
 import { TeacherAvatar } from "@/components/site/teacher-avatar";
@@ -59,19 +56,17 @@ export default async function WatchPage({ params, searchParams }: { params: Prom
   const files = productFiles.filter((f) => f.kind === "main");
 
   // الإغلاق يوقف البيع والمعاينات فقط: من يملك درسًا يكمله، والمالك والمعلم يراجعان المحتوى. من يملك كل الدروس لا يتأثر فلا داعي لفحصه
+  // الإغلاق يُسأل عنه مرة واحدة للمنتج ولكل منتج تأتي منه دروس القائمة، وفحص الدرس يقرأ الجواب نفسه (R019)
   const ownsEveryLesson = lessons.length > 0 && lessons.every((l) => owned.has(l.productId));
-  const closedCheck = staff || ownsEveryLesson ? Promise.resolve(false) : getSettings().then((settings) => closedVideoProductIds(sql, [product.id], settings)).then((ids) => ids.has(product.id));
-  const progressRead = user && lessons.length
-    ? sql<{ lesson_id: string; position_seconds: number; completed: boolean; updated_at: Date }[]>`
-        select lesson_id, position_seconds, completed, updated_at from lesson_progress
-        where user_id = ${user.id} and lesson_id = any(${lessons.map((l) => l.id)}::uuid[])
-        order by updated_at desc
-      `
-    : Promise.resolve([]);
-  // عند تغيير الدرس يكون معروفًا من الرابط، ففحصه يجري مع القراءتين لا بعدهما
+  const closure = staff || ownsEveryLesson ? undefined : readClosedVideo([product.id, ...lessons.map((l) => l.productId)]);
+  const known = { ownedProductIds: owned, closed: closure };
+  // التقدم جاء مع قراءة الوصول نفسها، ويبقى منه ما في القائمة فقط، الأحدث أولًا
+  const listed = new Set(lessons.map((l) => l.id));
+  const progress = context.progress.filter((p) => listed.has(p.lesson_id));
+  // عند تغيير الدرس يكون معروفًا من الرابط، ففحصه يجري مع قراءة الإغلاق لا بعدها
   const requested = lessons.find((l) => l.id === sp.lesson) ?? null;
-  const knownOwnership = { ownedProductIds: owned };
-  const [videoClosed, progress, requestedAccess] = await Promise.all([closedCheck, progressRead, requested ? checkLessonAccess(requested.id, user, knownOwnership) : Promise.resolve(null)]);
+  const [closedIds, requestedAccess] = await Promise.all([closure ? closure.ids : Promise.resolve(null), requested ? checkLessonAccess(requested.id, user, known) : Promise.resolve(null)]);
+  const videoClosed = closedIds?.has(product.id) ?? false;
   const freeOpen = (l: LessonInfo) => l.isFreePreview && !videoClosed;
   const canOpen = (l: LessonInfo) => staff || owned.has(l.productId) || freeOpen(l);
   const progressBy = new Map(progress.map((p) => [p.lesson_id, p]));
@@ -81,7 +76,7 @@ export default async function WatchPage({ params, searchParams }: { params: Prom
   if (!selected && progress.length) selected = lessons.find((l) => l.id === progress[0].lesson_id && canOpen(l)) ?? null;
   if (!selected) selected = lessons.find(canOpen) ?? lessons[0] ?? null;
 
-  const access = selected ? (selected === requested ? requestedAccess : await checkLessonAccess(selected.id, user, knownOwnership)) : null;
+  const access = selected ? (selected === requested ? requestedAccess : await checkLessonAccess(selected.id, user, known)) : null;
   const idx = selected ? lessons.findIndex((l) => l.id === selected!.id) : -1;
   const next = idx >= 0 ? lessons.slice(idx + 1).find(canOpen) ?? null : null;
   const prev = idx > 0 ? [...lessons.slice(0, idx)].reverse().find(canOpen) ?? null : null;
