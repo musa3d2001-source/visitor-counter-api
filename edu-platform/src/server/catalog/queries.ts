@@ -319,19 +319,40 @@ export async function listProducts(opts: {
   return rows.map(toCard);
 }
 
-/** الأكثر طلبًا — من بيانات مبيعات حقيقية فقط (طلبات مدفوعة غير تجريبية) */
-export async function bestSellers(opts: { gradeId?: string; limit?: number; closed?: VideoCloseFlags }): Promise<ProductCard[]> {
+/**
+ * نافذة «الأكثر طلبًا» بالأيام: ما بيع في آخر أربعة أشهر تقريبًا (فصل دراسي). تحدّ كلفة الاستعلام فلا تكبر مع كل بيع
+ * طوال عمر الموقع، وتجعل الرف يعكس الفصل الحالي (البند R030). النص المرئي في صفحة الصف يقول ذلك.
+ */
+export const BEST_SELLER_WINDOW_DAYS = 120;
+
+/**
+ * الأكثر طلبًا — من بيانات مبيعات حقيقية فقط (طلبات مدفوعة غير تجريبية داخل النافذة).
+ * الترتيب وحده يمر بالطلبات: عدد لكل منتج، بلا مستخدم ولا مبلغ ولا كوبون. المرشحون الأوائل يُختارون قبل الإحصاءات الثقيلة،
+ * فتُحسب videoStats لعدد ثابت من المنتجات لا لكل ما بيع في الصف.
+ * صفحة الصف تقرؤه من الذاكرة العامة (catalog/public-data.ts، استثناء F2 الموثق في handoff: ترتيب مجمّع لا يقرر وصولًا ولا مالًا).
+ */
+export async function bestSellers(opts: { gradeId?: string; limit?: number; closed?: VideoCloseFlags; windowDays?: number }): Promise<ProductCard[]> {
   const closed = opts.closed ?? (await currentCloseFlags());
+  const limit = opts.limit ?? 8;
   const rows = await sql<(ProductRow & { sold: number })[]>`
-    select ${cardColumns()}, sales.sold
-    from (
+    with sales as (
       select oi.product_id, count(*)::int as sold
-      from order_items oi join orders o on o.id = oi.order_id
+      from orders o join order_items oi on oi.order_id = o.id
       ${opts.gradeId ? sql`join products sp on sp.id = oi.product_id and sp.grade_id = ${opts.gradeId}` : sql``}
       where o.status = 'paid' and not o.is_test
+        and o.paid_at > now() - make_interval(days => ${opts.windowDays ?? BEST_SELLER_WINDOW_DAYS})
       group by oi.product_id
-    ) sales
-    join products p on p.id = sales.product_id
+    ),
+    candidates as materialized (
+      select sales.product_id, sales.sold
+      from sales
+      join products cp on cp.id = sales.product_id and cp.status = 'published'
+      order by sales.sold desc, cp.sort_order
+      limit ${Math.max(limit * 4, 24)}
+    )
+    select ${cardColumns()}, candidates.sold
+    from candidates
+    join products p on p.id = candidates.product_id
     ${videoStats()}
     join grades g on g.id = p.grade_id and g.is_published
     join stages st on st.id = g.stage_id and st.is_published
@@ -339,8 +360,8 @@ export async function bestSellers(opts: { gradeId?: string; limit?: number; clos
     where p.status = 'published' and (p.subject_id is null or s.is_published)
       ${opts.gradeId ? sql`and p.grade_id = ${opts.gradeId}` : sql``}
       ${hideClosedVideo(closed)}
-    order by sales.sold desc, p.sort_order
-    limit ${opts.limit ?? 8}
+    order by candidates.sold desc, p.sort_order
+    limit ${limit}
   `;
   return rows.map(toCard);
 }

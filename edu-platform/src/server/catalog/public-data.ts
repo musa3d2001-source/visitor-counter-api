@@ -10,7 +10,9 @@ import * as q from "./queries";
  * قراءات الكتالوج التي يراها أي زائر مجهول: من الذاكرة بين الطلبات، ومرة واحدة داخل الطلب.
  *
  * القواعد التي يختبرها tests/integration/public-data-boundary.test.ts:
- *  - لا شيء هنا يقرأ جلسة أو سلة أو صلاحية أو طلبًا أو كوبونًا أو تقدمًا. الأكثر مبيعًا مشتق من الطلبات فلا يُخزن.
+ *  - لا شيء هنا يقرأ جلسة أو سلة أو صلاحية أو طلبًا أو كوبونًا أو تقدمًا.
+ *    الاستثناء الوحيد bestSellers: ترتيب مجمّع من الطلبات المدفوعة (عدد لكل منتج داخل نافذة، بلا مستخدم ولا مبلغ ولا كوبون)،
+ *    يراه كل زائر كما هو، ولا يقرر وصولًا ولا مالًا. ما يخرج منه بطاقات كتالوج فقط (البند R030، قرار موثق في handoff).
  *  - كل دالة تعيد المنشور فقط، والمغلق بقرار المالك أو بغياب مزود البث لا يدخل القوائم.
  *  - فحوص الوصول والسلة والدفع والتسليم لا تستورد هذا الملف أبدًا، فما يُشترى يُقرأ من قاعدة البيانات.
  *
@@ -108,3 +110,11 @@ export const getPlaylist = cache((productId: string) => publicCached(`playlist:$
 export const getProductSaleState = cache((productId: string) => publicCached(`sale-state:${productId}`, () => readProductSaleState(sql, productId)));
 
 export const sitemapEntries = cache(() => publicCached("sitemap", q.sitemapEntries));
+
+/**
+ * «الأكثر طلبًا» في صف: من الذاكرة بعمرها الموثق (أقل من دقيقة)، فلا يحسب كل عرض للصفحة ترتيبًا من سجل الطلبات.
+ * المحمّل يقرأ نافذة BEST_SELLER_WINDOW_DAYS ويطبق إغلاق الفيديو بنفسه، مثل listProducts. منتج سحبه المالك يختفي خلال العمر نفسه
+ */
+const bestSellersByKey = cache((gradeId: string, limit: number) => publicCached(`best-sellers:${gradeId}:${limit}`, () => q.bestSellers({ gradeId, limit })));
+
+export const bestSellers = (gradeId: string, limit: number) => bestSellersByKey(gradeId, limit);

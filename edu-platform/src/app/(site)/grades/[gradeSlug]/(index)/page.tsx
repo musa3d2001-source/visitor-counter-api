@@ -2,10 +2,7 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { ArrowLeft, BookOpen, Flame, GraduationCap, Layers, MonitorPlay, Package, Play, Printer, Users } from "lucide-react";
-import { bestSellers } from "@/server/catalog/queries";
-import { getBundleItemsFor, getGradeBySlug, listProducts, listSubjects, teachersForSubjects } from "@/server/catalog/public-data";
-import { getPublicSettings } from "@/server/platform/public-settings";
-import { videoCloseFlags } from "@/server/video/policy";
+import { bestSellers, getBundleItemsFor, getGradeBySlug, listProducts, listSubjects, teachersForSubjects } from "@/server/catalog/public-data";
 import { getCurrentUser } from "@/server/auth/session";
 import { accessibleProductIds } from "@/server/access/entitlements";
 import { EmptyState } from "@/components/ui/empty-state";
@@ -37,12 +34,11 @@ const NOTE_ORDER = ["final_notes", "exam_night", "review_notes", "exam_model", "
 export default async function GradePage({ params }: { params: Promise<{ gradeSlug: string }> }) {
   const grade = await getGradeBySlug((await params).gradeSlug);
   if (!grade) notFound();
-  const settings = await getPublicSettings();
   const [subjects, bundles, popular, all, user] = await Promise.all([
     listSubjects(grade.id),
     listProducts({ gradeId: grade.id, type: "bundle", limit: 6 }),
-    // مشتق من الطلبات، فلا يُخزن بين الطلبات أبدًا
-    bestSellers({ gradeId: grade.id, limit: 4, closed: videoCloseFlags(settings) }),
+    // ترتيب مجمّع من الطلبات بلا أي بيانات شخصية، من الذاكرة العامة (R030): لا يمر كل عرض للصفحة بسجل الطلبات
+    bestSellers(grade.id, 4),
     listProducts({ gradeId: grade.id, excludeType: "bundle" }),
     getCurrentUser(),
   ]);
@@ -175,7 +171,7 @@ export default async function GradePage({ params }: { params: Promise<{ gradeSlu
 
         {popular.length ? (
           <section aria-labelledby="popular">
-            <SectionHead id="popular" icon={<Flame aria-hidden />} tone="coral" eyebrow="من طلبات الطلاب" title="الأكثر طلبًا" sub={`أكثر ما اشتراه طلاب ${grade.name} على المنصة.`} />
+            <SectionHead id="popular" icon={<Flame aria-hidden />} tone="coral" eyebrow="من طلبات الطلاب" title="الأكثر طلبًا" sub={`أكثر ما اشتراه طلاب ${grade.name} على المنصة في الأشهر الأربعة الأخيرة.`} />
             <ProductShelf products={popular} ownedIds={owned} itemsById={itemsById} showGrade={false} className={balancedGrid(popular.length, { md: [3, 2], lg: [4, 3], video: true })} />
           </section>
         ) : null}

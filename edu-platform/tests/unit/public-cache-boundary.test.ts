@@ -69,9 +69,13 @@ describe("who may touch the public cache", () => {
     expect(file.text).not.toMatch(/"fee_|"watermark/);
   });
 
-  it("best sellers, which come from orders, are never read through the cache", () => {
+  it("the one read of orders behind the cache is the best-seller ranking, and no page counts sales per view (R030)", () => {
     const file = ALL.find((f) => f.path === "server/catalog/public-data.ts")!;
-    expect(file.text).not.toMatch(/\bq\.bestSellers\b/);
+    expect([...file.text.matchAll(/\bq\.bestSellers\b/g)]).toHaveLength(1);
+    expect(file.text).toContain("publicCached(`best-sellers:${gradeId}:${limit}`, () => q.bestSellers({ gradeId, limit }))");
+    // الترتيب الحي لا تستورده صفحة: كل عرض لها كان يعدّ سجل الطلبات
+    const pagesImportingLive = ALL.filter((f) => /^app\//.test(f.path) && /import\s*\{[^}]*\bbestSellers\b[^}]*\}\s*from\s*["']@\/server\/catalog\/queries["']/.test(f.text)).map((f) => f.path);
+    expect(pagesImportingLive).toEqual([]);
   });
 });
 

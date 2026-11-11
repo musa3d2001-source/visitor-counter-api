@@ -1,3 +1,5 @@
+import { readFileSync } from "node:fs";
+import { resolve } from "node:path";
 import { afterAll, afterEach, beforeAll, beforeEach, describe, expect, it, vi } from "vitest";
 import { grantProduct } from "@/server/access/entitlements";
 import { resetEnvCache } from "@/server/env";
@@ -102,8 +104,15 @@ describe("what public-data may read", () => {
       getPlaylist: () => publicData.getPlaylist(video.id),
       getProductSaleState: () => publicData.getProductSaleState(notes.id),
       sitemapEntries: () => publicData.sitemapEntries(),
+      bestSellers: () => publicData.bestSellers(gradeId, 4),
     } satisfies Record<keyof typeof publicData, () => unknown>;
   }
+
+  /** الاستثناء الموثق الوحيد (R030): ترتيب «الأكثر طلبًا» يعدّ بنود الطلبات المدفوعة لكل منتج، ولا يقرأ غير ذلك منها */
+  const ORDER_AGGREGATE = "bestSellers";
+  const ORDER_TABLES = /\b(orders|order_items)\b/i;
+  /** ما يخص المشتري أو المال في الطلب: لا يُذكر أي منه في جزء الترتيب */
+  const PERSONAL_ORDER_COLUMNS = /\b(user_id|email|full_name|total_fils|subtotal_fils|discount_fils|price_fils|coupon_id|coupon_code|order_number|ip|user_agent|gateway\w*|invoice\w*)\b/i;
 
   it("no function touches a table that belongs to a person, an order or a coupon, and every export is covered", async () => {
     const calls = await everyExportInvoked();
@@ -112,7 +121,19 @@ describe("what public-data may read", () => {
       resetPublicCacheForTests();
       const { statements } = await statementsOf(call as () => Promise<unknown>);
       expect(statements.length, name).toBeGreaterThan(0);
-      for (const text of statements) expect(text.replace(/\s+/g, " "), name).not.toMatch(FORBIDDEN);
+      for (const text of statements) {
+        const flat = text.replace(/\s+/g, " ");
+        if (name === ORDER_AGGREGATE && ORDER_TABLES.test(flat)) {
+          // الطلبات تدخل عدًّا لكل منتج فقط، ولا جدول آخر يخص شخصًا أو مالًا
+          expect(flat.replace(/\b(orders|order_items)\b/gi, ""), name).not.toMatch(FORBIDDEN);
+          expect(flat, name).toContain("select oi.product_id, count(*)::int as sold from orders o join order_items oi on oi.order_id = o.id");
+          const ordersPart = flat.slice(flat.indexOf("with sales as"), flat.indexOf("candidates as"));
+          expect(ordersPart.length, name).toBeGreaterThan(50);
+          expect(ordersPart, name).not.toMatch(PERSONAL_ORDER_COLUMNS);
+          continue;
+        }
+        expect(flat, name).not.toMatch(FORBIDDEN);
+      }
     }
   });
 
@@ -535,5 +556,86 @@ describe("the lesson page's access read", () => {
     expect(withoutSet.out).toMatchObject({ ok: true });
     expect(withSet.statements).toHaveLength(1);
     expect(withoutSet.statements).toHaveLength(2);
+  });
+});
+
+describe("best sellers on the grade page (R030)", () => {
+  async function paidOrder(productIds: string[], paidDaysAgo: number) {
+    const buyer = await createUser();
+    const [o] = await sql<{ id: string }[]>`
+      insert into orders (user_id, status, subtotal_fils, total_fils, paid_at, is_test, customer_name, customer_email)
+      values (${buyer.id}, 'paid', 0, 0, now() - make_interval(days => ${paidDaysAgo}), false, 'مشترٍ', ${buyer.email}) returning id
+    `;
+    for (const productId of productIds) {
+      await sql`insert into order_items (order_id, product_id, title, product_type, unit_price_fils) values (${o.id}, ${productId}, 'x', 'final_notes', 0)`;
+    }
+    return o.id;
+  }
+
+  // الطلبات تمنع حذف المنتجات التي يفرغها beforeEach العام، فتُفرغ بعد كل حالة هنا
+  afterEach(async () => {
+    await sql`truncate order_items, orders cascade`;
+  });
+
+  it("ranks only sales inside the documented window, and the grade page says how long that is", async () => {
+    const recent = await createProduct({ title: "حديث" });
+    const old = await createProduct({ title: "قديم" });
+    const { gradeId } = await gradeAndSubject(6, "math");
+    await paidOrder([recent.id], 10);
+    for (let i = 0; i < 3; i++) await paidOrder([old.id], live.BEST_SELLER_WINDOW_DAYS + 1);
+    expect(titles(await publicData.bestSellers(gradeId, 4))).toEqual(["حديث"]);
+    const page = readFileSync(resolve(__dirname, "../../src/app/(site)/grades/[gradeSlug]/(index)/page.tsx"), "utf8");
+    expect(page).toContain("في الأشهر الأربعة الأخيرة");
+    expect(live.BEST_SELLER_WINDOW_DAYS).toBe(120);
+  });
+
+  it("is read once per lifetime whatever the traffic, and a new sale shows within it", async () => {
+    const first = await createProduct({ title: "الأول" });
+    const second = await createProduct({ title: "الثاني" });
+    const { gradeId } = await gradeAndSubject(6, "math");
+    await paidOrder([first.id], 1);
+    expect(titles(await publicData.bestSellers(gradeId, 4))).toEqual(["الأول"]);
+    await paidOrder([second.id], 0);
+    await paidOrder([second.id], 0);
+    const warm = await statementsOf(() => publicData.bestSellers(gradeId, 4));
+    expect(warm.statements).toEqual([]);
+    expect(titles(warm.out)).toEqual(["الأول"]);
+    advance(LIFETIME_S);
+    expect(titles(await publicData.bestSellers(gradeId, 4))).toEqual(["الثاني", "الأول"]);
+  });
+
+  it("holds catalogue cards only, and a product the owner withdraws leaves within the lifetime", async () => {
+    const p = await createProduct({ title: "سيُسحب" });
+    const { gradeId } = await gradeAndSubject(6, "math");
+    await paidOrder([p.id], 1);
+    const [card] = await publicData.bestSellers(gradeId, 4);
+    expect(Object.keys(card).filter((k) => /sold|order|user|buyer|email|coupon|paid/i.test(k))).toEqual([]);
+    expect(Object.keys(card).sort()).toEqual(Object.keys((await publicData.listProducts({ gradeId }))[0]).sort());
+    await sql`update products set status = 'draft' where id = ${p.id}`;
+    advance(LIFETIME_S - 1);
+    expect(titles(await publicData.bestSellers(gradeId, 4))).toEqual(["سيُسحب"]);
+    advance(1);
+    expect(await publicData.bestSellers(gradeId, 4)).toEqual([]);
+  });
+
+  it("an unpublished top seller does not take a place: the next sellers fill the shelf", async () => {
+    const { gradeId } = await gradeAndSubject(6, "math");
+    const hidden = await createProduct({ title: "مخفي" });
+    const shown = [];
+    for (let i = 0; i < 5; i++) shown.push(await createProduct({ title: `ظاهر ${i}` }));
+    for (let i = 0; i < 6; i++) await paidOrder([hidden.id], 1);
+    for (const [i, p] of shown.entries()) for (let n = 0; n < 5 - i; n++) await paidOrder([p.id], 1);
+    await sql`update products set status = 'hidden' where id = ${hidden.id}`;
+    expect(titles(await publicData.bestSellers(gradeId, 4))).toEqual(["ظاهر 0", "ظاهر 1", "ظاهر 2", "ظاهر 3"]);
+  });
+
+  it("test orders and orders that were not paid never rank", async () => {
+    const p = await createProduct({ title: "تجريبي" });
+    const { gradeId } = await gradeAndSubject(6, "math");
+    const id = await paidOrder([p.id], 1);
+    await sql`update orders set is_test = true where id = ${id}`;
+    const pending = await paidOrder([p.id], 1);
+    await sql`update orders set status = 'pending', paid_at = null where id = ${pending}`;
+    expect(await publicData.bestSellers(gradeId, 4)).toEqual([]);
   });
 });
