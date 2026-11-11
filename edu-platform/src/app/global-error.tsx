@@ -1,6 +1,6 @@
 "use client";
 
-import { DB_BUSY_MESSAGE, DB_BUSY_TITLE, isBusyDigest } from "@/lib/busy";
+import { temporaryStateCopy } from "@/lib/busy";
 
 /**
  * خطأ في التخطيط الجذري نفسه: لا نضمن تحميل globals.css أو الخطوط هنا،
@@ -9,7 +9,7 @@ import { DB_BUSY_MESSAGE, DB_BUSY_TITLE, isBusyDigest } from "@/lib/busy";
 const font = "'Cairo Variable', Cairo, Tajawal, 'Segoe UI', Tahoma, system-ui, sans-serif";
 
 export default function GlobalError({ error, reset }: { error: Error & { digest?: string }; reset: () => void }) {
-  const busy = isBusyDigest(error.digest);
+  const temporary = temporaryStateCopy(error.digest);
   return (
     <html lang="ar" dir="rtl">
       <body
@@ -50,17 +50,26 @@ export default function GlobalError({ error, reset }: { error: Error & { digest?
               borderRadius: 24,
               display: "grid",
               placeItems: "center",
-              background: "linear-gradient(145deg, #ffa07a, #e8483f)",
-              boxShadow: "0 6px 0 #b4322a, 0 18px 30px -14px rgb(180 50 42 / 0.6)",
+              // حالة مؤقتة (ضغط أو تحديث): ساعة رملية بالفيروزي الهادئ، لا علامة خطر حمراء
+              background: temporary ? "linear-gradient(145deg, #2fc4b2, #0a6b66)" : "linear-gradient(145deg, #ffa07a, #e8483f)",
+              boxShadow: temporary ? "0 6px 0 #075a55, 0 18px 30px -14px rgb(6 63 60 / 0.6)" : "0 6px 0 #b4322a, 0 18px 30px -14px rgb(180 50 42 / 0.6)",
             }}
           >
-            <svg viewBox="0 0 24 24" width="38" height="38" fill="none" stroke="#fff" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round">
-              <path d="M12 3 2.5 20h19Z" />
-              <path d="M12 10v4M12 17.2v.1" />
-            </svg>
+            {temporary ? (
+              <svg viewBox="0 0 24 24" width="38" height="38" fill="none" stroke="#fff" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round">
+                <path d="M5 22h14M5 2h14" />
+                <path d="M17 22v-4.172a2 2 0 0 0-.586-1.414L12 12l-4.414 4.414A2 2 0 0 0 7 17.828V22" />
+                <path d="M7 2v4.172a2 2 0 0 0 .586 1.414L12 12l4.414-4.414A2 2 0 0 0 17 6.172V2" />
+              </svg>
+            ) : (
+              <svg viewBox="0 0 24 24" width="38" height="38" fill="none" stroke="#fff" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round">
+                <path d="M12 3 2.5 20h19Z" />
+                <path d="M12 10v4M12 17.2v.1" />
+              </svg>
+            )}
           </div>
-          <h1 style={{ margin: "22px 0 8px", fontSize: 30, fontWeight: 900, lineHeight: 1.3 }} data-testid={busy ? "busy-title" : undefined}>{busy ? DB_BUSY_TITLE : "حدث خطأ غير متوقع"}</h1>
-          <p style={{ margin: "0 0 26px", fontSize: 17, lineHeight: 1.9, color: "#3c4a52" }}>{busy ? DB_BUSY_MESSAGE : "حاول مرة أخرى بعد لحظات. إذا تكرر الخطأ، عُد إلى الصفحة الرئيسية."}</p>
+          <h1 style={{ margin: "22px 0 8px", fontSize: 30, fontWeight: 900, lineHeight: 1.3 }} data-testid={temporary ? `${temporary.kind}-title` : undefined}>{temporary ? temporary.title : "حدث خطأ غير متوقع"}</h1>
+          <p style={{ margin: "0 0 26px", fontSize: 17, lineHeight: 1.9, color: "#3c4a52" }}>{temporary ? temporary.message : "حاول مرة أخرى بعد لحظات. إذا تكرر الخطأ، عُد إلى الصفحة الرئيسية."}</p>
           <div style={{ display: "flex", flexWrap: "wrap", gap: 12, justifyContent: "center" }}>
             <button
               onClick={reset}

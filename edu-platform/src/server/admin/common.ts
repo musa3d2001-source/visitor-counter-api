@@ -4,8 +4,7 @@ import { assertStaff, PermissionError, type Actor } from "../auth/permissions";
 import type { ActionState } from "@/lib/action-state";
 import { clientIp } from "../http";
 import { reportError } from "../platform/report-error";
-import { isDatabaseBusy } from "../db-busy";
-import { DB_BUSY_MESSAGE } from "@/lib/busy";
+import { busyMessageFor, isDatabaseBusy } from "../db-busy";
 import { StampBusyError } from "../access/stamp-gate";
 
 /**
@@ -48,7 +47,7 @@ async function toActionError(err: unknown): Promise<ActionState> {
   // إعادة رمي أخطاء التوجيه الخاصة بـ Next.js (redirect/notFound)
   if (isNextControlFlow(err)) throw err;
   // مؤقت: لا يُسجل خطأً في الإجراء، ويُطلب من المالك إعادة المحاولة بعد لحظات
-  if (isDatabaseBusy(err)) return { error: DB_BUSY_MESSAGE };
+  if (isDatabaseBusy(err)) return { error: busyMessageFor(err) };
   // حد أعمال PDF الثقيلة على هذه النسخة (فحص ملف، توليد معاينة): مؤقت مثل انشغال قاعدة البيانات
   if (err instanceof StampBusyError) return { error: "المنصة تجهز ملفات كثيرة الآن. حاول مرة أخرى بعد دقيقة." };
   const pgCode = (err as { code?: string })?.code;
@@ -69,7 +68,7 @@ export async function adminAction(fn: (ctx: AdminCtx) => Promise<ActionState | v
   try {
     admin = await assertAdmin();
   } catch (err) {
-    if (isDatabaseBusy(err)) return { error: DB_BUSY_MESSAGE };
+    if (isDatabaseBusy(err)) return { error: busyMessageFor(err) };
     return { error: "غير مصرح لك بتنفيذ هذا الإجراء" };
   }
   try {
@@ -89,7 +88,7 @@ export async function staffAction(fn: (ctx: StaffCtx) => Promise<ActionState | v
   try {
     actor = await assertStaff();
   } catch (err) {
-    if (isDatabaseBusy(err)) return { error: DB_BUSY_MESSAGE };
+    if (isDatabaseBusy(err)) return { error: busyMessageFor(err) };
     return { error: "غير مصرح لك بتنفيذ هذا الإجراء" };
   }
   try {

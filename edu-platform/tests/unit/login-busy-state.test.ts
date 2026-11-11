@@ -2,14 +2,24 @@ import { createElement } from "react";
 import { renderToStaticMarkup } from "react-dom/server";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { DUMMY_PASSWORD_HASH, hashPassword } from "@/server/auth/password-core";
-import { LOGIN_BUSY_MESSAGE } from "@/lib/busy";
+import { DB_BUSY_MESSAGE, DB_MAINTENANCE_MESSAGE, LOGIN_BUSY_MESSAGE } from "@/lib/busy";
+import { DatabaseBusyError, SchemaNotReadyError } from "@/server/db-busy";
 
 /** ما يراه الطالب حين تُرفض محاولته لأن المنصة مشغولة: ليست «كلمة مرور خاطئة»، والزر ينتظر المدة */
 const state = vi.hoisted(() => ({ current: null as unknown }));
 vi.mock("react", async (original) => ({ ...(await original<typeof import("react")>()), useActionState: () => [state.current, () => undefined, false] }));
 
-const login = vi.hoisted(() => ({ result: null as unknown }));
-vi.mock("@/server/auth/service", () => ({ loginWithPassword: async () => login.result, completeForcedPasswordChange: vi.fn(), registerStudent: vi.fn(), requestPasswordReset: vi.fn(), resetPassword: vi.fn() }));
+const login = vi.hoisted(() => ({ result: null as unknown, error: null as unknown }));
+vi.mock("@/server/auth/service", () => ({
+  loginWithPassword: async () => {
+    if (login.error) throw login.error;
+    return login.result;
+  },
+  completeForcedPasswordChange: vi.fn(),
+  registerStudent: vi.fn(),
+  requestPasswordReset: vi.fn(),
+  resetPassword: vi.fn(),
+}));
 vi.mock("@/server/http", () => ({ clientIp: async () => "192.0.2.1", userAgent: async () => "vitest" }));
 vi.mock("@/server/auth/device-cookie", () => ({ readLoginDeviceCookie: async () => undefined, setLoginDeviceCookie: vi.fn() }));
 vi.mock("@/server/auth/session", () => ({ clearSessionCookie: vi.fn(), getCurrentSession: vi.fn(), invalidateSession: vi.fn(), setSessionCookie: vi.fn() }));
@@ -33,6 +43,7 @@ const render = () => renderToStaticMarkup(createElement(LoginForm, { next: "/lib
 beforeEach(() => {
   state.current = null;
   login.result = null;
+  login.error = null;
 });
 
 describe("the login form when the platform is busy", () => {
@@ -72,6 +83,23 @@ describe("loginAction", () => {
   it("a lockout keeps its own text and never holds the button as a busy notice", async () => {
     login.result = { ok: false, error: "تم إيقاف تسجيل الدخول مؤقتًا", retryAfter: 900 };
     await expect(loginAction(null, form("student@farqad.test", "x-password-1"))).resolves.toEqual({ error: "تم إيقاف تسجيل الدخول مؤقتًا", values: { email: "student@farqad.test" } });
+  });
+
+  it("a busy database answers in the form with the wait, instead of an error page", async () => {
+    login.error = new DatabaseBusyError("queue");
+    await expect(loginAction(null, form("student@farqad.test", "x-password-1"))).resolves.toEqual({ error: DB_BUSY_MESSAGE, values: { email: "student@farqad.test" }, retryAfter: 5 });
+  });
+
+  it("a database still waiting for its update answers in the form with a longer wait", async () => {
+    login.error = new SchemaNotReadyError(["0014_hardening.sql"]);
+    const res = await loginAction(null, form("student@farqad.test", "x-password-1"));
+    expect(res).toEqual({ error: DB_MAINTENANCE_MESSAGE, values: { email: "student@farqad.test" }, retryAfter: 30 });
+    expect(JSON.stringify(res)).not.toContain("x-password-1");
+  });
+
+  it("any other failure is still thrown, so it reaches the owner", async () => {
+    login.error = new Error("real bug");
+    await expect(loginAction(null, form("student@farqad.test", "x-password-1"))).rejects.toThrow("real bug");
   });
 
   it("never returns the password", async () => {

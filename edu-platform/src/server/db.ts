@@ -1,12 +1,13 @@
 import "server-only";
 import { AsyncLocalStorage } from "node:async_hooks";
 import postgres, { type ISql, type Sql } from "postgres";
-import { DatabaseBusyError, toBusyError } from "./db-busy";
+import { REQUIRED_MIGRATIONS } from "@/lib/migrations";
+import { DatabaseBusyError, SchemaNotReadyError, toBusyError } from "./db-busy";
 import { env } from "./env";
 // يسجل مراقب الانشغال: كل أمر يمر من هنا يُعد في عدّادات الضغط
 import "./platform/saturation";
 
-export { DatabaseBusyError, isDatabaseBusy } from "./db-busy";
+export { DatabaseBusyError, isDatabaseBusy, SchemaNotReadyError } from "./db-busy";
 
 /**
  * اتصال PostgreSQL واحد مشترك (Supabase أو محلي).
@@ -22,6 +23,8 @@ export { DatabaseBusyError, isDatabaseBusy } from "./db-busy";
  *     (pooler لا يمرر الإلغاء مثلًا) يُرفض الوعد للمستدعي فورًا. الاتصال نفسه يبقى مشغولًا حتى يرد الخادم، فيصطدم ما بعده
  *     بالحد الأول ويرد «مشغول» بدل أن يعلق.
  * كل ذلك يصل إلى المستدعي خطأً واحدًا: DatabaseBusyError (انظر db-busy.ts).
+ *
+ * ولا يخدم الكود قاعدة ينقصها ترحيل يحتاجه (F26): انظر «الترحيلات» أدناه.
  *
  * المهام الطويلة (التصدير، التنظيف اليومي) تطلب مهلتها صراحة بـ withDbDeadline. الترحيلات والنسخ الاحتياطي
  * تعمل بعميل postgres خاص بها في scripts/ فلا تمر من هنا أصلًا.
@@ -185,7 +188,10 @@ function guardedBegin(db: Sql) {
       return Array.isArray(out) ? Promise.all(out) : out;
     };
     const begin = db.begin as unknown as (...a: unknown[]) => Promise<unknown>;
-    const started = mode === null ? begin.call(db, run) : begin.call(db, mode, run);
+    const open = () => (mode === null ? begin.call(db, run) : begin.call(db, mode, run));
+    // حارس الترحيلات قبل طلب الاتصال، داخل مهلة البدء نفسها
+    const gate = schemaGate(db);
+    const started = gate ? gate.then(open) : open();
     const finished = started.then(
       (value) => {
         phase = "settled";
@@ -202,22 +208,107 @@ function guardedBegin(db: Sql) {
   };
 }
 
+// ---------------------------------------------------------------------
+// الترحيلات
+// ---------------------------------------------------------------------
+
+/** إعادة الفحص ما دام ترحيل ناقصًا: أمر واحد كل ١٠ ثوانٍ لكل نسخة خادم، وكل ما بينها يُرفض دون أن يلمس قاعدة البيانات */
+const SCHEMA_RECHECK_MS = 10_000;
+
+type SchemaState = { state: "unknown" | "ready" | "missing"; missing: readonly string[]; checkedAt: number; checking: Promise<void> | null };
+const schema: SchemaState = { state: "unknown", missing: [], checkedAt: 0, checking: null };
+
+/**
+ * يقرأ schema_migrations مرة لكل نسخة. إن كانت الترحيلات كلها مطبقة حُفظ ذلك ولا يُسأل بعده أبدًا،
+ * فلا كلفة على أي أمر بعد أول فحص. وإن نقص شيء رُفض كل أمر بـ SchemaNotReadyError وأُعيد الفحص كل SCHEMA_RECHECK_MS،
+ * فيعود الموقع وحده بعد تطبيق الترحيل دون إعادة نشر. فشل الفحص نفسه (انشغال، شبكة) لا يُحفظ: يرد الأمر بخطئه ويُعاد الفحص مع التالي.
+ */
+async function checkSchema(db: Sql): Promise<void> {
+  let applied: string[];
+  try {
+    const query = db<{ name: string }[]>`select name from schema_migrations where name = any(${[...REQUIRED_MIGRATIONS]}::text[])`;
+    applied = (await guardQuery(query, currentStatementMs())).map((row) => row.name);
+  } catch (err) {
+    // جدول الترحيلات نفسه غير موجود: قاعدة لم يُطبق عليها شيء
+    if ((err as { code?: unknown } | null)?.code !== "42P01") throw err;
+    applied = [];
+  }
+  const missing = REQUIRED_MIGRATIONS.filter((name) => !applied.includes(name));
+  const before = schema.state;
+  schema.state = missing.length ? "missing" : "ready";
+  schema.missing = missing;
+  schema.checkedAt = Date.now();
+  // مرة عند تغير الحالة، لا مع كل طلب. أسماء الملفات وحدها
+  if (schema.state === "missing" && before !== "missing") console.error(`[db] الموقع في وضع «قيد التحديث»: ترحيلات لم تُطبق على قاعدة البيانات: ${missing.join(", ")}`);
+  if (schema.state === "ready" && before === "missing") console.info("[db] طُبقت الترحيلات الناقصة، وعاد الموقع يعمل");
+}
+
+/** null: الترحيلات مطبقة فلا انتظار. وإلا وعد يُرفض بـ SchemaNotReadyError أو بخطأ الفحص نفسه */
+function schemaGate(db: Sql): Promise<void> | null {
+  if (schema.state === "ready") return null;
+  if (schema.state === "missing" && Date.now() - schema.checkedAt < SCHEMA_RECHECK_MS) return Promise.reject(new SchemaNotReadyError(schema.missing));
+  schema.checking ??= checkSchema(db).finally(() => {
+    schema.checking = null;
+  });
+  return schema.checking.then(() => {
+    if (schema.state !== "ready") throw new SchemaNotReadyError(schema.missing);
+  });
+}
+
+/** حالة الترحيلات على هذه النسخة كما رآها آخر فحص، لفحص الصحة العام */
+export function schemaStatus(): { state: "unknown" | "ready" | "missing"; missing: readonly string[] } {
+  return { state: schema.state, missing: schema.missing };
+}
+
+function forgetSchema(state: "unknown" | "ready" = "unknown") {
+  schema.state = state;
+  schema.missing = [];
+  schema.checkedAt = 0;
+  schema.checking = null;
+}
+
+/** للاختبارات: ينسى ما عرفه، أو يعتبر الترحيلات مطبقة (pooler مزيف لا جدول ترحيلات فيه) */
+export const resetSchemaGateForTests = forgetSchema;
+
+/** الأمر لا يُرسل قبل أن يمر من حارس الترحيلات. بعد أول فحص ناجح لا يُلف شيء */
+function gateQuery<Q>(query: Q, db: Sql): Q {
+  if (schema.state === "ready") return query;
+  const q = query as unknown as InternalQuery & { run(): void };
+  const run = q.run;
+  q.run = function () {
+    const gate = schemaGate(db);
+    if (!gate) return run.call(this);
+    gate.then(
+      () => {
+        if (!this.settled) run.call(this);
+      },
+      (err: unknown) => {
+        if (!this.settled) this.reject(err);
+      },
+    );
+  };
+  return query;
+}
+
 /** استخدام مختصر: sql`select ...` */
 export const sql: Sql = new Proxy(function () {} as unknown as Sql, {
   apply(_t, _this, args) {
-    const out = (getDb() as unknown as (...a: unknown[]) => unknown)(...args);
-    return isTemplateCall(args) ? guardQuery(out, currentStatementMs()) : out;
+    const db = getDb();
+    const out = (db as unknown as (...a: unknown[]) => unknown)(...args);
+    return isTemplateCall(args) ? gateQuery(guardQuery(out, currentStatementMs()), db) : out;
   },
   get(_t, prop) {
     const db = getDb();
     if (prop === "begin") return guardedBegin(db);
-    if (prop === "unsafe") return (...a: unknown[]) => guardQuery((db.unsafe as unknown as (...x: unknown[]) => unknown)(...a), currentStatementMs());
+    if (prop === "unsafe") return (...a: unknown[]) => gateQuery(guardQuery((db.unsafe as unknown as (...x: unknown[]) => unknown)(...a), currentStatementMs()), db);
     const value = (db as unknown as Record<string | symbol, unknown>)[prop];
     return typeof value === "function" ? (value as (...a: unknown[]) => unknown).bind(db) : value;
   },
 });
 
 export async function closeDb() {
+  // عميل جديد قد يشير إلى قاعدة أخرى: يُفحص من جديد
+  forgetSchema();
   if (globalForDb.__sql) {
     await globalForDb.__sql.end({ timeout: 5 });
     globalForDb.__sql = undefined;

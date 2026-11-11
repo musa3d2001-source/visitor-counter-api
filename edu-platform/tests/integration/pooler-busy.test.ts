@@ -1,5 +1,5 @@
 import { afterAll, afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import { closeDb, DatabaseBusyError, dbTestHooks, isDatabaseBusy, sql } from "@/server/db";
+import { closeDb, DatabaseBusyError, dbTestHooks, isDatabaseBusy, resetSchemaGateForTests, sql } from "@/server/db";
 import { resetEnvCache } from "@/server/env";
 import { pendingSaturation, resetSaturationForTests } from "@/server/platform/saturation";
 import { startFakePooler, type FakePooler, type FakePoolerMode } from "../mocks/fake-pooler";
@@ -109,6 +109,8 @@ describe("a pooler that refuses new clients", () => {
 describe("a transaction whose BEGIN the pooler holds", () => {
   it("gives up at its start deadline with busy, and its body never runs even when BEGIN arrives later", async () => {
     const fake = await useFakePooler({ kind: "hold-begin" });
+    // الـ pooler المزيف بلا جدول ترحيلات: الحارس يُعد مطمئنًا، فالمعاملة تصل إلى BEGIN
+    resetSchemaGateForTests("ready");
     dbTestHooks.cancelGraceMs = 200;
     let ran = false;
     const { ms, error, timedOut } = await settle(
@@ -139,6 +141,7 @@ describe("a transaction whose BEGIN the pooler holds", () => {
 
   it("a BEGIN the pooler answers with its checkout timeout is busy", async () => {
     await useFakePooler({ kind: "fail-begin", code: "XX000", message: "(ECHECKOUTTIMEOUT) unable to check out connection from the pool after 15000ms in Transaction mode" });
+    resetSchemaGateForTests("ready");
     const { error, timedOut } = await settle(sql.begin(async () => undefined), 4_000);
     expect(timedOut).toBe(false);
     expect(isDatabaseBusy(error)).toBe(true);

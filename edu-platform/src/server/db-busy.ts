@@ -1,4 +1,4 @@
-import { DB_BUSY_DIGEST } from "@/lib/busy";
+import { DB_BUSY_DIGEST, DB_BUSY_MESSAGE, DB_BUSY_RETRY_AFTER_SECONDS, DB_MAINTENANCE_DIGEST, DB_MAINTENANCE_MESSAGE, DB_MAINTENANCE_RETRY_AFTER_SECONDS } from "@/lib/busy";
 
 /**
  * الخطأ الواحد الذي يعني «قاعدة البيانات لم تُتح في المهلة»: انتظار اتصال طال، أو أمر تجاوز مهلته فأُلغي،
@@ -7,7 +7,7 @@ import { DB_BUSY_DIGEST } from "@/lib/busy";
  * الرسالة ثابتة وبلا أي تفصيل من الخطأ الأصلي (نص الأمر، عنوان الخادم، القيم)، والأصل في cause لمن يحقق محليًا فقط.
  * digest ثابت: Next يحترم digest موجودًا على الخطأ، فيعرفه حد الخطأ في المتصفح ولا يرى غيره.
  */
-export type BusyReason = "queue" | "statement" | "connect" | "idle_in_transaction" | "unavailable" | "hash";
+export type BusyReason = "queue" | "statement" | "connect" | "idle_in_transaction" | "unavailable" | "hash" | "maintenance";
 
 /** عدّادات الضغط في «صحة المنصة». الخطأ يولد مرة واحدة لكل حدث، فلا يتكرر العد مهما عبر من طبقات */
 let busyObserver: ((reason: BusyReason) => void) | null = null;
@@ -17,8 +17,8 @@ export function observeDatabaseBusy(observer: ((reason: BusyReason) => void) | n
 }
 
 export class DatabaseBusyError extends Error {
-  readonly digest = DB_BUSY_DIGEST;
-  readonly code = DB_BUSY_DIGEST;
+  readonly digest: string = DB_BUSY_DIGEST;
+  readonly code: string = DB_BUSY_DIGEST;
 
   constructor(
     readonly reason: BusyReason,
@@ -28,6 +28,35 @@ export class DatabaseBusyError extends Error {
     this.name = "DatabaseBusyError";
     busyObserver?.(reason);
   }
+}
+
+/**
+ * قاعدة البيانات ينقصها ترحيل يحتاجه هذا الكود (F26): كل أمر يُرفض قبل أن يُرسل، فلا يصل إلى عمود أو جدول غير موجود.
+ * من نوع الانشغال، فكل ما يعالج «مشغول» اليوم (503 مع Retry-After، رسالة الإجراء، صفحة الخطأ) يعالجه، بنص «قيد التحديث» وبصمة خاصة.
+ * لا يُعد في عدّادات الضغط. أسماء الملفات الناقصة للمالك وفحص الصحة فقط، لا في الرسالة.
+ */
+export class SchemaNotReadyError extends DatabaseBusyError {
+  override readonly digest: string = DB_MAINTENANCE_DIGEST;
+  override readonly code: string = DB_MAINTENANCE_DIGEST;
+
+  constructor(readonly missing: readonly string[]) {
+    super("maintenance");
+    this.name = "SchemaNotReadyError";
+  }
+}
+
+export function isSchemaNotReady(err: unknown): boolean {
+  if (err instanceof SchemaNotReadyError) return true;
+  return typeof err === "object" && err !== null && (err as { digest?: unknown }).digest === DB_MAINTENANCE_DIGEST;
+}
+
+/** ما يقال للمستخدم عن خطأ انشغال، ومتى يعيد المحاولة */
+export function busyMessageFor(err: unknown): string {
+  return isSchemaNotReady(err) ? DB_MAINTENANCE_MESSAGE : DB_BUSY_MESSAGE;
+}
+
+export function busyRetryAfterFor(err: unknown): number {
+  return isSchemaNotReady(err) ? DB_MAINTENANCE_RETRY_AFTER_SECONDS : DB_BUSY_RETRY_AFTER_SECONDS;
 }
 
 /** رموز postgres.js وPostgreSQL والشبكة التي تعني انشغالًا مؤقتًا يُعاد بعده، لا خطأ في الطلب */
@@ -122,5 +151,7 @@ export function toBusyError(err: unknown): unknown {
 /** يعرف الخطأ حتى بعد عبوره حدود الوحدات أو تسلسله، ببصمته */
 export function isDatabaseBusy(err: unknown): boolean {
   if (err instanceof DatabaseBusyError) return true;
-  return typeof err === "object" && err !== null && (err as { digest?: unknown }).digest === DB_BUSY_DIGEST;
+  if (typeof err !== "object" || err === null) return false;
+  const digest = (err as { digest?: unknown }).digest;
+  return digest === DB_BUSY_DIGEST || digest === DB_MAINTENANCE_DIGEST;
 }

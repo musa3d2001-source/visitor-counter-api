@@ -116,6 +116,8 @@ const BUSY_KIND: Record<BusyReason, SaturationKind | null> = {
   statement: "db_deadline",
   idle_in_transaction: "db_deadline",
   hash: null,
+  // ترحيل ناقص: ليس ضغطًا، والحارس في db.ts يسجله مرة عند تغير الحالة
+  maintenance: null,
 };
 
 observeDatabaseBusy((reason) => {

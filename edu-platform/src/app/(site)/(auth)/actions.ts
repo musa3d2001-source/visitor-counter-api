@@ -15,12 +15,20 @@ import { TWO_FACTOR_LOGIN_PATH, TWO_FACTOR_SETUP_PATH } from "@/lib/two-factor";
 import { sendExistingAccountNotice, sendRegistrationVerification } from "@/server/auth/email-verification";
 import { GUARDIAN_ACCOUNT_ERROR } from "@/lib/consent";
 import { mailIsReal, redactSecrets } from "@/server/platform/mailer";
+import { busyMessageFor, busyRetryAfterFor, isDatabaseBusy } from "@/server/db-busy";
 
 export async function loginAction(_prev: ActionState, fd: FormData): Promise<ActionState> {
   const parsed = loginSchema.safeParse({ email: fd.get("email"), password: fd.get("password") });
   const values = formValues(fd, ["email"]);
   if (!parsed.success) return { fieldErrors: fieldErrors(parsed.error), values };
-  const res = await loginWithPassword(parsed.data.email, parsed.data.password, { ip: await clientIp(), userAgent: await userAgent(), deviceProof: await readLoginDeviceCookie() });
+  let res: Awaited<ReturnType<typeof loginWithPassword>>;
+  try {
+    res = await loginWithPassword(parsed.data.email, parsed.data.password, { ip: await clientIp(), userAgent: await userAgent(), deviceProof: await readLoginDeviceCookie() });
+  } catch (err) {
+    // قاعدة البيانات مشغولة أو المنصة قيد التحديث: رسالة هادئة في النموذج نفسه والزر ينتظر، لا صفحة خطأ
+    if (isDatabaseBusy(err)) return { error: busyMessageFor(err), values, retryAfter: busyRetryAfterFor(err) };
+    throw err;
+  }
   if (res.deviceProof) await setLoginDeviceCookie(res.deviceProof);
   if (!res.ok) {
     // رفض انشغال: الزر ينتظر المدة ويعرضها. Server Action لا تضبط ترويسات الرد، فمدة Retry-After تصل في الحالة نفسها

@@ -1,6 +1,7 @@
 import { CONSENT_VERSIONS, LEGAL_PAGE_VERSIONS } from "./consent";
 import { ar } from "./design";
 import { formatDateTime } from "./utils";
+import { REQUIRED_MIGRATIONS } from "./migrations";
 
 /**
  * خطوات الإطلاق: ما يجب أن يكون صحيحًا قبل أن تدفع أسرة دينارًا حقيقيًا.
@@ -60,8 +61,7 @@ export const SANDBOX_PASS_CHECKS = [
   "أقصى طول تقبله البوابة في ExternalIdentifier مسجَّل.",
 ] as const;
 
-/** الترحيلات التي يحتاجها هذا الكود. اختبار الوحدة يفشل إذا أُضيف ترحيل بعد 0010 ولم يُذكر هنا */
-export const REQUIRED_MIGRATIONS = ["0010_payments_hardening.sql", "0011_accounts_hardening.sql", "0012_content_teachers.sql", "0013_site_ops.sql", "0014_hardening.sql"] as const;
+export { REQUIRED_MIGRATIONS };
 
 // ---------------------------------------------------------------------------
 // الحقائق والتأشيرات

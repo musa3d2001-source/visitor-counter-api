@@ -4,7 +4,7 @@ import Link from "next/link";
 import { House, MessagesSquare, RotateCw } from "lucide-react";
 import { Sparkle } from "@/components/art";
 import { Button } from "@/components/ui/button";
-import { DB_BUSY_MESSAGE, DB_BUSY_TITLE, isBusyDigest } from "@/lib/busy";
+import { temporaryStateCopy } from "@/lib/busy";
 
 /** رسم «انقطع الاتصال»: قابس وسلك مفصولان فوق شمس دافئة، مع شرارة صغيرة. زخرفي. */
 function UnpluggedArt({ className }: { className?: string }) {
@@ -26,8 +26,9 @@ function UnpluggedArt({ className }: { className?: string }) {
 }
 
 export default function SiteError({ error, reset }: { error: Error & { digest?: string }; reset: () => void }) {
-  // ضغط مؤقت على قاعدة البيانات، لا عطل: نقول ذلك بوضوح ولا نعرض رمز خطأ
-  const busy = isBusyDigest(error.digest);
+  // ضغط مؤقت على قاعدة البيانات أو تحديث لم يكتمل، لا عطل: نقول ذلك بوضوح ولا نعرض رمز خطأ
+  const temporary = temporaryStateCopy(error.digest);
+  const busy = temporary !== null;
   return (
     <section className="bg-sunny bg-dots relative overflow-hidden px-4 py-14 sm:py-20">
       <Sparkle className="animate-twinkle absolute end-[10%] top-10 size-5" />
@@ -36,10 +37,10 @@ export default function SiteError({ error, reset }: { error: Error & { digest?: 
         <div className="mx-auto h-36 w-52 sm:h-40 sm:w-60">
           <UnpluggedArt />
         </div>
-        <h1 className="mt-4 font-display text-[clamp(1.8rem,5vw,2.4rem)] leading-tight font-black text-ink" data-testid={busy ? "busy-title" : undefined}>
-          {busy ? DB_BUSY_TITLE : "حدث خطأ غير متوقع"}
+        <h1 className="mt-4 font-display text-[clamp(1.8rem,5vw,2.4rem)] leading-tight font-black text-ink" data-testid={temporary ? `${temporary.kind}-title` : undefined}>
+          {temporary ? temporary.title : "حدث خطأ غير متوقع"}
         </h1>
-        <p className="mx-auto mt-3 max-w-sm text-[1.02rem] leading-8 text-ink-soft">{busy ? DB_BUSY_MESSAGE : "حاول مرة أخرى، وإذا تكرر الخطأ تواصل معنا."}</p>
+        <p className="mx-auto mt-3 max-w-sm text-[1.02rem] leading-8 text-ink-soft">{temporary ? temporary.message : "حاول مرة أخرى، وإذا تكرر الخطأ تواصل معنا."}</p>
         <div className="mt-7 flex flex-wrap items-center justify-center gap-3">
           <Button size="lg" onClick={reset}>
             <RotateCw aria-hidden />

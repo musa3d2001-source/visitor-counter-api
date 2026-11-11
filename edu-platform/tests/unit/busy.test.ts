@@ -3,9 +3,9 @@ import { join, relative } from "node:path";
 import { createElement } from "react";
 import { renderToStaticMarkup } from "react-dom/server";
 import { beforeEach, describe, expect, it, vi } from "vitest";
-import { DB_BUSY_DIGEST, DB_BUSY_MESSAGE, DB_BUSY_TITLE } from "@/lib/busy";
+import { DB_BUSY_DIGEST, DB_BUSY_MESSAGE, DB_BUSY_TITLE, DB_MAINTENANCE_DIGEST, DB_MAINTENANCE_MESSAGE, DB_MAINTENANCE_TITLE } from "@/lib/busy";
 import { INLINE_PAGE_CSP } from "@/lib/security-headers";
-import { DatabaseBusyError, isDatabaseBusy, toBusyError } from "@/server/db-busy";
+import { DatabaseBusyError, isDatabaseBusy, SchemaNotReadyError, toBusyError } from "@/server/db-busy";
 
 /**
  * «المنصة مشغولة»: خطأ واحد، رد 503 مع Retry-After لمسارات API، رسالة الإجراءات، وحالة الصفحات.
@@ -142,6 +142,23 @@ describe("API routes", () => {
     expect(html).not.toContain("<script");
   });
 
+  it("a missing migration answers the same way with the maintenance message and a longer wait, and is not reported", async () => {
+    const res = await withBusyGuard(async () => {
+      throw new SchemaNotReadyError(["0014_hardening.sql"]);
+    })();
+    expect(res.status).toBe(503);
+    expect(res.headers.get("retry-after")).toBe("30");
+    const body = await res.json();
+    expect(body).toEqual({ error: DB_MAINTENANCE_MESSAGE, busy: true, maintenance: true });
+    expect(JSON.stringify(body)).not.toContain("0014");
+    expect(reported.calls).toEqual([]);
+    const page = busyResponse("html", new SchemaNotReadyError([]));
+    expect(page.headers.get("retry-after")).toBe("30");
+    const html = await page.text();
+    expect(html).toContain(DB_MAINTENANCE_TITLE);
+    expect(html).toContain('content="30"');
+  });
+
   it("withBusyGuard turns busy into 503 and reports it, and passes anything else through", async () => {
     const busy = withBusyGuard(async () => {
       throw new DatabaseBusyError("queue");
@@ -197,11 +214,37 @@ describe("admin actions", () => {
     actor.fail = new DatabaseBusyError("queue");
     expect(await adminAction(async () => {})).toEqual({ error: DB_BUSY_MESSAGE });
   });
+
+  it("a missing migration says the platform is being updated, wherever it is met", async () => {
+    actor.fail = new SchemaNotReadyError(["0014_hardening.sql"]);
+    expect(await adminAction(async () => {})).toEqual({ error: DB_MAINTENANCE_MESSAGE });
+    actor.fail = null;
+    expect(
+      await adminAction(async () => {
+        throw new SchemaNotReadyError(["0014_hardening.sql"]);
+      }),
+    ).toEqual({ error: DB_MAINTENANCE_MESSAGE });
+    expect(reported.calls).toEqual([]);
+  });
 });
 
 describe("pages", () => {
   const busyError = Object.assign(new Error("Server Components render error"), { digest: DB_BUSY_DIGEST });
   const otherError = Object.assign(new Error("x"), { digest: "123456" });
+
+  it("the site, admin and root error pages show the maintenance state, calm and without an error code", async () => {
+    const maintenance = Object.assign(new Error("Server Components render error"), { digest: DB_MAINTENANCE_DIGEST });
+    expect(isDatabaseBusy(maintenance)).toBe(true);
+    for (const path of ["@/app/(site)/error", "@/app/admin/error", "@/app/global-error"]) {
+      const { default: ErrorPage } = await import(/* @vite-ignore */ path);
+      const html = renderToStaticMarkup(createElement(ErrorPage, { error: maintenance, reset: () => {} }));
+      expect(html, path).toContain(DB_MAINTENANCE_TITLE);
+      expect(html, path).toContain(DB_MAINTENANCE_MESSAGE);
+      expect(html, path).toContain('data-testid="maintenance-title"');
+      expect(html, path).not.toContain(DB_MAINTENANCE_DIGEST);
+      expect(html, path).not.toContain(DB_BUSY_TITLE);
+    }
+  });
 
   it("the site and admin error pages show the busy state without an error code", async () => {
     for (const path of ["@/app/(site)/error", "@/app/admin/error", "@/app/global-error"]) {

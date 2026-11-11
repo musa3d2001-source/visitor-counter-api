@@ -92,3 +92,71 @@ test.describe("a database that does not answer", () => {
     }
   });
 });
+
+test.describe("code deployed before its database migrations", () => {
+  test.beforeEach(({}, info) => test.skip(info.project.name !== "desktop", "تكفي مرة واحدة على الكمبيوتر"));
+  test.describe.configure({ mode: "serial" });
+
+  const PORT = 3196;
+  const BASE = `http://127.0.0.1:${PORT}`;
+  let server: ChildProcess;
+
+  test.beforeAll(async ({}, info) => {
+    if (info.project.name !== "desktop") return;
+    test.setTimeout(90_000);
+    const osEnv = Object.fromEntries(OS_ONLY.flatMap((name) => (process.env[name] ? [[name, process.env[name]!]] : [])));
+    // قاعدة E2E نفسها، لكن search_path إلى schema غير موجودة: لا جدول ترحيلات يُرى، كقاعدة لم يُطبق عليها شيء. لا يُكتب فيها شيء
+    const url = new URL(E2E_SERVER_ENV.DATABASE_URL);
+    url.searchParams.set("search_path", "no_migrations_here");
+    server = spawn(process.execPath, ["node_modules/next/dist/bin/next", "start", "-p", String(PORT)], {
+      cwd: resolve(__dirname, "../.."),
+      env: { ...osEnv, ...E2E_SERVER_ENV, PORT: String(PORT), APP_URL: BASE, DATABASE_URL: url.toString(), NODE_ENV: "production" } as NodeJS.ProcessEnv,
+      stdio: "ignore",
+    });
+    const started = Date.now();
+    const api = await playwrightRequest.newContext();
+    try {
+      for (;;) {
+        const up = await api.get(`${BASE}/api/health`).catch(() => null);
+        if (up) break;
+        if (server.exitCode !== null) throw new Error(`the server stopped with code ${server.exitCode}`);
+        if (Date.now() - started > 60_000) throw new Error("the server did not start");
+        await new Promise((done) => setTimeout(done, 500));
+      }
+    } finally {
+      await api.dispose();
+    }
+  });
+
+  test.afterAll(() => {
+    server?.kill();
+  });
+
+  test("the health check is down and names every missing migration", async ({ request }) => {
+    const res = await request.get(`${BASE}/api/health`);
+    expect(res.status()).toBe(503);
+    const body = await res.json();
+    expect(body).toMatchObject({ status: "down", reason: "migrations" });
+    expect(body.missing).toContain("0014_hardening.sql");
+  });
+
+  test("an API route answers 503 with a longer Retry-After and says the platform is being updated", async ({ request }) => {
+    const res = await request.get(`${BASE}/api/lessons/6f1c2b8e-0d2f-4b7a-9a51-1c7e3b2d4f60/stream`);
+    expect(res.status()).toBe(503);
+    expect(res.headers()["retry-after"]).toBe("30");
+    expect(await res.json()).toEqual({ error: expect.stringContaining("تحديث"), busy: true, maintenance: true });
+  });
+
+  test("pages, the sign-in page included, show the calm maintenance state with no error code", async ({ page }, info) => {
+    for (const path of ["/", "/teachers", "/login"]) {
+      await page.goto(`${BASE}${path}`);
+      await expect(page.getByTestId("maintenance-title"), path).toBeVisible();
+      await expect(page.getByText("رمز الخطأ")).toHaveCount(0);
+    }
+    for (const width of [390, 1440]) {
+      await page.setViewportSize({ width, height: 900 });
+      await expectNoHorizontalOverflow(page);
+      await page.screenshot({ path: info.outputPath(`maintenance-${width}.png`), fullPage: true });
+    }
+  });
+});
