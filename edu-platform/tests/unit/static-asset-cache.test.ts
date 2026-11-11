@@ -38,11 +38,16 @@ describe("reader assets and the social image", () => {
     }
   });
 
-  it("loads every reader file from the path of the running pdf.js version", () => {
+  // المحرك لم يعد في حزمة الموقع (R018): الإصدار يأتي من الحزمة المثبتة وقت البناء، والمحرك والعامل وملفاتهما كلها تحت مساره
+  it("loads every reader file from the path of the installed pdf.js version", () => {
+    const assets = read("src/lib/reader-assets.ts");
+    expect(assets).toContain('import pdfjsPackage from "pdfjs-dist/package.json";');
+    expect(assets).toContain("export const PDF_READER_ASSETS = `/pdfjs/${PDFJS_VERSION}`;");
+    expect(assets).toContain("export const PDF_READER_ENGINE = `${PDF_READER_ASSETS}/${PDF_READER_ENGINE_FILE}`;");
+    expect(assets).toContain("export const PDF_READER_WORKER = `${PDF_READER_ASSETS}/${PDF_READER_WORKER_FILE}`;");
     const reader = read("src/components/reader/pdf-reader.tsx");
-    expect(reader).toContain("`/pdfjs/${pdfjs.version}`");
-    expect(reader).toContain("workerSrc = `${assets}/pdf.worker.min.mjs`");
-    for (const k of ["cMapUrl", "standardFontDataUrl", "wasmUrl"]) expect(reader, k).toMatch(new RegExp(`${k}: \`\\$\\{assets\\}/`));
+    expect(reader).toContain("workerSrc = PDF_READER_WORKER");
+    for (const k of ["cMapUrl", "standardFontDataUrl", "wasmUrl"]) expect(reader, k).toMatch(new RegExp(`${k}: \`\\$\\{PDF_READER_ASSETS\\}/`));
     expect(reader).not.toMatch(/"\/pdfjs\//);
   });
 
@@ -50,7 +55,8 @@ describe("reader assets and the social image", () => {
     const { version } = JSON.parse(read("node_modules/pdfjs-dist/package.json")) as { version: string };
     const script = read("scripts/copy-pdf-worker.mjs");
     expect(script).toMatch(/const dest = join\(base, version\)/);
-    expect(existsSync(join(root, "public/pdfjs", version, "pdf.worker.min.mjs")), "run node scripts/copy-pdf-worker.mjs").toBe(true);
+    // الاسم القديم للعامل باقٍ لصفحة قارئ فُتحت قبل النشر
+    for (const f of ["pdf.worker.min.mjs", "pdf.r1.min.mjs", "pdf.worker.r1.min.mjs"]) expect(existsSync(join(root, "public/pdfjs", version, f)), `run node scripts/copy-pdf-worker.mjs: ${f}`).toBe(true);
   });
 
   it("points the social card at a versioned image of a sensible size", () => {

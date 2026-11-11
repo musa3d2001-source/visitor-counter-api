@@ -5,13 +5,57 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import { ArrowRight, BookOpenText, Download, Eye, LoaderCircle, Maximize, Minus, Plus, RotateCw, ShieldCheck, ShoppingCart, TriangleAlert } from "lucide-react";
 import { ar } from "@/lib/design";
 import { Price } from "@/components/ui/price";
-import { FILE_BUSY_MESSAGE, FILE_PREPARING_MESSAGE, READER_DELIVERY_HEADER, readerErrorMessage, readerRetryDelaySeconds, type FileLinkAnswer } from "@/lib/reader-error";
-import type { PDFDocumentProxy, PDFPageProxy } from "pdfjs-dist";
+import {
+  FILE_BUSY_MESSAGE,
+  FILE_PREPARING_MESSAGE,
+  READER_DELIVERY_HEADER,
+  READER_PAGE_FAILED_MESSAGE,
+  answerFailure,
+  fileAnswerKind,
+  jitteredWaitMs,
+  networkRetryDelaySeconds,
+  readerErrorMessage,
+  readerFailure,
+  readerRetryDelaySeconds,
+  type FileAnswer,
+  type FileLinkAnswer,
+} from "@/lib/reader-error";
+import { PDF_READER_ASSETS, PDF_READER_ENGINE, PDF_READER_WORKER } from "@/lib/reader-assets";
+import type { PDFDocumentProxy, PDFPageProxy, PDFWorker } from "pdfjs-dist";
+
+type PdfJs = typeof import("pdfjs-dist");
+
+/**
+ * محرك القارئ من /pdfjs/<الإصدار>/ لا من حزمة الموقع: نسخة pdf.js القديمة مجهزة لحد المتصفحات في reader-assets.ts (البند R018).
+ * import وقت التشغيل من النطاق نفسه، يسمح به CSP لأن السكربت الذي يطلبه موثوق بـ nonce ('strict-dynamic').
+ */
+let engineLoad: Promise<PdfJs> | null = null;
+let engineFailures = 0;
+function loadReaderEngine(): Promise<PdfJs> {
+  if (!engineLoad) {
+    // تحميل تعثر لا يُعاد من ذاكرة الوحدات: زر «حاول مرة أخرى» يطلب الملف من جديد بعنوان مختلف
+    const url = engineFailures ? `${PDF_READER_ENGINE}?retry=${engineFailures}` : PDF_READER_ENGINE;
+    engineLoad = (import(/* webpackIgnore: true */ /* turbopackIgnore: true */ url) as Promise<PdfJs>).catch((err: unknown) => {
+      engineLoad = null;
+      engineFailures++;
+      throw err;
+    });
+  }
+  return engineLoad;
+}
+
+/** أقصى انتظار لفتح ملف وصل كاملًا، ولرسم صفحة واحدة. ما يتجاوزه متصفح علق، فيقال ذلك بدل دوّامة بلا نهاية */
+const OPEN_DEADLINE_MS = 60_000;
+const PAGE_RENDER_DEADLINE_MS = 60_000;
+/** أكبر ملف تُحجز له ذاكرته مقدمًا من الطول المعلن. ما فوقه يُجمع قطعًا كما كان */
+const MAX_PREALLOCATED_BYTES = 256 * 1024 * 1024;
 
 /**
  * قارئ PDF مدمج ومتجاوب مبني على PDF.js:
  * - يرسم الصفحات القريبة من الشاشة فقط، ويحرر لوحات الرسم البعيدة (ملف من مئات الصفحات لا يملأ ذاكرة الهاتف)
- * - يعرض نسبة التحميل، ويعيد المحاولة وحده حين يقول الخادم إنه مشغول (503 أو 429 مع Retry-After)
+ * - يحمّل المحرك والعامل مع الملف لا بعده، ويحجز للملف نسخة واحدة في الذاكرة (البند R020)
+ * - يعيد المحاولة وحده حين يقول التطبيق إنه مشغول أو ترد منصة الاستضافة بانشغالها، بعد Retry-After وجزء عشوائي منه (البند R017)
+ * - صفحة لم تُرسم تقول ذلك على الصفحة نفسها مع زر لإعادة رسمها، ولا تُنسب إلى الاتصال (القرار F27)
  * - طبقة علامة مائية فوق كل صفحة
  * - بدون طبقة نص قابلة للنسخ، وبدون زر تنزيل للمنتجات «للقراءة فقط»
  * - يحفظ آخر صفحة ويعيد الطالب إليها
@@ -44,6 +88,8 @@ export function PdfReader({ src, title, backHref, backLabel, initialPage = 1, wa
   const [error, setError] = useState<string | null>(null);
   const [loaded, setLoaded] = useState<{ received: number; total: number | null }>({ received: 0, total: null });
   const [waiting, setWaiting] = useState<{ message: string; seconds: number } | null>(null);
+  /** file: الملف يصل. engine: وصل الملف، والمحرك يفتحه */
+  const [phase, setPhase] = useState<"file" | "engine">("file");
   const [attempt, setAttempt] = useState(0);
   const [ratio, setRatio] = useState(1.414);
   const [zoom, setZoom] = useState(1);
@@ -57,65 +103,120 @@ export function PdfReader({ src, title, backHref, backLabel, initialPage = 1, wa
     let cancelled = false;
     const abort = new AbortController();
     let loadingTask: { destroy: () => Promise<void> } | null = null;
+    let worker: PDFWorker | null = null;
     setError(null);
     setDoc(null);
+    setPhase("file");
     setLoaded({ received: 0, total: null });
-    const pause = (seconds: number) => new Promise<void>((resolve) => setTimeout(resolve, seconds * 1000));
+    const pause = (ms: number) => new Promise<void>((resolve) => setTimeout(resolve, ms));
+
+    // المحرك (نحو 150 KB مضغوطًا) والعامل (نحو 400 KB) يصلان أثناء تنزيل الملف لا بعده (البند R020)
+    const engine = loadReaderEngine();
+    const workerReady = engine.then((pdfjs) => {
+      if (cancelled) return null;
+      pdfjs.GlobalWorkerOptions.workerSrc = PDF_READER_WORKER;
+      worker = new pdfjs.PDFWorker();
+      return worker;
+    });
+    // التعثر هنا يُقرأ حين يُنتظر بعد وصول الملف، لا قبله
+    workerReady.catch(() => {});
+
     (async () => {
       try {
         let bytes: Uint8Array | null = null;
         // نسختك المحفوظة تصل رابطًا لدقيقة واحدة (القرار F22). إن تعذر اتباعه تُطلب مرة واحدة عبر الموقع نفسه
         let viaSite = false;
+        // لكل نوع حدّه: انشغال التطبيق، وانشغال المنصة، وانقطاع الشبكة. التحويل إلى البث عبر الموقع لا يُحتسب منها
+        const retried = { app: 0, platform: 0, network: 0 };
         const onProgress = (received: number, total: number | null) => {
           if (!cancelled) setLoaded({ received, total });
         };
-        for (let tries = 0; !bytes; tries++) {
-          const res = await fetch(viaSite ? streamThroughSite(src) : src, { headers: { "x-reader": "1", [READER_DELIVERY_HEADER]: "url" }, credentials: "same-origin", signal: abort.signal });
+        /** انقطاع في الشبكة (لا إلغاء): يُعاد مرة واحدة بعد ثانيتين وجزء عشوائي */
+        const afterNetworkDrop = async (err: unknown) => {
+          if (abort.signal.aborted) throw err;
+          const wait = networkRetryDelaySeconds(retried.network++);
+          if (wait === null) throw readerFailure({ stage: "network" }, err);
+          await pause(jitteredWaitMs(wait));
+        };
+        while (!bytes) {
+          let res: Response;
+          try {
+            res = await fetch(viaSite ? streamThroughSite(src) : src, { headers: { "x-reader": "1", [READER_DELIVERY_HEADER]: "url" }, credentials: "same-origin", signal: abort.signal });
+          } catch (err) {
+            await afterNetworkDrop(err);
+            if (cancelled) return;
+            continue;
+          }
           if (!res.ok) {
-            const body = (await res.json().catch(() => ({}))) as { retry?: unknown; busy?: unknown };
-            const retryFlag = body.retry === true || body.busy === true;
-            const wait = readerRetryDelaySeconds(res.status, res.headers.get("retry-after"), retryFlag, tries);
-            if (wait === null) throw Object.assign(new Error("file request failed"), { status: res.status, retryable: retryFlag && res.headers.has("retry-after") });
+            const answer = await readFileAnswer(res);
+            const kind = fileAnswerKind(answer);
+            const wait = kind === "final" ? null : readerRetryDelaySeconds(answer, retried[kind]);
+            if (wait === null) throw answerFailure(answer);
+            retried[kind as "app" | "platform"]++;
             setWaiting({ message: res.status === 429 ? FILE_PREPARING_MESSAGE : FILE_BUSY_MESSAGE, seconds: wait });
-            await pause(wait + Math.random());
+            await pause(jitteredWaitMs(wait));
             if (cancelled) return;
             setWaiting(null);
             continue;
           }
-          if (!viaSite && (res.headers.get("content-type") ?? "").includes("application/json")) {
-            const link = (await res.json().catch(() => ({}))) as Partial<FileLinkAnswer>;
-            try {
-              if (typeof link.url !== "string") throw new Error("no link");
-              // بلا كوكي ولا عنوان الصفحة ولا ذاكرة متصفح: الرابط وحده هو الإذن، وعمره دقيقة
-              const copy = await fetch(link.url, { credentials: "omit", cache: "no-store", referrerPolicy: "no-referrer", signal: abort.signal });
-              if (!copy.ok) throw new Error("link refused");
-              bytes = await readWithProgress(copy, onProgress);
-            } catch (err) {
-              if (abort.signal.aborted) throw err;
-              viaSite = true;
+          try {
+            if (!viaSite && (res.headers.get("content-type") ?? "").includes("application/json")) {
+              const link = (await res.json().catch(() => ({}))) as Partial<FileLinkAnswer>;
+              try {
+                if (typeof link.url !== "string") throw new Error("no link");
+                // بلا كوكي ولا عنوان الصفحة ولا ذاكرة متصفح: الرابط وحده هو الإذن، وعمره دقيقة
+                const copy = await fetch(link.url, { credentials: "omit", cache: "no-store", referrerPolicy: "no-referrer", signal: abort.signal });
+                if (!copy.ok) throw new Error("link refused");
+                bytes = await readWithProgress(copy, typeof link.size === "number" ? link.size : null, onProgress);
+              } catch (err) {
+                if (abort.signal.aborted) throw err;
+                viaSite = true;
+              }
+              continue;
             }
-            continue;
+            bytes = await readWithProgress(res, null, onProgress);
+          } catch (err) {
+            // انقطع التنزيل في منتصفه: الطلب كله يُعاد مرة واحدة
+            await afterNetworkDrop(err);
+            if (cancelled) return;
           }
-          bytes = await readWithProgress(res, onProgress);
         }
         if (cancelled) return;
-        const pdfjs = await import("pdfjs-dist");
-        // الإصدار جزء من المسار: الملفات تُخزَّن سنة كاملة، والعامل يبقى مطابقًا للمكتبة بعد أي ترقية
-        const assets = `/pdfjs/${pdfjs.version}`;
-        pdfjs.GlobalWorkerOptions.workerSrc = `${assets}/pdf.worker.min.mjs`;
+        setPhase("engine");
+        let pdfjs: PdfJs;
+        let readyWorker: PDFWorker | null;
+        try {
+          [pdfjs, readyWorker] = await Promise.all([engine, workerReady]);
+          // العامل جاهز فعلًا (ملفه وصل وبدأ): تعثره هنا محرك لم يعمل، لا ملف لم يُفتح
+          if (readyWorker) await withDeadline(readyWorker.promise, OPEN_DEADLINE_MS);
+        } catch (err) {
+          throw readerFailure({ stage: "engine" }, err);
+        }
+        if (cancelled || !readyWorker) return;
+        // الإصدار جزء من المسار: الملفات تُخزَّن سنة كاملة، والعامل يبقى مطابقًا للمكتبة بعد أي ترقية.
+        // المصفوفة تُنقل إلى العامل كما هي (طولها طول ذاكرتها)، فلا تبقى منها نسخة ثانية هنا
         const task = pdfjs.getDocument({
           data: bytes,
-          cMapUrl: `${assets}/cmaps/`,
+          worker: readyWorker,
+          cMapUrl: `${PDF_READER_ASSETS}/cmaps/`,
           cMapPacked: true,
-          standardFontDataUrl: `${assets}/standard_fonts/`,
-          wasmUrl: `${assets}/wasm/`,
+          standardFontDataUrl: `${PDF_READER_ASSETS}/standard_fonts/`,
+          wasmUrl: `${PDF_READER_ASSETS}/wasm/`,
         });
         loadingTask = task;
-        const loadedDoc = await task.promise;
+        let loadedDoc: PDFDocumentProxy;
+        let ratioOfFirst: number;
+        try {
+          loadedDoc = await withDeadline(task.promise, OPEN_DEADLINE_MS);
+          const first = await withDeadline(loadedDoc.getPage(1), OPEN_DEADLINE_MS);
+          const vp = first.getViewport({ scale: 1 });
+          ratioOfFirst = vp.height / vp.width;
+        } catch (err) {
+          if ((err as { name?: string } | null)?.name === "PasswordException") throw err;
+          throw readerFailure({ stage: "open" }, err);
+        }
         if (cancelled) return;
-        const first = await loadedDoc.getPage(1);
-        const vp = first.getViewport({ scale: 1 });
-        setRatio(vp.height / vp.width);
+        setRatio(ratioOfFirst);
         setDoc(loadedDoc);
       } catch (err) {
         if (cancelled) return;
@@ -127,6 +228,8 @@ export function PdfReader({ src, title, backHref, backLabel, initialPage = 1, wa
       cancelled = true;
       abort.abort();
       void loadingTask?.destroy();
+      // العامل المعطى لـ getDocument لا يُغلق مع المستند، فيُغلق هنا
+      (worker as PDFWorker | null)?.destroy();
     };
   }, [src, attempt]);
 
@@ -301,13 +404,17 @@ export function PdfReader({ src, title, backHref, backLabel, initialPage = 1, wa
               <p className="max-w-xs text-center font-display text-[0.98rem] leading-7 font-bold" data-testid="reader-waiting">
                 {waiting.message}
               </p>
+            ) : phase === "engine" ? (
+              <p className="font-display text-[0.98rem] font-bold" data-testid="reader-loading">
+                وصل الملف، نجهز صفحاته…
+              </p>
             ) : (
               <p className="font-display text-[0.98rem] font-bold" data-testid="reader-loading">
                 جارٍ فتح الملف…
                 {loaded.total ? <span className="num ms-1.5 text-[#ffc531]">{ar(Math.min(100, Math.floor((loaded.received / loaded.total) * 100)))}٪</span> : null}
               </p>
             )}
-            {loaded.total && !waiting ? (
+            {loaded.total && !waiting && phase === "file" ? (
               <span className="block h-1.5 w-48 overflow-hidden rounded-full bg-white/15" aria-hidden>
                 <span className="block h-full rounded-full bg-linear-to-l from-[#ffd25e] to-[#ffc531] transition-[width] duration-300" style={{ width: `${Math.min(100, (loaded.received / loaded.total) * 100)}%` }} />
               </span>
@@ -417,28 +524,74 @@ function streamThroughSite(src: string): string {
   return `${url.pathname}${url.search}`;
 }
 
-/** يقرأ الجسم كله مع نسبة التحميل (حين يرسل الخادم Content-Length) */
-async function readWithProgress(res: Response, onProgress: (received: number, total: number | null) => void): Promise<Uint8Array> {
+/** رد غير ناجح كما يحتاجه القرار: هل هو JSON من التطبيق، أم صفحة خطأ من منصة الاستضافة */
+async function readFileAnswer(res: Response): Promise<FileAnswer> {
+  const text = await res.text().catch(() => "");
+  let body: FileAnswer["body"] = {};
+  let appJson = false;
+  if ((res.headers.get("content-type") ?? "").includes("application/json")) {
+    try {
+      const parsed = JSON.parse(text) as unknown;
+      if (parsed && typeof parsed === "object" && typeof (parsed as { error?: unknown }).error === "string") {
+        body = parsed as FileAnswer["body"];
+        appJson = true;
+      }
+    } catch {
+      /* ليس JSON التطبيق */
+    }
+  }
+  return { status: res.status, retryAfter: res.headers.get("retry-after"), appJson, platformError: res.headers.get("x-vercel-error"), body };
+}
+
+/**
+ * يقرأ الجسم كله مع نسبة التحميل. حين يُعرف الطول (Content-Length، أو حجم النسخة في جواب الرابط) تُحجز مصفوفة واحدة
+ * بحجمه وتُملأ مباشرة، فلا تجتمع في ذاكرة الهاتف القطع ونسختها المجمعة معًا (البند R020). ما جاء أكبر مما قيل يكمل قطعًا.
+ */
+async function readWithProgress(res: Response, expected: number | null, onProgress: (received: number, total: number | null) => void): Promise<Uint8Array> {
   const declared = Number(res.headers.get("content-length"));
-  const total = Number.isFinite(declared) && declared > 0 ? declared : null;
+  const total = Number.isFinite(declared) && declared > 0 ? declared : expected !== null && expected > 0 ? expected : null;
   if (!res.body) return new Uint8Array(await res.arrayBuffer());
   const reader = res.body.getReader();
-  const chunks: Uint8Array[] = [];
+  let out: Uint8Array | null = total !== null && total <= MAX_PREALLOCATED_BYTES ? new Uint8Array(total) : null;
+  let chunks: Uint8Array[] = [];
   let received = 0;
   for (;;) {
     const { done, value } = await reader.read();
     if (done) break;
-    chunks.push(value);
+    if (out && received + value.byteLength > out.byteLength) {
+      chunks = [out.subarray(0, received)];
+      out = null;
+    }
+    if (out) out.set(value, received);
+    else chunks.push(value);
     received += value.byteLength;
     onProgress(received, total);
   }
-  const out = new Uint8Array(received);
+  if (out) return received === out.byteLength ? out : out.slice(0, received);
+  const joined = new Uint8Array(received);
   let offset = 0;
   for (const c of chunks) {
-    out.set(c, offset);
+    joined.set(c, offset);
     offset += c.byteLength;
   }
-  return out;
+  return joined;
+}
+
+/** وعد لا ينتهي خلال المهلة يُعامل كتعثر: متصفح علق في فتح الملف أو رسم صفحة */
+function withDeadline<T>(promise: Promise<T>, ms: number): Promise<T> {
+  return new Promise<T>((resolve, reject) => {
+    const timer = setTimeout(() => reject(new Error("reader deadline")), ms);
+    promise.then(
+      (v) => {
+        clearTimeout(timer);
+        resolve(v);
+      },
+      (e: unknown) => {
+        clearTimeout(timer);
+        reject(e);
+      },
+    );
+  });
 }
 
 /**
@@ -448,34 +601,51 @@ async function readWithProgress(res: Response, onProgress: (received: number, to
 function PdfPage({ doc, n, width, height, top, watermark }: { doc: PDFDocumentProxy; n: number; width: number; height: number; top: number; watermark?: string }) {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const [rendered, setRendered] = useState(0);
+  /** الرسم تعثر أو علق: يقال على الصفحة نفسها، وزرها يعيد الرسم */
+  const [failed, setFailed] = useState(false);
+  const [redraw, setRedraw] = useState(0);
 
   useEffect(() => {
     if (!canvasRef.current || rendered === width) return;
     let cancelled = false;
     let task: ReturnType<PDFPageProxy["render"]> | null = null;
-    (async () => {
-      const page = await doc.getPage(n);
+    const giveUp = () => {
       if (cancelled) return;
-      const base = page.getViewport({ scale: 1 });
-      const dpr = Math.min(window.devicePixelRatio || 1, 2);
-      const viewport = page.getViewport({ scale: (width / base.width) * dpr });
-      const canvas = canvasRef.current;
-      if (!canvas) return;
-      canvas.width = Math.floor(viewport.width);
-      canvas.height = Math.floor(viewport.height);
-      task = page.render({ canvas, viewport });
+      cancelled = true;
+      task?.cancel();
+      setFailed(true);
+    };
+    const watchdog = setTimeout(giveUp, PAGE_RENDER_DEADLINE_MS);
+    (async () => {
       try {
+        const page = await doc.getPage(n);
+        if (cancelled) return;
+        const base = page.getViewport({ scale: 1 });
+        const dpr = Math.min(window.devicePixelRatio || 1, 2);
+        const viewport = page.getViewport({ scale: (width / base.width) * dpr });
+        const canvas = canvasRef.current;
+        if (!canvas) return;
+        canvas.width = Math.floor(viewport.width);
+        canvas.height = Math.floor(viewport.height);
+        task = page.render({ canvas, viewport });
         await task.promise;
-        if (!cancelled) setRendered(width);
-      } catch {
-        /* render cancelled */
+        if (cancelled) return;
+        setFailed(false);
+        setRendered(width);
+      } catch (err) {
+        // الإلغاء (تمرير بعيدًا أو تكبير) ليس تعثرًا. أي خطأ آخر يُرى، لا يُبلع فتبقى الصفحة فارغة
+        if ((err as { name?: string } | null)?.name === "RenderingCancelledException") return;
+        giveUp();
+      } finally {
+        clearTimeout(watchdog);
       }
     })();
     return () => {
       cancelled = true;
+      clearTimeout(watchdog);
       task?.cancel();
     };
-  }, [doc, n, width, rendered]);
+  }, [doc, n, width, rendered, redraw]);
 
   // عند الإزالة: لوحة بحجم صفر تحرر ذاكرتها فورًا، و cleanup يحرر موارد الصفحة في pdf.js
   useEffect(() => {
@@ -501,7 +671,29 @@ function PdfPage({ doc, n, width, height, top, watermark }: { doc: PDFDocumentPr
       data-testid="reader-page"
     >
       <canvas ref={canvasRef} className="block h-full w-full" />
-      {!rendered ? <div className="absolute inset-0 animate-pulse bg-[#f4efe6]" aria-hidden /> : null}
+      {failed ? (
+        <div dir="rtl" className="absolute inset-0 flex flex-col items-center justify-center gap-3 bg-[#f4efe6] px-5 text-center text-ink" role="alert" data-testid="reader-page-failed">
+          <TriangleAlert className="size-7 text-[#c2410c]" aria-hidden />
+          <p className="max-w-xs font-display text-[0.98rem] leading-7 font-bold">
+            {READER_PAGE_FAILED_MESSAGE} حدّث المتصفح أو افتح الملف من Safari أو Chrome إن تكرر ذلك.
+          </p>
+          <button
+            type="button"
+            className="btn btn-3d btn-accent btn-sm min-h-11"
+            onClick={() => {
+              setFailed(false);
+              setRendered(0);
+              setRedraw((r) => r + 1);
+            }}
+            data-testid="reader-page-retry"
+          >
+            <RotateCw aria-hidden />
+            أعد عرض الصفحة
+          </button>
+        </div>
+      ) : !rendered ? (
+        <div className="absolute inset-0 animate-pulse bg-[#f4efe6]" aria-hidden />
+      ) : null}
       {watermark ? (
         <div className="pointer-events-none absolute inset-0 flex flex-col items-center justify-around overflow-hidden opacity-[0.13]" aria-hidden>
           {[0, 1, 2].map((i) => (

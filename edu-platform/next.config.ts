@@ -1,11 +1,12 @@
 import { execFileSync } from "node:child_process";
-import { existsSync, readFileSync } from "node:fs";
+import { existsSync } from "node:fs";
 import { join } from "node:path";
 import type { NextConfig } from "next";
 import { PHASE_PRODUCTION_BUILD } from "next/constants";
 import { bunnyConfigProblem } from "./src/lib/bunny-keys";
 import { envProblems, normaliseEnv } from "./src/server/env-schema";
 import { API_CSP_SOURCE, SECURITY_HEADERS, STRICT_CSP } from "./src/lib/security-headers";
+import { PDF_READER_ENGINE_FILE, PDF_READER_WORKER_FILE, PDFJS_VERSION } from "./src/lib/reader-assets";
 
 /**
  * إعدادات Next.js
@@ -80,10 +81,13 @@ const nextConfig: NextConfig = {
   },
 };
 
-/** بناء بلا npm install جديد (next build مباشرة، أو شجرة أقدم من ترقية pdfjs-dist) يجب ألا يخرج بقارئ بلا عامل */
+/**
+ * بناء بلا npm install جديد (next build مباشرة، أو شجرة أقدم من ترقية pdfjs-dist أو من طريقة بناء جديدة للقارئ)
+ * يجب ألا يخرج بقارئ بلا محرك أو عامل. السكربت يتوقف بخطأ إن لم يستطع تجهيزهما، فيتوقف البناء معه
+ */
 function ensurePdfReaderAssets() {
-  const { version } = JSON.parse(readFileSync(join(__dirname, "node_modules/pdfjs-dist/package.json"), "utf8")) as { version: string };
-  if (!existsSync(join(__dirname, "public/pdfjs", version, "pdf.worker.min.mjs"))) {
+  const dir = join(__dirname, "public/pdfjs", PDFJS_VERSION);
+  if (![PDF_READER_ENGINE_FILE, PDF_READER_WORKER_FILE].every((f) => existsSync(join(dir, f)))) {
     execFileSync(process.execPath, [join(__dirname, "scripts/copy-pdf-worker.mjs")], { stdio: "inherit" });
   }
 }

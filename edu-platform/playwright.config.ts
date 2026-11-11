@@ -1,4 +1,5 @@
-import { defineConfig, devices } from "@playwright/test";
+import { existsSync } from "node:fs";
+import { defineConfig, devices, webkit } from "@playwright/test";
 import { E2E_BASE_URL, E2E_BUNNY, E2E_BUNNY_PORT, E2E_MAIL_BASE_URL, E2E_MAIL_SERVER_ENV, E2E_PUBLIC_CACHE_BASE_URL, E2E_PUBLIC_CACHE_SERVER_ENV, E2E_SERVER_ENV, E2E_SIM_KEY, E2E_SIM_PORT, E2E_SINK_URL, E2E_SMTP_PORT, E2E_TWO_FACTOR_BASE_URL, E2E_TWO_FACTOR_SERVER_ENV, E2E_WEBHOOK_SECRET } from "./tests/e2e/e2e-env";
 
 /**
@@ -12,6 +13,16 @@ import { E2E_BASE_URL, E2E_BUNNY, E2E_BUNNY_PORT, E2E_MAIL_BASE_URL, E2E_MAIL_SE
  *    ويرسل Webhook موقّعًا (مرتين لاختبار منع التكرار) إلى خادم التطبيق.
  */
 const baseURL = E2E_BASE_URL;
+
+/** WebKit من Playwright مثبت على هذا الجهاز؟ بدونه لا يُضاف مشروعه، ويقال ذلك صراحة بدل أن يفشل كل التشغيل */
+const webkitInstalled = (() => {
+  try {
+    return existsSync(webkit.executablePath());
+  } catch {
+    return false;
+  }
+})();
+if (!webkitInstalled) console.warn("[playwright] WebKit غير مثبت: اختبار القارئ على WebKit لن يعمل. ثبّته بـ npx playwright install webkit");
 const simPort = E2E_SIM_PORT;
 
 export default defineConfig({
@@ -34,6 +45,8 @@ export default defineConfig({
     { name: "desktop", use: { ...devices["Desktop Chrome"], viewport: { width: 1366, height: 900 } } },
     { name: "iphone", use: { ...devices["iPhone 13"], browserName: "chromium", defaultBrowserType: "chromium" } },
     { name: "ipad", use: { ...devices["iPad (gen 7)"], browserName: "chromium", defaultBrowserType: "chromium" } },
+    // محرك Safari الفعلي، للقارئ وحده (R018). يحتاج WebKit من Playwright مثبتًا (npx playwright install webkit)
+    ...(webkitInstalled ? [{ name: "webkit", testMatch: /17-pdf-reader\.spec\.ts/, use: { ...devices["iPhone 13"] } }] : []),
   ],
   webServer: [
     {
