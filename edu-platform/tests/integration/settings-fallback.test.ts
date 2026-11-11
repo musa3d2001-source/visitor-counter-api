@@ -76,10 +76,12 @@ describe("stored settings", () => {
 describe("instagram link", () => {
   const ig = settingsSchema.shape.instagram_url;
 
-  it("accepts https and empty only", () => {
-    expect(ig.safeParse("https://instagram.com/farqad").success).toBe(true);
-    expect(ig.safeParse("").success).toBe(true);
-    for (const bad of ["javascript:alert(1)", "data:text/html,<b>x</b>", "http://instagram.com/farqad", "ftp://x.y/z", "instagram.com/farqad"]) {
+  it("accepts https on instagram.com and empty only", () => {
+    for (const good of ["https://instagram.com/farqad", "https://www.instagram.com/farqad/", "https://WWW.Instagram.com/farqad", ""]) {
+      expect(ig.safeParse(good).success, good).toBe(true);
+    }
+    const lookalikes = ["https://instagram.com.evil.example/farqad", "https://evil-instagram.com/farqad", "https://instagram.co/farqad", "https://example.com/instagram.com", "https://instagram.com@evil.example/x"];
+    for (const bad of ["javascript:alert(1)", "data:text/html,<b>x</b>", "http://instagram.com/farqad", "ftp://x.y/z", "instagram.com/farqad", ...lookalikes]) {
       expect(ig.safeParse(bad).success, bad).toBe(false);
     }
   });
@@ -91,5 +93,13 @@ describe("instagram link", () => {
     expect(res?.error).toContain("https://");
     const [row] = await sql`select 1 from settings where key = 'instagram_url'`;
     expect(row).toBeUndefined();
+  });
+
+  it("a link saved before the host rule falls back to empty and the owner is told", async () => {
+    await sql`insert into settings (key, value) values ('instagram_url', '"https://example.com/fake-support"'::jsonb) on conflict (key) do update set value = excluded.value`;
+    const report = await readSettingsReport();
+    expect(report.settings.instagram_url).toBe("");
+    expect(report.invalid).toContain("instagram_url");
+    await sql`delete from settings where key = 'instagram_url'`;
   });
 });

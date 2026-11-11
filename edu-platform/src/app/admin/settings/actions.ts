@@ -60,7 +60,7 @@ export async function saveSettingsAction(_p: ActionState, fd: FormData): Promise
       const errs: Record<string, string> = {};
       for (const i of parsed.error.issues) {
         const k = String(i.path[0]);
-        if (!errs[k]) errs[k] = k === "instagram_url" ? `«${FIELD_LABELS[k]}» يجب أن يبدأ بـ https://` : `قيمة غير صحيحة في «${FIELD_LABELS[k] ?? k}»`;
+        if (!errs[k]) errs[k] = k === "instagram_url" ? `«${FIELD_LABELS[k]}» يجب أن يكون رابط حساب يبدأ بـ https://instagram.com` : `قيمة غير صحيحة في «${FIELD_LABELS[k] ?? k}»`;
       }
       throw new AdminError(Object.values(errs).join("، "), errs);
     }

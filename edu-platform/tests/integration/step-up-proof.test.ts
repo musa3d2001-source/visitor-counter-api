@@ -47,7 +47,7 @@ afterAll(async () => {
 });
 beforeEach(async () => {
   await sql`delete from rate_limits`;
-  await sql`delete from settings where key in ('fee_percent_bps', 'fee_fixed_fils', 'watermark_enabled', 'whatsapp_number', 'seller_legal_name', 'tagline')`;
+  await sql`delete from settings where key in ('fee_percent_bps', 'fee_fixed_fils', 'watermark_enabled', 'whatsapp_number', 'instagram_url', 'seller_legal_name', 'tagline')`;
   owner = await createUser({ role: "admin" });
 });
 afterEach(() => {
@@ -145,6 +145,7 @@ async function protectedCases(): Promise<Case[]> {
     { name: "fee change", run: () => saveSettingsAction(null, settingsForm({ fee_percent: "2.5" })) },
     { name: "watermark off", run: () => saveSettingsAction(null, settingsForm({ watermark_enabled: "" })) },
     { name: "contact number change", run: () => saveSettingsAction(null, settingsForm({ whatsapp_number: "+96512345678" })) },
+    { name: "instagram link change", run: () => saveSettingsAction(null, settingsForm({ instagram_url: "https://instagram.com/other" })) },
     { name: "seller identity change", run: () => saveSettingsAction(null, settingsForm({ seller_legal_name: "شركة أخرى" })) },
     { name: "coupon create", run: () => saveCouponAction(null, form({ code: `Z${randomUUID().slice(0, 6)}`.toUpperCase(), kind: "percent", value: "100", maxPerUser: "1" })) },
     { name: "coupon activate", run: () => toggleCouponAction(null, form({ id: coupon.id, active: "1" })) },

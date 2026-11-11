@@ -21,17 +21,22 @@ export const settingsSchema = z.object({
   whatsapp_number: z.string().regex(/^\+?\d{8,15}$/).or(z.literal("")),
   contact_email: z.string().email().or(z.literal("")),
   contact_phone: z.string().max(30),
-  /** يظهر رابطًا في تذييل كل صفحة: https فقط (لا javascript: ولا data: ولا http) */
+  /**
+   * يظهر رابطًا باسم «إنستغرام» في تذييل كل صفحة وفي صفحة التواصل: https فقط (لا javascript: ولا data: ولا http)،
+   * وعلى instagram.com أو نطاق منه فقط (R005)، فلا يشير الاسم إلى موقع آخر. قيمة محفوظة لا تطابق هذا تعود إلى الفراغ ويُنبَّه المالك
+   */
   instagram_url: z
     .string()
     .url()
     .refine((u) => {
       try {
-        return new URL(u).protocol === "https:";
+        const url = new URL(u);
+        const host = url.hostname.toLowerCase();
+        return url.protocol === "https:" && (host === "instagram.com" || host.endsWith(".instagram.com"));
       } catch {
         return false;
       }
-    }, "الرابط يجب أن يبدأ بـ https://")
+    }, "الرابط يجب أن يبدأ بـ https://instagram.com")
     .or(z.literal("")),
   academic_year: z.string().regex(/^\d{4}-\d{4}$/),
   videos_enabled: z.boolean(),
@@ -143,8 +148,21 @@ export const getSettings = cache(async (): Promise<PlatformSettings> => (await g
 /**
  * ما يحتاج تغييره إثباتًا حديثًا: ما يحسب مال المعلمين، وما يوصل إليه ولي الأمر حين يبحث عن البائع أو الدعم.
  * من يبدّل رقم واتساب في جلسة مسروقة يستقبل أسئلة الدفع بدل المالك. إيقاف العلامة المائية يُفحص وحده لأن تشغيلها لا يحتاج شيئًا.
+ * وسائل التواصل كلها هنا، وهي كل إعداد يظهر رابطًا في الصفحات العامة: واتساب والبريد والهاتف وإنستغرام (R005).
+ * النصوص الحرة (التذييل والأسئلة الشائعة والشعار) ليست روابط، وتبقى بلا إثبات بقرار مسجل في handoff.md.
  */
-const PROOF_SETTING_KEYS = ["fee_percent_bps", "fee_fixed_fils", "fee_rules_confirmed_at", "whatsapp_number", "contact_email", "contact_phone", "seller_legal_name", "seller_license_number", "seller_address"] as const satisfies readonly (keyof PlatformSettings)[];
+const PROOF_SETTING_KEYS = [
+  "fee_percent_bps",
+  "fee_fixed_fils",
+  "fee_rules_confirmed_at",
+  "whatsapp_number",
+  "contact_email",
+  "contact_phone",
+  "instagram_url",
+  "seller_legal_name",
+  "seller_license_number",
+  "seller_address",
+] as const satisfies readonly (keyof PlatformSettings)[];
 
 function sameValue(a: unknown, b: unknown): boolean {
   return JSON.stringify(a) === JSON.stringify(b);
