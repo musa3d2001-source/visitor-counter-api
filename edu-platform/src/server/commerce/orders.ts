@@ -40,7 +40,8 @@ export type OrderRow = {
   fee_fixed_fils: number | null;
 };
 
-export type OrderClosedReason = "expired" | "student_cancelled" | "already_owned" | "coupon_unavailable" | "product_ended";
+/** unverifiable: أغلقه المالك بعد أن تحقق في لوحة البوابة من فاتورة لا يعرفها حسابها الحالي (F28) */
+export type OrderClosedReason = "expired" | "student_cancelled" | "already_owned" | "coupon_unavailable" | "product_ended" | "unverifiable";
 
 export type OrderItemRow = { id: string; product_id: string; title: string; product_type: string; unit_price_fils: number; slug: string | null };
 
@@ -270,6 +271,8 @@ export async function markOrderPaid(
  * إغلاق طلب غير مدفوع. لا يتحقق من البوابة: على المستدعي أن يكون قد تحقق من كل الفواتير.
  * شرط الحالة في UPDATE هو الحارس، فالتشغيل المتزامن أو المكرر يغلق ويدقق مرة واحدة ولا يلمس طلبًا دُفع للتو.
  * الفاتورة التي لم تنتهِ بعد تبقى كما هي: وظيفة التسوية تتابعها، ودفعة متأخرة عليها تُعالج ولا تضيع.
+ * فاتورة أجابت البوابة أنها لا تعرفها (F28) تفتح للمالك تنبيهًا واحدًا: لا نعرف من البوابة الحالية أنها لم تُدفع،
+ * فيتحقق منها في لوحة الحساب السابق، والتنبيه المفتوح يمنع حذف بيانات الطالب حتى يقرر. إغلاق المالك نفسه (unverifiable) قرار بعد ذلك التحقق.
  */
 export async function closeOrder(db: Db, input: { orderId: string; reason: OrderClosedReason; actorId: string | null; ip?: string }): Promise<boolean> {
   const [closed] = await db<{ id: string }[]>`
@@ -287,6 +290,17 @@ export async function closeOrder(db: Db, input: { orderId: string; reason: Order
     where order_id = ${input.orderId} and status = 'pending'
       and coalesce(expires_at, created_at + make_interval(mins => ${INVOICE_TTL_MINUTES})) <= now()
   `;
+  if (input.reason !== "unverifiable") {
+    await db`
+      insert into payment_alerts (kind, dedupe_key, order_id, payment_id, details)
+      select 'unknown_invoice', 'unknown-invoice:' || p.id, p.order_id, p.id,
+        jsonb_build_object('invoiceId', p.gateway_invoice_id, 'environment', p.environment, 'amountFils', p.amount_fils,
+          'firstUnknownAt', p.gateway_unknown_first_at, 'lastUnknownAt', p.gateway_unknown_last_at, 'closedReason', ${input.reason}::text)
+      from payments p
+      where p.order_id = ${input.orderId} and p.provider = 'myfatoorah' and p.gateway_unknown_last_at is not null and p.status not in ('paid', 'refunded')
+      on conflict (dedupe_key) do nothing
+    `;
+  }
   await audit({ actorId: input.actorId, action: "order.closed", entityType: "order", entityId: input.orderId, metadata: { reason: input.reason }, ip: input.ip ?? null }, db);
   return true;
 }

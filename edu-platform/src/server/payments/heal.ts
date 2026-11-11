@@ -5,8 +5,8 @@ import { hitRateLimit } from "../auth/rate-limit";
 import { isDatabaseBusy } from "../db-busy";
 import { reportError } from "../platform/report-error";
 import { isUuid } from "@/lib/uuid";
-import { type ClaimedInvoice, releaseClaims, unverifiedDue } from "./invoice-queue";
-import { paymentsConfig, verifyAndApplyPayment } from "./service";
+import { type ClaimedInvoice, queueOrder, releaseClaims, unverifiedDue } from "./invoice-queue";
+import { UnknownInvoiceError, paymentsConfig, verifyAndApplyPayment } from "./service";
 
 /**
  * فحص زيارة المشتري (F4): من دفع ثم ضاع إشعار البوابة وأغلق صفحة البنك يحصل على ما دفع ثمنه حين يفتح مكتبته أو طلبه أو صفحة الشراء،
@@ -37,13 +37,16 @@ async function dueOrderOf(userId: string, orderId: string | null, environment: s
       and q.created_at < now() - make_interval(secs => ${HEAL_LIMITS.minInvoiceAgeSeconds})
       ${orderId ? sql`and o.id = ${orderId}` : sql``}
       and ${unverifiedDue(sql, environment, HEAL_LIMITS.recheckMinutes)}
-    order by q.last_checked_at asc nulls first, q.created_at asc
+    order by ${queueOrder(sql)}
     limit 1
   `;
   return row?.order_id ?? null;
 }
 
-/** فواتير هذا الطلب المستحقة، الأحدث أولًا: الدفعة على آخر رابط فتحه المشتري في الغالب. MATERIALIZED حتى لا تتجاوز الدفعة حدها */
+/**
+ * فواتير هذا الطلب المستحقة، الأحدث أولًا: الدفعة على آخر رابط فتحه المشتري في الغالب. ما لا تعرفه البوابة بعد كل ما تعرفه (F28).
+ * MATERIALIZED حتى لا تتجاوز الدفعة حدها
+ */
 async function claimOrderInvoices(orderId: string, environment: string): Promise<ClaimedInvoice[]> {
   const claimed = await sql<ClaimedInvoice[]>`
     with batch as materialized (
@@ -51,15 +54,15 @@ async function claimOrderInvoices(orderId: string, environment: string): Promise
       where q.order_id = ${orderId} and o.status in ('pending', 'failed')
         and q.created_at < now() - make_interval(secs => ${HEAL_LIMITS.minInvoiceAgeSeconds})
         and ${unverifiedDue(sql, environment, HEAL_LIMITS.recheckMinutes)}
-      order by q.created_at desc
+      order by (q.gateway_unknown_last_at is not null) asc, q.created_at desc
       limit ${HEAL_LIMITS.invoicesPerVisit}
       for update of q skip locked
     )
     update payments p set reconcile_claimed_at = now()
     from batch where p.id = batch.id
-    returning p.id, p.gateway_invoice_id, p.last_checked_at, p.created_at
+    returning p.id, p.gateway_invoice_id, p.last_checked_at, p.created_at, p.gateway_unknown_last_at
   `;
-  return [...claimed].sort((a, b) => b.created_at.getTime() - a.created_at.getTime());
+  return [...claimed].sort((a, b) => Number(a.gateway_unknown_last_at !== null) - Number(b.gateway_unknown_last_at !== null) || b.created_at.getTime() - a.created_at.getTime());
 }
 
 async function heal(userId: string, orderId: string | null, environment: string, startedAt: number): Promise<HealOutcome> {
@@ -86,6 +89,11 @@ async function heal(userId: string, orderId: string | null, environment: string,
         // تبقى بعقدها خمس دقائق: مهلة انتظار لبوابة متعثرة، فلا ينتظر المشتري ثلاث ثوان مع كل تحديث للصفحة
         index++;
         if (isDatabaseBusy(err)) throw err;
+        // البوابة أجابت ولا تعرفها: جواب لا عطل، وحُفظ على صفها (F28). نكمل إلى التالية، والتقرير أول مرة فقط
+        if (err instanceof UnknownInvoiceError) {
+          if (err.firstTime) await reportError("payment:heal-unknown-invoice", err);
+          continue;
+        }
         await reportError("payment:heal", err);
         return "gateway_failed";
       }

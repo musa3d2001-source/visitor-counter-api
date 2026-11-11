@@ -46,7 +46,7 @@ import { DISPUTE_STATUS_LABELS, DISPUTE_TYPE_LABELS, HOLD_KIND_LABELS, PRODUCT_T
 import { displayPhone } from "@/lib/phone";
 import { count, W } from "@/lib/design";
 import { formatDateTime } from "@/lib/utils";
-import { recordMoneyReturnedAction, refundOrderAction, releaseOrderHoldAction, reverifyPaymentAction } from "../actions";
+import { closeUnverifiableOrderAction, recordMoneyReturnedAction, refundOrderAction, releaseOrderHoldAction, reverifyPaymentAction } from "../actions";
 import { StepUpOffNote } from "../_components/step-up-off-note";
 import { STEP_UP_CONFIRM_FIELD } from "@/lib/two-factor";
 import { BandChip, ProfileHero } from "../../_components/people/band";
@@ -76,6 +76,9 @@ export default async function AdminOrderPage({ params }: { params: Promise<{ id:
   const tone = orderTone(order.status);
   // يبدأ استرداد جديد فقط إن لم يبق سجل حي: السجلات المرفوضة تُعاد من صفها
   const canStartRefund = !refunds.some((r) => r.status !== "dismissed") && payments.some((p) => p.provider === "myfatoorah" && p.status === "paid" && p.gateway_invoice_id);
+  // طلب مفتوح عليه فاتورة أجابت البوابة الحالية أنها لا تعرفها (F28): للمالك ملاذ أخير بعد التحقق في الحساب السابق
+  const unknownInvoices = payments.filter((p) => p.provider === "myfatoorah" && p.gateway_unknown_last_at && p.status !== "paid" && p.status !== "refunded");
+  const canCloseUnverifiable = cfg.enabled && (order.status === "pending" || order.status === "failed") && unknownInvoices.length > 0;
 
   // مسار الطلب: يُبنى من التواريخ المسجلة فعلًا فقط (الإنشاء، محاولات الدفع، تأكيد الدفع، الاسترداد)
   const steps = ([
@@ -145,12 +148,50 @@ export default async function AdminOrderPage({ params }: { params: Promise<{ id:
           <Alert key={a.id} tone="danger" title={`نزاع مفتوح على هذا الطلب: ${DISPUTE_TYPE_LABELS[a.details.type ?? ""] ?? "نزاع على دفعة"}`}>
             الحالة لدى البوابة: {DISPUTE_STATUS_LABELS[a.details.status ?? ""] ?? a.details.status ?? "غير معروفة"}. {order.status === "paid" ? "الوصول والأرباح موقوفان حتى تقرر." : "الطلب غير مدفوع، فلا وصول يُوقف."} <Link prefetch={false} href="/admin/orders#payment-alerts">كل تنبيهات الدفع</Link>
           </Alert>
+        ) : a.kind === "unknown_invoice" ? (
+          <Alert key={a.id} tone="warning" title={`أُغلق الطلب وعليه فاتورة لا تعرفها البوابة (${a.details.invoiceId})`}>
+            البوابة الحالية لا تعرف هذه الفاتورة، فلا نعرف منها أنها لم تُدفع. ابحث عن رقمها في لوحة حساب MyFatoorah الذي أصدرها. إن وجدتها مدفوعة فامنح الطالب الوصول من ملفه أو استرد المبلغ من تلك اللوحة، ثم أغلق التنبيه. حذف بيانات صاحب الطلب ينتظر إغلاقه. <Link prefetch={false} href="/admin/orders#payment-alerts">كل تنبيهات الدفع</Link>
+          </Alert>
         ) : (
           <Alert key={a.id} tone="danger" title="حدث استرداد من البوابة لم يُطبق تلقائيًا">
             السبب: {REFUND_ALERT_REASON_LABELS[a.details.reason] ?? a.details.reason}. {a.details.reason === "amount_mismatch" && order.status === "paid" ? "الوصول والأرباح موقوفان حتى تقرر." : "لم يتغير الطلب ولا وصول الطالب."} راجعه في لوحة MyFatoorah. <Link prefetch={false} href="/admin/orders#payment-alerts">كل تنبيهات الدفع</Link>
           </Alert>
         ),
       )}
+
+      {canCloseUnverifiable ? (
+        <Section
+          id="unverifiable-order"
+          title="البوابة الحالية لا تعرف فاتورة على هذا الطلب"
+          description="يحدث هذا غالبًا بعد تغيير حساب MyFatoorah أو مفتاحه. يبقى الطلب مفتوحًا حتى تجيب البوابة بذلك مرتين بينهما يوم كامل بعد انتهاء مدته، ثم يُغلق وحده ويصلك تنبيه. إن احتجت إغلاقه قبل ذلك (مثل طلب حذف بيانات الطالب)، فتحقق أولًا في لوحة الحساب السابق أن الفاتورة لم تُدفع."
+          icon={<ShieldAlert />}
+          tone="gold"
+        >
+          <p className="text-[0.88rem] leading-7 text-ink-soft">
+            {unknownInvoices.length === 1 ? "الفاتورة" : "الفواتير"}:{" "}
+            {unknownInvoices.map((p, i) => (
+              <span key={p.id}>
+                {i ? "، " : ""}
+                <bdi className="num font-bold">{p.gateway_invoice_id}</bdi>
+              </span>
+            ))}
+          </p>
+          <div data-testid="close-unverifiable" className="mt-3 flex flex-wrap gap-2.5">
+            <ConfirmButton
+              action={closeUnverifiableOrderAction}
+              hidden={{ orderId: order.id }}
+              label="إغلاق الطلب بعد التحقق"
+              icon={<CircleX aria-hidden />}
+              variant="outline"
+              title="إغلاق هذا الطلب دون تأكيد من البوابة الحالية؟"
+              description="نسأل البوابة عن كل فواتيره أولًا، ولا نغلقه إن ظهرت دفعة أو تعذر الوصول إليها. بعد الإغلاق، أي دفعة تظهر عليه تُسجل لك للمراجعة ولا تمنح الطالب الوصول وحدها. يحتاج رمز التحقق بخطوتين خلال آخر ١٠ دقائق."
+              requireReason
+              reasonLabel="ماذا وجدت في لوحة الحساب السابق؟ (إلزامي)"
+              confirmLabel="أغلق الطلب"
+            />
+          </div>
+        </Section>
+      ) : null}
 
       {holds.map((h) => (
         <Section key={h.id} id="hold-decision" title={`هذا الطلب موقوف: ${HOLD_KIND_LABELS[h.kind]}`} description="الوصول والأرباح لهذا الطلب متوقفان منذ وصول الإشعار. راجع العملية في لوحة MyFatoorah ثم اختر ما حدث فعلًا." icon={<ShieldAlert />} tone="coral">

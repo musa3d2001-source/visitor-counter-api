@@ -12,6 +12,7 @@ import { readSettings } from "../platform/settings";
 import { accessibleProductIds } from "../access/entitlements";
 import { audit } from "../platform/audit";
 import {
+  MF_DEFAULT_TIMEOUT_MS,
   MyFatoorahClient,
   MyFatoorahError,
   gatewayExpiryDate,
@@ -21,6 +22,7 @@ import {
   isDefiniteGatewayRefusal,
   isKuwaitiDinarCode,
   isKuwaitiDinarDisplay,
+  isUnknownAtGateway,
   sanitizeCustomerName,
   verifyWebhookV2Signature,
   webhookV2SigningString,
@@ -44,6 +46,7 @@ import { isDatabaseBusy } from "../db-busy";
 import { GATEWAY_REASONS, checkGatewayTarget, isGatewayPaymentPage } from "./gateway-hosts";
 import { paymentReturnRef } from "./return-ref";
 import { amountBand, freshInMemory, readSharedMethods, rememberMethods, resetMethodMemory, type PaymentMethodOption } from "./method-cache";
+import { unknownTerminal } from "./invoice-queue";
 
 /**
  * خدمة الدفع — قواعد حاسمة:
@@ -207,10 +210,12 @@ const METHOD_CHECK_TIMEOUT_MS = 8_000;
  * المعرّف يأتي من نموذج في المتصفح، فلا يصل إلى البوابة إلا إن كانت عرضته لهذا المبلغ بصفحة مستضافة.
  * غير ذلك نستعمل رابط الدفع العام: صفحة البوابة نفسها تعرض ما هو متاح، فلا يتعطل المشتري ولا تصل وسيلة مباشرة تُدخل البطاقة عندنا.
  */
-async function offeredMethodId(paymentMethodId: number | null, amountFils: number): Promise<number | null> {
+async function offeredMethodId(paymentMethodId: number | null, amountFils: number, timeLeftMs = METHOD_CHECK_TIMEOUT_MS): Promise<number | null> {
   if (paymentMethodId === null) return null;
+  // لا وقت لسؤال البوابة عن الوسائل: رابط عام بكل الوسائل، كما عند تعذر السؤال
+  if (timeLeftMs < MIN_GATEWAY_CALL_MS) return null;
   try {
-    const offered = await getPaymentMethods(amountFils, { timeoutMs: METHOD_CHECK_TIMEOUT_MS });
+    const offered = await getPaymentMethods(amountFils, { timeoutMs: Math.min(METHOD_CHECK_TIMEOUT_MS, timeLeftMs) });
     return offered.some((m) => m.id === paymentMethodId) ? paymentMethodId : null;
   } catch (err) {
     if (isDatabaseBusy(err)) throw err;
@@ -265,6 +270,43 @@ export class OrderClosedError extends MyFatoorahError {
   }
 }
 
+/**
+ * البوابة أجابت عن رقم فاتورتنا بأنها لا تعرفه (F28)، وحُفظ الجواب على صف الدفع.
+ * firstTime: أول جواب كهذا منذ آخر جواب ناجح. terminal: انتهى أمرها (unknownTerminal في invoice-queue.ts).
+ */
+export class UnknownInvoiceError extends MyFatoorahError {
+  constructor(
+    message: string,
+    status: number | undefined,
+    public readonly firstTime: boolean,
+    public readonly terminal: boolean,
+  ) {
+    super(message, status);
+    this.name = "UnknownInvoiceError";
+  }
+}
+
+/**
+ * مهلة واحدة لكل أمر دفع من الطالب (R025): بدء الدفع وإعادة المحاولة والتحديث والإلغاء تنتظر البوابة داخل صفحة
+ * maxDuration لها ٦٠ ثانية (checkout/page.tsx و orders/[id]/page.tsx)، والإجراءات ترث مدة صفحتها حسب وثائق Next.
+ * كل نداء للبوابة يأخذ ما بقي منها لا أكثر، ويبقى بعدها نحو ١٥ ثانية لقاعدة البيانات وإعادة التوجيه.
+ */
+export const PAYMENT_ACTION_BUDGET_MS = 45_000;
+/** لا نبدأ إنشاء فاتورة بأقل من هذا: نداء الإنشاء يأخذ ما بقي حتى المهلة، والفحص قبله يتوقف عند بلوغه */
+export const PAYMENT_CREATE_RESERVE_MS = 12_000;
+/** أقل وقت يستحق نداءً واحدًا للبوابة. أقل منه نتوقف ونقول للطالب أن يحاول بعد قليل */
+export const MIN_GATEWAY_CALL_MS = 2_000;
+
+export const paymentDeadline = (now = Date.now()) => now + PAYMENT_ACTION_BUDGET_MS;
+
+/** نفد وقت الأمر قبل أن تجيب البوابة عن كل ما يلزم: لم ننشئ شيئًا، والطالب يحاول بعد دقيقة */
+export class PaymentGatewaySlowError extends MyFatoorahError {
+  constructor() {
+    super("بوابة الدفع بطيئة الآن، فلم نبدأ عملية دفع جديدة");
+    this.name = "PaymentGatewaySlowError";
+  }
+}
+
 export type InvoiceWalk = {
   total: number;
   checked: number;
@@ -278,21 +320,31 @@ export type InvoiceWalk = {
   anyFlagged: boolean;
   /** فواتير عليها عملية لم تُحسم عند البنك */
   inProgressInvoiceIds: string[];
+  /**
+   * أجابت البوابة أنها لا تعرفها (F28). ما لم ينته أمره منها محسوب أيضًا في unreachable: لا إلغاء ولا فاتورة جديدة قبل أن يتضح.
+   * unknownTerminal: انتهى أمرها، فلا تمنع إغلاق الطلب ولا تُعد تعذرًا. فاتورة جديدة على الطلب نفسه لا تُنشأ بعدها أبدًا، لأن
+   * انتهاء أمرها يتطلب انقضاء عمر الطلب، فيغلقه decidePayment بدل الفاتورة (انظر startPayment)
+   */
+  unknown: number;
+  unknownTerminal: number;
+  /** توقف الفحص لأن مهلة الأمر نفدت (deadline) */
+  timedOut: boolean;
   error: string | null;
 };
 
 /**
  * فحص كل فواتير الطلب غير المؤكدة لدى البوابة وتطبيق نتيجتها، بالتتابع ودون أي معاملة مفتوحة أثناء الاستدعاءات.
  * لا يرمي عند تعذر البوابة: النتيجة allChecked=false، والمستدعي هو من يقرر. stopOnError يوقف عند أول تعذر.
+ * deadline (لحظة بالمللي ثانية): كل نداء يأخذ ما بقي حتى المهلة، ولا يبدأ نداء بأقل من MIN_GATEWAY_CALL_MS.
  */
-export async function checkOrderInvoices(orderId: string, opts: { stopOnError?: boolean; timeoutMs?: number } = {}): Promise<InvoiceWalk> {
+export async function checkOrderInvoices(orderId: string, opts: { stopOnError?: boolean; timeoutMs?: number; deadline?: number } = {}): Promise<InvoiceWalk> {
   const cfg = paymentsConfig();
   const rows = await sql<{ gateway_invoice_id: string; environment: string }[]>`
     select gateway_invoice_id, environment from payments
     where order_id = ${orderId} and provider = 'myfatoorah' and gateway_invoice_id is not null and status not in ('paid', 'refunded')
     order by created_at asc
   `;
-  const walk: InvoiceWalk = { total: rows.length, checked: 0, allChecked: true, unreachable: 0, otherMode: 0, invalid: 0, anyPaid: false, anyFlagged: false, inProgressInvoiceIds: [], error: null };
+  const walk: InvoiceWalk = { total: rows.length, checked: 0, allChecked: true, unreachable: 0, otherMode: 0, invalid: 0, anyPaid: false, anyFlagged: false, inProgressInvoiceIds: [], unknown: 0, unknownTerminal: 0, timedOut: false, error: null };
   const note = (message: string) => {
     walk.allChecked = false;
     walk.error ??= message;
@@ -309,8 +361,19 @@ export async function checkOrderInvoices(orderId: string, opts: { stopOnError?: 
       if (opts.stopOnError) break;
       continue;
     }
+    let timeoutMs = opts.timeoutMs;
+    if (opts.deadline !== undefined) {
+      const left = opts.deadline - Date.now();
+      if (left < MIN_GATEWAY_CALL_MS) {
+        walk.unreachable++;
+        walk.timedOut = true;
+        note("انتهت مهلة الأمر قبل فحص كل الفواتير");
+        break;
+      }
+      timeoutMs = Math.min(timeoutMs ?? MF_DEFAULT_TIMEOUT_MS, left);
+    }
     try {
-      const result = await verifyAndApplyPayment({ invoiceId: row.gateway_invoice_id }, { timeoutMs: opts.timeoutMs });
+      const result = await verifyAndApplyPayment({ invoiceId: row.gateway_invoice_id }, { timeoutMs });
       if (result.state === "invalid") {
         walk.invalid++;
         note(result.error);
@@ -322,7 +385,16 @@ export async function checkOrderInvoices(orderId: string, opts: { stopOnError?: 
       if (result.state === "flagged") walk.anyFlagged = true;
       if (result.state === "pending" && result.inProgress) walk.inProgressInvoiceIds.push(row.gateway_invoice_id);
     } catch (err) {
+      if (err instanceof UnknownInvoiceError) {
+        walk.unknown++;
+        // انتهى أمرها: أُجيب عنها بما يكفي لإغلاق الطلب، فلا تمنع الإلغاء ولا تحبس الطلب مفتوحًا
+        if (err.terminal) {
+          walk.unknownTerminal++;
+          continue;
+        }
+      }
       walk.unreachable++;
+      if (opts.deadline !== undefined && Date.now() >= opts.deadline - MIN_GATEWAY_CALL_MS) walk.timedOut = true;
       note(err instanceof Error ? err.message : String(err));
       if (opts.stopOnError) break;
     }
@@ -448,9 +520,10 @@ export async function attemptBlocksClosing(orderId: string, invoiceIds: string[]
 const CLAIM_WAIT_ATTEMPTS = 40;
 const CLAIM_WAIT_STEP_MS = 250;
 
-/** تبويب آخر يُنشئ الفاتورة الآن: ننتظر رابطه بدل إنشاء فاتورة ثانية قابلة للدفع */
-async function waitForClaim(claimId: string): Promise<string> {
-  for (let i = 0; i < CLAIM_WAIT_ATTEMPTS; i++) {
+/** تبويب آخر يُنشئ الفاتورة الآن: ننتظر رابطه بدل إنشاء فاتورة ثانية قابلة للدفع، وحتى مهلة الأمر فقط */
+async function waitForClaim(claimId: string, deadline: number): Promise<string> {
+  const attempts = Math.min(CLAIM_WAIT_ATTEMPTS, Math.floor((deadline - Date.now()) / CLAIM_WAIT_STEP_MS));
+  for (let i = 0; i < attempts; i++) {
     await new Promise((r) => setTimeout(r, CLAIM_WAIT_STEP_MS));
     const [row] = await sql<{ status: string; payment_url: string | null }[]>`select status, payment_url from payments where id = ${claimId}`;
     if (row?.status === "pending" && row.payment_url) return row.payment_url;
@@ -463,8 +536,11 @@ async function waitForClaim(claimId: string): Promise<string> {
  * بدء الدفع (D3): لا ينشئ فاتورة جديدة إلا بعد التأكد من كل الفواتير السابقة.
  * يفحص كل فاتورة لدى البوابة ويطبق أي دفعة (عند التعذر لا ينشئ شيئًا)، ثم يعيد رابطًا مفتوحًا إن وجد،
  * وأخيرًا ينشئ فاتورة بعمر قصير. انظر تعليق decidePayment عن التزامن.
+ * كل ذلك داخل مهلة واحدة (deadline، الافتراضي PAYMENT_ACTION_BUDGET_MS من الآن): الفحص يتوقف قبلها بـ PAYMENT_CREATE_RESERVE_MS،
+ * ولا تُحجز مطالبة إنشاء بأقل من ذلك، فلا يقطع Vercel الطلب في منتصفه ولا تبقى مطالبة معلقة.
  */
-export async function startPayment(order: OrderRow, paymentMethodId: number | null): Promise<{ url: string; reused: boolean }> {
+export async function startPayment(order: OrderRow, paymentMethodId: number | null, opts: { deadline?: number } = {}): Promise<{ url: string; reused: boolean }> {
+  const deadline = opts.deadline ?? paymentDeadline();
   const cfg = paymentsConfig();
   if (!cfg.enabled) throw new MyFatoorahError(cfg.reason);
   if (order.status !== "pending" && order.status !== "failed") throw new MyFatoorahError("حالة الطلب لا تسمح بالدفع");
@@ -476,14 +552,17 @@ export async function startPayment(order: OrderRow, paymentMethodId: number | nu
   // نموذج مصنوع أو طلب قديم أو إعادة محاولة: لا فاتورة بلا إقرار مسجل لهذا الطلب
   await assertOrderConsent({ orderId: order.id, userId: order.user_id });
 
-  const walk = await checkOrderInvoices(order.id, { stopOnError: true });
+  const walk = await checkOrderInvoices(order.id, { stopOnError: true, deadline: deadline - PAYMENT_CREATE_RESERVE_MS });
+  if (walk.timedOut) throw new PaymentGatewaySlowError();
   if (walk.otherMode && !walk.unreachable) throw new PaymentModeMismatchError();
   if (walk.invalid && !walk.unreachable) throw new InvoiceNeedsReviewError(`فاتورة لا تطابق الطلب: ${walk.error}`);
   if (!walk.allChecked) throw new MyFatoorahError(`تعذر التحقق من فواتير الطلب: ${walk.error}`);
   if (walk.anyPaid) throw new OrderSettledError(order.id);
 
   // قبل أي مطالبة: انتظار البوابة هنا لا يحجز فاتورة
-  const methodId = await offeredMethodId(paymentMethodId, order.total_fils);
+  const methodId = await offeredMethodId(paymentMethodId, order.total_fils, deadline - PAYMENT_CREATE_RESERVE_MS - Date.now());
+  // لا مطالبة بلا وقت يكفي نداء الإنشاء: الخروج هنا لا يترك صف initiated ولا فاتورة لدى البوابة
+  if (deadline - Date.now() < PAYMENT_CREATE_RESERVE_MS) throw new PaymentGatewaySlowError();
   const decision = await decidePayment(order.id, cfg.environment, walk);
   if (decision.kind === "settled") throw new OrderSettledError(order.id);
   if (decision.kind === "closed") throw new OrderClosedError(decision.reason);
@@ -493,7 +572,7 @@ export async function startPayment(order: OrderRow, paymentMethodId: number | nu
     return { url: decision.url, reused: true };
   }
   if (decision.kind === "wait") {
-    const url = await waitForClaim(decision.claimId);
+    const url = await waitForClaim(decision.claimId, deadline);
     assertPaymentPage(url, cfg);
     return { url, reused: true };
   }
@@ -518,7 +597,8 @@ export async function startPayment(order: OrderRow, paymentMethodId: number | nu
     ExpiryDate: gatewayExpiryDate(decision.expiresAt),
   };
   try {
-    const mf = client(cfg);
+    // ما بقي حتى المهلة لا أكثر (والحد الأعلى مهلة النداء المعتادة). نفاده نتيجة مجهولة تعامل كأي تعذر: المطالبة تفشل والرابط لا يصل أحدًا
+    const mf = client(cfg, Math.min(MF_DEFAULT_TIMEOUT_MS, Math.max(deadline - Date.now(), MIN_GATEWAY_CALL_MS)));
     const res = methodId
       ? await mf.executePayment({ ...input, PaymentMethodId: methodId })
       : await mf.sendPayment(input);
@@ -547,21 +627,22 @@ export async function startPayment(order: OrderRow, paymentMethodId: number | nu
 export type OpenOrderResolution = { kind: "none" } | { kind: "paid"; orderId: string } | { kind: "open"; orderId: string };
 
 const OPEN_ORDERS_WALK_LIMIT = 8;
-/** طلب الشراء يعمل تحت maxDuration: بعد هذا الوقت لا نبدأ فحص طلب آخر */
-const OPEN_ORDERS_WALK_BUDGET_MS = 25_000;
 
-export async function resolveOpenOrderForCheckout(input: { userId: string; productIds: string[]; isTest: boolean }): Promise<OpenOrderResolution> {
+/**
+ * يعمل داخل مهلة أمر الشراء نفسه (deadline)، ويترك منها PAYMENT_CREATE_RESERVE_MS لإنشاء الطلب وفاتورته.
+ * ما لم نفحصه لضيق الوقت يبقى طلبًا مفتوحًا: لا ننشئ طلبًا موازيًا عليه.
+ */
+export async function resolveOpenOrderForCheckout(input: { userId: string; productIds: string[]; isTest: boolean; deadline?: number }): Promise<OpenOrderResolution> {
   const cart = await computeCart(input.productIds, input.userId);
   const open = await findOpenOrdersCovering(sql, { userId: input.userId, productIds: cart.payableLines.map((l) => l.id), isTest: input.isTest });
   let stillOpen: string | null = null;
-  const startedAt = Date.now();
+  const walkDeadline = (input.deadline ?? paymentDeadline()) - PAYMENT_CREATE_RESERVE_MS;
   for (const { id } of open.slice(0, OPEN_ORDERS_WALK_LIMIT)) {
-    // ما لم نفحصه يبقى طلبًا مفتوحًا: لا ننشئ طلبًا موازيًا عليه
-    if (Date.now() - startedAt > OPEN_ORDERS_WALK_BUDGET_MS) {
+    if (walkDeadline - Date.now() < MIN_GATEWAY_CALL_MS) {
       stillOpen ??= id;
       break;
     }
-    const walk = await checkOrderInvoices(id);
+    const walk = await checkOrderInvoices(id, { deadline: walkDeadline });
     if (walk.error) await reportError("checkout:open-order", walk.error);
     const [row] = await sql<{ status: OrderRow["status"] }[]>`select status from orders where id = ${id}`;
     if (row?.status === "paid") return { kind: "paid", orderId: id };
@@ -740,6 +821,20 @@ async function notifyAfterCommit(fn: () => Promise<unknown>): Promise<void> {
 }
 
 /**
+ * يحفظ جواب «لا أعرف هذه الفاتورة» على صفها (F28): أول جواب منذ آخر جواب ناجح، وآخر جواب.
+ * لا يُكتب last_checked_at: الجواب ليس فحصًا، ولا يُغلق به طلب إلا حين ينتهي أمر الفاتورة (unknownTerminal).
+ */
+async function recordUnknownInvoice(environment: string, invoiceId: string, err: MyFatoorahError): Promise<UnknownInvoiceError> {
+  const [row] = await sql<{ first_time: boolean; terminal: boolean }[]>`
+    update payments q set gateway_unknown_first_at = coalesce(q.gateway_unknown_first_at, now()), gateway_unknown_last_at = now()
+    from orders o
+    where o.id = q.order_id and q.provider = 'myfatoorah' and q.environment = ${environment} and q.gateway_invoice_id = ${invoiceId}
+    returning q.gateway_unknown_first_at = q.gateway_unknown_last_at as first_time, ${unknownTerminal(sql)} as terminal
+  `;
+  return new UnknownInvoiceError(err.message, err.status, row?.first_time ?? true, row?.terminal ?? false);
+}
+
+/**
  * التحقق من الدفع عبر الخادم (من صفحة العودة أو Webhook) وتطبيق النتيجة.
  * يتحقق من: الفاتورة تخص سجل دفع لدينا، الرقم المرجعي = رقم الطلب، المبلغ والعملة مطابقان.
  */
@@ -749,15 +844,24 @@ export async function verifyAndApplyPayment(key: { paymentId?: string; invoiceId
   const keyValue = key.paymentId ?? key.invoiceId;
   if (!keyValue || !/^[0-9A-Za-z-]{1,64}$/.test(keyValue)) return { state: "invalid", error: "مرجع دفع غير صالح" };
 
-  const status = await client(cfg, opts.timeoutMs).getPaymentStatus(keyValue, key.paymentId ? "PaymentId" : "InvoiceId");
+  let status: MfPaymentStatus;
+  try {
+    status = await client(cfg, opts.timeoutMs).getPaymentStatus(keyValue, key.paymentId ? "PaymentId" : "InvoiceId");
+  } catch (err) {
+    // البوابة لا تعرف رقم فاتورتنا (F28): يُحفظ الجواب على صف الدفع. رقم عملية مجهول لا يخص صفًا عندنا فلا يُحفظ
+    if (key.invoiceId !== undefined && !key.paymentId && isUnknownAtGateway(err)) throw await recordUnknownInvoice(cfg.environment, keyValue, err as MyFatoorahError);
+    throw err;
+  }
   // البوابة تعيد اسم العميل وبريده وهاتفه ورقم البطاقة كل مرة. نقرأ الرد كاملًا ولا نخزن منه إلا ما تحتاجه المراجعة
   const stored = redactGatewayStatus(status);
   // البيئة جزء من هوية الفاتورة: رقم sandbox قد يطابق رقمًا حقيقيًا، ولا يُقرأ أحدهما مكان الآخر
-  const [payment] = await sql<{ id: string; order_id: string; amount_fils: number; status: string }[]>`
-    select id, order_id, amount_fils, status from payments
+  const [payment] = await sql<{ id: string; order_id: string; amount_fils: number; status: string; gateway_unknown_last_at: Date | null }[]>`
+    select id, order_id, amount_fils, status, gateway_unknown_last_at from payments
     where provider = 'myfatoorah' and environment = ${cfg.environment} and gateway_invoice_id = ${String(status.InvoiceId)}
   `;
   if (!payment) return { state: "invalid", error: "فاتورة غير معروفة" };
+  // البوابة تعرفها الآن (صُحح المفتاح أو عادت): جواب «لا أعرفها» السابق لم يعد صحيحًا، فلا يُعد في انتهاء أمرها
+  if (payment.gateway_unknown_last_at) await sql`update payments set gateway_unknown_first_at = null, gateway_unknown_last_at = null where id = ${payment.id}`;
   const [order] = await sql<OrderRow[]>`select * from orders where id = ${payment.order_id}`;
   if (!order) return { state: "invalid", error: "الطلب غير موجود" };
 

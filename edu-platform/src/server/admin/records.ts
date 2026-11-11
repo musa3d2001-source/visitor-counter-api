@@ -71,9 +71,10 @@ export async function getAdminOrder(id: string) {
       error_message: string | null;
       paid_at: Date | null;
       created_at: Date;
+      gateway_unknown_last_at: Date | null;
     }[]
   >`
-    select id, provider, environment, status, amount_fils, gateway_invoice_id, gateway_payment_id, payment_method, error_message, paid_at, created_at
+    select id, provider, environment, status, amount_fils, gateway_invoice_id, gateway_payment_id, payment_method, error_message, paid_at, created_at, gateway_unknown_last_at
     from payments where order_id = ${id} order by created_at desc
   `;
   const invoiceIds = payments.map((p) => p.gateway_invoice_id).filter((x): x is string => Boolean(x));

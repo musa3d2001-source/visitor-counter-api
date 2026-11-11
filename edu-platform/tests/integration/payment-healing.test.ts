@@ -259,7 +259,7 @@ describe("the reconciler's queue", () => {
   });
 
   it("calls it a failure only when the gateway answered nothing", () => {
-    const base = { mode: "sandbox", claimed: 0, checked: 0, paid: 0, flagged: 0, invalid: 0, errors: 0, unknownAtGateway: 0, skipped: 0, stoppedEarly: false, closed: 0, abandonedClaims: 0, refundsChecked: 0, refundsResolved: 0, refundErrors: 0 } as const;
+    const base = { mode: "sandbox", claimed: 0, checked: 0, paid: 0, flagged: 0, invalid: 0, errors: 0, unknownAtGateway: 0, unknownAgain: 0, skipped: 0, stoppedEarly: false, closed: 0, abandonedClaims: 0, refundsChecked: 0, refundsResolved: 0, refundErrors: 0 } as const;
     expect(reconcileFailure(base)).toBeNull();
     expect(reconcileFailure({ ...base, errors: 3, stoppedEarly: true })).not.toBeNull();
     expect(reconcileFailure({ ...base, errors: 1, checked: 2 })).toBeNull();
@@ -269,6 +269,9 @@ describe("the reconciler's queue", () => {
     // فواتير لا تعرفها البوابة بجانب فواتير فُحصت: الجولة سليمة. وحدها: تنبيه، فقد يكون الحساب أو البيئة خاطئًا
     expect(reconcileFailure({ ...base, unknownAtGateway: 12, checked: 5 })).toBeNull();
     expect(reconcileFailure({ ...base, unknownAtGateway: 3 })).not.toBeNull();
+    // فواتير سبق أن أجابت البوابة أنها لا تعرفها: نُبه المالك في المرة الأولى، فيوم لا يُسأل فيه غيرها ليس فشلًا (F28)
+    expect(reconcileFailure({ ...base, unknownAgain: 3 })).toBeNull();
+    expect(reconcileFailure({ ...base, unknownAgain: 3, errors: 1 })).toBeNull();
   });
 });
 

@@ -77,6 +77,9 @@ export type MfPaymentStatus = {
 
 export type MfConfig = { baseUrl: string; apiKey: string; timeoutMs?: number };
 
+/** مهلة النداء الواحد إن لم يحدد المستدعي غيرها: تشمل الترويسات والجسم معًا */
+export const MF_DEFAULT_TIMEOUT_MS = 20_000;
+
 type MfEnvelope<T> = {
   IsSuccess: boolean;
   Message?: string;
@@ -117,7 +120,7 @@ export class MyFatoorahClient {
           body: JSON.stringify(body),
           cache: "no-store",
         },
-        { timeoutMs: this.cfg.timeoutMs ?? 20_000, maxBytes: MF_MAX_RESPONSE_BYTES },
+        { timeoutMs: this.cfg.timeoutMs ?? MF_DEFAULT_TIMEOUT_MS, maxBytes: MF_MAX_RESPONSE_BYTES },
       );
     } catch (err) {
       // بلا status: النتيجة مجهولة (قد تكون البوابة نفذت الطلب)، كما عند انقطاع الاتصال

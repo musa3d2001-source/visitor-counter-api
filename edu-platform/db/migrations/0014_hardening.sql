@@ -212,3 +212,18 @@ create table if not exists saturation_counters (
   primary key (hour, kind)
 );
 alter table saturation_counters enable row level security;
+
+-- =====================================================================
+-- فواتير لا تعرفها البوابة (مرحلة payments-access، القرار F28، البندان R001 و R026)
+-- البوابة أجابت عن رقم فاتورتنا بأنها لا تعرفه (غالبًا بعد تغيير حساب البوابة أو مفتاحها). نحفظ أول جواب وآخره:
+-- جوابان بينهما ٢٤ ساعة، وآخرهما بعد انقضاء عمر الطلب وموت الرابط، يجعلان الفاتورة منتهية الأمر للطابور والإغلاق.
+-- عمودان يقبلان null بلا قيمة افتراضية: إضافتهما لا تعيد كتابة الجدول، والكود القديم لا يقرؤهما ولا يكتبهما.
+-- سبب إغلاق جديد unverifiable: أمر المالك «إغلاق طلب تعذر التحقق منه». لا يكتبه إلا الكود الجديد.
+-- =====================================================================
+set local lock_timeout = '5s';
+alter table payments add column if not exists gateway_unknown_first_at timestamptz;
+alter table payments add column if not exists gateway_unknown_last_at timestamptz;
+alter table orders drop constraint if exists orders_closed_reason_check;
+alter table orders add constraint orders_closed_reason_check check (closed_reason is null or closed_reason in ('expired', 'student_cancelled', 'already_owned', 'coupon_unavailable', 'product_ended', 'unverifiable')) not valid;
+alter table orders validate constraint orders_closed_reason_check;
+set local lock_timeout = default;

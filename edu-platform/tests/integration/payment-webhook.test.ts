@@ -317,7 +317,7 @@ describe("dispute events (code 6)", () => {
     await send("LOST");
     const [reopened] = await openPaymentAlerts();
     expect(reopened.id).toBe(alert.id);
-    expect(reopened.details.status).toBe("LOST");
+    expect(reopened.kind === "dispute" && reopened.details.status).toBe("LOST");
     const [row] = await sql<{ resolved_by: string | null }[]>`select resolved_by from payment_alerts where id = ${alert.id}`;
     expect(row.resolved_by).toBeNull();
   });

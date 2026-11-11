@@ -8,10 +8,12 @@ import {
   OrderClosedError,
   InvoiceNeedsReviewError,
   OrderSettledError,
+  PaymentGatewaySlowError,
   PaymentInProgressError,
   PaymentModeMismatchError,
   attemptBlocksClosing,
   checkOrderInvoices,
+  paymentDeadline,
   paymentsConfig,
   resolveOpenOrderForCheckout,
   startPayment,
@@ -25,6 +27,8 @@ import { reportError } from "@/server/platform/report-error";
 import type { ActionState } from "@/lib/action-state";
 
 export async function placeOrderAction(_prev: ActionState, fd: FormData): Promise<ActionState> {
+  // مهلة واحدة للأمر كله، من أوله: فحص الطلبات المفتوحة وإنشاء الفاتورة يقتسمانها (R025)
+  const deadline = paymentDeadline();
   const user = await assertUser();
   const limit = await hitRateLimit(`checkout:${user.id}`, 20, 60 * 60);
   if (!limit.allowed) return { error: "محاولات كثيرة. حاول بعد قليل." };
@@ -37,7 +41,7 @@ export async function placeOrderAction(_prev: ActionState, fd: FormData): Promis
 
   // طلب مفتوح لنفس المنتج: نتحقق من فواتيره أولًا ثم نوجّه الطالب إليه، حتى لا ينشأ طلب ثانٍ يُدفع معه
   if (cfg.enabled) {
-    const open = await resolveOpenOrderForCheckout({ userId: user.id, productIds: ids, isTest });
+    const open = await resolveOpenOrderForCheckout({ userId: user.id, productIds: ids, isTest, deadline });
     if (open.kind === "paid") {
       await removeOrderItemsFromCart(open.orderId, ids);
       redirect(`/orders/${open.orderId}?from=payment`);
@@ -64,7 +68,7 @@ export async function placeOrderAction(_prev: ActionState, fd: FormData): Promis
       await completeFreeOrder(order.id, user.id);
       await removeOrderItemsFromCart(order.id, ids);
     } else {
-      const res = await startPayment(order, methodId);
+      const res = await startPayment(order, methodId, { deadline });
       paymentUrl = res.url;
     }
   } catch (err) {
@@ -75,6 +79,10 @@ export async function placeOrderAction(_prev: ActionState, fd: FormData): Promis
     if (err instanceof OrderClosedError && err.reason === "already_owned") return { error: "أصبح أحد المنتجات في مكتبتك، فلم ننشئ طلبًا لتجنب الدفع مرتين." };
     if (err instanceof OrderClosedError && err.reason === "product_ended") return { error: "انتهى بيع أحد المنتجات، فأغلقنا الطلب ولم يُخصم شيء." };
     if (err instanceof OrderClosedError && err.reason === "coupon_unavailable") return { error: "نفدت مرات استخدام كود الخصم، فأغلقنا الطلب. يمكنك إنشاء طلب جديد." };
+    if (err instanceof PaymentGatewaySlowError) {
+      await reportError("checkout:slow-gateway", err);
+      return { error: "بوابة الدفع بطيئة الآن، فلم نبدأ عملية الدفع. حاول بعد دقيقة." };
+    }
     if (err instanceof MyFatoorahError) {
       await reportError("checkout:init", err);
       return { error: "تعذر بدء عملية الدفع حاليًا. حاول مرة أخرى بعد قليل." };
@@ -92,6 +100,7 @@ async function removeOrderItemsFromCart(orderId: string, cart: string[]) {
 
 /** إعادة محاولة الدفع لطلب قائم لم يُدفع */
 export async function retryPaymentAction(fd: FormData) {
+  const deadline = paymentDeadline();
   const user = await assertUser();
   const found = await getUserOrder(String(fd.get("orderId") ?? ""), user.id);
   if (!found || (found.order.status !== "pending" && found.order.status !== "failed")) redirect("/account");
@@ -101,12 +110,23 @@ export async function retryPaymentAction(fd: FormData) {
   try {
     // طلب أقدم من سجل الموافقات: الإقرار يأتي من نموذج صفحة الطلب، و startPayment يرفض بدونه
     await recordOrderPageConsent({ orderId: found.order.id, userId: user.id, guardianDeclared: fd.get("guardianDeclaration") === "on", termsAccepted: fd.get("termsAccepted") === "on", meta: await requestConsentMeta() });
-    url = (await startPayment(found.order, null)).url;
+    url = (await startPayment(found.order, null, { deadline })).url;
   } catch (err) {
     if (err instanceof EmailVerificationRequiredError) redirect(verifyEmailPath(`/orders/${found.order.id}`));
     if (err instanceof ConsentRequiredError) redirect(`/orders/${found.order.id}?error=consent`);
     if (err instanceof OrderSettledError) redirect(`/orders/${found.order.id}`);
-    const code = err instanceof PaymentModeMismatchError ? "mode" : err instanceof InvoiceNeedsReviewError ? "review" : err instanceof OrderClosedError ? "closed" : err instanceof PaymentInProgressError ? "inprogress" : "payment";
+    const code =
+      err instanceof PaymentModeMismatchError
+        ? "mode"
+        : err instanceof InvoiceNeedsReviewError
+          ? "review"
+          : err instanceof OrderClosedError
+            ? "closed"
+            : err instanceof PaymentInProgressError
+              ? "inprogress"
+              : err instanceof PaymentGatewaySlowError
+                ? "slow"
+                : "payment";
     redirect(`/orders/${found.order.id}?error=${code}`);
   }
   redirect(url);
@@ -114,13 +134,14 @@ export async function retryPaymentAction(fd: FormData) {
 
 /** تحديث حالة طلب معلّق عبر الاستعلام من البوابة */
 export async function refreshOrderStatusAction(fd: FormData) {
+  const deadline = paymentDeadline();
   const user = await assertUser();
   const found = await getUserOrder(String(fd.get("orderId") ?? ""), user.id);
   if (!found) redirect("/account");
   const limit = await hitRateLimit(`refresh:${user.id}`, 20, 60 * 10);
   if (!limit.allowed) redirect(`/orders/${found.order.id}?error=rate`);
   if (found.order.status === "pending" || found.order.status === "failed") {
-    const walk = await checkOrderInvoices(found.order.id);
+    const walk = await checkOrderInvoices(found.order.id, { deadline });
     if (!walk.allChecked) {
       if (walk.error) await reportError("checkout:refresh", walk.error);
       // انتظار البوابة ينفع فقط إن كانت هي التي لم ترد
@@ -134,8 +155,10 @@ export async function refreshOrderStatusAction(fd: FormData) {
  * إلغاء الطالب لطلبه غير المدفوع، حتى يستطيع البدء من جديد دون انتظار انتهاء عمر الطلب.
  * لا يُلغى قبل التأكد من كل فواتيره لدى البوابة، وعند التعذر أو وجود محاولة لم تُحسم خلال عمر رابطها ومهلته يبقى الطلب كما هو.
  * فاتورة من وضع دفع آخر أو لا تطابق الطلب لا يحلها الانتظار، فلا تمنع الإلغاء: أي دفعة عليها تُسجل للمالك ولا تضيع.
+ * وكذلك فاتورة انتهى أمرها لأن البوابة لا تعرفها (F28): الإلغاء يفتح للمالك تنبيهًا ليتحقق منها. ما لم ينته أمره يبقى تعذرًا.
  */
 export async function cancelOrderAction(fd: FormData) {
+  const deadline = paymentDeadline();
   const user = await assertUser();
   const found = await getUserOrder(String(fd.get("orderId") ?? ""), user.id);
   if (!found) redirect("/account");
@@ -143,7 +166,7 @@ export async function cancelOrderAction(fd: FormData) {
   if (found.order.status !== "pending" && found.order.status !== "failed") redirect(orderUrl);
   const limit = await hitRateLimit(`cancel-order:${user.id}`, 10, 60 * 10);
   if (!limit.allowed) redirect(`${orderUrl}?error=rate`);
-  const walk = await checkOrderInvoices(found.order.id);
+  const walk = await checkOrderInvoices(found.order.id, { deadline });
   if (walk.unreachable) redirect(`${orderUrl}?error=check`);
   if (await attemptBlocksClosing(found.order.id, walk.inProgressInvoiceIds)) redirect(`${orderUrl}?error=inprogress`);
   await sql.begin((db) => closeOrder(db, { orderId: found.order.id, reason: "student_cancelled", actorId: user.id }));

@@ -280,7 +280,7 @@ export default async function OpsPage() {
                 <UnhealedLine key={`${row.reason}-${row.order_id}`} row={row} label={REASON_TEXT[row.reason]} tone="danger" now={now} />
               ))}
               {unhealed.unverified.map((row) => (
-                <UnhealedLine key={`unverified-${row.order_id}-${row.since.getTime()}`} row={row} label={row.last_checked_at ? "لم يتأكد مصيرها بعد" : "لم تُفحص بعد"} tone="warning" now={now} />
+                <UnhealedLine key={`unverified-${row.order_id}-${row.since.getTime()}`} row={row} label={row.unknown_at_gateway ? "البوابة لا تعرف هذه الفاتورة" : row.last_checked_at ? "لم يتأكد مصيرها بعد" : "لم تُفحص بعد"} tone="warning" now={now} />
               ))}
             </DataList>
           )}

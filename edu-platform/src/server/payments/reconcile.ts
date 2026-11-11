@@ -4,9 +4,9 @@ import { closeOrder } from "../commerce/orders";
 import { ORDER_LIFETIME_HOURS } from "./limits";
 import { isDatabaseBusy } from "../db-busy";
 import { reportError } from "../platform/report-error";
-import { claimDueInvoices, releaseClaims } from "./invoice-queue";
+import { claimDueInvoices, releaseClaims, unknownTerminal } from "./invoice-queue";
 import { isUnknownAtGateway } from "./myfatoorah";
-import { paymentsConfig, recheckExtraPayment, recheckOrderRefund, verifyAndApplyPayment } from "./service";
+import { UnknownInvoiceError, paymentsConfig, recheckExtraPayment, recheckOrderRefund, verifyAndApplyPayment } from "./service";
 
 /**
  * وظيفة التسوية (A7, A8): شبكة الأمان عندما لا يصلنا Webhook ولا يعود الطالب من صفحة الدفع.
@@ -47,8 +47,12 @@ export type ReconcileReport = {
   flagged: number;
   invalid: number;
   errors: number;
-  /** أجابت البوابة أنها لا تعرف الفاتورة: تبقى بعقدها حتى الجولة التالية ولا تُعد فحصًا، ولا توقف الجولة */
+  /**
+   * أجابت البوابة لأول مرة أنها لا تعرف الفاتورة: تبقى بعقدها حتى الجولة التالية ولا تُعد فحصًا، ولا توقف الجولة.
+   * unknownAgain: فاتورة سبق أن أجابت عنها بذلك. نبّهنا المالك في المرة الأولى، فلا تحوّل يومًا هادئًا إلى فشل (F28)
+   */
   unknownAtGateway: number;
+  unknownAgain: number;
   /** مُطالب بها ولم تُفحص، وأُعيدت إلى الطابور */
   skipped: number;
   stoppedEarly: boolean;
@@ -63,7 +67,7 @@ export type ReconcileReport = {
 export function reconcileFailure(report: ReconcileReport): string | null {
   const failed = report.errors + report.refundErrors;
   const known = report.checked + report.invalid + report.refundsChecked - report.refundErrors;
-  if (failed > 0 && known + report.unknownAtGateway === 0) return "لم تجب بوابة الدفع عن أي فاتورة";
+  if (failed > 0 && known + report.unknownAtGateway + report.unknownAgain === 0) return "لم تجب بوابة الدفع عن أي فاتورة";
   // البوابة تعمل ولا تعرف شيئًا مما سُئلت عنه: غالبًا حساب أو بيئة خاطئة، فيستحق تنبيه المالك
   if (report.unknownAtGateway > 0 && known === 0) return "بوابة الدفع لا تعرف أيًا من الفواتير التي سُئلت عنها";
   return null;
@@ -97,12 +101,16 @@ async function drainLane(cfg: EnabledConfig, lane: "unverified" | "settled", rep
           if (result.state === "paid" && result.changed) report.paid++;
           if (result.state === "flagged") report.flagged++;
         } catch (err) {
-          // البوابة أجابت ولا تعرف الفاتورة: لا نحسبها عطلًا يوقف الجولة، وإلا أوقفت بضع فواتير مجهولة في رأس الطابور كل جولة
-          // فلم يُفحص ما خلفها أبدًا. تبقى بعقدها فلا تتكرر في الجولة نفسها، ولا يُكتب last_checked_at لأنها لم تُفحص
+          // البوابة أجابت ولا تعرف الفاتورة: لا نحسبها عطلًا يوقف الجولة. تبقى بعقدها فلا تتكرر في الجولة نفسها،
+          // ولا يُكتب last_checked_at لأنها لم تُفحص. حُفظ الجواب على صفها (F28)، والتقرير مرة واحدة لكل فاتورة لا كل جولة
           if (isUnknownAtGateway(err)) {
             failures.consecutive = 0;
-            report.unknownAtGateway++;
-            await reportError("reconcile:unknown-invoice", err);
+            if (err instanceof UnknownInvoiceError && !err.firstTime) {
+              report.unknownAgain++;
+            } else {
+              report.unknownAtGateway++;
+              await reportError("reconcile:unknown-invoice", err);
+            }
             continue;
           }
           unanswered.push(row.id);
@@ -144,6 +152,7 @@ export async function runPaymentReconciliation(opts: { budgetMs?: number } = {})
     invalid: 0,
     errors: 0,
     unknownAtGateway: 0,
+    unknownAgain: 0,
     skipped: 0,
     stoppedEarly: false,
     closed: 0,
@@ -242,6 +251,8 @@ export type CloseReport = { closed: number; abandonedClaims: number; finished: b
 /**
  * إغلاق الطلبات التي انقضى عمرها، ومحاولات إنشاء رابط الدفع التي لم تكتمل. محدود بعدد الجولات وبالوقت، وما تبقى يُغلق في الجولة التالية.
  * لا يعتمد على جولة التسوية: يكفي أن كل فاتورة ردت عنها البوابة بعد انقضاء عمر الطلب، فلا يمكن أن يخفي دفعة.
+ * فاتورة انتهى أمرها لأن البوابة لا تعرفها (F28) تُعد مُجابًا عنها: closeOrder يفتح للمالك تنبيهًا لكل فاتورة كهذه ليتحقق منها
+ * في لوحة الحساب السابق، والتنبيه المفتوح يمنع حذف بيانات الطالب. دفعة تظهر عليها لاحقًا تُطبق كأي دفعة متأخرة على طلب انتهت مدته.
  * عند إيقاف الدفع لا نستطيع السؤال، فلا يُغلق إلا طلب لم يصل البوابة أصلًا. وفواتير sandbox لا تعيق الإغلاق في وضع live لأنها لن تُفحص أبدًا.
  */
 export async function closeExpiredOrders(opts: { rounds?: number } = {}): Promise<CloseReport> {
@@ -262,10 +273,13 @@ export async function closeExpiredOrders(opts: { rounds?: number } = {}): Promis
       where o.status in ('pending', 'failed')
         and o.created_at <= now() - make_interval(hours => ${ORDER_LIFETIME_HOURS})
         and not exists (
-          select 1 from payments p
-          where p.order_id = o.id and p.provider = 'myfatoorah' and p.gateway_invoice_id is not null
-            and not (${environment} = 'live' and p.environment = 'sandbox')
-            and (${environment} = 'none' or p.last_checked_at is null or p.last_checked_at < o.created_at + make_interval(hours => ${ORDER_LIFETIME_HOURS}))
+          select 1 from payments q
+          where q.order_id = o.id and q.provider = 'myfatoorah' and q.gateway_invoice_id is not null
+            and not (${environment} = 'live' and q.environment = 'sandbox')
+            and (${environment} = 'none' or (
+              (q.last_checked_at is null or q.last_checked_at < o.created_at + make_interval(hours => ${ORDER_LIFETIME_HOURS}))
+              and not ${unknownTerminal(sql)}
+            ))
         )
       order by o.created_at asc
       limit ${CLOSE_BATCH_SIZE}

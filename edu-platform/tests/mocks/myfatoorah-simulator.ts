@@ -126,6 +126,8 @@ export type Simulator = {
   setDelay(path: string, ms: number | null): void;
   /** تعذر الرد عن فاتورة واحدة فقط في GetPaymentStatus */
   setStatusFault(invoiceId: number, on: boolean): void;
+  /** البوابة «لا تعرف» هذه الفاتورة: GetPaymentStatus يرد 400 «Invalid key.» كما يرد على رقم لم يصدره الحساب (بعد تغيير الحساب أو المفتاح) */
+  forgetInvoice(invoiceId: number, on: boolean): void;
   clearFaults(): void;
   /** ينهي رابط الفاتورة الآن (يمرر الزمن دون انتظار): يُرفض الدفع عليه وتبقى حالتها Pending */
   expireInvoice(invoiceId: number): void;
@@ -251,6 +253,7 @@ export async function startSimulator(opts: SimulatorOptions): Promise<Simulator>
   let baseUrl = "";
   const faults = new Map<string, SimFault>();
   const statusFaults = new Set<number>();
+  const forgotten = new Set<number>();
   const delays = new Map<string, number>();
   /** الوثائق: نفس Idempotency-Key خلال ٢٥٠ دقيقة يعيد الرد الأصلي دون إعادة التنفيذ */
   const idempotent = new Map<string, unknown>();
@@ -601,7 +604,7 @@ export async function startSimulator(opts: SimulatorOptions): Promise<Simulator>
         } else if (keyType === "CustomerReference") {
           inv = [...state.invoices.values()].reverse().find((i) => i.CustomerReference === key);
         } else return validationError(res, [{ Name: "KeyType", Error: "Invalid KeyType." }]);
-        if (!inv) return validationError(res, [{ Name: "Key", Error: "Invalid key." }]);
+        if (!inv || forgotten.has(inv.InvoiceId)) return validationError(res, [{ Name: "Key", Error: "Invalid key." }]);
         if (statusFaults.has(inv.InvoiceId)) return envelope(res, 500, { IsSuccess: false, Message: "Internal server error", Data: null });
         return envelope(res, 200, { IsSuccess: true, Message: "", Data: statusData(inv) });
       }
@@ -770,6 +773,10 @@ ${isExpired(inv) ? `<p data-testid="sim-expired">انتهت صلاحية هذا 
       if (on) statusFaults.add(invoiceId);
       else statusFaults.delete(invoiceId);
     },
+    forgetInvoice: (invoiceId, on) => {
+      if (on) forgotten.add(invoiceId);
+      else forgotten.delete(invoiceId);
+    },
     setDelay: (path, ms) => {
       if (ms) delays.set(path, ms);
       else delays.delete(path);
@@ -777,6 +784,7 @@ ${isExpired(inv) ? `<p data-testid="sim-expired">انتهت صلاحية هذا 
     clearFaults: () => {
       faults.clear();
       statusFaults.clear();
+      forgotten.clear();
       delays.clear();
       refundRefusal = null;
       refundStatusNullData = false;

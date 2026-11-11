@@ -52,7 +52,8 @@ export type ProtectedCommand =
   | "student.correct_email"
   | "student.active"
   | "refund.dismiss"
-  | "extra_payment.dismiss";
+  | "extra_payment.dismiss"
+  | "order.close_unverifiable";
 
 type ProofRefusal = { need: "proof" | "enrol"; reason: "no_session" | "not_enrolled" | "missing" | "expired"; message: string };
 

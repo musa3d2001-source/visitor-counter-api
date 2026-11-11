@@ -151,7 +151,18 @@ type AlertBase = {
   updated_at: Date;
 };
 
-export type PaymentAlert = AlertBase & ({ kind: "refund_unmatched"; details: RefundAlertDetails } | { kind: "dispute"; details: DisputeDetails });
+/** فاتورة على طلب أُغلق وكانت البوابة الحالية لا تعرفها (F28): لا نعرف منها أنها لم تُدفع */
+export type UnknownInvoiceDetails = {
+  invoiceId: string;
+  environment: string;
+  amountFils: number | null;
+  firstUnknownAt: string | null;
+  lastUnknownAt: string | null;
+  closedReason: string;
+};
+
+export type PaymentAlert = AlertBase &
+  ({ kind: "refund_unmatched"; details: RefundAlertDetails } | { kind: "dispute"; details: DisputeDetails } | { kind: "unknown_invoice"; details: UnknownInvoiceDetails });
 
 /**
  * تنبيه حدث استرداد موقّع لم نستطع تطبيقه تلقائيًا (استرداد جزئي من لوحة البوابة، أو طلب غير مدفوع...).

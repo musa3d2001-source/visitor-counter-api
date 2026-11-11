@@ -103,12 +103,13 @@ export default async function AdminOrdersPage({ searchParams }: { searchParams: 
       ) : null}
 
       {alerts.length ? (
-        <Section id="payment-alerts" title="تنبيهات الدفع" description="نزاعات واستردادات أبلغت عنها بوابة الدفع ولم تُطبق تلقائيًا. النزاع على طلب مدفوع والاسترداد الجزئي يوقفان وصوله حتى تقرر، وما عداهما لا يغيّر شيئًا." icon={<ShieldAlert />} tone="coral">
+        <Section id="payment-alerts" title="تنبيهات الدفع" description="نزاعات واستردادات أبلغت عنها بوابة الدفع ولم تُطبق تلقائيًا، وفواتير لا تعرفها البوابة على طلبات أُغلقت. النزاع على طلب مدفوع والاسترداد الجزئي يوقفان وصوله حتى تقرر، وما عداهما لا يغيّر شيئًا." icon={<ShieldAlert />} tone="coral">
           <ul className="flex flex-col gap-3" aria-label="تنبيهات الدفع المفتوحة" data-testid="payment-alerts">
             {alerts.map((a) => {
-              const status = a.details.status ?? "";
+              const status = "status" in a.details ? (a.details.status ?? "") : "";
               const tone: StatusTone = status === "RESOLVED" ? "success" : status === "LOST" ? "danger" : "warning";
               const isDispute = a.kind === "dispute";
+              const isUnknown = a.kind === "unknown_invoice";
               return (
                 <li key={a.id} className="flex min-w-0 flex-wrap items-center gap-x-4 gap-y-3 rounded-[1.4rem] border border-[rgb(23_32_38/0.06)] bg-surface p-3.5 shadow-xs sm:p-4">
                   <ToneIcon tone="coral" size="md" className="max-sm:size-11">
@@ -116,8 +117,8 @@ export default async function AdminOrdersPage({ searchParams }: { searchParams: 
                   </ToneIcon>
                   <div className="min-w-[min(100%,13rem)] flex-1">
                     <p className="flex flex-wrap items-center gap-1.5 font-display font-extrabold text-ink">
-                      {isDispute ? (DISPUTE_TYPE_LABELS[a.details.type ?? ""] ?? "نزاع على دفعة") : "استرداد لم يُطبق تلقائيًا"}
-                      <StatusPill tone={isDispute ? tone : "warning"}>{isDispute ? (DISPUTE_STATUS_LABELS[status] ?? (status || "غير معروفة")) : status === "CANCELED" ? "ملغى لدى البوابة" : "منفذ لدى البوابة"}</StatusPill>
+                      {a.kind === "dispute" ? (DISPUTE_TYPE_LABELS[a.details.type ?? ""] ?? "نزاع على دفعة") : isUnknown ? "فاتورة لا تعرفها البوابة على طلب أُغلق" : "استرداد لم يُطبق تلقائيًا"}
+                      <StatusPill tone={isDispute ? tone : "warning"}>{isDispute ? (DISPUTE_STATUS_LABELS[status] ?? (status || "غير معروفة")) : isUnknown ? "تحقق من الحساب السابق" : status === "CANCELED" ? "ملغى لدى البوابة" : "منفذ لدى البوابة"}</StatusPill>
                       {a.order_is_test ? <TestBadge /> : null}
                     </p>
                     <p className="text-[0.84rem] leading-6 text-muted">
@@ -133,13 +134,13 @@ export default async function AdminOrdersPage({ searchParams }: { searchParams: 
                           {" · "}فاتورة <span className="num">{a.details.invoiceId}</span>
                         </>
                       ) : null}
-                      {isDispute && a.details.amount ? (
+                      {a.kind === "dispute" && a.details.amount ? (
                         <>
                           {" · "}
                           <span className="num">{a.details.amount}</span> {a.details.currency === "KWD" || a.details.currency === "KD" ? "د.ك" : a.details.currency}
                         </>
                       ) : null}
-                      {!isDispute && a.details.amountFils !== null ? (
+                      {a.kind !== "dispute" && a.details.amountFils !== null ? (
                         <>
                           {" · "}
                           <span className="num">{filsToKwdString(a.details.amountFils)}</span> د.ك
@@ -148,12 +149,17 @@ export default async function AdminOrdersPage({ searchParams }: { searchParams: 
                       {" · "}
                       <span className="whitespace-nowrap">{formatDateTime(a.updated_at)}</span>
                     </p>
-                    {isDispute && a.details.reason ? (
+                    {a.kind === "dispute" && a.details.reason ? (
                       <p className="text-[0.84rem] leading-6 text-ink-soft">
                         السبب حسب البوابة: <bdi dir="ltr">{a.details.reason}</bdi>
                       </p>
                     ) : null}
-                    {!isDispute ? <p className="text-[0.84rem] leading-6 text-ink-soft">السبب: {REFUND_ALERT_REASON_LABELS[a.details.reason] ?? a.details.reason}. راجعه في لوحة MyFatoorah.</p> : null}
+                    {a.kind === "refund_unmatched" ? <p className="text-[0.84rem] leading-6 text-ink-soft">السبب: {REFUND_ALERT_REASON_LABELS[a.details.reason] ?? a.details.reason}. راجعه في لوحة MyFatoorah.</p> : null}
+                    {isUnknown ? (
+                      <p className="text-[0.84rem] leading-6 text-ink-soft" data-testid="unknown-invoice-alert">
+                        البوابة الحالية لا تعرف هذه الفاتورة، فلا نعرف منها أنها لم تُدفع. ابحث عن رقمها في لوحة حساب MyFatoorah الذي أصدرها. إن وجدتها مدفوعة فامنح الطالب الوصول من ملفه أو استرد المبلغ من تلك اللوحة، ثم أغلق التنبيه. حذف بيانات صاحب الطلب ينتظر إغلاقه.
+                      </p>
+                    ) : null}
                   </div>
                   <ConfirmButton
                     action={resolvePaymentAlertAction}
@@ -162,7 +168,13 @@ export default async function AdminOrdersPage({ searchParams }: { searchParams: 
                     icon={<CircleCheck aria-hidden />}
                     variant="outline"
                     title="إغلاق هذا التنبيه؟"
-                    description={isDispute ? "يختفي التنبيه من القائمة ويُسجَّل الإغلاق في سجل التدقيق. هذا لا يعيد وصولًا موقوفًا، فالقرار في «دفعات موقوفة». يعود التنبيه إذا غيّرت البوابة حالة النزاع." : "يختفي التنبيه من القائمة ويُسجَّل الإغلاق في سجل التدقيق. هذا لا يعيد وصولًا موقوفًا، فالقرار في «دفعات موقوفة»."}
+                    description={
+                      isDispute
+                        ? "يختفي التنبيه من القائمة ويُسجَّل الإغلاق في سجل التدقيق. هذا لا يعيد وصولًا موقوفًا، فالقرار في «دفعات موقوفة». يعود التنبيه إذا غيّرت البوابة حالة النزاع."
+                        : isUnknown
+                          ? "أغلقه فقط بعد أن تتأكد في لوحة الحساب السابق أن هذه الفاتورة لم تُدفع. يُسجَّل الإغلاق في سجل التدقيق."
+                          : "يختفي التنبيه من القائمة ويُسجَّل الإغلاق في سجل التدقيق. هذا لا يعيد وصولًا موقوفًا، فالقرار في «دفعات موقوفة»."
+                    }
                     confirmLabel="إغلاق التنبيه"
                   />
                 </li>

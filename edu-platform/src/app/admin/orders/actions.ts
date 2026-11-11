@@ -9,6 +9,7 @@ import { RefundError, dismissRefund, recordMoneyReturned, type RefundOutcome } f
 import { releaseOrderHold } from "@/server/payments/holds";
 import { assertFreshProof, assertRefundStepUp } from "@/server/auth/step-up";
 import { resolvePaymentAlert } from "@/server/payments/monitoring";
+import { closeUnverifiableOrder, type CloseUnverifiableRefusal } from "@/server/payments/unverifiable";
 import { audit } from "@/server/platform/audit";
 import { AdminError, adminAction, isUuid, str } from "@/server/admin/common";
 
@@ -171,6 +172,36 @@ export async function reverifyPaymentAction(_p: ActionState, fd: FormData): Prom
     if (walk.anyPaid) return { ok: true, message: "الدفع مؤكد لدى البوابة وتم منح الصلاحيات" };
     if (walk.total === 0) return { ok: true, message: "لا توجد فواتير غير مؤكدة على هذا الطلب" };
     return { ok: true, message: `تم فحص كل الفواتير (${walk.checked}): لا توجد دفعة مؤكدة لدى البوابة` };
+  });
+}
+
+const UNVERIFIABLE_REFUSALS: Record<CloseUnverifiableRefusal, string> = {
+  not_open: "هذا الطلب ليس مفتوحًا الآن. حدّث الصفحة.",
+  nothing_unknown: "البوابة تعرف كل فواتير هذا الطلب، فلا حاجة لهذا الإجراء. يُغلق الطلب وحده بعد انتهاء مدته، أو استخدم «إعادة التحقق من البوابة».",
+  unreachable: "تعذر الوصول إلى بوابة الدفع الآن، فلم يتغير الطلب. حاول بعد قليل.",
+  paid: "ظهرت دفعة على هذا الطلب لدى البوابة، فلم نغلقه. راجع المدفوعات في هذه الصفحة.",
+  invalid: "على هذا الطلب فاتورة لا تطابق بياناته، فلم نغلقه. راجعها في لوحة MyFatoorah أولًا.",
+  in_progress: "على هذا الطلب عملية دفع لم تُحسم عند البنك، فلم نغلقه. أعد المحاولة بعد انتهاء مهلتها (نحو ربع ساعة بعد انتهاء الرابط).",
+  link_payable: "رابط إحدى فواتير هذا الطلب ما زال يقبل الدفع، فلم نغلقه. أعد المحاولة بعد أربع ساعات من إنشائه.",
+};
+
+/**
+ * الملاذ الأخير (F28): إغلاق طلب مفتوح لا يعرف حساب البوابة الحالي فاتورته، بعد أن يتحقق المالك في لوحة الحساب السابق
+ * أنها لم تُدفع. يحتاج إثباتًا حديثًا وسببًا مكتوبًا، ويُسجل في التدقيق.
+ */
+export async function closeUnverifiableOrderAction(_p: ActionState, fd: FormData): Promise<ActionState> {
+  return adminAction(async ({ adminId, ip }) => {
+    const orderId = str(fd, "orderId");
+    const reason = str(fd, "reason");
+    if (!isUuid(orderId)) throw new AdminError("طلب غير صالح");
+    if (reason.length < 3) throw new AdminError("اكتب ما وجدته في لوحة البوابة (٣ أحرف على الأقل)");
+    await assertFreshProof({ adminId, ip, command: "order.close_unverifiable" });
+    const out = await closeUnverifiableOrder({ orderId, adminId, reason, ip });
+    revalidatePath(`/admin/orders/${orderId}`);
+    revalidatePath("/admin/orders");
+    revalidatePath("/admin");
+    if (out.state === "refused") return { error: UNVERIFIABLE_REFUSALS[out.reason] };
+    return { ok: true, message: "أُغلق الطلب. إن ظهرت عليه دفعة لاحقًا فستُسجل لك للمراجعة، ولن تمنح الطالب الوصول وحدها." };
   });
 }
 

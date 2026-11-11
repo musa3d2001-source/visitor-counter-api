@@ -46,6 +46,7 @@ const CLOSED_COPY = {
   already_owned: { title: "هذا المنتج في مكتبتك", body: "أصبح أحد منتجات هذا الطلب في مكتبتك، فأغلقنا الطلب حتى لا تدفع مرتين." },
   coupon_unavailable: { title: "نفد كود الخصم قبل إكمال الطلب", body: "نفدت مرات استخدام كود الخصم، فأغلقنا الطلب. يمكنك إنشاء طلب جديد من السلة." },
   product_ended: { title: "انتهى بيع أحد منتجات هذا الطلب", body: "أحد منتجات هذا الطلب لم يعد متاحًا للبيع، فأغلقناه حتى لا تدفع مقابل منتج غير متاح." },
+  unverifiable: { title: "أُغلق هذا الطلب", body: "لم نجد دفعة مؤكدة على هذا الطلب، فأغلقناه. يمكنك إنشاء طلب جديد من السلة متى شئت." },
 } as const;
 
 /** مال وصلنا ولم يكمل طلبًا، كما يراه الطالب. الوصف يختلف لأن الجملة نفسها تكذب في غير موضعها */
@@ -316,6 +317,10 @@ export default async function OrderPage({ params, searchParams }: { params: Prom
         ) : sp.error === "inprogress" ? (
           <Alert tone="warning" className="mt-6 no-print" title="توجد عملية دفع لم تكتمل بعد">
             انتظر قليلًا ثم اضغط «تحديث الحالة». لا ننشئ عملية دفع جديدة قبل أن تتضح نتيجتها.
+          </Alert>
+        ) : sp.error === "slow" ? (
+          <Alert tone="warning" className="mt-6 no-print" title="بوابة الدفع بطيئة الآن">
+            لم نبدأ عملية دفع جديدة. حاول بعد دقيقة.
           </Alert>
         ) : sp.error === "check" ? (
           <Alert tone="warning" className="mt-6 no-print" title="تعذر التأكد من حالة الدفع الآن">

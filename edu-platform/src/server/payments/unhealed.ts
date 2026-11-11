@@ -20,7 +20,8 @@ const OWNER_RUN_BUDGET_MS = 40_000;
 
 export type PaidNotGrantedReason = "payment_not_applied" | "needs_decision" | "no_access";
 
-export type UnhealedRow = { order_id: string; order_number: string; is_test: boolean; amount_fils: number; since: Date; last_checked_at: Date | null };
+/** unknown_at_gateway: أجابت البوابة الحالية أنها لا تعرف هذه الفاتورة (F28)، فالسؤال عن الحساب أو المفتاح لا عن الدفع */
+export type UnhealedRow = { order_id: string; order_number: string; is_test: boolean; amount_fils: number; since: Date; last_checked_at: Date | null; unknown_at_gateway?: boolean };
 
 export type UnhealedOrders = {
   paidNotGranted: (UnhealedRow & { reason: PaidNotGrantedReason })[];
@@ -52,11 +53,12 @@ export async function unhealedOrders(): Promise<UnhealedOrders> {
     `,
     cfg.enabled
       ? sql<UnhealedRow[]>`
-          select o.id as order_id, o.number as order_number, o.is_test, q.amount_fils, q.created_at as since, q.last_checked_at
+          select o.id as order_id, o.number as order_number, o.is_test, q.amount_fils, q.created_at as since, q.last_checked_at,
+            q.gateway_unknown_last_at is not null as unknown_at_gateway
           from payments q join orders o on o.id = q.order_id
           where o.status in ('pending', 'failed') and q.created_at < now() - make_interval(mins => ${UNVERIFIED_MIN_AGE_MINUTES})
             and ${unverifiedDue(sql, cfg.environment)}
-          order by q.created_at asc limit ${LIST_LIMIT}
+          order by (q.gateway_unknown_last_at is not null) asc, q.created_at asc limit ${LIST_LIMIT}
         `
       : Promise.resolve([] as UnhealedRow[]),
     cfg.enabled
