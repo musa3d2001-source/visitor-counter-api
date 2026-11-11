@@ -34,7 +34,9 @@ SKIP_DIRS = {".git", "node_modules", ".harness", "__pycache__", ".venv", "venv",
 MAX_WALK_FILES = 20000
 BYTES_PER_TOKEN = 4
 UNSURE = "unsure"
-PLACEHOLDERS = {"", "none", "-", "n/a", "na", "tbd", "todo", "?", "unknown", "no", "false"}
+PLACEHOLDERS = {"", "none", "-", "n/a", "na", "tbd", "todo", "?", "unknown", "no", "false", "manual", "see"}
+CODE_EXTS = {".go", ".py", ".js", ".mjs", ".cjs", ".ts", ".tsx", ".jsx", ".java", ".kt", ".rb", ".rs", ".c", ".h",
+             ".cc", ".cpp", ".hpp", ".cs", ".php", ".swift", ".scala", ".sh"}
 EDIT_TOOLS = ("Edit", "Write", "NotebookEdit")
 NESTING_TOOLS = ("Agent", "Skill")
 
@@ -443,7 +445,7 @@ def has_check(value) -> bool:
     """True when the field holds a command the worker can run, not a
     placeholder ('none.', 'no check', 'TBD', '(validator reads it)')."""
     text = str(value or "").strip().strip("`").strip()
-    if not text or text.startswith("("):
+    if not text:
         return False
     m = re.match(r"^[^A-Za-z0-9./]*([A-Za-z0-9./_-]+)", text)
     first = (m.group(1) if m else "").lower().rstrip(".")
@@ -476,6 +478,8 @@ def _is_log(rel: Path) -> bool:
     name = rel.name.lower()
     if rel.suffix.lower() in LOG_EXTS or re.search(r"\.log(\.\d+)?$", name):
         return True
+    if rel.suffix.lower() in CODE_EXTS:      # e.g. internal/log/log.go is source, not a log
+        return False
     return any(part.lower() in ("log", "logs") for part in rel.parts[:-1])
 
 
@@ -785,7 +789,11 @@ def route_item(sig: Signals, contract: Contract, cycles: list | None = None) -> 
     # Did the failed cycle's worker have a check it could run? (the Cycles row
     # records it; older tables without the column fall back to the item now)
     had_check = _truthy(last.get("check")) if "check" in last else sig.has_check
-    step = escalate(last_model, last_effort, bool(had_check), contract)
+    # The verify rung is used at most once: if an earlier failed run already had
+    # no check, the orchestrator has had its chance to add one (some criteria
+    # can only be judged), so climb on to effort and model.
+    verify_used = any("check" in r and not _truthy(r.get("check")) for r in failed[:-1])
+    step = escalate(last_model, last_effort, bool(had_check) or verify_used, contract)
     if (step["action"] != "blocked" and not sig.user_override
             and _rank(contract, step["model"]) < _rank(contract, base["model"])):
         # The item's signals changed after the failed cycle (e.g. it turned out
@@ -1028,8 +1036,8 @@ def main(argv=None):
     e.add_argument("--effort", required=True)
     e.add_argument("--has-check", action="store_true")
 
-    sub.add_parser("kinds", help="list the kinds the contract knows")
-    c = sub.add_parser("check", help="validate the contract and the subagent files")
+    sub.add_parser("kinds", help="list the kinds the contract knows", parents=[common])
+    c = sub.add_parser("check", help="validate the contract and the subagent files", parents=[common])
     c.add_argument("--root", help="project root (default: nearest dir with .claude/ or .git)")
 
     args = ap.parse_args(argv)

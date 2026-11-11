@@ -314,6 +314,10 @@ class LedgerTest(unittest.TestCase):
         rows = ledger.read_ledger(Path(".harness/ledger.jsonl"))
         rows[0]["ts"] = "2026-01-01T00:00:00Z"   # pretend the first run was earlier
         Path(".harness/ledger.jsonl").write_text("\n".join(json.dumps(r) for r in rows) + "\n", encoding="utf-8")
+        code, _, err = self.run_cli("start", "--title", "rename a config key")
+        self.assertEqual(code, 2)                                  # TASK.md still belongs to the old task
+        self.assertIn("belongs to task", err)
+        self.task_path.unlink()                                    # archived
         _, c, _ = self.run_cli("start", "--title", "rename a config key")
         self.assertNotEqual(json.loads(a)["task"], json.loads(c)["task"])
 
@@ -479,6 +483,81 @@ class LedgerTest(unittest.TestCase):
         s = json.loads(out)
         self.assertEqual(s["orchestrator"]["messages"], 2)
         self.assertAlmostEqual(s["orchestrator"]["cost_usd"], 8.0)
+
+    # ---- round 3 -----------------------------------------------------------
+
+    def test_summary_reports_the_task_md_task(self):
+        _, a, _ = self.run_cli("start", "--title", "rename")
+        self.run_cli("cycle", "--item", "W2", "--worker", "worker-sonnet", "--verdict", "FAIL", "--validator", "none",
+                     "--worker-tokens", "10,1")
+        rows = ledger.read_ledger(Path(".harness/ledger.jsonl"))
+        rows.append({"ts": "2999-01-01T00:00:00Z", "kind": "start", "task": "other-1", "title": "other"})
+        Path(".harness/ledger.jsonl").write_text("\n".join(json.dumps(r) for r in rows) + "\n", encoding="utf-8")
+        _, out, _ = self.run_cli("summary", "--format", "json", "--no-session")
+        s = json.loads(out)
+        self.assertEqual(s["task"], json.loads(a)["task"])
+        self.assertEqual(len(s["steps"]), 1)
+
+    def test_main_transcript_without_a_session_folder(self):
+        sid = "plan-only-session"
+        other = self.cfg / "projects" / "-proj" / "other-sess"
+        (other / "subagents").mkdir(parents=True)
+        other.with_suffix(".jsonl").write_text(assistant_row("o", "claude-sonnet-5-5", {"input_tokens": 1, "output_tokens": 1},
+                                                             ts="2026-01-01T00:00:05Z", sidechain=False) + "\n")
+        (self.cfg / "projects" / "-proj" / f"{sid}.jsonl").write_text(assistant_row(
+            "p", "claude-opus-5-5", {"input_tokens": 100_000, "output_tokens": 5_000}, ts="2026-01-01T00:00:05Z",
+            sidechain=False) + "\n")
+        Path(".harness/ledger.jsonl").write_text(json.dumps(
+            {"ts": "2026-01-01T00:00:00Z", "kind": "start", "task": "p-1", "title": "p", "session": sid}) + "\n")
+        with mock.patch.dict(os.environ, {"CLAUDE_CODE_SESSION_ID": sid}):
+            _, out, _ = self.run_cli("summary", "--format", "json", "--task", "p-1")
+        o = json.loads(out)["orchestrator"]
+        self.assertEqual(o["model"], "claude-opus-5-5")
+        self.assertAlmostEqual(o["cost_usd"], 0.5)
+
+    def test_reopening_several_items_blocks_dependents_in_any_order(self):
+        self.run_cli("start", "--title", "x")
+        for verdict in ("FAIL", "FAIL", "PASS"):
+            self.run_cli("cycle", "--item", "W2", "--worker", "worker-sonnet", "--effort", "medium", "--verdict",
+                         verdict, "--validator", "none", "--worker-tokens", "10,1")
+        self.run_cli("cycle", "--item", "W3", "--worker", "worker-sonnet", "--verdict", "PASS", "--validator", "none",
+                     "--worker-tokens", "10,1")
+        _, out, _ = self.run_cli("step", "--name", "final-validation", "--agent", "validator", "--item", "W2,W3,W2",
+                                 "--verdict", "FAIL", "--tokens", "10,1")
+        items = self.task()["items"]
+        self.assertEqual(items["W2"]["status"], "blocked")
+        self.assertEqual((items["W3"]["status"], items["W3"]["blocked_by"]), ("blocked", "W2"))
+        self.assertEqual(sum(1 for c in self.task()["cycles"] if c["item"] == "W2"), 4)   # W2 named twice, one row
+
+    def test_relogging_the_same_run_is_refused(self):
+        self.run_cli("start", "--title", "x")
+        self.add_agent("w", "worker-sonnet", "Harness work item W2: x", {"input_tokens": 1, "output_tokens": 1})
+        self.run_cli("cycle", "--item", "W2", "--worker", "worker-sonnet", "--verdict", "FAIL", "--validator", "none")
+        code, _, err = self.run_cli("cycle", "--item", "W2", "--worker", "worker-sonnet", "--verdict", "FAIL",
+                                    "--validator", "none", "--worker-agent-id", "w")
+        self.assertEqual(code, 2)
+        self.assertEqual(len(self.task()["cycles"]), 1)
+
+    def test_passing_item_unblocks_its_dependents(self):
+        self.run_cli("start", "--title", "x")
+        for _ in range(3):
+            self.run_cli("cycle", "--item", "W2", "--worker", "worker-sonnet", "--verdict", "FAIL",
+                         "--validator", "none", "--worker-tokens", "10,1")
+        self.assertEqual(self.task()["items"]["W3"]["status"], "blocked")
+        _, out, _ = self.run_cli("cycle", "--item", "W2", "--worker", "worker-opus", "--verdict", "PASS",
+                                 "--validator", "none", "--worker-tokens", "10,1")
+        self.assertEqual(json.loads(out)["unblocked"], ["W3"])
+        self.assertEqual(self.task()["items"]["W3"]["status"], "todo")
+
+    def test_markdown_heading_brief_is_matched(self):
+        self.run_cli("start", "--title", "x")
+        self.add_agent("h", "worker-sonnet", "## Harness work item W3: Docs", {"input_tokens": 1, "output_tokens": 1})
+        code, _, err = self.run_cli("cycle", "--item", "W2", "--worker", "worker-sonnet", "--verdict", "PASS",
+                                    "--validator", "none")
+        self.assertEqual(code, 2)                      # W3's run is not taken for W2
+        _, out, _ = self.run_cli("cycle", "--item", "W3", "--worker", "worker-sonnet", "--verdict", "PASS",
+                                 "--validator", "none")
+        self.assertEqual(json.loads(out)["worker"]["agent_id"], "h")
 
 
 if __name__ == "__main__":

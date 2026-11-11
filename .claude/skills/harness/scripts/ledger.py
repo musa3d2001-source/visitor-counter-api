@@ -42,7 +42,8 @@ LEDGER_FILE = HARNESS_DIR / "ledger.jsonl"
 CYCLE_COLUMNS = ["item", "cycle", "agent", "model", "effort", "check", "verdict", "cost", "note"]
 REQUIRED_COLUMNS = {"item", "model", "effort", "check", "verdict"}
 MAX_STUCK = 2          # STUCK replies from the same agent on one item before it is blocked
-HARNESS_LINE = re.compile(r"^\s*(?:\*\*)?Harness (?:(work item|validation) ([A-Za-z]*\d+[A-Za-z0-9]*)\b|(final validation))",
+BRIEF_PREFIX = r"^[\s#>*_`]*"   # tolerate markdown around the brief's first line
+HARNESS_LINE = re.compile(BRIEF_PREFIX + r"Harness (?:(work item|validation) ([A-Za-z]*\d+[A-Za-z0-9]*)\b|(final validation))",
                           re.I)
 
 
@@ -103,7 +104,13 @@ def session_dirs(sid: str | None = None) -> list:
 
 
 def main_transcripts(sid: str | None = None) -> list:
-    return [d.with_suffix(".jsonl") for d in session_dirs(sid) if d.with_suffix(".jsonl").exists()]
+    """The main transcript of a session. A session that never dispatched a
+    subagent has no <session>/ folder, so look for the file itself."""
+    sid = sid or current_session_id()
+    if sid:
+        return sorted(p for p in projects_dir().glob(f"*/{sid}.jsonl") if p.is_file())
+    proj = projects_dir() / project_slug(Path.cwd())
+    return sorted(proj.glob("*.jsonl"), key=lambda p: p.stat().st_mtime, reverse=True)[:1]
 
 
 def _meta(transcript: Path) -> dict:
@@ -189,7 +196,7 @@ def find_transcript(agent_type: str, exclude_ids: set, marker: str | None = None
         return not meta or meta.get("finished") is True   # Claude Code writes finished: true at the end
 
     if marker:
-        rx = re.compile(r"^\s*(?:\*\*)?" + marker, re.I)
+        rx = re.compile(BRIEF_PREFIX + marker, re.I)
         matched = [t for t in cands if rx.match(first_line(t))]
         if matched:
             pool = [t for t in matched if finished(t)] or matched
@@ -533,6 +540,13 @@ def _after_verdict(task_file: Path, item_id: str, contract: Contract, verdict: s
     out = {}
     if verdict == "PASS":
         status = "done"
+        freed = [iid for iid, it in task["items"].items()
+                 if (it.get("status") or "").lower() == "blocked" and (it.get("blocked_by") or "").upper() == item_id]
+        for iid in freed:   # they were blocked only because this item was
+            set_item_field(task_file, iid, "status", "todo")
+            set_item_field(task_file, iid, "blocked_by", "-")
+        if freed:
+            out["unblocked"] = freed
     else:
         nxt = route_item(signals_from_item(task["items"][item_id]), contract, task["cycles"])
         out["next"] = {k: nxt.get(k) for k in ("status", "agent", "effort", "rule", "next")}
@@ -572,6 +586,11 @@ def cmd_start(args, contract):
             raise LedgerError("nothing to resume: no task in the ledger matches; start a new one with --title")
     if not title:
         raise LedgerError("start needs --title (or --resume)")
+    if not args.resume and task_file.exists():
+        stamped = parse_task(task_file.read_text(encoding="utf-8")).get("task_id")
+        if stamped:
+            raise LedgerError(f"{task_file} belongs to task {stamped}: resume it with `start --resume`, or move it to "
+                              f".harness/archive/ before starting a new task")
     if not task_id:
         task_id = f"{slugify(title)}-{now_utc():%Y%m%d-%H%M%S}"
         taken = {r.get("task") for r in starts}
@@ -614,6 +633,8 @@ def cmd_cycle(args, contract):
                      marker=rf"Harness work item {re.escape(item_id)}\b")
     if not worker["found"]:
         raise _not_found("worker", args.worker, "worker")
+    if worker.get("duplicate_of"):
+        raise LedgerError(f"nothing logged: run {worker['duplicate_of']} is already in the ledger as a cycle")
     if worker.get("agent_id"):
         logged.add(worker["agent_id"])
     validator = None
@@ -654,7 +675,7 @@ def cmd_step(args, contract):
     ledger = read_ledger(ledger_path)
     task_id = task_id_for(ledger, task_file)
     logged = {r.get("agent_id") for r in ledger if r.get("agent_id")}
-    items = [i.strip().upper() for i in re.split(r"[,\s]+", args.item or "") if i.strip()]
+    items = list(dict.fromkeys(i.strip().upper() for i in re.split(r"[,\s]+", args.item or "") if i.strip()))
     verdict = (args.verdict or "").upper() or None
     task = None
     if items or verdict in ("FAIL", "STUCK"):
@@ -690,6 +711,8 @@ def cmd_step(args, contract):
     if not m["found"]:
         raise LedgerError(f"nothing logged: no unlogged {args.agent} transcript found. Rerun with --agent-id ID "
                           f"or --transcript PATH, or as a fallback --tokens IN,OUT (or --total-tokens N).")
+    if m.get("duplicate_of") and verdict in ("FAIL", "STUCK"):
+        raise LedgerError(f"nothing logged: run {m['duplicate_of']} is already in the ledger")
     row = _row({"ts": iso(now_utc()), "task": task_id, "item": ",".join(items) or None, "cycle": None,
                 "name": args.name}, args.role, m, verdict)
     out = {"step": row, "items": {}}
@@ -701,8 +724,9 @@ def cmd_step(args, contract):
         # passed: record a failed cycle of each item's last run. The run's
         # cost is in the ledger once; the Cycles rows carry it on the first item.
         for n, iid in enumerate(items):
-            rows_i = [c for c in task["cycles"] if c.get("item") == iid]
-            if (task["items"][iid].get("status") or "").lower() == "blocked":
+            now = parse_task(task_file.read_text(encoding="utf-8"))
+            rows_i = [c for c in now["cycles"] if c.get("item") == iid]
+            if (now["items"][iid].get("status") or "").lower() == "blocked":
                 out["items"][iid] = {"item_status": "blocked", "next": "already blocked: report it, do not reopen"}
                 continue
             last = rows_i[-1]
@@ -714,6 +738,18 @@ def cmd_step(args, contract):
             out["items"][iid] = _after_verdict(task_file, iid, contract, "FAIL")
             if len(items) == 1:
                 row["cycle"] = len(rows_i) + 1
+        # An item blocked in this loop may have dependents that were only
+        # reopened after it: block them now, whatever order the items came in.
+        final = parse_task(task_file.read_text(encoding="utf-8"))["items"]
+        for iid in items:
+            if (final[iid].get("status") or "").lower() == "blocked":
+                more = block_dependents(task_file, iid)
+                if more:
+                    out["items"][iid].setdefault("also_blocked", [])
+                    out["items"][iid]["also_blocked"] = sorted(set(out["items"][iid]["also_blocked"] or []) | set(more))
+                    for dep in more:
+                        if dep in out["items"]:
+                            out["items"][dep]["item_status"] = "blocked"
     elif verdict == "STUCK":
         stuck = 1 + sum(1 for r in ledger if r.get("task") == task_id and r.get("item") == item_id
                         and r.get("verdict") == "STUCK" and r.get("agent") == args.agent)
@@ -766,7 +802,7 @@ def _windows(ledger: list, task_id: str):
 def cmd_summary(args, contract):
     ledger_path, task_file = Path(args.ledger), Path(args.task_file)
     ledger = read_ledger(ledger_path)
-    task_id = args.task or current_task(ledger, task_file)[0]
+    task_id = args.task or task_id_for(ledger, task_file)
     rows = [r for r in ledger if r.get("kind") == "step" and (args.all or r.get("task") == task_id)]
 
     session = None

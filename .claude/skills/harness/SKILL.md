@@ -79,7 +79,8 @@ from the project root (that form is pre-approved); they keep state in
 - Starting fresh with an old TASK.md present: move it to
   `.harness/archive/<task-slug>.md` first.
 - No TASK.md to resume and no request in `$ARGUMENTS`? Ask what to do.
-- Open the ledger (also for `--plan`, so planning is costed):
+- Starting a new task (not resuming): open the ledger, also for `--plan`, so
+  planning is costed:
   `python3 ${CLAUDE_SKILL_DIR}/scripts/ledger.py start --title "<the request in a few words>"`
 - `--plan` at the start of the arguments means: do steps 1 and 2, show the
   plan table (item, kind, route, why), run
@@ -209,7 +210,7 @@ same answer):
 
 | action | do |
 |---|---|
-| `add_check` | the failed run had no check: write a `check:` command into the item that the worker can run itself, then re-dispatch to the same agent and effort |
+| `add_check` | the failed run had no check: write a `check:` command into the item that the worker can run itself, then re-dispatch to the same agent and effort. If the criterion can only be judged, write `check: (judgement: <what the validator reads>)` and re-dispatch; this rung is used once per item, so the next failure moves on to effort |
 | `raise_effort` | re-dispatch to the same agent one effort level higher, with the validator's evidence |
 | `next_model` | re-dispatch to the next agent up the ladder at medium, with the evidence |
 | `reroute` | the item's signals changed; dispatch to the agent the router now names |
@@ -273,7 +274,7 @@ worker file pins its tier's model and cannot start subagents of its own.
   and the same for `ledger.py` in their settings.
 - **A computer-use item comes back STUCK for lack of tools:** `worker-opus`
   has a tool allowlist without MCP tools, to keep each dispatch small. Add the
-  computer-use MCP tool names to its `tools:` line (or make a variant agent
-  for it) and route again.
+  computer-use MCP tool names to its `tools:` line, run `route.py check`, and
+  route again.
 - **The user wants a quick answer, not a run:** this harness is for work
   worth splitting. For a one-line question, just answer it.

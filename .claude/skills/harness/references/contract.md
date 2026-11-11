@@ -86,7 +86,8 @@ After a FAIL, the next rung follows `escalation.order`
 
 1. **verify** — if the failed run had no `check:` (the Cycles table's
    `check` column), give the worker a check it can run itself; same model,
-   same effort.
+   same effort. Used at most once per item: a criterion that can only be
+   judged moves on to the effort rung after that.
 2. **effort** — raise effort one level (`low → medium → high`), up to
    `max_effort`.
 3. **model** — move one tier up the ladder, starting at `restart_effort`.
@@ -105,6 +106,8 @@ waits on it. With checks written up front, the default three cycles are:
   `ledger.py step --item W# --verdict FAIL`; it reopens the item as a failed
   cycle of its last run and counts toward the three.
 - `STATUS: STUCK` replies are not cycles; a second one from the same agent on an item blocks it.
+- When a blocked item later passes (say, on a route the user approved), the
+  items that were blocked only because of it go back to `todo`.
 
 ## The subagents
 

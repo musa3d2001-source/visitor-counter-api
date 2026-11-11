@@ -458,5 +458,33 @@ class RoundTwo(unittest.TestCase):
         self.assertIn("worker-opus @ high", buf.getvalue())
 
 
+class RoundThree(unittest.TestCase):
+    def test_subshell_check_counts(self):
+        self.assertTrue(route.has_check("`(cd api && npm test)`"))
+        for v in ("(judgement: the validator reads x)", "(none)", "(n/a)", "see AC1", "manual"):
+            self.assertFalse(route.has_check(v), v)
+
+    def test_source_file_in_a_log_package_is_not_a_log(self):
+        with tempfile.TemporaryDirectory() as d:
+            p = Path(d)
+            (p / "internal" / "log").mkdir(parents=True)
+            (p / "internal" / "log" / "log.go").write_text("package log")
+            self.assertEqual(route.inspect_assets(["internal/log/log.go"], p).logs, 0)
+
+    def test_unavailable_on_kinds_and_check(self):
+        for argv in (["kinds", "--unavailable", "fable"], ["check", "--root", str(REPO_ROOT), "--unavailable", "fable"]):
+            buf = io.StringIO()
+            with redirect_stdout(buf):
+                self.assertEqual(route.main(argv), 0, argv)
+
+    def test_verify_rung_is_used_once(self):
+        sig = Signals(item="W2", kinds=["scoped fix"], spec="clear", edits_code=True, has_check=False)
+        cycles = [{"item": "W2", "model": "sonnet", "effort": "medium", "check": "no", "verdict": "FAIL"}]
+        self.assertEqual(route_item(sig, CONTRACT, cycles)["escalation"]["action"], "add_check")
+        cycles.append({"item": "W2", "model": "sonnet", "effort": "medium", "check": "no", "verdict": "FAIL"})
+        out = route_item(sig, CONTRACT, cycles)
+        self.assertEqual((out["escalation"]["action"], out["effort"]), ("raise_effort", "high"))
+
+
 if __name__ == "__main__":
     unittest.main()
