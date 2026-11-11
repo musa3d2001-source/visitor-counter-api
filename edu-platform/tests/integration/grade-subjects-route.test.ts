@@ -3,6 +3,7 @@ import { NextRequest } from "next/server";
 import { GET } from "@/app/api/grades/[gradeId]/subjects/route";
 import { getDb } from "@/server/db";
 import { resetEnvCache } from "@/server/env";
+import { LENIENT_INTS, PUBLIC_FRESHNESS_SECONDS } from "@/server/env-schema";
 import { resetPublicCacheForTests } from "@/server/platform/public-cache";
 import { closeDb, resetDb, sql } from "../helpers/db";
 import { createProduct, gradeAndSubject } from "../helpers/factories";
@@ -33,6 +34,18 @@ describe("GET /api/grades/:id/subjects", () => {
     await sql`update products set status = 'hidden' where id = ${p.id}`;
     const { subjects } = await (await ask(gradeId)).json();
     expect(subjects).toEqual([]);
+  });
+
+  it("keeps the browser copy inside the owner's one minute, on top of the longest server cache (R022)", async () => {
+    await createProduct({ level: 6, subjectSlug: "science" });
+    const { gradeId } = await gradeAndSubject(6, "science");
+    const header = (await ask(gradeId)).headers.get("cache-control") ?? "";
+    const maxAge = Number(/(?:^|,\s*)max-age=(\d+)/.exec(header)?.[1]);
+    expect(Number.isInteger(maxAge)).toBe(true);
+    expect(maxAge + LENIENT_INTS.PUBLIC_CACHE_SECONDS.max).toBeLessThanOrEqual(PUBLIC_FRESHNESS_SECONDS);
+    expect(PUBLIC_FRESHNESS_SECONDS).toBe(60);
+    // لا نسخة على شبكة التوزيع: لا يصلها إبطال الذاكرة عند تعديل المالك
+    expect(header).not.toMatch(/s-maxage|stale-/);
   });
 
   it("answers 400 for something that is not an id, before touching the database", async () => {
