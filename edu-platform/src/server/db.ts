@@ -1,9 +1,11 @@
 import "server-only";
 import { AsyncLocalStorage } from "node:async_hooks";
+import { PHASE_PRODUCTION_BUILD } from "next/constants";
 import postgres, { type ISql, type Sql } from "postgres";
 import { REQUIRED_MIGRATIONS } from "@/lib/migrations";
 import { DatabaseBusyError, SchemaNotReadyError, toBusyError } from "./db-busy";
-import { env } from "./env";
+import { configurePoolHold, notePoolUsed, poolHoldActive } from "./db-pool-hold";
+import { env, isVercelDeployment } from "./env";
 // يسجل مراقب الانشغال: كل أمر يمر من هنا يُعد في عدّادات الضغط
 import "./platform/saturation";
 
@@ -25,6 +27,8 @@ export { DatabaseBusyError, isDatabaseBusy, SchemaNotReadyError } from "./db-bus
  * كل ذلك يصل إلى المستدعي خطأً واحدًا: DatabaseBusyError (انظر db-busy.ts).
  *
  * ولا يخدم الكود قاعدة ينقصها ترحيل يحتاجه (F26): انظر «الترحيلات» أدناه.
+ *
+ * وعلى Vercel تبقى النسخة حية بعد آخر أمر حتى تُغلق اتصالاتها الخاملة (db-pool-hold.ts)، فلا تحجز النسخ المعلقة مقاعد الـ pooler.
  *
  * المهام الطويلة (التصدير، التنظيف اليومي) تطلب مهلتها صراحة بـ withDbDeadline. الترحيلات والنسخ الاحتياطي
  * تعمل بعميل postgres خاص بها في scripts/ فلا تمر من هنا أصلًا.
@@ -58,6 +62,25 @@ function createClient(): Sql {
 export function getDb(): Sql {
   if (!globalForDb.__sql) globalForDb.__sql = createClient();
   return globalForDb.__sql;
+}
+
+configurePoolHold({
+  // نشر Vercel وقت التشغيل فقط: أثناء البناء لا طلبات ولا نسخ تُعلق
+  enabled: () => process.env.NEXT_PHASE !== PHASE_PRODUCTION_BUILD && isVercelDeployment(env()),
+  idleMs: () => env().DATABASE_IDLE_TIMEOUT_SECONDS * 1000,
+  connections: () => {
+    const stats = globalForDb.__sql?.stats;
+    return stats ? stats.connections + stats.opening : 0;
+  },
+});
+
+/**
+ * بعد أن ينتهي أمر أو معاملة تبقى النسخة حية حتى يُغلق الحوض الخامل. يُربط في سياق من أرسل الأمر ليجد after() طلبه.
+ * then الأصلية لا then الخاصة بـ Query (التي تنفذ الأمر)، ونوعها Promise عادي (Symbol.species في postgres.js).
+ */
+function holdWhenSettled(promise: PromiseLike<unknown>) {
+  if (!poolHoldActive()) return;
+  Promise.prototype.then.call(promise, notePoolUsed, notePoolUsed);
 }
 
 // ---------------------------------------------------------------------
@@ -120,6 +143,7 @@ function guardQuery<Q>(query: Q, statementMs: number): Q {
   };
   q.handle = function () {
     if (!this.executed && !timer) {
+      holdWhenSettled(this as unknown as PromiseLike<unknown>);
       timer = setTimeout(() => {
         timer = null;
         if (this.settled) return;
@@ -204,7 +228,9 @@ function guardedBegin(db: Sql) {
         throw toBusyError(err);
       },
     );
-    return Promise.race([finished, abandoned]).finally(() => clearTimeout(timer));
+    const result = Promise.race([finished, abandoned]).finally(() => clearTimeout(timer));
+    holdWhenSettled(result);
+    return result;
   };
 }
 
