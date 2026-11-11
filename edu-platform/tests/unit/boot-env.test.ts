@@ -1,7 +1,7 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { PHASE_PRODUCTION_BUILD } from "next/constants";
 import { register } from "@/instrumentation";
-import { configWarnings, ENV_KEYS, env, opsAlertEmail, resetEnvCache } from "@/server/env";
+import { configWarnings, ENV_KEYS, env, opsAlertEmail, resetEnvCache, VERCEL_DATABASE_DEFAULTS } from "@/server/env";
 import nextConfig from "../../next.config";
 import { TEST_ENV } from "../test-env";
 
@@ -296,6 +296,34 @@ describe("the public data cache lifetime", () => {
     expect(exit).not.toHaveBeenCalled();
     expect(env().PUBLIC_CACHE_SECONDS).toBe(55);
     expect(configWarnings()).toEqual(["PUBLIC_CACHE_SECONDS"]);
+  });
+});
+
+describe("the database pool on Vercel (Fluid compute)", () => {
+  const { DATABASE_POOL_MAX: _pool, ...withoutPool } = DEPLOYED;
+  const useVercel = (patch: Record<string, string> = {}) => useEnv({ ...withoutPool, NODE_ENV: "production", NEXT_RUNTIME: "nodejs", VERCEL_ENV: "production", ...patch });
+
+  it("defaults to 3 connections per instance and a 5 s idle timeout when the owner set neither", () => {
+    useVercel();
+    expect(env()).toMatchObject({ DATABASE_POOL_MAX: VERCEL_DATABASE_DEFAULTS.poolMax, DATABASE_IDLE_TIMEOUT_SECONDS: VERCEL_DATABASE_DEFAULTS.idleSeconds });
+    expect(VERCEL_DATABASE_DEFAULTS).toEqual({ poolMax: 3, idleSeconds: 5 });
+    expect(configWarnings()).toEqual([]);
+  });
+
+  it("keeps what the owner set", () => {
+    useVercel({ DATABASE_POOL_MAX: "8", DATABASE_IDLE_TIMEOUT_SECONDS: "30" });
+    expect(env()).toMatchObject({ DATABASE_POOL_MAX: 8, DATABASE_IDLE_TIMEOUT_SECONDS: 30 });
+  });
+
+  it("an unreadable idle timeout falls back to the Vercel default and is named for the owner, never a crash", () => {
+    useVercel({ DATABASE_IDLE_TIMEOUT_SECONDS: "soon" });
+    expect(env().DATABASE_IDLE_TIMEOUT_SECONDS).toBe(5);
+    expect(configWarnings()).toEqual(["DATABASE_IDLE_TIMEOUT_SECONDS"]);
+  });
+
+  it("off Vercel the defaults stay as they were", () => {
+    useEnv({ ...withoutPool, NODE_ENV: "production", NEXT_RUNTIME: "nodejs" });
+    expect(env()).toMatchObject({ DATABASE_POOL_MAX: 5, DATABASE_IDLE_TIMEOUT_SECONDS: 60 });
   });
 });
 

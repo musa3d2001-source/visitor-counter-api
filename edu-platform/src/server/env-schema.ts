@@ -52,6 +52,7 @@ export const envSchema = z
     NODE_ENV: z.enum(["development", "production", "test"]).default("development"),
     APP_URL: z.string().url().default("http://localhost:3000"),
     DATABASE_URL: z.string().min(1, "DATABASE_URL مطلوب"),
+    /** اتصالات كل نسخة خادم. على Vercel الافتراضي VERCEL_DATABASE_DEFAULTS.poolMax، والحساب فوقه */
     DATABASE_POOL_MAX: z.coerce.number().int().min(1).max(50).default(5),
     /** true عند الاتصال عبر Supabase pooler (وضع transaction) */
     DATABASE_PGBOUNCER: flag("false"),
@@ -177,6 +178,35 @@ export function normaliseEnv(source: Record<string, string | undefined>): Record
     out[key] = word === "" ? undefined : word;
   }
   return out;
+}
+
+/**
+ * قيم قاعدة البيانات الافتراضية على Vercel (Fluid compute) حين لا يضبطها المالك. القيمة المضبوطة صراحة تبقى كما هي.
+ *
+ * poolMax = 3، وهي القيمة الموصى بها للإنتاج:
+ *   كل نسخة تفتح حتى DATABASE_POOL_MAX اتصالًا بالـ pooler، وحد عملاء الـ pooler لحجم حوسبة Supabase
+ *   (https://supabase.com/docs/guides/platform/compute-and-disk، قُرئ 2026-11-11):
+ *   Nano و Micro ٢٠٠، Small ٤٠٠، Medium ٦٠٠، Large ٨٠٠، XL ١٠٠٠، 2XL ١٥٠٠.
+ *   القاعدة: أعلى عدد نسخ × DATABASE_POOL_MAX ≤ ٨٠٪ من الحد (الباقي للوحة Supabase والسكربتات والنسخ المعلقة).
+ *   بـ ٣: Micro ‏floor(160 / 3) = ٥٣ نسخة، Small ‏floor(320 / 3) = ١٠٦، Medium ‏floor(480 / 3) = ١٦٠، Large ‏floor(640 / 3) = ٢١٣.
+ *   تقدير ليلة الامتحان بعد تسليم الملفات بروابط موقعة: بضع عشرات من التنفيذات المتزامنة على الأكثر، وكل نسخة Fluid
+ *   تخدم عدة طلبات معًا، فحد Small (١٠٦ نسخ) فوق الحاجة بفارق كبير. العدد الحقيقي تؤكده Preview وأول ليلة امتحان.
+ *   لا تُضبط على 1: Vercel يقول إن ذلك لا يقلل مجموع الاتصالات ويضر التزامن
+ *   (https://vercel.com/kb/guide/efficiently-manage-database-connection-pools-with-fluid-compute).
+ * idleSeconds = 5: إرشاد Vercel نفسه لمهلة الخمول القصيرة، لأن مؤقت الخمول لا يعمل والنسخة معلقة.
+ *   db-pool-hold.ts يبقي النسخة حية حتى تُغلق الاتصالات الخاملة.
+ */
+export const VERCEL_DATABASE_DEFAULTS = { poolMax: 3, idleSeconds: 5 } as const;
+
+/** يطبق قيم Vercel الافتراضية على ما لم يضبطه المالك. source: المتغيرات بعد normaliseEnv */
+export function withPlatformDefaults(e: Env, source: Record<string, string | undefined>): Env {
+  if (!isVercelDeployment(e)) return e;
+  return {
+    ...e,
+    DATABASE_POOL_MAX: source.DATABASE_POOL_MAX === undefined ? VERCEL_DATABASE_DEFAULTS.poolMax : e.DATABASE_POOL_MAX,
+    // قيمة لا تُقرأ تعامل كأنها غير مضبوطة، كما في بقية المهل، ويظهر اسمها للمالك
+    DATABASE_IDLE_TIMEOUT_SECONDS: readLenientInt(source.DATABASE_IDLE_TIMEOUT_SECONDS, "DATABASE_IDLE_TIMEOUT_SECONDS") === undefined ? VERCEL_DATABASE_DEFAULTS.idleSeconds : e.DATABASE_IDLE_TIMEOUT_SECONDS,
+  };
 }
 
 /** هل هذا نشر على Vercel؟ Vercel يضبط VERCEL_ENV بنفسه على كل نشر */

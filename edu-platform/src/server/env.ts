@@ -1,9 +1,9 @@
 import "server-only";
 import { z } from "zod";
 import { bunnyConfigProblem } from "@/lib/bunny-keys";
-import { deploymentProblems, envSchema, envWarnings, normaliseEnv, PLACEHOLDER_MAIL_DOMAINS, type Env } from "./env-schema";
+import { deploymentProblems, envSchema, envWarnings, normaliseEnv, PLACEHOLDER_MAIL_DOMAINS, withPlatformDefaults, type Env } from "./env-schema";
 
-export { ENV_KEYS, isVercelDeployment, mailFromProblem, type Env } from "./env-schema";
+export { ENV_KEYS, isVercelDeployment, mailFromProblem, VERCEL_DATABASE_DEFAULTS, type Env } from "./env-schema";
 
 /**
  * متغيرات البيئة — تُقرأ وتُتحقق منها مرة واحدة على الخادم فقط. المخطط في env-schema.ts لأن البناء يقرؤه أيضًا.
@@ -20,7 +20,8 @@ export function env(): Env {
     const issues = parsed.error.issues.map((i) => `${i.path.join(".")}: ${i.message}`).join("\n");
     throw new Error(`إعدادات البيئة غير صحيحة:\n${issues}`);
   }
-  const e = parsed.data;
+  // على Vercel: حوض أصغر ومهلة خمول أقصر ما لم يضبطهما المالك (انظر VERCEL_DATABASE_DEFAULTS)
+  const e = withPlatformDefaults(parsed.data, source);
   // بدون مفتاح القراءة فقط لا يمكن التحقق من Webhook، فتبقى الدروس عالقة قيد المعالجة ويفشل الطالب عند التشغيل بدل فشل واضح عند البدء
   const bunnyProblem = bunnyConfigProblem(source);
   if (bunnyProblem) throw new Error(bunnyProblem);
