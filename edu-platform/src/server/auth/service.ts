@@ -8,7 +8,7 @@ import { createSession, createSessionIn, generateToken, hashToken, InactiveAccou
 import { hitRateLimit, clearRateLimit, peekRateLimit, releaseFailureSlot, reserveFailureSlot, settleCorrectPassword, type FailurePolicy } from "./rate-limit";
 import { completeLoginChallenge, startLoginChallenge, twoFactorIsActive, type CompleteChallengeResult } from "./two-factor";
 import { revokeEmailLinks } from "./email-verification";
-import { issueDeviceProof, verifyDeviceProof } from "./device-proof";
+import { deviceProofKey, issueDeviceProof, verifyDeviceProof } from "./device-proof";
 import { mailIsReal, sendMail } from "../platform/mailer";
 import { getSettings, readSettings } from "../platform/settings";
 import { audit } from "../platform/audit";
@@ -30,8 +30,9 @@ export type AuthResult =
  *
  *  - لكل زوج (حساب + IP): ٥ محاولات خاطئة بلا تأخير، ثم انتظار ٣٠ ثانية يتضاعف حتى ١٥ دقيقة.
  *    تُنسى بعد ساعة بلا محاولات، وتُمسح عند أول كلمة مرور صحيحة.
- *    المفتاح يجمع الاثنين عن قصد: زميل في شبكة المدرسة نفسها لا يقفل حسابك،
- *    ومهاجم يعرف بريدك لا يستطيع قفله من شبكة أخرى.
+ *    المفتاح يجمع الاثنين عن قصد: مهاجم يعرف بريدك لا يستطيع قفله من شبكة أخرى.
+ *    ومتصفح سبق أن دخل هذا الحساب (device-proof.ts) يُحتسب على عدّاده هو بالسياسة نفسها بدل الزوج (R004):
+ *    زميل أو غريب على العنوان نفسه لا يقفله، وتخميناته هو تقفله وحده، ودخوله الصحيح لا يمسح عدّاد الزوج.
  *  - لكل حساب من كل الشبكات: ٢٠ محاولة بلا تأخير، ثم انتظار دقيقة يتضاعف حتى ٥ دقائق، أي ٢٨٨ تخمينًا في اليوم على الأكثر.
  *    تُنسى بعد ساعة بلا محاولات. يبطئ التخمين الموزع على عناوين كثيرة، ولا يقفل أحدًا طويلًا: ٥ دقائق بعد آخر محاولة،
  *    ومتصفح سبق أن دخل هذا الحساب (device-proof.ts) لا يقف عنده ولا يُحتسب عليه. الاستعادة بالرابط وإعادة التعيين من المالك تمسحانه.
@@ -88,11 +89,11 @@ async function checkLoginPassword(email: string, password: string, failureKey: s
 }
 
 export async function loginWithPassword(email: string, password: string, meta: { ip: string; userAgent: string; deviceProof?: string }): Promise<AuthResult> {
-  const failureKey = `${loginFailurePrefix(email)}${meta.ip}`;
-  // تحت بادئة الحساب: الاستعادة وإعادة التعيين من المالك تمسحانه مع حدود الأزواج. لا عنوان اسمه «*»
+  const provedDevice = verifyDeviceProof(meta.deviceProof, email, env().APP_SECRET);
+  // كل المفاتيح تحت بادئة الحساب: الاستعادة وإعادة التعيين من المالك تمسحانها معًا. لا عنوان اسمه «*» ولا يبدأ بـ «dev:»
+  const failureKey = provedDevice ? `${loginFailurePrefix(email)}dev:${deviceProofKey(meta.deviceProof!)}` : `${loginFailurePrefix(email)}${meta.ip}`;
   const accountKey = `${loginFailurePrefix(email)}*`;
   const ipKey = `login:ipfail:${meta.ip}`;
-  const provedDevice = verifyDeviceProof(meta.deviceProof, email, env().APP_SECRET);
   if (!provedDevice) {
     const ipState = await peekRateLimit(ipKey, LOGIN_IP.failingAccounts);
     if (ipState.blocked) return { ok: false, error: "محاولات كثيرة. حاول مرة أخرى بعد قليل.", retryAfter: ipState.retryAfterSeconds };

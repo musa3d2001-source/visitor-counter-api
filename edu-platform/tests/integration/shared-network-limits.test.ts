@@ -1,6 +1,8 @@
 import { afterAll, afterEach, beforeAll, beforeEach, describe, expect, it } from "vitest";
 import { loginWithPassword, registerStudent, requestPasswordReset, resetPassword } from "@/server/auth/service";
+import { createHmac } from "node:crypto";
 import { DEVICE_PROOF_DAYS, issueDeviceProof, verifyDeviceProof } from "@/server/auth/device-proof";
+import { deriveKey } from "@/server/auth/two-factor-core";
 import { resetEnvCache } from "@/server/env";
 import { startSmtpSink, type SmtpSink } from "../mocks/smtp-sink";
 import { closeDb, resetDb, sql } from "../helpers/db";
@@ -145,13 +147,43 @@ describe("a device that has proved itself", () => {
     expect((await loginWithPassword(b.email, TEST_PASSWORD, meta(BLOCKED, issueDeviceProof(a.email, SECRET)))).ok).toBe(false);
   });
 
-  it("a proof does not replace the password, and wrong guesses still lock the pair", async () => {
+  it("a proof does not replace the password: wrong guesses with it lock that browser, and only that browser (R004)", async () => {
     const u = await createUser();
     const proof = issueDeviceProof(u.email, SECRET);
     await block();
     for (let i = 0; i < 5; i++) expect((await loginWithPassword(u.email, `guess-${i}`, meta(BLOCKED, proof))).ok).toBe(false);
     const locked = await loginWithPassword(u.email, TEST_PASSWORD, meta(BLOCKED, proof));
     expect(locked).toMatchObject({ ok: false, error: expect.stringContaining("إيقاف تسجيل الدخول مؤقتًا") });
+    // عدّاد الزوج لم يُمس، ومتصفح آخر أثبت الحساب نفسه يدخل
+    expect(await sql`select 1 from rate_limits where key = ${`login:fail:${u.email.toLowerCase()}|${BLOCKED}`}`).toHaveLength(0);
+    expect(await loginWithPassword(u.email, TEST_PASSWORD, meta(BLOCKED, issueDeviceProof(u.email, SECRET)))).toMatchObject({ ok: true });
+  });
+
+  it("a stranger on the same address cannot lock out a browser that has signed in before (R004)", async () => {
+    const u = await createUser();
+    const ip = "10.0.0.9";
+    const first = await loginWithPassword(u.email, TEST_PASSWORD, meta(ip));
+    expect(first.ok && first.deviceProof).toBeTruthy();
+    // بلا إثبات: ١٥ تخمينًا خاطئًا من العنوان نفسه
+    for (let i = 0; i < 15; i++) expect((await loginWithPassword(u.email, `stranger-${i}`, meta(ip))).ok).toBe(false);
+    const stranger = await loginWithPassword(u.email, TEST_PASSWORD, meta(ip));
+    expect(stranger).toMatchObject({ ok: false, error: expect.stringContaining("إيقاف تسجيل الدخول مؤقتًا") });
+    // الطالب في متصفحه، على العنوان نفسه، بكلمته الصحيحة: يدخل من أول محاولة، ولا يمسح قفل الغريب
+    expect(await loginWithPassword(u.email, TEST_PASSWORD, meta(ip, first.deviceProof))).toMatchObject({ ok: true });
+    expect(await loginWithPassword(u.email, TEST_PASSWORD, meta(ip))).toMatchObject({ ok: false, error: expect.stringContaining("إيقاف تسجيل الدخول مؤقتًا") });
+  });
+
+  it("the account ceiling still holds for browsers without a proof, and a reset clears the browser's counter too", async () => {
+    const u = await createUser();
+    await seed(`login:fail:${u.email.toLowerCase()}|*`, 20);
+    await sql`update rate_limits set reset_at = now() + interval '1 hour' where key = ${`login:fail:${u.email.toLowerCase()}|*`}`;
+    expect(await loginWithPassword(u.email, TEST_PASSWORD, meta("198.51.100.43"))).toMatchObject({ ok: false, error: expect.stringContaining("إيقاف تسجيل الدخول مؤقتًا") });
+    const proof = issueDeviceProof(u.email, SECRET);
+    for (let i = 0; i < 6; i++) await loginWithPassword(u.email, `guess-${i}`, meta("198.51.100.43", proof));
+    const keys = await sql<{ key: string }[]>`select key from rate_limits where starts_with(key, ${`login:fail:${u.email.toLowerCase()}|dev:`})`;
+    expect(keys).toHaveLength(1);
+    // البصمة لا الإثبات: لا يُكتب الإثبات في قاعدة البيانات
+    expect(keys[0].key).not.toContain(proof);
   });
 
   it("failures from a proved device still count against the network", async () => {
@@ -175,11 +207,31 @@ describe("the proof itself", () => {
 
   it("rejects tampering, another secret and junk", () => {
     const proof = issueDeviceProof("a@farqad.test", SECRET, NOW);
-    const [expires, mac] = proof.split(".");
-    expect(verifyDeviceProof(`${Number(expires) + 86400}.${mac}`, "a@farqad.test", SECRET, NOW)).toBe(false);
+    const [expires, nonce, mac] = proof.split(".");
+    expect(verifyDeviceProof(`${Number(expires) + 86400}.${nonce}.${mac}`, "a@farqad.test", SECRET, NOW)).toBe(false);
+    expect(verifyDeviceProof(`${expires}.${"A".repeat(22)}.${mac}`, "a@farqad.test", SECRET, NOW)).toBe(false);
+    // الرقم العشوائي جزء مما يُوقّع: لا يُحذف لتصير صيغة قديمة
+    expect(verifyDeviceProof(`${expires}.${mac}`, "a@farqad.test", SECRET, NOW)).toBe(false);
     expect(verifyDeviceProof(proof, "a@farqad.test", `${SECRET}-other`, NOW)).toBe(false);
-    for (const junk of [undefined, "", "abc", "1.2.3", `${expires}.`, `.${mac}`, "x".repeat(200), `abc.${mac}`]) {
+    for (const junk of [undefined, "", "abc", "1.2.3", "1.2.3.4", `${expires}.`, `.${mac}`, "x".repeat(200), `abc.${nonce}.${mac}`, `${expires}.${nonce}!.${mac}`]) {
       expect(verifyDeviceProof(junk, "a@farqad.test", SECRET, NOW), String(junk)).toBe(false);
     }
+  });
+
+  it("is different on every sign-in, so two browsers never share a counter", () => {
+    const a = issueDeviceProof("a@farqad.test", SECRET, NOW);
+    const b = issueDeviceProof("a@farqad.test", SECRET, NOW);
+    expect(a).not.toBe(b);
+    expect(a.length).toBeLessThanOrEqual(120);
+    expect(verifyDeviceProof(a, "a@farqad.test", SECRET, NOW)).toBe(true);
+    expect(verifyDeviceProof(b, "a@farqad.test", SECRET, NOW)).toBe(true);
+  });
+
+  it("a proof issued before the nonce is still accepted until it expires", () => {
+    const expires = String(Math.floor(NOW / 1000) + 86400);
+    const legacy = `${expires}.${createHmac("sha256", deriveKey(SECRET, "login-device-proof")).update(`a@farqad.test|${expires}`).digest("base64url")}`;
+    expect(verifyDeviceProof(legacy, "a@farqad.test", SECRET, NOW)).toBe(true);
+    expect(verifyDeviceProof(legacy, "b@farqad.test", SECRET, NOW)).toBe(false);
+    expect(verifyDeviceProof(legacy, "a@farqad.test", SECRET, NOW + 2 * 86400_000)).toBe(false);
   });
 });
