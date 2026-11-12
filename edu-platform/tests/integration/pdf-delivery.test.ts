@@ -219,7 +219,79 @@ describe("نسخة لكل مشترٍ", () => {
     expect((await copiesOf(p.mainFileId!)).filter((c) => c.state === "ready")).toHaveLength(1);
     await sql`delete from stamped_copies where object_key = ${`stamped/${filler}.pdf`}`;
   });
+
+  /**
+   * سباق ظهر في اختبار الضغط (٣٠٠ مستخدم، مساحة الخطة المجانية): طلب يفسح المكان اختار نسخة قديمة للحذف، وفي اللحظة
+   * نفسها فتحها صاحبها. الطرفان يحدّثان الصف نفسه، والثاني ينتظر الأول ثم يعيد فحص شرطه على الصف كما صار.
+   */
+  it("a copy its owner opens while another request is making room is kept: eviction rechecks the last use on the row", async () => {
+    const p = await createProduct();
+    const { user } = await buyer(p);
+    const filler = randomUUID();
+    const [{ id }] = await sql<{ id: string }[]>`insert into stamped_copies (cache_key, user_id, file_id, file_version, object_key, size_bytes, state, last_used_at) values (${"d".repeat(64)}, ${user.id}, ${p.previewFileId}, 'x', ${`stamped/${filler}.pdf`}, ${200 * 1024 * 1024}, 'ready', now() - interval '2 hours') returning id`;
+    // صاحبها يفتحها الآن: تحديث آخر استعمال ممسوك حتى يقف أمر الإخراج عليه
+    const release = await holdRowUpdate(id, "touch");
+    const opening = open(p.mainFileId!, user);
+    await untilWaitingOnRowLock();
+    await release();
+    const res = await opening;
+    expect(res.status).toBe(200);
+    expect(await stampedText(await bytesOf(res))).toContain(user.email);
+    expect((await sql<{ state: string }[]>`select state from stamped_copies where id = ${id}`)[0].state).toBe("ready");
+    expect((await copiesOf(p.mainFileId!)).filter((c) => c.state === "ready")).toHaveLength(1);
+    await sql`delete from stamped_copies where id = ${id}`;
+  });
+
+  it("a copy evicted between the lookup and the open is never handed out: a fresh copy is stamped", async () => {
+    const p = await createProduct();
+    const { user } = await buyer(p);
+    expect((await open(p.mainFileId!, user)).status).toBe(200);
+    const [copy] = await copiesOf(p.mainFileId!);
+    await sql`update stamped_copies set last_used_at = now() - interval '2 hours' where id = ${copy.id}`;
+    const stamp = stampSpy();
+    // طلب آخر يخرجها لإفساح المكان بعد أن قرأها هذا الفتح جاهزة
+    const release = await holdRowUpdate(copy.id, "doom");
+    const opening = open(p.mainFileId!, user);
+    await untilWaitingOnRowLock();
+    await release();
+    const res = await opening;
+    expect(res.status).toBe(200);
+    expect(await stampedText(await bytesOf(res))).toContain(user.email);
+    expect(stamp).toHaveBeenCalledTimes(1);
+    const ready = (await copiesOf(p.mainFileId!)).filter((c) => c.state === "ready");
+    expect(ready).toHaveLength(1);
+    expect(ready[0].id).not.toBe(copy.id);
+  });
 });
+
+/** معاملة تحدّث صف نسخة وتمسك قفله حتى تُستدعى الدالة المعادة، كطلب آخر في منتصف عمله */
+async function holdRowUpdate(id: string, change: "touch" | "doom"): Promise<() => Promise<void>> {
+  let finish!: () => void;
+  const finished = new Promise<void>((r) => (finish = r));
+  let held!: () => void;
+  const holding = new Promise<void>((r) => (held = r));
+  const tx = sql.begin(async (t) => {
+    if (change === "touch") await t`update stamped_copies set last_used_at = now() where id = ${id}`;
+    else await t`update stamped_copies set state = 'doomed' where id = ${id}`;
+    held();
+    await finished;
+  });
+  await holding;
+  return async () => {
+    finish();
+    await tx;
+  };
+}
+
+/** ينتظر حتى يقف أمر من أوامر التطبيق على قفل صف تمسكه معاملة أخرى */
+async function untilWaitingOnRowLock() {
+  for (let i = 0; i < 400; i++) {
+    const [{ n }] = await sql<{ n: number }[]>`select count(*)::int as n from pg_stat_activity where datname = current_database() and wait_event_type = 'Lock'`;
+    if (n > 0) return;
+    await new Promise((r) => setTimeout(r, 25));
+  }
+  throw new Error("no statement waited on the row lock");
+}
 
 describe("مفتاح النسخة", () => {
   const base = { fileId: "f", fileVersion: "v", userId: "u", orderNumber: "O-1", lines: { primary: "a", secondary: "b" } };

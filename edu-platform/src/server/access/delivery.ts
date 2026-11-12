@@ -264,7 +264,10 @@ async function makeRoom(size: number): Promise<number> {
       ) ranked
       where freed - size_bytes < ${over}
     )
-    update stamped_copies c set state = 'doomed' from victims v where c.id = v.id and c.state = 'ready'
+    update stamped_copies c set state = 'doomed' from victims v
+    where c.id = v.id and c.state = 'ready'
+      -- يُعاد فحصه على الصف وقت التحديث: نسخة فُتحت بعد اختيار الضحايا (طلب آخر حدّث آخر استعمالها) تُترك
+      and c.last_used_at < now() - make_interval(mins => ${STAMPED_COPY_IN_USE_MINUTES})
   `;
   if (evicted.count > 0) sweepSoon(evicted.count);
   return evicted.count;
@@ -429,9 +432,19 @@ async function stampOnce(key: string, user: DeliveryUser, file: DeliverableFile,
 async function stampedDelivery(user: DeliveryUser, file: DeliverableFile, preferStream: boolean): Promise<PdfDelivery> {
   // ملف فوق الحد لا يُقرأ أصلًا. صفحاته تُعرف بعد الفتح أيضًا (watermarkPdf يرفض ما زاد)
   if (exceedsStampLimit(file)) throw new OverStampLimitError();
-  const { identity, key, hit, queued } = await identityAndCopies(user, file);
+  const found = await identityAndCopies(user, file);
+  const { identity, key, queued } = found;
+  let hit = found.hit;
+  if (hit?.stale) {
+    // التحديث مشروط بأنها ما زالت جاهزة: إن أخرجها طلب آخر لإفساح المكان بين القراءة وهذا السطر فلا يُسلَّم رابط لكائن
+    // سيُحذف بعد لحظات، بل تُختم نسخة جديدة. والإخراج نفسه يعيد فحص آخر استعمال على الصف (makeRoom)، فأيهما سبق صح.
+    const touched = await sql<{ id: string }[]>`update stamped_copies set last_used_at = now() where id = ${hit.id} and state = 'ready' returning id`.catch((err) => {
+      reportError("files:stamped-copy-touch", err);
+      return null;
+    });
+    if (touched && touched.length === 0) hit = null;
+  }
   if (hit) {
-    if (hit.stale) await sql`update stamped_copies set last_used_at = now() where id = ${hit.id}`.catch((err) => reportError("files:stamped-copy-touch", err));
     // النسخة الجاهزة لا تُختم ولا تُقرأ هنا: المسار يصدر لها رابطًا بعد تسجيل الوصول
     if (!preferStream) return { kind: "copy", objectKey: hit.objectKey, size: hit.size };
     try {
