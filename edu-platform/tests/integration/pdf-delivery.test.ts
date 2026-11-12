@@ -18,6 +18,7 @@ import { runDataPruning } from "@/server/platform/maintenance";
 import { storage } from "@/server/storage";
 import { STAMP_MAX_BYTES, STAMP_MAX_PAGES } from "@/lib/pdf-limits";
 import { pendingSaturation, resetSaturationForTests } from "@/server/platform/saturation";
+import { withDbDeadline } from "@/server/db";
 import { closeDb, resetDb, sql } from "../helpers/db";
 import { createProduct, createUser, makePdf, type TestProduct } from "../helpers/factories";
 import { provenOwner } from "../helpers/step-up";
@@ -232,8 +233,8 @@ describe("نسخة لكل مشترٍ", () => {
     // صاحبها يفتحها الآن: تحديث آخر استعمال ممسوك حتى يقف أمر الإخراج عليه
     const release = await holdRowUpdate(id, "touch");
     const opening = open(p.mainFileId!, user);
-    await untilWaitingOnRowLock();
-    await release();
+    // القفل يُترك في كل حال، فلا يبقى اتصال معلقًا إن لم يقف الأمر عليه
+    await untilWaitingOnRowLock().finally(release);
     const res = await opening;
     expect(res.status).toBe(200);
     expect(await stampedText(await bytesOf(res))).toContain(user.email);
@@ -252,8 +253,8 @@ describe("نسخة لكل مشترٍ", () => {
     // طلب آخر يخرجها لإفساح المكان بعد أن قرأها هذا الفتح جاهزة
     const release = await holdRowUpdate(copy.id, "doom");
     const opening = open(p.mainFileId!, user);
-    await untilWaitingOnRowLock();
-    await release();
+    // القفل يُترك في كل حال، فلا يبقى اتصال معلقًا إن لم يقف الأمر عليه
+    await untilWaitingOnRowLock().finally(release);
     const res = await opening;
     expect(res.status).toBe(200);
     expect(await stampedText(await bytesOf(res))).toContain(user.email);
@@ -261,6 +262,24 @@ describe("نسخة لكل مشترٍ", () => {
     const ready = (await copiesOf(p.mainFileId!)).filter((c) => c.state === "ready");
     expect(ready).toHaveLength(1);
     expect(ready[0].id).not.toBe(copy.id);
+  });
+
+  it("a busy database while confirming an old copy answers busy with a retry, never that copy unconfirmed", async () => {
+    const p = await createProduct();
+    const { user } = await buyer(p);
+    expect((await open(p.mainFileId!, user)).status).toBe(200);
+    const [copy] = await copiesOf(p.mainFileId!);
+    await sql`update stamped_copies set last_used_at = now() - interval '2 hours' where id = ${copy.id}`;
+    // تأكيد استعمالها يقف على قفل يمسكه طلب آخر حتى تنتهي مهلة الأمر
+    const release = await holdRowUpdate(copy.id, "touch");
+    try {
+      const res = await withDbDeadline(400, () => open(p.mainFileId!, user));
+      expect(res.status).toBe(503);
+      expect(Number(res.headers.get("retry-after"))).toBeGreaterThan(0);
+      expect(new TextDecoder().decode(await bytesOf(res))).not.toContain("%PDF");
+    } finally {
+      await release();
+    }
   });
 });
 

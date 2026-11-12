@@ -1,7 +1,7 @@
 import "server-only";
 import { randomUUID } from "node:crypto";
 import { after } from "next/server";
-import { sql, type Db } from "../db";
+import { isDatabaseBusy, sql, type Db } from "../db";
 import { storage, StorageNotFoundError } from "../storage";
 import { getSettings } from "../platform/settings";
 import { reportError } from "../platform/report-error";
@@ -438,8 +438,11 @@ async function stampedDelivery(user: DeliveryUser, file: DeliverableFile, prefer
   if (hit?.stale) {
     // التحديث مشروط بأنها ما زالت جاهزة: إن أخرجها طلب آخر لإفساح المكان بين القراءة وهذا السطر فلا يُسلَّم رابط لكائن
     // سيُحذف بعد لحظات، بل تُختم نسخة جديدة. والإخراج نفسه يعيد فحص آخر استعمال على الصف (makeRoom)، فأيهما سبق صح.
-    const touched = await sql<{ id: string }[]>`update stamped_copies set last_used_at = now() where id = ${hit.id} and state = 'ready' returning id`.catch((err) => {
-      reportError("files:stamped-copy-touch", err);
+    // قاعدة مشغولة: لا يُسلَّم رابط لنسخة لم يُثبَّت استعمالها (قد تُخرج والرابط حي)، بل «مشغول» مع Retry-After يعيد بعده
+    // القارئ (المسار يعيد خطأ الانشغال كما هو). غير ذلك يُسجَّل الخطأ وتُسلَّم النسخة كما كان
+    const touched = await sql<{ id: string }[]>`update stamped_copies set last_used_at = now() where id = ${hit.id} and state = 'ready' returning id`.catch(async (err) => {
+      if (isDatabaseBusy(err)) throw err;
+      await reportError("files:stamped-copy-touch", err);
       return null;
     });
     if (touched && touched.length === 0) hit = null;
