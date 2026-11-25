@@ -1,0 +1,309 @@
+{
+ "take": "take1.mp3",
+ "voice": "Jassim Almathkour (ElevenLabs lB6K69u17Gb2FSiT9pVV, eleven_v4)",
+ "generation_id": "78njtU9gFZpS7XmjjyqV",
+ "duration": 28.32,
+ "note": "word times are from ElevenLabs alignment of the prompt; tag tokens removed; verify boundaries against silencedetect before cutting",
+ "words": [
+  {
+   "text": "عندك",
+   "type": "word",
+   "start": 0.067,
+   "end": 0.32
+  },
+  {
+   "text": "بريزنتيشن؟",
+   "type": "word",
+   "start": 0.36,
+   "end": 1.2
+  },
+  {
+   "text": "تقرير؟",
+   "type": "word",
+   "start": 1.36,
+   "end": 2.08
+  },
+  {
+   "text": "بحث؟",
+   "type": "word",
+   "start": 2.24,
+   "end": 2.68
+  },
+  {
+   "text": "والتسليم…",
+   "type": "word",
+   "start": 3.307,
+   "end": 4.08
+  },
+  {
+   "text": "باچر؟",
+   "type": "word",
+   "start": 4.24,
+   "end": 4.68
+  },
+  {
+   "text": "المرّة",
+   "type": "word",
+   "start": 5.28,
+   "end": 5.6
+  },
+  {
+   "text": "الياية…",
+   "type": "word",
+   "start": 5.64,
+   "end": 6.24
+  },
+  {
+   "text": "خلّ",
+   "type": "word",
+   "start": 6.4,
+   "end": 6.6
+  },
+  {
+   "text": "التصميم",
+   "type": "word",
+   "start": 6.64,
+   "end": 7.04
+  },
+  {
+   "text": "على",
+   "type": "word",
+   "start": 7.12,
+   "end": 7.28
+  },
+  {
+   "text": "طَشّ.",
+   "type": "word",
+   "start": 7.32,
+   "end": 7.84
+  },
+  {
+   "text": "بريزنتيشن؟",
+   "type": "word",
+   "start": 8.08,
+   "end": 8.92
+  },
+  {
+   "text": "يشدّ",
+   "type": "word",
+   "start": 9.12,
+   "end": 9.413
+  },
+  {
+   "text": "من",
+   "type": "word",
+   "start": 9.44,
+   "end": 9.6
+  },
+  {
+   "text": "أول",
+   "type": "word",
+   "start": 9.68,
+   "end": 9.92
+  },
+  {
+   "text": "سلايد.",
+   "type": "word",
+   "start": 10.08,
+   "end": 10.56
+  },
+  {
+   "text": "تقرير؟",
+   "type": "word",
+   "start": 10.72,
+   "end": 11.24
+  },
+  {
+   "text": "نرتّبه.",
+   "type": "word",
+   "start": 11.36,
+   "end": 12.373
+  },
+  {
+   "text": "بحث؟",
+   "type": "word",
+   "start": 12.507,
+   "end": 12.76
+  },
+  {
+   "text": "ننسّقه",
+   "type": "word",
+   "start": 12.88,
+   "end": 13.44
+  },
+  {
+   "text": "عدل.",
+   "type": "word",
+   "start": 13.6,
+   "end": 13.96
+  },
+  {
+   "text": "بوستر.",
+   "type": "word",
+   "start": 14.16,
+   "end": 14.84
+  },
+  {
+   "text": "فيديو.",
+   "type": "word",
+   "start": 14.88,
+   "end": 15.36
+  },
+  {
+   "text": "سي",
+   "type": "word",
+   "start": 15.44,
+   "end": 15.52
+  },
+  {
+   "text": "في.",
+   "type": "word",
+   "start": 15.68,
+   "end": 16.04
+  },
+  {
+   "text": "وأي",
+   "type": "word",
+   "start": 16.16,
+   "end": 16.32
+  },
+  {
+   "text": "ملف",
+   "type": "word",
+   "start": 16.4,
+   "end": 16.64
+  },
+  {
+   "text": "أوفيس.",
+   "type": "word",
+   "start": 16.72,
+   "end": 17.32
+  },
+  {
+   "text": "حتى",
+   "type": "word",
+   "start": 17.6,
+   "end": 17.84
+  },
+  {
+   "text": "الهوامش…",
+   "type": "word",
+   "start": 17.88,
+   "end": 18.52
+  },
+  {
+   "text": "نضبّطها.",
+   "type": "word",
+   "start": 18.56,
+   "end": 19.4
+  },
+  {
+   "text": "المعلومة",
+   "type": "word",
+   "start": 19.68,
+   "end": 20.16
+  },
+  {
+   "text": "منّك…",
+   "type": "word",
+   "start": 20.24,
+   "end": 20.76
+  },
+  {
+   "text": "والترتيب",
+   "type": "word",
+   "start": 20.8,
+   "end": 21.36
+  },
+  {
+   "text": "والتصميم",
+   "type": "word",
+   "start": 21.44,
+   "end": 22.0
+  },
+  {
+   "text": "علينا.",
+   "type": "word",
+   "start": 22.08,
+   "end": 22.64
+  },
+  {
+   "text": "ويوم",
+   "type": "word",
+   "start": 23.013,
+   "end": 23.12
+  },
+  {
+   "text": "التسليم…",
+   "type": "word",
+   "start": 23.2,
+   "end": 23.96
+  },
+  {
+   "text": "خلّ",
+   "type": "word",
+   "start": 24.0,
+   "end": 24.24
+  },
+  {
+   "text": "شغلك",
+   "type": "word",
+   "start": 24.32,
+   "end": 24.56
+  },
+  {
+   "text": "يسولف",
+   "type": "word",
+   "start": 24.64,
+   "end": 25.0
+  },
+  {
+   "text": "عنّك.",
+   "type": "word",
+   "start": 25.04,
+   "end": 25.77
+  },
+  {
+   "text": "دزّ",
+   "type": "word",
+   "start": 25.84,
+   "end": 26.0
+  },
+  {
+   "text": "لنا",
+   "type": "word",
+   "start": 26.04,
+   "end": 26.16
+  },
+  {
+   "text": "بالخاص…",
+   "type": "word",
+   "start": 26.24,
+   "end": 26.88
+  },
+  {
+   "text": "بس",
+   "type": "word",
+   "start": 27.12,
+   "end": 27.28
+  },
+  {
+   "text": "مو",
+   "type": "word",
+   "start": 27.36,
+   "end": 27.44
+  },
+  {
+   "text": "آخر",
+   "type": "word",
+   "start": 27.52,
+   "end": 27.76
+  },
+  {
+   "text": "ليلة.",
+   "type": "word",
+   "start": 27.92,
+   "end": 28.32
+  }
+ ]
+}
