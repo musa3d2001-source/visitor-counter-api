@@ -1,0 +1,179 @@
+[
+ {
+  "role": "gates",
+  "check": {
+   "findings": [
+    {
+     "id": "G2-lp-prefix",
+     "severity": "minor",
+     "file": "/home/user/visitor-counter-api/tash/11-boost-ad/v4/build/picture/m11.py (line 59); affects TASH-v4-A20-9x16-instagram.mp4 and TASH-v4-A20-9x16-tiktok.mp4",
+     "frames": "A-20 9:16 ig and tt, f510-539 (perfume CTA band)",
+     "claim": "G2_colour fails on both A-20 9:16 variants, but only because of a checker error. The perfume CTA band was switched to the shrunk LAYL prefix 'lp' (final review CC1), and m11 counts only ('ls','lb') as LAYL. So the accepted LAYL near-black ground in the band is counted as a forbidden Ink field. The picture does not break the rule as R3-25 accepts it.",
+     "evidence": "m11 on wd_20_ig_916 and wd_20_tt_916: 'Ink/Char/Smoke-coloured field (>=25%) frames: 60, outside the accepted LAYL near-black ground: 30', dark_field_outside_accepted ink = f510-539. film.json f510/525/539 = /_stills/lp0315/lp0330/lp0344.png. m11.py: STAKK, LAYL = ('sa','sb','su','sl'), ('ls','lb'). Measured at f520: Ink-coloured field 35.5% of the 9:16 picture, mean Y' 0.487; a phone-size look shows the LAYL bottle on its near-black ground under the Lime panel. 4:5 uses 'lb' for this band and its G2 passes, with the same 60 dark frames and 0 outside. In a scratch copy with LAYL += 'lp' and STAKK += 'sd' (deliv/gates/patch/m11_lp.py), A-20 ig 916 G2 = PASS (outside accepted: 0) and G1/G3-G6/G8/G9 do not change.",
+     "fix": "In m11.py line 59 set STAKK = ('sa','sb','su','sl','sd') and LAYL = ('ls','lb','lp'), and add 'sd'/'lp' to WORLD (and BACKDROP if wanted). Re-run m11 on w_20_ig_916 and w_20_tt_916. The frames need no change."
+    },
+    {
+     "id": "G7-loop-baseline",
+     "severity": "minor",
+     "file": "/home/user/visitor-counter-api/tash/11-boost-ad/v4/build/picture/m11.py (G7, line ~566); BUILD-SPEC.md section 12 'Loop' row",
+     "frames": "A-20 ig/tt f599->f0, A-14 ig/tt f419->f0, A-20 4:5 f599->f0",
+     "claim": "G7_loop fails on all five variants because the fixed 0.99 gate came before the R3-25 decision to play the pour n28-n39 into f0 with no frozen frame. f599 (hp n39) and f0 (hp n40) are now consecutive native frames. The seam step is as smooth as or smoother than every frame step around it, so no seam shows. This is a stale gate, not a defect in the film.",
+     "evidence": "m11: SSIM(Y') f599 vs f0 = 0.9888 for A-20 ig and tt, f419 vs f0 = 0.9888 for A-14 ig and tt, 0.9876 for 4:5 (gate 0.99). Local SSIM < 0.9 on 2.59% / 3.14% of the picture, all in the pour stream. Same SSIM_y on the steps around the seam, A-20 9:16: f592-f599 steps 0.9814-0.9883, seam 0.9888, then f0->f1 0.9858, f1->f2 0.9815, f2->f3 0.9530. 4:5: 0.9775-0.9900 around a 0.9876 seam. A-14: f418->f419 0.9873, seam 0.9888. film.json: f595-599 = hp0035-hp0039, f0 = hp0040. The earlier review R2-loop-freeze already asked for 'the spec's loop SSIM check against that one-step baseline', and m11 still uses the absolute 0.99.",
+     "fix": "Change G7 to pass when SSIM(f[N-1], f0) >= the minimum SSIM of the 6 consecutive steps on each side of the seam (all five variants pass this today), or write the seam SSIM 0.987-0.989 into the R3-25 accepted exceptions and the section 12 Loop row. No re-render."
+    },
+    {
+     "id": "band-ghost-crown-n17",
+     "severity": "minor",
+     "file": "/home/user/visitor-counter-api/tash/11-boost-ad/v4/build/picture/swap_manifest.json (uses.burger 'burger-band' n list)",
+     "frames": "A-20 ig/tt f494 (sd0017), A-20 4:5 f494 (su0017), A-14 ig/tt f359 (sd0017)",
+     "claim": "In the CTA burger band, the frame just before the crown lands shows the falling crown as a see-through smear: the sauce dollop and the red-onion ring show through its lower half (AI ghosting in b7 n17). Earlier review R3-ghost-crown-band reported this frame, and its fix is not in the applied list. The n4 hold moved n17 from f493 to f494.",
+     "evidence": "film.json still layers: A-20 f493 sd0016, f494 sd0017, f495 sd0019 (A-14 f358/359/360 the same; 4:5 f494 su0017). 100% crops deliv/gates/look/band_494_100.png (9:16 f493-495) and look/ghost_14_45.png (A-14 f358/359, 4:5 f493/494): on f494/f359 the onion ring and sauce read through the blurred crown. The landing itself is correct: the band changes most at f495 (39.7% of band pixels change >= 40 levels in 9:16, 78.7% in 4:5), and the crown top rests at y 1074 (9:16) / 806 (4:5).",
+     "fix": "Keep the landing on f495 / A-14 f360 and drop n17. Set the burger-band n list for f480-494 to [4,4,4,5,6,...,16] (hold n4 one more frame at the start), so that f494 = n16 and f495 = n19 is unchanged. The soft thump at f495 (A-14 f360) keeps its sync. Re-render only the band frames f480-494 (A-14 f345-359) in all five variants."
+    }
+   ],
+   "checked": "Measured-gates role. All work is in /tmp/claude-0/-home-user-visitor-counter-api/1e0f8dbb-d731-5965-a898-07519c7bdbc3/scratchpad/deliv/gates/. m11 ran against shadow work dirs (wd_<variant> = film.json copy + symlink to the original frames/), so m11.json was written here and not into d/. Caches are in tmp_<variant>, logs in m11_<variant>.log, reports in wd_<variant>/m11.json. No repo file was edited and nothing was committed; tash/HANDOFF.md was read but not updated, because this role may not edit repo files.\n\nM11 SUMMARIES (python3 -I m11.py <wd> --mp4 <out> --jobs 4 --tmp tmp_<v>), all RESULT FAIL, every failure explained in the findings:\n- A-20 ig 916: G1 PASS (min Y' 0.140 at f165; 56 frames under 0.40: 30 accepted LAYL f165-194, 26 accepted natural footage, 0 outside). G2 FAIL (Lime 52.5%, footage 64.7%, dark field outside accepted f510-539 = 'lp' checker gap). G3 PASS (max 2 pairs, window f9-38). G4 PASS (14 hard cuts, 0 off grid, max 2/30 f). G5 PASS (general flashes max 3/s, at the limit, window f12; red 1/s; 10 saturated-red transitions, reported). G6 PASS. G7 FAIL 0.9888. G8 PASS (0 items in the rail). G9 PASS (0 box intersections; 27 ink px over the hook saucer rim, accepted). G10 PASS (0142/0337/0490 identical). G11 PASS (worst flat error 1.00 level, min PSNR 39.6 dB).\n- A-20 tt 916: identical to ig (G2 FAIL f510-539, G7 FAIL 0.9888; G11 1.00 level / 39.6 dB).\n- A-14 ig 916: G2 PASS (Lime 51.4%, footage 74.5%, 0 outside). G5 red flashes 2/s. G7 FAIL 0.9888. All others PASS (11 hard cuts, 0 off grid). G11 1.02 level / 39.2 dB.\n- A-14 tt 916: same as A-14 ig. G11 1.01 / 39.7 dB.\n- A-20 ig 45: G1 PASS (min 0.159). G2 PASS. G4 14 cuts, 0 off grid. G5 PASS (3/s at f15; 9 red transitions). G7 FAIL 0.9876. G8 n/a. G9 PASS (0 px). G10 PASS. G11 PASS (1.00 level, 38.4 dB).\n- A scratch m11 copy with 'lp'/'sd' added (patch/m11_lp.py, --no-det) gives G2 PASS on A-20 ig 916, and no other gate changes.\n\nMP4 CONTAINER, all five pass:\n- H.264 High, yuv420p, 30/1 CFR, BT.709 primaries/transfer/matrix, tv range. moov is before mdat (faststart).\n- A-20: 1080x1920 (4:5 1080x1350), 600 frames, 20.000 s.\n- A-14: 420 frames, 14.000 s.\n- Sizes: A20-9x16-ig 16,710,702 B (video 6.35 Mb/s); A20-9x16-tt 16,687,168; A14-9x16-ig 13,277,785 (7.25 Mb/s); A14-9x16-tt 13,250,424; A20-4x5-ig 13,035,125 (4.88 Mb/s).\n- Audio: AAC LC, 48 kHz stereo, 324 kb/s. The audio stream bytes are identical (md5) across ig/tt/4:5 for A-20 and across ig/tt for A-14.\n\nLOUDNESS, ffmpeg ebur128 peak=true, all pass:\n- A-20 MP4s: I -14.0 LUFS, LRA 5.6 LU, true peak -2.9 dBTP. A20.wav: -14.0 LUFS, -3.0 dBTP.\n- A-14 MP4s: I -14.0 LUFS, LRA 3.1, true peak -3.0 dBTP. A14.wav: -14.0 LUFS, -3.1 dBTP.\n- Sample peak of the decoded A-20 audio: L -2.89 / R -2.99 dBFS.\n- Spectral shares of the decoded audio: below 150 Hz 34.2% (A-20) / 32.0% (A-14), limit 50%; 500 Hz-6 kHz 25.9% / 27.1%, limit 25%. Both pass; the A-20 margin is 0.9 points.\n\nAUDIO LENGTH, pass:\n- Edit lists: video 307200/15360 = 20.000 s (A-14 215040 = 14.000 s); audio skips 1024 priming samples, duration 960000 = 20.000 s (A-14 672000 = 14.000 s).\n- A raw decode gives 960512 / 672768 samples: the last AAC frame runs 512 / 768 samples past the edit list, at -55 / -61 dBFS peak. Harmless.\n\nA/V SYNC, pass:\n- FFT cross-correlation of the decoded MP4 audio against A20.wav / A14.wav, all five files: global lag 0 samples (0.0 ms), normalised peak 0.9997. Lag 0 in every 1-s window (19 / 13 windows), so there is no drift. Residual SNR 30.8 / 30.2 dB.\n- AAC priming shifts nothing while the edit lists are honoured. Not a defect, for information: if a player ignored both edit lists, video would start at 66.7 ms (B-frame delay) and audio content at 21.3 ms, about 45 ms apart.\n- MP4 frame n decodes to PNG frame n at every event frame: PSNR 38-44 dB against the same index, 8-27 dB against its neighbours, in all five files.\n\nHITS VS PICTURE EVENTS, all within one frame (decoded MP4 audio, broadband onset at +9 dB over the preceding 150-35 ms; the WAV gives the same values):\n- A-20 f90 audio +4.5 ms. Picture: the shockwave first shows on f90 (Lime 47.5% of the picture, front r 763; f89 1.1%).\n- A-20 f225 audio 0.0 ms. Picture: Burger B hard cut on f225 (47.8% of pixels change >= 40 levels; f224 0.0%).\n- A-20 f390 audio -0.5 ms. Picture: the snap slam enters on f390 after solid Lime f387-389 (Ink 10.2%).\n- A-20 f495 audio +3.0 ms. Picture: the crown lands on f495 (largest band change, crown top at y 1074 after the f493-494 blur).\n- A-14 hits: f90 +4.0 ms, f210 0.0 ms, f300 -1.5 ms, f360 0.0 ms, against picture events on exactly f90/f210/f300/f360.\n- TikTok and 4:5 show the same event frames (4:5: shockwave f90, cut f225, slam f390, band landing f495) and carry identical audio bytes.\n\nScripts written: av_xcorr.py, onsets.py (onsets_A20.json, onsets_A14.json), pic_events.py (pic_w_*.json), mp4_align.py, loop_ssim.py, run_m11.sh. Images looked at: look/band_916_a20.png, look/band_494_100.png, look/ghost_14_45.png, look/band_layl.png."
+  },
+  "verify": {
+   "verdicts": [
+    {
+     "id": "G2-lp-prefix",
+     "real": true,
+     "severity": "minor",
+     "why": "Confirmed. The fault is in the checker, not the picture. (1) Code: m11.py line 59 is still `STAKK, LAYL = ('sa','sb','su','sl'), ('ls','lb')`. prep_swap.py lines 194-198 build 'lp' from the prepared lb frames (label already off), shrunk 0.8 by shrink_into(), which fills the uncovered canvas with the frame's own edge colours. So 'lp' is LAYL footage on its own near-black ground. film.json for A-20 9:16 f510-539 has lp0315-lp0344 clipped to the band y 1060-1920, and the only ink fill is the 10 px panel edge. (2) Pixels (deliv/skeptic/g2.py): at f520 the Ink-coloured share is 35.5% in ig and 34.5% in tt, with Y' 0.487 / 0.496. 30.3% of that is inside the band and the other 4-5% is panel text that is present on every CTA frame. Throughout f510-539 the band share is 30.5% to 30.0%; f509 and f540 have 0.0-0.1%. In the 4:5 version the same band uses 'lb' (18.4-18.7% band ink) and passes. (3) Looking: deliv/skeptic/perfume_520.png shows the LAYL bottle on its near-black ground under the Lime panel, in both formats. R3-25 accepts this ground. (4) Gate replica (deliv/skeptic/g2_all.py, A-20 tt): 60 dark frames. With LAYL = (ls, lb), 30 fall outside the accepted ground (f510-539). With 'lp' added, 0 do. The only prefix on those frames is 'lp'. I also patched only LAYL += 'lp', without 'sd' (deliv/skeptic/patch/m11_lponly.py, log m11_tt_lponly.log). On A-20 tt 9:16 G2 then passes, and G1, G3-G6, G8 and G9 are unchanged (G9 still shows 27 ink px). Small correction to the fix: adding 'sd' to STAKK is not needed for G2. It only makes the G9 product mask for the sd band use the STAKK red model, which is reasonable but optional. No frames change.",
+     "real_fix": "m11.py line 59: LAYL = ('ls','lb','lp') (optionally STAKK += 'sd', and add 'lp'/'sd' to WORLD for labels). Re-run m11 on w_20_ig_916 and w_20_tt_916."
+    },
+    {
+     "id": "G7-loop-baseline",
+     "real": true,
+     "severity": "minor",
+     "why": "Confirmed as a gate/spec mismatch. The film has no visible seam. film.json: f595-599 = hp0035-hp0039 and f0 = hp0040 (A-14: f414-419 = hp0034-39, with the iris at r 2300, fully open, on f419). The only other change across the seam is the third dot's typing step (y 326->329, 4:5 122->124). My own SSIM(Y') and pixel steps (deliv/skeptic/seam.py): A-20 9:16 ig/tt seam 0.9888, MAD 0.63, 1.4% of px >10 levels. That is smoother than f0->f1 (0.9858, MAD 0.82) and inside the f593-599 range (0.9814-0.9883). 4:5 seam 0.9876 against f0->f1 0.9849 and f593-599 0.9775-0.9900. A-14 seam 0.9888 against f418->419 0.9873. Two consecutive native frames of a moving pour cannot reach 0.99, so the R3-25 decision ('the loop plays the pour n28-n39 into f0, no frozen frame') guarantees this FAIL. The amendment that the R2-loop-freeze verdict asked for was never made: section 12 Loop row (line 274) still says 0.99, D2 (line 28) still describes the frozen frame, and the M10 row (line 151) still says 'SSIM 0.99'. The delivered M11 report therefore says FAIL on all five variants, and section 12 requires that report to be attached. I keep the finding real for that reason, but no picture change is needed. The proposed criterion is too loose: 'minimum of the 6 steps on each side' includes the hook-tag entrance f2->f3 (SSIM 0.9530) and, in A-14, the wind-up iris f416->f417 (0.6767), so it would pass a clearly visible jump.",
+     "real_fix": "Gate G7 against the native one-step baseline: pass when SSIM(f[N-1], f0) >= SSIM(f0, f1) - 0.002. Values today: 0.9888 >= 0.9858 for 9:16 A-20 and A-14, 0.9876 >= 0.9849 for 4:5. Alternatively, pass when the seam is no larger than the median of the pour-only steps. Amend BUILD-SPEC D2, the M10 row and the section 12 Loop row to match, or add it to the R3-25 exceptions. No re-render."
+    },
+    {
+     "id": "band-ghost-crown-n17",
+     "real": false,
+     "severity": "minor",
+     "why": "Refuted. What I measured is ordinary motion blur on the last frame of a fast drop, not AI ghosting, and a viewer does not see it as a defect. (1) Source (deliv/skeptic/su_15_16_17_19.png): b7 n15, n16 and n17 all show the falling crown as the same single, vertically streaked slab, moving down one step per frame. There is no doubled object. The doubled bun is n18, and it is already skipped. (2) 100% crops: deliv/skeptic/band916_493_495_100.png (9:16 f493-495) and band45_492_495_100.png (4:5 f492-495). On f494 the sauce and the onion ring show only through the lowest edge of the blur, about 20-30 px in 9:16; most of the smear sits above the toppings. That is where the crown's lower edge passed only during part of the 1/30 s exposure, which is how a real shutter records it. In 4:5 the band shows more of the lower blur, so more of the overlap is visible, but it is the same physics. (3) Phone size (deliv/skeptic/phone_493_495.png, 9:16 and 4:5 f493-495): one 33 ms frame of a blurred crown just above the stack, then landed on f495. It reads as a fast drop. (4) History, misstated in the finding: R3-ghost-crown-band was not overlooked. Its verify verdict was real=false ('ordinary motion blur ... Do not drop n17'), and the QT6 verdict that produced the applied fix (n4 held one frame, landing on f495) says explicitly 'Keep n16-n17'. swap_manifest burger-band rule: 'n4 held one frame, n5-n17, n19-n33'. (5) The proposed fix makes the motion worse. f494 = n16 and f495 = n19 skip two native frames. In 9:16, n16 shows only a faint smear at the band's top edge (strip band916_491_496.png, f493), so the crown would pop into place with almost no visible fall.",
+     "real_fix": "No change. If the owner stops on f494 / A-14 f359 and objects, the least intrusive polish is to lower the smear contrast in prep, not to drop n17: blend sd/su n17 above the toppings (canvas y 1060-1230 in 9:16) 50% with n16."
+    }
+   ]
+  }
+ },
+ {
+  "role": "viewer",
+  "check": {
+   "findings": [
+    {
+     "id": "OE-1",
+     "severity": "major",
+     "file": "All five: TASH-v4-A20-9x16-instagram.mp4, -A20-9x16-tiktok, -A14-9x16-instagram, -A14-9x16-tiktok, -A20-4x5-instagram (Coffee A is shared; A-14 f149 is bit-identical to A-20 f149)",
+     "frames": "f149 (the last frame of Coffee A, just before the cut to the Coffee B lens)",
+     "claim": "A new defect from the bean fix. On f149 a dark, motion-blurred upright 'fin' grows out of the left end of the bean that has just landed. On a phone it looks like the bean briefly morphs or sprouts a tail. In 4:5 it is larger. It is not in the source clip. The held-bean composite pastes n102's in-flight bean back into n113.",
+     "evidence": "Decoded MP4 crops: deliv/owner-eye/crops/ghostbean.png (f148 | f149 | source k4 n113 at 1.6x) and ghost45.png (4:5 f148 | f149). Prepared frame against source: hb0113 is more than 35 luma levels darker than k4_beans n113 on 2228 px in x 491-577, y 1258-1339. For n112 the count is 119 px; for n108-n111 it is 8 px or fewer. Diff image: crops/hb113_diff.png. The film layer list for f149 = /_stills/hb0113.png. The held bean itself is now stable: its top edge stays at y 1269 / 1274 / 1329 (x 330 / 380 / 450) from f138 to f149, so the sinking is fixed.",
+     "fix": "prep_swap.py hb block: for n112-n113, limit the n102 paste mask to x < 490, or drop from the mask the pixels of n102's falling bean (where n102 luma is below 90 and the frame's own luma is above 120). Simpler: point f149 at hb0112 (hold n112 on f148-f149) in swap_manifest coffee-a. Re-render the f135-f149 chunk of all five variants."
+    },
+    {
+     "id": "OE-2",
+     "severity": "major",
+     "file": "TASH-v4-A20-9x16-instagram.mp4, TASH-v4-A20-9x16-tiktok.mp4, TASH-v4-A14-9x16-instagram.mp4, TASH-v4-A14-9x16-tiktok.mp4 (4:5 not affected: it uses su, not sd)",
+     "frames": "A-20 f498-f502 (CTA burger band, just after the crown lands); A-14 f363-f367",
+     "claim": "In the 0.6x burger band, a pale horizontal light bar runs across the red backdrop at the left of the burger, from x 0 to x 216. It ends in a hard vertical edge at x 216, where the 0.6x picture meets its filled side margin. It lasts 5 frames during the CTA hold and reads as a glitch or light leak. The edge also gives away the composite.",
+     "evidence": "crops/streak.png (f499 at 2x) and crops/bandb_100b.png (f497 | f499 | f502). Row luma peak over the median of x 20-200: f498 +55 at y 1255, f499 +56, f500 +53, f501 +43, f502 +21. Every other band frame is +2 to +3. Seam |Y(x213)-Y(x219)|: mean 4.2, max 58 on f498-f501, against mean 1.0, max 7 elsewhere. A-14 IG/TT f363-f367: +55/+55/+52/+43/+21 at y 1253-1256. Source: sd0022-sd0025, where the left-margin peak at row 1254 is +43 to +47 (other sd frames peak at the bottom row only).",
+     "fix": "prep_swap.py sd block (shrink_into 0.6 for the 9:16 burger band, around line 229-231): stop building the side margins from each frame's own outer columns. Take them from one clean frame (for example the margins of n30) or a temporal median of n26-n33 for every sd frame. Re-prep sd0017-sd0048 and re-render A-20 9:16 ig/tt f480-f509 and A-14 9:16 ig/tt f345-f374."
+    },
+    {
+     "id": "OE-3",
+     "severity": "minor",
+     "file": "TASH-v4-A20-9x16-instagram/-tiktok, TASH-v4-A14-9x16-instagram/-tiktok, TASH-v4-A20-4x5-instagram",
+     "frames": "A-20 f495-f499 (9:16 and 4:5); A-14 f360-f364",
+     "claim": "After the band crown lands, it moves UP again for 2 frames and then settles: a small upward bounce on the burger, the kind of motion the owner dislikes. In 4:5 the crown rises to 2 px under the Ink panel edge.",
+     "evidence": "Crown top (first bun row, x 480-600) measured on the decoded MP4s. 9:16 A-20: f494 not landed, f495 1078, f496 1072, f497 1071, f498 1074, f499 1078, then 1077-1078. A-14 TT f360-f364: 1078, 1072, 1071, 1074, 1078. 4:5: f495 814, f496 805, f497 802, f498 808, f499 814 (panel edge y 790-800). The bounce is in the source: su n19-n23 top at 627, 618, 615, 621, 627. Strips: crops/bandb1.png, crops/45_crown.png.",
+     "fix": "In the band entries of swap_manifest (9:16 sd and 4:5 su), replace n20-n22 with n19 (hold the landed crown on f495-f498, A-14 f360-f363), then resume at n23. The thump stays on f495 / f360."
+    },
+    {
+     "id": "OE-4",
+     "severity": "minor",
+     "file": "TASH-v4-A20-9x16-instagram/-tiktok, TASH-v4-A14-9x16-instagram/-tiktok, TASH-v4-A20-4x5-instagram",
+     "frames": "A-20 f493-f494 (9:16 and 4:5); A-14 f358-f359",
+     "claim": "The falling band crown is drawn as a translucent orange smear. The sauce dollop and the onion ring show through its lower half (AI ghosting). In 4:5 at 1.0 scale the haze covers the top half of the band.",
+     "evidence": "crops/bandb_100a.png (9:16 f493 | f494) and crops/45_f494.png (4:5 f493 | f494). In 4:5 f494, the sauce and the pink onion ring are clearly visible through the blurred crown. A-14 strip: crops/a14_crown.png (f358-f359). Layer list: f494 = /_stills/sd0017.png.",
+     "fix": "Skip the in-flight frame. Show the crownless frame (sd/su n16) on f493-f494 (A-14 f358-f359), so the crown arrives as a hard landing on f495 / f360 with the thump, the same way the Burger B landing is sold across the cut."
+    },
+    {
+     "id": "OE-5",
+     "severity": "minor",
+     "file": "TASH-v4-A20-9x16-instagram/-tiktok, TASH-v4-A14-9x16-instagram/-tiktok (4:5 iris similar)",
+     "frames": "A-20 f589-f590; A-14 f415-f416",
+     "claim": "During the wind-up iris, two copies of the same cup are on screen, turned 180 degrees from each other. Inside the iris is the rotated opener cup (handle left, pitcher from the bottom). Below the panel is the band cup (handle right, stream from the top). It reads as a flip glitch just before the loop.",
+     "evidence": "crops/iris.png (f589 | f590 | f591) and crops/a14_wind.png (f413-f419). Layers on f588-f590: hu0092 band at dy 740 plus hp0028-hp0030 inside the iris circle.",
+     "fix": "On the iris frames, hide the band under the Lime panel (panel y 0-1920 from f588, A-14 f414) so the iris opens on Lime only. Or draw the band from the rotated hp frame at the same offset from f588."
+    },
+    {
+     "id": "OE-6",
+     "severity": "minor",
+     "file": "TASH-v4-A20-4x5-instagram.mp4",
+     "frames": "f480-f509 (burger band), f510-f539 (perfume band)",
+     "claim": "In the feed version, the CTA band shows only the top half of the burger: crown, pickles, cheese and the top patty, with the bottom patty and bun below the frame edge. The perfume bottle's base is cut by the bottom edge. In 9:16 both were shrunk to fit (0.6 / 0.8), but in 4:5 they are still drawn at 1.0.",
+     "evidence": "crops/45_bands.png (f470-f560) and crops/45_burgband.png (f490 | f500 | f520). 4:5 layer list f495: su0019 at dy 187, scale 1, band y 800-1350. The burger spans source rows 623-1593, which lands at screen y 810-1780, so 56% is visible. R3-10 asks for the product centred in the band.",
+     "fix": "In the 4:5 entries of swap_manifest, use a shrunk band like the 9:16 sd: burger about 0.5 with the bun top at about y 815 so the whole burger sits in y 815-1340; perfume about 0.65. Build the margins from a clean frame (see OE-2)."
+    },
+    {
+     "id": "OE-7",
+     "severity": "minor",
+     "file": "TASH-v4-A20-9x16-instagram/-tiktok (A-14 Burger B equivalent f210-f212)",
+     "frames": "A-20 f225-f228",
+     "claim": "In the Burger B punch-in, the crown top comes within 9-14 px of the bottom of the tag «برجر؟» (its Ink shadow). It does not overlap, but at phone size the bun looks like it is touching the tag.",
+     "evidence": "Measured on the decoded frames: lowest tag ink row y 841 on f224-f239; crown top y 852 (f225), 850 (f226), 855 (f227), 860 (f228), then 865-870. Crop: crops/burgtag.png (f218 | f226).",
+     "fix": "Burger B (f225-f239, A-14 f210-f224): move the picture 20 px lower (dy +20 on top of the bump) or lower the punch-in centre, so the crown top stays at y 870 or below."
+    }
+   ],
+   "checked": "Final owner-eye pass on the five MP4s in /home/user/visitor-counter-api/tash/11-boost-ad/v4/out/. All work is in /tmp/claude-0/-home-user-visitor-counter-api/1e0f8dbb-d731-5965-a898-07519c7bdbc3/scratchpad/deliv/owner-eye/: sheets/ holds contact sheets every 5 frames for all five variants, crops/ holds the cut strips and the 100% crops, scripts/ holds the decode, diff, grab and audio checks. All frames were decoded from the MP4s with BT.709 tv to pc, not taken from the PNGs. No repo file was edited, so tash/HANDOFF.md was not updated (the task forbids repo edits; the parent should record this stage). No credits, no MCP.\n\nWhat I could not do: I cannot hear, so the score has not been judged by ear. No PEAT run.\n\nWhat passed:\n- **Containers:** 1080x1920 / 1080x1350, 30 fps, 600 / 420 frames, BT.709 tv tags, AAC 48 kHz stereo at about 324 kb/s.\n- **Audio:** sample-aligned to build/audio/A20.wav and A14.wav (lag 0, residual -48 dB against -17 dB signal). -14.0 LUFS, true peak -2.9 / -3.0 dBTP. The crown cue sits at f495 (16.5 s) in cues.json.\n- **Instagram vs TikTok:** they differ only in the CTA (A-20 f453-f599, A-14 f316-f415).\n- **Arabic, at 100%, letter by letter, all correct:**\n  - shadda on «طشّ» (offer, snap, tagline and CTA wordmark), «خلّ إعلانك», «خلّهم», «دزّ لنا»; hamza in «إعلانك».\n  - «؟ ! …» on the left: «حلو…», «محد يسولف؟», «قهوة؟», «عطر؟», «برجر؟», «حلويات؟», «شنو حسابهم؟!», «عنك!».\n  - Endings: TikTok «دزّ لنا / بالخاص / @tash.creative» (shadda top at about y 303, inside Zone A); Instagram «اطلب إعلانك / بالخاص / @tash.creative.kw».\n  - No line is cut or crosses an edge, apart from the accepted 1-frame entrance slams.\n- **Loop:** last-to-first frame mean diff 1.03 (A-20, A-14) and 1.02 (4:5), against a median frame-to-frame 0.81-0.90. A-20 f599 = hp n39 into f0 = hp n40, so the pour plays through. No single-frame spikes anywhere.\n- **Fixes from the last review, now verified:** the held bean is stable (top edge constant f138-f149); the centre porthole plays without a break; the 9:16 CTA bands sit above the caption rows; the crown lands on f495 / A-14 f360; the A-14 iris is 6 frames; the 4:5 opener tag clears the saucer.\n- **Burger B:** after the cut-landing the bun only settles downward (no upward move).\n- **Nothing branded or human in any footage:** no logo, café name, label, text, face or hand. Plain steel pitcher, unlabelled bottle, plain plate and tray, plain atomiser.\n\nAccepted exceptions in R3-25 (spec section 15) were not reported: the dark LAYL beat, the sauce and milk streams behind the type, the heart pointing up, the 1-frame slams, «حلو…» on the saucer rim in 9:16, the STAKK red, no impact in the first 0.3 s."
+  },
+  "verify": {
+   "verdicts": [
+    {
+     "id": "OE-1",
+     "real": true,
+     "severity": "major",
+     "why": "Confirmed. Layer list f149 = /_stills/hb0113.png in every variant (4:5 at dy -335). On the decoded A-20 IG f149, a dark, upright, motion-blurred bar sits at about x 490-575, y 1250-1340 and is joined to the left end of the bean that has just landed. f147 and f148 are clean. I decoded k4_beans myself (cover 1084, crop 2). The shape is not in source n113. n102 has the in-flight bean standing upright at exactly that spot. The hold mask (S0 = x 262-575 minus bean_d of n113) no longer covers that area once the bean has settled to the right, so n102's falling bean gets pasted back in. hb0113 is more than 35 luma levels darker than n113 on 2044 px in x 491-577, y 1258-1339. hb0112 has 98 px there. The region is identical in A-20 TT, A-14 IG and A-14 TT f149 (mean diff 0.0). In 4:5 it is larger. It lasts one frame and the cut to the Lime lens on f150 partly hides it. Still, it is a flash-frame morph on the hero product, created by our own composite, in all five files. Crops: deliv/skeptic/z_147_149.png, z_src.png (n102 | n112 | n113 | hb0113), z45.png. Fix: in swap_manifest coffee-a, point f149 at hb0112 (hold n112 on f148-f149), or in the prep_swap.py hb block limit S0 to x <= 490 for n >= 112. Then re-render the f135-f149 chunk of all five variants."
+    },
+    {
+     "id": "OE-2",
+     "real": true,
+     "severity": "major",
+     "why": "Confirmed on the decoded MP4s. Row luma over a ±40-row local median (x 20-200): A-20 IG f498-f502 +26/+26/+26/+22/+14 at y 1251-1255. Every other band frame peaks at +4/+5, at y 1527. Seam |Y(x213)-Y(x219)|: mean 4.2, max 58 on f498-f499, against mean 1.0, max 7 elsewhere. A-14 TT f363-f367 matches, and so do A-20 TT f499 and A-14 IG f364. 4:5 is not affected. Cause: shrink_into() fills x < 216 with each row's mean of picture columns x 216-228. On sd n22-n25 the crown has just landed and is squashed wider, so its left edge reaches source x 0-20 at source row about 921. Those edge columns are bun (Y 144-160, backdrop 99-110), and the bun colour gets smeared across the whole margin. At 100% it shows as a pale bar running out of the bun's left side to the frame edge for 5 frames of the CTA (deliv/skeptic/streak1.png: f497 | f499 | f501 | f504). Fix: as proposed, build the sd side margins from one clean frame's edge profile (n30) for every sd frame, or leave out pixels with Y > 130 from the 12-column average. Re-prep sd n4-n33 and re-render A-20 9:16 ig/tt f480-f509 and A-14 9:16 ig/tt f345-f374."
+    },
+    {
+     "id": "OE-3",
+     "real": false,
+     "severity": "minor",
+     "why": "The numbers are right: crown top 1078/1072/1071/1074/1078 on A-20 IG f495-f499 and A-14 TT f360-f364, and 814/805/802/808/814 in 4:5. The movement is the source's own short rebound at impact: 6-7 px at 0.6x in 9:16 and 12 px in 4:5, over 4 frames (133 ms) that start on the thump. On a phone that is about 2-4 pt, and it reads as the bun's weight settling, not as a bounce (deliv/skeptic/crown916.png, crown45.png). No owner note objects to a rebound. The STAKK note «شلون يرفع البرجر عكس» was about a reversed lift, and R3-24's 'bounced up and swayed' was a 28-frame sway in the old S3 clip. The proposed fix (hold n19 for 4 frames, then n23) would freeze the steam and the stack and then restart them, which is a worse stutter. No change."
+    },
+    {
+     "id": "OE-4",
+     "real": false,
+     "severity": "minor",
+     "why": "f493 (n16) shows only a thin blur at the panel edge. On f494 (sd0017/su0017) the falling crown is a vertical smear about as wide as the landed bun. The sauce and onion show through only its lower leading edge, which is what a fast-moving opaque object leaves during the exposure (deliv/skeptic/smear916.png, smear45.png). In motion it reads as a fast drop that lands on f495 with the thump. The final review's skeptic (wf_0d526e23, R3-ghost-crown-band) judged this same source frame to be ordinary motion blur, and it was deliberately kept. The proposed fix (crownless on f493-f494, then landed) would make the crown appear from nowhere inside a continuous shot. Burger B hides its landing behind a cut; this band has none, so the fix is worse than the current frame. No change."
+    },
+    {
+     "id": "OE-5",
+     "real": true,
+     "severity": "minor",
+     "why": "Confirmed, but on one recognisable frame per variant. On A-20 IG f590, A-14 IG f416 and 4:5 f590, the iris shows the rotated opener cup (handle left, milk stream from below). Under the panel, outside the iris, the band cup hu0092 at dy 740 is still visible with its handle on the right. That is two cups turned 180 degrees from each other (deliv/skeptic/iris916.png, iris14.png, iris45.png). On f589 / f415 the iris shows only saucer rim, and on f591 / f417 it covers the band. At speed this mostly reads as the iris transition, hence minor. It is not an R3-25 accepted exception. Fix: in mk_film.mjs cta(), from the first iris frame (A-20 f589, A-14 f415; or f588 / f414), draw a Lime rect over the band outside the iris clip, so the iris opens on Lime only. Then re-run the M11 flash count over f580-f609, including the loop wrap."
+    },
+    {
+     "id": "OE-6",
+     "real": true,
+     "severity": "minor",
+     "why": "Confirmed in the 4:5 file. Layer list f495: su0019 at scale 1, dy 187, band y 800-1350. The settled burger lands at y 810-1780, so about 56% is visible. The decoded f490 and f500 show the crown, toppings, cheese and top patty, and the bottom patty and bun are cut off by the frame edge. In the perfume band (f520, lb0325, dy 0) the cap sits at about y 822 and the bottle runs off the bottom edge (deliv/skeptic/f45_bands.png). This breaks R3-10 ('footage offset per shot to centre the product in the band'). R3-25 shrank only the 9:16 bands. Both products are still easy to name and look appetising as tight close-ups, so minor. Fix: as proposed (4:5 burger about 0.5 with the bun top at about y 815, perfume about 0.65). Build the margins from a clean frame first (the OE-2 fix), or the same pale-bar defect will appear in 4:5."
+    },
+    {
+     "id": "OE-7",
+     "real": false,
+     "severity": "minor",
+     "why": "There is no overlap on any frame. I measured the per-column gap between the tag's lowest Ink pixel (y 842, shadow included) and the bun top on decoded A-20 IG frames: f225 10 px, f226 9, f227 16, f228 25, f229-f239 23-32 px. The 9-10 px frames are the two frames of the spec's -10/-5 landing bump (R3-24). After the bump the gap is 23-32 px, and that is the intended composition (prep_swap.py: 'bun top lands about y 860-868'). At phone scale (about 0.36x), 23 px is about 8 pt of clear red, and at 1x red is visible between them on every frame (deliv/skeptic/burgtag1x.png). It reads as the tag sitting above the burger, not touching it. No change needed. Optional: a softer bump (-6/-3) would keep f225-f226 at 13 px or more."
+    }
+   ]
+  }
+ }
+]

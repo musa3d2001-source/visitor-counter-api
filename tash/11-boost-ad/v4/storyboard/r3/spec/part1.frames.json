@@ -1,0 +1,709 @@
+{
+ "title": "الجزء الأول · البداية والمشكلة",
+ "frames": [
+  {
+   "n": 1,
+   "id": "01_f000",
+   "tc": "f0 · 0.00s",
+   "note": "أول لقطة: «مشروعك» ونقاطه الثلاث تتحرك مثل نقاط «يكتب…»، والثلج بالهوا فوق الكوب. ولا شي ثاني.",
+   "layers": [
+    {
+     "t": "still",
+     "src": "/_stills/s1alt_fit.png"
+    },
+    {
+     "t": "word",
+     "key": "mashrou3ak",
+     "size": 172,
+     "slot": [
+      715,
+      352
+     ],
+     "fill": "paper",
+     "stroke": "ink",
+     "lw": 16,
+     "shadow": {
+      "dx": 8,
+      "dy": 8,
+      "color": "ink"
+     },
+     "dots": false
+    },
+    {
+     "t": "dot",
+     "x": 629,
+     "y": 348,
+     "r": 44,
+     "fill": "ink"
+    },
+    {
+     "t": "dot",
+     "x": 623,
+     "y": 342,
+     "r": 40,
+     "fill": "lime",
+     "ring": {
+      "color": "ink",
+      "lw": 8
+     }
+    },
+    {
+     "t": "dot",
+     "x": 721,
+     "y": 338,
+     "r": 44,
+     "fill": "ink"
+    },
+    {
+     "t": "dot",
+     "x": 715,
+     "y": 332,
+     "r": 40,
+     "fill": "lime",
+     "ring": {
+      "color": "ink",
+      "lw": 8
+     }
+    },
+    {
+     "t": "dot",
+     "x": 813,
+     "y": 326,
+     "r": 44,
+     "fill": "ink"
+    },
+    {
+     "t": "dot",
+     "x": 807,
+     "y": 320,
+     "r": 40,
+     "fill": "lime",
+     "ring": {
+      "color": "ink",
+      "lw": 8
+     }
+    }
+   ]
+  },
+  {
+   "n": 2,
+   "id": "02_f010",
+   "tc": "f10 · 0.33s",
+   "note": "صورة الغلاف: تطلع «حلو…» والقهوة تطش من الكوب (الطشّة بالفيديو)، وبعدها زووم قوي مع الإيقاع.",
+   "layers": [
+    {
+     "t": "still",
+     "src": "/_stills/s1alt_fit.png"
+    },
+    {
+     "t": "text",
+     "s": "حلو…",
+     "size": 200,
+     "x": 540,
+     "y": 757,
+     "w": 800,
+     "fill": "lime",
+     "stroke": "ink",
+     "lw": 20,
+     "shadow": {
+      "dx": 10,
+      "dy": 10,
+      "color": "ink"
+     },
+     "rot": -4
+    },
+    {
+     "t": "word",
+     "key": "mashrou3ak",
+     "size": 172,
+     "slot": [
+      715,
+      352
+     ],
+     "fill": "paper",
+     "stroke": "ink",
+     "lw": 16,
+     "shadow": {
+      "dx": 8,
+      "dy": 8,
+      "color": "ink"
+     },
+     "dots": false
+    },
+    {
+     "t": "dot",
+     "x": 629,
+     "y": 336,
+     "r": 44,
+     "fill": "ink"
+    },
+    {
+     "t": "dot",
+     "x": 623,
+     "y": 330,
+     "r": 40,
+     "fill": "lime",
+     "ring": {
+      "color": "ink",
+      "lw": 8
+     }
+    },
+    {
+     "t": "dot",
+     "x": 721,
+     "y": 326,
+     "r": 44,
+     "fill": "ink"
+    },
+    {
+     "t": "dot",
+     "x": 715,
+     "y": 320,
+     "r": 40,
+     "fill": "lime",
+     "ring": {
+      "color": "ink",
+      "lw": 8
+     }
+    },
+    {
+     "t": "dot",
+     "x": 813,
+     "y": 342,
+     "r": 44,
+     "fill": "ink"
+    },
+    {
+     "t": "dot",
+     "x": 807,
+     "y": 336,
+     "r": 40,
+     "fill": "lime",
+     "ring": {
+      "color": "ink",
+      "lw": 8
+     }
+    }
+   ]
+  },
+  {
+   "n": 3,
+   "id": "03_f031",
+   "tc": "f31 · 1.03s",
+   "note": "عند كلمة «حلو» تتبدل الصورة لكنافة (حلو = حلويات)، لنص ثانية بس.",
+   "layers": [
+    {
+     "t": "still",
+     "src": "/_stills/s5_fit.png"
+    },
+    {
+     "t": "text",
+     "s": "حلو…",
+     "size": 200,
+     "x": 540,
+     "y": 757,
+     "w": 800,
+     "fill": "lime",
+     "stroke": "ink",
+     "lw": 20,
+     "shadow": {
+      "dx": 10,
+      "dy": 10,
+      "color": "ink"
+     },
+     "rot": -4
+    },
+    {
+     "t": "word",
+     "key": "mashrou3ak",
+     "size": 172,
+     "slot": [
+      715,
+      352
+     ],
+     "fill": "paper",
+     "stroke": "ink",
+     "lw": 16,
+     "shadow": {
+      "dx": 8,
+      "dy": 8,
+      "color": "ink"
+     },
+     "dots": false
+    },
+    {
+     "t": "dot",
+     "x": 629,
+     "y": 326,
+     "r": 44,
+     "fill": "ink"
+    },
+    {
+     "t": "dot",
+     "x": 623,
+     "y": 320,
+     "r": 40,
+     "fill": "lime",
+     "ring": {
+      "color": "ink",
+      "lw": 8
+     }
+    },
+    {
+     "t": "dot",
+     "x": 721,
+     "y": 340,
+     "r": 44,
+     "fill": "ink"
+    },
+    {
+     "t": "dot",
+     "x": 715,
+     "y": 334,
+     "r": 40,
+     "fill": "lime",
+     "ring": {
+      "color": "ink",
+      "lw": 8
+     }
+    },
+    {
+     "t": "dot",
+     "x": 813,
+     "y": 348,
+     "r": 44,
+     "fill": "ink"
+    },
+    {
+     "t": "dot",
+     "x": 807,
+     "y": 342,
+     "r": 40,
+     "fill": "lime",
+     "ring": {
+      "color": "ink",
+      "lw": 8
+     }
+    }
+   ]
+  },
+  {
+   "n": 4,
+   "id": "04_f040",
+   "tc": "f40 · 1.33s",
+   "note": "النقاط تطيح من الشين وحدة وحدة، وكل نقطة تسحب ثلث الصورة وياها، والكلمة تفضى.",
+   "layers": [
+    {
+     "t": "fill",
+     "color": "#DCDCD0"
+    },
+    {
+     "t": "still",
+     "src": "/_stills/s5_fit.png",
+     "clip": {
+      "x": 720,
+      "y": 0,
+      "w": 360,
+      "h": 1920
+     },
+     "dy": 1517
+    },
+    {
+     "t": "still",
+     "src": "/_stills/s5_fit.png",
+     "clip": {
+      "x": 360,
+      "y": 0,
+      "w": 360,
+      "h": 1920
+     },
+     "dy": 853
+    },
+    {
+     "t": "still",
+     "src": "/_stills/s5_fit.png",
+     "clip": {
+      "x": 0,
+      "y": 0,
+      "w": 360,
+      "h": 1920
+     },
+     "dy": 379
+    },
+    {
+     "t": "word",
+     "key": "mashrou3ak",
+     "size": 172,
+     "slot": [
+      715,
+      352
+     ],
+     "fill": "rgba(0,0,0,0)",
+     "stroke": "ink",
+     "lw": 8,
+     "shadow": null,
+     "dots": false
+    },
+    {
+     "t": "dot",
+     "x": 623,
+     "y": 342,
+     "r": 40,
+     "fill": null,
+     "ring": {
+      "color": "ink",
+      "lw": 5,
+      "dash": [
+       8,
+       7
+      ]
+     }
+    },
+    {
+     "t": "dot",
+     "x": 715,
+     "y": 342,
+     "r": 40,
+     "fill": null,
+     "ring": {
+      "color": "ink",
+      "lw": 5,
+      "dash": [
+       8,
+       7
+      ]
+     }
+    },
+    {
+     "t": "dot",
+     "x": 807,
+     "y": 342,
+     "r": 40,
+     "fill": null,
+     "ring": {
+      "color": "ink",
+      "lw": 5,
+      "dash": [
+       8,
+       7
+      ]
+     }
+    },
+    {
+     "t": "dot",
+     "x": 631,
+     "y": 729,
+     "r": 84,
+     "fill": "ink"
+    },
+    {
+     "t": "dot",
+     "x": 623,
+     "y": 721,
+     "r": 80,
+     "fill": "lime",
+     "ring": {
+      "color": "ink",
+      "lw": 8
+     }
+    },
+    {
+     "t": "dot",
+     "x": 723,
+     "y": 1203,
+     "r": 104,
+     "fill": "ink"
+    },
+    {
+     "t": "dot",
+     "x": 715,
+     "y": 1195,
+     "r": 100,
+     "fill": "lime",
+     "ring": {
+      "color": "ink",
+      "lw": 8
+     }
+    },
+    {
+     "t": "dot",
+     "x": 815,
+     "y": 1867,
+     "r": 124,
+     "fill": "ink"
+    },
+    {
+     "t": "dot",
+     "x": 807,
+     "y": 1859,
+     "r": 120,
+     "fill": "lime",
+     "ring": {
+      "color": "ink",
+      "lw": 8
+     }
+    }
+   ]
+  },
+  {
+   "n": 5,
+   "id": "05_f060",
+   "tc": "f60 · 2.00s",
+   "note": "بدون النقاط صارت «مسروعك»: الصورة طفت والنقاط طايحة رمادية تحت. أهدى لحظة بالإعلان.",
+   "layers": [
+    {
+     "t": "fill",
+     "color": "#DCDCD0"
+    },
+    {
+     "t": "word",
+     "key": "mashrou3ak",
+     "size": 172,
+     "slot": [
+      715,
+      352
+     ],
+     "fill": "rgba(0,0,0,0)",
+     "stroke": "ink",
+     "lw": 8,
+     "shadow": null,
+     "dots": false
+    },
+    {
+     "t": "dot",
+     "x": 623,
+     "y": 342,
+     "r": 40,
+     "fill": null,
+     "ring": {
+      "color": "ink",
+      "lw": 5,
+      "dash": [
+       8,
+       7
+      ]
+     }
+    },
+    {
+     "t": "dot",
+     "x": 715,
+     "y": 342,
+     "r": 40,
+     "fill": null,
+     "ring": {
+      "color": "ink",
+      "lw": 5,
+      "dash": [
+       8,
+       7
+      ]
+     }
+    },
+    {
+     "t": "dot",
+     "x": 807,
+     "y": 342,
+     "r": 40,
+     "fill": null,
+     "ring": {
+      "color": "ink",
+      "lw": 5,
+      "dash": [
+       8,
+       7
+      ]
+     }
+    },
+    {
+     "t": "text",
+     "s": "محد يسولف؟",
+     "size": 126,
+     "x": 540,
+     "y": 740,
+     "w": 800,
+     "fill": "ink"
+    },
+    {
+     "t": "dot",
+     "x": 420,
+     "y": 1170,
+     "r": 50,
+     "fill": "smoke",
+     "ring": {
+      "color": "ink",
+      "lw": 8
+     }
+    },
+    {
+     "t": "dot",
+     "x": 540,
+     "y": 1170,
+     "r": 50,
+     "fill": "smoke",
+     "ring": {
+      "color": "ink",
+      "lw": 8
+     }
+    },
+    {
+     "t": "dot",
+     "x": 660,
+     "y": 1170,
+     "r": 50,
+     "fill": "smoke",
+     "ring": {
+      "color": "ink",
+      "lw": 8
+     }
+    }
+   ]
+  },
+  {
+   "n": 6,
+   "id": "06_f084",
+   "tc": "f84 · 2.80s",
+   "note": "النقاط ترجع على الشين، ومن كل نقطة تنفتح دايرة ترجّع اللون والقهوة للصورة.",
+   "layers": [
+    {
+     "t": "fill",
+     "color": "#DCDCD0"
+    },
+    {
+     "t": "still",
+     "src": "/_stills/s1alt_fit.png",
+     "clip": {
+      "type": "circle",
+      "x": 807,
+      "y": 342,
+      "r": 1560
+     }
+    },
+    {
+     "t": "dot",
+     "x": 807,
+     "y": 342,
+     "r": 1555,
+     "fill": null,
+     "ring": {
+      "color": "lime",
+      "lw": 10
+     }
+    },
+    {
+     "t": "dot",
+     "x": 807,
+     "y": 342,
+     "r": 1563,
+     "fill": null,
+     "ring": {
+      "color": "ink",
+      "lw": 6
+     }
+    },
+    {
+     "t": "dot",
+     "x": 715,
+     "y": 342,
+     "r": 775,
+     "fill": null,
+     "ring": {
+      "color": "lime",
+      "lw": 10
+     }
+    },
+    {
+     "t": "dot",
+     "x": 715,
+     "y": 342,
+     "r": 783,
+     "fill": null,
+     "ring": {
+      "color": "ink",
+      "lw": 6
+     }
+    },
+    {
+     "t": "word",
+     "key": "mashrou3ak",
+     "size": 172,
+     "slot": [
+      715,
+      352
+     ],
+     "fill": "paper",
+     "stroke": "ink",
+     "lw": 16,
+     "shadow": {
+      "dx": 8,
+      "dy": 8,
+      "color": "ink"
+     },
+     "dots": false
+    },
+    {
+     "t": "dot",
+     "x": 629,
+     "y": 348,
+     "r": 44,
+     "fill": "ink"
+    },
+    {
+     "t": "dot",
+     "x": 623,
+     "y": 342,
+     "r": 40,
+     "fill": "lime",
+     "ring": {
+      "color": "ink",
+      "lw": 8
+     }
+    },
+    {
+     "t": "dot",
+     "x": 721,
+     "y": 348,
+     "r": 44,
+     "fill": "ink"
+    },
+    {
+     "t": "dot",
+     "x": 715,
+     "y": 342,
+     "r": 40,
+     "fill": "lime",
+     "ring": {
+      "color": "ink",
+      "lw": 8
+     }
+    },
+    {
+     "t": "dot",
+     "x": 813,
+     "y": 348,
+     "r": 44,
+     "fill": "ink"
+    },
+    {
+     "t": "dot",
+     "x": 807,
+     "y": 342,
+     "r": 40,
+     "fill": "lime",
+     "ring": {
+      "color": "ink",
+      "lw": 8
+     }
+    },
+    {
+     "t": "text",
+     "s": "محد يسولف؟",
+     "size": 126,
+     "x": 540,
+     "y": 740,
+     "w": 800,
+     "fill": "ink"
+    }
+   ]
+  }
+ ]
+}
