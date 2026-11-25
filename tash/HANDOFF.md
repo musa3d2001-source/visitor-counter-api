@@ -1,7 +1,8 @@
 # HANDOFF: ذاكرة مشروع «طشّ | TASH Creative»
 
 > **Read this before resuming any TASH work. Update it after every stage and before the session ends.**
-> Last updated: 2026-11-07 ~17:45 UTC.
+> Last updated: 2026-11-25 (students ad started; see §7).
+> Earlier: 2026-11-07 ~17:45 UTC.
 > - The DOSE v3 story ad was **delivered** to the owner (sent as `DOSE-spec-story-v2.mp4`; it is the same file as `tash/10-spec-dose/DOSE-spec-story-9x16.mp4`) and committed in `8e0bd40`.
 > - It is **not approved and not published**.
 > - DOSE Higgsfield total: **214.25** credits (253.75 → 39.50).
@@ -40,6 +41,9 @@
 ## 3. Approved decisions (owner said so)
 | Decision | Source |
 |---|---|
+| **New line «طشّ للطلاب» (25 Nov).** TASH is no longer only an ad studio: it also does digital work for school and university students (presentations, reports, research formatting, posters, project videos, Microsoft Office files). An ad for TASH's own account is being made: 25–30 s, 9:16, Kuwaiti, fast and youthful, with VO. Full creative freedom given. | Owner, 25 Nov: «نبي هالاعلان لحسابنا طش بخليه مو بس استديو لترويج المنتجات بل حتى للطلاب الجامعة وغيرهم اسوي لهم مشاريع و عروض وكل شي ببالهم رقمي يبونه او microsoft office» + «لك مطلق الحرية في الاختيار والابداع والتفكير» |
+| Students ad copy rule (Claude's call, told to the owner, **not yet confirmed by him**): we sell design, formatting and production — «المعلومة منك… والترتيب والتصميم علينا» — never writing a student's graded research for them, no grade or overnight promises. | Claude, 25 Nov; brief `tash/11-students-ad/BRIEF-STUDENTS.md` |
+| Students ad Higgsfield cap: **60 credits** (balance before: 415.25 — the owner topped up after DOSE). Stated to the owner up front; he gave full freedom on tools. | Claude stated it 25 Nov |
 | **Working rule from the owner (7 Nov): act as a real ad director.** Make the appetising, dynamic creative call yourself. Ask the owner only about money or facts, never about obvious craft. His words: «لا تطلب كذا مرة ثانيه… ادرس اخراج واعلان و تسويق عدل… الثلج لما يطيح و القهوة تصب احلى». For iced V60, **the ice tumbles out of the carafe with the coffee into the cup** (that is how they serve it, and it sells). **Espresso never steams.** Pours come from the spout. | Owner, 7 Nov |
 | Owner opened the DOSE credits («الكريديت مفتوح») and asked for the best model for realism. The carafe was re-made with Seedance 2.5. The owner then chose Seedance **720p (35)** for the ice-falling version, because the balance (77.25) can't cover 1080p. | Owner answers, 7 Nov |
 | **DOSE cap raised to 81 credits; d5 terrace re-done as a new shot.** The owner spotted the yellow cup standing half on the tray rim and half on the table, and disliked the hand lifting the espresso («ماحبيت ايد الرجال اللي تسحب الاسبريسو… باهتة»). New d5: no hands, a low crane-up reveal over the orange table to the steel tray and the facade with the orange dose sign, then a match cut to the end card. The owner also caught the d2 carafe pouring opposite its spout; it was re-shot. | Owner, 7 Nov: «سو صورة جديدة + ماحبيت ايد الرجال…» (answer to the 81-cap question) |
@@ -139,6 +143,12 @@ The old split zips (`split/TASH-1..6-of-6`) and `TASH-Instagram-Kit.zip` were **
 4. If the iPhone download fails: shrink the reels further, or split into 2 zips of about 30 MB each.
 
 ## 7. Next step
+**In progress (25 Nov): «طشّ للطلاب» ad** in `tash/11-students-ad/` (brief: `BRIEF-STUDENTS.md`).
+- Stage 1: final Kuwaiti script (copy doctors) + sample works (HTML → PNG) + two AI plates (parent).
+- Stage 2: VO (ElevenLabs, voice «Jassim Almathkour»), then the edit, three hostile review lenses, fixes.
+- Deliver two mixes (with VO / without VO) + caption.
+- Pricing note from 22 Nov: the owner rejected 390 KD for a 30 s video as far too high. Real cost is tiny (a credit ≈ 0.018 KD; DOSE ≈ 4 KD of credits). Claude suggested 150–250 KD for a 3-minute video and asked the owner for his own number; **no answer yet**, so `07-ops/04-pricing.md` is still the old draft.
+
 **DOSE status (7 Nov, 17:45 UTC):**
 - v3 was delivered to the owner. Owner feedback is pending.
 - The posting note is in `tash/10-spec-dose/SCRIPT.md` («ملاحظة النشر»).
