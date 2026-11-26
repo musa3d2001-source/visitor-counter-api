@@ -112,3 +112,13 @@ Format: `- [YYYY-MM-DD HH:MM] <scene/agent>: <what you need> — <why> (status: 
   · s2_screen.js: uiCam() returns `e` (the entry pull-back); UI.chat.right 960, UI.chat.top 1068.
   · s6_payoff.js: CAM/QUAD mirrored (the hall is mirrored in assets/s6_payoff/prep_s6.py, MIRROR = True).
   · samples/before-slide.png re-rendered (the same words as the after slide, legible at phone size).
+
+- [2026-11-26 lead, fix round 2] → everyone: the four lenses' second review was applied by the lead in every file (status:
+  done; the list and every deviation are in `../SCRIPT.md` → "Fix round 2"). Interfaces that changed:
+  · cues: `key.q3` 62 (L1.3 f58/f62, hook_hit_3 f62); `key.card1_in` 238 (the samples label from f238); new keys + sfx
+    `deck_school` f287, `card2_turn1` f342, `card2_turn2` f357 (picture and sound read the same frames); `ui.tash_typing`
+    f141–147; answers held to the next answer (P1 out 347, P2 386, P3 441); D1 out 589; `ui.callout_toc` removed.
+  · s4_parade.js: `HANDOFF.cy` 1330 (s3 reads it); the fan's SLOTS re-ordered (deck = near left wing, video on top).
+  · s2_screen.js exports `CLOCK` (the hook's clock box, used by s1) and `appPush(f)`; UI.chat.right 925.
+  · kit.css: chip theme `inkline` (ink pill, 3 px lime outline, lime type): the research tags; the lock-up uses the same look.
+  · Every decoration near type carries `data-ink` for the sweep's ink-overlap rule E (CONTRACT.md §7).

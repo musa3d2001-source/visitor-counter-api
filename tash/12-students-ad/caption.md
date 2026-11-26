@@ -1,6 +1,6 @@
 # «طشّ للطلاب»: captions, alt text and posting notes
 
-Status: **delivered to nobody yet, not approved, not published.** Claude never posts; the owner posts.
+Status: **not approved, not published.** A fix-round-1 draft of the film was sent to the owner on 26 Nov ~06:30 (see `tash/HANDOFF.md` §7); the files described here are the fix-round-2 build. Claude never posts; the owner posts.
 The caption texts below are copied character for character from `script.json` (`caption`, `caption_tiktok`).
 
 ## Which file to post
@@ -11,7 +11,7 @@ The caption texts below are copied character for character from `script.json` (`
 | `TASH-students-9x16-novo.mp4` | Spare: the same picture with music + sound effects only. Use it only if the owner does not like the voice or the dialect. The film still works without the voice, because every spoken line is on screen. |
 | `poster.png` | The Reel cover, made for the grid (fix round): the splash's lime field, the lock-up «طشّ للطلاب» big in the centre 3:4, and TASH's sample slide «مسار» under it with its label «نماذج من تصميمنا». No CTA or handles on it (they are in the caption). |
 
-Both files are 1080×1920, 30 fps, 891 frames = 29.70 s, H.264 High, AAC 48 kHz, −14 LUFS.
+Both files are 1080×1920, 30 fps, 891 frames = 29.70 s, H.264 High, AAC 48 kHz, −14 LUFS (fix round 2, 26 Nov).
 
 ## Instagram (Reel)
 
@@ -85,7 +85,7 @@ Ad for "TASH for students": a student at 2 a.m. in front of a laptop with a blan
 2. **انشر الملف مثل ما هو.** لا تقصّه، ولا تحط فلتر، ولا تكتب عليه نص من التطبيق، ولا تشغّل الترجمة التلقائية فوقه (كل الكلام مكتوب على الشاشة أصلاً، والترجمة التلقائية تغطيه).
 3. **بدون ملصق موسيقى.** لا تضيف أغنية من مكتبة التطبيق، ولا «موسيقى تلقائية». الموسيقى والمؤثرات أصلية ومدموجة بالملف.
 4. **أي نسخة؟** انشر `TASH-students-9x16-vo.mp4` (فيها الصوت). نسخة `novo` احتياط، بس إذا ما عجبك الصوت أو اللهجة.
-5. **الغلاف:** بالإنستقرام ارفع `poster.png` كغلاف (مسوّى للشبكة: «طشّ للطلاب» كبيرة ونموذج من تصميمنا تحتها). بالتيك توك ارفع نفس الصورة إذا التطبيق يسمح، وإلا اختار كادر من الكرت الأخير (حوالي الثانية ٢٨٫٣، كل شي طالع فيه).
+5. **الغلاف:** على الإنستقرام ارفع `poster.png` كغلاف (مسوّى للشبكة: «طشّ للطلاب» كبيرة ونموذج من تصميمنا تحتها، وعليه «نماذج من تصميمنا»). وعلى التيك توك ارفع نفس الصورة إذا التطبيق يسمح، وإلا اختار كادر من الكرت الأخير (حوالي الثانية ٢٨٫٣، كل شي طالع فيه؛ النماذج اللي ورا الشعار مغبّشة وما تنقرا).
 6. **الكابشن:** الصق النسخة الصح لكل منصة (إنستقرام فوق، تيك توك تحت). بالمعاينة تأكد إن علامة @ لاصقة بالحساب وإن الرابط يفتح حسابنا.
 7. **التوقيت:** لا تنشر بنفس الدقيقة على المنصتين، وتجنّب الساعة المدوّرة (مثلاً ٨:٠٧ مو ٨:٠٠). أول ساعة بعد النشر رد على التعليقات.
 8. **قبل النشر، شوف الفيديو كامل بالصوت مرة وحدة على تلفونك.** محد سمع الصوت للحين: Claude ما يقدر يسمع. إنت تحكم على اللهجة ونطق «باچر» و«الياية» و«بريزنتيشن» و«طشّ».

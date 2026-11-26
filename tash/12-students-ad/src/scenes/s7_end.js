@@ -78,7 +78,7 @@ export default {
       const bb = g.getBBox(); tmp.remove();
       const probe = K.el(s.all, 'div', 's7-abs s7-chip', { visibility: 'hidden' }, ev('end.line').text);
       const pillH = probe.offsetHeight; probe.remove();
-      const ctaH = 53 * 1.84, tagInk = 44, hInk = 48, e2Ink = 82;
+      const ctaH = 47 * 1.96, tagInk = 44, hInk = 48, e2Ink = 82;
       const wmInk = bb.height * sc;
       const total = wmInk + GAP.wm + pillH + GAP.pill + tagInk + GAP.cta + ctaH + GAP.handles + hInk + GAP.hh + hInk + GAP.e2 + e2Ink;
       let y = STACK_CY - total / 2;
@@ -217,7 +217,9 @@ export default {
     s.tag.render(t);
     const c = s.ctaEv, cq = clamp((f - c.in) / (c.land - c.in));
     s.cta.style.display = f >= c.in ? 'inline-flex' : 'none';
-    const pl = f - F.hit, pulse = pl >= 0 && pl < 8 ? 1 + 0.06 * Math.sin(Math.PI * pl / 8) : 1;   // one pulse on the logo hit
+    // one pulse on the logo hit: a lime glow ring (fix round 2: no scale, so the pill never passes x 920)
+    const pl = f - F.hit, pulse = 1, glow = pl >= 0 && pl < 10 ? Math.sin(Math.PI * pl / 10) : 0;
+    s.cta.style.boxShadow = glow > 0 ? `0 18px 40px rgba(0,0,0,0.45), 0 0 0 ${f2(10 * glow)}px rgba(198,255,0,${(0.35 * glow).toFixed(3)})` : '';
     K.css(s.cta, { opacity: clamp(cq * 2.5).toFixed(3), transform: `translateY(${f2((1 - E.outCubic(cq)) * 30)}px) scale(${(lerp(0.7, 1, E.outBack(cq, 2)) * pulse).toFixed(4)})` });
     const sw = clamp((f - (c.land + 15)) / 12);                // one lime sheen across the button
     s.ctaSheen.style.transform = `translateX(${f2(lerp(-0.4, 3.2, E.inOutCubic(sw)) * s.ctaW * 0.34)}px)`;

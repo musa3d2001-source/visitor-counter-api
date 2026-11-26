@@ -10,7 +10,7 @@
   font: 800 70px "Alexandria", sans-serif; line-height: 1; padding: 0.2em 0.6em 0.34em; white-space: nowrap; direction: rtl;
   box-shadow: inset 0 0 0 3px #C6FF00; transform-origin: 50% 50%; will-change: transform, opacity; }   /* fix round 2: the film's one lock-up */
 .s7-cta { display: inline-flex; align-items: center; border-radius: 999px; background: #C6FF00; color: #0B0B0B; overflow: hidden;
-  font: 800 53px "Alexandria", sans-serif; line-height: 1; padding: 0.36em 0.45em 0.48em;   /* fix round 2: inside x 920 (it sits below y 900 now) */ white-space: nowrap; direction: rtl;
+  font: 800 47px "Alexandria", sans-serif; line-height: 1; padding: 0.42em 0.45em 0.54em;   /* fix round 2: inside x 920 at every frame (it sits below y 900 now) */ white-space: nowrap; direction: rtl;
   box-shadow: 0 18px 40px rgba(0,0,0,0.45); transform-origin: 50% 50%; will-change: transform, opacity; position: absolute; }
 .s7-cta .sheen { position: absolute; top: -20%; bottom: -20%; width: 34%; left: 0; pointer-events: none;
   background: linear-gradient(100deg, rgba(255,255,255,0) 0%, rgba(255,255,255,0.6) 50%, rgba(255,255,255,0) 100%); }

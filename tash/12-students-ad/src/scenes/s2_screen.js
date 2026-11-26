@@ -30,8 +30,11 @@ export const CLOCK = { right: 262, cy: 322, size: 56 };
 /** (fix round 2) one continuous push on the app layer only, f87 → the hit (1.00 → 1.08, ~1.5° of roll about (540, 720)),
  *  accelerating into the riser; the big line, TASH's message and the dimmer stay in screen space */
 export function appPush(f) {
-  const p = Math.max(0, (f - 87) / (214 - 87)), e = 0.3 * p + 0.7 * p * p;
-  return { k: 1 + 0.08 * e, rz: 1.5 * e };        // 1.08 (not 1.10): every app prop stays inside the safe area (swept)
+  const p = Math.max(0, (f - 87) / (214 - 87)), e = 0.45 * p + 0.55 * p * p;
+  // + a slow drift down and to the left (an arc that starts at full speed on f87 and comes home by the hit), so the hold
+  // on «والتسليم…» (f92–117) is never a still frame
+  const arc = Math.sin(Math.PI * Math.min(1, p));
+  return { k: 1 + 0.08 * e, rz: -1.5 * e, tx: -18 * arc, ty: 30 * arc };   // 1.08 (not 1.10): every app prop stays inside the safe area (swept)
 }
 let FR = { in: F0, punch: F_PUNCH, out: F_END, resolve: 8, bubble: 143 };
 
@@ -150,7 +153,7 @@ export default {
     box('s2-title', -310, 346, 1700, 80);
     box('s2-tools', -310, 426, 1700, 72);
     // status bar: clock on the left (RTL end), wifi + a low battery on the right
-    s.clock = arText(W, 's2-clock', ev('ui.clock').text, 232, 316);
+    s.clock = arText(W, 's2-clock', ev('ui.clock').text, 232, 324);   // (fix round 2) 316 → 324: inside y 250 under the push
     const wifi = K.el(W, 'div', 's2-ico', { left: '916px', top: '300px', width: '32px', height: '32px' });
     wifi.innerHTML = svg('0 0 24 24', `<path d="M2.5 9.2a14 14 0 0 1 19 0M5.6 12.6a9.4 9.4 0 0 1 12.8 0M8.8 16a4.8 4.8 0 0 1 6.4 0" fill="none" stroke="#E2E5EA" stroke-width="2.1" stroke-linecap="round"/><circle cx="12" cy="19.2" r="1.5" fill="#E2E5EA"/>`);
     const bat = K.el(W, 'div', 's2-ico', { left: '958px', top: '300px', width: '38px', height: '32px' });
@@ -241,7 +244,7 @@ export default {
     // camera (the pull-back out of the white is inside uiCam), then the push on the app layer (screen space)
     applyUiCam(s.world, t);
     const ap = appPush(f);
-    s.push.style.transform = ap.k > 1.00001 ? `rotate(${ap.rz.toFixed(4)}deg) scale(${ap.k.toFixed(5)})` : 'none';
+    s.push.style.transform = ap.k > 1.00001 ? `translate(${ap.tx.toFixed(2)}px, ${ap.ty.toFixed(2)}px) rotate(${ap.rz.toFixed(4)}deg) scale(${ap.k.toFixed(5)})` : 'none';
     // the selection box and its placeholder text come up as the app settles (f78 is pure white)
     const phk = K.smoothstep(FR.in + 3, FR.in + 9, f);
     s.phBox.style.opacity = phk.toFixed(3); s.ph.el.style.opacity = phk.toFixed(3);
@@ -298,7 +301,12 @@ export default {
       let tr, blur;
       const creep = 1 + 0.018 * K.clamp((f - o.land) / 40);       // a living hold
       if (mode === 'rise') { const e = K.E.outCubic(kk); tr = `translateY(${((1 - e) * 54 - out * 60).toFixed(2)}px) scale(${creep.toFixed(4)})`; blur = (1 - K.clamp(kk * 1.5)) * 9; }
-      else { const e = K.E.outExpo(kk); tr = `translateY(${(-out * 60).toFixed(2)}px) scale(${(K.lerp(1.7, 1, e) * creep).toFixed(4)})`; blur = (1 - K.clamp(kk * 1.4)) * 12; }
+      else {
+        // (fix round 2) «باجر؟» throbs on the heartbeat under the clock ticks (every half beat after it lands), so the hold
+        // before TASH's message is never a still frame
+        const throb = f > o.land + 2 ? 1 + 0.045 * s.G.pulse(t, 5.5, 7, 0.1, 0.5) : 1;
+        const e = K.E.outExpo(kk); tr = `translateY(${(-out * 60).toFixed(2)}px) scale(${(K.lerp(1.7, 1, e) * creep * throb).toFixed(4)})`; blur = (1 - K.clamp(kk * 1.4)) * 12;
+      }
       blur += out * 10;
       K.css(o.el, { transform: tr, opacity: (K.clamp(kk * 2.2) * (1 - out)).toFixed(3), filter: blur > 0.05 ? `blur(${blur.toFixed(2)}px)` : 'none' });
     };

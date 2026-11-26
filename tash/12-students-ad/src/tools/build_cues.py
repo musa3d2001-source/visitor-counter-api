@@ -207,8 +207,8 @@ TEXT.append(ev('P5', on('P5', 0), 's4_parade', FB(30.5), FB(33), words=word_land
 # (fix round 2) every answer is complete on screen for >= 1 s: it holds until the next answer replaces it (the answers share
 # one spot), dimmed to 70 % under the next card; «ننسّقه عدل.» rides under the poster to f437 (its last word lands f403)
 _ans = {e['id']: e for e in TEXT if e['id'].endswith('.answer')}
-_ans['P1.answer']['out'] = _ans['P2.answer']['land']
-_ans['P2.answer']['out'] = _ans['P3.answer']['land']
+_ans['P1.answer']['out'] = _ans['P2.answer']['land'] - 1        # a clean swap: the next answer punches in on the
+_ans['P2.answer']['out'] = _ans['P3.answer']['land'] - 1        # frame this one is cut (never two answers at once)
 _ans['P3.answer']['out'] = _ans['P3.answer']['words'][-1]['land'] + 35
 for _e in _ans.values(): _e['t_out'] = T(_e['out'])
 for j, (tag, k) in enumerate(zip(uis('research_card_tag'), (24, 24.25, 24.5))):

@@ -5,8 +5,9 @@ the scene builders (each owns one or more scenes) and the audio builder. **Read 
 `../SCRIPT-COPY.md` and `../script.json`.** The copy is final: every on-screen string is already in `cues.json → text`,
 copied byte for byte from `script.json`; use the event's `text`, never retype Arabic.
 
-**Status:** scenes, audio, the lead's integration pass and the fix round after four review lenses are done (26 Nov);
-the film is built (see `../SCRIPT.md`, section "Fix round"). Nothing here is delivered, approved or published.
+**Status:** scenes, audio, the lead's integration pass and two fix rounds after the four review lenses are done (26 Nov);
+the film is built (see `../SCRIPT.md`, sections "Fix round" and "Fix round 2"). Nothing here is delivered, approved or
+published.
 
 ## 0. The film in one table (125 BPM, 30 fps, 891 frames = 29.70 s; the music inserts one beat after the chord)
 
@@ -15,16 +16,16 @@ key word starts 0.02 s before it (measured, see `vo/vo_timeline.json`).
 
 | scene | frames [in, out) | seconds | what (full brief in `cues.json → scenes[].what`) |
 |---|---|---|---|
-| `s1_hook` | 0–78 | 0.000–2.600 | live plate h1, «عندك برزنتيشن؟» on from f0, «تقرير؟» f42 (bar), «بحث؟» f59, push INTO the laptop screen, ends on white (f77) |
-| `s2_screen` | 78–224 | 2.600–7.467 | match cut on the white (f78 = the blank slide filling the frame, whip back by ≈ f87); group chat (f83), notification + ding (f85), «والتسليم… باجر؟» (f92/f117); the reminder flies off and the app dims 40 % from f140; runs under s3; wiped by the splash |
-| `s3_splash` | 140–258 | 4.667–8.600 | the TASH message, centred (f143), «المرة الجاية…» (f150), «خلّ التصميم على» + dots (f185…), **SPLASH f215 (bar)**: the dots become the wordmark's dots in place, «للطلاب» f229; card 1 flies in as a new object f232–257 to s4's `HANDOFF` view |
-| `s4_parade` | 258–517 | 8.600–17.233 | 7 sample cards on the beat: f258 · f330 (bar) · f366 · f416 · f431 · f452 · f481; each chip pops on its own card's land frame; file chips f488–f503; fan hold to f517 |
-| `s5_details` | 517–687 | 17.233–22.900 | margins: «حتى الهوامش…» f524, **snap «نضبّطها.» f553**; RULE LINE f589 (قبل), swipe **f618 (bar)**, f625 (بعد); one push 0.92 → 1.00 to s6's screen rect |
-| `s6_payoff` | 687–776 | 22.900–25.867 | lecture hall h2 (mirrored), card 1's slide on the screen behind her hand; «ويوم التسليم…» f689, «خلّ شغلك يسولف عنك.» f719 (chord), held to f775 |
+| `s1_hook` | 0–78 | 0.000–2.600 | live plate h1, «عندك برزنتيشن؟» + the clock prop «٢:٤٧ ص» on from f0, «تقرير؟» f42 (bar), «بحث؟» f62, push INTO the laptop screen, ends on white (f77) |
+| `s2_screen` | 78–224 | 2.600–7.467 | match cut on the white (f78 = the blank slide filling the frame, whip back by ≈ f87); the hook's clock settles onto the status bar (f78–90); one push on the app layer f87 → the hit (`appPush`); group chat (f83), notification + ding (f85), «والتسليم… باجر؟» (f92/f117); the reminder flies out right f137–141 and the app dims 40 %; runs under s3; wiped by the splash |
+| `s3_splash` | 140–258 | 4.667–8.600 | the TASH message springs up (first seen f142), grown before its content, «المرة الجاية…» (f150), row-2 typing f161–181, «خلّ التصميم على» (f185…), row-3 dots f189, **SPLASH f215 (bar)**: the dots become the wordmark's dots in place, «للطلاب» f229 (the lock-up pill); the group steps back f236–252 while card 1 flies in as a new object f238–257 to s4's `HANDOFF` view |
+| `s4_parade` | 258–517 | 8.600–17.233 | 7 sample cards on the beat: f258 · f330 (bar) · f366 · f416 · f431 · f452 · f481; the school deck grows f287 (`key.deck_school`); the report turns on `key.card2_turn1/2` (f342/f357); each chip pops on its own card's land frame; answers hold to the next answer; file chips f488–f503; fan hold to f517 |
+| `s5_details` | 517–687 | 17.233–22.900 | margins: «حتى الهوامش…» f524, **snap «نضبّطها.» f553**, both held to f588 (no callout); RULE LINE f589 (قبل), swipe **f618 (bar)**, f625 (بعد); a 1.18× macro that pulls back on the swipe to s6's screen rect |
+| `s6_payoff` | 687–776 | 22.900–25.867 | lecture hall h2 (mirrored), card 1's slide on the screen behind her hand; «ويوم التسليم…» f689 (above the screen), «خلّ شغلك / يسولف عنك.» f719 (chord: a one-frame punch-in, the phones flare), held to f775 |
 | `s7_end` | 776–891 | 25.867–29.700 | end card: wordmark + «للطلاب» + tagline f776, CTA f784, handles f791–793, «بس مو آخر ليلة.» f820, sonic-logo ticks f854 (after the voice), hit f863 (the music's bar) |
 
 `cues.key` has every big frame by name (`splash`, `card1`…`card7`, `snap`, `rule`, `swipe`, `chord`, `logo_hit` …).
-The samples label «نماذج من تصميمنا» is drawn by `main.js` from f232 (card 1's first visible frame) to f776 (top-right,
+The samples label «نماذج من تصميمنا» is drawn by `main.js` from f238 (card 1's first visible frame) to f776 (top-right,
 `cues.label_pos`, one opaque pill); **scenes do not draw it** and must keep its corner (x 700–1016, y 255–320) free of
 anything important.
 
@@ -92,7 +93,7 @@ Working references: `src/kitdemo.html` (every component; render it with the stil
 
 All frames are in `cues.json`; a scene reads them from `ctx.ev(id)` / `cues.key` / `cues.cards`, never hard-codes them.
 
-- **s1_hook**: `L1.1` («عندك برزنتيشن؟», on from f0), `L1.2` f42, `L1.3` f59 (`key.q3`); the three lines stack and stay
+- **s1_hook**: `L1.1` («عندك برزنتيشن؟», on from f0), `L1.2` f42, `L1.3` f62 (`key.q3`), `ui.clock` as a prop from f0; the three lines stack and stay
   until the push takes them; last frame f77 must be fully white (`handoffs.s1_s2`). Plate: `footage/h1/` (frame k = film frame
   k), screen quads `footage/h1/screen.json → frames[k].quad_s`. Never cover the student's head/hands or the glowing screen
   with type in 0–1.6 s.
@@ -108,8 +109,7 @@ All frames are in `cues.json`; a scene reads them from `ctx.ev(id)` / `cues.key`
   `P3.chip`, `P4.1`–`P4.3`, `ui.chip_excel`; answers `P1.answer` (f287), `P2.answer` (f347), `P3.answer` (f383);
   `ui.research_tag1–3` (f388/391/395); `P5` (f481); `ui.file_chip1–5` (f488–503, LTR). Each chip string rendered ONCE.
   Hold the full fan f503–f517.
-- **s5_details**: `D1.1` (f524), `D1.2` (f553) = the guides SNAP; optional `ui.callout_toc` (f573–588, only if it reads
-  clean; never over the rule line); `R1.1` + `ui.before` (f589), swipe on f618, `ui.after` (f620), `R1.2` (f625); the
+- **s5_details**: `D1.1` (f524), `D1.2` (f553) = the guides SNAP, both to f589 (fix round 2: no optional callout); `R1.1` + `ui.before` (f589), swipe on f618, `ui.after` (f620), `R1.2` (f625); the
   rule line is the most important text of the film: big, calm, nothing busy behind it.
 - **s6_payoff**: `C1.1` (f690), `C1.2` (f719, the chord). Plate `footage/h2/plate.jpg`; slide = card 1's hero slide into
   `screen.quad_draw`; then `fg.png` at `fg.box` (her hand stays in front). Push-in ≤ 1.4× (no upsampling). Type must
@@ -172,6 +172,9 @@ Scene in/out seconds for `--from/--to`: s1 0–2.6 · s2 2.6–7.4667 · s3 4.66
   Arabic. Arabic-Indic digits in Arabic lines (`K.arDigits`). «على الإنستقرام», never «بالإنستقرام».
 - Every text inside the safe area x 64–1016, y 250–1620 (check with `?guide=1`). Fix round, the platform map on top of
   it: key ink ends at y ≤ 1540; nothing readable at x > 950 over y 1100–1750; key lines keep x ≤ 920 over y 900–1650.
+- (fix round 2) No chip, pill, file chip, label, CTA, underline, guide or handle may touch an Arabic line's glyph ink,
+  the dots below the baseline included. Mark any new decoration with `data-ink="1"` (and a masked container with
+  `data-inkclip="<y>"`) so the frame sweep (rule E) checks it.
 - Never cover the key moment with UI or type (the student, the glowing screen, a card's hero area, her hand on the slide).
 - LTR runs (handles, file types) are isolated LTR elements; «؟» sits on the LEFT of an RTL line.
 - No Office logos or exact Office UI; no emoji on screen; no real school/university names; samples only from `../samples/`.

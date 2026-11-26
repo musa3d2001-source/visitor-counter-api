@@ -310,9 +310,10 @@ export default {
       // (fix round) maxWidth 760: every glyph's right edge stays at x <= 920, clear of the TikTok/Reels button column
       // (fix round 2) each answer holds until the next one replaces it (exit 3 frames), dimmed to 70 % under the next card;
       // (all three sit 32 px lower than before: ≥ 40 px under the «بحث؟» chip; the chips never touch an answer's ink)
-      K.kinetic(ov, ev('P1.answer'), { x: 540, y: YA, size: 92, style: 'punch', exit: 'lift', exitDur: 3, colors: { 0: K.C.lime }, shadow: sh, maxWidth: 760 }),
-      K.kinetic(ov, ev('P2.answer'), { x: 540, y: YA, size: 100, style: 'punch', exit: 'lift', exitDur: 3, colors: { 0: K.C.lime }, shadow: sh, maxWidth: 760 }),
-      K.kinetic(ov, ev('P3.answer'), { x: 540, y: YA, size: 96, style: 'punch', exit: 'lift', exitDur: 4, colors: { 0: K.C.lime }, shadow: sh, maxWidth: 760 }),
+      // the swap is clean: an answer is CUT on the frame before the next one punches in (2-frame punch), never overlapping
+      K.kinetic(ov, ev('P1.answer'), { x: 540, y: YA, size: 92, style: 'punch', exit: 'cut', colors: { 0: K.C.lime }, shadow: sh, maxWidth: 760 }),
+      K.kinetic(ov, ev('P2.answer'), { x: 540, y: YA, size: 100, style: 'punch', dur: 2, exit: 'cut', colors: { 0: K.C.lime }, shadow: sh, maxWidth: 760 }),
+      K.kinetic(ov, ev('P3.answer'), { x: 540, y: YA, size: 96, style: 'punch', dur: 2, exit: 'lift', exitDur: 4, colors: { 0: K.C.lime }, shadow: sh, maxWidth: 760 }),
       K.kinetic(ov, ev('P5'), { x: 540, y: 1376, size: 84, style: 'punch', dur: 2, exit: 'cut', colors: { 2: K.C.lime }, shadow: sh, maxWidth: 760 }),   // dur 2: nothing of it shows before the dashboard lands
     ];
     // the five file chips, one row, popping right → left (RTL order); each chip is an LTR element

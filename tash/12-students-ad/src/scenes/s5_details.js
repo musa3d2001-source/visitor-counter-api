@@ -167,7 +167,7 @@ export default {
     K.el(s.knob, 'i', 'l'); K.el(s.knob, 'i', 'r');
     // «قبل» / «بعد»: tabs on the card's top edge (right corner), swapped on their cue frames; outside the slide so they
     // never cover its content
-    // (fix round 2) the tabs sit 90 px in from the card's right corner: at the 1.21x macro they stay inside x 950
+    // (fix round 2) the tabs sit 90 px in from the card's right corner: at the 1.30x macro they stay inside x 980
     s.lBefore = K.chip(s.card, { text: ctx.ev('ui.before').text, theme: 'ink', size: 34, x: R.w - 90, y: -12, anchor: 'right' });
     s.lAfter = K.chip(s.card, { text: ctx.ev('ui.after').text, theme: 'lime', size: 34, x: R.w - 90, y: -12, anchor: 'right' });
     // the rule line: big and calm under the card, nothing busy behind it
@@ -267,12 +267,15 @@ export default {
   // ------------------------------------------------------------------ B
   seekB(f, ctx) {
     const s = this.s, F = s.F, R = s.R;
-    // (fix round 2) it opens on a 1.18x macro of the BEFORE slide (≈ 92 % of the frame width) creeping in to 1.21x, and on
-    // the swipe (f618) the camera pulls back to show the whole designed slide, easing to exactly s6's screen rect on the
-    // last frame (velocity ≈ 0 there, so the hall's own slow push-in takes over at the match cut)
-    const sw0 = F.swipe;
-    const sc = f < sw0 ? lerp(1.18, 1.21, clamp((f - F.rule) / (sw0 - F.rule)))
-      : lerp(1.21, 1, E.outCubic(clamp((f - sw0) / (F.out - 1 - sw0))));
+    // (fix round 2) it opens on a macro of the BEFORE slide (it overfills the frame width) and the camera pulls back to show
+    // the whole designed slide after the swipe (f618)
+    // and it never stops (Hermite keys: frame, scale, slope per frame): a 1.30x macro easing back from the cut, faster on
+    // the swipe (≥ 80 % of the frame width on f640), a turn a little past the rect (0.94 on f664), then a push back in to
+    // exactly the rect on f686, still moving into the match cut (the hall's own push-in continues it)
+    const KS = [[F.rule, 1.30, -0.003], [F.swipe, 1.21, -0.006], [F.out - 23, 0.94, 0], [F.out - 1, 1.0, 0.0025]];
+    let ki = 0; while (ki < KS.length - 2 && f > KS[ki + 1][0]) ki++;
+    const [fa, va, ma] = KS[ki], [fb, vb, mb] = KS[ki + 1], hh = fb - fa, uu = clamp((f - fa) / hh);
+    const sc = (2 * uu ** 3 - 3 * uu ** 2 + 1) * va + (uu ** 3 - 2 * uu ** 2 + uu) * hh * ma + (-2 * uu ** 3 + 3 * uu ** 2) * vb + (uu ** 3 - uu ** 2) * hh * mb;
     s.card.style.transform = `scale(${sc.toFixed(5)})`;
 
     // the handle: in on «منك…», a small wind-up, the swipe on the bar line, then it leaves
