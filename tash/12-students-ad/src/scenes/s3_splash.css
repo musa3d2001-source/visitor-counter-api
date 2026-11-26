@@ -13,10 +13,12 @@
 .s3-line .w { display: inline-block; padding: 0.3em 0.06em; margin: -0.3em -0.06em; transform-origin: 50% 70%; will-change: transform, opacity; }
 .s3-sender { font: 600 44px "IBM Plex Sans Arabic", sans-serif; color: #C6FF00; line-height: 1; }
 
-/* the lock-up sticker «للطلاب» (lime, ink type: the end card's sticker) */
-.s3-chip { display: inline-flex; align-items: center; border-radius: 999px; background: #C6FF00; color: #0B0B0B;
-  font: 800 62px "Alexandria", sans-serif; line-height: 1; padding: 0.22em 0.58em 0.34em; white-space: nowrap; direction: rtl;
-  box-shadow: 0 0 0 5px #0B0B0B, 0 16px 34px rgba(40,60,0,.45); transform-origin: 50% 50%; will-change: transform, opacity; }
+/* the lock-up «للطلاب» (fix round 2: ONE lock-up in the film, the end card and the poster): an ink pill with a 3 px lime
+   outline and lime type, 24 px under the wordmark */
+.s3-chip { display: inline-flex; align-items: center; border-radius: 999px; background: #0B0B0B; color: #C6FF00;
+  font: 800 78px "Alexandria", sans-serif; line-height: 1; padding: 0.2em 0.6em 0.34em; white-space: nowrap; direction: rtl;
+  box-shadow: inset 0 0 0 3px #C6FF00; transform-origin: 50% 50%; will-change: transform, opacity; }
+.s3-grp { will-change: transform; }
 
 /* card 1, seen through the parade's own camera (perspective 1300 about the frame centre, like .s4-persp) */
 .s3-persp { position: absolute; inset: 0; perspective: 1300px; perspective-origin: 540px 960px; }

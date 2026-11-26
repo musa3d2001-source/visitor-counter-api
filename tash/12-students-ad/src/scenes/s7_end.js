@@ -1,7 +1,8 @@
 // s7_end — builder B. The end card on TASH ink (f762–877), composed as a poster that also works as the reel cover.
 //
-// On the cut the wordmark (the logo from /_system/brand/logo.mjs, never typed) wipes in right→left and slams, while its
-// three lime dots type in a small bubble above it like the brand sting, then drop into the ش; the shadda lands last.
+// On the cut the wordmark (the logo from /_system/brand/logo.mjs, never typed) wipes in right→left and slams with its
+// three lime dots already in the ش (fix round: they pop in place and type there for ~0.4 s; it never reads «طس»); the
+// shadda lands last.
 // «للطلاب» snaps under it as the same sticker as in the splash (inverted: lime on ink). Then the short tagline, the CTA
 // as a paper button, and the two handles (Arabic label + the handle as its own isolated LTR run, the «@» on its left).
 // (fix round) Hierarchy: logo → «للطلاب» → the CTA (a lime pill, ink type, 64 px) → the handles (46 px, paper labels)
@@ -15,8 +16,14 @@ import * as L from '/_system/brand/logo.mjs';
 
 const NS = 'http://www.w3.org/2000/svg';
 const LIME = '#C6FF00', PAPER = '#F5F5E9', CHAR = '#1A1A18';
-const WM = { w: 560, top: 372 };
-const Y = { chip: 748, tag: 858, cta: 990, ig: 1122, tt: 1190, e2: 1352 };
+// (fix round) the stack: logo → «للطلاب» → the quiet tagline → the CTA pill (above y 900, so it can be wide without
+// touching the right-hand button column) → the handles → «بس مو آخر ليلة.»; all key ink inside y 300–1500, x <= 920
+// below y 900
+// (fix round 2) one spacing rhythm, measured on the ink: 24 px under the wordmark, 24 under «للطلاب», 40 above the CTA,
+// 56 above the handles, 64 above «بس مو آخر ليلة.»; the stack is centred on y ≈ 900 (positions computed at mount)
+const WM = { w: 520, top: 318 };
+const GAP = { wm: 24, pill: 24, cta: 40, handles: 56, hh: 16, e2: 64 }, STACK_CY = 900;
+const Y = {};
 const FAN = ['deck-school-01-title', 'report-01-cover', 'deck-uni-01-title', 'poster-recycle', 'cv-student', 'sheet-dashboard'];
 const clamp = K.clamp, lerp = K.lerp, E = K.E;
 const f2 = v => (+v).toFixed(2);
@@ -39,7 +46,6 @@ export default {
     const sfx = Object.fromEntries(ctx.cues.sfx.map(x => [x.name, x.frame]));
     const G = ctx.G;
     s.F = { in: ctx.scene.in, out: ctx.scene.out, hit: key.logo_hit, ticks: sfx.sonic_logo_ticks };
-    // the sonic logo's typing ticks are three 16ths from beat 55; its answer ticks three 16ths from beat 57 (audio.py)
     const s16 = G.beat / 4;
     // (fix round) the typing ticks come AFTER the last word (vo_last_end + 0.02, three ticks 0.09 s apart); the answer
     // ticks a beat after the hit (audio.py: the music's logical beat 57 = film beat 58)
@@ -65,6 +71,26 @@ export default {
     const cp = sv('clipPath', { id: 's7-wipe' }, defs);
     s.wipe = sv('rect', { x: 0, y: -400, width: L.VB.w, height: L.VB.h + 800 }, cp);
     const sc = s.sc = WM.w / L.VB.w;
+    // measure everything first (ink heights), then stack it on one rhythm, centred on STACK_CY
+    {
+      const tmp = sv('svg', { viewBox: '0 0 1080 1920', width: 1080, height: 1920, style: 'position:absolute;visibility:hidden' }, s.all);
+      const g = sv('g', {}, tmp); g.innerHTML = L.wordmarkInner({ body: PAPER, dot: LIME, ids: true });
+      const bb = g.getBBox(); tmp.remove();
+      const probe = K.el(s.all, 'div', 's7-abs s7-chip', { visibility: 'hidden' }, ev('end.line').text);
+      const pillH = probe.offsetHeight; probe.remove();
+      const ctaH = 53 * 1.84, tagInk = 44, hInk = 48, e2Ink = 82;
+      const wmInk = bb.height * sc;
+      const total = wmInk + GAP.wm + pillH + GAP.pill + tagInk + GAP.cta + ctaH + GAP.handles + hInk + GAP.hh + hInk + GAP.e2 + e2Ink;
+      let y = STACK_CY - total / 2;
+      WM.top = y - bb.y * sc; y += wmInk + GAP.wm;
+      Y.chip = y + pillH / 2; y += pillH + GAP.pill;
+      Y.tag = y + tagInk / 2; y += tagInk + GAP.cta;
+      Y.cta = y + ctaH / 2; y += ctaH + GAP.handles;
+      Y.ig = y + hInk / 2; y += hInk + GAP.hh;
+      Y.tt = y + hInk / 2; y += hInk + GAP.e2;
+      Y.e2 = y + e2Ink / 2 - 4;
+      s.stack = { top: STACK_CY - total / 2, bottom: STACK_CY + total / 2 };
+    }
     s.wmX = 540 - WM.w / 2; s.wmY = WM.top;
     s.bubble = sv('path', { fill: CHAR }, s.svg);
     s.ring = sv('circle', { fill: 'none', stroke: LIME, 'stroke-width': 5 }, s.svg);
@@ -116,7 +142,10 @@ export default {
     s.e2 = K.kinetic(s.all, { text: e2.text, land: e2.land, out: null, words: e2.words }, { y: Y.e2, size: 82, weight: 800, color: PAPER, style: 'pop', dur: 3,
       maxWidth: 760, shadow: '0 6px 26px rgba(0,0,0,.5)' });
     s.e2Ev = e2;
-    s.ul = K.el(s.all, 'div', 's7-ul', { left: f2(540 - s.e2.width / 2 + 8) + 'px', top: f2(Y.e2 + s.e2.height * 0.36) + 'px', width: f2(s.e2.width - 16) + 'px' });
+    // (fix round 2) the underline sits under the line's lowest ink (the dots of ب and ي end ≈ 54 px under the line's
+    // centre, measured) with a 12 px gap: it no longer crosses the dots («ٮس مو آخر لٮلة.»)
+    s.ul = K.el(s.all, 'div', 's7-ul', { left: f2(540 - s.e2.width / 2 + 8) + 'px', top: f2(Y.e2 + 66) + 'px', width: f2(s.e2.width - 16) + 'px' });
+    s.ul.dataset.ink = '1';                                         // checked against every line's glyph ink (sweep)
   },
 
   seek(tl, ctx) {
@@ -133,7 +162,9 @@ export default {
       const x = px + R * Math.sin(rad) - c.w / 2, y = py - R * Math.cos(rad) - c.h;
       c.el.style.transform = `translate(${f2(x)}px, ${f2(y)}px) rotate(${f2(a)}deg)`;
     });
-    s.fan.style.opacity = (0.13 * E.outCubic(clamp((f - F.in) / 10))).toFixed(3);
+    // (fix round 2) blurred 12 px and at 7 %: a texture of the work behind the card, no sample text readable (no samples
+    // label on the end card)
+    s.fan.style.opacity = (0.07 * E.outCubic(clamp((f - F.in) / 10))).toFixed(3);
 
     // ---- wordmark body: right → left wipe + slam (the sting's move), on the cut
     const a = f - F.in;
@@ -148,25 +179,15 @@ export default {
     s.shadda.setAttribute('opacity', f < SH ? '0' : clamp((f - SH) / 2).toFixed(2));
 
     // ---- the typing bubble and the dots: type (f762–768), converge into the ش (f768–773), land, then answer the logo
-    const B = s.bub, bIn = sprF(a, 0.6, 2.6), bOut = E.inBack(clamp((f - (F.in + 5)) / 5), 1.4);
-    const k = Math.max(0, bIn * (1 - bOut));
-    if (k > 0.01) {
-      const w = B.w * k, h = B.h * k, r = h / 2, x = B.cx - w / 2, y = B.cy - h / 2;
-      s.bubble.setAttribute('d', `M${f2(x + r)} ${f2(y)}H${f2(x + w - r)}A${f2(r)} ${f2(r)} 0 0 1 ${f2(x + w - r)} ${f2(y + h)}H${f2(x + r)}A${f2(r)} ${f2(r)} 0 0 1 ${f2(x + r)} ${f2(y)}Z` +
-        `M${f2(x + w - r * 0.55)} ${f2(y + h - 6 * k)}q${f2(16 * k)} ${f2(24 * k)} ${f2(40 * k)} ${f2(27 * k)}q${f2(-27 * k)} ${f2(-22 * k)} ${f2(-24 * k)} ${f2(-52 * k)}z`);
-      s.bubble.style.display = 'inline';
-    } else s.bubble.style.display = 'none';
-    const C0 = F.in + 6, C1 = F.in + 11;                      // converge window
+    // (fix round) the dots land WITH the body on the cut (the wordmark never reads «طس»): no typing bubble above it any
+    // more; the dots pop in place, staggered by a frame, and type (bounce) in the ش for ~0.4 s before they settle
+    s.bubble.style.display = 'none';
     s.dots.forEach((c, i) => {
-      const A = s.typ[i], D = s.logoDots[i];
-      const ap = sprF(a - i * 1.2, 0.6, 2.4);
-      const conv = E.inOutCubic(clamp((f - (C0 + i * 0.6)) / (C1 - C0)));
-      const bob = conv < 1 ? K.typing(a / 30, i, { period: 0.36, amp: 16, phase: 0.08 }) * (1 - conv) : 0;
-      const arc = Math.sin(conv * Math.PI) * -34 * (1 + i * 0.25);
-      let x = lerp(A[0], D.x, conv), y = lerp(A[1] + bob, D.y, conv) + arc;
-      let r = lerp(19, D.r, conv) * Math.max(0, ap), sx = 1, sy = 1;
-      const land = f - (C1 + i * 0.6);
-      if (land >= 0) { const q = Math.exp(-land / 2.2) * Math.cos(land * 1.2); sx = 1 + 0.3 * q; sy = 1 - 0.26 * q; }
+      const D = s.logoDots[i];
+      const ap = sprF(a + 1.5 - i * 0.8, 0.6, 2.4);
+      const bob = K.typing(a / 30, i, { period: 0.36, amp: 12, phase: 0.08 }) * (1 - clamp((a - 6) / 6));
+      const x = D.x, y = D.y + (a >= 0 ? bob : 0);
+      const r = D.r * Math.max(0, ap), sx = 1, sy = 1;
       // the sonic logo: a hop per typing tick, a pulse on the hit, little hops on the answer ticks (dots only)
       let hop = 0, pulse = 1;
       for (const [fs, amp] of [[s.tickF[i], 14], [s.ansF[i], 7]]) { const d = f - fs; if (d >= 0 && d < 8) hop -= amp * Math.sin(Math.PI * d / 8); }

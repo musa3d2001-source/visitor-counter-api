@@ -41,7 +41,7 @@
    "id": "s3_splash",
    "in": 140,
    "out": 258,
-   "what": "The TASH chat bubble (sender «طشّ», no time, no online dot) pops in over the screen UI with typing dots, types «المرة الجاية…», then «خلّ التصميم على •••»; on the hit (f215, bar line) its live dots burst into a lime SPLASH that wipes the WHOLE screen and land as the wordmark «طشّ»; «للطلاب» snaps under it on beat 13. The splash reveals TASH sample slide = card 1 of the parade (samples label on from its first frame). The student's blank file is NEVER shown finished. «المرة الجاية…» stays to the cut (f258). Hands card 1 to s4 at the rect in handoffs.s3_s4."
+   "what": "The TASH chat bubble (sender «طشّ», no time, no online dot) pops in over the screen UI with typing dots, types «المرة الجاية…», then «خلّ التصميم على •••»; on the hit (f215, bar line) its live dots burst into a lime SPLASH that wipes the WHOLE screen and land as the wordmark «طشّ»; «للطلاب» snaps under it on beat 13. The dots stay as the wordmark's dots (its body lands around them on their row). Card 1 of the parade then flies in as a NEW object below the lock-up (samples label on from its first frame). The student's blank file is NEVER shown finished. «المرة الجاية…» stays to the cut (f258). Hands card 1 to s4 per handoffs.s3_s4."
   },
   {
    "id": "s4_parade",
@@ -75,14 +75,8 @@
   },
   "s3_s4": {
    "frame": 258,
-   "card1_rect": {
-    "cx": 540,
-    "cy": 960,
-    "w": 1000,
-    "rotY": 0,
-    "rotX": 0
-   },
-   "what": "card 1's slide (16:9) as s3 leaves it on f257: centred, 1000 px wide, flat. s4 starts from the same rect and pulls it into the parade"
+   "card1": "scenes/s4_parade.js HANDOFF + card1Matrix()",
+   "what": "(fix round) card 1 flies in as a new object in s3 (from f238) and sits on f257 exactly where the parade camera sees it on f258: centred about (540, 1300), 760 px wide, rolled -3 deg; s4's camera then lifts it to the spot"
   },
   "s4_s5": {
    "frame": 517,
@@ -149,14 +143,14 @@
    "kind": "line",
    "size": "big",
    "dir": "rtl",
-   "in": 55,
-   "land": 59,
+   "in": 58,
+   "land": 62,
    "out": 78,
-   "t_in": 1.8333,
-   "t_land": 1.9667,
+   "t_in": 1.9333,
+   "t_land": 2.0667,
    "t_out": 2.6,
    "vo": "h3",
-   "note": "(fix round) lands ~0.2 s before its VO word (PLAYBOOK: type before the voice), sharp to f73"
+   "note": "(fix round 2) lands on f62 with its hit, ~20 ms before its VO word; sharp to f73"
   },
   {
    "id": "ui.clock",
@@ -208,10 +202,10 @@
    "kind": "ui",
    "size": "small",
    "dir": "rtl",
-   "in": 81,
+   "in": 82,
    "land": 83,
    "out": 215,
-   "t_in": 2.7,
+   "t_in": 2.7333,
    "t_land": 2.7667,
    "t_out": 7.1667,
    "note": "lands FIRST (no group header) and stays to the splash"
@@ -295,13 +289,13 @@
    "kind": "ui",
    "size": "small",
    "dir": "rtl",
-   "in": 140,
+   "in": 141,
    "land": 143,
-   "out": 150,
-   "t_in": 4.6667,
+   "out": 147,
+   "t_in": 4.7,
    "t_land": 4.7667,
-   "t_out": 5.0,
-   "note": "typing dots until «المرة الجاية…» replaces them"
+   "t_out": 4.9,
+   "note": "typing dots until «المرة الجاية…» replaces them (fix round 2: gone one frame before its first word shows; they come back on row 2 from «الجاية…» to «خلّ», then on row 3 as the wordmark's dots)"
   },
   {
    "id": "L3.1",
@@ -424,10 +418,10 @@
    "dir": "rtl",
    "in": 283,
    "land": 287,
-   "out": 330,
+   "out": 347,
    "t_in": 9.4333,
    "t_land": 9.5667,
-   "t_out": 11.0,
+   "t_out": 11.5667,
    "words": [
     {
      "text": "يشدّ",
@@ -451,7 +445,7 @@
     }
    ],
    "vo": "p1b",
-   "note": "the answer punches in beside card 1's chip"
+   "note": "the answer punches in beside card 1's chip; (fix round 2) it holds until the next answer replaces it, dimmed to 70 % once the next card lands"
   },
   {
    "id": "P2.chip",
@@ -478,10 +472,10 @@
    "dir": "rtl",
    "in": 343,
    "land": 347,
-   "out": 366,
+   "out": 386,
    "t_in": 11.4333,
    "t_land": 11.5667,
-   "t_out": 12.2,
+   "t_out": 12.8667,
    "words": [
     {
      "text": "نرتّبه.",
@@ -490,7 +484,7 @@
     }
    ],
    "vo": "p2b",
-   "note": "the answer punches in beside card 2's chip"
+   "note": "the answer punches in beside card 2's chip; (fix round 2) it holds until the next answer replaces it, dimmed to 70 % once the next card lands"
   },
   {
    "id": "P3.chip",
@@ -517,10 +511,10 @@
    "dir": "rtl",
    "in": 382,
    "land": 386,
-   "out": 416,
+   "out": 441,
    "t_in": 12.7333,
    "t_land": 12.8667,
-   "t_out": 13.8667,
+   "t_out": 14.7,
    "words": [
     {
      "text": "ننسّقه",
@@ -534,7 +528,7 @@
     }
    ],
    "vo": "p3b",
-   "note": "the answer punches in beside card 3's chip"
+   "note": "the answer punches in beside card 3's chip; (fix round 2) it holds until the next answer replaces it, dimmed to 70 % once the next card lands"
   },
   {
    "id": "ui.research_tag1",
@@ -760,10 +754,10 @@
    "dir": "rtl",
    "in": 520,
    "land": 524,
-   "out": 571,
+   "out": 589,
    "t_in": 17.3333,
    "t_land": 17.4667,
-   "t_out": 19.0333,
+   "t_out": 19.6333,
    "words": [
     {
      "text": "حتى",
@@ -788,27 +782,12 @@
    "dir": "rtl",
    "in": 549,
    "land": 553,
-   "out": 571,
+   "out": 589,
    "t_in": 18.3,
    "t_land": 18.4333,
-   "t_out": 19.0333,
+   "t_out": 19.6333,
    "vo": "m2",
-   "note": "lands ON THE SNAP of the alignment guides (f553)"
-  },
-  {
-   "id": "ui.callout_toc",
-   "text": "فهرس تلقائي",
-   "scene": "s5_details",
-   "kind": "callout",
-   "size": "small",
-   "dir": "rtl",
-   "in": 569,
-   "land": 573,
-   "out": 588,
-   "t_in": 18.9667,
-   "t_land": 19.1,
-   "t_out": 19.6,
-   "note": "OPTIONAL (script: only if the VO leaves >= 0.5 s): it leaves 0.57 s (the breath before the rule line, f572-f588). Gone before the rule line. «ترقيم الصفحات» has no room: not used."
+   "note": "lands ON THE SNAP of the alignment guides (f553); (fix round 2) both D1 lines hold to the hard cut f589"
   },
   {
    "id": "R1.1",
@@ -819,10 +798,10 @@
    "dir": "rtl",
    "in": 585,
    "land": 589,
-   "out": 683,
+   "out": 687,
    "t_in": 19.5,
    "t_land": 19.6333,
-   "t_out": 22.7667,
+   "t_out": 22.9,
    "words": [
     {
      "text": "المعلومة",
@@ -861,10 +840,10 @@
    "dir": "rtl",
    "in": 618,
    "land": 620,
-   "out": 683,
+   "out": 687,
    "t_in": 20.6,
    "t_land": 20.6667,
-   "t_out": 22.7667
+   "t_out": 22.9
   },
   {
    "id": "R1.2",
@@ -875,10 +854,10 @@
    "dir": "rtl",
    "in": 621,
    "land": 625,
-   "out": 683,
+   "out": 687,
    "t_in": 20.7,
    "t_land": 20.8333,
-   "t_out": 22.7667,
+   "t_out": 22.9,
    "words": [
     {
      "text": "والترتيب",
@@ -1195,11 +1174,11 @@
  ],
  "samples_label": {
   "text": "نماذج من تصميمنا",
-  "in": 232,
+  "in": 238,
   "out": 776,
-  "t_in": 7.7333,
+  "t_in": 7.9333,
   "t_out": 25.8667,
-  "note": "drawn by main.js (kit.samplesLabel) on every frame from card 1's first visible frame (fix round: card 1 now flies in as a new object from f232, after the lock-up has read) to the end of the payoff (f776), so it never flickers at a cut; one opaque pill; a little larger for card 1's first 15 frames"
+  "note": "drawn by main.js (kit.samplesLabel) on every frame from card 1's first visible frame (fix round: card 1 now flies in as a new object from f238, after the lock-up has read) to the end of the payoff (f776), so it never flickers at a cut; one opaque pill; a little larger for card 1's first 15 frames"
  },
  "label_pos": {
   "s3_splash": "top",
@@ -1238,9 +1217,9 @@
   },
   {
    "name": "hook_hit_3",
-   "frame": 59,
-   "t": 1.9667,
-   "beat": 1.18,
+   "frame": 62,
+   "t": 2.0667,
+   "beat": 1.39,
    "note": "«بحث؟» punch-in (fix round: with the type, ~0.2 s before the word)"
   },
   {
@@ -1328,11 +1307,32 @@
    "note": "answer pop (soft)"
   },
   {
+   "name": "deck_school",
+   "frame": 287,
+   "t": 9.5667,
+   "beat": 17.01,
+   "note": "(fix round 2) the school deck grows out from behind card 1 (f287-f295): a short fan flick + three flicks"
+  },
+  {
    "name": "card2",
    "frame": 330,
    "t": 11.0,
    "beat": 20.0,
-   "note": "card 2 hit (bar line) + page flips"
+   "note": "card 2 hit (bar line)"
+  },
+  {
+   "name": "card2_turn1",
+   "frame": 342,
+   "t": 11.4,
+   "beat": 20.83,
+   "note": "(fix round 2) the report cover turns (vertical ~2 frames later): one paper flip"
+  },
+  {
+   "name": "card2_turn2",
+   "frame": 357,
+   "t": 11.9,
+   "beat": 21.87,
+   "note": "(fix round 2) the contents page turns: one paper flip"
   },
   {
    "name": "answer2",
@@ -1866,13 +1866,13 @@
   "hook1": 13,
   "hook2": 42,
   "hook3": 64,
-  "q3": 59,
+  "q3": 62,
   "whiteout": 77,
   "ding": 85,
   "bubble": 143,
   "splash": 215,
   "lockup": 229,
-  "card1_in": 232,
+  "card1_in": 238,
   "card1": 258,
   "card2": 330,
   "card3": 366,
@@ -1889,6 +1889,9 @@
   "payoff_cut": 687,
   "payoff": 689,
   "chord": 719,
+  "deck_school": 287,
+  "card2_turn1": 342,
+  "card2_turn2": 357,
   "end": 776,
   "cta": 784,
   "handles": 791,

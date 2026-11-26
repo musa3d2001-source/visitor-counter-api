@@ -14,6 +14,7 @@
 //   (with the same shutter trail) — "the push takes them".
 // · Older questions step back to 78% as the next lands, so the eye follows the voice.
 import * as K from '../kit.js';
+import { CLOCK } from './s2_screen.js';
 
 const PAPER = '#F5F5E9';
 const SHADOW = '0 3px 10px rgba(0,0,0,.55), 0 10px 44px rgba(0,0,0,.6)';
@@ -72,14 +73,14 @@ export default {
     s.layer = K.el(root, 'div', 's1-txt');
     const kick = word(s.layer, L11.words[0].text, { size: 66, cls: 'kick' });
     const hero = word(s.layer, L11.words[1].text, { size: 150 });
-    const q2 = word(s.layer, L12.text, { size: 138 });
-    const q3 = word(s.layer, L13.text, { size: 138 });
+    const q2 = word(s.layer, L12.text, { size: 128 });
+    const q3 = word(s.layer, L13.text, { size: 128 });
     // top lock-up: kicker right-aligned to the hero (RTL start), the hero centred
     place(hero, 540, 436); place(kick, hero.x + hero.w - 6, 312, 'right');
     // bottom row: «تقرير؟» then «بحث؟» (RTL: first on the right), centred as a row. Fix round: lifted 70 px (ink ends
     // ~y 1512, above the platform caption rows; higher would cover his hands) and its right edge <= 920 (clear of the
     // TikTok/Reels button column)
-    const gap = 58, row = q2.w + gap + q3.w, x0 = Math.min(540 + row / 2, 920);
+    const gap = 50, row = q2.w + gap + q3.w, x0 = Math.min(540 + row / 2, 900);
     place(q2, x0, 1428, 'right'); place(q3, x0 - q2.w - gap, 1428, 'right');
     const D = s.F.dive0;
     // (fix round) frame 0 already carries the hook: «عندك» + «برزنتيشن؟» are on, full size and sharp, from f0 (the type
@@ -88,8 +89,8 @@ export default {
     s.ws = [
       { w: kick, land: -1, dur: 4, from: 0.86, rise: 26, out: [D, D + 5] },
       { w: hero, land: -1, dur: 4, from: 1.6, rise: 0, out: [D + 1, D + 7] },
-      { w: q2, land: L12.land, dur: 4, from: 1.6, rise: 0, out: [D + 3, D + 9] },
-      { w: q3, land: L13.land, dur: 4, from: 1.6, rise: 0, out: [D + 9, D + 13] },
+      { w: q2, land: L12.land, dur: 4, from: 1.3, rise: 0, out: [D + 3, D + 9] },     // (fix round) from 1.3: the punch-in
+      { w: q3, land: L13.land, dur: 4, from: 1.3, rise: 0, out: [D + 9, D + 13] },    // stays inside x 64–920
     ];
     // exposure: a soft lift on the desk and hands for the first ~1.3 s (phone night brightness), then on his head and
     // shoulders while it drops (f50–77: the hair keeps its texture, a cool rim of the laptop's light on it)
@@ -99,6 +100,11 @@ export default {
     rg.addColorStop(0, 'rgba(255,255,255,1)'); rg.addColorStop(0.55, 'rgba(255,255,255,0.55)'); rg.addColorStop(1, 'rgba(255,255,255,0)');
     lg.fillStyle = rg; lg.fillRect(0, 0, 256, 256);
     for (const o of s.ws) K.css(o.w.el, { left: o.w.x.toFixed(1) + 'px', top: o.w.y.toFixed(1) + 'px' });
+    // (fix round 2) «٢:٤٧ ص» from frame 0: a small paper timestamp at the top left (opposite «عندك»), the 2 a.m. of the
+    // idea; it stays put through the dive (it burns out with the white) and comes back as the app's status-bar clock (s2)
+    s.clock = K.el(root, 'div', 's1-clock', { fontSize: CLOCK.size + 'px', textShadow: SHADOW }, ctx.ev('ui.clock').text);
+    s.clock.dir = 'rtl'; s.clock.dataset.safe = '1';
+    K.css(s.clock, { left: (CLOCK.right - s.clock.offsetWidth).toFixed(1) + 'px', top: (CLOCK.cy - s.clock.offsetHeight / 2).toFixed(1) + 'px' });
     // a half-res buffer for the shutter accumulation (fast camera only)
     s.half = document.createElement('canvas'); s.half.width = 540; s.half.height = 960;
     s.hg = s.half.getContext('2d', { alpha: false }); s.hg.imageSmoothingEnabled = true; s.hg.imageSmoothingQuality = 'medium';
@@ -176,12 +182,15 @@ export default {
       h.globalCompositeOperation = 'destination-in'; h.drawImage(s.lift, x - rx, y - ry, 2 * rx, 2 * ry);
       g.globalCompositeOperation = 'source-over'; g.globalAlpha = L1; g.drawImage(s.lc, 0, 0); g.globalAlpha = 1;
     }
-    if (L2 > 0) {                                                  // the head: blacks up ~+12 IRE, a cool rim on the hair
+    if (L2 > 0) {                                                  // the head: its own texture brought up (x1.9 through a
+      const h = s.lg, [x, y] = P2F(540, 1320), rx = 470 * c0.z, ry = 420 * c0.z;    // soft mask), a faint cool rim on the hair
+      h.globalCompositeOperation = 'source-over'; h.clearRect(0, 0, 1080, 1920);
+      h.filter = 'brightness(1.9) contrast(1.06)'; h.drawImage(s.cv, 0, 0); h.filter = 'none';
+      h.globalCompositeOperation = 'destination-in'; h.drawImage(s.lift, x - rx, y - ry, 2 * rx, 2 * ry);
+      g.globalCompositeOperation = 'source-over'; g.globalAlpha = L2; g.drawImage(s.lc, 0, 0); g.globalAlpha = 1;
       g.save(); g.globalCompositeOperation = 'screen';
-      const [x, y] = P2F(540, 1330), r = 430 * c0.z;
-      g.globalAlpha = 0.13 * L2; g.drawImage(s.tint2 || (s.tint2 = this.tinted(s.lift, 'rgb(255,255,255)')), x - r * 1.25, y - r, 2.5 * r, 2 * r);
-      const [rx, ry] = P2F(560, 1110), rr = 300 * c0.z;
-      g.globalAlpha = 0.32 * L2; g.drawImage(s.tint3 || (s.tint3 = this.tinted(s.lift, 'rgb(70,104,170)')), rx - rr * 1.5, ry - rr * 0.6, 3 * rr, 1.2 * rr);
+      const [cx, cy] = P2F(560, 1110), rr = 300 * c0.z;
+      g.globalAlpha = 0.16 * L2; g.drawImage(s.tint3 || (s.tint3 = this.tinted(s.lift, 'rgb(70,104,170)')), cx - rr * 1.5, cy - rr * 0.6, 3 * rr, 1.2 * rr);
       g.restore();
     }
     g.globalCompositeOperation = 'source-over'; g.globalAlpha = 1;
@@ -198,6 +207,8 @@ export default {
     const ex = K.E.inQuad(K.smoothstep(0.62, 1, c0.p));
     if (ex > 0) { g.globalAlpha = Math.min(1, ex); g.fillStyle = '#FFFFFF'; g.fillRect(0, 0, 1080, 1920); }
     if (f >= s.lastF) { g.globalCompositeOperation = 'source-over'; g.globalAlpha = 1; g.fillStyle = '#FFFFFF'; g.fillRect(0, 0, 1080, 1920); }
+    const ck = 1 - Math.min(1, 1.6 * Math.max(0, ex));
+    K.css(s.clock, { display: ck > 0.01 && f < s.lastF ? 'block' : 'none', opacity: ck.toFixed(3) });
     g.globalCompositeOperation = 'source-over'; g.globalAlpha = 1;
 
     // ---- the questions: land on their grid frames, step back as the next lands, rack out of focus as the dive starts

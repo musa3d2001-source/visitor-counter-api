@@ -102,3 +102,13 @@ Format: `- [YYYY-MM-DD HH:MM] <scene/agent>: <what you need> — <why> (status: 
   · audio.py: the hook key taps are cut (both hands are in his hair 0–1.6 s: no visible cause). Mixes re-rendered.
   · s4 → s5, s5 → s6, s6 → s7 hand-overs checked at 1:1: the s5 → s6 match cut lands on the same rect; s3 → s4 keeps
     card 1 on the same rect across the lime → stage cut.
+
+- [2026-11-26 lead, fix round] → everyone: the four review lenses' findings were applied by the lead in every file (status:
+  done; the full list and every deviation is in `../SCRIPT.md` → "Fix round"). Interfaces that changed:
+  · cues: s5 out 687, s6 687–776, s7 776–891 (891 frames, 29.70 s); `music_insert` (one beat after the chord);
+    `key.card1_in` 232, `key.q3` 59, `key.logo_ticks` 854; the samples label from f232.
+  · s4_parade.js now EXPORTS the parade camera (`camKeys`, `camera`, `card1Matrix`, `HANDOFF`, matrix helpers): s3 draws
+    card 1 through the same camera so the lime → stage cut keeps it in place.
+  · s2_screen.js: uiCam() returns `e` (the entry pull-back); UI.chat.right 960, UI.chat.top 1068.
+  · s6_payoff.js: CAM/QUAD mirrored (the hall is mirrored in assets/s6_payoff/prep_s6.py, MIRROR = True).
+  · samples/before-slide.png re-rendered (the same words as the after slide, legible at phone size).

@@ -7,3 +7,7 @@
 .s1-w > span { display: inline-block; padding: 0.3em 0.08em; margin: -0.3em -0.08em; }
 .s1-w.kick { font-weight: 600; }
 .s1-w.hero { font-weight: 800; }
+
+/* (fix round 2) the 2 a.m. clock prop, top left, small (a prop, not a headline) */
+.s1-clock { position: absolute; left: 0; top: 0; font-family: "IBM Plex Sans Arabic", sans-serif; font-weight: 600; color: #F5F5E9;
+  line-height: 1; white-space: nowrap; direction: rtl; z-index: 3; }

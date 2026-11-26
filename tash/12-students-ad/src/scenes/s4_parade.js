@@ -101,7 +101,7 @@ export const CARD1 = { W: 1000, H: 562.5 };
  *  tilted (never on the student's slide rect). On the parade's first frame (L[0]) the camera sees card 1 (at REST on the
  *  spot) centred at about (540, 1300), 760 px wide, rolled −3° and turned a little; s3 draws its last frame with the same
  *  view, so the lime → stage cut keeps the card exactly where it is. */
-export const HANDOFF = { cx: 540, cy: 1300, w: 760, yaw: 5, roll: -3 };
+export const HANDOFF = { cx: 540, cy: 1330, w: 760, yaw: 5, roll: -3 };   // (fix round 2) cy 1300 → 1330: room for the lock-up above it
 /** the camera keys of the parade (frame, target x/y, distance in P, yaw, pitch, roll) */
 export function camKeys(L, fanF, outF) {
   const kf = (f, x, y, d, yaw, pitch, roll = 0) => ({ f, x, y, d, yaw, pitch, roll });
@@ -110,7 +110,8 @@ export function camKeys(L, fanF, outF) {
     keys: [
       kf(L[0], 0, y0, d0, HANDOFF.yaw, 0, HANDOFF.roll),
       kf(L[0] + 14, 0, -300, 1.13, 3.2, 4.6),
-      kf(L[1] - 8, 0, -306, 1.10, 6.0, 5.4),
+      kf(L[0] + 38, 0, -303, 1.095, 4.6, 5.0),      // (fix round 2) a steady push through the school deck's fan-out (no stop f286–295)
+      kf(L[1] - 8, 0, -306, 1.07, 6.0, 5.4),
       kf(L[1] + 6, 0, -290, 1.03, 2.0, 5.0),
       kf(L[2] - 4, 0, -294, 0.99, -2.0, 5.0),
       kf(L[2] + 6, 0, -298, 1.05, -4.5, 5.2),
@@ -138,13 +139,15 @@ export function card1Matrix(cues, pose = REST, f = null) {
 // out to the sides, outer cards a little nearer and turned in. The pivot sits under the floor, so the bottoms hide behind
 // the hero and the tops open above it. Scaled down so the whole hand fits the frame (and clears the label corner).
 const FAN = { x: 0, y: 150, z: -1000 };
+// (fix round 2) re-ordered for the full-fan hold: the deck «مسار» (the ad's opening sample) is the near LEFT wing (its
+// face shows beside the dashboard), the video card peeks out at the TOP centre; the dashboard stays the hero in front
 const SLOTS = [            // a: roll about the pivot (deg), r: pivot → card bottom-centre, dz: toward the camera, ry: turn in
-  { a: 0, r: 640, dz: 30, ry: 0, s: 0.86 },       // deck (the film's hero slide) — centre, in front of the video
-  { a: -13, r: 610, dz: 60, ry: 6, s: 0.86 },     // report
-  { a: 13, r: 610, dz: 66, ry: -6, s: 0.86 },     // research (closed to page 1)
-  { a: -25, r: 580, dz: 100, ry: 11, s: 0.84 },   // poster
-  { a: 0, r: 900, dz: -70, ry: 0, s: 0.86 },      // video — above and behind the deck
-  { a: 25, r: 580, dz: 106, ry: -11, s: 0.84 },   // CV
+  { a: -23, r: 600, dz: 112, ry: 11, s: 0.80 },   // deck (the film's hero slide) — the near left wing
+  { a: 11, r: 620, dz: 60, ry: -5, s: 0.86 },     // report
+  { a: 22, r: 600, dz: 84, ry: -9, s: 0.84 },     // research (closed to page 1)
+  { a: -9, r: 640, dz: 40, ry: 5, s: 0.84 },      // poster
+  { a: 0, r: 1000, dz: -90, ry: 0, s: 0.86 },     // video — high, behind: its frame peeks out over the dashboard
+  { a: 33, r: 570, dz: 118, ry: -12, s: 0.82 },   // CV
 ];
 function slotPose(i, spread = 1, bob = 0) {
   const s = SLOTS[i], a = s.a * spread;
@@ -162,6 +165,7 @@ export default {
     s.L = L; s.OUT = ctx.scene.out; s.IN = ctx.scene.in; s.FANF = key.fan;
     s.wAwwal = ctx.ev('P1.answer').words[2].land;        // «أول»
     s.wRattib = ctx.ev('P2.answer').land;               // «نرتّبه.»
+    s.deckSchool = key.deck_school; s.turn = [key.card2_turn1, key.card2_turn2];   // (fix round 2) shared with audio.py
     const ev = id => ctx.ev(id);
 
     // camera keys: the first key is the splash hand-off (card 1 low, smaller, tilted; see HANDOFF)
@@ -297,23 +301,30 @@ export default {
     s.chips = chipIds.map(id => ({ ev: ev(id), c: K.chip(ov, { text: ev(id).text, theme: 'lime', size: 54, x: 0, y: 0, anchor: 'right' }) }));
     // the research tags
     // (fix round) the tags are the on-screen proof of «we format, we don't write»: chip style, 46 px, lime with ink text
-    s.tags = ['ui.research_tag1', 'ui.research_tag2', 'ui.research_tag3'].map(id => ({ ev: ev(id), c: K.chip(ov, { text: ev(id).text, theme: 'lime', size: 46, x: 0, y: 0, anchor: 'right' }) }));
+    // (fix round 2) restyled as annotations (ink pill, 3 px lime outline, lime type): the only SOLID lime pill on the card
+    // is its own chip «بحث؟», so the label and the "what we did" tags no longer read as one lime clump
+    s.tags = ['ui.research_tag1', 'ui.research_tag2', 'ui.research_tag3'].map(id => ({ ev: ev(id), c: K.chip(ov, { text: ev(id).text, theme: 'inkline', size: 46, x: 0, y: 0, anchor: 'right' }) }));
     // the answers (per word, on the VO word frames), the verb in lime
-    const YA = s.YA = 1372, sh = '0 6px 28px rgba(0,0,0,.65)';
+    const YA = s.YA = 1404, sh = '0 6px 28px rgba(0,0,0,.65)';   // (fix round 2) 1372 → 1404: clear of the chips above
     s.answers = [
-      // (fix round) maxWidth 820: every glyph's right edge stays at x <= 950, clear of the TikTok/Reels button column
-      K.kinetic(ov, ev('P1.answer'), { x: 540, y: YA, size: 92, style: 'punch', exit: 'lift', exitDur: 5, colors: { 0: K.C.lime }, shadow: sh, maxWidth: 820 }),
-      K.kinetic(ov, ev('P2.answer'), { x: 540, y: YA, size: 100, style: 'punch', exit: 'lift', exitDur: 5, colors: { 0: K.C.lime }, shadow: sh, maxWidth: 820 }),
-      K.kinetic(ov, ev('P3.answer'), { x: 540, y: YA, size: 96, style: 'punch', exit: 'lift', exitDur: 5, colors: { 0: K.C.lime }, shadow: sh, maxWidth: 820 }),
-      K.kinetic(ov, ev('P5'), { x: 540, y: 1376, size: 84, style: 'punch', dur: 2, exit: 'cut', colors: { 2: K.C.lime }, shadow: sh, maxWidth: 820 }),   // dur 2: nothing of it shows before the dashboard lands
+      // (fix round) maxWidth 760: every glyph's right edge stays at x <= 920, clear of the TikTok/Reels button column
+      // (fix round 2) each answer holds until the next one replaces it (exit 3 frames), dimmed to 70 % under the next card;
+      // (all three sit 32 px lower than before: ≥ 40 px under the «بحث؟» chip; the chips never touch an answer's ink)
+      K.kinetic(ov, ev('P1.answer'), { x: 540, y: YA, size: 92, style: 'punch', exit: 'lift', exitDur: 3, colors: { 0: K.C.lime }, shadow: sh, maxWidth: 760 }),
+      K.kinetic(ov, ev('P2.answer'), { x: 540, y: YA, size: 100, style: 'punch', exit: 'lift', exitDur: 3, colors: { 0: K.C.lime }, shadow: sh, maxWidth: 760 }),
+      K.kinetic(ov, ev('P3.answer'), { x: 540, y: YA, size: 96, style: 'punch', exit: 'lift', exitDur: 4, colors: { 0: K.C.lime }, shadow: sh, maxWidth: 760 }),
+      K.kinetic(ov, ev('P5'), { x: 540, y: 1376, size: 84, style: 'punch', dur: 2, exit: 'cut', colors: { 2: K.C.lime }, shadow: sh, maxWidth: 760 }),   // dur 2: nothing of it shows before the dashboard lands
     ];
     // the five file chips, one row, popping right → left (RTL order); each chip is an LTR element
     const fids = ['ui.file_chip1', 'ui.file_chip2', 'ui.file_chip3', 'ui.file_chip4', 'ui.file_chip5'];
-    const tmp = fids.map(id => K.fileChip(ov, { ext: ev(id).text, size: 31, x: 0, y: 0, anchor: 'left' }));
+    const tmp = fids.map(id => K.fileChip(ov, { ext: ev(id).text, size: 28, x: 0, y: 0, anchor: 'left' }));
     // (fix round) the row sits higher (ink ends ~y 1490, above the platform caption rows) and its right edge <= 950
-    const gap = 14, tot = tmp.reduce((a, c) => a + c.width, 0) + gap * (tmp.length - 1);
-    let xr = Math.min(540 + tot / 2, 950);
-    s.files = tmp.map((fc, i) => { const x = xr - fc.width; xr = x - gap; return { ev: ev(fids[i]), c: fc, x, y: 1462 }; });
+    const gap = 10, tot = tmp.reduce((a, c) => a + c.width, 0) + gap * (tmp.length - 1);
+    let xr = Math.min(540 + tot / 2, 915);
+    // (fix round 2) y 1462 → 1498: the chip tops sit at y ≈ 1472, clear of the dots under the ي of «وأي» (they ended
+    // at y ≈ 1450 and the row covered them: «وأى»)
+    s.files = tmp.map((fc, i) => { const x = xr - fc.width; xr = x - gap; return { ev: ev(fids[i]), c: fc, x, y: 1498 }; });
+    s.ansDim = [L[1], L[2], L[3], null];                  // each answer dims to 70 % once the next card has landed
   },
 
   // ==================================================================== per frame
@@ -352,7 +363,9 @@ export default {
     const arr0 = c.i === 0 ? -1e9 : c.land - A;
     if (f < arr0) return st;
     st.vis = true;
-    const R0 = c.next == null ? 1e9 : c.next - (c.i === 0 ? 7 : 5), R1 = R0 + (c.i === 0 ? 17 : 15);
+    // (fix round 2) the filing is longer (18–20 frames) and eased in and out more gently (inOutSine: about half the peak
+    // speed of the old inOutCubic over 15), so no card jumps between two frames as the next one lands
+    const R0 = c.next == null ? 1e9 : c.next - (c.i === 0 ? 8 : 6), R1 = R0 + (c.i === 0 ? 20 : 18);
     const bob = 6 * Math.sin((f - c.i * 9) / 11);
     if (f < c.land) {                                               // ---- arriving (lands ON the cue frame)
       const u = (f - arr0) / A;
@@ -375,7 +388,7 @@ export default {
       }
       st.pose = p; st.floor = 1; st.hero = true;
     } else {                                                        // ---- filed into the fan
-      const k = E.inOutCubic(clamp((f - R0) / (R1 - R0)));
+      const k = E.inOutSine(clamp((f - R0) / (R1 - R0)));
       const slot = slotPose(c.i, spread, bob);
       st.pose = mixPose(REST, slot, k);
       st.pose.y += -300 * Math.sin(Math.PI * k);                    // an arc up and over
@@ -383,6 +396,9 @@ export default {
       st.dim = (0.30 + 0.0016 * (110 - SLOTS[c.i].dz)) * k;          // deeper in the hand = darker
       st.floor = clamp(1 - k * 3);
       st.retire = k;
+      // (fix round 2) a motion blur on the fast middle of the filing: it reads as a move, not a jump
+      const u = (f - R0) / (R1 - R0);
+      st.blur = u > 0 && u < 1 ? 4 * Math.sin(Math.PI * u) : 0;
     }
     return st;
   },
@@ -427,7 +443,9 @@ export default {
     const L = this.s.L;
     if (c.kind === 'deck') {
       const uni = E.outBack(clamp((f - L[0]) / 12), 1.4);
-      const sch = E.outBack(clamp((f - (this.s.wAwwal - 7)) / 7), 1.6);                // the school deck lands on «أول» (f302)
+      // (fix round 2) the school deck GROWS out from behind card 1 over 9 frames from the beat (f287 → f296), eased in and
+      // out (it popped in fully formed in one frame, f295 → f296)
+      const sch = E.outBack(E.inOutSine(clamp((f - this.s.deckSchool) / 9)), 1.1);
       const close = E.inOutCubic(clamp((f - (c.next - 14)) / 10));
       const keep = lerp(1, 0.16, close) + 0.24 * E.outBack(clamp((f - (this.s.FANF - 3)) / 8), 1.6);   // re-opens a little with the fan
       for (const sb of c.subs) {
@@ -437,15 +455,18 @@ export default {
         K.css(sb.f.dim, { opacity: Math.max(st.dim, 0.16 + 0.0006 * -sb.z).toFixed(3) });
       }
     } else if (c.kind === 'report') {
-      const close = st.retire ? E.inOutCubic(clamp(st.retire * 1.6)) : 0;
-      const a1 = 174 * E.inOutCubic(clamp((f - (this.s.wRattib - 9)) / 10)) * (1 - close);  // cover: open on «نرتّبه.» (f347)
-      const a2 = 170 * E.inOutCubic(clamp((f - (this.s.wRattib + 7)) / 9)) * (1 - close);   // then the contents page
+      // (fix round 2) the pages close on the frame clock (12 frames, with the filing), not on the filing curve: the cover
+      // used to swing 126° → 30° in one frame (f367 → f368)
+      const close = c.next == null ? 0 : E.inOutCubic(clamp((f - (c.next - 6)) / 12));
+      const T1 = this.s.turn[0], T2 = this.s.turn[1];
+      const a1 = 174 * E.inOutCubic(clamp((f - (T1 - 4)) / 10)) * (1 - close);   // cover: vertical ~f343 (its flip sound f342)
+      const a2 = 170 * E.inOutCubic(clamp((f - (T2 - 3)) / 9)) * (1 - close);    // contents: vertical ~f358 (flip f357)
       const ang = [0, a2, a1];
       c.pages.forEach((pg, j) => {
         pg.el.style.transform = css3(mul(T(c.W, 0, pg.z + (ang[j] > 0.5 ? 6 : 0)), RY(ang[j]), T(-c.W, 0, 0)));
       });
     } else if (c.kind === 'research') {
-      const close = st.retire ? E.inOutCubic(clamp(st.retire * 1.5)) : 0;
+      const close = c.next == null ? 0 : E.inOutCubic(clamp((f - (c.next - 6)) / 12));     // (fix round 2) frame clock
       const v = 9 * (1 - close), PW = c.PW, G = c.G;
       const sh = -close * (PW + G) / 2;                       // closed, page 1 sits centred on the card's anchor
       c.pageM = { right: mul(T(PW + G + sh, 0, 0), RY(-v)), left: mul(T(lerp(PW, PW + G + PW, close) + sh, 0, -6 * close), RY(v), T(-PW, 0, 0)) };
@@ -484,7 +505,8 @@ export default {
       const c = s.cards[i], e = ch.ev, land = L[i] + (i === 0 ? 3 : 0);
       const anchor = c.VM ? proj(c.VM, c.W - 26, c.H) : proj(mul(V, cardM(REST, c.W, c.H)), c.W - 26, c.H);
       const punch = 1 + 0.18 * Math.exp(-Math.max(0, f - land) / 2.2);
-      const x = Math.min(anchor[0], 950), y = Math.min(anchor[1] + 4, 1492);
+      // (fix round 2) the research chip «بحث؟» stays ≥ 40 px above the answers' ink (its corner sits low on the open spread)
+      const x = Math.min(anchor[0], 885), y = Math.min(anchor[1] + 4, i === 2 ? 1236 : 1492);   // its pop overshoot stays inside x 920
       const outF = e.out >= s.OUT ? null : (L[i + 1] ?? e.out);
       ch.c.render(t, land - 1, land + 2, outF, { extra: `translate(${x.toFixed(1)}px, ${y.toFixed(1)}px) rotate(-3.5deg) scale(${punch.toFixed(4)})` });
     });
@@ -512,7 +534,7 @@ export default {
       ld.ring.setAttribute('cx', b[0].toFixed(1)); ld.ring.setAttribute('cy', b[1].toFixed(1));
       ld.ring.setAttribute('r', (9 * clamp((k - 0.6) / 0.4)).toFixed(2));
     });
-    for (const a of s.answers) a.render(t);
+    s.answers.forEach((a, i) => { a.render(t); const dl = s.ansDim[i]; a.el.style.opacity = dl != null && f >= dl ? '0.7' : '1'; });
     s.files.forEach(fc => fc.c.render(t, fc.ev.in, fc.ev.land, fc.ev.out >= s.OUT ? null : fc.ev.out, { extra: `translate(${fc.x.toFixed(1)}px, ${fc.y.toFixed(1)}px)` }));
   },
 };

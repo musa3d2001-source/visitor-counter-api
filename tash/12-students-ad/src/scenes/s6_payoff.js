@@ -19,8 +19,8 @@ const PW = 1512, PH = 2688, S0 = 1080 / PW;          // plate size; frame px per
 // (fix round) the room is MIRRORED (assets/s6_payoff/prep_s6.py MIRROR): the presenter stands at the LEFT edge, clear of
 // the TikTok/Reels button column; the slide on the screen is comped un-mirrored. Camera x values are mirrored too.
 // camera (plate px): start and end of the base push; the chord adds a little more
-export const CAM = { z0: 1.03, cx0: 757, cy0: 1370, z1: 1.105, cx1: 720, cy1: 1408, zChord: 0.035, cxChord: -8, cyChord: 14,
-  nearExtra: 0.045 };
+export const CAM = { z0: 1.03, cx0: 757, cy0: 1370, z1: 1.08, cx1: 720, cy1: 1408, zChord: 0.035, cxChord: -8, cyChord: 14,
+  nearExtra: 0.045, punch: 1.06 };   // (fix round 2) a one-frame 1.00 → 1.06 punch-in on the chord (f719); z1 1.105 → 1.08
 // the screen's inner quad (plate px, s6.json → screen_quad, mirrored), kept here so s5 can match its last frame to it
 const QUAD = [[184.62, 773.0], [1331.88, 773.0], [1330.52, 1428.56], [182.5, 1426.42]];
 
@@ -66,8 +66,16 @@ export default {
       const m = { el: K.el(root, 'div', 's6-mote'), u: r(), v: 0.25 + r() * 0.7, ph: r() * 6.28, sp: 0.4 + r() * 0.8, sz: 0.5 + r() * 0.9 };
       return m;
     });
+    // (fix round 2) the two classmates' phones light up on the chord (people recording your work): a soft screen-blend
+    // glow on each phone's display, 40 % on f719, decaying over ~6 frames
+    s.phones = Object.values(s.J.phones).map(q => {
+      const xs = q.map(p => p[0]), ys = q.map(p => p[1]);
+      const x0 = Math.min(...xs) - 6, y0 = Math.min(...ys) - 6, w = Math.max(...xs) - x0 + 6, h = Math.max(...ys) - y0 + 6;
+      return { el: K.el(root, 'div', 's6-img s6-phone', { width: w + 'px', height: h + 'px' }), x0, y0 };
+    });
     s.near = img('near.png');
     s.swell = K.el(root, 'div', 's6-swell');
+    s.band = K.el(root, 'div', 's6-band');                             // (fix round 2) a soft ink band behind the closing line
     s.vig = K.el(root, 'div', 's6-vig');
     s.grain = K.el(root, 'div', 's6-grain', { backgroundImage: `url(${A}grain.png)` });
     await Promise.all([K.img(A + 'room.jpg'), K.img(A + 'glow.jpg'), K.img(A + 'near.png'), K.img(A + 'grain.png')]);
@@ -76,10 +84,17 @@ export default {
     // the platform caption rows) and right-aligned at x 920 (RTL: «خلّ», the line's first word, is on the right, clear
     // of the TikTok/Reels button column), at most 825 px wide
     const sh = '0 3px 6px rgba(0,0,0,0.55), 0 8px 34px rgba(0,0,0,0.75)';
-    s.l1 = K.kinetic(root, ctx.ev('C1.1'), { x: 920, y: 1310, anchor: 'right', size: 72, weight: 700, color: K.C.paper, style: 'rise', dur: 2,
+    // (fix round 2) «ويوم التسليم…» moves ABOVE the screen (centred, under the samples label), so the closing line can be
+    // the film's biggest type in two right-aligned rows at x 920 («خلّ شغلك» / «يسولف عنك.», 116 px, each ≤ 700 px) on a
+    // soft ink band, under the two phones and clear of them; the line still lands word by word with the voice
+    s.l1 = K.kinetic(root, ctx.ev('C1.1'), { x: 500, y: 330, anchor: 'center', size: 68, weight: 700, color: K.C.paper, style: 'rise', dur: 2,
       exit: 'cut', shadow: sh });
-    s.l2 = K.kinetic(root, ctx.ev('C1.2'), { x: 920, y: 1430, anchor: 'right', size: 96, maxWidth: 825, weight: 800, color: K.C.paper, style: 'rise', dur: 4,
-      exit: 'cut', shadow: sh, colors: { 2: K.C.lime } });
+    const c2 = ctx.ev('C1.2'), w2 = c2.words, tx = c2.text.split(' ');
+    console.assert(tx.length === 4 && w2.length === 4, 'C1.2 must be four words');
+    const row = (i0, i1, y, colors) => K.kinetic(root, { text: tx.slice(i0, i1).join(' '), land: w2[i0].land, out: c2.out, words: w2.slice(i0, i1) },
+      { x: 920, y, anchor: 'right', size: 116, maxWidth: 700, weight: 800, color: K.C.paper, style: 'punch', dur: 4, exit: 'cut', shadow: sh, colors });
+    s.l2 = [row(0, 2, 1356, {}), row(2, 4, 1484, { 0: K.C.lime })];
+    s.c2 = c2;
   },
 
   seek(tl, ctx) {
@@ -89,7 +104,7 @@ export default {
     const pb = 1 - Math.pow(1 - p, 1.6);
     // the lean-in on the chord
     const pc = E.inOutSine(clamp((f - s.F.chord + 2) / 34));
-    const z = lerp(CAM.z0, CAM.z1, pb) + CAM.zChord * pc;
+    const z = (lerp(CAM.z0, CAM.z1, pb) + CAM.zChord * pc) * (f >= s.F.chord ? CAM.punch : 1);   // the punch on the chord
     const cx = lerp(CAM.cx0, CAM.cx1, pb) + CAM.cxChord * pc, cy = lerp(CAM.cy0, CAM.cy1, pb) + CAM.cyChord * pc;
     const place = (el, px, py, scale) => {          // a plate-space element whose (0,0) is at plate (px, py)
       const [fx, fy] = toFrame([px, py], z * scale.zMul, cx, cy);
@@ -124,7 +139,12 @@ export default {
     const g = K.rng(1000 + f);
     s.grain.style.transform = `translate(${Math.floor(g() * 64)}px, ${Math.floor(g() * 64)}px)`;
 
+    // the phones: lit on the chord, 6-frame decay (they ride with the room)
+    const ph = f >= s.F.chord ? 0.4 * Math.exp(-(f - s.F.chord) / 6) : 0;
+    for (const p of s.phones) { p.el.style.opacity = ph.toFixed(3); p.el.style.display = ph > 0.004 ? 'block' : 'none'; if (ph > 0.004) place(p.el, p.x0, p.y0, { zMul: 1, pix: 1 }); }
+    // the ink band behind the closing line, in with its first word
+    s.band.style.opacity = K.smoothstep(s.c2.land - 6, s.c2.land, f).toFixed(3);
     s.l1.render(ctx.t);
-    s.l2.render(ctx.t);
+    s.l2.forEach(l => l.render(ctx.t));
   },
 };

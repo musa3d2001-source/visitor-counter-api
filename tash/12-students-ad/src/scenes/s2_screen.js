@@ -15,8 +15,8 @@ export const UI = {
   slide: { x: 70, y: 556, w: 944, h: 531 },
   placeholder: { x: 155, y: 716, w: 774, h: 176 },
   notif: { x: 84, y: 362, w: 556, h: 128, z: 60 },
-  chat: { right: 960, top: 1078, avatar: 70, gap: 16, z: 40, nextTop: 1206, maxMsgW: 800 },   // fix round: 996 → 960
-  big: { y1: 1250, y2: 1410, size2: 170 },   // the two tiers of «والتسليم… باجر؟» (screen space; gone by f143). Fix round:
+  chat: { right: 925, top: 1050, avatar: 70, gap: 16, z: 40, nextTop: 1206, maxMsgW: 800 },   // fix round: 996 → 960; round 2: → 925 (the push)
+  big: { y1: 1288, y2: 1430, size2: 156 },   // the two tiers of «والتسليم… باجر؟» (screen space; gone by f143). Fix round:
                                              // lifted ~60–110 px so «باجر؟» ends above y 1540 (the platform caption rows)
   entryZ: 3.75,                        // fix round: f78 = the blank slide scaled so its white fills the frame (match cut)
   entryF: 9,                           // … then the camera whips back to the slide's rest rect (settled ~f87)
@@ -24,6 +24,15 @@ export const UI = {
     shadow: '0 2px 6px rgba(0,0,0,.25), 0 20px 50px rgba(0,0,0,.5)', canvas: '#17191D' },
 };
 const F0 = 78, F_PUNCH = 117, F_END = 224;   // overwritten from cues at mount (same values)
+// (fix round 2) the hook's clock prop (s1, screen space, 56 px, top-left) rides into the app and becomes its status-bar
+// clock: s1 and s2 share this box (right edge, vertical centre, size)
+export const CLOCK = { right: 262, cy: 322, size: 56 };
+/** (fix round 2) one continuous push on the app layer only, f87 → the hit (1.00 → 1.08, ~1.5° of roll about (540, 720)),
+ *  accelerating into the riser; the big line, TASH's message and the dimmer stay in screen space */
+export function appPush(f) {
+  const p = Math.max(0, (f - 87) / (214 - 87)), e = 0.3 * p + 0.7 * p * p;
+  return { k: 1 + 0.08 * e, rz: 1.5 * e };        // 1.08 (not 1.10): every app prop stays inside the safe area (swept)
+}
 let FR = { in: F0, punch: F_PUNCH, out: F_END, resolve: 8, bubble: 143 };
 
 /** the UI plane's camera at FILM time t (s): scale s, rotations rx/ry (deg), translation tx/ty (px) */
@@ -35,7 +44,7 @@ export function uiCam(t) {
   // group chat (f81) and the reminder (f85) coming in from the edges. No white overlay, no exposure filter.
   const e = K.E.outQuart(K.clamp((f - a) / UI.entryF));
   const entry = Math.exp(K.lerp(Math.log(UI.entryZ), 0, e));
-  const drift = 1 + 0.025 * u;                                                 // slow creep closer: pressure
+  const drift = 1;                                                             // (fix round 2) the creep is appPush() now
   const punch = 1 + 0.035 * K.E.outExpo(K.clamp((f - (FR.punch - 1)) / 5));   // «باجر؟»
   const w = K.E.inOutSine(u);
   const sc = entry * drift * punch;
@@ -131,8 +140,9 @@ export default {
     s.G = ctx.G;
     root.classList.add('s2-root'); s.root = root;
 
-    // ---- the plane
-    const W = s.world = K.el(root, 'div', 's2-world');
+    // ---- the plane (inside the push: the app layer only)
+    s.push = K.el(root, 'div', 's2-push');
+    const W = s.world = K.el(s.push, 'div', 's2-world');
     const box = (cls, x, y, w, h, st = {}) => abs(W, cls, x, y, { width: w + 'px', height: h + 'px', ...st });
     box('s2-canvas', -310, -380, 1700, 2700);
     box('s2-thumbs', 1036, 498, 420, 1600);
@@ -202,6 +212,14 @@ export default {
     s.bOut = L2.out;
 
     s.ev = { chat: ev('ui.group_chat'), notif: ev('ui.notif'), ui: ev('ui.file') };
+    // (fix round 2) the hook's clock (screen space) lands on the status-bar clock as the camera settles (f78 → f90)
+    s.clockS = K.el(root, 'div', 's2-abs s2-ar s2-clockS', { fontSize: CLOCK.size + 'px' }, ev('ui.clock').text);
+    s.clockS.dir = 'rtl'; s.clockS.dataset.safe = '1';
+    s.cw = s.clockS.offsetWidth; s.ch = s.clockS.offsetHeight;
+    K.css(s.clockS, { left: (CLOCK.right - s.cw).toFixed(1) + 'px', top: (CLOCK.cy - s.ch / 2).toFixed(1) + 'px', transformOrigin: '100% 50%' });
+    applyUiCam(s.world, 90 / 30);
+    const cr = s.clock.el.getBoundingClientRect(), rr = root.getBoundingClientRect();
+    s.clockT = { right: cr.right - rr.left, cy: (cr.top + cr.bottom) / 2 - rr.top, k: cr.height / s.clock.h };   // the plane clock at f90
     // cursor path (UI px, the arrow's tip): wander to the title, hover, flinch on «باجر؟», drift off, stop
     const p = FR.punch;
     s.path = [[84, 826, 1050], [97, 664, 872], [104, 636, 862], [111, 618, 866], [p - 1, 610, 864], [p + 2, 628, 850],
@@ -220,14 +238,23 @@ export default {
 
   seek(tl, ctx) {
     const s = this.s, f = ctx.f, t = ctx.t;
-    // camera (the pull-back out of the white is inside uiCam)
+    // camera (the pull-back out of the white is inside uiCam), then the push on the app layer (screen space)
     applyUiCam(s.world, t);
+    const ap = appPush(f);
+    s.push.style.transform = ap.k > 1.00001 ? `rotate(${ap.rz.toFixed(4)}deg) scale(${ap.k.toFixed(5)})` : 'none';
     // the selection box and its placeholder text come up as the app settles (f78 is pure white)
     const phk = K.smoothstep(FR.in + 3, FR.in + 9, f);
     s.phBox.style.opacity = phk.toFixed(3); s.ph.el.style.opacity = phk.toFixed(3);
     // the small app labels come up only once the plane has settled into the frame (no text outside the safe area)
     const lk = K.smoothstep(0.9, 0.99, uiCam(t).e);
-    s.clock.el.style.opacity = lk.toFixed(3); s.file.el.style.opacity = lk.toFixed(3);
+    s.file.el.style.opacity = lk.toFixed(3);
+    // the clock: the hook's prop (56 px, screen space) settles onto the status-bar clock, then hands over (f86–90)
+    const hand = K.smoothstep(FR.in + 8, FR.in + 12, f);
+    s.clock.el.style.opacity = hand.toFixed(3);
+    const ce = K.E.outQuart(K.clamp((f - FR.in) / 10)), T_ = s.clockT;
+    const cxr = K.lerp(CLOCK.right, T_.right, ce), ccy = K.lerp(CLOCK.cy, T_.cy, ce), csc = K.lerp(1, T_.k * 32 / CLOCK.size, ce);
+    K.css(s.clockS, { display: hand < 1 ? 'block' : 'none', opacity: (K.smoothstep(FR.in + 2, FR.in + 6, f) * (1 - hand)).toFixed(3),
+      transform: `translate(${(cxr - CLOCK.right).toFixed(2)}px, ${(ccy - CLOCK.cy).toFixed(2)}px) scale(${csc.toFixed(4)})` });
     // tension: the edges darken slowly (the vignette comes in with the pull-back)
     s.vig.style.opacity = (K.lerp(0.7, 1, K.smoothstep(FR.in, 215, f)) * K.smoothstep(FR.in + 2, FR.in + 12, f)).toFixed(3);
     // TASH's message takes over: the app dims 40 % as the bubble lands
@@ -243,10 +270,11 @@ export default {
     const n = s.ev.notif, nk = K.clamp((f - n.in) / (n.land - n.in));
     const ny = (1 - K.E.outBack(nk, 1.6)) * -84;                               // a short drop: its text never leaves the safe area
     const settle = f >= n.land ? Math.sin((f - n.land) * 1.9) * 5 * Math.exp(-(f - n.land) / 2.4) : 0;
-    // (fix round) dismissed as TASH's message lands (slides up and out over 4 frames): no half-covered «…جر ٨:٠٠ ص»
-    const nx = K.E.inCubic(K.clamp((f - (FR.bubble - 3)) / 4));
-    K.css(s.notif, { display: f >= n.in && nx < 1 ? 'block' : 'none', opacity: (K.clamp(nk * 2.2) * (1 - nx)).toFixed(3),
-      transform: `translate3d(0, ${(ny + settle - 230 * nx).toFixed(2)}px, ${UI.notif.z}px) scale(${K.lerp(0.94, 1, K.E.outCubic(nk)).toFixed(4)})` });
+    // (fix round 2) dismissed BEFORE TASH's message arrives: it flies out to the right on f137–141, on its own row (never
+    // across the status bar), and is gone on f141, the frame before the bubble is first seen
+    const nx = K.E.inCubic(K.clamp((f - (FR.bubble - 6)) / 4));
+    K.css(s.notif, { display: f >= n.in && nx < 1 ? 'block' : 'none', opacity: (K.clamp(nk * 2.2) * (1 - K.clamp(nx * 2.5))).toFixed(3),
+      transform: `translate3d(${(1150 * nx).toFixed(2)}px, ${(ny + settle).toFixed(2)}px, ${UI.notif.z}px) rotate(${(4 * nx).toFixed(3)}deg) scale(${K.lerp(0.94, 1, K.E.outCubic(nk)).toFixed(4)})` });
     const wob = f >= n.land ? Math.sin((f - n.land) * 1.6) * 14 * Math.exp(-(f - n.land) / 4) : 0;
     s.nPin.style.transform = `rotate(${wob.toFixed(2)}deg)`;
 

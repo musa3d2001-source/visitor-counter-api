@@ -94,10 +94,12 @@ export default {
       const big = !!parts.num;
       return {
         parts, i, cy: (row.band[0] + row.band[1]) / 2, big,
+        // (fix round 2) visibly wrong before the snap: ragged ±40–80 px (some rows past the margin, some short of it),
+        // one row tilted 3°, the number column out of line both ways
         mess: {
-          title: { dx: -30 - r() * 80 + (i % 3 === 1 ? 40 : 0), dy: (r() - 0.5) * 12, rot: (r() - 0.5) * 4.2 },
-          num: { dx: -16 - r() * 46, dy: (r() - 0.5) * 9, rot: (r() - 0.5) * 5 },
-          pg: { dx: (r() - 0.5) * 40, dy: (r() - 0.5) * 6, rot: 0 },
+          title: { dx: (i % 2 ? 1 : -1) * (40 + r() * 40), dy: (r() - 0.5) * 14, rot: i === 2 ? -3.0 : (r() - 0.5) * 2.4 },
+          num: { dx: (i % 3 === 0 ? 1 : -1) * (22 + r() * 30), dy: (r() - 0.5) * 10, rot: (r() - 0.5) * 5 },
+          pg: { dx: (r() - 0.5) * 50, dy: (r() - 0.5) * 8, rot: 0 },
         },
         ph: r() * 6.28,
       };
@@ -107,6 +109,10 @@ export default {
     K.el(a, 'div', 's5-fall');
     // the guide plane (same camera)
     const gp = K.el(a, 'div', 's5-persp');
+    // (fix round 2) the guides, the margin band and the snap handles stop above the caption block (frame y ≤ 1190, ≥ 30 px
+    // clear of «حتى الهوامش…»'s ink): no guide through «حتى», no handle beside the dots of its ت
+    const gm = 'linear-gradient(180deg, #000 0px, #000 1130px, rgba(0,0,0,0) 1190px)';
+    K.css(gp, { webkitMaskImage: gm, maskImage: gm }); gp.dataset.inkclip = '1190';
     s.gcam = K.el(gp, 'div', 's5-cam');
     // the right-margin guide runs the page's height (the headline is aligned on it); both fade at their ends.
     const gv = (x, top, h, fadeIn, fadeOut) => {
@@ -116,7 +122,7 @@ export default {
     };
     // the title guide ends above the headline (which sits over page y ≈ 1000–1200 on the snap), so it never crosses it
     s.gRight = gv(G.right + GOFF, -60, 1900, 170, 260); s.gTitle = gv(G.title + GOFF, -60, 1050, 170, 100);
-    s.band = K.el(s.gcam, 'div', 's5-g s5-band', { left: G.right + 'px', top: '0px', width: (1240 - G.right) + 'px', height: '1754px' });
+    s.band = K.el(s.gcam, 'div', 's5-g s5-band s5-noink', { left: G.right + 'px', top: '0px', width: (1240 - G.right) + 'px', height: '1754px' });
     s.dimY = 452;
     s.dim = K.el(s.gcam, 'div', 's5-g s5-dim', { left: G.right + 'px', top: s.dimY + 'px', width: (1240 - G.right) + 'px', transformOrigin: '100% 50%' });
     s.mval = K.el(s.gcam, 'div', 's5-g s5-mval', {}, K.arDigits('1') + '٫' + K.arDigits('7'));
@@ -136,13 +142,11 @@ export default {
     s.w1 = wrap(); s.w2 = wrap();
     const sh = '0 3px 8px rgba(0,0,0,0.5), 0 10px 36px rgba(0,0,0,0.6)';
     s.d1 = K.kinetic(s.w1, ctx.ev('D1.1'), { x: s.X1, y: s.Y1, anchor: 'right', size: 86, weight: 700, color: K.C.paper,
-      style: 'rise', dur: 4, exit: 'lift', exitDur: 6, shadow: sh });
+      style: 'rise', dur: 4, exit: 'cut', shadow: sh });          // (fix round 2) both hold to the hard cut (f589)
     s.d2 = K.kinetic(s.w2, ctx.ev('D1.2'), { x: s.X2, y: s.Y2, anchor: 'right', size: 128, weight: 800, color: K.C.lime,
-      style: 'slam', dur: 4, exit: 'lift', exitDur: 6, shadow: sh });
+      style: 'slam', dur: 4, exit: 'cut', shadow: sh });
     s.w1.style.transformOrigin = `${s.X1}px ${s.Y1}px`;
-    // the optional callout (the breath before the rule line)
-    const toc = ctx.ev('ui.callout_toc');
-    s.toc = { ev: toc, chip: K.chip(a, { text: toc.text, theme: 'lime', size: 40, x: 250, y: 742, anchor: 'center' }) };   // x 234 → 250 (lead): its pop overshoot touched x 63
+    // (fix round 2) no optional callout: «فهرس تلقائي» hid the dots of «التنفيذي» on the page, and its time is D1's hold
 
     // ============================================================ B
     const b = s.b = K.el(root, 'div', 's5-part');
@@ -157,14 +161,15 @@ export default {
     im(s.after, 'after.jpg');
     s.sheen = K.el(s.after, 'div', 's5-sheen');
     K.el(s.card, 'div', 'rim');
-    s.handle = K.el(s.card, 'div', 's5-handle');
+    s.handle = K.el(s.card, 'div', 's5-handle'); s.handle.dataset.ink = '1';
     K.el(s.handle, 'div', 'bar');
     s.knob = K.el(s.handle, 'div', 'knob');
     K.el(s.knob, 'i', 'l'); K.el(s.knob, 'i', 'r');
     // «قبل» / «بعد»: tabs on the card's top edge (right corner), swapped on their cue frames; outside the slide so they
     // never cover its content
-    s.lBefore = K.chip(s.card, { text: ctx.ev('ui.before').text, theme: 'ink', size: 34, x: R.w - 20, y: -12, anchor: 'right' });
-    s.lAfter = K.chip(s.card, { text: ctx.ev('ui.after').text, theme: 'lime', size: 34, x: R.w - 20, y: -12, anchor: 'right' });
+    // (fix round 2) the tabs sit 90 px in from the card's right corner: at the 1.21x macro they stay inside x 950
+    s.lBefore = K.chip(s.card, { text: ctx.ev('ui.before').text, theme: 'ink', size: 34, x: R.w - 90, y: -12, anchor: 'right' });
+    s.lAfter = K.chip(s.card, { text: ctx.ev('ui.after').text, theme: 'lime', size: 34, x: R.w - 90, y: -12, anchor: 'right' });
     // the rule line: big and calm under the card, nothing busy behind it
     // (fix round) both rows right-aligned at x 920 (RTL: their first word is on the right, clear of the TikTok/Reels
     // button column), at most 825 px wide
@@ -173,6 +178,9 @@ export default {
     s.r2 = K.kinetic(b, ctx.ev('R1.2'), { x: 920, y: 1296, anchor: 'right', size: 86, maxWidth: 825, weight: 800, color: K.C.paper, style: 'rise', dur: 4, exit: 'cut',
       shadow: sh2, colors: { 2: K.C.lime } });
 
+    // every guide, the dimension and the snap handles are checked against the caption's glyph ink (sweep; clipped at the
+    // mask, y 1190). The tinted margin band is a tint, not a mark: not checked
+    for (const g of s.a.querySelectorAll('.s5-g:not(.s5-noink)')) g.dataset.ink = '1';
     await Promise.all(imgs);
   },
 
@@ -192,11 +200,10 @@ export default {
     s.cam.style.transform = css; s.gcam.style.transform = css;
 
     // rows: out of line until the snap; a magnetic pull in the last 4 frames, a small overshoot after
-    const pull = r => {                                           // 1 = fully out of line, 0 = on the guides
-      if (f >= snap) return -0.10 * damp(f, snap, 4.5, 2.6);
-      const start = snap - 4 - r.i * 0.18;
-      return f < start ? 1 : 1 - E.inCubic(clamp((f - start) / (snap - start)));
-    };
+    // (fix round 2) out of line until f552; on the snap (f553) everything lands on the guides at once, overshoots ~15 %
+    // and settles by f555
+    const snapP = () => (f < snap ? 1 : -0.15 * Math.cos(Math.PI * (f - snap) / 2) * Math.exp(-(f - snap) / 1.5));
+    const pull = r => snapP();                                    // 1 = fully out of line, 0 = on the guides
     for (const r of s.rows) {
       const p = pull(r);
       const wob = f < snap ? Math.sin(f * 0.21 + r.ph) * 2.2 : 0;
@@ -214,7 +221,7 @@ export default {
 
     // guides: draw down on «الهوامش…», sit a little off, lock on the snap with a flash
     const dIn = (a0) => E.outCubic(clamp((f - a0) / 6));
-    const gp = f >= snap ? -0.12 * damp(f, snap, 4.5, 2.6) : 1 - E.inCubic(clamp((f - (snap - 4)) / 4));
+    const gp = snapP();
     const flash = kick(f, snap, 2) * 1.0;
     const gstyle = (el, d, off) => {
       el.style.transform = `translateX(${(off * gp).toFixed(2)}px) scaleY(${d.toFixed(4)})`;
@@ -248,21 +255,25 @@ export default {
 
     // the headline, kept right-aligned on the margin guide (which moves with the camera); crooked until the snap
     const dx1 = lineXAt(k, gx + GOFF - 2, s.Y1) - s.X1, dx2 = lineXAt(k, G.right + GOFF - 2, s.Y2) - s.X2;
-    const hp = f >= snap ? -0.14 * damp(f, snap, 4.5, 2.6) : 1 - E.inCubic(clamp((f - (snap - 4)) / 4));
-    s.w1.style.transform = `translateX(${(dx1 - 40 * hp).toFixed(2)}px) rotate(${(-2.2 * Math.max(0, hp)).toFixed(3)}deg)`;
-    s.w2.style.transform = `translateX(${dx2.toFixed(2)}px)`;
+    const hp = snapP();
+    // (fix round) before the snap the guide still sweeps in from the right: the headline never passes x 915 (the right-hand
+    // button column); from the snap on it sits ON the guide (which the camera keeps at x ~915)
+    const cl1 = Math.min(0, 915 - (s.X1 + dx1 - 40 * hp)), cl2 = Math.min(0, 915 - (s.X2 + dx2));
+    s.w1.style.transform = `translateX(${(dx1 - 40 * hp + cl1).toFixed(2)}px) rotate(${(-2.2 * Math.max(0, hp)).toFixed(3)}deg)`;
+    s.w2.style.transform = `translateX(${(dx2 + cl2).toFixed(2)}px)`;
     s.d1.render(ctx.t); s.d2.render(ctx.t);
-    const T = s.toc.ev;
-    s.toc.chip.render(ctx.t, T.in, T.land, T.out);
   },
 
   // ------------------------------------------------------------------ B
   seekB(f, ctx) {
     const s = this.s, F = s.F, R = s.R;
-    // (fix round) one continuous push from 0.92 on the cut to exactly s6's screen rect on the last frame, still moving
-    // at the cut, so it carries through the match cut into the hall's own push-in (no locked-off hold)
-    const u = clamp((f - F.rule) / (F.out - 1 - F.rule));
-    s.card.style.transform = `scale(${lerp(0.92, 1, 0.35 * u + 0.65 * u * u).toFixed(5)})`;
+    // (fix round 2) it opens on a 1.18x macro of the BEFORE slide (≈ 92 % of the frame width) creeping in to 1.21x, and on
+    // the swipe (f618) the camera pulls back to show the whole designed slide, easing to exactly s6's screen rect on the
+    // last frame (velocity ≈ 0 there, so the hall's own slow push-in takes over at the match cut)
+    const sw0 = F.swipe;
+    const sc = f < sw0 ? lerp(1.18, 1.21, clamp((f - F.rule) / (sw0 - F.rule)))
+      : lerp(1.21, 1, E.outCubic(clamp((f - sw0) / (F.out - 1 - sw0))));
+    s.card.style.transform = `scale(${sc.toFixed(5)})`;
 
     // the handle: in on «منك…», a small wind-up, the swipe on the bar line, then it leaves
     const sw = F.swipe;

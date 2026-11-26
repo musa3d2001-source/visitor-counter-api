@@ -1,4 +1,9 @@
-"""«طشّ للطلاب» (TASH for students, 9:16, 877 frames = 29.233 s): original score, sound design and the two mixes.
+"""«طشّ للطلاب» (TASH for students, 9:16, 891 frames = 29.70 s): original score, sound design and the two mixes.
+FIX ROUND (26 Nov): one beat is inserted after the payoff chord (cues.json music_insert: the music's logical beat k >= 48
+sounds at film beat k + 1), so the closing line holds ~1 s; the VO mix carves 1.5-5 kHz out of the music by a further
+-5 dB while the voice speaks and ducks the SFX -6 dB (was -3); the wink pluck sits in the gap BEFORE «بس»; the sonic
+logo's ticks and the tail lift start after the last word (vo_last_end). Frame numbers in the notes below are the first
+build's; every time is read from cues.json.
 Everything is synthesised here or by the TASH engine (_system/audio/tashaudio.py): no samples, no library music, no
 paid tools. Every time comes from src/cues.json (sfx[], the beat grid, key frames, text lands) and
 src/vo/vo_timeline.json (phrases, words). Nothing is typed in by hand except the musical choices.
@@ -77,9 +82,11 @@ OUT = {'novo': [os.path.join(HERE, 'audio_novo.wav'), os.path.join(HERE, 'audio'
        'vo': [os.path.join(HERE, 'audio_vo.wav'), os.path.join(HERE, 'audio', 'mix_vo.wav')]}
 
 
-def kt(k): return PHASE + k * BEAT                                       # beat k → s
+INS = C.get('music_insert', {'from_logical_beat': 1e9, 'beats': 0})
+def _ins(k): return INS['beats'] * BEAT if k >= INS['from_logical_beat'] - 1e-9 else 0.0   # the inserted beat after the chord
+def kt(k): return PHASE + k * BEAT + _ins(k)                             # LOGICAL music beat k → film s
 def ft(f): return f / FPS                                                # frame → s
-def i16(i, swing=True): return PHASE + i * S16 + (SWING if swing and i % 2 else 0.0)   # 16th i (= 4k + step) → s
+def i16(i, swing=True): return PHASE + i * S16 + (SWING if swing and i % 2 else 0.0) + _ins(i / 4)   # 16th i (= 4k + step) → s
 def cue(name): return ft(SFX[name]['frame'])
 
 
@@ -253,10 +260,10 @@ def ding():
     """the deadline reminder: a two-tone chime, E6 then C6 (a 'ding-dong' going down)"""
     out = np.zeros(n_(1.4))
     for t0, f, a in ((0.0, nf('E6'), 1.0), (0.11, nf('C6'), 0.85)):
-        d = 1.2; t = tt(d)
-        y = (np.sin(2 * np.pi * f * t) * np.exp(-t / 0.35) + 0.35 * np.sin(2 * np.pi * 2 * f * t) * np.exp(-t / 0.12)
+        d = 0.5; t = tt(d)                    # (fix round 2) τ 0.35 → 0.18, body 1.2 → 0.5 s: done before the voice
+        y = (np.sin(2 * np.pi * f * t) * np.exp(-t / 0.18) + 0.35 * np.sin(2 * np.pi * 2 * f * t) * np.exp(-t / 0.12)
              + 0.12 * np.sin(2 * np.pi * 3.01 * f * t) * np.exp(-t / 0.05)) * np.minimum(1, t / 0.0015) * a
-        out[n_(t0):n_(t0) + len(y)] += fade(y, 0.0005, 0.4)
+        out[n_(t0):n_(t0) + len(y)] += fade(y, 0.0005, 0.2)
     return fade(out * 0.35, 0.0005, 0.1)
 
 
@@ -538,7 +545,7 @@ def build():
     RIM = rim(0.06)
     KPAT = {'2step': (0, 10), 'fill': (0, 8, 11, 12, 14, 15), 'roll': (0, 6, 7)}
 
-    def drums(k0, k1, kick_='2step', fills=(), claps=True, hats=True, ohats=True, shk=True, rims=True, vel=1.0, skip=(), fill_vel=1.0):
+    def drums(k0, k1, kick_='2step', fills=(), claps=True, hats=True, ohats=True, shk=True, rims=True, vel=1.0, skip=(), fill_vel=1.0, clap_skip=()):
         for i in range(int(round(k0 * 4)), int(round(k1 * 4))):
             b = i % 16; bar = (i // 16) * 4
             pat = KPAT['fill'] if bar in fills else KPAT[kick_]
@@ -546,7 +553,7 @@ def build():
             if b in pat and not any(abs(t0 - s) < 0.02 for s in skip):
                 fv = fill_vel if (bar in fills and b >= 8) else 1.0
                 m.add(KICK, t0, gain=G['kick'] * vel * fv * (1.0 if b == 0 else 0.92), bus='drums'); KICKS.append(t0)
-            if claps and b in (4, 12): m.add(CLAPS[(i // 4) % 4], t0, gain=G['clap'] * vel, bus='drums')
+            if claps and b in (4, 12) and i not in clap_skip: m.add(CLAPS[(i // 4) % 4], t0, gain=G['clap'] * vel, bus='drums')
             if hats:
                 if b % 4 == 2 and ohats: m.add(OH, t0, gain=G['ohat'] * vel, bus='drums', pan=0.2)
                 else: m.add(HATS[i % 4], tsw, gain=(0.16, 0.24, 0.2, 0.26)[b % 4] * G['hat'] * vel, bus='drums', pan=0.25)
@@ -597,7 +604,7 @@ def build():
     # ---------------------------------------------------------------- SCREEN (2.6 – 4.77): inside the laptop
     m.add(blip(), cue('screen_on'), gain=0.45, bus='sfx'); mark('screen_on', cue('screen_on'))
     m.add(pop(420, 1100, 0.07), cue('chat_pop'), gain=0.6, bus='sfx', pan=-0.1); mark('chat_pop', cue('chat_pop'))
-    m.add(buzz(), cue('chat_pop'), gain=0.6, bus='sfx', pan=0.35)
+    m.add(buzz(((0.0, 0.14), (0.19, 0.04))), cue('chat_pop'), gain=0.6, bus='sfx', pan=0.35)   # (fix round 2) ends 2.99 s, before «والتسليم…»
     m.add(ding(), cue('notif_ding'), gain=0.75, bus='sfx', pan=0.05); mark('notif_ding', cue('notif_ding'))
     k0 = int(round((cue('clock_ticks') - PHASE) / BEAT))                       # beat 4 … beat 11, stops at the hit
     for k in range(k0, 12):
@@ -628,6 +635,13 @@ def build():
     ta.seed(2150)                                   # the brand hits get their own fixed noise (no drift when code above changes)
     sp = np.zeros((n_(2.6), 2)); th = tash_hit(); ws = reverb(water_splash(), 1.2, 0.14, 0.01, 7000); sd = stereo(sub_drop())
     sp[:len(th)] += th[:len(sp)] * 0.55; sp[:min(len(ws), len(sp))] += ws[:len(sp)] * 0.9; sp[:len(sd)] += sd * 0.8
+    # (fix round 2) the spoken «طَ» (7.14-7.22 s) sits under the hit: a -6 dB cut of the splash's 0.4-3 kHz band over its
+    # first 0.13 s, back by 0.20 s (zero-phase band subtract, like the music carve); the sub, the clap transient and the
+    # air above 4 kHz are untouched
+    spb = signal.sosfiltfilt(signal.butter(2, [400 / (SR / 2), 3000 / (SR / 2)], 'band', output='sos'), sp, axis=0)
+    tsp = np.arange(len(sp)) / SR
+    wcut = np.clip((0.20 - tsp) / 0.07, 0, 1); wcut = wcut * wcut * (3 - 2 * wcut)
+    sp = sp - spb * ((1 - db(-6.0)) * wcut)[:, None]
     m.add(fade(sp, 0.0005, 0.3), T_HIT - 0.002, gain=0.47, bus='logo'); mark('SPLASH', T_HIT)
     m.add(snapper(), cue('lockup_snap'), gain=0.45, bus='sfx', pan=0.1); mark('lockup_snap', cue('lockup_snap'))
     drums(12, 32, fills=(16, 28), fill_vel=0.7, skip=(kt(12),) + tuple(ft(c['land']) for c in C['cards']))  # the splash / a card hit IS that kick
@@ -645,7 +659,13 @@ def build():
     m.add(whoosh(0.35, 600, 7000, pan_from=-0.5, pan_to=0.6, peak=0.35), t1, gain=0.25, bus='sfx')   # the slides fan out
     for j in range(6):
         m.add(paper_flip(R, 0.12), t1 + 0.02 + 0.055 * j, gain=0.3, bus='sfx', pan=-0.6 + 0.24 * j)
-    for j in range(3): m.add(paper_flip(R, 0.15), cue('card2') + 0.07 + 0.12 * j, gain=0.34, bus='sfx', pan=0.2 - 0.2 * j)
+    # (fix round 2) the report's two page turns, on the picture's own turn frames (cues card2_turn1/2: f342, f357)
+    for j, nm in enumerate(('card2_turn1', 'card2_turn2')):
+        m.add(paper_flip(R, 0.15), cue(nm), gain=0.34, bus='sfx', pan=0.2 - 0.3 * j); mark(nm, cue(nm))
+    # (fix round 2) the school deck grows out from behind card 1 on the beat (f287-f295): a fan flick + three flicks
+    tds = cue('deck_school')
+    m.add(whoosh(0.22, 600, 6000, pan_from=-0.4, pan_to=0.4, peak=0.6), tds, gain=0.2, bus='sfx'); mark('deck_school', tds)
+    for j in range(3): m.add(paper_flip(R, 0.1), tds + 0.13 + 0.04 * j, gain=0.26, bus='sfx', pan=-0.5 + 0.5 * j)
     m.add(paper_flip(R, 0.16), cue('card3') + 0.06, gain=0.34, bus='sfx', pan=-0.15)
     m.add(whoosh(0.32, 400, 6000, pan_from=-0.6, pan_to=0.5, peak=0.6), cue('card4') - 0.19, gain=0.22, bus='sfx')
     m.add(shutter(), cue('card5') + 0.03, gain=0.45, bus='sfx', pan=0.1)
@@ -674,12 +694,12 @@ def build():
     drums(33, 37, hats=False, ohats=False, shk=True, rims=False, vel=0.85)
     drums(38, 40, hats=False, ohats=False, shk=True, rims=False, vel=0.9)       # the rule line: the beat comes back,
     m.add(KICK, kt(38), gain=G['kick'] * 0.95, bus='drums'); KICKS.append(kt(38))  # on beat 38 itself (beat 3: no 2-step kick)
-    drums(40, 44.5, ohats=False, rims=False, vel=0.8)                           # after the swipe: light hats
+    drums(40, 45, ohats=False, rims=False, vel=0.8)                             # after the swipe: light hats (to the cut)
     gap = (kt(37), kt(38))
     cell(32, 'Am', parts=('bass',), keep=lambda t: t >= kt(33))
     for k, ch in ((34, 'Dm'), (36, 'Bb'), (38, 'C'), (40, 'Am'), (42, 'Dm'), (44, 'Bb')):
         parts = ('bass', 'pad')                                                   # nothing busy under the rule line
-        cell(k, ch, n16=2 if k == 44 else 8, parts=parts, vel=0.85, gpad=4.0, keep=lambda t: not (gap[0] <= t < gap[1]) and t < T_CUT)
+        cell(k, ch, n16=4 if k == 44 else 8, parts=parts, vel=0.85, gpad=4.0, keep=lambda t: not (gap[0] <= t < gap[1]) and t < T_CUT)
     ts = cue('margin_snap')
     m.add(click_pop(nf('E6'), 0.9), ts, gain=0.42, bus='sfx'); m.add(bell(nf('E7'), 0.9, 0.6), ts + 0.004, gain=0.12, bus='sfx', pan=0.2)
     m.add(tick(3200), ts + 2 / FPS, gain=0.16, bus='sfx', pan=-0.3); m.add(tick(3600), ts + 4 / FPS, gain=0.13, bus='sfx', pan=0.3)
@@ -715,17 +735,20 @@ def build():
     eh = np.zeros((n_(1.4), 2)); k_ = stereo(KICK); c_ = stereo(CLAPS[0])
     eh[:len(k_)] += k_ * 0.9; eh[:len(c_)] += c_ * 0.7; eh[:len(CRASH)] += CRASH[:len(eh)] * 0.8
     m.add(eh, T_END, gain=0.75, bus='hits'); KICKS.append(T_END); mark('end_cut', T_END)
-    drums(50, 55, fills=(52,))
+    # (fix round 2) the bar-52 fill keeps its roll but drops the two kicks and the clap that sat on «ليلة.» (28.16 / 28.28 s):
+    # the roll now starts on 16th 14 (28.52 s), after the last word
+    drums(50, 55, fills=(52,), skip=(i16(219, False), i16(220, False)), clap_skip=(220,))
     cell(50, 'Bb'); cell(52, 'C'); cell(54, 'Dm', n16=4)
     m.add(pop(420, 1100, 0.07), cue('cta_pop'), gain=0.42, bus='sfx'); mark('cta_pop', cue('cta_pop'))
     m.add(tick(2800), cue('handles_pop'), gain=0.32, bus='sfx', pan=0.2); mark('handles_pop', cue('handles_pop'))
     t2 = ft(TXT['end.tt']['land']); m.add(tick(3200), t2, gain=0.3, bus='sfx', pan=-0.2); mark('handles_pop2', t2)
-    tg = cue('tag_pop')                                                              # the wink: E6 C6 then G6
+    tg = cue('tag_pop')            # the wink: E6 C6 then G6, its attack in the gap BEFORE «بس» (fix round), short tails
     for j, (n, dt) in enumerate((('E6', 0.0), ('C6', 0.06), ('G6', 0.12))):
-        m.add(pluck_syn(nf(n), 0.3, 0.95), tg + dt, gain=0.3, bus='sfx', pan=(-0.3, 0.3, 0.0)[j])
-    m.add(pop(600, 1500, 0.05), tg + 0.18, gain=0.2, bus='sfx'); mark('tag_pop', tg)
-    # the cadence under the logo: Csus on beat 55 (the ticks), Fmaj9 on the hit, held to the last frame
-    m.add(pad([nf(n) for n in CH['Csus']], T_LOGO - kt(55) + 0.08, cutoff=1500, detune=0.08, attack=0.03, release=0.06), kt(55), gain=0.32, bus='big')
+        m.add(pluck_syn(nf(n), 0.22, 0.95), tg + dt, gain=0.3, bus='sfx', pan=(-0.3, 0.3, 0.0)[j])
+    m.add(pop(600, 1500, 0.05), tg + 0.14, gain=0.16, bus='sfx'); mark('tag_pop', tg)
+    # the cadence under the logo: Csus from the ticks (after the last word), Fmaj9 on the hit, held to the last frame
+    tk0 = V['vo_last_end'] + 0.02
+    m.add(pad([nf(n) for n in CH['Csus']], T_LOGO - tk0 + 0.08, cutoff=1500, detune=0.08, attack=0.03, release=0.06), tk0 - 0.01, gain=0.32, bus='big')
     m.add(pad([nf(n) for n in ('F3', 'A3', 'C4', 'E4', 'G4')], DUR - T_LOGO + 1.0, cutoff=2400, detune=0.08, attack=0.01, release=0.4), T_LOGO, gain=0.5, bus='big')
     for j, n in enumerate(('A3', 'E4', 'G4', 'C5')):
         m.add(epiano(nf(n), 1.6, 0.6, 0.5, pan=(j / 3 - 0.5) * 0.5), T_LOGO + 0.01 + j * 0.01, gain=0.32, bus='big')
@@ -733,9 +756,10 @@ def build():
 
     # ---------------------------------------------------------------- the TASH sonic logo, alone
     ta.seed(8480)
-    tk0 = kt(55)
+    # (fix round) the typing ticks start AFTER the voice (vo_last_end + 0.02), three ticks 0.09 s apart into the hit:
+    # before, they and the tail lift landed on «ليلة.»
     for j, (f, pn) in enumerate(((2200, 0.25), (2500, 0.0), (2800, -0.25))):
-        m.add(tick(f), tk0 + j * S16, gain=0.85, bus='logo', pan=pn)
+        m.add(tick(f), tk0 + j * 0.09, gain=0.85, bus='logo', pan=pn)
     mark('sonic_logo_ticks', tk0)
     m.add(whoosh(0.3, 400, 6000, pan_from=0.4, pan_to=-0.2, peak=0.8), T_LOGO - 0.255, gain=0.5, bus='logo')
     m.add(tash_hit(), T_LOGO - 0.004, gain=0.66, bus='logo'); mark('sonic_logo_hit', T_LOGO)
@@ -782,22 +806,31 @@ def build():
     # after the last word the duck lets go in 150 ms (the sonic logo and the end pad come up in the clear)
     free = 1 - np.clip((np.arange(NS) / SR - V['vo_last_end']) / 0.15, 0, 1) ** 2
     duck_m = vo_duck(vo, -7.0) * free
-    duck_s = vo_duck(vo, -3.0) * free
+    duck_s = vo_duck(vo, -6.0) * free                                  # (fix round) -3 → -6: pops and ticks under the voice
     duck_h = vo_duck(vo, -2.0) * free
     return stems, {'vo': vinfo, 'duck_music_db': duck_m, 'duck_sfx_db': duck_s, 'duck_hits_db': duck_h}
 
 
 VO_GAIN_DB = 10.5
 MUSIC_GAIN_DB = 0.0
-TAIL_LIFT_DB = 3.5          # VO mix only: from the sonic logo's first tick (beat 55, 27.80 s) the bed and the logo come up
+TAIL_LIFT_DB = 3.5          # VO mix only: after the last word (vo_last_end) the bed and the logo come up
+CARVE_DB = -5.0             # VO mix only: an extra cut of the music's 1.5-5 kHz band while the voice speaks
 
 
 def mixes(stems, info):
     dm = db(info['duck_music_db'])[:, None]; ds = db(info['duck_sfx_db'])[:, None]; dh = db(info['duck_hits_db'])[:, None]
     mus = stems['music'] * db(MUSIC_GAIN_DB)
     novo = mus + stems['sfx'] + stems['hits'] + stems['logo']
-    lift = db(TAIL_LIFT_DB * np.clip((np.arange(NS) / SR - kt(55)) / 0.15, 0, 1) ** 2)[:, None]
-    vo = (mus * dm + stems['sfx'] * ds + stems['hits'] * dh + stems['logo']) * lift + stems['vo']
+    lift = db(TAIL_LIFT_DB * np.clip((np.arange(NS) / SR - V['vo_last_end']) / 0.15, 0, 1) ** 2)[:, None]
+    # (fix round) the carve: keyed to the same voice side-chain (k = 0..1), an extra CARVE_DB on 1.5-5 kHz only, zero-phase
+    # so the cut is clean (the band is subtracted in phase)
+    k = np.clip(info['duck_music_db'] / -7.0, 0, 1)
+    md = mus * dm
+    mb = signal.sosfiltfilt(signal.butter(2, [1500 / (SR / 2), 5000 / (SR / 2)], 'band', output='sos'), md, axis=0)
+    mus_v = md - mb * (1 - db(CARVE_DB * k))[:, None]
+    bed = (mus_v + stems['sfx'] * ds + stems['hits'] * dh + stems['logo']) * lift
+    info['bed_vo'] = bed
+    vo = bed + stems['vo']
     return novo, vo
 
 
@@ -824,6 +857,7 @@ def main():
     print('VO chain:', info['vo'])
     print(f"music duck while the VO speaks: median {np.median(dm):.2f} dB, 5-95 % {np.percentile(dm, 5):.2f} … {np.percentile(dm, 95):.2f} dB")
     if a.stems:
+        write(os.path.join(a.stems, 'bed_vo.wav'), info['bed_vo'])
         for k, v in stems.items(): write(os.path.join(a.stems, f'{k}.wav'), v)
         for k in ('duck_music_db', 'duck_sfx_db', 'duck_hits_db'): np.save(os.path.join(a.stems, f'{k}.npy'), info[k])
         json.dump({'events': EVENTS, 'report': report, 'vo': info['vo']}, open(os.path.join(a.stems, 'events.json'), 'w'),

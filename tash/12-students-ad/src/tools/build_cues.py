@@ -69,8 +69,10 @@ def word_lands(text, phrases, first_land):
 # line holds 0.9 s after its last word; «بحث؟» lands 5 frames before its word; card 1 flies in as a new object from f232
 _c1 = next(p for p in V['phrases'] if p['id'] == 'c1')
 S5_OUT = F(_c1['film_on'] + 0.04)
-Q3 = FB(1.5) - 5
-CARD1_IN = FB(13) + 3
+# (fix round 2) «بحث؟» lands on f62 (its hit leads the voice by ~20 ms, like hit 2; was f59, 0.12 s early) and stays
+# sharp to f73; card 1 starts its flight on f238 (was f232) so «للطلاب» reads alone for ~0.3 s first
+Q3 = FB(1.5) - 2
+CARD1_IN = FB(13) + 9
 SCENES = [
     {'id': 's1_hook', 'in': 0, 'out': FB(2.5),
      'what': 'Live plate h1_desk (src/footage/h1, frame k = film frame k, 1.25x): night, the student from behind, hands in '
@@ -86,9 +88,9 @@ SCENES = [
      'what': 'The TASH chat bubble (sender «طشّ», no time, no online dot) pops in over the screen UI with typing dots, '
              'types «المرة الجاية…», then «خلّ التصميم على •••»; on the hit (f215, bar line) its live dots burst into a '
              'lime SPLASH that wipes the WHOLE screen and land as the wordmark «طشّ»; «للطلاب» snaps under it on beat 13. '
-             'The splash reveals TASH sample slide = card 1 of the parade (samples label on from its first frame). The '
-             'student\'s blank file is NEVER shown finished. «المرة الجاية…» stays to the cut (f258). Hands card 1 to s4 '
-             'at the rect in handoffs.s3_s4.'},
+             'The dots stay as the wordmark\'s dots (its body lands around them on their row). Card 1 of the parade then '
+             'flies in as a NEW object below the lock-up (samples label on from its first frame). The student\'s blank '
+             'file is NEVER shown finished. «المرة الجاية…» stays to the cut (f258). Hands card 1 to s4 per handoffs.s3_s4.'},
     {'id': 's4_parade', 'in': FB(15), 'out': FB(33),
      'what': 'The sample parade: 3D cards with depth on the beat, each card\'s chip = its on-screen word (rendered '
              'once), the answer punches in beside it; cards 4-6 one hit each; card 7 Excel (chart draws) + «وأي ملف '
@@ -132,7 +134,7 @@ TEXT.append(ev('L1.1', on('L1', 0), 's1_hook', FB(-2), s1o, in_=2,
                              'with the next two (they stack) until the push leaves them behind'))
 TEXT.append(ev('L1.2', on('L1', 1), 's1_hook', FB(0), s1o, vo='h2', note='bar line 1'))
 TEXT.append(ev('L1.3', on('L1', 2), 's1_hook', Q3, s1o, vo='h3',
-               note='(fix round) lands ~0.2 s before its VO word (PLAYBOOK: type before the voice), sharp to f73'))
+               note='(fix round 2) lands on f62 with its hit, ~20 ms before its VO word; sharp to f73'))
 # ---- s2
 bub = FB(7)                                                          # the TASH bubble lands (s3)
 TEXT.append(ev('L2', on('L2', 0), 's2_screen', FB(3.5), bub, words=word_lands(on('L2', 0), ['d1'], FB(3.5)), vo='d1',
@@ -143,7 +145,7 @@ TEXT.append(ev('ui.placeholder', ui('placeholder_title'), 's2_screen', FB(2.5) +
 TEXT.append(ev('ui.clock', ui('clock'), 's2_screen', FB(2.5) + 2, FB(12), in_=FB(2.5), kind='ui', size='small'))
 # (fix round) s2 opens with a match cut on the slide's white and whips back to the app (settled ~f87): the group chat
 # pops once its bubble is inside the safe area (f81-83), still before the reminder drops with the ding (f83-85)
-TEXT.append(ev('ui.group_chat', ui('group_chat_bubble'), 's2_screen', FB(2.5) + 5, FB(12), in_=FB(2.5) + 3, kind='ui', size='small',
+TEXT.append(ev('ui.group_chat', ui('group_chat_bubble'), 's2_screen', FB(2.5) + 5, FB(12), in_=FB(2.5) + 4, kind='ui', size='small',
                note='lands FIRST (no group header) and stays to the splash'))
 TEXT.append(ev('ui.notif_title', ui('deadline_notification_title'), 's2_screen', FB(3), FB(12), in_=FB(3) - 2, kind='ui', size='small',
                note='with the ding (beat 3); the pin is a drawn icon, no emoji'))
@@ -152,8 +154,9 @@ TEXT.append(ev('ui.notif', ui('deadline_notification'), 's2_screen', FB(3), FB(1
 s3o = SC['s3_splash']['out']
 TEXT.append(ev('ui.tash_sender', ui('tash_bubble_sender'), 's3_splash', bub, FB(12), in_=bub - 3, kind='ui', size='small',
                note='the bubble\'s sender name; no time, no online dot'))
-TEXT.append(ev('ui.tash_typing', ui('tash_bubble_typing'), 's3_splash', bub, FB(7.5), in_=bub - 3, kind='ui', size='small',
-               note='typing dots until «المرة الجاية…» replaces them'))
+TEXT.append(ev('ui.tash_typing', ui('tash_bubble_typing'), 's3_splash', bub, FB(7.5) - 3, in_=bub - 2, kind='ui', size='small',
+               note='typing dots until «المرة الجاية…» replaces them (fix round 2: gone one frame before its first word shows; '
+                    'they come back on row 2 from «الجاية…» to «خلّ», then on row 3 as the wordmark\'s dots)'))
 TEXT.append(ev('L3.1', on('L3', 0), 's3_splash', FB(7.5), s3o, words=word_lands(on('L3', 0), ['t1'], FB(7.5)), vo='t1',
                note='typed into the TASH bubble (the bubble text IS the on-screen text); stays to the cut f258'))
 pre = ui('tash_bubble_before_splash')                               # «خلّ التصميم على •••»
@@ -197,9 +200,17 @@ for i, (n, kind, lid, chip_i, ans_i, beat, _, move, hint) in enumerate(CARDS):
         a_ph = PH[lid][1]; a_on = next(p for p in V['phrases'] if p['id'] == a_ph)
         a_land = FB(17) if lid == 'P1' else F(a_on['film_on'] + 0.02)
         TEXT.append(ev(f'{lid}.answer', on(lid, 1), 's4_parade', a_land, nxt, words=word_lands(on(lid, 1), [a_ph], a_land),
-                       vo=a_ph, note=f'the answer punches in beside card {n}\'s chip'))
+                       vo=a_ph, note=f'the answer punches in beside card {n}\'s chip; (fix round 2) it holds until the next '
+                                     'answer replaces it, dimmed to 70 % once the next card lands'))
     SLOTS.append(slot)
 TEXT.append(ev('P5', on('P5', 0), 's4_parade', FB(30.5), FB(33), words=word_lands(on('P5', 0), ['p5'], FB(30.5)), vo='p5'))
+# (fix round 2) every answer is complete on screen for >= 1 s: it holds until the next answer replaces it (the answers share
+# one spot), dimmed to 70 % under the next card; «ننسّقه عدل.» rides under the poster to f437 (its last word lands f403)
+_ans = {e['id']: e for e in TEXT if e['id'].endswith('.answer')}
+_ans['P1.answer']['out'] = _ans['P2.answer']['land']
+_ans['P2.answer']['out'] = _ans['P3.answer']['land']
+_ans['P3.answer']['out'] = _ans['P3.answer']['words'][-1]['land'] + 35
+for _e in _ans.values(): _e['t_out'] = T(_e['out'])
 for j, (tag, k) in enumerate(zip(uis('research_card_tag'), (24, 24.25, 24.5))):
     TEXT.append(ev(f'ui.research_tag{j + 1}', tag, 's4_parade', FB(k), FB(26), kind='tag', size='small',
                    note='on card 3: what we did to the paper'))
@@ -208,21 +219,20 @@ for j, (chip, k) in enumerate(zip(uis('file_chip'), (31, 31.25, 31.5, 31.75, 32)
                    dir_='ltr', note='LTR element (dir=ltr), the dot on the left; pops on quarter beats, then the fan holds'))
 # ---- s5 details
 m1w = vo_words(['m1'])
-TEXT.append(ev('D1.1', on('D1', 0), 's5_details', FB(33.5), FB(36.5) + 3,
+TEXT.append(ev('D1.1', on('D1', 0), 's5_details', FB(33.5), FB(38),
                words=[[on('D1', 0).split(' ')[0], FB(33.5)], [on('D1', 0).split(' ')[1], F(m1w[1][2] + 0.02)]], vo='m1',
                note='the margins line; the only label of the margins'))
-TEXT.append(ev('D1.2', on('D1', 1), 's5_details', FB(35.5), FB(36.5) + 3, vo='m2',
-               note='lands ON THE SNAP of the alignment guides (f553)'))
-TEXT.append(ev('ui.callout_toc', [s for s in uis('detail_callout')][0], 's5_details', FB(36.5) + 5, FB(38) - 1, kind='callout',
-               size='small', note='OPTIONAL (script: only if the VO leaves >= 0.5 s): it leaves 0.57 s (the breath before the '
-                                  'rule line, f572-f588). Gone before the rule line. «ترقيم الصفحات» has no room: not used.'))
-TEXT.append(ev('R1.1', on('R1', 0), 's5_details', FB(38), FB(44.5), words=word_lands(on('R1', 0), ['r1'], FB(38)), vo='r1',
+TEXT.append(ev('D1.2', on('D1', 1), 's5_details', FB(35.5), FB(38), vo='m2',
+               note='lands ON THE SNAP of the alignment guides (f553); (fix round 2) both D1 lines hold to the hard cut f589'))
+# (fix round 2) the optional callouts («فهرس تلقائي», «ترقيم الصفحات») are not used: the script makes them conditional on
+# 0.5 s of free time, and here that time is D1's own hold (and the callout hid the dots of «التنفيذي» on the page)
+TEXT.append(ev('R1.1', on('R1', 0), 's5_details', FB(38), S5_OUT, words=word_lands(on('R1', 0), ['r1'], FB(38)), vo='r1',
                note='THE RULE LINE, part 1, on BEFORE'))
-TEXT.append(ev('R1.2', on('R1', 1), 's5_details', FB(40.5), FB(44.5), words=word_lands(on('R1', 1), ['r2'], FB(40.5)), vo='r2',
+TEXT.append(ev('R1.2', on('R1', 1), 's5_details', FB(40.5), S5_OUT, words=word_lands(on('R1', 1), ['r2'], FB(40.5)), vo='r2',
                note='part 2, on AFTER, after the swipe on the bar line f618; both parts read together to the cut'))
 ba = uis('before_after_label')
 TEXT.append(ev('ui.before', ba[0], 's5_details', FB(38), FB(40), kind='label', size='small'))
-TEXT.append(ev('ui.after', ba[1], 's5_details', FB(40) + 2, FB(44.5), in_=FB(40), kind='label', size='small'))
+TEXT.append(ev('ui.after', ba[1], 's5_details', FB(40) + 2, S5_OUT, in_=FB(40), kind='label', size='small'))
 # ---- s6 payoff
 TEXT.append(ev('C1.1', on('C1', 0), 's6_payoff', S5_OUT + 2, FB(51), in_=S5_OUT, words=word_lands(on('C1', 0), ['c1'], S5_OUT + 2),
                vo='c1', note='(fix round) the VO starts on the cut (22.86 s); the type lands 2 frames into the hall'))
@@ -251,6 +261,7 @@ LABEL = {'text': ui('samples_label'), 'in': CARD1_IN, 'out': FB(51), 't_in': T(C
 LABEL_POS = {'s3_splash': 'top', 's4_parade': 'top', 's5_details': 'top', 's6_payoff': 'top'}
 
 # ---- SFX for the audio agent (frame = the hit; times in seconds too)
+TXT_ID = {e['id']: e for e in TEXT}
 def sfx(name, f, note): return {'name': name, 'frame': f, 't': T(f), 'beat': round((T(f) - PHASE) / BEAT, 2), 'note': note}
 SFX = [
     sfx('hook_bed', 0, 'night room tone + low tension pad, pre-drop (no groove yet); laptop fan hum'),
@@ -271,7 +282,10 @@ SFX = [
     sfx('lockup_snap', FB(13), '«للطلاب» snaps under the wordmark'),
     sfx('card1', FB(15), 'card 1 hit + slides fan out (paper whoosh)'),
     sfx('answer1', FB(17), 'answer pop (soft)'),
-    sfx('card2', FB(20), 'card 2 hit (bar line) + page flips'),
+    sfx('deck_school', FB(17), '(fix round 2) the school deck grows out from behind card 1 (f287-f295): a short fan flick + three flicks'),
+    sfx('card2', FB(20), 'card 2 hit (bar line)'),
+    sfx('card2_turn1', TXT_ID['P2.answer']['land'] - 5, '(fix round 2) the report cover turns (vertical ~2 frames later): one paper flip'),
+    sfx('card2_turn2', TXT_ID['P2.answer']['land'] + 10, '(fix round 2) the contents page turns: one paper flip'),
     sfx('answer2', F(next(p for p in V['phrases'] if p['id'] == 'p2b')['film_on'] + 0.02), 'answer pop'),
     sfx('card3', FB(22.5), 'card 3 hit + paper flip'),
     sfx('research_tags', FB(24), 'three small ticks f388 / f392 / f395 (the tags عناوين، ترقيم، مراجع)'),
@@ -314,9 +328,10 @@ C = {
     'handoffs': {
         's1_s2': {'frame': FB(2.5), 'what': 'white match: s1 ends on a fully white frame (inside the laptop screen); s2 starts '
                                             'from white and the app UI resolves out of it within ~6 frames'},
-        's3_s4': {'frame': FB(15), 'card1_rect': {'cx': 540, 'cy': 960, 'w': 1000, 'rotY': 0, 'rotX': 0},
-                  'what': 'card 1\'s slide (16:9) as s3 leaves it on f257: centred, 1000 px wide, flat. s4 starts from the '
-                          'same rect and pulls it into the parade'},
+        's3_s4': {'frame': FB(15), 'card1': 'scenes/s4_parade.js HANDOFF + card1Matrix()',
+                  'what': '(fix round) card 1 flies in as a new object in s3 (from f%d) and sits on f257 exactly where the '
+                          'parade camera sees it on f258: centred about (540, 1300), 760 px wide, rolled -3 deg; s4\'s camera '
+                          'then lifts it to the spot' % CARD1_IN},
         's4_s5': {'frame': FB(33), 'what': 'hard cut on the beat (or s5 opens with a push into one page)'},
         's5_s6': {'frame': S5_OUT, 'what': 'match cut to the lecture hall; the slide on its screen is card 1\'s slide'},
         's6_s7': {'frame': FB(51), 'what': 'hard cut to the end card'},
@@ -333,6 +348,7 @@ C = {
             'splash': FB(12), 'lockup': FB(13), 'card1_in': CARD1_IN, 'card1': FB(15), 'card2': FB(20), 'card3': FB(22.5), 'card4': FB(26),
             'card5': FB(27), 'card6': FB(28.5), 'card7': FB(30.5), 'fan': FB(32), 'details': FB(33), 'snap': FB(35.5),
             'rule': FB(38), 'swipe': FB(40), 'rule2': FB(40.5), 'payoff_cut': S5_OUT, 'payoff': S5_OUT + 2, 'chord': FB(47),
+            'deck_school': FB(17), 'card2_turn1': TXT_ID['P2.answer']['land'] - 5, 'card2_turn2': TXT_ID['P2.answer']['land'] + 10,
             'end': FB(51), 'cta': F(e1['film_on'] + 0.02), 'handles': FB(52), 'tag': FB(54), 'logo_hit': FB(57),
             'logo_ticks': F(V['vo_last_end'] + 0.02), 'last': END_F - 1},
 }

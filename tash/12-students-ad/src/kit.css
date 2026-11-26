@@ -38,6 +38,7 @@ html, body { margin: 0; padding: 0; background: var(--ink); overflow: hidden; }
 .k-chip.lime { background: var(--lime); color: var(--ink); }
 .k-chip.ink { background: var(--ink); color: var(--paper); box-shadow: 0 10px 30px rgba(0,0,0,.35); }
 .k-chip.paper { background: var(--paper); color: var(--ink); box-shadow: 0 10px 30px rgba(0,0,0,.28); }
+.k-chip.inkline { background: var(--ink); color: var(--lime); box-shadow: inset 0 0 0 3px var(--lime), 0 8px 24px rgba(0,0,0,.45); }   /* fix round 2: annotations / the lock-up */
 .k-chip.glass { background: rgba(11,11,11,.62); color: var(--paper); border: 1.5px solid rgba(245,245,233,.22); }
 .k-chip i.dot { display: block; width: 0.34em; height: 0.34em; border-radius: 50%; background: var(--lime); flex: none; }
 

@@ -1,4 +1,5 @@
-// s3_splash — THE TURN (f140–258), the most important 2.5 s of the film. (Rebuilt in the fix round, 26 Nov.)
+// s3_splash — THE TURN (f140–258), the most important 2.5 s of the film. (Rebuilt in the fix round, 26 Nov; re-timed and
+// re-laid in fix round 2: see the block at the end of this comment.)
 //
 // Over the student's dark slide app (s2 runs underneath to f224, dimmed 40 % from f141) a big TASH message lands in the
 // middle of the screen: an ink bubble with a lime rim, the sender «طشّ» (lime, 44 px), no time, no online dot, no avatar.
@@ -17,9 +18,18 @@
 // the wordmark), and settles exactly where the parade's camera sees it on its first frame (s4_parade.js HANDOFF): the
 // lime → stage cut on f258 keeps the card in place. The samples label is on from the card's first visible frame.
 // Every visual is a pure function of the frame (seeded rng, no timers).
+// (fix round 2) · The bubble springs UP from 220 px below on f141 (first seen f142, once the reminder has flown off) and
+//   settles by f148. · It is always grown BEFORE its content: row-1 width from its first frame, two rows from f157, the
+//   row-2 width by f180, three rows from f184; every word pops WHOLE inside it (never revealed through the clip edge).
+//   · Typing dots: row 1 f142–146, row 2 f161–181 (one frame before «خلّ» shows), row 3 (= the wordmark's dots) from
+//   f189. · The burst droplets fly out from the bubble's rim, drawn UNDER the bubble (nothing lands on the type). · The
+//   whole message is one group, centred lower in the frame for the turn and the hit (≈ y 540–1330); as card 1 flies in
+//   (f238–257) the group steps back up and a little smaller (f236–252), so the card lands ≥ 48 px under it. · «للطلاب»
+//   is the film's one lock-up: an ink pill, 3 px lime outline, lime type, 24 px under the wordmark (s7 and the poster
+//   use the same).
 import * as K from '../kit.js';
 import * as L from '/_system/brand/logo.mjs';
-import { card1Matrix, cardM, css3, REST, CARD1 } from './s4_parade.js';
+import { card1Matrix, cardM, css3, REST, CARD1, HANDOFF } from './s4_parade.js';
 
 const NS = 'http://www.w3.org/2000/svg';
 const LIME = '#C6FF00', INK = '#0B0B0B', PAPER = '#F5F5E9';
@@ -30,8 +40,11 @@ const CARD_IMG = '../assets/s4_parade/deck-uni-01-title.jpg';
 // rows are centred on x 540; the dots row sits where the wordmark's dots will be (they never move)
 const B = { padX: 50, r: 46, rTail: 12, sz1: 84, sz2: 100, maxRow: 830,
   top0: 382, y1: 508, y2: 628, yDots: 758, bot1: 568, bot2: 694, bot3: 822,        // before the hit
-  lift: 50, top1: 332, bot4: 1004 };                                                // after the hit (rows lifted)
+  lift: 50, top1: 372, botPad: 34 };                                                // after the hit (rows lifted)
 const WM_W = 560;
+// (fix round 2) the message group: centred lower for the turn and the hit, then it steps back for card 1
+const GRP = { y0: 170, rise: 220, glide: [236, 252], y1: -30, s1: 0.90, origin: [540, 372] };
+const PILL = { size: 78, gap: 24 };          // «للطلاب»: type px, gap under the wordmark's ink
 const PERIOD = { r: 64, gap: 92 };            // logo units: the full stop's radius and its gap from the ش's left edge
 
 const clamp = K.clamp, lerp = K.lerp, E = K.E;
@@ -85,19 +98,20 @@ export default {
     s.cardSheen = K.el(s.card, 'div', 'gl');
     s.cues = ctx.cues;
 
-    // ---- 3. the TASH bubble body (SVG)
-    s.bsvg = sv('svg', { class: 's3-svg', viewBox: '0 0 1080 1920', width: 1080, height: 1920 }); world.appendChild(s.bsvg);
+    // ---- 3. the burst droplets (canvas UNDER the message group: they fly out from the bubble's rim, never over the type)
+    s.dcv = K.el(world, 'canvas', 's3-cv'); s.dcv.width = 1080; s.dcv.height = 1920; s.dgc = s.dcv.getContext('2d');
+
+    // ---- 4. the message group: bubble, text rows, wordmark, «للطلاب» (one transform: shake, rise, the step back)
+    s.grp = K.el(world, 'div', 'layer s3-grp', { transformOrigin: `${GRP.origin[0]}px ${GRP.origin[1]}px` });
+    s.bsvg = sv('svg', { class: 's3-svg', viewBox: '0 0 1080 1920', width: 1080, height: 1920 }); s.grp.appendChild(s.bsvg);
     sv('defs', {}, s.bsvg).innerHTML = '<filter id="s3-bsh" x="-15%" y="-30%" width="130%" height="190%"><feGaussianBlur stdDeviation="16"/></filter>';
     s.bShadow = sv('path', { fill: 'rgba(40,62,0,0.55)', filter: 'url(#s3-bsh)' }, s.bsvg);
     s.bG = sv('g', {}, s.bsvg);
     s.bGlow = sv('path', { fill: 'none', stroke: LIME, 'stroke-width': 16, 'stroke-opacity': 0.13 }, s.bG);
     s.bBody = sv('path', { fill: INK, stroke: LIME, 'stroke-width': 3 }, s.bG);
 
-    // ---- 4. the burst droplets (canvas ABOVE the bubble body, BELOW the text)
-    s.dcv = K.el(world, 'canvas', 's3-cv'); s.dcv.width = 1080; s.dcv.height = 1920; s.dgc = s.dcv.getContext('2d');
-
     // ---- 5. the text rows (DOM, per word), clipped to the bubble
-    s.txt = K.el(world, 'div', 'layer s3-txt');
+    s.txt = K.el(s.grp, 'div', 'layer s3-txt');
     s.rowBox = K.el(s.txt, 'div', 'layer');
     const mkRow = (words, size, weight) => {
       const d = K.el(s.rowBox, 'div', 's3-line', { fontSize: size + 'px', fontWeight: String(weight) }); d.dir = 'rtl';
@@ -120,7 +134,7 @@ export default {
     s.senderW = s.sender.offsetWidth;
 
     // ---- 6. the wordmark (paper body + the lime dots = the typing dots), the full stop, «للطلاب»
-    s.osvg = sv('svg', { class: 's3-svg', viewBox: '0 0 1080 1920', width: 1080, height: 1920 }); world.appendChild(s.osvg);
+    s.osvg = sv('svg', { class: 's3-svg', viewBox: '0 0 1080 1920', width: 1080, height: 1920 }); s.grp.appendChild(s.osvg);
     const sc = s.wmS = WM_W / L.VB.w;
     const D0 = L.dots();
     s.wmX = 540 - WM_W / 2; s.wmY = B.yDots - D0[1].cy * sc;
@@ -139,27 +153,38 @@ export default {
     s.wmLeft = s.wmX + (TX + bb.x) * sc;
     s.logoDots = D0.map(d => ({ x: s.wmX + d.cx * sc, y: s.wmY + d.cy * sc, r: d.r * sc }));
     s.dots = s.logoDots.map(() => sv('circle', { fill: LIME }, s.osvg));
-    s.tDots = [0, 1, 2].map(() => sv('circle', { fill: LIME }, s.osvg));       // ui.tash_typing «•••» (row 1, f140–150)
-    s.wmBottom = s.wmY + L.VB.h * sc;
+    s.tDots = [0, 1, 2].map(() => sv('circle', { fill: LIME }, s.osvg));       // ui.tash_typing «•••» on row 1 (f142–146)
+    s.tDots2 = [0, 1, 2].map(() => sv('circle', { fill: LIME }, s.osvg));      // … and on row 2 (f161–181)
+    for (const c of [...s.tDots, ...s.tDots2]) c.dataset.ink = '1';             // never on a word (sweep)
+    // the wordmark's real ink (measured): the body + shadda, at rest
+    const ib = s.wmBody.getBBox();
+    s.wmInkBottom = s.wmY + (ib.y + ib.height) * sc;
 
-    s.chip = K.el(world, 'div', 's3-abs s3-chip', {}, L33.text); s.chip.dir = 'rtl'; s.chip.dataset.safe = '1';
+    // «للطلاب»: the lock-up pill (ink, 3 px lime outline, lime type), 24 px under the wordmark's ink
+    s.chip = K.el(s.grp, 'div', 's3-abs s3-chip', { fontSize: PILL.size + 'px' }, L33.text); s.chip.dir = 'rtl'; s.chip.dataset.safe = '1';
     const cw = s.chip.offsetWidth, ch = s.chip.offsetHeight;
-    s.chipCy = B.bot4 + 4;
+    s.chipCy = s.wmInkBottom + PILL.gap + ch / 2;
     K.css(s.chip, { left: f2(540 - cw / 2) + 'px', top: f2(s.chipCy - ch / 2) + 'px' });
+    s.bot4 = s.wmInkBottom + B.botPad;                                 // the wordmark held (the hit)
+    s.bot5 = s.chipCy + ch / 2 + B.botPad;                            // … and the pill (f227 on)
 
-    // ---- 7. widths of the bubble over time (it springs to hold each new word; centred rows)
-    const wTyp = 3 * 40 + 2 * B.padX + 20;
+    // ---- 7. (fix round 2) the bubble is grown BEFORE its content: the row-1 width from its first frame, two rows once
+    // «الجاية…» is in (f157, for the row-2 typing dots from f161), the row-2 width by f180 (before «خلّ» shows on f183),
+    // three rows f184 (before the wordmark's dots spawn on f189); the hit grows it to hold the wordmark, the snap of
+    // «للطلاب» (f227) to hold the pill. Words pop whole inside it (no word is ever revealed through the clip edge).
     const ext = sp => 2 * Math.max(Math.abs(sp.x0 - 540), Math.abs(sp.x1 - 540)) + 2 * B.padX;
-    const wSteps = [[s.F.bub - 3, wTyp]];
-    let wNow = wTyp;
-    s.r1.spans.forEach(sp => { wNow = Math.max(wNow, ext(sp), s.senderW + 2 * B.padX + 40); wSteps.push([sp.land - 3, wNow]); });
-    s.r2.spans.forEach(sp => { wNow = Math.max(wNow, ext(sp)); wSteps.push([sp.land - 3, wNow]); });
-    s.wSteps = wSteps; s.wFinal = wNow;
-    s.hSteps = [[s.F.bub - 3, B.bot1], [s.F.row2 - 3, B.bot2], [s.F.row2 + 1, B.bot3]];
+    const W1 = Math.max(3 * 40 + 2 * B.padX + 20, s.senderW + 2 * B.padX + 40, ...s.r1.spans.map(ext));
+    const W2 = Math.max(W1, ...s.r2.spans.map(ext));
+    const r1Last = s.r1.spans[s.r1.spans.length - 1].land;
+    s.F.typ2 = [r1Last + 1, s.F.row2 - 4];                            // row-2 typing dots: f161 … f181 (hidden on f182)
+    s.F.dots3 = s.F.row2 + 4;                                         // the wordmark's dots spawn on f189
+    s.wSteps = [[s.F.in, W1], [s.F.row2 - 12, W2]];
+    s.hSteps = [[s.F.in, B.bot1], [r1Last - 3, B.bot2], [s.F.row2 - 1, B.bot3]];
+    s.wFinal = W2;
 
     // ---- 8. the flood model (seeded), the burst droplets
     const rnd = K.rng(215);
-    s.O = [s.logoDots[1].x, s.logoDots[1].y];
+    s.O = [s.logoDots[1].x, s.logoDots[1].y + GRP.y0];              // the splash's origin, in the frame (the group sits lower)
     s.lobes = [[3, 0.075], [4, 0.05], [6, 0.04], [9, 0.026], [13, 0.017], [19, 0.011]].map(([k, a]) => ({ k, a, p: rnd() * 6.283, v: (rnd() - 0.5) * 0.5 }));
     s.fingers = Array.from({ length: 26 }, (_, i) => {
       const th = -Math.PI + (i + 0.15 + rnd() * 0.7) * (2 * Math.PI / 26);
@@ -170,10 +195,11 @@ export default {
       return { th, ts: rnd() * 5.5, m: 1.25 + rnd() * 0.9, r: 3 + Math.pow(rnd(), 2) * 15, stick: rnd() < 0.45 ? 1 + rnd() * 3 : 99,
         sat: Array.from({ length: 3 }, () => [rnd() * 6.283, 1.6 + rnd() * 1.4, 0.18 + rnd() * 0.22]) };
     });
-    // the burst: droplets thrown from the three dots (mostly sideways and down, a few up), solid, no outline
-    s.burst = Array.from({ length: 22 }, (_, i) => {
-      const a = (i / 22) * 2 * Math.PI + (rnd() - 0.5) * 0.4, v = 34 + rnd() * 46;
-      return { src: i % 3, vx: Math.cos(a) * v * 1.25, vy: Math.sin(a) * v * 0.9 - 6, r: 6 + Math.pow(rnd(), 1.5) * 16, life: 6 + rnd() * 5 };
+    // the burst: droplets thrown OUT of the bubble's rim (mostly sideways and down, a few up), solid, no outline; drawn
+    // under the bubble, so none of them ever sits on a letter (fix round 2: they landed as extra dots on the type)
+    s.burst = Array.from({ length: 26 }, (_, i) => {
+      const a = (i / 26) * 2 * Math.PI + (rnd() - 0.5) * 0.4, v = 30 + rnd() * 44;
+      return { a, vx: Math.cos(a) * v * 1.25, vy: Math.sin(a) * v * 0.9 - 6, r: 7 + Math.pow(rnd(), 1.5) * 17, life: 6 + rnd() * 5 };
     });
   },
 
@@ -284,7 +310,7 @@ export default {
     };
     for (const tk of [6, 11, 17, 24]) { const a = tau - tk; if (a > 0) ring(ox, oy, 420 + 40 * a, 0.16 * Math.exp(-a / 11), 20); }
     const ca = f - (s.F.card0 + 12);
-    if (ca > 0) for (const tk of [0, 6]) { const a = ca - tk; if (a > 0) ring(540, 1340, 300 + 26 * a, 0.2 * Math.exp(-a / 7), 10, 0.3); }
+    if (ca > 0) for (const tk of [0, 6]) { const a = ca - tk; if (a > 0) ring(540, HANDOFF.cy + 40, 300 + 26 * a, 0.2 * Math.exp(-a / 7), 10, 0.3); }
   },
 
   /** the impact shake (px) — the hit, then a small one when the wordmark slams */
@@ -296,17 +322,21 @@ export default {
     return [x, y];
   },
 
-  /** the burst: solid lime droplets out of the three dots, a one-frame smear on their first frame, an inner shade */
+  /** the burst: solid lime droplets thrown out of the bubble's rim (drawn under the bubble), a one-frame smear on their
+   *  first frame, an inner shade */
   drawBurst(f) {
     const s = this.s, g = s.dgc, a = f - s.F.hit;
     g.clearRect(0, 0, 1080, 1920);
     if (a < 0 || a > 12) { s.dcv.style.display = 'none'; return; }
     s.dcv.style.display = 'block';
     const sh = this.shake(f);
+    const cx = 540, cy = B.yDots + GRP.y0, hw = s.wFinal / 2 - 14, up = cy - (B.top1 + GRP.y0) - 14, dn = s.bot4 + GRP.y0 - cy - 14;
     for (const d of s.burst) {
       if (a > d.life) continue;
-      const D = s.logoDots[d.src], t = a + 0.6;
-      const x = D.x + sh[0] + d.vx * t * (1 - 0.04 * t), y = D.y + sh[1] + d.vy * t + 2.6 * t * t;
+      const ux = Math.cos(d.a), uy = Math.sin(d.a);
+      const tr = Math.min(hw / Math.max(1e-3, Math.abs(ux)), (uy < 0 ? up : dn) / Math.max(1e-3, Math.abs(uy)));   // to the rim
+      const t = a + 0.6;
+      const x = cx + ux * tr + sh[0] + d.vx * t * (1 - 0.04 * t), y = cy + uy * tr + sh[1] + d.vy * t + 2.6 * t * t;
       const vx = d.vx * (1 - 0.08 * t), vy = d.vy + 5.2 * t, sp = Math.hypot(vx, vy);
       const smear = a < 1 ? Math.min(1.9, 1 + sp * 0.014) : Math.min(1.35, 1 + sp * 0.005);  // the 1-frame motion smear
       const r = d.r * (1 - 0.5 * clamp((a - d.life + 3) / 3));
@@ -323,22 +353,27 @@ export default {
   seek(tl, ctx) {
     const s = this.s, f = ctx.f, F = s.F, HIT = F.hit;
     const sh = this.shake(f);
-    const shT = `translate(${f2(sh[0])}px, ${f2(sh[1])}px)`;
-    for (const e of [s.bsvg, s.osvg, s.txt]) e.style.transform = shT;
+
+    // ---- the message group: it springs up from 220 px below (f141 → settled by f148), sits lower in the frame for the
+    // turn and the hit, then steps back up and a little smaller while card 1 flies in (f236–252)
+    const rise = f < F.in + 1 ? 1 : 1 - sprF(f - (F.in + 1), 0.5, 1.8);
+    const gl = E.inOutCubic(clamp((f - GRP.glide[0]) / (GRP.glide[1] - GRP.glide[0])));
+    const gy = lerp(GRP.y0, GRP.y1, gl) + GRP.rise * rise, gs = lerp(1, GRP.s1, gl);
+    s.grp.style.transform = `translate(${f2(sh[0])}px, ${f2(sh[1] + gy)}px) scale(${gs.toFixed(5)})`;
+    s.grp.style.opacity = clamp((f - (F.in + 1)) / 2).toFixed(3);   // first seen on f142 (the reminder has flown off)
 
     this.drawLiquid(f);
     this.drawBurst(f);
 
-    // ---- the bubble: centred, springs to hold each word; lifts and grows to hold the wordmark on the hit
-    const pop = E.outBack(clamp((f - F.in) / (F.bub - F.in + 1)), 2.0);
-    let W = 0;
-    for (let i = 0; i < s.wSteps.length; i++) { const [fs, w] = s.wSteps[i], prev = i ? s.wSteps[i - 1][1] : 0; W += (w - prev) * (i ? sprF(f - fs) : 1); }
-    let bot = 0;
-    for (let i = 0; i < s.hSteps.length; i++) { const [fs, h] = s.hSteps[i], prev = i ? s.hSteps[i - 1][1] : 0; bot += (h - prev) * (i ? sprF(f - fs, 0.5, 2.6) : 1); }
+    // ---- the bubble: centred; grown BEFORE its content (see mount); on the hit it holds the wordmark, on f227 the pill
+    const pop = lerp(0.72, 1, E.outBack(clamp((f - (F.in + 1)) / 5), 2.0));
+    const step = (steps, sp) => { let v = 0; for (let i = 0; i < steps.length; i++) { const [fs, w] = steps[i], prev = i ? steps[i - 1][1] : 0; v += (w - prev) * (i ? sp(f - fs) : 1); } return v; };
+    const W = step(s.wSteps, n => sprF(n, 0.45, 2.2));              // a small overshoot: the rim stays inside x 64–1016
+    let bot = step(s.hSteps, n => sprF(n, 0.5, 2.6));
     const post = f >= HIT ? sprF(f - HIT + 1, 0.6, 1.8) : 0;       // the lock-up layout (rows lift, bubble grows): fast,
                                                                    // so the wordmark sits on ink from its first frame
     const top = lerp(B.top0, B.top1, post);
-    bot = lerp(bot, B.bot4, post);
+    bot = lerp(bot, s.bot4, post) + (s.bot5 - s.bot4) * (f >= F.chipIn - 2 ? sprF(f - (F.chipIn - 2), 0.55, 2.2) : 0);
     const trem = f >= HIT - 5 && f < HIT ? [Math.sin(f * 2.9) * 1.8, Math.cos(f * 3.7) * 1.4] : [0, 0];
     const breathe = 1 + 0.012 * Math.sin((f - F.in) / 9) * clamp((f - (HIT + 14)) / 10);   // alive on the lime field
     const bx = 540 - W / 2 + trem[0], by = top + trem[1], Hh = bot - top;
@@ -350,19 +385,18 @@ export default {
       `translate(${f2(cx0)} ${f2(cy0)}) scale(${sx.toFixed(4)} ${sy.toFixed(4)}) translate(${f2(-cx0)} ${f2(-cy0)})`);
     const d = bubblePath(bx, by, W, Hh, B.r, B.rTail);
     s.bBody.setAttribute('d', d); s.bGlow.setAttribute('d', d);
-    s.bG.style.opacity = clamp((f - F.in) / 2).toFixed(3);
     const onLime = clamp((f - (HIT + 2)) / 6);
     s.bBody.setAttribute('stroke-opacity', (1 - onLime).toFixed(3)); s.bGlow.setAttribute('stroke-opacity', (0.13 * (1 - onLime)).toFixed(3));
     s.bShadow.style.display = onLime > 0 ? 'inline' : 'none';
     if (onLime > 0) { s.bShadow.setAttribute('d', bubblePath(bx, by + 22, W, Hh, B.r, B.rTail)); s.bShadow.setAttribute('opacity', onLime.toFixed(3)); s.bShadow.setAttribute('transform', s.bG.getAttribute('transform')); }
 
-    // the text layer: clipped to the bubble's own rect (so no word ever hangs outside it), lifted with the lock-up
+    // the text layer: clipped to the bubble's own rect (a safety: the bubble is always grown before a word shows)
     const bs = pk * breathe;
-    const cl = { t: by + (1 - bs) * 0, l: cx0 - (W / 2) * bs, r: cx0 + (W / 2) * bs, b: by + Hh * bs };
+    const cl = { t: by, l: cx0 - (W / 2) * bs, r: cx0 + (W / 2) * bs, b: by + Hh * bs };
     s.rowBox.style.clipPath = `inset(${f2(cl.t)}px ${f2(1080 - cl.r)}px ${f2(1920 - cl.b)}px ${f2(cl.l)}px round ${B.r}px)`;
     for (const r of [s.r1, s.r2]) r.el.style.transform = `translateY(${f2(-B.lift * post)}px)`;
-    const word = sp => {
-      const k = clamp((f - (sp.land - 3)) / 3);                     // a 3-frame pop with a 2-frame overshoot
+    const word = sp => {                                           // a whole word pops (first seen at land-2, full on land)
+      const k = clamp((f - (sp.land - 3)) / 3);
       const sc = k <= 0 ? 0.6 : lerp(0.6, 1, E.outBack(k, 3.0));
       K.css(sp.el, { opacity: clamp(k * 2.5).toFixed(3), transform: `translateY(${f2((1 - E.outCubic(k)) * 16)}px) scale(${sc.toFixed(4)})` });
     };
@@ -372,30 +406,33 @@ export default {
     K.css(s.sender, { display: sOut >= 1 ? 'none' : 'block', opacity: (sIn * (1 - sOut)).toFixed(3),
       left: f2(bx + W - B.padX - s.senderW) + 'px', top: f2(by + 14) + 'px' });
 
-    // typing indicator «•••» on row 1 (f140 → 150)
-    const tOut = clamp((f - (F.typOut - 2)) / 2);
-    s.tDots.forEach((c, i) => {
-      const ap = sprF(f - (F.in + 1 + i * 1.5), 0.6, 2.4);
-      const bob = f >= F.bub ? K.typing((f - F.bub) / 30, i, { period: 0.72, amp: 12, phase: 0.16 }) : 0;
-      c.setAttribute('cx', f2(540 + (1 - i) * 40)); c.setAttribute('cy', f2(B.y1 + bob));
-      c.setAttribute('r', f < F.typOut ? f2(14 * Math.max(0, ap) * (1 - tOut)) : '0');
+    // typing indicator «•••»: row 1 (f142–146, gone one frame before «المرة» shows) and row 2 (f161–181)
+    const typing = (dots, y, f0, f1, amp) => dots.forEach((c, i) => {
+      const on = f >= f0 && f <= f1;
+      const ap = on ? sprF(f - f0 + 1 - i * 0.7, 0.6, 2.0) : 0;
+      const bob = K.typing((f - f0) / 30, i, { period: 0.6, amp, phase: 0.14 });
+      c.setAttribute('cx', f2(540 + (1 - i) * 40)); c.setAttribute('cy', f2(y + bob));
+      c.setAttribute('r', f2(on ? 14 * Math.max(0, ap) : 0));
     });
+    typing(s.tDots, B.y1, F.in + 2, F.typOut - 1, 12);
+    typing(s.tDots2, B.y2, F.typ2[0], F.typ2[1], 12);
 
-    // ---- the dots: typing on their own row from row 2's first word, still from «على», swelling on the riser; on the
-    // hit they punch and stay: they ARE the wordmark's dots
+    // ---- the dots: typing on row 3 from f189 (inside the grown bubble), still from «على», swelling on the riser; on
+    // the hit they punch and stay: they ARE the wordmark's dots
     s.dots.forEach((c, i) => {
       const D = s.logoDots[i];
-      const ap = sprF(f - (F.row2 + i * 1.5), 0.6, 2.4);
+      const ap = sprF(f - (F.dots3 + i * 1.5), 0.6, 2.4);
       const bobbing = f < F.dotsLand ? 1 : 1 - clamp((f - F.dotsLand) / 3);
-      const bob = K.typing((f - F.row2) / 30, i, { period: 0.6, amp: 11, phase: 0.14 }) * bobbing;
+      const bob = K.typing((f - F.dots3) / 30, i, { period: 0.6, amp: 11, phase: 0.14 }) * bobbing;
       const swell = 1 + 0.32 * E.inCubic(clamp((f - F.dotsLand) / (HIT - F.dotsLand)));
       let r = 15 * Math.max(0, ap) * swell, y = D.y + bob, rx = 1, ry = 1;
       if (f >= HIT) {
         const b = f - HIT, q = Math.exp(-b / 2.2) * Math.cos(b * 1.25);
-        r = D.r * (1 + 0.45 * Math.exp(-b / 1.6)); rx = 1 + 0.22 * q; ry = 1 - 0.2 * q; y = D.y;
+        // (fix round 2) a punch that never merges the three dots into a bar (diameter stays under their spacing)
+        r = D.r * (1 + 0.14 * Math.exp(-b / 1.6)); rx = 1 + 0.03 * q; ry = 1 - 0.2 * q; y = D.y;
       }
       c.setAttribute('cx', f2(D.x)); c.setAttribute('cy', f2(y));
-      c.setAttribute('r', f2(f < F.row2 ? 0 : r));
+      c.setAttribute('r', f2(f < F.dots3 ? 0 : r));
       c.setAttribute('transform', rx !== 1 ? `translate(${f2(D.x)} ${f2(y)}) scale(${rx.toFixed(4)} ${ry.toFixed(4)}) translate(${f2(-D.x)} ${f2(-y)})` : '');
     });
 
@@ -409,7 +446,7 @@ export default {
     s.wmBody.setAttribute('transform', `translate(${D1.cx} ${D1.cy}) scale(${ss.toFixed(4)}) translate(${-D1.cx} ${-D1.cy})`);
     s.wmBody.setAttribute('opacity', wk.toFixed(3));
     const SH = HIT + 4, sk = f < SH ? 0 : sprF(f - SH, 0.6, 2.4);
-    s.shadda.setAttribute('transform', `${s.shaddaBase} translate(0 ${f2((1 - sk) * -260)})`);
+    s.shadda.setAttribute('transform', `${s.shaddaBase} translate(0 ${f2((1 - sk) * -70)})`);   // a short drop: it never crosses row 2
     s.shadda.setAttribute('opacity', f < SH ? '0' : clamp((f - SH) / 2).toFixed(2));
     const PF = HIT + 7, pk2 = f < PF ? 0 : E.outBack(clamp((f - PF) / 3), 2.6);
     s.period.setAttribute('opacity', f >= PF ? '1' : '0');
@@ -419,24 +456,24 @@ export default {
     s.wm.setAttribute('transform', `translate(${f2(cx0)} ${f2(cy0)}) scale(${breathe.toFixed(5)}) translate(${f2(-cx0)} ${f2(-cy0)}) ` +
       `translate(${f2(s.wmX)} ${f2(s.wmY)}) scale(${s.wmS.toFixed(5)})`);
 
-    // ---- «للطلاب»: a lime sticker snapping under the wordmark, on the bubble's bottom edge (L3.3, beat 13)
+    // ---- «للطلاب»: the lock-up pill snaps under the wordmark (L3.3, beat 13), inside the bubble
     const ck = clamp((f - F.chipIn) / (F.chipLand - F.chipIn));
     s.chip.style.display = f >= F.chipIn ? 'inline-flex' : 'none';
     K.css(s.chip, { opacity: clamp(ck * 3).toFixed(3),
-      transform: `translate(${f2(sh[0])}px, ${f2(sh[1] + (breathe - 1) * (s.chipCy - cy0))}px) rotate(${f2(lerp(-14, -3, E.outBack(ck, 2.4)))}deg) scale(${lerp(0.4, 1, E.outBack(ck, 2.6)).toFixed(4)})` });
+      transform: `translateY(${f2((breathe - 1) * (s.chipCy - cy0))}px) rotate(${f2(lerp(-14, -3, E.outBack(ck, 2.4)))}deg) scale(${lerp(0.4, 1, E.outBack(ck, 2.6)).toFixed(4)})` });
 
-    // ---- card 1: a NEW object. It flies up from below the frame (tilted back, turned, rolled), overshoots a touch and
-    // settles exactly on the parade camera's first view of it at f257 (s4 HANDOFF); never above y ~1080
+    // ---- card 1: a NEW object. It flies up from below the frame (tilted back, turned, rolled) on f238–257 and settles
+    // (no overshoot above its rest: the lock-up is right above it) exactly on the parade camera's first view of it (s4 HANDOFF)
     const c0 = F.card0, c1 = F.card1 - 1;
     if (f < c0) s.card.style.display = 'none';
     else {
       s.card.style.display = 'block';
-      const u = clamp((f - c0) / (c1 - c0));                        // one flight to the cut: fast up, a soft overshoot,
-      const k = 1 - E.outBack(u, 1.25);                             // still easing into the hand-off on f257
+      const u = clamp((f - c0) / (c1 - c0));
+      const k = Math.pow(1 - u, 3);                                 // fast up, easing into the hand-off on f257
       const pose = { x: 0, y: 1250 * k, z: -520 * k, rx: 34 * k, ry: -14 * k, rz: -9 * k, s: 1 };
       s.card.style.transform = css3(card1Matrix(s.cues, pose));
-      const gl = clamp((f - (c1 - 9)) / 11);
-      K.css(s.cardSheen, { opacity: gl > 0 && gl < 1 ? (0.8 * Math.sin(Math.PI * gl)).toFixed(3) : '0', transform: `translateX(${(gl * 330).toFixed(1)}%)` });
+      const gl2 = clamp((f - (c1 - 9)) / 11);
+      K.css(s.cardSheen, { opacity: gl2 > 0 && gl2 < 1 ? (0.8 * Math.sin(Math.PI * gl2)).toFixed(3) : '0', transform: `translateX(${(gl2 * 330).toFixed(1)}%)` });
     }
   },
 };

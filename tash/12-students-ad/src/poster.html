@@ -1,0 +1,53 @@
+<!doctype html>
+<html lang="ar" dir="rtl"><head><meta charset="utf-8">
+<title>طشّ للطلاب — الغلاف</title>
+<link rel="stylesheet" href="./kit.css">
+<style>
+/* (fix round, 26 Nov) the dedicated reel cover: the splash's lime field, the lock-up «طشّ للطلاب» (2 words) big in the
+   centre 3:4 (y 240–1680), and card 1 («مسار», a TASH sample) under it with its «نماذج من تصميمنا» label. No CTA, no
+   handles, no tagline (they are in the caption). Rendered with: node _system/tools/render.mjs --page
+   12-students-ad/src/poster.html --stills 0 --stills-dir <dir>  → copied to 12-students-ad/poster.png */
+#stage { background: #C6FF00; }
+.bg { position: absolute; inset: 0;
+  background: radial-gradient(70% 46% at 50% 44%, rgba(255,255,255,.18), rgba(255,255,255,0) 60%),
+              radial-gradient(120% 80% at 50% 50%, rgba(0,0,0,0) 55%, rgba(40,62,0,.28) 100%); }
+.ring { position: absolute; border-radius: 50%; border: 10px solid rgba(250,255,215,.35); box-shadow: 0 0 0 8px rgba(70,105,0,.10); }
+svg.wm { position: absolute; left: 0; top: 0; width: 1080px; height: 1920px; overflow: visible; }
+.chip { position: absolute; left: 0; top: 0; display: inline-flex; align-items: center; border-radius: 999px; background: #0B0B0B; color: #C6FF00;
+  font: 800 96px "Alexandria", sans-serif; line-height: 1; padding: 0.2em 0.6em 0.34em; white-space: nowrap; direction: rtl;
+  box-shadow: inset 0 0 0 3px #C6FF00, 0 18px 40px rgba(40,60,0,.35); transform-origin: 50% 50%; }   /* fix round 2: the film's one lock-up */
+.persp { position: absolute; inset: 0; perspective: 1500px; perspective-origin: 540px 1230px; }
+.card { position: absolute; left: 140px; top: 1005px; width: 800px; height: 450px; border-radius: 14px; overflow: hidden;
+  transform: rotateX(9deg) rotateY(-12deg) rotateZ(-4deg); transform-origin: 50% 50%;
+  box-shadow: 0 40px 90px rgba(40,62,0,.5), 0 8px 22px rgba(40,62,0,.35); }
+.card img { position: absolute; left: 0; top: 0; width: 100%; height: 100%; display: block; }
+.card .lt { position: absolute; inset: 0; background: linear-gradient(105deg, rgba(255,255,255,0) 35%, rgba(255,255,255,.16) 48%, rgba(255,255,255,0) 60%); }
+.lab { position: absolute; }
+</style>
+</head><body>
+<div id="stage"><div class="bg"></div></div>
+<script type="module">
+import * as K from './kit.js';
+import * as L from '/_system/brand/logo.mjs';
+const stage = document.getElementById('stage');
+await Promise.all([document.fonts.load('800 96px "Alexandria"'), document.fonts.load('500 27px "IBM Plex Sans Arabic"')]);
+for (const [r, a] of [[430, 1], [610, 0.7], [800, 0.45]]) K.el(stage, 'div', 'ring', { left: (540 - r) + 'px', top: (1230 - r * 0.42) + 'px', width: 2 * r + 'px', height: (2 * r * 0.42) + 'px', opacity: String(a) });
+// the wordmark: ink on lime (the avatar colourway), its dots ink too
+const W = 720, sc = W / L.VB.w, x0 = 540 - W / 2, y0 = 300;
+const svg = K.el(stage, 'div'); svg.innerHTML = `<svg class="wm" viewBox="0 0 1080 1920"><g transform="translate(${x0} ${y0}) scale(${sc})">${L.wordmarkInner({ body: '#0B0B0B', dot: '#0B0B0B', shadda: '#0B0B0B' })}</g></svg>`;
+const chip = K.el(stage, 'div', 'chip', {}, 'للطلاب'); chip.dir = 'rtl';
+// (fix round 2) the lock-up as in the film: the pill 24 px under the wordmark's ink
+const ib = svg.querySelector('g').getBBox();
+const cy = y0 + (ib.y + ib.height) * sc + 24 + chip.offsetHeight / 2;
+K.css(chip, { left: (540 - chip.offsetWidth / 2) + 'px', top: (cy - chip.offsetHeight / 2) + 'px', transform: 'rotate(-3deg)' });
+// card 1, a TASH sample, labelled
+const persp = K.el(stage, 'div', 'persp');
+const card = K.el(persp, 'div', 'card');
+const im = K.el(card, 'img'); im.src = '../samples/deck-uni-01-title.png'; await K.img(im.src);
+K.el(card, 'div', 'lt');
+const lab = K.samplesLabel(stage, 'نماذج من تصميمنا');
+lab.show(true); lab.place({ right: 132, top: 960 });
+lab.el.style.transform = 'rotate(-4deg) scale(1.25)';
+window.TASH = { width: 1080, height: 1920, fps: 30, duration: 1 / 30, from: 0, ready: K.preloadAll(), seek: async () => {} };
+</script>
+</body></html>
