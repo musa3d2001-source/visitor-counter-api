@@ -1,0 +1,204 @@
+<!doctype html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="utf-8">
+<title>مَسار — ٠١ العنوان</title>
+<style>
+@font-face{font-family:"Alexandria";src:url("../../../_system/fonts/Alexandria-VF.ttf") format("truetype");font-weight:100 900;font-display:block}
+@font-face{font-family:"Plex Arabic";src:url("../../../_system/fonts/IBMPlexSansArabic-Regular.ttf") format("truetype");font-weight:400;font-display:block}
+@font-face{font-family:"Plex Arabic";src:url("../../../_system/fonts/IBMPlexSansArabic-Medium.ttf") format("truetype");font-weight:500;font-display:block}
+@font-face{font-family:"Plex Arabic";src:url("../../../_system/fonts/IBMPlexSansArabic-SemiBold.ttf") format("truetype");font-weight:600;font-display:block}
+
+:root{
+  --bg:#07090D; --bg-2:#0D1017;
+  --ink:#F3F5F9; --mute:#9AA2B3; --dim:#5D6474; --line:rgba(255,255,255,.12);
+  --accent:#FF5A1F; --accent-hi:#FF8552;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+html,body{width:1920px;height:1080px;overflow:hidden;background:var(--bg)}
+body{font-family:"Plex Arabic",sans-serif;color:var(--ink);-webkit-font-smoothing:antialiased;text-rendering:geometricPrecision}
+.slide{position:relative;width:1920px;height:1080px;overflow:hidden;background:var(--bg)}
+
+/* scene */
+.lot{position:absolute;inset:0;width:1920px;height:1080px;display:block;
+  -webkit-mask-image:radial-gradient(ellipse 1050px 720px at 640px 600px,#000 38%,rgba(0,0,0,.55) 66%,transparent 100%);
+          mask-image:radial-gradient(ellipse 1050px 720px at 640px 600px,#000 38%,rgba(0,0,0,.55) 66%,transparent 100%)}
+.bloom{position:absolute;left:0;top:0;width:1920px;height:1080px;pointer-events:none;mix-blend-mode:screen}
+.scrim{position:absolute;inset:0;background:
+  linear-gradient(to left,var(--bg) 0%,rgba(7,9,13,.96) 24%,rgba(7,9,13,.62) 42%,rgba(7,9,13,0) 60%),
+  linear-gradient(to bottom,rgba(7,9,13,.85) 0%,rgba(7,9,13,0) 20%,rgba(7,9,13,0) 78%,rgba(7,9,13,.9) 100%)}
+.grain{position:absolute;inset:0;width:1920px;height:1080px;opacity:.16;mix-blend-mode:overlay;pointer-events:none}
+
+/* floating tag over the free slot */
+.tag{position:absolute;display:flex;align-items:center;gap:16px;direction:rtl;
+  padding:14px 22px 15px 26px;border-radius:999px;white-space:nowrap;
+  background:rgba(13,16,23,.86);border:1.5px solid rgba(255,133,82,.75);
+  box-shadow:0 18px 50px rgba(0,0,0,.55),0 0 44px rgba(255,90,31,.32);transform:translate(-50%,-100%)}
+.tag i{width:14px;height:14px;border-radius:50%;background:var(--accent);box-shadow:0 0 0 6px rgba(255,90,31,.22)}
+.tag b{font-family:"Alexandria";font-weight:700;font-size:28px;line-height:1.2;color:var(--ink)}
+.tag span{font-family:"Alexandria";font-weight:500;font-size:22px;line-height:1.2;color:var(--mute);padding-right:16px;border-right:1.5px solid rgba(255,255,255,.18)}
+.stem{position:absolute;width:2px;background:linear-gradient(to bottom,rgba(255,133,82,.95),rgba(255,133,82,.15));transform:translateX(-1px)}
+
+/* chrome */
+.top{position:absolute;top:70px;right:112px;left:112px;display:flex;justify-content:space-between;align-items:center}
+.kicker{display:flex;align-items:center;gap:16px;font-family:"Alexandria";font-weight:600;font-size:26px;line-height:1.2;color:var(--ink)}
+.kicker i{width:12px;height:12px;border-radius:50%;background:var(--accent);box-shadow:0 0 18px rgba(255,90,31,.9)}
+.year{font-family:"Alexandria";font-weight:500;font-size:24px;line-height:1.2;color:var(--mute);font-feature-settings:"tnum" 1}
+
+/* title block */
+.copy{position:absolute;right:112px;top:246px;width:880px;text-align:right}
+h1{font-family:"Alexandria";font-weight:900;font-size:336px;line-height:1.16;color:var(--ink);white-space:nowrap;letter-spacing:0;margin-right:-10px}
+.rule{display:block;width:132px;height:8px;border-radius:8px;background:var(--accent);margin:26px 0 38px auto;margin-left:auto;margin-right:0;box-shadow:0 0 34px rgba(255,90,31,.7)}
+.sub{font-family:"Alexandria";font-weight:500;font-size:60px;line-height:1.42;color:var(--ink);white-space:nowrap}
+.sub em{font-style:normal;color:var(--accent-hi);font-weight:700}
+
+.meta{position:absolute;right:112px;bottom:82px;display:flex;gap:64px;align-items:flex-start}
+.meta div{display:flex;flex-direction:column;gap:8px}
+.meta small{font-family:"Alexandria";font-weight:500;font-size:20px;line-height:1.2;color:var(--dim)}
+.meta strong{font-family:"Alexandria";font-weight:600;font-size:27px;line-height:1.3;color:var(--ink);white-space:nowrap}
+.meta .sep{width:1.5px;align-self:stretch;background:var(--line)}
+.num{position:absolute;left:112px;bottom:84px;font-family:"Alexandria";font-weight:600;font-size:24px;line-height:1.2;color:var(--mute);font-feature-settings:"tnum" 1;white-space:nowrap}
+.num b{color:var(--ink);font-weight:700}
+</style>
+</head>
+<body>
+<div class="slide">
+  <svg class="lot" id="lot" viewBox="0 0 1920 1080" aria-hidden="true"></svg>
+  <svg class="bloom" id="bloom" viewBox="0 0 1920 1080" aria-hidden="true"></svg>
+  <div class="scrim"></div>
+
+  <div class="stem" id="stem"></div>
+  <div class="tag" id="tag"><i></i><b>فاضي الحين</b><span>موقف ب-١٤</span></div>
+
+  <div class="top">
+    <div class="kicker"><i></i>مشروع تخرّج</div>
+    <div class="year">العام الجامعي ٢٠٢٦–٢٠٢٧</div>
+  </div>
+
+  <div class="copy">
+    <h1>مَسار</h1>
+    <span class="rule"></span>
+    <p class="sub">تطبيق يدلّك على <em>موقف فاضي</em><br>بالحرم الجامعي.</p>
+  </div>
+
+  <div class="meta">
+    <div><small>إعداد</small><strong>نورة، فهد، دانة، يوسف</strong></div>
+    <span class="sep"></span>
+    <div><small>إشراف</small><strong>د. مريم</strong></div>
+    <span class="sep"></span>
+    <div><small>القسم</small><strong>علوم الحاسوب</strong></div>
+  </div>
+  <div class="num"><b>٠١</b> / ١٢</div>
+
+  <svg class="grain" viewBox="0 0 1920 1080" aria-hidden="true">
+    <filter id="g" x="0" y="0" width="100%" height="100%"><feTurbulence type="fractalNoise" baseFrequency=".9" numOctaves="2" seed="7"/><feColorMatrix values="0 0 0 0 .5  0 0 0 0 .5  0 0 0 0 .5  0 0 0 1.6 -.45"/></filter>
+    <rect width="1920" height="1080" filter="url(#g)"/>
+  </svg>
+</div>
+
+<script>
+/* ---------- tiny parking-lot renderer (projected SVG, painter's order) ---------- */
+(function(){
+  const BG=[7,9,13], ACC=[255,90,31];
+  const cam={yaw:-31,elev:39,D:2100,S:2.06,ox:640,oy:628,fx:412,fy:230};
+  const SW=50, N=18;
+  const rows=[ {y0:0,y1:100,open:1},{y0:175,y1:275,open:-1},{y0:275,y1:375,open:1},
+               {y0:450,y1:550,open:-1},{y0:550,y1:650,open:1},{y0:725,y1:825,open:-1} ];
+  const glow={r:1,c:8};
+  const empties=new Set(['1:8','0:3','3:13','4:5','5:9','2:15']);
+
+  const rad=a=>a*Math.PI/180, cy=Math.cos(rad(cam.yaw)), sy=Math.sin(rad(cam.yaw)), ce=Math.cos(rad(cam.elev)), se=Math.sin(rad(cam.elev));
+  function P(x,y,z){ z=z||0; const dx=x-cam.fx, dy=y-cam.fy, xr=dx*cy-dy*sy, yr=dx*sy+dy*cy, dep=yr*ce-z*se, up=yr*se+z*ce, k=cam.D/(cam.D+dep);
+    return [cam.ox+xr*k*cam.S, cam.oy-up*k*cam.S, dep]; }
+  const pts=a=>a.map(p=>p[0].toFixed(1)+','+p[1].toFixed(1)).join(' ');
+  const mix=(a,b,t)=>a.map((v,i)=>v+(b[i]-v)*t);
+  const css=c=>'rgb('+c.map(v=>Math.max(0,Math.min(255,Math.round(v)))).join(',')+')';
+  const fog=(c,dep)=>{ const t=Math.max(0,Math.min(1,(dep+260)/1150)); return mix(c,BG,t*.9); };
+  let s=20261125; const rnd=()=>{ s|=0; s=s+0x6D2B79F5|0; let t=Math.imul(s^s>>>15,1|s); t=t+Math.imul(t^t>>>7,61|t)^t; return ((t^t>>>14)>>>0)/4294967296; };
+
+  let out='<defs>'
+    +'<filter id="b60" x="-60%" y="-60%" width="220%" height="220%"><feGaussianBlur stdDeviation="46"/></filter>'
+    +'<filter id="b14" x="-60%" y="-60%" width="220%" height="220%"><feGaussianBlur stdDeviation="12"/></filter>'
+    +'<filter id="b5" x="-60%" y="-60%" width="220%" height="220%"><feGaussianBlur stdDeviation="5"/></filter>'
+    +'</defs>';
+
+  /* ground */
+  const G=[P(-190,-110),P(N*SW+190,-110),P(N*SW+190,935),P(-190,935)];
+  out+='<polygon points="'+pts(G)+'" fill="#0B0E14"/>';
+  /* soft lamp pools on the asphalt */
+  [[150,137],[650,412],[250,687],[820,137]].forEach(l=>{ const c=P(l[0],l[1]); out+='<ellipse cx="'+c[0].toFixed(0)+'" cy="'+c[1].toFixed(0)+'" rx="250" ry="110" fill="#8FA4D0" opacity=".055" filter="url(#b60)"/>'; });
+
+  /* painted lines */
+  function line(a,b,op,w){ const p=P(a[0],a[1]), q=P(b[0],b[1]); const t=Math.max(0,Math.min(1,((p[2]+q[2])/2+260)/1150));
+    out+='<line x1="'+p[0].toFixed(1)+'" y1="'+p[1].toFixed(1)+'" x2="'+q[0].toFixed(1)+'" y2="'+q[1].toFixed(1)+'" stroke="#DCE3F2" stroke-opacity="'+(op*(1-t*.85)).toFixed(3)+'" stroke-width="'+(w||2)+'" stroke-linecap="round"/>'; }
+  rows.forEach(r=>{ for(let c=0;c<=N;c++) line([c*SW,r.y0],[c*SW,r.y1],.3); });
+  [0,275,550,825].forEach(y=>line([0,y],[N*SW,y],.22));
+  /* aisle arrows */
+  function arrow(x,y,dir){ const a=[[0,-3],[26,-3],[26,-9],[42,0],[26,9],[26,3],[0,3]].map(p=>P(x+p[0]*dir,y+p[1]));
+    const t=Math.max(0,Math.min(1,(a[0][2]+260)/1150)); out+='<polygon points="'+pts(a)+'" fill="#DCE3F2" opacity="'+(.2*(1-t*.85)).toFixed(3)+'"/>'; }
+  [[137.5,-1],[412.5,1],[687.5,-1]].forEach(a=>{ for(let x=120;x<N*SW;x+=230) arrow(x,a[0],a[1]); });
+
+  /* the free slot: light on the asphalt */
+  const gr=rows[glow.r], gx0=glow.c*SW, gx1=gx0+SW, gcx=gx0+SW/2;
+  const slot=[P(gx0+3,gr.y0+3),P(gx1-3,gr.y0+3),P(gx1-3,gr.y1-3),P(gx0+3,gr.y1-3)];
+  const spill=[P(gx0-60,gr.y0-80),P(gx1+60,gr.y0-80),P(gx1+60,gr.y1+30),P(gx0-60,gr.y1+30)];
+  out+='<polygon points="'+pts(spill)+'" fill="'+css(ACC)+'" opacity=".5" filter="url(#b60)"/>';
+  out+='<linearGradient id="sg" gradientUnits="userSpaceOnUse" x1="'+slot[0][0]+'" y1="'+slot[0][1]+'" x2="'+slot[2][0]+'" y2="'+slot[2][1]+'"><stop offset="0" stop-color="#FF8A55"/><stop offset="1" stop-color="#FF4A12"/></linearGradient>';
+  out+='<polygon points="'+pts(slot)+'" fill="'+css(ACC)+'" opacity=".9" filter="url(#b14)"/>';
+  out+='<polygon points="'+pts(slot)+'" fill="url(#sg)" stroke="#FFC2A3" stroke-width="2.5" stroke-linejoin="round"/>';
+
+  /* the route: a ribbon lying on the asphalt, from the gate to the slot */
+  const ay=137.5, R=30, path=[];
+  for(let x=1010;x>=gcx+R;x-=10) path.push([x,ay]);
+  for(let a=0;a<=90;a+=6){ const t=rad(a); path.push([gcx+R-R*Math.sin(t), ay+R-R*Math.cos(t)]); }
+  for(let y=ay+R+6;y<=gr.y0+16;y+=4) path.push([gcx,y]);
+  function ribbon(w){ const L=[],Rr=[]; for(let i=0;i<path.length;i++){ const a=path[Math.max(0,i-1)], b=path[Math.min(path.length-1,i+1)]; let tx=b[0]-a[0], ty=b[1]-a[1]; const l=Math.hypot(tx,ty)||1; tx/=l; ty/=l;
+      L.push(P(path[i][0]-ty*w/2,path[i][1]+tx*w/2)); Rr.push(P(path[i][0]+ty*w/2,path[i][1]-tx*w/2)); } return L.concat(Rr.reverse()); }
+  const p0=P(path[0][0],path[0][1]), p1=P(gcx+R,ay);
+  out+='<linearGradient id="rg" gradientUnits="userSpaceOnUse" x1="'+p0[0]+'" y1="'+p0[1]+'" x2="'+p1[0]+'" y2="'+p1[1]+'"><stop offset="0" stop-color="#FF5A1F" stop-opacity="0"/><stop offset=".3" stop-color="#FF5A1F" stop-opacity=".55"/><stop offset="1" stop-color="#FF6A30"/></linearGradient>';
+  out+='<polygon points="'+pts(ribbon(22))+'" fill="url(#rg)" opacity=".55" filter="url(#b14)"/>';
+  out+='<polygon points="'+pts(ribbon(11))+'" fill="url(#rg)"/>';
+  /* direction chevrons on the ribbon */
+  for(let x=930;x>gcx+70;x-=64){ const c=[[x+7,ay-3.4],[x,ay],[x+7,ay+3.4]].map(p=>P(p[0],p[1])); const t=Math.max(0,Math.min(1,(930-x)/260));
+    out+='<polyline points="'+pts(c)+'" fill="none" stroke="#1B0A03" stroke-opacity="'+(.75*t).toFixed(2)+'" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"/>'; }
+
+  /* cars */
+  const tones=[[34,39,53],[27,31,43],[43,49,66],[22,26,35],[52,60,80],[30,35,48],[64,73,96]];
+  const cars=[];
+  rows.forEach((r,ri)=>{ for(let c=0;c<N;c++){ if(empties.has(ri+':'+c)) continue; if(rnd()<.04) continue;
+    const big=rnd()<.24, w=(big?35:32)+rnd()*2, len=(big?84:74)+rnd()*6, cx=(c+.5)*SW+(rnd()-.5)*4, back=r.open>0?r.y0:r.y1;
+    const y0=r.open>0? back+7+rnd()*5 : back-7-rnd()*5-len;
+    cars.push({ri,c,x0:cx-w/2,x1:cx+w/2,y0,y1:y0+len,hb:big?16:12.5,hc:big?13:10.5,nose:(rnd()<.72?1:-1)*r.open,tone:tones[Math.floor(rnd()*tones.length)]}); } });
+  const D=[sy,cy];
+  function box(b,t,z0,z1,top,side,lit){
+    const f=[ {n:[0,-1],i:[0,1],k:.62}, {n:[1,0],i:[1,2],k:.46}, {n:[0,1],i:[2,3],k:.34}, {n:[-1,0],i:[3,0],k:.78} ];
+    const B=[[b[0],b[1]],[b[2],b[1]],[b[2],b[3]],[b[0],b[3]]], T=[[t[0],t[1]],[t[2],t[1]],[t[2],t[3]],[t[0],t[3]]];
+    let h='';
+    f.forEach(F=>{ if(F.n[0]*D[0]+F.n[1]*D[1]>=0) return; const i=F.i[0], j=F.i[1], poly=[P(B[i][0],B[i][1],z0),P(B[j][0],B[j][1],z0),P(T[j][0],T[j][1],z1),P(T[i][0],T[i][1],z1)];
+      let col=fog(side.map(v=>v*F.k),poly[0][2]); if(lit&&lit.n===F.n[0]) col=mix(col,ACC,lit.a);
+      h+='<polygon points="'+pts(poly)+'" fill="'+css(col)+'" stroke="'+css(col)+'" stroke-width="1.6" stroke-linejoin="round"/>'; });
+    const tp=T.map(q=>P(q[0],q[1],z1)); let tc=fog(top,tp[0][2]); if(lit) tc=mix(tc,ACC,lit.a*.28);
+    h+='<polygon points="'+pts(tp)+'" fill="'+css(tc)+'" stroke="'+css(tc)+'" stroke-width="2.4" stroke-linejoin="round"/>';
+    return h; }
+  cars.forEach(c=>{ c.dep=P((c.x0+c.x1)/2,(c.y0+c.y1)/2)[2]; });
+  cars.sort((a,b)=>b.dep-a.dep).forEach(c=>{
+    let lit=null; if(c.ri===glow.r&&Math.abs(c.c-glow.c)===1) lit={n:c.c<glow.c?1:-1,a:.62};
+    const len=c.y1-c.y0, cs=c.nose>0?[.3,.82]:[.18,.7];
+    const sh=[P(c.x0-3,c.y0-3),P(c.x1+3,c.y0-3),P(c.x1+3,c.y1+3),P(c.x0-3,c.y1+3)];
+    out+='<polygon points="'+pts(sh)+'" fill="#000" opacity=".5" filter="url(#b5)"/>';
+    out+=box([c.x0,c.y0,c.x1,c.y1],[c.x0+1.2,c.y0+1.5,c.x1-1.2,c.y1-1.5],2,c.hb,c.tone,c.tone,lit);
+    const ca=c.y0+len*cs[0], cb=c.y0+len*cs[1], fr=c.nose>0?[5,11]:[11,5];
+    out+=box([c.x0+3.2,ca,c.x1-3.2,cb],[c.x0+6.2,ca+fr[1],c.x1-6.2,cb-fr[0]],c.hb,c.hb+c.hc,c.tone.map(v=>v*1.2),[30,37,54],lit&&{n:lit.n,a:lit.a*.6});
+  });
+  document.getElementById('lot').innerHTML=out;
+
+  /* bloom above everything + the floating tag */
+  const sc=P(gcx,(gr.y0+gr.y1)/2), tip=P(gcx,(gr.y0+gr.y1)/2,0), topP=[tip[0],tip[1]-232];
+  document.getElementById('bloom').innerHTML='<defs><radialGradient id="bl"><stop offset="0" stop-color="#FF5A1F" stop-opacity=".5"/><stop offset=".45" stop-color="#FF5A1F" stop-opacity=".14"/><stop offset="1" stop-color="#FF5A1F" stop-opacity="0"/></radialGradient></defs>'
+    +'<ellipse cx="'+sc[0].toFixed(0)+'" cy="'+sc[1].toFixed(0)+'" rx="430" ry="290" fill="url(#bl)"/>';
+  const stem=document.getElementById('stem'); stem.style.left=tip[0]+'px'; stem.style.top=topP[1]+'px'; stem.style.height=(tip[1]-topP[1])+'px';
+  const tag=document.getElementById('tag'); tag.style.left=tip[0]+'px'; tag.style.top=topP[1]+'px';
+})();
+</script>
+</body>
+</html>
