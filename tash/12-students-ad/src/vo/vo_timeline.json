@@ -1,0 +1,800 @@
+{
+ "_note": "The VO on the FILM timeline (seconds). Built by src/tools/vo_edit.py from vo/take1.mp3 (cut list: src/tools/vo_pieces.py). Phrase in/on/out are measured to ±10 ms; inner word starts ±60 ms. word.end = the next word's start inside a phrase, or the phrase's voiced end. Grid: beat k is at phase + k*60/bpm; k % 4 == 0 is a bar line. Words are spelled as script.json vo lines (byte for byte; on screen «سي ڤي» is «CV»).",
+ "source": "vo/take1.mp3 (ElevenLabs eleven_v4, Jassim Almathkour, generation 78njtU9gFZpS7XmjjyqV)",
+ "tempo": 1.08,
+ "stretch": "ffmpeg rubberband (pitch kept, formant preserved, transients mixed, soft detector)",
+ "rubberband_lag_s": 0.0,
+ "bpm": 125.0,
+ "beat": 0.48,
+ "phase": 1.401,
+ "film_end": 29.241,
+ "vo_first_onset": 0.1,
+ "vo_last_end": 27.957,
+ "vo_edit_length": 27.868,
+ "wav": {
+  "file": "src/vo/vo_edit.wav",
+  "sr": 48000,
+  "channels": 1,
+  "format": "PCM 24-bit",
+  "length_s": 29.241,
+  "gain_db": 1.54,
+  "integrated_lufs": -26.0,
+  "true_peak_dbtp": -3.0,
+  "note": "sample peak normalised to -3 dBFS; the mix sets the speech level"
+ },
+ "breath": {
+  "src": [
+   17.14,
+   17.545
+  ],
+  "film": [
+   19.206,
+   19.581
+  ],
+  "gain_db": -2,
+  "note": "the take's one inhale, moved from before «حتى الهوامش» to before the rule line"
+ },
+ "phrases": [
+  {
+   "id": "h1",
+   "line": "L1",
+   "src": [
+    0.012,
+    1.22
+   ],
+   "src_on": 0.023,
+   "film_in": 0.09,
+   "film_on": 0.1,
+   "film_out": 1.208,
+   "gap_before": 0.1,
+   "key_word_src": 0.37,
+   "key_word_film": 0.421,
+   "grid": "beat",
+   "grid_miss_s": 0.0
+  },
+  {
+   "id": "h2",
+   "line": "L1",
+   "src": [
+    1.405,
+    1.955
+   ],
+   "src_on": 1.42,
+   "film_in": 1.367,
+   "film_on": 1.381,
+   "film_out": 1.876,
+   "gap_before": 0.173,
+   "key_word_src": 1.42,
+   "key_word_film": 1.381,
+   "grid": "half",
+   "grid_miss_s": 0.0
+  },
+  {
+   "id": "h3",
+   "line": "L1",
+   "src": [
+    2.15,
+    2.83
+   ],
+   "src_on": 2.17,
+   "film_in": 2.082,
+   "film_on": 2.101,
+   "film_out": 2.712,
+   "gap_before": 0.225,
+   "key_word_src": 2.17,
+   "key_word_film": 2.101,
+   "grid": "half",
+   "grid_miss_s": 0.0
+  },
+  {
+   "id": "d1",
+   "line": "L2",
+   "src": [
+    3.2,
+    4.88
+   ],
+   "src_on": 3.225,
+   "film_in": 3.038,
+   "film_on": 3.061,
+   "film_out": 4.593,
+   "gap_before": 0.349,
+   "key_word_src": 3.225,
+   "key_word_film": 3.061,
+   "grid": "half",
+   "grid_miss_s": 0.0
+  },
+  {
+   "id": "t1",
+   "line": "L3",
+   "src": [
+    5.235,
+    6.17
+   ],
+   "src_on": 5.257,
+   "film_in": 4.961,
+   "film_on": 4.981,
+   "film_out": 5.826,
+   "gap_before": 0.388,
+   "key_word_src": 5.257,
+   "key_word_film": 4.981,
+   "grid": "half",
+   "grid_miss_s": 0.0
+  },
+  {
+   "id": "t2",
+   "line": "L3",
+   "src": [
+    6.17,
+    7.79
+   ],
+   "src_on": 6.235,
+   "film_in": 6.085,
+   "film_on": 6.146,
+   "film_out": 7.585,
+   "gap_before": 0.319,
+   "key_word_src": 7.31,
+   "key_word_film": 7.141,
+   "grid": "bar",
+   "grid_miss_s": 0.0
+  },
+  {
+   "id": "p1a",
+   "line": "P1",
+   "src": [
+    8.02,
+    8.87
+   ],
+   "src_on": 8.039,
+   "film_in": 8.563,
+   "film_on": 8.581,
+   "film_out": 9.35,
+   "gap_before": 0.996,
+   "key_word_src": 8.039,
+   "key_word_film": 8.581,
+   "grid": "beat",
+   "grid_miss_s": 0.0
+  },
+  {
+   "id": "p1b",
+   "line": "P1",
+   "src": [
+    9.045,
+    10.42
+   ],
+   "src_on": 9.07,
+   "film_in": 9.518,
+   "film_on": 9.541,
+   "film_out": 10.791,
+   "gap_before": 0.191,
+   "key_word_src": 9.07,
+   "key_word_film": 9.541,
+   "grid": "half",
+   "grid_miss_s": 0.0
+  },
+  {
+   "id": "p2a",
+   "line": "P2",
+   "src": [
+    10.665,
+    11.22
+   ],
+   "src_on": 10.68,
+   "film_in": 10.967,
+   "film_on": 10.981,
+   "film_out": 11.481,
+   "gap_before": 0.19,
+   "key_word_src": 10.68,
+   "key_word_film": 10.981,
+   "grid": "half",
+   "grid_miss_s": 0.0
+  },
+  {
+   "id": "p2b",
+   "line": "P2",
+   "src": [
+    11.325,
+    11.95
+   ],
+   "src_on": 11.34,
+   "film_in": 11.547,
+   "film_on": 11.561,
+   "film_out": 12.126,
+   "gap_before": 0.08,
+   "key_word_src": 11.34,
+   "key_word_film": 11.561,
+   "grid": null,
+   "grid_miss_s": 0.0
+  },
+  {
+   "id": "p3a",
+   "line": "P3",
+   "src": [
+    12.135,
+    12.69
+   ],
+   "src_on": 12.15,
+   "film_in": 12.167,
+   "film_on": 12.181,
+   "film_out": 12.681,
+   "gap_before": 0.055,
+   "key_word_src": 12.15,
+   "key_word_film": 12.181,
+   "grid": "half",
+   "grid_miss_s": 0.0
+  },
+  {
+   "id": "p3b",
+   "line": "P3",
+   "src": [
+    12.825,
+    13.82
+   ],
+   "src_on": 12.84,
+   "film_in": 12.747,
+   "film_on": 12.761,
+   "film_out": 13.668,
+   "gap_before": 0.08,
+   "key_word_src": 12.84,
+   "key_word_film": 12.761,
+   "grid": null,
+   "grid_miss_s": 0.0
+  },
+  {
+   "id": "p4a",
+   "line": "P4",
+   "src": [
+    14.125,
+    14.655
+   ],
+   "src_on": 14.141,
+   "film_in": 13.846,
+   "film_on": 13.861,
+   "film_out": 14.337,
+   "gap_before": 0.193,
+   "key_word_src": 14.141,
+   "key_word_film": 13.861,
+   "grid": "half",
+   "grid_miss_s": 0.0
+  },
+  {
+   "id": "p4b",
+   "line": "P4",
+   "src": [
+    14.712,
+    15.32
+   ],
+   "src_on": 14.725,
+   "film_in": 14.329,
+   "film_on": 14.341,
+   "film_out": 14.892,
+   "gap_before": 0.004,
+   "key_word_src": 14.725,
+   "key_word_film": 14.341,
+   "grid": "half",
+   "grid_miss_s": 0.0
+  },
+  {
+   "id": "p4c",
+   "line": "P4",
+   "src": [
+    15.32,
+    16.13
+   ],
+   "src_on": 15.33,
+   "film_in": 15.052,
+   "film_on": 15.061,
+   "film_out": 15.802,
+   "gap_before": 0.169,
+   "key_word_src": 15.33,
+   "key_word_film": 15.061,
+   "grid": "half",
+   "grid_miss_s": 0.0
+  },
+  {
+   "id": "p5",
+   "line": "P5",
+   "src": [
+    16.165,
+    17.12
+   ],
+   "src_on": 16.18,
+   "film_in": 16.007,
+   "film_on": 16.021,
+   "film_out": 16.891,
+   "gap_before": 0.219,
+   "key_word_src": 16.18,
+   "key_word_film": 16.021,
+   "grid": "half",
+   "grid_miss_s": 0.0
+  },
+  {
+   "id": "m1",
+   "line": "D1",
+   "src": [
+    17.545,
+    18.5
+   ],
+   "src_on": 17.557,
+   "film_in": 17.45,
+   "film_on": 17.461,
+   "film_out": 18.334,
+   "gap_before": 0.57,
+   "key_word_src": 17.557,
+   "key_word_film": 17.461,
+   "grid": "half",
+   "grid_miss_s": 0.0
+  },
+  {
+   "id": "m2",
+   "line": "D1",
+   "src": [
+    18.5,
+    19.2
+   ],
+   "src_on": 18.519,
+   "film_in": 18.403,
+   "film_on": 18.421,
+   "film_out": 19.052,
+   "gap_before": 0.087,
+   "key_word_src": 18.519,
+   "key_word_film": 18.421,
+   "grid": "half",
+   "grid_miss_s": 0.0
+  },
+  {
+   "id": "r1",
+   "line": "R1",
+   "src": [
+    19.625,
+    20.7
+   ],
+   "src_on": 19.645,
+   "film_in": 19.602,
+   "film_on": 19.621,
+   "film_out": 20.598,
+   "gap_before": 0.569,
+   "key_word_src": 19.645,
+   "key_word_film": 19.621,
+   "grid": "beat",
+   "grid_miss_s": 0.0
+  },
+  {
+   "id": "r2",
+   "line": "R1",
+   "src": [
+    20.7,
+    22.58
+   ],
+   "src_on": 20.725,
+   "film_in": 20.798,
+   "film_on": 20.821,
+   "film_out": 22.539,
+   "gap_before": 0.223,
+   "key_word_src": 20.725,
+   "key_word_film": 20.821,
+   "grid": "half",
+   "grid_miss_s": 0.0
+  },
+  {
+   "id": "c1",
+   "line": "C1",
+   "src": [
+    22.835,
+    23.85
+   ],
+   "src_on": 22.855,
+   "film_in": 22.962,
+   "film_on": 22.981,
+   "film_out": 23.902,
+   "gap_before": 0.442,
+   "key_word_src": 22.855,
+   "key_word_film": 22.981,
+   "grid": "beat",
+   "grid_miss_s": 0.0
+  },
+  {
+   "id": "c2",
+   "line": "C1",
+   "src": [
+    23.85,
+    25.49
+   ],
+   "src_on": 23.905,
+   "film_in": 23.89,
+   "film_on": 23.941,
+   "film_out": 25.409,
+   "gap_before": 0.039,
+   "key_word_src": 23.905,
+   "key_word_film": 23.941,
+   "grid": "beat",
+   "grid_miss_s": 0.0
+  },
+  {
+   "id": "e1",
+   "line": "E1",
+   "src": [
+    25.775,
+    26.79
+   ],
+   "src_on": 25.79,
+   "film_in": 25.615,
+   "film_on": 25.629,
+   "film_out": 26.555,
+   "gap_before": 0.22,
+   "key_word_src": 25.79,
+   "key_word_film": 25.629,
+   "grid": "half",
+   "grid_miss_s": 0.008
+  },
+  {
+   "id": "e2",
+   "line": "E2",
+   "src": [
+    26.985,
+    28.23
+   ],
+   "src_on": 27.003,
+   "film_in": 26.804,
+   "film_on": 26.821,
+   "film_out": 27.957,
+   "gap_before": 0.266,
+   "key_word_src": 27.003,
+   "key_word_film": 26.821,
+   "grid": "half",
+   "grid_miss_s": 0.0
+  }
+ ],
+ "words": [
+  {
+   "text": "عندك",
+   "line": "L1",
+   "phrase": "h1",
+   "start": 0.1,
+   "end": 0.421
+  },
+  {
+   "text": "برزنتيشن؟",
+   "line": "L1",
+   "phrase": "h1",
+   "start": 0.421,
+   "end": 1.178
+  },
+  {
+   "text": "تقرير؟",
+   "line": "L1",
+   "phrase": "h2",
+   "start": 1.381,
+   "end": 1.846
+  },
+  {
+   "text": "بحث؟",
+   "line": "L1",
+   "phrase": "h3",
+   "start": 2.101,
+   "end": 2.682
+  },
+  {
+   "text": "والتسليم…",
+   "line": "L2",
+   "phrase": "d1",
+   "start": 3.061,
+   "end": 3.879
+  },
+  {
+   "text": "باجر؟",
+   "line": "L2",
+   "phrase": "d1",
+   "start": 3.879,
+   "end": 4.563
+  },
+  {
+   "text": "المرة",
+   "line": "L3",
+   "phrase": "t1",
+   "start": 4.981,
+   "end": 5.299
+  },
+  {
+   "text": "الجاية…",
+   "line": "L3",
+   "phrase": "t1",
+   "start": 5.299,
+   "end": 5.796
+  },
+  {
+   "text": "خلّ",
+   "line": "L3",
+   "phrase": "t2",
+   "start": 6.146,
+   "end": 6.335
+  },
+  {
+   "text": "التصميم",
+   "line": "L3",
+   "phrase": "t2",
+   "start": 6.335,
+   "end": 6.771
+  },
+  {
+   "text": "على",
+   "line": "L3",
+   "phrase": "t2",
+   "start": 6.771,
+   "end": 7.141
+  },
+  {
+   "text": "طشّ.",
+   "line": "L3",
+   "phrase": "t2",
+   "start": 7.141,
+   "end": 7.555
+  },
+  {
+   "text": "برزنتيشن؟",
+   "line": "P1",
+   "phrase": "p1a",
+   "start": 8.581,
+   "end": 9.32
+  },
+  {
+   "text": "يشدّ",
+   "line": "P1",
+   "phrase": "p1b",
+   "start": 9.541,
+   "end": 9.837
+  },
+  {
+   "text": "من",
+   "line": "P1",
+   "phrase": "p1b",
+   "start": 9.837,
+   "end": 10.06
+  },
+  {
+   "text": "أول",
+   "line": "P1",
+   "phrase": "p1b",
+   "start": 10.06,
+   "end": 10.448
+  },
+  {
+   "text": "سلايد.",
+   "line": "P1",
+   "phrase": "p1b",
+   "start": 10.448,
+   "end": 10.761
+  },
+  {
+   "text": "تقرير؟",
+   "line": "P2",
+   "phrase": "p2a",
+   "start": 10.981,
+   "end": 11.451
+  },
+  {
+   "text": "نرتّبه.",
+   "line": "P2",
+   "phrase": "p2b",
+   "start": 11.561,
+   "end": 12.096
+  },
+  {
+   "text": "بحث؟",
+   "line": "P3",
+   "phrase": "p3a",
+   "start": 12.181,
+   "end": 12.651
+  },
+  {
+   "text": "ننسّقه",
+   "line": "P3",
+   "phrase": "p3b",
+   "start": 12.761,
+   "end": 13.455
+  },
+  {
+   "text": "عدل.",
+   "line": "P3",
+   "phrase": "p3b",
+   "start": 13.455,
+   "end": 13.638
+  },
+  {
+   "text": "بوستر.",
+   "line": "P4",
+   "phrase": "p4a",
+   "start": 13.861,
+   "end": 14.307
+  },
+  {
+   "text": "فيديو.",
+   "line": "P4",
+   "phrase": "p4b",
+   "start": 14.341,
+   "end": 14.862
+  },
+  {
+   "text": "سي",
+   "line": "P4",
+   "phrase": "p4c",
+   "start": 15.061,
+   "end": 15.367
+  },
+  {
+   "text": "ڤي.",
+   "line": "P4",
+   "phrase": "p4c",
+   "start": 15.367,
+   "end": 15.772
+  },
+  {
+   "text": "وأي",
+   "line": "P5",
+   "phrase": "p5",
+   "start": 16.021,
+   "end": 16.225
+  },
+  {
+   "text": "ملف",
+   "line": "P5",
+   "phrase": "p5",
+   "start": 16.225,
+   "end": 16.502
+  },
+  {
+   "text": "أوفيس.",
+   "line": "P5",
+   "phrase": "p5",
+   "start": 16.502,
+   "end": 16.861
+  },
+  {
+   "text": "حتى",
+   "line": "D1",
+   "phrase": "m1",
+   "start": 17.461,
+   "end": 17.658
+  },
+  {
+   "text": "الهوامش…",
+   "line": "D1",
+   "phrase": "m1",
+   "start": 17.658,
+   "end": 18.304
+  },
+  {
+   "text": "نضبّطها.",
+   "line": "D1",
+   "phrase": "m2",
+   "start": 18.421,
+   "end": 19.022
+  },
+  {
+   "text": "المعلومة",
+   "line": "R1",
+   "phrase": "r1",
+   "start": 19.621,
+   "end": 20.181
+  },
+  {
+   "text": "منك…",
+   "line": "R1",
+   "phrase": "r1",
+   "start": 20.181,
+   "end": 20.568
+  },
+  {
+   "text": "والترتيب",
+   "line": "R1",
+   "phrase": "r2",
+   "start": 20.821,
+   "end": 21.539
+  },
+  {
+   "text": "والتصميم",
+   "line": "R1",
+   "phrase": "r2",
+   "start": 21.539,
+   "end": 22.002
+  },
+  {
+   "text": "علينا.",
+   "line": "R1",
+   "phrase": "r2",
+   "start": 22.002,
+   "end": 22.509
+  },
+  {
+   "text": "ويوم",
+   "line": "C1",
+   "phrase": "c1",
+   "start": 22.981,
+   "end": 23.282
+  },
+  {
+   "text": "التسليم…",
+   "line": "C1",
+   "phrase": "c1",
+   "start": 23.282,
+   "end": 23.872
+  },
+  {
+   "text": "خلّ",
+   "line": "C1",
+   "phrase": "c2",
+   "start": 23.941,
+   "end": 24.214
+  },
+  {
+   "text": "شغلك",
+   "line": "C1",
+   "phrase": "c2",
+   "start": 24.214,
+   "end": 24.566
+  },
+  {
+   "text": "يسولف",
+   "line": "C1",
+   "phrase": "c2",
+   "start": 24.566,
+   "end": 24.909
+  },
+  {
+   "text": "عنك.",
+   "line": "C1",
+   "phrase": "c2",
+   "start": 24.909,
+   "end": 25.379
+  },
+  {
+   "text": "دزّ",
+   "line": "E1",
+   "phrase": "e1",
+   "start": 25.629,
+   "end": 25.814
+  },
+  {
+   "text": "لنا",
+   "line": "E1",
+   "phrase": "e1",
+   "start": 25.814,
+   "end": 26.008
+  },
+  {
+   "text": "بالخاص…",
+   "line": "E1",
+   "phrase": "e1",
+   "start": 26.008,
+   "end": 26.525
+  },
+  {
+   "text": "بس",
+   "line": "E2",
+   "phrase": "e2",
+   "start": 26.821,
+   "end": 27.05
+  },
+  {
+   "text": "مو",
+   "line": "E2",
+   "phrase": "e2",
+   "start": 27.05,
+   "end": 27.189
+  },
+  {
+   "text": "آخر",
+   "line": "E2",
+   "phrase": "e2",
+   "start": 27.189,
+   "end": 27.559
+  },
+  {
+   "text": "ليلة.",
+   "line": "E2",
+   "phrase": "e2",
+   "start": 27.559,
+   "end": 27.927
+  }
+ ],
+ "search": "search over tempo 1.00-1.08 x BPM 121-127 x bar phase (DP placer, see module doc). Chosen 1.08x, 125 BPM, bar phase 1.401 s: every key word within 8 ms of its grid point; film end 29.241 s (beat 58). 1.06x: cost 3.12, end 29.38 · 1.07x: 2.65, 29.37 · 1.08x: 2.36, 29.24 (124 BPM: 4.51; 126.5 BPM: 2.0)."
+}

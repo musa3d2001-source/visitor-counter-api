@@ -1,0 +1,201 @@
+<!doctype html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="utf-8">
+<title>دراسة جدوى — الغلاف</title>
+<style>
+@font-face{font-family:"Alexandria";src:url("../../../_system/fonts/Alexandria-VF.ttf") format("truetype");font-weight:100 900;font-display:block}
+@font-face{font-family:"Plex Arabic";src:url("../../../_system/fonts/IBMPlexSansArabic-Regular.ttf") format("truetype");font-weight:400;font-display:block}
+@font-face{font-family:"Plex Arabic";src:url("../../../_system/fonts/IBMPlexSansArabic-Medium.ttf") format("truetype");font-weight:500;font-display:block}
+@font-face{font-family:"Plex Arabic";src:url("../../../_system/fonts/IBMPlexSansArabic-SemiBold.ttf") format("truetype");font-weight:600;font-display:block}
+
+:root{
+  --paper:#F4ECDF; --paper-2:#EADFCD; --cream:#FBF6EE;
+  --ink:#2A1D16; --ink-2:#5A493D; --mute:#8E7C6E; --line:rgba(42,29,22,.16);
+  --terra:#B8532E; --terra-d:#9A4223;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+html,body{width:1240px;height:1754px;overflow:hidden;background:var(--paper)}
+body{font-family:"Plex Arabic",sans-serif;color:var(--ink);-webkit-font-smoothing:antialiased;text-rendering:geometricPrecision}
+.page{position:relative;width:1240px;height:1754px;overflow:hidden;
+  background:
+    radial-gradient(ellipse 900px 700px at 85% 10%,rgba(255,255,255,.45),transparent 70%),
+    var(--paper)}
+
+/* top bar */
+.top{position:absolute;top:78px;right:100px;left:100px;display:flex;justify-content:space-between;align-items:center}
+.top .brand{display:flex;align-items:center;gap:14px;font-family:"Alexandria";font-weight:600;font-size:22px;line-height:1.3;color:var(--ink)}
+.top .brand i{width:12px;height:12px;border-radius:50%;background:var(--terra)}
+.top .date{font-family:"Alexandria";font-weight:500;font-size:21px;line-height:1.3;color:var(--mute)}
+.rule-top{position:absolute;top:128px;right:100px;left:100px;height:1.5px;background:var(--ink);opacity:.85}
+
+/* arch */
+.arch{position:absolute;left:100px;top:180px;width:500px;height:1030px;
+  filter:drop-shadow(0 30px 40px rgba(90,40,18,.18))}
+.arch svg{display:block}
+
+/* title column */
+.col{position:absolute;right:100px;top:196px;width:470px}
+.kicker{font-family:"Plex Arabic";font-weight:600;font-size:22px;line-height:1.4;color:var(--terra);display:flex;align-items:center;gap:14px}
+.kicker::before{content:"";width:34px;height:2px;background:var(--terra)}
+h1{font-family:"Alexandria";font-weight:800;font-size:156px;line-height:1.14;color:var(--ink);margin-top:26px;letter-spacing:0}
+h1 span{display:block}
+.sub{font-family:"Alexandria";font-weight:500;font-size:50px;line-height:1.4;color:var(--ink);margin-top:22px}
+.sub span{display:block}
+.sub .acc{color:var(--terra)}
+.bar{width:84px;height:6px;border-radius:6px;background:var(--terra);margin:34px 0 26px}
+.lede{font-size:24px;line-height:1.85;color:var(--ink-2);font-weight:400}
+
+.toc{margin-top:30px;border-bottom:1.5px solid var(--line)}
+.toc .lbl{font-family:"Alexandria";font-weight:600;font-size:18px;line-height:1.3;color:var(--mute);margin-bottom:12px}
+.toc .row{display:flex;align-items:baseline;gap:22px;height:54px;padding-top:12px;border-top:1.5px solid var(--line)}
+.toc .row b{font-family:"Alexandria";font-weight:600;font-size:22px;line-height:1.3;color:var(--terra);width:34px;font-feature-settings:"tnum" 1}
+.toc .row span{font-weight:500;font-size:24px;line-height:1.3;color:var(--ink)}
+
+/* meta band */
+.meta{position:absolute;right:100px;left:100px;top:1290px;border-top:2px solid var(--ink);
+  display:grid;grid-template-columns:1fr 1fr;column-gap:64px}
+.meta .cell{padding:30px 0 28px;border-bottom:1.5px solid var(--line)}
+.meta small{display:block;font-family:"Alexandria";font-weight:500;font-size:19px;line-height:1.3;color:var(--mute);margin-bottom:10px}
+.meta strong{display:block;font-family:"Alexandria";font-weight:600;font-size:31px;line-height:1.35;color:var(--ink)}
+.meta strong em{font-style:normal;color:var(--terra)}
+
+.foot{position:absolute;right:100px;left:100px;bottom:96px;display:flex;justify-content:space-between;align-items:center;
+  font-family:"Alexandria";font-weight:500;font-size:19px;line-height:1.3;color:var(--mute)}
+.foot .bean{display:block}
+</style>
+</head>
+<body>
+<div class="page">
+
+  <div class="top">
+    <div class="brand"><i></i>التقرير النهائي</div>
+    <div class="date">نوفمبر ٢٠٢٦</div>
+  </div>
+  <div class="rule-top"></div>
+
+  <!-- illustration: top-down coffee cup inside an arch -->
+  <div class="arch">
+    <svg width="500" height="1030" viewBox="0 0 500 1030" xmlns="http://www.w3.org/2000/svg">
+      <defs>
+        <clipPath id="archClip"><path d="M0,250 A250,250 0 0 1 500,250 L500,1030 L0,1030 Z"/></clipPath>
+        <linearGradient id="terraG" x1="0" y1="0" x2="0" y2="1">
+          <stop offset="0" stop-color="#C66A3F"/><stop offset=".55" stop-color="#B8532E"/><stop offset="1" stop-color="#A34528"/>
+        </linearGradient>
+        <radialGradient id="glow" cx="250" cy="560" r="360" gradientUnits="userSpaceOnUse">
+          <stop offset="0" stop-color="#FFD9B0" stop-opacity=".42"/><stop offset="1" stop-color="#FFD9B0" stop-opacity="0"/>
+        </radialGradient>
+        <radialGradient id="coffee" cx="236" cy="540" r="130" gradientUnits="userSpaceOnUse">
+          <stop offset="0" stop-color="#8E5A36"/><stop offset=".7" stop-color="#5E3521"/><stop offset="1" stop-color="#3F2316"/>
+        </radialGradient>
+        <radialGradient id="saucerG" cx="230" cy="530" r="210" gradientUnits="userSpaceOnUse">
+          <stop offset="0" stop-color="#FBF5EC"/><stop offset="1" stop-color="#EEE2D1"/>
+        </radialGradient>
+        <linearGradient id="spoonG" x1="0" y1="0" x2="0" y2="1">
+          <stop offset="0" stop-color="#F1ECE6"/><stop offset=".5" stop-color="#CFC7BD"/><stop offset="1" stop-color="#A59D93"/>
+        </linearGradient>
+        <filter id="soft" x="-30%" y="-30%" width="160%" height="160%"><feGaussianBlur stdDeviation="16"/></filter>
+        <filter id="soft2" x="-30%" y="-30%" width="160%" height="160%"><feGaussianBlur stdDeviation="6"/></filter>
+        <filter id="spoonSh" x="-20%" y="-120%" width="140%" height="340%"><feGaussianBlur stdDeviation="3.2"/></filter>
+        <g id="bean">
+          <ellipse cx="0" cy="0" rx="17" ry="24" fill="#4A2817"/>
+          <ellipse cx="-6" cy="-7" rx="5" ry="9" fill="#6E4127" opacity=".7"/>
+          <path d="M0,-19 C8,-7 -8,6 0,19" fill="none" stroke="#2E170C" stroke-width="3.2" stroke-linecap="round"/>
+        </g>
+      </defs>
+      <g clip-path="url(#archClip)">
+        <rect width="500" height="1030" fill="url(#terraG)"/>
+        <circle cx="250" cy="560" r="360" fill="url(#glow)"/>
+        <!-- ripples -->
+        <g fill="none" stroke="#FCE9D4">
+          <circle cx="250" cy="560" r="252" stroke-opacity=".16" stroke-width="2"/>
+          <circle cx="250" cy="560" r="306" stroke-opacity=".11" stroke-width="2"/>
+          <circle cx="250" cy="560" r="368" stroke-opacity=".07" stroke-width="2"/>
+          <circle cx="250" cy="560" r="438" stroke-opacity=".05" stroke-width="2"/>
+        </g>
+        <!-- inner arch line -->
+        <path d="M24,1030 L24,250 A226,226 0 0 1 476,250 L476,1030" fill="none" stroke="#FCE9D4" stroke-opacity=".32" stroke-width="2"/>
+
+        <!-- beans -->
+        <use href="#bean" transform="translate(150,236) rotate(28)"/>
+        <use href="#bean" transform="translate(352,190) rotate(-32) scale(.85)"/>
+        <use href="#bean" transform="translate(410,312) rotate(62) scale(.8)"/>
+        <use href="#bean" transform="translate(140,862) rotate(-38)"/>
+        <use href="#bean" transform="translate(352,850) rotate(22) scale(.9)"/>
+        <use href="#bean" transform="translate(258,932) rotate(78) scale(.8)"/>
+        <use href="#bean" transform="translate(412,968) rotate(-12) scale(.95)"/>
+        <use href="#bean" transform="translate(96,982) rotate(44) scale(.85)"/>
+
+        <!-- saucer -->
+        <circle cx="272" cy="590" r="198" fill="#5A2310" opacity=".38" filter="url(#soft)"/>
+        <circle cx="250" cy="560" r="197" fill="url(#saucerG)"/>
+        <circle cx="250" cy="560" r="196" fill="none" stroke="#E0CFB9" stroke-width="2"/>
+        <circle cx="250" cy="560" r="162" fill="none" stroke="#E3D5C1" stroke-width="2"/>
+
+        <!-- spoon -->
+        <g transform="translate(20 -6) rotate(-8 250 725)">
+          <g fill="#5A2310" opacity=".26" filter="url(#spoonSh)" transform="translate(4 6)">
+            <path d="M200,721 L338,717 Q346,717 346,724 Q346,731 338,731 L200,729 Z"/>
+            <ellipse cx="184" cy="725" rx="24" ry="14"/>
+          </g>
+          <path d="M200,721 L338,717 Q346,717 346,724 Q346,731 338,731 L200,729 Z" fill="url(#spoonG)"/>
+          <ellipse cx="184" cy="725" rx="24" ry="14" fill="url(#spoonG)"/>
+          <ellipse cx="180" cy="722" rx="12" ry="5" fill="#FFFFFF" opacity=".55"/>
+        </g>
+
+        <!-- handle -->
+        <g transform="rotate(-38 250 560)">
+          <rect x="372" y="541" width="80" height="38" rx="19" fill="#FCF8F2" stroke="#E4D7C5" stroke-width="2"/>
+        </g>
+        <!-- cup -->
+        <circle cx="262" cy="574" r="144" fill="#9C8467" opacity=".45" filter="url(#soft2)"/>
+        <circle cx="250" cy="560" r="143" fill="#FDFAF6"/>
+        <circle cx="250" cy="560" r="142" fill="none" stroke="#E8DCCB" stroke-width="2"/>
+        <circle cx="250" cy="560" r="128" fill="#ECE1D2"/>
+        <circle cx="250" cy="560" r="118" fill="url(#coffee)"/>
+        <circle cx="250" cy="560" r="114" fill="none" stroke="#A9764B" stroke-opacity=".55" stroke-width="5"/>
+
+        <!-- latte art: tulip — stacked layers, each pinched to a V by one pull-through -->
+        <g fill="#F1DEC2">
+          <path d="M250,531 C234,520 224,507 226,494 C228,480 245,477 250,490 C255,477 272,480 274,494 C276,507 266,520 250,531 Z"/>
+          <path d="M210,503 C203,534.9 235.6,548.2 250,561 C264.4,548.2 297,534.9 290,503 C289,522.8 263.2,533.4 250,541 C236.8,533.4 211,522.8 210,503Z"/>
+          <path d="M194,524 C187,562.5 229.8,578.6 250,594 C270.2,578.6 313,562.5 306,524 C305,548.4 268.5,561.6 250,571 C231.5,561.6 195,548.4 194,524Z"/>
+          <path d="M178,550 C171,596.2 224.1,615.5 250,634 C275.9,615.5 329,596.2 322,550 C321,578.1 273.8,593.2 250,604 C226.2,593.2 179,578.1 178,550Z"/>
+          <path d="M247.4,662 L249.3,530 L250.7,530 L252.6,662 Q250,669 247.4,662 Z"/>
+        </g>
+      </g>
+    </svg>
+  </div>
+
+  <!-- title column -->
+  <div class="col">
+    <div class="kicker">مشروع جماعي</div>
+    <h1><span>دراسة</span><span>جدوى</span></h1>
+    <div class="sub"><span>كافيه داخل</span><span class="acc">الحرم الجامعي</span></div>
+    <div class="bar"></div>
+    <p class="lede">قراءة مبدئية لفكرة مشروع طلابي: السوق، والموقع، والتكاليف، والعائد المتوقع.</p>
+
+    <div class="toc">
+      <div class="lbl">أبرز الأقسام</div>
+      <div class="row"><b>٣</b><span>دراسة السوق والفئة المستهدفة</span></div>
+      <div class="row"><b>٤</b><span>الموقع والتشغيل</span></div>
+      <div class="row"><b>٥</b><span>الدراسة المالية</span></div>
+      <div class="row"><b>٦</b><span>المخاطر والحلول</span></div>
+    </div>
+  </div>
+
+  <!-- meta -->
+  <div class="meta">
+    <div class="cell"><small>المقرر</small><strong>مبادئ ريادة الأعمال</strong></div>
+    <div class="cell"><small>إعداد</small><strong>المجموعة <em>الثالثة</em></strong></div>
+    <div class="cell"><small>أعضاء الفريق</small><strong>نوف · يوسف · دانة · فهد</strong></div>
+    <div class="cell"><small>الفصل الدراسي</small><strong>الأول ٢٠٢٦/٢٠٢٧</strong></div>
+  </div>
+
+  <div class="foot">
+    <span>تقرير مقدَّم ضمن متطلبات المقرر</span>
+    <svg class="bean" width="20" height="26" viewBox="-10 -13 20 26" aria-hidden="true"><ellipse rx="8.5" ry="12" fill="#B8532E" transform="rotate(25)"/><path d="M0,-9.5 C4,-3.5 -4,3 0,9.5" transform="rotate(25)" fill="none" stroke="#F4ECDF" stroke-width="2" stroke-linecap="round"/></svg>
+  </div>
+</div>
+</body>
+</html>

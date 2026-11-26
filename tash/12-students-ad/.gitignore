@@ -1,0 +1,5 @@
+out/
+review/
+src/audio/*.wav
+src/audio_novo.wav
+src/audio_vo.wav

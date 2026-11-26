@@ -1,0 +1,221 @@
+<!doctype html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="utf-8">
+<title>دورة الماء في الطبيعة — ٢ المراحل</title>
+<style>
+@font-face{font-family:"Alexandria";src:url("../../../_system/fonts/Alexandria-VF.ttf") format("truetype");font-weight:100 900;font-display:block}
+@font-face{font-family:"Plex Arabic";src:url("../../../_system/fonts/IBMPlexSansArabic-Medium.ttf") format("truetype");font-weight:500;font-display:block}
+@font-face{font-family:"Plex Arabic";src:url("../../../_system/fonts/IBMPlexSansArabic-SemiBold.ttf") format("truetype");font-weight:600;font-display:block}
+
+:root{
+  --sky:#CFEFFF; --sky-soft:#E2F6FF;
+  --navy:#0E2A66;
+  --s1:#FF8A3D; --s2:#8B7BFF; --s3:#2F7BFF; --s4:#1FB386;
+  --cream:#FFFDF6;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+html,body{width:1920px;height:1080px;overflow:hidden;background:var(--sky)}
+body{font-family:"Plex Arabic",sans-serif;color:var(--navy);-webkit-font-smoothing:antialiased;text-rendering:geometricPrecision}
+.slide{position:relative;width:1920px;height:1080px;overflow:hidden;background:var(--sky)}
+.scene{position:absolute;inset:0;width:1920px;height:1080px;display:block}
+
+/* ring labels (HTML so Arabic shaping is perfect) */
+.tag{position:absolute;display:flex;align-items:center;gap:14px;transform:translate(50%,-50%);
+  background:#fff;border-radius:999px;padding:9px 10px 11px 32px;box-shadow:0 7px 0 rgba(14,42,102,.18);white-space:nowrap}
+.tag i{font-style:normal;width:56px;height:56px;border-radius:50%;display:grid;place-items:center;
+  font-family:"Alexandria";font-weight:700;font-size:32px;line-height:1;color:#fff;padding-bottom:3px}
+.tag b{font-family:"Alexandria";font-weight:700;font-size:38px;line-height:1.2}
+
+.col{position:absolute;top:74px;right:120px;width:690px;text-align:right}
+.chip{display:inline-flex;align-items:center;gap:12px;font-family:"Alexandria";font-weight:600;font-size:27px;line-height:1;
+  padding:15px 28px 17px 24px;border-radius:999px;background:var(--navy);color:#fff;white-space:nowrap}
+.chip svg{width:20px;height:26px;display:block}
+h2{font-family:"Alexandria";font-weight:700;font-size:112px;line-height:1.15;margin-top:26px;white-space:nowrap}
+h2 em{font-style:normal;color:#1B5CE0}
+.lede{font-weight:500;font-size:34px;line-height:1.5;margin-top:10px;white-space:nowrap}
+
+.cards{margin-top:38px;display:flex;flex-direction:column;gap:18px}
+.card{display:flex;align-items:center;gap:26px;background:#fff;border-radius:30px;padding:16px 26px 18px 34px;
+  box-shadow:0 8px 0 rgba(14,42,102,.13)}
+.card .n{flex:none;width:74px;height:74px;border-radius:24px;display:grid;place-items:center;
+  font-family:"Alexandria";font-weight:700;font-size:40px;line-height:1;color:#fff;padding-bottom:4px}
+.card p{font-weight:500;font-size:30px;line-height:1.5;color:var(--navy);white-space:nowrap}
+
+.pg{position:absolute;left:96px;bottom:34px;width:64px;height:64px;border-radius:50%;background:var(--cream);
+  display:grid;place-items:center;font-family:"Alexandria";font-weight:700;font-size:30px;color:var(--navy);padding-bottom:3px;
+  box-shadow:0 6px 0 rgba(8,34,110,.28)}
+</style>
+</head>
+<body>
+<div class="slide">
+
+<svg class="scene" viewBox="0 0 1920 1080" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+  <defs>
+    <g id="cloud">
+      <rect x="0" y="100" width="360" height="92" rx="46"/>
+      <circle cx="108" cy="104" r="64"/>
+      <circle cx="206" cy="82" r="82"/>
+      <circle cx="288" cy="118" r="52"/>
+    </g>
+    <path id="drop" d="M0-22C9-9 15 0 15 9A15 15 0 1 1-15 9C-15 0-9-9 0-22Z"/>
+    <clipPath id="disc"><circle r="106"/></clipPath>
+    <linearGradient id="g12" gradientUnits="userSpaceOnUse" x1="918" y1="659" x2="918" y2="421"><stop offset="0" stop-color="#FF8A3D"/><stop offset="1" stop-color="#8B7BFF"/></linearGradient>
+    <linearGradient id="g23" gradientUnits="userSpaceOnUse" x1="719" y1="222" x2="481" y2="222"><stop offset="0" stop-color="#8B7BFF"/><stop offset="1" stop-color="#2F7BFF"/></linearGradient>
+    <linearGradient id="g34" gradientUnits="userSpaceOnUse" x1="282" y1="421" x2="282" y2="659"><stop offset="0" stop-color="#2F7BFF"/><stop offset="1" stop-color="#1FB386"/></linearGradient>
+    <linearGradient id="g41" gradientUnits="userSpaceOnUse" x1="481" y1="858" x2="719" y2="858"><stop offset="0" stop-color="#1FB386"/><stop offset="1" stop-color="#FF8A3D"/></linearGradient>
+  </defs>
+
+  <!-- air -->
+  <circle cx="600" cy="540" r="486" fill="#DDF4FF"/>
+  <circle cx="600" cy="540" r="250" fill="#E9F8FF"/>
+    <use href="#cloud" transform="translate(30 60) scale(.36)" fill="#fff" opacity=".9"/>
+
+  <!-- ring arrows -->
+  <g fill="none" stroke-width="22" stroke-linecap="round">
+    <path d="M918.4,659.3 A340 340 0 0 0 931.6,464.7" stroke="url(#g12)"/>
+    <path d="M719.3,221.6 A340 340 0 0 0 524.7,208.4" stroke="url(#g23)"/>
+    <path d="M281.6,420.7 A340 340 0 0 0 268.4,615.3" stroke="url(#g34)"/>
+    <path d="M480.7,858.4 A340 340 0 0 0 675.3,871.6" stroke="url(#g41)"/>
+  </g>
+  <g stroke-linejoin="round" stroke-width="10">
+    <path d="M918.4,416.7 L962.9,457.1 L900.3,471.3 Z" fill="#8B7BFF" stroke="#8B7BFF"/>
+    <path d="M476.7,221.6 L517.1,177.1 L531.3,239.7 Z" fill="#2F7BFF" stroke="#2F7BFF"/>
+    <path d="M281.6,663.3 L237.1,622.9 L299.7,608.7 Z" fill="#1FB386" stroke="#1FB386"/>
+    <path d="M723.3,858.4 L682.9,902.9 L668.7,840.3 Z" fill="#FF8A3D" stroke="#FF8A3D"/>
+  </g>
+
+  <!-- ===== node 1: evaporation (bottom-right) ===== -->
+  <g transform="translate(840.4 780.4)">
+    <circle r="120" cy="8" fill="rgba(14,42,102,.16)"/>
+    <circle r="120" fill="#fff"/>
+    <g clip-path="url(#disc)">
+      <rect x="-110" y="-110" width="220" height="220" fill="#CFEFFF"/>
+      <g transform="translate(-44 -46)">
+        <circle r="44" fill="#FFF0B8"/>
+        <g stroke="#FFC933" stroke-width="7" stroke-linecap="round">
+          <line y1="-31" y2="-39"/><line y1="-31" y2="-39" transform="rotate(45)"/><line y1="-31" y2="-39" transform="rotate(90)"/><line y1="-31" y2="-39" transform="rotate(135)"/>
+          <line y1="-31" y2="-39" transform="rotate(180)"/><line y1="-31" y2="-39" transform="rotate(225)"/><line y1="-31" y2="-39" transform="rotate(270)"/><line y1="-31" y2="-39" transform="rotate(315)"/>
+        </g>
+        <circle r="22" fill="#FFC933"/>
+      </g>
+      <path d="M-130 34q20-12 40 0t40 0t40 0t40 0t40 0t40 0t40 0L130 130L-130 130Z" fill="#5AA6FF"/>
+      <path d="M-150 62q20-12 40 0t40 0t40 0t40 0t40 0t40 0t40 0L130 130L-150 130Z" fill="#2F7BFF"/>
+      <path d="M-130 88q20-12 40 0t40 0t40 0t40 0t40 0t40 0t40 0L130 130L-130 130Z" fill="#1B5CE0"/>
+      <g fill="none" stroke="#fff" stroke-width="8" stroke-linecap="round" stroke-linejoin="round">
+        <path d="M10 22q-10-11 0-22t0-22t0-22"/><path d="M2-52l8-12l8 12"/>
+        <path d="M46 26q-10-11 0-22t0-22t0-22t0-22"/><path d="M38-70l8-12l8 12"/>
+        <path d="M82 22q-10-11 0-22t0-22"/><path d="M74-30l8-12l8 12"/>
+      </g>
+    </g>
+  </g>
+
+  <!-- ===== node 2: condensation (top-right) =====
+       vapour rises from below as tiny dots that grow as they climb and gather into the cloud -->
+  <g transform="translate(840.4 299.6)">
+    <circle r="120" cy="8" fill="rgba(14,42,102,.16)"/>
+    <circle r="120" fill="#fff"/>
+    <g clip-path="url(#disc)">
+      <rect x="-110" y="-110" width="220" height="220" fill="#E4E6FF"/>
+      <!-- the cloud being formed, high in the disc -->
+      <g fill="#fff">
+        <rect x="-74" y="-50" width="148" height="44" rx="22"/>
+        <circle cx="-36" cy="-50" r="29"/><circle cx="8" cy="-66" r="38"/><circle cx="46" cy="-44" r="25"/>
+      </g>
+      <path d="M-56-14h112" stroke="#D3D8FF" stroke-width="7" stroke-linecap="round"/>
+      <!-- vapour converging upward: wide and tiny at the bottom, big and close together at the top -->
+      <g fill="#7B6AF5">
+        <circle cx="-36" cy="90" r="4.5"/><circle cx="-12" cy="94" r="4.5"/><circle cx="12" cy="94" r="4.5"/><circle cx="36" cy="90" r="4.5"/>
+        <circle cx="-25" cy="64" r="7"/><circle cx="0" cy="67" r="7"/><circle cx="25" cy="64" r="7"/>
+        <circle cx="-13" cy="38" r="9.5"/><circle cx="13" cy="38" r="9.5"/>
+        <circle cx="0" cy="12" r="12"/>
+      </g>
+      <!-- arrows sweeping up and in, into the cloud -->
+      <g fill="none" stroke="#6A58E8" stroke-width="7" stroke-linecap="round" stroke-linejoin="round">
+        <path d="M-60 82Q-66 44-46 18"/><path d="M-60.6 21.2L-46 18L-45.4 33"/>
+        <path d="M60 82Q66 44 46 18"/><path d="M60.6 21.2L46 18L45.4 33"/>
+      </g>
+    </g>
+  </g>
+
+  <!-- ===== node 3: precipitation (top-left) ===== -->
+  <g transform="translate(359.6 299.6)">
+    <circle r="120" cy="8" fill="rgba(14,42,102,.16)"/>
+    <circle r="120" fill="#fff"/>
+    <g clip-path="url(#disc)">
+      <rect x="-110" y="-110" width="220" height="220" fill="#D2E4FB"/>
+      <g fill="#9DB6E4">
+        <rect x="-80" y="-34" width="160" height="46" rx="23"/>
+        <circle cx="-40" cy="-34" r="32"/><circle cx="8" cy="-52" r="42"/><circle cx="50" cy="-28" r="28"/>
+      </g>
+      <path d="M-62 4h120" stroke="#87A3D8" stroke-width="8" stroke-linecap="round"/>
+      <g fill="#2F7BFF">
+        <use href="#drop" transform="translate(-54 42) scale(.72)"/><use href="#drop" transform="translate(-14 58) scale(.72)"/>
+        <use href="#drop" transform="translate(26 40) scale(.72)"/><use href="#drop" transform="translate(64 60) scale(.72)"/>
+        <use href="#drop" transform="translate(-34 92) scale(.72)"/><use href="#drop" transform="translate(6 98) scale(.72)"/>
+        <use href="#drop" transform="translate(46 94) scale(.72)"/>
+      </g>
+    </g>
+  </g>
+
+  <!-- ===== node 4: runoff (bottom-left) ===== -->
+  <g transform="translate(359.6 780.4)">
+    <circle r="120" cy="8" fill="rgba(14,42,102,.16)"/>
+    <circle r="120" fill="#fff"/>
+    <g clip-path="url(#disc)">
+      <rect x="-110" y="-110" width="220" height="220" fill="#D6F3FF"/>
+      <clipPath id="m4"><path d="M-150 60L-58-58Q-44-76-30-58L80 60Z"/></clipPath>
+      <path d="M-150 60L-58-58Q-44-76-30-58L80 60Z" fill="#5CCBA8"/>
+      <path clip-path="url(#m4)" d="M-44-80L100 70L-10 70Z" fill="#27B08A" opacity=".55"/>
+      <path d="M-79-31L-58-58Q-44-76-30-58L-9-31q-10 12-17.5 0q-10 12-17.5 0q-10 12-17.5 0q-10 12-17.5 0Z" fill="#fff"/>
+      <path d="M-130 46C-70 26-10 30 30 50L64 72L64 130L-130 130Z" fill="#8ADB6B"/>
+      <path d="M-130 84C-80 70-30 72 10 86L10 130L-130 130Z" fill="#5FC25C" opacity=".6"/>
+      <path d="M-36-22C-46 4-22 16-30 32C-36 48-4 58 36 58L46 44C14 44-6 40-4 30C2 14-22 4-24-22Q-30-30-36-22Z" fill="#4FA3FF"/>
+      <path d="M-20 42q14 8 36 10" fill="none" stroke="#fff" stroke-width="5" stroke-linecap="round" opacity=".9"/>
+      <path d="M4 130C8 96 18 68 36 60q14-8 28 0t28 0t28 0t28 0L170 60L170 130Z" fill="#5AA6FF"/>
+      <path d="M26 130C32 106 42 90 58 88q14-8 28 0t28 0t28 0t28 0L170 88L170 130Z" fill="#2F7BFF"/>
+    </g>
+  </g>
+
+  <!-- ===== centre: the droplet ===== -->
+  <g transform="translate(600 520) scale(1.18)">
+    <ellipse cx="0" cy="134" rx="62" ry="10" fill="rgba(14,42,102,.12)"/>
+    <!-- short resting arms, same style as slides 1 and 3 -->
+    <path d="M-74 34Q-100 50-104 74" fill="none" stroke="#6FC3FF" stroke-width="14" stroke-linecap="round"/><circle cx="-104" cy="74" r="12" fill="#6FC3FF"/>
+    <path d="M74 34Q100 50 104 74" fill="none" stroke="#6FC3FF" stroke-width="14" stroke-linecap="round"/><circle cx="104" cy="74" r="12" fill="#6FC3FF"/>
+    <path d="M0-104C40-48 78-4 78 44A78 78 0 1 1-78 44C-78-4-40-48 0-104Z" fill="#6FC3FF"/>
+    <path d="M-44 6C-52 24-54 40-52 54" fill="none" stroke="#fff" stroke-width="12" stroke-linecap="round" opacity=".85"/>
+    <circle cx="-24" cy="40" r="11" fill="#0E2A66"/><circle cx="24" cy="40" r="11" fill="#0E2A66"/>
+    <circle cx="-20" cy="36" r="4" fill="#fff"/><circle cx="28" cy="36" r="4" fill="#fff"/>
+    <path d="M-16 64Q0 82 16 64" fill="none" stroke="#0E2A66" stroke-width="7" stroke-linecap="round"/>
+    <circle cx="-46" cy="62" r="10" fill="#FF9A86"/><circle cx="46" cy="62" r="10" fill="#FF9A86"/>
+  </g>
+
+  <!-- footer sea -->
+  <path d="M-60 1008q60-24 120 0t120 0t120 0t120 0t120 0t120 0t120 0t120 0t120 0t120 0t120 0t120 0t120 0t120 0t120 0t120 0t120 0L1980 1080L-60 1080Z" fill="#5AA6FF"/>
+  <path d="M-120 1040q60-22 120 0t120 0t120 0t120 0t120 0t120 0t120 0t120 0t120 0t120 0t120 0t120 0t120 0t120 0t120 0t120 0t120 0t120 0L2040 1080L-120 1080Z" fill="#2F7BFF"/>
+</svg>
+
+<!-- ring labels; positions are the right edge anchor (translate 50%) -->
+<div class="tag" style="right:calc(1920px - 840px);top:140px"><i style="background:var(--s2)">٢</i><b>التكاثف</b></div>
+<div class="tag" style="right:calc(1920px - 360px);top:140px"><i style="background:var(--s3)">٣</i><b>الهطول</b></div>
+<div class="tag" style="right:calc(1920px - 360px);top:940px"><i style="background:var(--s4)">٤</i><b>الجريان</b></div>
+<div class="tag" style="right:calc(1920px - 840px);top:940px"><i style="background:var(--s1)">١</i><b>التبخر</b></div>
+
+<div class="col">
+  <span class="chip"><svg viewBox="-16 -24 32 48"><path d="M0-22C9-9 15 0 15 9A15 15 0 1 1-15 9C-15 0-9-9 0-22Z" fill="#6FC3FF"/></svg>المراحل الأربع</span>
+  <h2>رحلة <em>القطرة</em></h2>
+  <p class="lede">أربع مراحل تتكرّر باستمرار.</p>
+  <div class="cards">
+    <div class="card"><span class="n" style="background:var(--s1)">١</span><p>حرارة الشمس تحوّل الماء<br>إلى بخار يصعد للأعلى.</p></div>
+    <div class="card"><span class="n" style="background:var(--s2)">٢</span><p>يبرد البخار في الجو فيتحوّل<br>إلى قطرات تكوّن الغيوم.</p></div>
+    <div class="card"><span class="n" style="background:var(--s3)">٣</span><p>تكبر القطرات وتثقل<br>فتسقط مطرًا أو ثلجًا.</p></div>
+    <div class="card"><span class="n" style="background:var(--s4)">٤</span><p>يجري الماء في الأودية والأنهار<br>حتى يعود إلى البحر.</p></div>
+  </div>
+</div>
+
+<div class="pg">٢</div>
+
+</div>
+</body>
+</html>

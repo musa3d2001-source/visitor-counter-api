@@ -1,0 +1,188 @@
+<!doctype html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="utf-8">
+<title>مسار — ١٢ شكرا</title>
+<style>
+@font-face{font-family:"Alexandria";src:url("../../../_system/fonts/Alexandria-VF.ttf") format("truetype");font-weight:100 900;font-display:block}
+@font-face{font-family:"Archivo";src:url("../../../_system/fonts/Archivo-VF.ttf") format("truetype");font-weight:100 900;font-display:block}
+@font-face{font-family:"Plex Arabic";src:url("../../../_system/fonts/IBMPlexSansArabic-Regular.ttf") format("truetype");font-weight:400;font-display:block}
+@font-face{font-family:"Plex Arabic";src:url("../../../_system/fonts/IBMPlexSansArabic-Medium.ttf") format("truetype");font-weight:500;font-display:block}
+@font-face{font-family:"Plex Arabic";src:url("../../../_system/fonts/IBMPlexSansArabic-SemiBold.ttf") format("truetype");font-weight:600;font-display:block}
+
+:root{
+  --bg:#07090D; --bg-2:#0D1017;
+  --ink:#F3F5F9; --mute:#9AA2B3; --dim:#5D6474; --line:rgba(255,255,255,.12);
+  --accent:#FF5A1F; --accent-hi:#FF8552;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+html,body{width:1920px;height:1080px;overflow:hidden;background:var(--bg)}
+body{font-family:"Plex Arabic",sans-serif;color:var(--ink);-webkit-font-smoothing:antialiased;text-rendering:geometricPrecision}
+.slide{position:relative;width:1920px;height:1080px;overflow:hidden;background:var(--bg)}
+
+/* chrome (shared with the whole deck) */
+.top{position:absolute;top:70px;right:112px;left:112px;display:flex;justify-content:space-between;align-items:center;z-index:5}
+.kicker{display:flex;align-items:center;gap:16px;font-family:"Alexandria";font-weight:600;font-size:26px;line-height:1.2;color:var(--ink)}
+.kicker i{width:12px;height:12px;border-radius:50%;background:var(--accent);box-shadow:0 0 18px rgba(255,90,31,.9)}
+.brand{font-family:"Alexandria";font-weight:700;font-size:26px;line-height:1.2;color:var(--mute)}
+.num{position:absolute;left:112px;bottom:84px;font-family:"Alexandria";font-weight:600;font-size:24px;line-height:1.2;color:var(--mute);white-space:nowrap;z-index:5}
+.num b{color:var(--ink);font-weight:700}
+
+/* light + rings behind the phone */
+.bloom{position:absolute;left:-260px;top:-60px;width:1400px;height:1200px;
+  background:radial-gradient(ellipse 520px 460px at 700px 600px,rgba(255,90,31,.30) 0%,rgba(255,90,31,.10) 40%,rgba(255,90,31,0) 72%)}
+.rings{position:absolute;left:0;top:0;width:1100px;height:1080px}
+
+/* phone */
+.stage{position:absolute;left:250px;top:84px;width:470px;height:960px;perspective:2200px}
+.phone{position:absolute;inset:0;border-radius:72px;transform:rotateY(16deg) rotateX(5deg) rotateZ(-5deg) scale(.92);transform-origin:50% 50%;
+  background:linear-gradient(135deg,#3A3F4A 0%,#15181E 18%,#0D0F13 60%,#2A2E36 100%);
+  box-shadow:0 60px 120px rgba(0,0,0,.75),0 0 0 1.5px rgba(255,255,255,.10) inset,-30px 30px 80px rgba(255,90,31,.18);padding:14px}
+.screen{position:relative;width:100%;height:100%;border-radius:58px;overflow:hidden;background:#0A0C11}
+.island{position:absolute;top:18px;left:50%;width:128px;height:36px;margin-left:-64px;border-radius:20px;background:#000;z-index:3}
+.status{position:absolute;top:24px;right:40px;left:40px;display:flex;justify-content:space-between;align-items:center;font-family:"Alexandria";font-weight:600;font-size:20px;color:#E8ECF3;z-index:2}
+.status .ic{display:flex;gap:8px;align-items:center}
+.app-h{position:absolute;top:84px;right:30px;left:30px;display:flex;justify-content:space-between;align-items:center}
+.app-h b{font-family:"Alexandria";font-weight:800;font-size:34px;color:#F3F5F9}
+.app-h .av{width:44px;height:44px;border-radius:50%;background:linear-gradient(135deg,#FF8552,#C2380A);display:grid;place-items:center;font-family:"Alexandria";font-weight:700;font-size:19px;color:#fff}
+.search{position:absolute;top:150px;right:30px;left:30px;height:62px;border-radius:20px;background:#151922;border:1.5px solid rgba(255,255,255,.08);display:flex;align-items:center;gap:14px;padding:0 20px}
+.search span{font-family:"Plex Arabic";font-weight:500;font-size:21px;color:#9AA2B3}
+.search b{font-family:"Plex Arabic";font-weight:600;font-size:21px;color:#F3F5F9}
+.map{position:absolute;top:228px;right:0;left:0;height:470px}
+.sheet{position:absolute;right:0;left:0;bottom:0;height:300px;border-radius:36px 36px 0 0;background:#12151C;border-top:1.5px solid rgba(255,255,255,.08);padding:16px 30px 0;
+  box-shadow:0 -24px 50px rgba(0,0,0,.55)}
+.grab{width:52px;height:6px;border-radius:6px;background:rgba(255,255,255,.18);margin:0 auto 18px}
+.sheet small{display:flex;align-items:center;gap:10px;font-family:"Plex Arabic";font-weight:500;font-size:19px;color:#FFB08C}
+.sheet small i{width:10px;height:10px;border-radius:50%;background:var(--accent);box-shadow:0 0 0 5px rgba(255,90,31,.22)}
+.spot{display:flex;justify-content:space-between;align-items:flex-end;margin-top:8px}
+.spot b{font-family:"Alexandria";font-weight:800;font-size:62px;line-height:1.1;color:#F3F5F9}
+.spot div{text-align:left;font-family:"Plex Arabic";font-weight:500;font-size:19px;line-height:1.5;color:#9AA2B3;padding-bottom:10px}
+.spot div em{font-style:normal;color:#F3F5F9;font-weight:600}
+.go{margin-top:20px;height:66px;border-radius:20px;background:linear-gradient(180deg,#FF6A2E,#F24E12);display:flex;align-items:center;justify-content:center;gap:12px;
+  font-family:"Alexandria";font-weight:700;font-size:24px;color:#fff;box-shadow:0 12px 30px rgba(255,90,31,.45)}
+.glare{position:absolute;inset:0;border-radius:58px;background:linear-gradient(120deg,rgba(255,255,255,.07) 0%,rgba(255,255,255,0) 32%);pointer-events:none;z-index:4}
+
+/* closing copy */
+.copy{position:absolute;right:112px;top:206px;width:900px;text-align:right}
+h1{font-family:"Alexandria";font-weight:900;font-size:300px;line-height:1.18;color:var(--ink);white-space:nowrap;margin-right:-8px}
+.rule{display:block;width:132px;height:8px;border-radius:8px;background:var(--accent);margin:10px 0 40px auto;margin-left:auto;margin-right:0;box-shadow:0 0 34px rgba(255,90,31,.7)}
+.qa{font-family:"Alexandria";font-weight:600;font-size:66px;line-height:1.4;color:var(--ink);white-space:nowrap}
+.qa em{font-style:normal;color:var(--accent-hi);font-weight:800}
+.qa .el{margin-right:-.1em}
+.qa-sub{margin-top:18px;font-family:"Plex Arabic";font-weight:400;font-size:32px;line-height:1.6;color:var(--mute);white-space:nowrap}
+
+.meta{position:absolute;right:112px;bottom:82px;display:flex;gap:64px;align-items:flex-start}
+.meta div{display:flex;flex-direction:column;gap:8px}
+.meta small{font-family:"Alexandria";font-weight:500;font-size:20px;line-height:1.2;color:var(--dim)}
+.meta strong{font-family:"Alexandria";font-weight:600;font-size:27px;line-height:1.3;color:var(--ink);white-space:nowrap}
+.meta .sep{width:1.5px;align-self:stretch;background:var(--line)}
+
+.grain{position:absolute;inset:0;width:1920px;height:1080px;opacity:.14;mix-blend-mode:overlay;pointer-events:none;z-index:9}
+</style>
+</head>
+<body>
+<div class="slide">
+  <div class="bloom"></div>
+  <svg class="rings" viewBox="0 0 1100 1080" aria-hidden="true">
+    <defs><radialGradient id="rf" cx="485" cy="600" r="560" gradientUnits="userSpaceOnUse"><stop offset="0" stop-color="#FF8552" stop-opacity=".55"/><stop offset="1" stop-color="#FF8552" stop-opacity="0"/></radialGradient></defs>
+    <g fill="none" stroke="url(#rf)" stroke-width="1.6">
+      <circle cx="485" cy="600" r="300"/><circle cx="485" cy="600" r="400"/><circle cx="485" cy="600" r="500"/><circle cx="485" cy="600" r="600"/>
+    </g>
+  </svg>
+
+  <div class="stage"><div class="phone"><div class="screen">
+    <div class="island"></div>
+    <div class="status">
+      <span>٧:٥٢</span>
+      <span class="ic">
+        <svg width="26" height="16" viewBox="0 0 26 16"><rect x="0" y="10" width="4" height="6" rx="1" fill="#E8ECF3"/><rect x="7" y="7" width="4" height="9" rx="1" fill="#E8ECF3"/><rect x="14" y="4" width="4" height="12" rx="1" fill="#E8ECF3"/><rect x="21" y="0" width="4" height="16" rx="1" fill="#E8ECF3" opacity=".4"/></svg>
+        <svg width="34" height="16" viewBox="0 0 34 16"><rect x="1" y="1" width="28" height="14" rx="4" fill="none" stroke="#E8ECF3" stroke-opacity=".5" stroke-width="1.6"/><rect x="3.5" y="3.5" width="18" height="9" rx="2" fill="#E8ECF3"/><rect x="30.5" y="5" width="2.5" height="6" rx="1" fill="#E8ECF3" opacity=".5"/></svg>
+      </span>
+    </div>
+    <div class="app-h"><b>مسار</b><span class="av">ن</span></div>
+    <div class="search">
+      <svg width="22" height="22" viewBox="0 0 22 22"><circle cx="9.5" cy="9.5" r="7" fill="none" stroke="#9AA2B3" stroke-width="2.2"/><path d="M15 15l5 5" stroke="#9AA2B3" stroke-width="2.2" stroke-linecap="round"/></svg>
+      <span>رايح:</span><b>المبنى ٧</b>
+    </div>
+    <svg class="map" id="map" viewBox="0 0 442 470" aria-hidden="true"></svg>
+    <div class="sheet">
+      <div class="grab"></div>
+      <small><i></i>أقرب موقف فاضي</small>
+      <div class="spot"><b>ب-١٤</b><div><em>دقيقتين مشي</em><br>للمبنى ٧</div></div>
+      <div class="go">
+        <svg width="24" height="24" viewBox="0 0 24 24"><path d="M20 4L4 11l7 2 2 7z" fill="#fff"/></svg>
+        ابدأ التوجيه
+      </div>
+    </div>
+    <div class="glare"></div>
+  </div></div></div>
+
+  <div class="top">
+    <div class="kicker"><i></i>الختام</div>
+    <div class="brand">مسار</div>
+  </div>
+
+  <div class="copy">
+    <h1>شكرا.</h1>
+    <span class="rule"></span>
+    <p class="qa">والحين<span class="el">…</span> <em>وقت أسئلتكم.</em></p>
+    <p class="qa-sub">اسألوا عن أي شي: الفكرة، التصميم أو التجربة.</p>
+  </div>
+
+  <div class="meta">
+    <div><small>إعداد</small><strong>نورة، فهد، دانة، يوسف</strong></div>
+    <span class="sep"></span>
+    <div><small>إشراف</small><strong>د. مريم</strong></div>
+    <span class="sep"></span>
+    <div><small>القسم</small><strong>علوم الحاسوب</strong></div>
+  </div>
+  <div class="num"><b>١٢</b> / ١٢</div>
+
+  <svg class="grain" viewBox="0 0 1920 1080" aria-hidden="true">
+    <filter id="g" x="0" y="0" width="100%" height="100%"><feTurbulence type="fractalNoise" baseFrequency=".9" numOctaves="2" seed="9"/><feColorMatrix values="0 0 0 0 .5  0 0 0 0 .5  0 0 0 0 .5  0 0 0 1.6 -.45"/></filter>
+    <rect width="1920" height="1080" filter="url(#g)"/>
+  </svg>
+</div>
+
+<script>
+(function(){
+  /* mini map inside the phone: flat top-down lot + route to the free stall */
+  const W=442, H=470;
+  let o='<defs><filter id="mb" x="-50%" y="-50%" width="200%" height="200%"><feGaussianBlur stdDeviation="10"/></filter>'
+    +'<filter id="mb3" x="-50%" y="-50%" width="200%" height="200%"><feGaussianBlur stdDeviation="3"/></filter>'
+    +'<linearGradient id="fade" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#0A0C11" stop-opacity="0"/><stop offset=".8" stop-color="#0A0C11" stop-opacity="0"/><stop offset="1" stop-color="#0A0C11" stop-opacity=".95"/></linearGradient></defs>';
+  o+='<rect width="'+W+'" height="'+H+'" fill="#0C0F15"/>';
+  /* building block (destination) */
+  o+='<rect x="26" y="22" width="150" height="86" rx="10" fill="#161B25" stroke="rgba(255,255,255,.08)"/>';
+  o+='<text x="101" y="73" text-anchor="middle" font-family="Alexandria" font-weight="600" font-size="19" fill="#9AA2B3" direction="rtl">المبنى ٧</text>';
+  /* rows of stalls */
+  const SW=30, D=52, x0=40, N=12;
+  const rows=[{y:150,open:1},{y:202,open:-1},{y:300,open:1},{y:352,open:-1}];
+  const free={'1:8':1}, other={'0:2':1,'3:5':1,'2:10':1};
+  let s=99; const rnd=()=>{ s=(s*16807)%2147483647; return (s-1)/2147483646; };
+  rows.forEach((r,ri)=>{ for(let c=0;c<=N;c++) o+='<line x1="'+(x0+c*SW)+'" y1="'+r.y+'" x2="'+(x0+c*SW)+'" y2="'+(r.y+D)+'" stroke="#DCE3F2" stroke-opacity=".14" stroke-width="1.2"/>';
+    for(let c=0;c<N;c++){ const k=ri+':'+c; if(free[k]) continue; if(other[k]){ o+='<rect x="'+(x0+c*SW+4)+'" y="'+(r.y+4)+'" width="'+(SW-8)+'" height="'+(D-8)+'" rx="4" fill="none" stroke="#FF8552" stroke-opacity=".45" stroke-width="1.6"/>'; continue; }
+      const w=SW-9, l=D-14-rnd()*4, y=r.open>0? r.y+5 : r.y+D-5-l;
+      o+='<rect x="'+(x0+c*SW+4.5)+'" y="'+y+'" width="'+w+'" height="'+l+'" rx="5" fill="'+['#222838','#2A3142','#1D2230'][Math.floor(rnd()*3)]+'"/>'; } });
+  /* free target stall: row 1, col 8 */
+  const fx=x0+8*SW, fy=rows[1].y;
+  o+='<rect x="'+(fx-6)+'" y="'+(fy-6)+'" width="'+(SW+12)+'" height="'+(D+12)+'" fill="#FF5A1F" opacity=".7" filter="url(#mb)"/>';
+  o+='<rect x="'+(fx+3)+'" y="'+(fy+3)+'" width="'+(SW-6)+'" height="'+(D-6)+'" rx="5" fill="#FF6A2E" stroke="#FFC2A3" stroke-width="2"/>';
+  /* route: from the bottom (you) up the right aisle, along the middle aisle, into the stall */
+  const ay=276, cx=fx+SW/2;
+  const d='M 400 470 L 400 '+(ay+22)+' Q 400 '+ay+' 378 '+ay+' L '+(cx+22)+' '+ay+' Q '+cx+' '+ay+' '+cx+' '+(ay-22)+' L '+cx+' '+(fy+D+4);
+  o+='<path d="'+d+'" fill="none" stroke="#FF5A1F" stroke-width="16" stroke-opacity=".35" filter="url(#mb3)" stroke-linecap="round" stroke-linejoin="round"/>';
+  o+='<path d="'+d+'" fill="none" stroke="#FF6A2E" stroke-width="7" stroke-linecap="round" stroke-linejoin="round"/>';
+  o+='<path d="'+d+'" fill="none" stroke="#FFE1D2" stroke-width="2" stroke-dasharray="2 12" stroke-linecap="round"/>';
+  /* you-are-here puck */
+  o+='<circle cx="400" cy="430" r="26" fill="#FF5A1F" opacity=".18"/><circle cx="400" cy="430" r="13" fill="#fff"/><circle cx="400" cy="430" r="8" fill="#FF5A1F"/>';
+  /* pin over the stall */
+  const px=cx, py=fy+6;
+  o+='<g transform="translate('+px+' '+py+')"><path d="M0 0 C -6 -10 -22 -18 -22 -36 A 22 22 0 1 1 22 -36 C 22 -18 6 -10 0 0 Z" fill="#FF5A1F" stroke="#0A0C11" stroke-width="3"/>'
+    +'<text x="0" y="-28" text-anchor="middle" font-family="Archivo, Alexandria" font-weight="800" font-size="22" fill="#fff">P</text></g>';
+  o+='<rect width="'+W+'" height="'+H+'" fill="url(#fade)"/>';
+  document.getElementById('map').innerHTML=o;
+})();
+</script>
+</body>
+</html>

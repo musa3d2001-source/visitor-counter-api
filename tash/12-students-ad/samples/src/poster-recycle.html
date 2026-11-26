@@ -1,0 +1,249 @@
+<!doctype html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="utf-8">
+<title>مدرستنا تعيد التدوير — ملصق علمي</title>
+<style>
+@font-face{font-family:"Alexandria";src:url("../../../_system/fonts/Alexandria-VF.ttf") format("truetype");font-weight:100 900;font-display:block}
+@font-face{font-family:"Plex Arabic";src:url("../../../_system/fonts/IBMPlexSansArabic-Medium.ttf") format("truetype");font-weight:500;font-display:block}
+@font-face{font-family:"Plex Arabic";src:url("../../../_system/fonts/IBMPlexSansArabic-SemiBold.ttf") format("truetype");font-weight:600;font-display:block}
+@font-face{font-family:"Plex Arabic";src:url("../../../_system/fonts/IBMPlexSansArabic-Bold.ttf") format("truetype");font-weight:700;font-display:block}
+
+:root{
+  --paper:#F2EDE3; --green:#0D3B2E; --green-2:#165440; --orange:#FF5A1F;
+  --sage:#A8C8B0; --kraft:#D9B88A; --ink:#111713; --cream:#F6F1E6; --mute:rgba(17,23,19,.6);
+}
+*{box-sizing:border-box;margin:0;padding:0}
+html,body{width:1587px;height:2245px;overflow:hidden;background:var(--paper)}
+body{font-family:"Plex Arabic",sans-serif;color:var(--ink);-webkit-font-smoothing:antialiased;text-rendering:geometricPrecision}
+.poster{position:relative;width:1587px;height:2245px;overflow:hidden;background:var(--paper)}
+.defs{position:absolute;width:0;height:0;overflow:hidden}
+
+/* ---------- hero ---------- */
+.hero{position:absolute;inset:0 0 auto 0;height:806px;background:var(--green);color:var(--cream)}
+.hero svg.art{position:absolute;inset:0;width:1587px;height:806px;display:block}
+.mast{position:absolute;top:58px;right:88px;left:88px;display:flex;justify-content:space-between;align-items:center;
+  font-weight:600;font-size:25px;line-height:1;white-space:nowrap}
+.mast .r{display:flex;align-items:center;gap:18px}
+.mast .pill{border:2px solid rgba(246,241,230,.7);border-radius:999px;padding:9px 20px 12px}
+.mast .muted{color:rgba(246,241,230,.62)}
+.mast-rule{position:absolute;top:114px;right:88px;left:88px;height:2px;background:rgba(246,241,230,.22)}
+
+.title{position:absolute;top:144px;right:88px;text-align:right}
+.kicker{display:inline-flex;align-items:center;gap:14px;font-family:"Alexandria";font-weight:700;font-size:32px;line-height:1.3;color:var(--orange);white-space:nowrap}
+.kicker::before{content:"";width:54px;height:6px;border-radius:3px;background:var(--orange)}
+h1{font-family:"Alexandria";font-weight:900;font-size:210px;line-height:1.04;letter-spacing:0;margin-top:6px}
+h1 span{display:block;white-space:nowrap}
+h1 em{font-style:normal;color:var(--orange)}
+.lede{position:absolute;top:654px;right:88px;width:880px;font-weight:500;font-size:30px;line-height:1.6;color:rgba(246,241,230,.88)}
+.facts{position:absolute;left:88px;bottom:56px;display:flex;gap:12px;direction:rtl}
+.facts span{border:2px solid rgba(246,241,230,.55);border-radius:999px;padding:10px 22px 13px;font-weight:600;font-size:25px;line-height:1;white-space:nowrap;color:var(--cream)}
+.facts span b{font-family:"Alexandria";font-weight:800;color:var(--orange)}
+
+/* ---------- sections ---------- */
+.sec{position:absolute;right:88px;left:88px}
+.label{display:flex;align-items:center;gap:16px;border-top:4px solid var(--ink);padding-top:18px;white-space:nowrap}
+.label i{font-style:normal;width:42px;height:42px;border-radius:10px;background:var(--orange);color:#fff;display:grid;place-items:center;
+  font-family:"Alexandria";font-weight:800;font-size:25px;line-height:1;padding-bottom:3px}
+.label span{font-weight:700;font-size:27px;line-height:1}
+.label small{margin-right:auto;font-weight:500;font-size:23px;color:var(--mute)}
+.label sup{font-size:.8em;line-height:0;vertical-align:.32em;margin-right:2px;color:var(--orange)}
+
+/* stats */
+.stats{top:852px}
+.stat-row{display:grid;grid-template-columns:1fr 1.25fr 1fr;margin-top:30px}
+.stat{padding:0 32px;border-left:2px solid rgba(17,23,19,.16)}
+.stat:first-child{padding-right:0}
+.stat:last-child{border-left:0;padding-left:0}
+.stat .top{display:flex;align-items:center;gap:16px}
+.stat .top svg{width:58px;height:72px;display:block;flex:none}
+.stat .top b{font-weight:700;font-size:31px;line-height:1.2;white-space:nowrap}
+.stat .num{display:flex;align-items:baseline;gap:16px;margin-top:2px;white-space:nowrap}
+.stat .num strong{font-family:"Alexandria";font-weight:900;font-size:160px;line-height:1.12;letter-spacing:0}
+.stat .num em{font-style:normal;font-family:"Alexandria";font-weight:700;font-size:44px;color:var(--orange)}
+.stat p{font-weight:500;font-size:24px;line-height:1.4;color:var(--mute);white-space:nowrap}
+
+/* method + chart */
+.mid{top:1286px}
+.mid-grid{display:grid;grid-template-columns:1fr 640px;gap:64px;margin-top:20px}
+.mid h2,.res h2{font-family:"Alexandria";font-weight:800;font-size:54px;line-height:1.2;white-space:nowrap}
+.steps{margin-top:20px;display:flex;flex-direction:column;gap:16px}
+.step{display:flex;gap:20px;align-items:center}
+.step i{flex:none;width:62px;height:62px;border-radius:50%;background:var(--green);color:var(--cream);display:grid;place-items:center;
+  font-style:normal;font-family:"Alexandria";font-weight:800;font-size:31px;padding-bottom:4px}
+.step p{font-weight:500;font-size:29px;line-height:1.4;white-space:nowrap}
+.quote{margin-top:16px;border-right:8px solid var(--orange);padding:4px 24px 8px 0;font-family:"Alexandria";font-weight:700;font-size:36px;line-height:1.35;white-space:nowrap}
+.chart{background:var(--cream);border-radius:28px;padding:22px 34px 12px;border:2px solid rgba(17,23,19,.1)}
+.chart h3{font-weight:700;font-size:28px;line-height:1.3;white-space:nowrap}
+.chart h3 small{font-weight:500;font-size:22px;color:var(--mute);margin-right:8px}
+.chart svg{display:block;width:568px;height:280px;margin-top:12px;overflow:visible}
+
+/* result + next */
+.res{top:1798px}
+.res-grid{display:grid;grid-template-columns:1fr 500px;gap:56px;margin-top:30px;align-items:stretch}
+.res-main{display:grid;grid-template-columns:auto 1fr;gap:44px;align-items:center}
+.big{font-family:"Alexandria";font-weight:900;font-size:150px;line-height:1;color:var(--orange);white-space:nowrap}
+.big-cap{font-weight:700;font-size:28px;line-height:1.35;margin-top:14px;white-space:nowrap}
+.bars{display:flex;flex-direction:column;gap:22px}
+.bar .t{display:flex;justify-content:space-between;align-items:baseline;white-space:nowrap}
+.bar .t span{font-weight:600;font-size:25px;line-height:1.3}
+.bar .t b{font-family:"Alexandria";font-weight:700;font-size:27px;line-height:1.3}
+.bar .tr{height:24px;border-radius:12px;background:rgba(17,23,19,.08);margin-top:8px}
+.bar .f{height:24px;border-radius:12px;background:var(--green)}
+.bar.after .t b{color:var(--orange)}
+.bar.after .f{background:var(--orange)}
+.next{background:var(--green);color:var(--cream);border-radius:28px;padding:28px 34px 30px;position:relative;overflow:hidden}
+.next b{display:flex;align-items:center;gap:12px;font-family:"Alexandria";font-weight:800;font-size:36px;line-height:1.2;color:var(--orange)}
+.next p{font-weight:600;font-size:27px;line-height:1.55;margin-top:12px;position:relative}
+.next svg{position:absolute;left:-40px;bottom:-56px;width:200px;height:200px;opacity:.16}
+
+/* footer */
+.foot{position:absolute;right:88px;left:88px;bottom:50px;border-top:2px solid rgba(17,23,19,.3);padding-top:18px;
+  display:flex;gap:44px;font-weight:500;font-size:22px;line-height:1.4;white-space:nowrap}
+.foot b{font-weight:700}
+.foot .mute{color:var(--mute)}
+.foot .note{margin-right:auto;color:var(--mute)}
+</style>
+</head>
+<body>
+<div class="poster">
+
+<svg class="defs" aria-hidden="true"><defs>
+  <g id="recycle">
+    <g fill="none" stroke-width="62">
+      <path d="M41.1 -165.0 A170 170 0 0 1 169.9 -5.9"/>
+      <path d="M122.3 118.1 A170 170 0 0 1 -79.8 150.1"/>
+      <path d="M-163.4 46.9 A170 170 0 0 1 -90.1 -144.2"/>
+    </g>
+    <path d="M231.9 -8.1L155.3 69.1L107.9 -3.8Z"/>
+    <path d="M-108.9 204.8L-137.5 99.9L-50.7 95.4Z"/>
+    <path d="M-122.9 -196.7L-17.8 -169.1L-57.2 -91.6Z"/>
+  </g>
+</defs></svg>
+
+<!-- ================= HERO ================= -->
+<section class="hero">
+  <svg class="art" viewBox="0 0 1587 806" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+    <g stroke="rgba(246,241,230,.06)" stroke-width="2">
+      <line x1="335" y1="114" x2="335" y2="830"/><line x1="582" y1="114" x2="582" y2="830"/>
+      <line x1="829" y1="114" x2="829" y2="830"/><line x1="1076" y1="114" x2="1076" y2="830"/><line x1="1252" y1="114" x2="1252" y2="830"/>
+    </g>
+    <g transform="translate(300 280) rotate(-8) scale(.62)">
+      <circle r="240" fill="rgba(246,241,230,.06)"/>
+      <use href="#recycle" fill="#FF5A1F" stroke="#FF5A1F"/>
+    </g>
+  </svg>
+
+  <div class="mast">
+    <div class="r"><span class="pill">ملصق علمي</span><span>مشروع مدرسي · الصف الثامن</span></div>
+    <span class="muted">الفصل الدراسي الأول</span>
+  </div>
+  <div class="mast-rule"></div>
+
+  <div class="title">
+    <span class="kicker">مبادرة طلابية</span>
+    <h1><span>مدرستنا</span><span>تعيد <em>التدوير</em></span></h1>
+  </div>
+  <p class="lede">ستة أسابيع من الفرز في ثلاث حاويات ملوّنة: ورق، وبلاستيك، وعلب ألمنيوم. هذا ما جمعناه، وما تغيّر بعده.</p>
+  <div class="facts"><span><b>٦</b> أسابيع</span><span><b>٢٤</b> فصلًا</span><span><b>٧٢</b> حاوية</span></div>
+</section>
+
+<!-- ================= 1 STATS ================= -->
+<section class="sec stats">
+  <div class="label"><i>١</i><span>الحصيلة بالأرقام<sup>*</sup></span><small>خلال ستة أسابيع</small></div>
+  <div class="stat-row">
+    <div class="stat">
+      <div class="top">
+        <svg viewBox="0 0 64 80"><rect x="24" y="1" width="16" height="8" rx="3" fill="#C9A473"/><rect x="3" y="7" width="58" height="12" rx="4" fill="#C9A473"/>
+          <path d="M7 21H57L53 74Q52.5 79 47 79H17Q11.5 79 11 74Z" fill="#D9B88A"/>
+          <g transform="translate(32 47) scale(.075)" fill="#0D3B2E"><use href="#recycle" stroke="#0D3B2E"/></g></svg>
+        <b>ورق وكرتون</b>
+      </div>
+      <div class="num"><strong>٤٢٠</strong><em>كغ</em></div>
+      <p>وُزنت كل يوم خميس</p>
+    </div>
+    <div class="stat">
+      <div class="top">
+        <svg viewBox="0 0 64 80"><rect x="24" y="1" width="16" height="8" rx="3" fill="#E24812"/><rect x="3" y="7" width="58" height="12" rx="4" fill="#E24812"/>
+          <path d="M7 21H57L53 74Q52.5 79 47 79H17Q11.5 79 11 74Z" fill="#FF5A1F"/>
+          <g transform="translate(32 47) scale(.075)" fill="#F6F1E6"><use href="#recycle" stroke="#F6F1E6"/></g></svg>
+        <b>عبوات بلاستيك</b>
+      </div>
+      <div class="num"><strong>١٨٦٠</strong><em>عبوة</em></div>
+      <p>بعد غسلها وكبسها</p>
+    </div>
+    <div class="stat">
+      <div class="top">
+        <svg viewBox="0 0 64 80"><rect x="24" y="1" width="16" height="8" rx="3" fill="#8DB398"/><rect x="3" y="7" width="58" height="12" rx="4" fill="#8DB398"/>
+          <path d="M7 21H57L53 74Q52.5 79 47 79H17Q11.5 79 11 74Z" fill="#A8C8B0"/>
+          <g transform="translate(32 47) scale(.075)" fill="#0D3B2E"><use href="#recycle" stroke="#0D3B2E"/></g></svg>
+        <b>علب ألمنيوم</b>
+      </div>
+      <div class="num"><strong>٩٤٠</strong><em>علبة</em></div>
+      <p>من المقصف والفسحة</p>
+    </div>
+  </div>
+</section>
+
+<!-- ================= 2 METHOD + CHART ================= -->
+<section class="sec mid">
+  <div class="label"><i>٢</i><span>الطريقة والحصيلة الأسبوعية</span></div>
+  <div class="mid-grid">
+    <div>
+      <h2>كيف عملنا؟</h2>
+      <div class="steps">
+        <div class="step"><i>١</i><p>وضعنا ثلاث حاويات ملوّنة في كل فصل، لكل مادة لون.</p></div>
+        <div class="step"><i>٢</i><p>درّبنا «سفراء البيئة» في كل فصل على الفرز.</p></div>
+        <div class="step"><i>٣</i><p>وزنّا الحصيلة كل أسبوع وسجّلناها في جدول.</p></div>
+      </div>
+      <p class="quote">الفرز يبدأ من الفصل… لا من الحاوية.</p>
+    </div>
+    <div class="chart">
+      <h3>الورق والكرتون أسبوعيًا <small>(كغ)</small></h3>
+      <svg viewBox="0 0 568 280" xmlns="http://www.w3.org/2000/svg" font-family="Alexandria" overflow="visible">
+        <line x1="0" y1="120" x2="556" y2="120" stroke="rgba(17,23,19,.16)" stroke-width="2" stroke-dasharray="4 8"/>
+        <text x="574" y="127" text-anchor="middle" font-weight="600" font-size="19" fill="rgba(17,23,19,.5)">٥٠</text>
+        <line x1="0" y1="210" x2="568" y2="210" stroke="#111713" stroke-width="3"/>
+        <!-- week 1 on the right (RTL); baseline 210, 1 kg = 1.8 px -->
+        <g><rect x="488" y="127" width="60" height="83" rx="8" fill="#165440"/><rect x="402" y="106" width="60" height="104" rx="8" fill="#165440"/><rect x="316" y="91" width="60" height="119" rx="8" fill="#165440"/><rect x="230" y="77" width="60" height="133" rx="8" fill="#165440"/><rect x="144" y="62" width="60" height="148" rx="8" fill="#165440"/><rect x="58" y="41" width="60" height="169" rx="8" fill="#FF5A1F"/></g>
+        <g font-weight="700" font-size="26" text-anchor="middle" fill="#111713"><text x="518" y="114">٤٦</text><text x="432" y="93">٥٨</text><text x="346" y="78">٦٦</text><text x="260" y="64">٧٤</text><text x="174" y="49">٨٢</text><text x="88" y="28" fill="#FF5A1F">٩٤</text></g>
+        <g font-weight="600" font-size="23" text-anchor="middle" fill="rgba(17,23,19,.6)"><text x="518" y="244">١</text><text x="432" y="244">٢</text><text x="346" y="244">٣</text><text x="260" y="244">٤</text><text x="174" y="244">٥</text><text x="88" y="244">٦</text></g>
+        <text x="518" y="270" text-anchor="middle" font-family="Plex Arabic" font-weight="500" font-size="19" fill="rgba(17,23,19,.6)">الأسبوع</text>
+      </svg>
+    </div>
+  </div>
+</section>
+
+<!-- ================= 3 RESULT + NEXT ================= -->
+<section class="sec res">
+  <div class="label"><i>٣</i><span>ماذا تغيّر؟</span></div>
+  <div class="res-grid">
+    <div class="res-main">
+      <div>
+        <div class="big">٣٦٪</div>
+        <div class="big-cap">أقل في الحاوية العامة</div>
+      </div>
+      <div class="bars">
+        <div class="bar"><div class="t"><span>قبل المبادرة</span><b>١٤ كيسًا يوميًا</b></div><div class="tr"><div class="f" style="width:100%"></div></div></div>
+        <div class="bar after"><div class="t"><span>بعد المبادرة</span><b>٩ أكياس يوميًا</b></div><div class="tr"><div class="f" style="width:64.3%"></div></div></div>
+      </div>
+    </div>
+    <div class="next">
+      <svg viewBox="-240 -240 480 480" aria-hidden="true"><use href="#recycle" fill="#F6F1E6" stroke="#F6F1E6"/></svg>
+      <b>الخطوة القادمة</b>
+      <p>حاوية للبطاريات القديمة، ومسابقة فرز بين الفصول في الفصل الدراسي الثاني.</p>
+    </div>
+  </div>
+</section>
+
+<!-- ================= FOOTER ================= -->
+<footer class="foot">
+  <span><b>إعداد:</b> فريق «الدورة الخضراء»</span>
+  <span><b>إشراف:</b> أ. اسم المعلّم</span>
+  <span class="mute"><b>المراجع:</b> اسم المؤلف، عنوان المرجع، السنة.</span>
+  <span class="note">* الأرقام بيانات تجريبية للعرض</span>
+</footer>
+
+</div>
+</body>
+</html>

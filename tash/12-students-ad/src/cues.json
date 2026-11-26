@@ -1,0 +1,1884 @@
+{
+ "_note": "«طشّ للطلاب»: build src/cues.json, the one timeline every scene, the page and the audio read.\n\nInputs: ../script.json (every on-screen string is COPIED from it, never retyped) and src/vo/vo_timeline.json (the VO\nedit: tempo, BPM, grid phase, word times). Everything is placed on the 125 BPM grid: beat k is at\nPHASE + k * 0.48 s (PHASE = 1.401 s, a bar line; k % 4 == 0 is a bar line); a frame is round(t * 30).\n'land' = the frame a text is fully on (on the grid, ~1 frame after its VO word starts); 'in' = the frame its entrance\nstarts; 'out' = the first frame it is gone (exits end by then). Scene in/out: [in, out) in frames.\n    python3 src/tools/build_cues.py",
+ "fps": 30,
+ "width": 1080,
+ "height": 1920,
+ "duration_frames": 877,
+ "duration": 29.2333,
+ "bpm": 125.0,
+ "beat": 0.48,
+ "phase": 1.401,
+ "bar": 1.92,
+ "grid_rule": "beat k at phase + k*beat s; frame round(t*30); k % 4 == 0 = bar line. The VO key words lead their grid point by 0.02 s; type lands ON the grid frame.",
+ "vo": {
+  "file": "src/vo/vo_edit.wav",
+  "timeline": "src/vo/vo_timeline.json",
+  "tempo": 1.08,
+  "first_onset": 0.1,
+  "last_end": 27.957,
+  "length": 27.868
+ },
+ "safe": {
+  "x0": 64,
+  "x1": 1016,
+  "y0": 250,
+  "y1": 1620
+ },
+ "scenes": [
+  {
+   "id": "s1_hook",
+   "in": 0,
+   "out": 78,
+   "what": "Live plate h1_desk (src/footage/h1, frame k = film frame k, 1.25x): night, the student from behind, hands in hair to 1.6 s, hands drop 1.67-2.0 s. The three questions punch in on the grid. From about beat 1.5 (2.121) the camera accelerates INTO the laptop screen (screen.json quad_s) and ends on full white on the last frame (f77): a white match cut into s2."
+  },
+  {
+   "id": "s2_screen",
+   "in": 78,
+   "out": 224,
+   "what": "Inside the laptop screen: OUR generic slide app (no Office UI/logo) from white. Blank slide, «انقر لإضافة عنوان» low-contrast texture, file name small, clock ٢:٤٧ ص small, the group-chat bubble lands first, the deadline notification (drawn pin icon, no emoji) drops with the ding on beat 3; «والتسليم… باجر؟» is the only big line. Runs UNDER s3 from f140; the splash (f215) wipes all of it, gone by its out frame."
+  },
+  {
+   "id": "s3_splash",
+   "in": 140,
+   "out": 258,
+   "what": "The TASH chat bubble (sender «طشّ», no time, no online dot) pops in over the screen UI with typing dots, types «المرة الجاية…», then «خلّ التصميم على •••»; on the hit (f215, bar line) its live dots burst into a lime SPLASH that wipes the WHOLE screen and land as the wordmark «طشّ»; «للطلاب» snaps under it on beat 13. The splash reveals TASH sample slide = card 1 of the parade (samples label on from its first frame). The student's blank file is NEVER shown finished. «المرة الجاية…» stays to the cut (f258). Hands card 1 to s4 at the rect in handoffs.s3_s4."
+  },
+  {
+   "id": "s4_parade",
+   "in": 258,
+   "out": 517,
+   "what": "The sample parade: 3D cards with depth on the beat, each card's chip = its on-screen word (rendered once), the answer punches in beside it; cards 4-6 one hit each; card 7 Excel (chart draws) + «وأي ملف أوفيس.» + five LTR file chips; ends on the full fan held ~0.45 s. Starts from card 1 exactly where s3 left it."
+  },
+  {
+   "id": "s5_details",
+   "in": 517,
+   "out": 683,
+   "what": "Details: macro push-in on one sample page, alignment guides SNAP onto the margins on «نضبّطها» (f553); then THE RULE LINE on a before/after of ONE page with the same words both sides: «المعلومة منك…» on BEFORE (قبل), the swipe on the bar line f618, «والترتيب والتصميم علينا.» on AFTER (بعد). No callout while the rule line is up. Samples: a report/research page for the margins; before/after = samples/before-slide.png (the plain BEFORE) against the matching designed slide (AFTER)."
+  },
+  {
+   "id": "s6_payoff",
+   "in": 683,
+   "out": 762,
+   "what": "Payoff plate h2_class (src/footage/h2): card 1's slide comped on the projection screen BEHIND the presenter's hand (plate -> slide into quad_draw -> fg.png), slow 2.5D push-in, classmates from behind. «خلّ شغلك يسولف عنك.» lands on the wide chord (f719). Samples label still on."
+  },
+  {
+   "id": "s7_end",
+   "in": 762,
+   "out": 877,
+   "what": "End card on ink: wordmark «طشّ» + «للطلاب» + «شغل يبيّض الوجه.» on the cut; CTA (f769) and the two handles (f776) hold to the end; «بس مو آخر ليلة.» pops with the voice (f805); the TASH sonic logo plays alone after the last word, its hit on the bar line f848 (the wordmark dots can answer it)."
+  }
+ ],
+ "handoffs": {
+  "s1_s2": {
+   "frame": 78,
+   "what": "white match: s1 ends on a fully white frame (inside the laptop screen); s2 starts from white and the app UI resolves out of it within ~6 frames"
+  },
+  "s3_s4": {
+   "frame": 258,
+   "card1_rect": {
+    "cx": 540,
+    "cy": 960,
+    "w": 1000,
+    "rotY": 0,
+    "rotX": 0
+   },
+   "what": "card 1's slide (16:9) as s3 leaves it on f257: centred, 1000 px wide, flat. s4 starts from the same rect and pulls it into the parade"
+  },
+  "s4_s5": {
+   "frame": 517,
+   "what": "hard cut on the beat (or s5 opens with a push into one page)"
+  },
+  "s5_s6": {
+   "frame": 683,
+   "what": "hard cut to the lecture hall; the slide on its screen is card 1's slide"
+  },
+  "s6_s7": {
+   "frame": 762,
+   "what": "hard cut to the end card"
+  }
+ },
+ "text": [
+  {
+   "id": "L1.1",
+   "text": "عندك برزنتيشن؟",
+   "scene": "s1_hook",
+   "kind": "line",
+   "size": "big",
+   "dir": "rtl",
+   "in": 2,
+   "land": 13,
+   "out": 78,
+   "t_in": 0.0667,
+   "t_land": 0.4333,
+   "t_out": 2.6,
+   "words": [
+    {
+     "text": "عندك",
+     "land": 4,
+     "t": 0.1333
+    },
+    {
+     "text": "برزنتيشن؟",
+     "land": 13,
+     "t": 0.4333
+    }
+   ],
+   "vo": "h1",
+   "note": "«عندك» lands with the first VO frame, «برزنتيشن؟» on beat -2 (the stress); the line stays up with the next two (they stack) until the push leaves them behind"
+  },
+  {
+   "id": "L1.2",
+   "text": "تقرير؟",
+   "scene": "s1_hook",
+   "kind": "line",
+   "size": "big",
+   "dir": "rtl",
+   "in": 38,
+   "land": 42,
+   "out": 78,
+   "t_in": 1.2667,
+   "t_land": 1.4,
+   "t_out": 2.6,
+   "vo": "h2",
+   "note": "bar line 1"
+  },
+  {
+   "id": "L1.3",
+   "text": "بحث؟",
+   "scene": "s1_hook",
+   "kind": "line",
+   "size": "big",
+   "dir": "rtl",
+   "in": 60,
+   "land": 64,
+   "out": 78,
+   "t_in": 2.0,
+   "t_land": 2.1333,
+   "t_out": 2.6,
+   "vo": "h3"
+  },
+  {
+   "id": "ui.clock",
+   "text": "٢:٤٧ ص",
+   "scene": "s2_screen",
+   "kind": "ui",
+   "size": "small",
+   "dir": "rtl",
+   "in": 78,
+   "land": 80,
+   "out": 215,
+   "t_in": 2.6,
+   "t_land": 2.6667,
+   "t_out": 7.1667
+  },
+  {
+   "id": "ui.file",
+   "text": "عرض بدون عنوان",
+   "scene": "s2_screen",
+   "kind": "ui",
+   "size": "small",
+   "dir": "rtl",
+   "in": 78,
+   "land": 80,
+   "out": 215,
+   "t_in": 2.6,
+   "t_land": 2.6667,
+   "t_out": 7.1667
+  },
+  {
+   "id": "ui.group_chat",
+   "text": "منو مسوّي البرزنتيشن؟؟",
+   "scene": "s2_screen",
+   "kind": "ui",
+   "size": "small",
+   "dir": "rtl",
+   "in": 78,
+   "land": 81,
+   "out": 215,
+   "t_in": 2.6,
+   "t_land": 2.7,
+   "t_out": 7.1667,
+   "note": "lands FIRST (no group header) and stays to the splash"
+  },
+  {
+   "id": "ui.placeholder",
+   "text": "انقر لإضافة عنوان",
+   "scene": "s2_screen",
+   "kind": "ui",
+   "size": "small",
+   "dir": "rtl",
+   "in": 78,
+   "land": 80,
+   "out": 215,
+   "t_in": 2.6,
+   "t_land": 2.6667,
+   "t_out": 7.1667,
+   "note": "low contrast, texture only"
+  },
+  {
+   "id": "ui.notif",
+   "text": "التسليم: باجر ٨:٠٠ ص",
+   "scene": "s2_screen",
+   "kind": "ui",
+   "size": "small",
+   "dir": "rtl",
+   "in": 81,
+   "land": 85,
+   "out": 215,
+   "t_in": 2.7,
+   "t_land": 2.8333,
+   "t_out": 7.1667
+  },
+  {
+   "id": "ui.notif_title",
+   "text": "تذكير",
+   "scene": "s2_screen",
+   "kind": "ui",
+   "size": "small",
+   "dir": "rtl",
+   "in": 81,
+   "land": 85,
+   "out": 215,
+   "t_in": 2.7,
+   "t_land": 2.8333,
+   "t_out": 7.1667,
+   "note": "with the ding (beat 3); the pin is a drawn icon, no emoji"
+  },
+  {
+   "id": "L2",
+   "text": "والتسليم… باجر؟",
+   "scene": "s2_screen",
+   "kind": "line",
+   "size": "big",
+   "dir": "rtl",
+   "in": 88,
+   "land": 92,
+   "out": 143,
+   "t_in": 2.9333,
+   "t_land": 3.0667,
+   "t_out": 4.7667,
+   "words": [
+    {
+     "text": "والتسليم…",
+     "land": 92,
+     "t": 3.0667
+    },
+    {
+     "text": "باجر؟",
+     "land": 117,
+     "t": 3.9
+    }
+   ],
+   "vo": "d1",
+   "note": "the only big line inside the screen; leaves as the TASH bubble arrives"
+  },
+  {
+   "id": "ui.tash_sender",
+   "text": "طشّ",
+   "scene": "s3_splash",
+   "kind": "ui",
+   "size": "small",
+   "dir": "rtl",
+   "in": 140,
+   "land": 143,
+   "out": 215,
+   "t_in": 4.6667,
+   "t_land": 4.7667,
+   "t_out": 7.1667,
+   "note": "the bubble's sender name; no time, no online dot"
+  },
+  {
+   "id": "ui.tash_typing",
+   "text": "•••",
+   "scene": "s3_splash",
+   "kind": "ui",
+   "size": "small",
+   "dir": "rtl",
+   "in": 140,
+   "land": 143,
+   "out": 150,
+   "t_in": 4.6667,
+   "t_land": 4.7667,
+   "t_out": 5.0,
+   "note": "typing dots until «المرة الجاية…» replaces them"
+  },
+  {
+   "id": "L3.1",
+   "text": "المرة الجاية…",
+   "scene": "s3_splash",
+   "kind": "line",
+   "size": "big",
+   "dir": "rtl",
+   "in": 146,
+   "land": 150,
+   "out": 258,
+   "t_in": 4.8667,
+   "t_land": 5.0,
+   "t_out": 8.6,
+   "words": [
+    {
+     "text": "المرة",
+     "land": 150,
+     "t": 5.0
+    },
+    {
+     "text": "الجاية…",
+     "land": 160,
+     "t": 5.3333
+    }
+   ],
+   "vo": "t1",
+   "note": "typed into the TASH bubble (the bubble text IS the on-screen text); stays to the cut f258"
+  },
+  {
+   "id": "L3.2a",
+   "text": "خلّ التصميم على •••",
+   "scene": "s3_splash",
+   "kind": "line",
+   "size": "big",
+   "dir": "rtl",
+   "in": 181,
+   "land": 185,
+   "out": 215,
+   "t_in": 6.0333,
+   "t_land": 6.1667,
+   "t_out": 7.1667,
+   "words": [
+    {
+     "text": "خلّ",
+     "land": 185,
+     "t": 6.1667
+    },
+    {
+     "text": "التصميم",
+     "land": 191,
+     "t": 6.3667
+    },
+    {
+     "text": "على",
+     "land": 204,
+     "t": 6.8
+    },
+    {
+     "text": "•••",
+     "land": 210,
+     "t": 7.0
+    }
+   ],
+   "vo": "t2",
+   "note": "the second bubble line typed word by word; its trailing typing dots stay live until the hit"
+  },
+  {
+   "id": "L3.2",
+   "text": "خلّ التصميم على طشّ.",
+   "scene": "s3_splash",
+   "kind": "line",
+   "size": "big",
+   "dir": "rtl",
+   "in": 215,
+   "land": 215,
+   "out": 258,
+   "t_in": 7.1667,
+   "t_land": 7.1667,
+   "t_out": 8.6,
+   "note": "on the hit (bar line, f215) the dots burst into the splash and land as the wordmark «طشّ»: the line now reads «خلّ التصميم على طشّ.» with the wordmark as its last word (one element, no second copy)"
+  },
+  {
+   "id": "L3.3",
+   "text": "للطلاب",
+   "scene": "s3_splash",
+   "kind": "line",
+   "size": "big",
+   "dir": "rtl",
+   "in": 225,
+   "land": 229,
+   "out": 258,
+   "t_in": 7.5,
+   "t_land": 7.6333,
+   "t_out": 8.6,
+   "note": "snaps under the wordmark (lock-up «طشّ للطلاب»)"
+  },
+  {
+   "id": "P1.chip",
+   "text": "برزنتيشن؟",
+   "scene": "s4_parade",
+   "kind": "chip",
+   "size": "mid",
+   "dir": "rtl",
+   "in": 254,
+   "land": 258,
+   "out": 330,
+   "t_in": 8.4667,
+   "t_land": 8.6,
+   "t_out": 11.0,
+   "vo": "p1a",
+   "note": "card 1 chip (= its on-screen word, rendered once)"
+  },
+  {
+   "id": "P1.answer",
+   "text": "يشدّ من أول سلايد.",
+   "scene": "s4_parade",
+   "kind": "line",
+   "size": "big",
+   "dir": "rtl",
+   "in": 283,
+   "land": 287,
+   "out": 330,
+   "t_in": 9.4333,
+   "t_land": 9.5667,
+   "t_out": 11.0,
+   "words": [
+    {
+     "text": "يشدّ",
+     "land": 287,
+     "t": 9.5667
+    },
+    {
+     "text": "من",
+     "land": 296,
+     "t": 9.8667
+    },
+    {
+     "text": "أول",
+     "land": 302,
+     "t": 10.0667
+    },
+    {
+     "text": "سلايد.",
+     "land": 314,
+     "t": 10.4667
+    }
+   ],
+   "vo": "p1b",
+   "note": "the answer punches in beside card 1's chip"
+  },
+  {
+   "id": "P2.chip",
+   "text": "تقرير؟",
+   "scene": "s4_parade",
+   "kind": "chip",
+   "size": "mid",
+   "dir": "rtl",
+   "in": 326,
+   "land": 330,
+   "out": 366,
+   "t_in": 10.8667,
+   "t_land": 11.0,
+   "t_out": 12.2,
+   "vo": "p2a",
+   "note": "card 2 chip (= its on-screen word, rendered once)"
+  },
+  {
+   "id": "P2.answer",
+   "text": "نرتّبه.",
+   "scene": "s4_parade",
+   "kind": "line",
+   "size": "big",
+   "dir": "rtl",
+   "in": 343,
+   "land": 347,
+   "out": 366,
+   "t_in": 11.4333,
+   "t_land": 11.5667,
+   "t_out": 12.2,
+   "words": [
+    {
+     "text": "نرتّبه.",
+     "land": 347,
+     "t": 11.5667
+    }
+   ],
+   "vo": "p2b",
+   "note": "the answer punches in beside card 2's chip"
+  },
+  {
+   "id": "P3.chip",
+   "text": "بحث؟",
+   "scene": "s4_parade",
+   "kind": "chip",
+   "size": "mid",
+   "dir": "rtl",
+   "in": 362,
+   "land": 366,
+   "out": 416,
+   "t_in": 12.0667,
+   "t_land": 12.2,
+   "t_out": 13.8667,
+   "vo": "p3a",
+   "note": "card 3 chip (= its on-screen word, rendered once)"
+  },
+  {
+   "id": "P3.answer",
+   "text": "ننسّقه عدل.",
+   "scene": "s4_parade",
+   "kind": "line",
+   "size": "big",
+   "dir": "rtl",
+   "in": 379,
+   "land": 383,
+   "out": 416,
+   "t_in": 12.6333,
+   "t_land": 12.7667,
+   "t_out": 13.8667,
+   "words": [
+    {
+     "text": "ننسّقه",
+     "land": 383,
+     "t": 12.7667
+    },
+    {
+     "text": "عدل.",
+     "land": 404,
+     "t": 13.4667
+    }
+   ],
+   "vo": "p3b",
+   "note": "the answer punches in beside card 3's chip"
+  },
+  {
+   "id": "ui.research_tag1",
+   "text": "عناوين",
+   "scene": "s4_parade",
+   "kind": "tag",
+   "size": "small",
+   "dir": "rtl",
+   "in": 384,
+   "land": 388,
+   "out": 416,
+   "t_in": 12.8,
+   "t_land": 12.9333,
+   "t_out": 13.8667,
+   "note": "on card 3: what we did to the paper"
+  },
+  {
+   "id": "ui.research_tag2",
+   "text": "ترقيم",
+   "scene": "s4_parade",
+   "kind": "tag",
+   "size": "small",
+   "dir": "rtl",
+   "in": 387,
+   "land": 391,
+   "out": 416,
+   "t_in": 12.9,
+   "t_land": 13.0333,
+   "t_out": 13.8667,
+   "note": "on card 3: what we did to the paper"
+  },
+  {
+   "id": "ui.research_tag3",
+   "text": "مراجع",
+   "scene": "s4_parade",
+   "kind": "tag",
+   "size": "small",
+   "dir": "rtl",
+   "in": 391,
+   "land": 395,
+   "out": 416,
+   "t_in": 13.0333,
+   "t_land": 13.1667,
+   "t_out": 13.8667,
+   "note": "on card 3: what we did to the paper"
+  },
+  {
+   "id": "P4.1",
+   "text": "بوستر",
+   "scene": "s4_parade",
+   "kind": "chip",
+   "size": "mid",
+   "dir": "rtl",
+   "in": 412,
+   "land": 416,
+   "out": 431,
+   "t_in": 13.7333,
+   "t_land": 13.8667,
+   "t_out": 14.3667,
+   "vo": "p4a",
+   "note": "card 4 chip (= its on-screen word, rendered once)"
+  },
+  {
+   "id": "P4.2",
+   "text": "فيديو",
+   "scene": "s4_parade",
+   "kind": "chip",
+   "size": "mid",
+   "dir": "rtl",
+   "in": 427,
+   "land": 431,
+   "out": 452,
+   "t_in": 14.2333,
+   "t_land": 14.3667,
+   "t_out": 15.0667,
+   "vo": "p4b",
+   "note": "card 5 chip (= its on-screen word, rendered once)"
+  },
+  {
+   "id": "P4.3",
+   "text": "CV",
+   "scene": "s4_parade",
+   "kind": "chip",
+   "size": "mid",
+   "dir": "rtl",
+   "in": 448,
+   "land": 452,
+   "out": 481,
+   "t_in": 14.9333,
+   "t_land": 15.0667,
+   "t_out": 16.0333,
+   "vo": "p4c",
+   "note": "card 6 chip (= its on-screen word, rendered once)"
+  },
+  {
+   "id": "P5",
+   "text": "وأي ملف أوفيس.",
+   "scene": "s4_parade",
+   "kind": "line",
+   "size": "big",
+   "dir": "rtl",
+   "in": 477,
+   "land": 481,
+   "out": 517,
+   "t_in": 15.9,
+   "t_land": 16.0333,
+   "t_out": 17.2333,
+   "words": [
+    {
+     "text": "وأي",
+     "land": 481,
+     "t": 16.0333
+    },
+    {
+     "text": "ملف",
+     "land": 487,
+     "t": 16.2333
+    },
+    {
+     "text": "أوفيس.",
+     "land": 496,
+     "t": 16.5333
+    }
+   ],
+   "vo": "p5"
+  },
+  {
+   "id": "ui.chip_excel",
+   "text": "إكسل",
+   "scene": "s4_parade",
+   "kind": "chip",
+   "size": "mid",
+   "dir": "rtl",
+   "in": 477,
+   "land": 481,
+   "out": 517,
+   "t_in": 15.9,
+   "t_land": 16.0333,
+   "t_out": 17.2333,
+   "note": "card 7 chip"
+  },
+  {
+   "id": "ui.file_chip1",
+   "text": ".pptx",
+   "scene": "s4_parade",
+   "kind": "file_chip",
+   "size": "small",
+   "dir": "ltr",
+   "in": 486,
+   "land": 488,
+   "out": 517,
+   "t_in": 16.2,
+   "t_land": 16.2667,
+   "t_out": 17.2333,
+   "note": "LTR element (dir=ltr), the dot on the left; pops on quarter beats, then the fan holds"
+  },
+  {
+   "id": "ui.file_chip2",
+   "text": ".docx",
+   "scene": "s4_parade",
+   "kind": "file_chip",
+   "size": "small",
+   "dir": "ltr",
+   "in": 490,
+   "land": 492,
+   "out": 517,
+   "t_in": 16.3333,
+   "t_land": 16.4,
+   "t_out": 17.2333,
+   "note": "LTR element (dir=ltr), the dot on the left; pops on quarter beats, then the fan holds"
+  },
+  {
+   "id": "ui.file_chip3",
+   "text": ".xlsx",
+   "scene": "s4_parade",
+   "kind": "file_chip",
+   "size": "small",
+   "dir": "ltr",
+   "in": 494,
+   "land": 496,
+   "out": 517,
+   "t_in": 16.4667,
+   "t_land": 16.5333,
+   "t_out": 17.2333,
+   "note": "LTR element (dir=ltr), the dot on the left; pops on quarter beats, then the fan holds"
+  },
+  {
+   "id": "ui.file_chip4",
+   "text": ".pdf",
+   "scene": "s4_parade",
+   "kind": "file_chip",
+   "size": "small",
+   "dir": "ltr",
+   "in": 497,
+   "land": 499,
+   "out": 517,
+   "t_in": 16.5667,
+   "t_land": 16.6333,
+   "t_out": 17.2333,
+   "note": "LTR element (dir=ltr), the dot on the left; pops on quarter beats, then the fan holds"
+  },
+  {
+   "id": "ui.file_chip5",
+   "text": ".mp4",
+   "scene": "s4_parade",
+   "kind": "file_chip",
+   "size": "small",
+   "dir": "ltr",
+   "in": 501,
+   "land": 503,
+   "out": 517,
+   "t_in": 16.7,
+   "t_land": 16.7667,
+   "t_out": 17.2333,
+   "note": "LTR element (dir=ltr), the dot on the left; pops on quarter beats, then the fan holds"
+  },
+  {
+   "id": "D1.1",
+   "text": "حتى الهوامش…",
+   "scene": "s5_details",
+   "kind": "line",
+   "size": "big",
+   "dir": "rtl",
+   "in": 520,
+   "land": 524,
+   "out": 571,
+   "t_in": 17.3333,
+   "t_land": 17.4667,
+   "t_out": 19.0333,
+   "words": [
+    {
+     "text": "حتى",
+     "land": 524,
+     "t": 17.4667
+    },
+    {
+     "text": "الهوامش…",
+     "land": 530,
+     "t": 17.6667
+    }
+   ],
+   "vo": "m1",
+   "note": "the margins line; the only label of the margins"
+  },
+  {
+   "id": "D1.2",
+   "text": "نضبّطها.",
+   "scene": "s5_details",
+   "kind": "line",
+   "size": "big",
+   "dir": "rtl",
+   "in": 549,
+   "land": 553,
+   "out": 571,
+   "t_in": 18.3,
+   "t_land": 18.4333,
+   "t_out": 19.0333,
+   "vo": "m2",
+   "note": "lands ON THE SNAP of the alignment guides (f553)"
+  },
+  {
+   "id": "ui.callout_toc",
+   "text": "فهرس تلقائي",
+   "scene": "s5_details",
+   "kind": "callout",
+   "size": "small",
+   "dir": "rtl",
+   "in": 569,
+   "land": 573,
+   "out": 588,
+   "t_in": 18.9667,
+   "t_land": 19.1,
+   "t_out": 19.6,
+   "note": "OPTIONAL (script: only if the VO leaves >= 0.5 s): it leaves 0.57 s (the breath before the rule line, f572-f588). Gone before the rule line. «ترقيم الصفحات» has no room: not used."
+  },
+  {
+   "id": "R1.1",
+   "text": "المعلومة منك…",
+   "scene": "s5_details",
+   "kind": "line",
+   "size": "big",
+   "dir": "rtl",
+   "in": 585,
+   "land": 589,
+   "out": 683,
+   "t_in": 19.5,
+   "t_land": 19.6333,
+   "t_out": 22.7667,
+   "words": [
+    {
+     "text": "المعلومة",
+     "land": 589,
+     "t": 19.6333
+    },
+    {
+     "text": "منك…",
+     "land": 606,
+     "t": 20.2
+    }
+   ],
+   "vo": "r1",
+   "note": "THE RULE LINE, part 1, on BEFORE"
+  },
+  {
+   "id": "ui.before",
+   "text": "قبل",
+   "scene": "s5_details",
+   "kind": "label",
+   "size": "small",
+   "dir": "rtl",
+   "in": 585,
+   "land": 589,
+   "out": 618,
+   "t_in": 19.5,
+   "t_land": 19.6333,
+   "t_out": 20.6
+  },
+  {
+   "id": "ui.after",
+   "text": "بعد",
+   "scene": "s5_details",
+   "kind": "label",
+   "size": "small",
+   "dir": "rtl",
+   "in": 618,
+   "land": 620,
+   "out": 683,
+   "t_in": 20.6,
+   "t_land": 20.6667,
+   "t_out": 22.7667
+  },
+  {
+   "id": "R1.2",
+   "text": "والترتيب والتصميم علينا.",
+   "scene": "s5_details",
+   "kind": "line",
+   "size": "big",
+   "dir": "rtl",
+   "in": 621,
+   "land": 625,
+   "out": 683,
+   "t_in": 20.7,
+   "t_land": 20.8333,
+   "t_out": 22.7667,
+   "words": [
+    {
+     "text": "والترتيب",
+     "land": 625,
+     "t": 20.8333
+    },
+    {
+     "text": "والتصميم",
+     "land": 647,
+     "t": 21.5667
+    },
+    {
+     "text": "علينا.",
+     "land": 661,
+     "t": 22.0333
+    }
+   ],
+   "vo": "r2",
+   "note": "part 2, on AFTER, after the swipe on the bar line f618; both parts read together to the cut"
+  },
+  {
+   "id": "C1.1",
+   "text": "ويوم التسليم…",
+   "scene": "s6_payoff",
+   "kind": "line",
+   "size": "big",
+   "dir": "rtl",
+   "in": 686,
+   "land": 690,
+   "out": 762,
+   "t_in": 22.8667,
+   "t_land": 23.0,
+   "t_out": 25.4,
+   "words": [
+    {
+     "text": "ويوم",
+     "land": 690,
+     "t": 23.0
+    },
+    {
+     "text": "التسليم…",
+     "land": 699,
+     "t": 23.3
+    }
+   ],
+   "vo": "c1"
+  },
+  {
+   "id": "C1.2",
+   "text": "خلّ شغلك يسولف عنك.",
+   "scene": "s6_payoff",
+   "kind": "line",
+   "size": "big",
+   "dir": "rtl",
+   "in": 715,
+   "land": 719,
+   "out": 762,
+   "t_in": 23.8333,
+   "t_land": 23.9667,
+   "t_out": 25.4,
+   "words": [
+    {
+     "text": "خلّ",
+     "land": 719,
+     "t": 23.9667
+    },
+    {
+     "text": "شغلك",
+     "land": 727,
+     "t": 24.2333
+    },
+    {
+     "text": "يسولف",
+     "land": 738,
+     "t": 24.6
+    },
+    {
+     "text": "عنك.",
+     "land": 748,
+     "t": 24.9333
+    }
+   ],
+   "vo": "c2",
+   "note": "lands on the wide chord"
+  },
+  {
+   "id": "end.line",
+   "text": "للطلاب",
+   "scene": "s7_end",
+   "kind": "line",
+   "size": "big",
+   "dir": "rtl",
+   "in": 762,
+   "land": 765,
+   "out": 877,
+   "t_in": 25.4,
+   "t_land": 25.5,
+   "t_out": 29.2333
+  },
+  {
+   "id": "end.wordmark",
+   "text": "طشّ",
+   "scene": "s7_end",
+   "kind": "logo",
+   "size": "big",
+   "dir": "rtl",
+   "in": 762,
+   "land": 762,
+   "out": 877,
+   "t_in": 25.4,
+   "t_land": 25.4,
+   "t_out": 29.2333,
+   "note": "the wordmark (logo, not typed text)"
+  },
+  {
+   "id": "end.tagline",
+   "text": "شغل يبيّض الوجه.",
+   "scene": "s7_end",
+   "kind": "line",
+   "size": "mid",
+   "dir": "rtl",
+   "in": 763,
+   "land": 768,
+   "out": 877,
+   "t_in": 25.4333,
+   "t_land": 25.6,
+   "t_out": 29.2333,
+   "note": "first to go if the card is crowded"
+  },
+  {
+   "id": "end.cta",
+   "text": "اطلب الحين — دزّ لنا بالخاص",
+   "scene": "s7_end",
+   "kind": "line",
+   "size": "mid",
+   "dir": "rtl",
+   "in": 765,
+   "land": 769,
+   "out": 877,
+   "t_in": 25.5,
+   "t_land": 25.6333,
+   "t_out": 29.2333,
+   "vo": "e1"
+  },
+  {
+   "id": "end.ig",
+   "text": "إنستقرام: ‎@tash.creative.kw",
+   "scene": "s7_end",
+   "kind": "line",
+   "size": "small",
+   "dir": "rtl",
+   "in": 772,
+   "land": 776,
+   "out": 877,
+   "t_in": 25.7333,
+   "t_land": 25.8667,
+   "t_out": 29.2333,
+   "note": "Arabic label + the handle as its own LTR run; U+200E before @"
+  },
+  {
+   "id": "end.tt",
+   "text": "تيك توك: ‎@tash.creative",
+   "scene": "s7_end",
+   "kind": "line",
+   "size": "small",
+   "dir": "rtl",
+   "in": 774,
+   "land": 778,
+   "out": 877,
+   "t_in": 25.8,
+   "t_land": 25.9333,
+   "t_out": 29.2333,
+   "note": "same as end.ig"
+  },
+  {
+   "id": "E2",
+   "text": "بس مو آخر ليلة.",
+   "scene": "s7_end",
+   "kind": "line",
+   "size": "mid",
+   "dir": "rtl",
+   "in": 801,
+   "land": 805,
+   "out": 877,
+   "t_in": 26.7,
+   "t_land": 26.8333,
+   "t_out": 29.2333,
+   "words": [
+    {
+     "text": "بس",
+     "land": 805,
+     "t": 26.8333
+    },
+    {
+     "text": "مو",
+     "land": 812,
+     "t": 27.0667
+    },
+    {
+     "text": "آخر",
+     "land": 816,
+     "t": 27.2
+    },
+    {
+     "text": "ليلة.",
+     "land": 827,
+     "t": 27.5667
+    }
+   ],
+   "vo": "e2",
+   "note": "pops with the voice; on a loop it runs straight into the hook"
+  }
+ ],
+ "cards": [
+  {
+   "card": 1,
+   "kind": "presentation",
+   "answers": "P1",
+   "hook_question": "L1.1",
+   "in": 255,
+   "land": 258,
+   "out": 517,
+   "hero_until": 330,
+   "t_land": 8.6,
+   "move": "slides fan out",
+   "sample_hint": "HERO = samples/deck-uni-01-title.png (the slide the splash reveals, card 1, and the one on the lecture-hall screen); fan: deck-uni-02-problem, deck-uni-03-data, deck-uni-04-thanks, deck-school-01-title/02-cycle/03-quiz",
+   "chip": "برزنتيشن؟"
+  },
+  {
+   "card": 2,
+   "kind": "report",
+   "answers": "P2",
+   "hook_question": "L1.2",
+   "in": 327,
+   "land": 330,
+   "out": 517,
+   "hero_until": 366,
+   "t_land": 11.0,
+   "move": "cover + pages flip",
+   "sample_hint": "samples/report-01-cover.png, report-02-contents.png, report-03-chart.png",
+   "chip": "تقرير؟"
+  },
+  {
+   "card": 3,
+   "kind": "research",
+   "answers": "P3",
+   "hook_question": "L1.3",
+   "in": 363,
+   "land": 366,
+   "out": 517,
+   "hero_until": 416,
+   "t_land": 12.2,
+   "move": "formatted paper: headings, numbering, references",
+   "sample_hint": "samples/research-01-first.png, research-02-refs.png",
+   "chip": "بحث؟"
+  },
+  {
+   "card": 4,
+   "kind": "poster",
+   "answers": "P4",
+   "hook_question": null,
+   "in": 413,
+   "land": 416,
+   "out": 517,
+   "hero_until": 431,
+   "t_land": 13.8667,
+   "move": "one hit",
+   "sample_hint": "samples/poster-recycle.png (infographic-tips.png spare)",
+   "chip": "بوستر"
+  },
+  {
+   "card": 5,
+   "kind": "video",
+   "answers": "P4",
+   "hook_question": null,
+   "in": 428,
+   "land": 431,
+   "out": 517,
+   "hero_until": 452,
+   "t_land": 14.3667,
+   "move": "frame + timeline",
+   "sample_hint": "samples/video-frame.png",
+   "chip": "فيديو"
+  },
+  {
+   "card": 6,
+   "kind": "cv",
+   "answers": "P4",
+   "hook_question": null,
+   "in": 449,
+   "land": 452,
+   "out": 517,
+   "hero_until": 481,
+   "t_land": 15.0667,
+   "move": "one hit",
+   "sample_hint": "samples/cv-student.png",
+   "chip": "CV"
+  },
+  {
+   "card": 7,
+   "kind": "excel",
+   "answers": "P5",
+   "hook_question": null,
+   "in": 478,
+   "land": 481,
+   "out": 517,
+   "hero_until": 517,
+   "t_land": 16.0333,
+   "move": "dashboard, the chart draws",
+   "sample_hint": "samples/sheet-dashboard.png",
+   "chip": "إكسل"
+  }
+ ],
+ "samples_label": {
+  "text": "نماذج من تصميمنا",
+  "in": 215,
+  "out": 762,
+  "t_in": 7.161,
+  "t_out": 25.401,
+  "note": "drawn by main.js (kit.samplesLabel) on every frame from the splash reveal (f215) to the end of the payoff (f762), so it never flickers at a cut; position per scene in cues.label_pos (scenes may request a move in REQUESTS.md)"
+ },
+ "label_pos": {
+  "s3_splash": "top",
+  "s4_parade": "top",
+  "s5_details": "top",
+  "s6_payoff": "top"
+ },
+ "sfx": [
+  {
+   "name": "hook_bed",
+   "frame": 0,
+   "t": 0.0,
+   "beat": -2.92,
+   "note": "night room tone + low tension pad, pre-drop (no groove yet); laptop fan hum"
+  },
+  {
+   "name": "kbd_taps",
+   "frame": 3,
+   "t": 0.1,
+   "beat": -2.71,
+   "note": "a few hesitant keyboard taps under «عندك…» (f3-f40), then stop: the student gives up"
+  },
+  {
+   "name": "hook_hit_1",
+   "frame": 13,
+   "t": 0.4333,
+   "beat": -2.02,
+   "note": "«برزنتيشن؟» punch-in: dry percussive tick + sub tap"
+  },
+  {
+   "name": "hook_hit_2",
+   "frame": 42,
+   "t": 1.4,
+   "beat": -0.0,
+   "note": "«تقرير؟» punch-in (bar line 1)"
+  },
+  {
+   "name": "hook_hit_3",
+   "frame": 64,
+   "t": 2.1333,
+   "beat": 1.53,
+   "note": "«بحث؟» punch-in"
+  },
+  {
+   "name": "push_whoosh",
+   "frame": 66,
+   "t": 2.2,
+   "beat": 1.66,
+   "note": "the camera dives into the laptop screen: rising whoosh f66-f77, cut dead on the white (f78)"
+  },
+  {
+   "name": "screen_on",
+   "frame": 78,
+   "t": 2.6,
+   "beat": 2.5,
+   "note": "white -> UI: soft digital blip"
+  },
+  {
+   "name": "chat_pop",
+   "frame": 81,
+   "t": 2.7,
+   "beat": 2.71,
+   "note": "group-chat message received (short bubble pop)"
+  },
+  {
+   "name": "notif_ding",
+   "frame": 85,
+   "t": 2.8333,
+   "beat": 2.98,
+   "note": "deadline notification ding (beat 3); the VO enters 0.22 s later"
+  },
+  {
+   "name": "clock_ticks",
+   "frame": 100,
+   "t": 3.3333,
+   "beat": 4.03,
+   "note": "clock ticks on every beat f99-f210 (2:47 am), low in the mix, stop at the hit"
+  },
+  {
+   "name": "tash_bubble_pop",
+   "frame": 143,
+   "t": 4.7667,
+   "beat": 7.01,
+   "note": "the TASH bubble arrives (brand pop; its typing dots tick like the sonic logo ticks)"
+  },
+  {
+   "name": "typing",
+   "frame": 150,
+   "t": 5.0,
+   "beat": 7.5,
+   "note": "soft typing under «المرة الجاية…» and «خلّ التصميم على…» (f150-f210)"
+  },
+  {
+   "name": "splash_riser",
+   "frame": 193,
+   "t": 6.4333,
+   "beat": 10.48,
+   "note": "riser f193 -> cut at the hit"
+  },
+  {
+   "name": "SPLASH",
+   "frame": 215,
+   "t": 7.1667,
+   "beat": 12.01,
+   "note": "THE «طشّ» HIT on the bar line: water splash + sub + riser cut; the groove drops here (UK-garage / Jersey-club bounce, bright)"
+  },
+  {
+   "name": "lockup_snap",
+   "frame": 229,
+   "t": 7.6333,
+   "beat": 12.98,
+   "note": "«للطلاب» snaps under the wordmark"
+  },
+  {
+   "name": "card1",
+   "frame": 258,
+   "t": 8.6,
+   "beat": 15.0,
+   "note": "card 1 hit + slides fan out (paper whoosh)"
+  },
+  {
+   "name": "answer1",
+   "frame": 287,
+   "t": 9.5667,
+   "beat": 17.01,
+   "note": "answer pop (soft)"
+  },
+  {
+   "name": "card2",
+   "frame": 330,
+   "t": 11.0,
+   "beat": 20.0,
+   "note": "card 2 hit (bar line) + page flips"
+  },
+  {
+   "name": "answer2",
+   "frame": 347,
+   "t": 11.5667,
+   "beat": 21.18,
+   "note": "answer pop"
+  },
+  {
+   "name": "card3",
+   "frame": 366,
+   "t": 12.2,
+   "beat": 22.5,
+   "note": "card 3 hit + paper flip"
+  },
+  {
+   "name": "research_tags",
+   "frame": 388,
+   "t": 12.9333,
+   "beat": 24.03,
+   "note": "three small ticks f388 / f392 / f395 (the tags عناوين، ترقيم، مراجع)"
+  },
+  {
+   "name": "card4",
+   "frame": 416,
+   "t": 13.8667,
+   "beat": 25.97,
+   "note": "card 4 (poster): percussive hit + whoosh"
+  },
+  {
+   "name": "card5",
+   "frame": 431,
+   "t": 14.3667,
+   "beat": 27.01,
+   "note": "card 5 (video): hit + a shutter/click"
+  },
+  {
+   "name": "card6",
+   "frame": 452,
+   "t": 15.0667,
+   "beat": 28.47,
+   "note": "card 6 (CV): hit"
+  },
+  {
+   "name": "card7",
+   "frame": 481,
+   "t": 16.0333,
+   "beat": 30.48,
+   "note": "card 7 (Excel): hit + rising pluck as the chart draws"
+  },
+  {
+   "name": "file_chips",
+   "frame": 488,
+   "t": 16.2667,
+   "beat": 30.97,
+   "note": "five rising mouse-click pops on quarter beats f488-f503 (the file chips)"
+  },
+  {
+   "name": "fan_hold",
+   "frame": 503,
+   "t": 16.7667,
+   "beat": 32.01,
+   "note": "held chord on the full fan to the cut (f503-f517)"
+  },
+  {
+   "name": "details_in",
+   "frame": 517,
+   "t": 17.2333,
+   "beat": 32.98,
+   "note": "cut to the details: soft macro whoosh; music thins (filtered) for the details"
+  },
+  {
+   "name": "margin_snap",
+   "frame": 553,
+   "t": 18.4333,
+   "beat": 35.48,
+   "note": "the alignment guides SNAP on «نضبّطها» (click + tiny bell)"
+  },
+  {
+   "name": "breath_gap",
+   "frame": 573,
+   "t": 19.1,
+   "beat": 36.87,
+   "note": "the VO breath before the rule line (19.21-19.58 s): keep the music low here"
+  },
+  {
+   "name": "rule_line",
+   "frame": 589,
+   "t": 19.6333,
+   "beat": 37.98,
+   "note": "THE RULE LINE in: music drops back to the beat, nothing busy under the voice"
+  },
+  {
+   "name": "ba_swipe",
+   "frame": 618,
+   "t": 20.6,
+   "beat": 40.0,
+   "note": "before/after swipe (whoosh) on the bar line"
+  },
+  {
+   "name": "class_cut",
+   "frame": 683,
+   "t": 22.7667,
+   "beat": 44.51,
+   "note": "cut to the lecture hall: room air, a soft low swell"
+  },
+  {
+   "name": "wide_chord",
+   "frame": 719,
+   "t": 23.9667,
+   "beat": 47.01,
+   "note": "the WIDE CHORD under «خلّ شغلك يسولف عنك.» (pride, warm)"
+  },
+  {
+   "name": "end_cut",
+   "frame": 762,
+   "t": 25.4,
+   "beat": 50.0,
+   "note": "cut to the end card: clean hit"
+  },
+  {
+   "name": "cta_pop",
+   "frame": 769,
+   "t": 25.6333,
+   "beat": 50.48,
+   "note": "CTA pop"
+  },
+  {
+   "name": "handles_pop",
+   "frame": 776,
+   "t": 25.8667,
+   "beat": 50.97,
+   "note": "handles pop (two light ticks)"
+  },
+  {
+   "name": "tag_pop",
+   "frame": 805,
+   "t": 26.8333,
+   "beat": 52.98,
+   "note": "«بس مو آخر ليلة.» mischievous pluck with the voice"
+  },
+  {
+   "name": "sonic_logo_ticks",
+   "frame": 834,
+   "t": 27.8,
+   "beat": 55.0,
+   "note": "TASH sonic logo typing ticks start (under the tail of «ليلة.» ending 27.957)"
+  },
+  {
+   "name": "sonic_logo_hit",
+   "frame": 848,
+   "t": 28.2667,
+   "beat": 55.97,
+   "note": "TASH sonic logo hit on the bar line (28.281); alone after the voice; tail to the end"
+  }
+ ],
+ "beats": [
+  {
+   "k": -2,
+   "t": 0.441,
+   "f": 13,
+   "bar": false
+  },
+  {
+   "k": -1,
+   "t": 0.921,
+   "f": 28,
+   "bar": false
+  },
+  {
+   "k": 0,
+   "t": 1.401,
+   "f": 42,
+   "bar": true
+  },
+  {
+   "k": 1,
+   "t": 1.881,
+   "f": 56,
+   "bar": false
+  },
+  {
+   "k": 2,
+   "t": 2.361,
+   "f": 71,
+   "bar": false
+  },
+  {
+   "k": 3,
+   "t": 2.841,
+   "f": 85,
+   "bar": false
+  },
+  {
+   "k": 4,
+   "t": 3.321,
+   "f": 100,
+   "bar": true
+  },
+  {
+   "k": 5,
+   "t": 3.801,
+   "f": 114,
+   "bar": false
+  },
+  {
+   "k": 6,
+   "t": 4.281,
+   "f": 128,
+   "bar": false
+  },
+  {
+   "k": 7,
+   "t": 4.761,
+   "f": 143,
+   "bar": false
+  },
+  {
+   "k": 8,
+   "t": 5.241,
+   "f": 157,
+   "bar": true
+  },
+  {
+   "k": 9,
+   "t": 5.721,
+   "f": 172,
+   "bar": false
+  },
+  {
+   "k": 10,
+   "t": 6.201,
+   "f": 186,
+   "bar": false
+  },
+  {
+   "k": 11,
+   "t": 6.681,
+   "f": 200,
+   "bar": false
+  },
+  {
+   "k": 12,
+   "t": 7.161,
+   "f": 215,
+   "bar": true
+  },
+  {
+   "k": 13,
+   "t": 7.641,
+   "f": 229,
+   "bar": false
+  },
+  {
+   "k": 14,
+   "t": 8.121,
+   "f": 244,
+   "bar": false
+  },
+  {
+   "k": 15,
+   "t": 8.601,
+   "f": 258,
+   "bar": false
+  },
+  {
+   "k": 16,
+   "t": 9.081,
+   "f": 272,
+   "bar": true
+  },
+  {
+   "k": 17,
+   "t": 9.561,
+   "f": 287,
+   "bar": false
+  },
+  {
+   "k": 18,
+   "t": 10.041,
+   "f": 301,
+   "bar": false
+  },
+  {
+   "k": 19,
+   "t": 10.521,
+   "f": 316,
+   "bar": false
+  },
+  {
+   "k": 20,
+   "t": 11.001,
+   "f": 330,
+   "bar": true
+  },
+  {
+   "k": 21,
+   "t": 11.481,
+   "f": 344,
+   "bar": false
+  },
+  {
+   "k": 22,
+   "t": 11.961,
+   "f": 359,
+   "bar": false
+  },
+  {
+   "k": 23,
+   "t": 12.441,
+   "f": 373,
+   "bar": false
+  },
+  {
+   "k": 24,
+   "t": 12.921,
+   "f": 388,
+   "bar": true
+  },
+  {
+   "k": 25,
+   "t": 13.401,
+   "f": 402,
+   "bar": false
+  },
+  {
+   "k": 26,
+   "t": 13.881,
+   "f": 416,
+   "bar": false
+  },
+  {
+   "k": 27,
+   "t": 14.361,
+   "f": 431,
+   "bar": false
+  },
+  {
+   "k": 28,
+   "t": 14.841,
+   "f": 445,
+   "bar": true
+  },
+  {
+   "k": 29,
+   "t": 15.321,
+   "f": 460,
+   "bar": false
+  },
+  {
+   "k": 30,
+   "t": 15.801,
+   "f": 474,
+   "bar": false
+  },
+  {
+   "k": 31,
+   "t": 16.281,
+   "f": 488,
+   "bar": false
+  },
+  {
+   "k": 32,
+   "t": 16.761,
+   "f": 503,
+   "bar": true
+  },
+  {
+   "k": 33,
+   "t": 17.241,
+   "f": 517,
+   "bar": false
+  },
+  {
+   "k": 34,
+   "t": 17.721,
+   "f": 532,
+   "bar": false
+  },
+  {
+   "k": 35,
+   "t": 18.201,
+   "f": 546,
+   "bar": false
+  },
+  {
+   "k": 36,
+   "t": 18.681,
+   "f": 560,
+   "bar": true
+  },
+  {
+   "k": 37,
+   "t": 19.161,
+   "f": 575,
+   "bar": false
+  },
+  {
+   "k": 38,
+   "t": 19.641,
+   "f": 589,
+   "bar": false
+  },
+  {
+   "k": 39,
+   "t": 20.121,
+   "f": 604,
+   "bar": false
+  },
+  {
+   "k": 40,
+   "t": 20.601,
+   "f": 618,
+   "bar": true
+  },
+  {
+   "k": 41,
+   "t": 21.081,
+   "f": 632,
+   "bar": false
+  },
+  {
+   "k": 42,
+   "t": 21.561,
+   "f": 647,
+   "bar": false
+  },
+  {
+   "k": 43,
+   "t": 22.041,
+   "f": 661,
+   "bar": false
+  },
+  {
+   "k": 44,
+   "t": 22.521,
+   "f": 676,
+   "bar": true
+  },
+  {
+   "k": 45,
+   "t": 23.001,
+   "f": 690,
+   "bar": false
+  },
+  {
+   "k": 46,
+   "t": 23.481,
+   "f": 704,
+   "bar": false
+  },
+  {
+   "k": 47,
+   "t": 23.961,
+   "f": 719,
+   "bar": false
+  },
+  {
+   "k": 48,
+   "t": 24.441,
+   "f": 733,
+   "bar": true
+  },
+  {
+   "k": 49,
+   "t": 24.921,
+   "f": 748,
+   "bar": false
+  },
+  {
+   "k": 50,
+   "t": 25.401,
+   "f": 762,
+   "bar": false
+  },
+  {
+   "k": 51,
+   "t": 25.881,
+   "f": 776,
+   "bar": false
+  },
+  {
+   "k": 52,
+   "t": 26.361,
+   "f": 791,
+   "bar": true
+  },
+  {
+   "k": 53,
+   "t": 26.841,
+   "f": 805,
+   "bar": false
+  },
+  {
+   "k": 54,
+   "t": 27.321,
+   "f": 820,
+   "bar": false
+  },
+  {
+   "k": 55,
+   "t": 27.801,
+   "f": 834,
+   "bar": false
+  },
+  {
+   "k": 56,
+   "t": 28.281,
+   "f": 848,
+   "bar": true
+  },
+  {
+   "k": 57,
+   "t": 28.761,
+   "f": 863,
+   "bar": false
+  }
+ ],
+ "key": {
+  "hook1": 13,
+  "hook2": 42,
+  "hook3": 64,
+  "whiteout": 77,
+  "ding": 85,
+  "bubble": 143,
+  "splash": 215,
+  "lockup": 229,
+  "card1": 258,
+  "card2": 330,
+  "card3": 366,
+  "card4": 416,
+  "card5": 431,
+  "card6": 452,
+  "card7": 481,
+  "fan": 503,
+  "details": 517,
+  "snap": 553,
+  "rule": 589,
+  "swipe": 618,
+  "rule2": 625,
+  "payoff_cut": 683,
+  "payoff": 690,
+  "chord": 719,
+  "end": 762,
+  "cta": 769,
+  "handles": 776,
+  "tag": 805,
+  "logo_hit": 848,
+  "last": 876
+ }
+}

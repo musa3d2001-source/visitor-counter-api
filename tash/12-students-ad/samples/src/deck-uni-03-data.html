@@ -1,0 +1,179 @@
+<!doctype html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="utf-8">
+<title>مسار — ٠٦ النتائج</title>
+<style>
+@font-face{font-family:"Alexandria";src:url("../../../_system/fonts/Alexandria-VF.ttf") format("truetype");font-weight:100 900;font-display:block}
+@font-face{font-family:"Plex Arabic";src:url("../../../_system/fonts/IBMPlexSansArabic-Regular.ttf") format("truetype");font-weight:400;font-display:block}
+@font-face{font-family:"Plex Arabic";src:url("../../../_system/fonts/IBMPlexSansArabic-Medium.ttf") format("truetype");font-weight:500;font-display:block}
+
+:root{
+  --bg:#07090D; --bg-2:#0D1017;
+  --ink:#F3F5F9; --mute:#9AA2B3; --dim:#5D6474; --line:rgba(255,255,255,.12);
+  --accent:#FF5A1F; --accent-hi:#FF8552; --base:#A7B0C2;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+html,body{width:1920px;height:1080px;overflow:hidden;background:var(--bg)}
+body{font-family:"Plex Arabic",sans-serif;color:var(--ink);-webkit-font-smoothing:antialiased;text-rendering:geometricPrecision}
+.slide{position:relative;width:1920px;height:1080px;overflow:hidden;
+  background:radial-gradient(ellipse 900px 620px at 640px 700px,#0F131C 0%,var(--bg) 72%)}
+
+/* chrome (shared with the whole deck) */
+.top{position:absolute;top:70px;right:112px;left:112px;display:flex;justify-content:space-between;align-items:center}
+.kicker{display:flex;align-items:center;gap:16px;font-family:"Alexandria";font-weight:600;font-size:26px;line-height:1.2;color:var(--ink)}
+.kicker i{width:12px;height:12px;border-radius:50%;background:var(--accent);box-shadow:0 0 18px rgba(255,90,31,.9)}
+.brand{font-family:"Alexandria";font-weight:700;font-size:26px;line-height:1.2;color:var(--mute)}
+.num{position:absolute;left:112px;bottom:84px;font-family:"Alexandria";font-weight:600;font-size:24px;line-height:1.2;color:var(--mute);white-space:nowrap}
+.num b{color:var(--ink);font-weight:700}
+
+/* head */
+.head{position:absolute;right:112px;top:168px;text-align:right}
+h2{font-family:"Alexandria";font-weight:800;font-size:104px;line-height:1.25;color:var(--ink);white-space:nowrap}
+h2 em{font-style:normal;color:var(--accent)}
+h2 .el{margin-right:-.1em}
+.sub{margin-top:14px;font-family:"Plex Arabic";font-weight:400;font-size:31px;line-height:1.5;color:var(--mute);white-space:nowrap}
+
+.subrow{margin-top:14px;display:flex;align-items:center;gap:26px}
+.subrow .sub{margin-top:0}
+.pill{display:inline-flex;align-items:center;gap:10px;font-family:"Alexandria";font-weight:600;font-size:22px;line-height:1;color:#FFB08C;padding:10px 18px 11px;border-radius:999px;border:1.5px solid rgba(255,133,82,.6);background:rgba(255,90,31,.10);white-space:nowrap}
+.pill i{width:8px;height:8px;border-radius:50%;background:var(--accent-hi)}
+
+/* chart */
+.chart{position:absolute;left:96px;top:420px;width:1160px;height:540px}
+
+/* stats */
+.stats{position:absolute;right:112px;top:424px;width:452px}
+.stat{padding:22px 0 24px;border-top:1.5px solid var(--line);display:flex;flex-direction:column;gap:8px}
+.stat:first-child{border-top:0;padding-top:0}
+.stat .n{display:block;font-family:"Alexandria";font-weight:800;font-size:80px;line-height:1.05;color:var(--ink);white-space:nowrap}
+.stat .n small{font-family:"Alexandria";font-weight:600;font-size:32px;color:var(--mute);margin-right:14px}
+.stat .n sup{font-family:"Alexandria";font-weight:700;font-size:30px;color:var(--accent-hi);vertical-align:top;position:relative;top:-6px;margin-right:6px}
+.stat.hot .n{color:var(--accent)}
+.stat p{font-family:"Plex Arabic";font-weight:500;font-size:27px;line-height:1.45;color:#C5CBD8;white-space:nowrap}
+
+.foot{position:absolute;right:112px;bottom:82px;font-family:"Plex Arabic";font-weight:400;font-size:22px;line-height:1.3;color:var(--dim);white-space:nowrap}
+.foot b{font-family:"Alexandria";font-weight:700;color:var(--accent-hi);margin-left:6px}
+
+.grain{position:absolute;inset:0;width:1920px;height:1080px;opacity:.14;mix-blend-mode:overlay;pointer-events:none}
+</style>
+</head>
+<body>
+<div class="slide">
+  <div class="top">
+    <div class="kicker"><i></i>نتائج التجربة</div>
+    <div class="brand">مسار</div>
+  </div>
+
+  <div class="head">
+    <h2><em>دقيقتين<span class="el">…</span></em> بدل سبع.</h2>
+    <div class="subrow">
+      <p class="sub">متوسط وقت البحث عن موقف (بالدقائق)، حسب ساعة الوصول.</p>
+      <span class="pill"><i></i>بيانات نموذجية</span>
+    </div>
+  </div>
+
+  <svg class="chart" id="chart" viewBox="0 0 1160 540" aria-label="رسم بياني: متوسط وقت البحث عن موقف حسب ساعة الوصول، مع التطبيق وبدونه (بيانات نموذجية)"></svg>
+
+  <div class="stats">
+    <div class="stat hot"><div class="n">٧١٪<sup>*</sup></div><p>أقل في وقت البحث عن موقف</p></div>
+    <div class="stat"><div class="n">٤٫٦<sup>*</sup><small>من ٥</small></div><p>تقييم المشاركين لسهولة الاستخدام</p></div>
+    <div class="stat"><div class="n">٣٢٠<sup>*</sup></div><p>مشارك في تجربة مدتها ٤ أسابيع</p></div>
+  </div>
+
+  <div class="foot"><b>*</b>أرقام نموذجية لأغراض العرض فقط، وليست نتائج حقيقية.</div>
+  <div class="num"><b>٠٦</b> / ١٢</div>
+
+  <svg class="grain" viewBox="0 0 1920 1080" aria-hidden="true">
+    <filter id="g" x="0" y="0" width="100%" height="100%"><feTurbulence type="fractalNoise" baseFrequency=".9" numOctaves="2" seed="5"/><feColorMatrix values="0 0 0 0 .5  0 0 0 0 .5  0 0 0 0 .5  0 0 0 1.6 -.45"/></filter>
+    <rect width="1920" height="1080" filter="url(#g)"/>
+  </svg>
+</div>
+
+<script>
+(function(){
+  /* SAMPLE DATA (fictional): average minutes to find a spot, by arrival hour */
+  const hours=['٧ ص','٨ ص','٩ ص','١٠ ص','١١ ص','١٢ م','١ م','٢ م'];
+  const without=[4.2,9.6,10.4,8.1,6.3,5.2,7.4,4.8];   /* mean 7.0 */
+  const withApp=[1.4,2.6,2.9,2.3,1.8,1.5,2.1,1.4];    /* mean 2.0  -> 71% less */
+  const ar=n=>String(n).replace(/\./,'٫').replace(/\d/g,d=>'٠١٢٣٤٥٦٧٨٩'[d]);
+
+  /* plot box (RTL: time runs right -> left, value axis on the right) */
+  const W=1160, H=540, pr=1040, pl=200, pt=40, pb=470, vmax=12;
+  const xs=i=>pr-(pr-pl)*i/(hours.length-1);
+  const ys=v=>pb-(pb-pt)*v/vmax;
+
+  /* monotone cubic (Fritsch–Carlson) through points */
+  function mono(pts){
+    const n=pts.length, dx=[], dy=[], m=[], t=[];
+    for(let i=0;i<n-1;i++){ dx[i]=pts[i+1][0]-pts[i][0]; dy[i]=pts[i+1][1]-pts[i][1]; m[i]=dy[i]/dx[i]; }
+    t[0]=m[0]; t[n-1]=m[n-2];
+    for(let i=1;i<n-1;i++){ t[i]= (m[i-1]*m[i]<=0)?0:(m[i-1]+m[i])/2; }
+    for(let i=0;i<n-1;i++){ if(m[i]===0){t[i]=0;t[i+1]=0;continue;} const a=t[i]/m[i], b=t[i+1]/m[i], h=a*a+b*b; if(h>9){ const k=3/Math.sqrt(h); t[i]=k*a*m[i]; t[i+1]=k*b*m[i]; } }
+    let d='M'+pts[0][0].toFixed(1)+' '+pts[0][1].toFixed(1);
+    for(let i=0;i<n-1;i++){ const h=dx[i]/3;
+      d+=' C'+(pts[i][0]+h).toFixed(1)+' '+(pts[i][1]+t[i]*h).toFixed(1)+' '+(pts[i+1][0]-h).toFixed(1)+' '+(pts[i+1][1]-t[i+1]*h).toFixed(1)+' '+pts[i+1][0].toFixed(1)+' '+pts[i+1][1].toFixed(1); }
+    return d;
+  }
+  /* x decreases with i, so feed points left->right for the spline then keep order */
+  const A=withApp.map((v,i)=>[xs(i),ys(v)]).reverse();
+  const B=without.map((v,i)=>[xs(i),ys(v)]).reverse();
+  const dA=mono(A), dB=mono(B);
+  /* band between the curves: B forward, A backward */
+  const Ar=A.slice().reverse();
+  const dBand=dB+' L'+Ar[0][0].toFixed(1)+' '+Ar[0][1].toFixed(1)+mono(Ar).slice(mono(Ar).indexOf(' C'))+' Z';
+
+  let o='<defs>'
+   +'<pattern id="hatch" width="12" height="12" patternUnits="userSpaceOnUse" patternTransform="rotate(45)"><rect width="12" height="12" fill="#FF5A1F" fill-opacity=".07"/><line x1="0" y1="0" x2="0" y2="12" stroke="#FF8552" stroke-opacity=".26" stroke-width="2"/></pattern>'
+   +'<filter id="glow" x="-10%" y="-40%" width="120%" height="180%"><feGaussianBlur stdDeviation="9"/></filter>'
+   +'</defs>';
+
+  /* grid + value axis (right) */
+  for(let v=0; v<=vmax; v+=3){
+    const y=ys(v);
+    o+='<line x1="'+pl+'" x2="'+pr+'" y1="'+y+'" y2="'+y+'" stroke="#fff" stroke-opacity="'+(v===0?.28:.07)+'" stroke-width="'+(v===0?1.6:1.2)+'"/>';
+    o+='<text x="'+(pr+30)+'" y="'+(y+9)+'" text-anchor="end" font-family="Alexandria" font-weight="500" font-size="24" fill="#7D8597" direction="rtl">'+ar(v)+'</text>';
+  }
+  o+='<text x="'+(pr+30)+'" y="'+(pt-26)+'" text-anchor="end" font-family="Plex Arabic" font-weight="500" font-size="22" fill="#7D8597" direction="rtl">دقيقة</text>';
+  /* hour axis */
+  hours.forEach((h,i)=>{ const x=xs(i);
+    o+='<line x1="'+x+'" x2="'+x+'" y1="'+pb+'" y2="'+(pb+10)+'" stroke="#fff" stroke-opacity=".28" stroke-width="1.6"/>';
+    o+='<text x="'+x+'" y="'+(pb+50)+'" text-anchor="middle" font-family="Alexandria" font-weight="500" font-size="24" fill="#9AA2B3" direction="rtl">'+h+'</text>'; });
+
+  /* peak window shading (8–10 am) */
+  const px0=xs(3)+0, px1=xs(1)+0;
+  o+='<rect x="'+(xs(3)-40)+'" y="'+pt+'" width="'+(xs(1)-xs(3)+80)+'" height="'+(pb-pt)+'" fill="#fff" fill-opacity=".025"/>';
+  o+='<text x="'+((xs(1)+xs(3))/2)+'" y="'+(pt-26)+'" text-anchor="middle" font-family="Plex Arabic" font-weight="500" font-size="22" fill="#7D8597" direction="rtl">وقت الذروة</text>';
+
+  /* saved-time band */
+  o+='<path d="'+dBand+'" fill="url(#hatch)"/>';
+  /* lines (only the saved-time band carries the accent fill) */
+  o+='<path d="'+dB+'" fill="none" stroke="#A7B0C2" stroke-width="3.2" stroke-dasharray="10 9" stroke-linecap="round"/>';
+  o+='<path d="'+dA+'" fill="none" stroke="#FF5A1F" stroke-width="10" stroke-opacity=".55" filter="url(#glow)"/>';
+  o+='<path d="'+dA+'" fill="none" stroke="#FF6A2E" stroke-width="4.5" stroke-linecap="round"/>';
+
+  /* markers */
+  without.forEach((v,i)=>{ o+='<circle cx="'+xs(i)+'" cy="'+ys(v)+'" r="6" fill="#07090D" stroke="#A7B0C2" stroke-width="2.6"/>'; });
+  withApp.forEach((v,i)=>{ o+='<circle cx="'+xs(i)+'" cy="'+ys(v)+'" r="8" fill="#FF6A2E" stroke="#0A0D13" stroke-width="3"/>'; });
+
+  /* peak annotation at 9 am */
+  const ix=2, x9=xs(ix);
+  o+='<line x1="'+x9+'" x2="'+x9+'" y1="'+(ys(without[ix])+14)+'" y2="'+(ys(withApp[ix])-16)+'" stroke="#F3F5F9" stroke-opacity=".55" stroke-width="1.6" stroke-dasharray="2 6" stroke-linecap="round"/>';
+  o+='<text x="'+(x9)+'" y="'+(ys(without[ix])-22)+'" text-anchor="middle" font-family="Alexandria" font-weight="700" font-size="28" fill="#C5CBD8" direction="rtl">'+ar(without[ix])+'</text>';
+  o+='<text x="'+(x9)+'" y="'+(ys(withApp[ix])+48)+'" text-anchor="middle" font-family="Alexandria" font-weight="800" font-size="30" fill="#F3F5F9" direction="rtl">'+ar(withApp[ix])+'</text>';
+
+  /* band label */
+  const bx=(xs(4)+xs(5))/2, by=(ys((without[4]+without[5])/2)+ys((withApp[4]+withApp[5])/2))/2;
+  o+='<g transform="translate('+bx+' '+by+')"><rect x="-112" y="-26" width="224" height="50" rx="25" fill="#0B0E14" stroke="rgba(255,133,82,.5)" stroke-width="1.5"/>'
+    +'<text x="0" y="9" text-anchor="middle" font-family="Plex Arabic" font-weight="500" font-size="23" fill="#FFB08C" direction="rtl">الوقت اللي توفّره</text></g>';
+
+  /* direct end labels (left end = 2 pm) */
+  const e=hours.length-1;
+  o+='<text x="'+(xs(e)-24)+'" y="'+(ys(without[e])+9)+'" text-anchor="start" font-family="Plex Arabic" font-weight="500" font-size="24" fill="#C5CBD8" direction="rtl">بدون مسار</text>';
+  o+='<text x="'+(xs(e)-24)+'" y="'+(ys(withApp[e])+9)+'" text-anchor="start" font-family="Plex Arabic" font-weight="500" font-size="24" fill="#F3F5F9" direction="rtl">مع مسار</text>';
+
+  document.getElementById('chart').innerHTML=o;
+})();
+</script>
+</body>
+</html>

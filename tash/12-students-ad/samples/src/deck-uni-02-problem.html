@@ -1,0 +1,202 @@
+<!doctype html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="utf-8">
+<title>مسار — ٠٢ المشكلة</title>
+<style>
+@font-face{font-family:"Alexandria";src:url("../../../_system/fonts/Alexandria-VF.ttf") format("truetype");font-weight:100 900;font-display:block}
+@font-face{font-family:"Plex Arabic";src:url("../../../_system/fonts/IBMPlexSansArabic-Regular.ttf") format("truetype");font-weight:400;font-display:block}
+@font-face{font-family:"Plex Arabic";src:url("../../../_system/fonts/IBMPlexSansArabic-Medium.ttf") format("truetype");font-weight:500;font-display:block}
+
+:root{
+  --bg:#07090D; --bg-2:#0D1017;
+  --ink:#F3F5F9; --mute:#9AA2B3; --dim:#5D6474; --line:rgba(255,255,255,.12);
+  --accent:#FF5A1F; --accent-hi:#FF8552;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+html,body{width:1920px;height:1080px;overflow:hidden;background:var(--bg)}
+body{font-family:"Plex Arabic",sans-serif;color:var(--ink);-webkit-font-smoothing:antialiased;text-rendering:geometricPrecision}
+.slide{position:relative;width:1920px;height:1080px;overflow:hidden;
+  background:radial-gradient(ellipse 980px 760px at 520px 560px,#0E121B 0%,var(--bg) 70%)}
+
+/* chrome (shared with the whole deck) */
+.top{position:absolute;top:70px;right:112px;left:112px;display:flex;justify-content:space-between;align-items:center}
+.kicker{display:flex;align-items:center;gap:16px;font-family:"Alexandria";font-weight:600;font-size:26px;line-height:1.2;color:var(--ink)}
+.kicker i{width:12px;height:12px;border-radius:50%;background:var(--accent);box-shadow:0 0 18px rgba(255,90,31,.9)}
+.brand{font-family:"Alexandria";font-weight:700;font-size:26px;line-height:1.2;color:var(--mute)}
+.num{position:absolute;left:112px;bottom:84px;font-family:"Alexandria";font-weight:600;font-size:24px;line-height:1.2;color:var(--mute);white-space:nowrap}
+.num b{color:var(--ink);font-weight:700}
+
+/* statement */
+.copy{position:absolute;right:112px;top:214px;width:980px;text-align:right}
+.eyebrow{font-family:"Alexandria";font-weight:600;font-size:30px;line-height:1.3;color:var(--accent-hi);margin-bottom:34px;display:flex;align-items:center;gap:18px}
+.eyebrow::after{content:"";width:72px;height:3px;border-radius:3px;background:var(--accent);opacity:.8}
+h2{font-family:"Alexandria";font-weight:800;font-size:97px;line-height:1.3;color:var(--ink);white-space:nowrap;letter-spacing:0}
+h2 .soft{color:#C5CBD8;font-weight:700}
+h2 em{font-style:normal;color:var(--accent);position:relative}
+h2 .el{margin-right:-.1em}
+.body{margin-top:44px;font-family:"Plex Arabic";font-weight:400;font-size:36px;line-height:1.7;color:var(--mute);width:720px}
+.body b{font-weight:500;color:var(--ink)}
+
+.legend{display:flex;gap:52px;align-items:center;margin-top:56px;padding-top:40px;border-top:1.5px solid var(--line);width:840px}
+.legend div{display:flex;align-items:center;gap:16px;font-family:"Plex Arabic";font-weight:500;font-size:25px;line-height:1.3;color:#C5CBD8;white-space:nowrap}
+.sw-free{width:30px;height:40px;border-radius:7px;border:2.5px solid #FF8552;background:rgba(255,90,31,.22);box-shadow:0 0 16px rgba(255,90,31,.55)}
+.sw-path{width:56px;height:0;border-top:4px dashed rgba(220,227,242,.8)}
+
+/* visual */
+.plan{position:absolute;left:0;top:0;width:900px;height:1080px}
+.chip{position:absolute;display:flex;align-items:center;gap:14px;white-space:nowrap;direction:rtl;
+  padding:12px 20px 13px 22px;border-radius:16px;background:rgba(13,16,23,.92);border:1.5px solid rgba(255,255,255,.16);
+  box-shadow:0 16px 40px rgba(0,0,0,.6)}
+.chip b{font-family:"Alexandria";font-weight:700;font-size:28px;line-height:1.15;color:var(--ink)}
+.chip span{font-family:"Alexandria";font-weight:500;font-size:21px;line-height:1.2;color:var(--mute)}
+.chip.hot{border-color:rgba(255,133,82,.8);box-shadow:0 16px 40px rgba(0,0,0,.6),0 0 30px rgba(255,90,31,.3)}
+.chip.hot span{color:#FFB08C}
+.chip .ic{width:30px;height:30px;flex:none}
+.cap{position:absolute;left:112px;top:0;font-family:"Plex Arabic";font-weight:400;font-size:21px;line-height:1.2;color:var(--dim);white-space:nowrap}
+
+.grain{position:absolute;inset:0;width:1920px;height:1080px;opacity:.14;mix-blend-mode:overlay;pointer-events:none}
+</style>
+</head>
+<body>
+<div class="slide">
+  <svg class="plan" id="plan" viewBox="0 0 900 1080" aria-hidden="true"></svg>
+  <div id="chips"></div>
+
+  <div class="top">
+    <div class="kicker"><i></i>المشكلة</div>
+    <div class="brand">مسار</div>
+  </div>
+
+  <div class="copy">
+    <div class="eyebrow">كل صباح، نفس السالفة</div>
+    <h2><span class="soft">الموقف موجود<span class="el">…</span></span><br>بس محد يدري <em>وينه.</em></h2>
+    <p class="body">تلفّ بين الصفوف والمحاضرة بدت، والمواقف الفاضية <b>ما تبان إلا لما توصل لها.</b></p>
+    <div class="legend">
+      <div><span class="sw-free"></span>مواقف فاضية ما انتبهت لها</div>
+      <div><span class="sw-path"></span>لفّتك بين الصفوف</div>
+    </div>
+  </div>
+
+  <div class="cap" id="cap">رسم توضيحي لسيناريو افتراضي</div>
+  <div class="num"><b>٠٢</b> / ١٢</div>
+
+  <svg class="grain" viewBox="0 0 1920 1080" aria-hidden="true">
+    <filter id="g" x="0" y="0" width="100%" height="100%"><feTurbulence type="fractalNoise" baseFrequency=".9" numOctaves="2" seed="11"/><feColorMatrix values="0 0 0 0 .5  0 0 0 0 .5  0 0 0 0 .5  0 0 0 1.6 -.45"/></filter>
+    <rect width="1920" height="1080" filter="url(#g)"/>
+  </svg>
+</div>
+
+<script>
+(function(){
+  /* plan coordinates (local units) -> page px */
+  const S=.735, OX=112+104*S, OY=214+44*S;
+  const X=x=>OX+x*S, Y=y=>OY+y*S;
+  const SW=48, N=14, D=86;
+  /* rows: top y, which way the stalls open (+1 down to the aisle below / -1 up) */
+  const rows={A:{y0:0,open:1},B:{y0:176,open:-1},C:{y0:262,open:1},D:{y0:438,open:-1},E:{y0:524,open:1},F:{y0:700,open:-1}};
+  const free={ 'F:11':1,'E:4':1,'D:9':1,'C:2':1,'A:8':1 };
+  const parked='A:1';   /* the far top-left stall, reached last */
+  let s=7311; const rnd=()=>{ s=(s*16807)%2147483647; return (s-1)/2147483646; };
+
+  let o='<defs>'
+   +'<filter id="b18" x="-80%" y="-80%" width="260%" height="260%"><feGaussianBlur stdDeviation="14"/></filter>'
+   +'<filter id="b6" x="-50%" y="-50%" width="200%" height="200%"><feGaussianBlur stdDeviation="5"/></filter>'
+   +'<filter id="b3" x="-50%" y="-50%" width="200%" height="200%"><feGaussianBlur stdDeviation="2.2"/></filter>'
+   +'<radialGradient id="vg" cx=".5" cy=".5" r=".62"><stop offset=".55" stop-color="#07090D" stop-opacity="0"/><stop offset="1" stop-color="#07090D" stop-opacity=".75"/></radialGradient>'
+   +'</defs>';
+
+  /* asphalt slab */
+  const sx=X(-104), sy=Y(-44), sw=880*S, sh=880*S;
+  o+='<rect x="'+(sx+0)+'" y="'+(sy+18)+'" width="'+sw+'" height="'+sh+'" rx="26" fill="#000" opacity=".6" filter="url(#b18)"/>';
+  o+='<rect x="'+sx+'" y="'+sy+'" width="'+sw+'" height="'+sh+'" rx="26" fill="#0C0F16" stroke="rgba(255,255,255,.09)" stroke-width="1.5"/>';
+
+  /* stall lines */
+  const L=(x1,y1,x2,y2,op,w)=>'<line x1="'+X(x1).toFixed(1)+'" y1="'+Y(y1).toFixed(1)+'" x2="'+X(x2).toFixed(1)+'" y2="'+Y(y2).toFixed(1)+'" stroke="#DCE3F2" stroke-opacity="'+op+'" stroke-width="'+(w||1.4)+'"/>';
+  Object.values(rows).forEach(r=>{ for(let c=0;c<=N;c++) o+=L(c*SW,r.y0,c*SW,r.y0+D,.15); });
+  o+=L(0,262,N*SW,262,.2); o+=L(0,524,N*SW,524,.2);
+
+  const cell=(k)=>{ const [r,c]=k.split(':'); const R=rows[r]; return {x0:+c*SW,y0:R.y0,x1:+c*SW+SW,y1:R.y0+D,open:R.open}; };
+  /* free stalls (missed) */
+  Object.keys(free).forEach(k=>{ const q=cell(k);
+    o+='<rect x="'+X(q.x0-4)+'" y="'+Y(q.y0-4)+'" width="'+((SW+8)*S)+'" height="'+((D+8)*S)+'" fill="#FF5A1F" opacity=".6" filter="url(#b18)"/>';
+    o+='<rect x="'+(X(q.x0)+4)+'" y="'+(Y(q.y0)+4)+'" width="'+(SW*S-8)+'" height="'+(D*S-8)+'" rx="6" fill="rgba(255,90,31,.26)" stroke="#FF8552" stroke-width="2.2"/>';
+  });
+
+  /* cars */
+  function car(cx,y0,w,l,t,open,hot){
+    const x=X(cx-w/2), y=Y(y0), W=w*S, H=l*S;
+    let h='<rect x="'+(x+1.5)+'" y="'+(y+2.5)+'" width="'+W+'" height="'+H+'" rx="7" fill="#000" opacity=".6" filter="url(#b3)"/>';
+    h+='<rect x="'+x+'" y="'+y+'" width="'+W+'" height="'+H+'" rx="7" fill="'+t+'" stroke="'+(hot?'#F3F5F9':'rgba(255,255,255,.07)')+'" stroke-width="'+(hot?2:1)+'"/>';
+    const gl = open>0 ? [.6,.2] : [.2,.2];
+    h+='<rect x="'+(x+4)+'" y="'+(y+H*gl[0])+'" width="'+(W-8)+'" height="'+(H*gl[1])+'" rx="4" fill="'+(hot?'#6A7389':'#3B4459')+'"/>';
+    h+='<rect x="'+(x+5)+'" y="'+(y+H*.42)+'" width="'+(W-10)+'" height="'+(H*.16)+'" rx="3" fill="#fff" opacity=".04"/>';
+    return h;
+  }
+  const tones=['#222838','#283043','#2F3749','#1D2230','#343D51'];
+  Object.entries(rows).forEach(([rk,R])=>{ for(let c=0;c<N;c++){ const k=rk+':'+c; if(free[k]||k===parked) continue;
+    const w=SW-12-rnd()*3, l=D-18-rnd()*6, cx=c*SW+SW/2+(rnd()-.5)*3;
+    const y0 = R.open>0 ? R.y0+6+rnd()*3 : R.y0+D-6-rnd()*3-l;
+    o+=car(cx,y0,w,l,tones[Math.floor(rnd()*tones.length)],R.open,false);
+  }});
+
+  /* the search route: entrance -> aisle 3 -> aisle 2 -> aisle 1 -> the far stall */
+  const pk=cell(parked), pcx=pk.x0+SW/2;
+  const route=[[720,900],[720,655],[-48,655],[-48,393],[720,393],[720,131],[pcx,131],[pcx,52]];
+  function rounded(pts,r){
+    let d='M'+X(pts[0][0]).toFixed(1)+' '+Y(pts[0][1]).toFixed(1);
+    for(let i=1;i<pts.length-1;i++){
+      const a=pts[i-1], b=pts[i], c=pts[i+1];
+      const l1=Math.hypot(b[0]-a[0],b[1]-a[1]), l2=Math.hypot(c[0]-b[0],c[1]-b[1]);
+      const rr=Math.min(r,l1/2,l2/2);
+      const p1=[b[0]+(a[0]-b[0])*rr/l1,b[1]+(a[1]-b[1])*rr/l1], p2=[b[0]+(c[0]-b[0])*rr/l2,b[1]+(c[1]-b[1])*rr/l2];
+      d+=' L'+X(p1[0]).toFixed(1)+' '+Y(p1[1]).toFixed(1)+' Q'+X(b[0]).toFixed(1)+' '+Y(b[1]).toFixed(1)+' '+X(p2[0]).toFixed(1)+' '+Y(p2[1]).toFixed(1);
+    }
+    const e=pts[pts.length-1]; d+=' L'+X(e[0]).toFixed(1)+' '+Y(e[1]).toFixed(1);
+    return d;
+  }
+  const d=rounded(route,40);
+  o+='<path d="'+d+'" fill="none" stroke="#DCE3F2" stroke-opacity=".16" stroke-width="12" stroke-linecap="round" stroke-linejoin="round" filter="url(#b6)"/>';
+  o+='<path id="rt" d="'+d+'" fill="none" stroke="#E4E9F3" stroke-opacity=".85" stroke-width="3.5" stroke-dasharray="11 10" stroke-linecap="round" stroke-linejoin="round"/>';
+
+  /* the car that finally parks, at the far end */
+  o+=car(pcx,pk.y0+6,SW-12,64,'#3A4254',1,true);
+  o+='<rect x="'+sx+'" y="'+sy+'" width="'+sw+'" height="'+sh+'" rx="26" fill="url(#vg)" pointer-events="none"/>';
+  /* entrance: a gap in the kerb + two gate posts */
+  o+='<rect x="'+(X(720)-26)+'" y="'+(sy+sh-3)+'" width="52" height="6" fill="#07090D"/>';
+  /* entrance tick */
+  o+='<circle cx="'+X(720)+'" cy="'+Y(900)+'" r="7" fill="#07090D" stroke="#E4E9F3" stroke-width="3"/>';
+  document.getElementById('plan').innerHTML=o;
+
+  /* direction chevrons along the route */
+  const svg=document.getElementById('plan'), rt=document.getElementById('rt'), len=rt.getTotalLength();
+  let ch='';
+  for(let t=150;t<len-70;t+=175){
+    const p=rt.getPointAtLength(t), q=rt.getPointAtLength(t+2), a=Math.atan2(q.y-p.y,q.x-p.x)*180/Math.PI;
+    ch+='<g transform="translate('+p.x.toFixed(1)+' '+p.y.toFixed(1)+') rotate('+a.toFixed(1)+')"><circle r="11" fill="#0C0F16"/><polyline points="-3.5,-6 3.5,0 -3.5,6" fill="none" stroke="#F3F5F9" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"/></g>';
+  }
+  svg.insertAdjacentHTML('beforeend',ch);
+
+  /* chips (page coordinates) */
+  const chips=document.getElementById('chips');
+  function chip(html,px,py,cls,tx,ty){ const el=document.createElement('div'); el.className='chip '+(cls||''); el.innerHTML=html; chips.appendChild(el);
+    el.style.left=px+'px'; el.style.top=py+'px'; el.style.transform='translate('+tx+'%,'+ty+'%)'; return el; }
+  const clock=c=>'<svg class="ic" viewBox="0 0 30 30"><circle cx="15" cy="15" r="12" fill="none" stroke="'+c+'" stroke-width="2.4"/><path d="M15 8v7.5l5 3" fill="none" stroke="#F3F5F9" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"/></svg>';
+  /* start: below the slab, right edge aligned with the entrance */
+  chip(clock('#9AA2B3')+'<b>٧:٥٢ ص</b><span>وصلت</span>',X(720)+22,Y(900),'',0,-50);
+  /* end: floating above the far stall, with a stem */
+  /* the stem drops through the empty kerb margin straight onto the roof of the car in row A (the route arrives from below) */
+  const ex=X(pcx), roof=Y(pk.y0+6)+16;
+  const end=chip(clock('#FF8552')+'<b>٨:٠٤ ص</b><span>متأخر ٤ دقائق</span>',ex-22,Y(-44)-28,'hot',0,-100);
+  const stem=document.createElement('div'); stem.style.cssText='position:absolute;width:2px;left:'+(ex-1)+'px;top:'+(Y(-44)-28)+'px;height:'+(roof-Y(-44)+28)+'px;background:linear-gradient(#FF8552,rgba(255,133,82,.55))';
+  chips.appendChild(stem);
+  const dot=document.createElement('div'); dot.style.cssText='position:absolute;width:12px;height:12px;border-radius:50%;background:#FF8552;left:'+(ex-6)+'px;top:'+(Y(-44)-34)+'px;box-shadow:0 0 14px rgba(255,90,31,.9)';
+  chips.appendChild(dot);
+  const pin=document.createElement('div'); pin.style.cssText='position:absolute;width:12px;height:12px;border-radius:50%;background:#FF8552;border:2px solid #0C0F16;left:'+(ex-6)+'px;top:'+(roof-6)+'px;box-shadow:0 0 0 5px rgba(255,90,31,.25),0 0 16px rgba(255,90,31,.9)';
+  chips.appendChild(pin);
+  /* caption under the slab */
+  const cap=document.getElementById('cap'); cap.style.top=(sy+sh+34)+'px';
+})();
+</script>
+</body>
+</html>
