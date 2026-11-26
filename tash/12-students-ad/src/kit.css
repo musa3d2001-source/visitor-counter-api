@@ -61,7 +61,7 @@ html, body { margin: 0; padding: 0; background: var(--ink); overflow: hidden; }
 
 /* the samples label (one global overlay, main.js) */
 .k-label { position: absolute; display: inline-flex; align-items: center; gap: 12px; direction: rtl; white-space: nowrap;
-  background: rgba(11,11,11,.66); color: var(--paper); border-radius: 22px; padding: 8px 20px 11px 18px;
+  background: #161616; color: var(--paper); border-radius: 22px; padding: 8px 20px 11px 18px; transform-origin: 100% 0;
   font-family: var(--f-text-ar); font-weight: 500; font-size: 27px; line-height: 1.2; border: 1px solid rgba(245,245,233,.16); }
 .k-label i { display: block; width: 10px; height: 10px; border-radius: 5px; background: var(--lime); flex: none; }
 

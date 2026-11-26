@@ -45,5 +45,8 @@ PIECES = [
 ]
 # pieces that continue the previous one without a real pause in the read (cut inside a -40..-57 dB dip): short
 # crossfade-style fades at the joint instead of the 30-60 ms tail fade
-JOINED = {'t2', 'p4b', 'p4c', 'm2', 'r2', 'c2'}
+# (fix round, 26 Nov) 'p4c' is no longer joined: at src 15.320 the take sits at -36..-39 dB for only ~20 ms inside
+# running speech (not a -40..-57 dB dip), and the 12 ms joint fade clipped the voiced «و» of «فيديو.». p4b now gets the
+# normal 35 ms tail fade and p4c a normal fade-in, with air between them (vo_edit RULES).
+JOINED = {'t2', 'p4b', 'm2', 'r2', 'c2'}
 BREATH = (17.140, 17.545)          # the take's one inhale (moved before the rule line)

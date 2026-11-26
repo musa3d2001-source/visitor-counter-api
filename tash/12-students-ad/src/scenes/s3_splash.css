@@ -1,0 +1,29 @@
+/* s3_splash — the TASH bubble types the turn line; its dots fire a lime splash that floods the screen and stay as the
+   wordmark's dots; card 1 flies in as a new object. Everything is set from seek(t): no animation/transition here. */
+.s3-root { position: absolute; inset: 0; overflow: hidden; }
+.s3-world { position: absolute; inset: 0; }
+.s3-cv { position: absolute; left: 0; top: 0; width: 1080px; height: 1920px; }
+.s3-svg { position: absolute; left: 0; top: 0; width: 1080px; height: 1920px; overflow: visible; }
+.s3-abs { position: absolute; left: 0; top: 0; }
+.s3-ar { direction: rtl; white-space: nowrap; letter-spacing: 0; font-feature-settings: "kern" 1, "liga" 1, "calt" 1; }
+
+/* the TASH bubble's rows: DOM, Arabic per word, centred; clipped to the bubble */
+.s3-line { position: absolute; top: 0; left: 0; font-family: "Alexandria", "IBM Plex Sans Arabic", sans-serif; font-weight: 700;
+  color: #F5F5E9; line-height: 1; white-space: nowrap; direction: rtl; will-change: transform; }
+.s3-line .w { display: inline-block; padding: 0.3em 0.06em; margin: -0.3em -0.06em; transform-origin: 50% 70%; will-change: transform, opacity; }
+.s3-sender { font: 600 44px "IBM Plex Sans Arabic", sans-serif; color: #C6FF00; line-height: 1; }
+
+/* the lock-up sticker «للطلاب» (lime, ink type: the end card's sticker) */
+.s3-chip { display: inline-flex; align-items: center; border-radius: 999px; background: #C6FF00; color: #0B0B0B;
+  font: 800 62px "Alexandria", sans-serif; line-height: 1; padding: 0.22em 0.58em 0.34em; white-space: nowrap; direction: rtl;
+  box-shadow: 0 0 0 5px #0B0B0B, 0 16px 34px rgba(40,60,0,.45); transform-origin: 50% 50%; will-change: transform, opacity; }
+
+/* card 1, seen through the parade's own camera (perspective 1300 about the frame centre, like .s4-persp) */
+.s3-persp { position: absolute; inset: 0; perspective: 1300px; perspective-origin: 540px 960px; }
+.s3-w3 { position: absolute; left: 0; top: 0; width: 1080px; height: 1920px; transform-style: preserve-3d; }
+.s3-card { position: absolute; left: 0; top: 0; transform-origin: 0 0; border-radius: 14px; overflow: hidden; background: #fff;
+  box-shadow: 0 36px 80px rgba(40,62,0,.5), 0 8px 20px rgba(40,62,0,.35); will-change: transform; }
+.s3-card > img { position: absolute; left: 0; top: 0; width: 100%; height: 100%; display: block; }
+.s3-card .lt { position: absolute; inset: 0; background: linear-gradient(180deg, rgba(255,255,255,.06), rgba(255,255,255,0) 30%, rgba(0,0,0,0) 62%, rgba(0,0,0,.14)); }
+.s3-card .gl { position: absolute; top: -30%; bottom: -30%; left: -60%; width: 60%; opacity: 0;
+  background: linear-gradient(100deg, rgba(255,255,255,0) 20%, rgba(255,255,255,.30) 50%, rgba(255,255,255,0) 80%); }

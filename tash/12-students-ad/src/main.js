@@ -75,9 +75,15 @@ async function seekFrame(t) {
     active.push(s.id);
   }
   // the samples label: on every frame from the reveal to the end of the payoff, placed per scene
+  // (fix round) one opaque pill on every frame (a card passing behind never changes its look); a little larger (36 px)
+  // for card 1's first 15 frames, so the first sample is labelled loud and clear
   const lon = f >= L.in && f < L.out && active.length > 0;
   label.show(lon);
-  if (lon) label.place(cues.label_pos[active[active.length - 1]] || 'top');
+  if (lon) {
+    label.place(cues.label_pos[active[active.length - 1]] || 'top');
+    const big = 1 + 0.34 * (1 - kit.smoothstep(L.in + 12, L.in + 18, f));
+    label.el.style.transform = big > 1.001 ? `scale(${big.toFixed(4)})` : 'none';
+  }
   if (gd) gd.render(tq, f, active);
 }
 

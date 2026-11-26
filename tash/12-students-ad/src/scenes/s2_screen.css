@@ -8,7 +8,7 @@
 .s2-ar { direction: rtl; white-space: nowrap; letter-spacing: 0; font-feature-settings: "kern" 1, "liga" 1, "calt" 1; }
 
 /* the app (flat on the plane) */
-.s2-canvas { width: 1700px; height: 2700px; background: radial-gradient(60% 40% at 50% 42%, #1F2227 0%, #17191D 55%, #131518 100%); }
+.s2-canvas { width: 1700px; height: 2700px; background: #17191D; }   /* flat: a gradient bands under the exposure settle */
 .s2-status { width: 1700px; height: 652px; background: #0E0F12; }
 .s2-title { width: 1700px; height: 80px; background: #1C1E23; border-top: 1px solid #26292F; }
 .s2-tools { width: 1700px; height: 72px; background: #1C1E23; border-bottom: 1px solid #2A2D33; }

@@ -15,23 +15,36 @@ export const UI = {
   slide: { x: 70, y: 556, w: 944, h: 531 },
   placeholder: { x: 155, y: 716, w: 774, h: 176 },
   notif: { x: 84, y: 362, w: 556, h: 128, z: 60 },
-  chat: { right: 996, top: 1078, avatar: 70, gap: 16, z: 40, nextTop: 1206, maxMsgW: 800 },
-  big: { y1: 1294, y2: 1472 },         // the two tiers of «والتسليم… باجر؟» (screen space; gone by f143)
+  chat: { right: 960, top: 1078, avatar: 70, gap: 16, z: 40, nextTop: 1206, maxMsgW: 800 },   // fix round: 996 → 960
+  big: { y1: 1250, y2: 1410, size2: 170 },   // the two tiers of «والتسليم… باجر؟» (screen space; gone by f143). Fix round:
+                                             // lifted ~60–110 px so «باجر؟» ends above y 1540 (the platform caption rows)
+  entryZ: 3.75,                        // fix round: f78 = the blank slide scaled so its white fills the frame (match cut)
+  entryF: 9,                           // … then the camera whips back to the slide's rest rect (settled ~f87)
   bubbleStyle: { bg: '#F4F5F7', radius: '34px 8px 34px 34px', font: '500 44px "IBM Plex Sans Arabic"', color: '#111317',
     shadow: '0 2px 6px rgba(0,0,0,.25), 0 20px 50px rgba(0,0,0,.5)', canvas: '#17191D' },
 };
 const F0 = 78, F_PUNCH = 117, F_END = 224;   // overwritten from cues at mount (same values)
-let FR = { in: F0, punch: F_PUNCH, out: F_END, resolve: 8 };
+let FR = { in: F0, punch: F_PUNCH, out: F_END, resolve: 8, bubble: 143 };
 
 /** the UI plane's camera at FILM time t (s): scale s, rotations rx/ry (deg), translation tx/ty (px) */
 export function uiCam(t) {
   const f = t * 30, a = FR.in;
   const u = K.clamp((f - a) / (FR.out - a));
-  const entry = K.lerp(0.9, 1, K.E.outExpo(K.clamp((f - a) / 18)));          // still moving forward out of the dive
+  // (fix round) a MATCH CUT on the white: on f78 the blank slide is scaled (entryZ) so its white fills the frame — the
+  // same white as s1's f77 — and the camera pulls back to the slide's rest rect by ~f92, the dark chrome, the clock, the
+  // group chat (f81) and the reminder (f85) coming in from the edges. No white overlay, no exposure filter.
+  const e = K.E.outQuart(K.clamp((f - a) / UI.entryF));
+  const entry = Math.exp(K.lerp(Math.log(UI.entryZ), 0, e));
   const drift = 1 + 0.025 * u;                                                 // slow creep closer: pressure
   const punch = 1 + 0.035 * K.E.outExpo(K.clamp((f - (FR.punch - 1)) / 5));   // «باجر؟»
   const w = K.E.inOutSine(u);
-  return { s: entry * drift * punch, rx: K.lerp(5, 2, w), ry: K.lerp(-6, 2.5, w), tx: K.lerp(-14, 14, w), ty: K.lerp(18, -10, w) };
+  const sc = entry * drift * punch;
+  // the slide centre sits on the frame centre at f78 and glides to its rest place
+  const P = [UI.slide.x + UI.slide.w / 2, UI.slide.y + UI.slide.h / 2], O = UI.origin;
+  const tr = [K.lerp(-14, 14, w), K.lerp(18, -10, w)];
+  const tx = (1 - e) * (540 - O[0] - (P[0] - O[0]) * sc) + e * tr[0];
+  const ty = (1 - e) * (960 - O[1] - (P[1] - O[1]) * sc) + e * tr[1];
+  return { s: sc, rx: K.lerp(5, 2, w) * e, ry: K.lerp(-6, 2.5, w) * e, tx, ty, e };
 }
 /** CSS transform for a 1080x1920 layer whose transform-origin is UI.origin (px) — the same plane as the app */
 export function uiTransform(t) {
@@ -114,7 +127,7 @@ export default {
     const s = this.s = {};
     await ctx.loadCSS(new URL('./s2_screen.css', import.meta.url));
     const ev = id => ctx.ev(id);
-    FR = { in: ctx.scene.in, punch: ev('L2').words[1].land, out: ctx.scene.out, resolve: 8 };
+    FR = { in: ctx.scene.in, punch: ev('L2').words[1].land, out: ctx.scene.out, resolve: 8, bubble: ctx.cues.key.bubble };
     s.G = ctx.G;
     root.classList.add('s2-root'); s.root = root;
 
@@ -150,7 +163,7 @@ export default {
     const SL = UI.slide;
     box('s2-slide', SL.x, SL.y, SL.w, SL.h);
     const P = UI.placeholder;
-    const ph = box('s2-ph', P.x, P.y, P.w, P.h);
+    const ph = s.phBox = box('s2-ph', P.x, P.y, P.w, P.h);
     for (const [hx, hy] of [[0, 0], [0.5, 0], [1, 0], [1, 0.5], [1, 1], [0.5, 1], [0, 1], [0, 0.5]]) {
       K.el(ph, 'i', null, { left: (hx * P.w - 8.5).toFixed(1) + 'px', top: (hy * P.h - 8.5).toFixed(1) + 'px' });
     }
@@ -173,8 +186,9 @@ export default {
     s.cursor = abs(W, 's2-cursor', 0, 0); s.cursor.innerHTML = ARROW;
     s.ibeam = abs(W, 's2-cursor', 0, 0); s.ibeam.innerHTML = IBEAM;
 
-    // ---- screen space: vignette, the big line
+    // ---- screen space: vignette, the dimmer (TASH's message takes over), the big line
     s.vig = K.el(root, 'div', 's2-vig');
+    s.dim = K.el(root, 'div', null, { position: 'absolute', inset: '0', background: '#000', opacity: '0', pointerEvents: 'none' });
     const L2 = ev('L2');
     const big = (text, size, weight, y, lh) => {
       const e = K.el(root, 'div', 's2-big', { fontSize: size + 'px', fontWeight: String(weight), lineHeight: String(lh) });
@@ -184,14 +198,14 @@ export default {
       return { el: e, w, h };
     };
     s.b1 = { ...big(L2.words[0].text, 100, 700, UI.big.y1, 1.3), land: L2.words[0].land };
-    s.b2 = { ...big(L2.words[1].text, 200, 900, UI.big.y2, 1.15), land: L2.words[1].land };
+    s.b2 = { ...big(L2.words[1].text, UI.big.size2, 900, UI.big.y2, 1.15), land: L2.words[1].land };
     s.bOut = L2.out;
 
     s.ev = { chat: ev('ui.group_chat'), notif: ev('ui.notif'), ui: ev('ui.file') };
     // cursor path (UI px, the arrow's tip): wander to the title, hover, flinch on «باجر؟», drift off, stop
     const p = FR.punch;
-    s.path = [[84, 826, 1050], [97, 660, 848], [104, 632, 828], [111, 614, 834], [p - 1, 606, 831], [p + 2, 624, 814],
-      [p + 11, 470, 852], [p + 21, 318, 1004], [p + 33, 286, 1044], [F_END + 10, 286, 1044]];
+    s.path = [[84, 826, 1050], [97, 664, 872], [104, 636, 862], [111, 618, 866], [p - 1, 610, 864], [p + 2, 628, 850],
+      [p + 11, 470, 872], [p + 21, 318, 1004], [p + 33, 286, 1044], [F_END + 10, 286, 1044]];   // hover under the text line
   },
 
   cursorAt(f) {
@@ -206,15 +220,19 @@ export default {
 
   seek(tl, ctx) {
     const s = this.s, f = ctx.f, t = ctx.t;
-    // camera
+    // camera (the pull-back out of the white is inside uiCam)
     applyUiCam(s.world, t);
-    // resolve out of the dive's white like an exposure settling: the white slide holds, the dark UI comes down around it
-    // (s1's last frame f77 is pure white; here the exposure comes down from ~6.4x on f78 to 1x by ~f85)
-    const rk = K.clamp((f - (FR.in - 1)) / FR.resolve);
-    const E = 1 + 8 * (1 - K.E.outCubic(rk));
-    s.root.style.filter = E < 1.002 ? 'none' : `brightness(${E.toFixed(3)})`;
-    // tension: the edges darken slowly
-    s.vig.style.opacity = K.lerp(0.7, 1, K.smoothstep(FR.in, 215, f)).toFixed(3);
+    // the selection box and its placeholder text come up as the app settles (f78 is pure white)
+    const phk = K.smoothstep(FR.in + 3, FR.in + 9, f);
+    s.phBox.style.opacity = phk.toFixed(3); s.ph.el.style.opacity = phk.toFixed(3);
+    // the small app labels come up only once the plane has settled into the frame (no text outside the safe area)
+    const lk = K.smoothstep(0.9, 0.99, uiCam(t).e);
+    s.clock.el.style.opacity = lk.toFixed(3); s.file.el.style.opacity = lk.toFixed(3);
+    // tension: the edges darken slowly (the vignette comes in with the pull-back)
+    s.vig.style.opacity = (K.lerp(0.7, 1, K.smoothstep(FR.in, 215, f)) * K.smoothstep(FR.in + 2, FR.in + 12, f)).toFixed(3);
+    // TASH's message takes over: the app dims 40 % as the bubble lands
+    const dm = 0.4 * K.smoothstep(FR.bubble - 2, FR.bubble + 7, f);
+    s.dim.style.opacity = dm.toFixed(3); s.dim.style.display = dm > 0.002 ? 'block' : 'none';
 
     // group chat: lands first
     const c = s.ev.chat, ck = K.clamp((f - c.in) / (c.land - c.in + 2));
@@ -225,8 +243,10 @@ export default {
     const n = s.ev.notif, nk = K.clamp((f - n.in) / (n.land - n.in));
     const ny = (1 - K.E.outBack(nk, 1.6)) * -84;                               // a short drop: its text never leaves the safe area
     const settle = f >= n.land ? Math.sin((f - n.land) * 1.9) * 5 * Math.exp(-(f - n.land) / 2.4) : 0;
-    K.css(s.notif, { display: f >= n.in ? 'block' : 'none', opacity: K.clamp(nk * 2.2).toFixed(3),
-      transform: `translate3d(0, ${(ny + settle).toFixed(2)}px, ${UI.notif.z}px) scale(${K.lerp(0.94, 1, K.E.outCubic(nk)).toFixed(4)})` });
+    // (fix round) dismissed as TASH's message lands (slides up and out over 4 frames): no half-covered «…جر ٨:٠٠ ص»
+    const nx = K.E.inCubic(K.clamp((f - (FR.bubble - 3)) / 4));
+    K.css(s.notif, { display: f >= n.in && nx < 1 ? 'block' : 'none', opacity: (K.clamp(nk * 2.2) * (1 - nx)).toFixed(3),
+      transform: `translate3d(0, ${(ny + settle - 230 * nx).toFixed(2)}px, ${UI.notif.z}px) scale(${K.lerp(0.94, 1, K.E.outCubic(nk)).toFixed(4)})` });
     const wob = f >= n.land ? Math.sin((f - n.land) * 1.6) * 14 * Math.exp(-(f - n.land) / 4) : 0;
     s.nPin.style.transform = `rotate(${wob.toFixed(2)}deg)`;
 
@@ -248,8 +268,9 @@ export default {
       if (kk <= 0 || out >= 1) { o.el.style.display = 'none'; return; }
       o.el.style.display = 'block';
       let tr, blur;
-      if (mode === 'rise') { const e = K.E.outCubic(kk); tr = `translateY(${((1 - e) * 54 - out * 60).toFixed(2)}px)`; blur = (1 - K.clamp(kk * 1.5)) * 9; }
-      else { const e = K.E.outExpo(kk); tr = `translateY(${(-out * 60).toFixed(2)}px) scale(${K.lerp(1.7, 1, e).toFixed(4)})`; blur = (1 - K.clamp(kk * 1.4)) * 12; }
+      const creep = 1 + 0.018 * K.clamp((f - o.land) / 40);       // a living hold
+      if (mode === 'rise') { const e = K.E.outCubic(kk); tr = `translateY(${((1 - e) * 54 - out * 60).toFixed(2)}px) scale(${creep.toFixed(4)})`; blur = (1 - K.clamp(kk * 1.5)) * 9; }
+      else { const e = K.E.outExpo(kk); tr = `translateY(${(-out * 60).toFixed(2)}px) scale(${(K.lerp(1.7, 1, e) * creep).toFixed(4)})`; blur = (1 - K.clamp(kk * 1.4)) * 12; }
       blur += out * 10;
       K.css(o.el, { transform: tr, opacity: (K.clamp(kk * 2.2) * (1 - out)).toFixed(3), filter: blur > 0.05 ? `blur(${blur.toFixed(2)}px)` : 'none' });
     };

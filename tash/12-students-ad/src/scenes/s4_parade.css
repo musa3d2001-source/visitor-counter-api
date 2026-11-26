@@ -1,0 +1,68 @@
+/* s4_parade — scene builder C. Every visual is a pure function of t (no animations/transitions; kit.css enforces it). */
+.s4-bg { position: absolute; inset: 0; background: #0B0B0B; overflow: hidden; }
+.s4-bg > div { will-change: transform; }
+.s4-bg .wall { position: absolute; left: -200px; width: 1480px; height: 2400px; top: -1200px;
+  background: radial-gradient(ellipse 52% 30% at 50% 40%, rgba(64,66,56,.55), rgba(28,29,25,.35) 45%, rgba(11,11,11,0) 78%); }
+.s4-bg .floor { position: absolute; left: -200px; width: 1480px; height: 2200px; top: 0;
+  background: linear-gradient(180deg, #171814 0%, #10110E 9%, #0A0A09 34%, #060606 100%); }
+.s4-bg .strip { position: absolute; left: -200px; width: 1480px; height: 2px; top: -1px;
+  background: linear-gradient(90deg, rgba(198,255,0,0) 4%, rgba(198,255,0,.55) 30%, rgba(198,255,0,.75) 50%, rgba(198,255,0,.55) 70%, rgba(198,255,0,0) 96%);
+  box-shadow: 0 0 18px 2px rgba(198,255,0,.22); }
+.s4-bg .haze { position: absolute; left: -200px; width: 1480px; height: 260px; top: -130px;
+  background: radial-gradient(ellipse 50% 50% at 50% 50%, rgba(198,255,0,.06), rgba(198,255,0,0) 70%); }
+
+.s4-persp { position: absolute; inset: 0; perspective: 1300px; perspective-origin: 540px 960px; }
+.s4-world { position: absolute; left: 0; top: 0; width: 1080px; height: 1920px; transform-style: preserve-3d; }
+.s4-u { position: absolute; left: 0; top: 0; transform-origin: 0 0; }
+.s4-u.p3 { transform-style: preserve-3d; }
+.s4-sub { position: absolute; left: 0; top: 0; transform-origin: 0 0; }
+.s4-sub.p3 { transform-style: preserve-3d; }
+
+/* a card face: the sample, a top light, a depth dimmer and a glint */
+.s4-face { position: absolute; left: 0; top: 0; overflow: hidden; backface-visibility: hidden; background: #fff;
+  box-shadow: inset 0 0 0 1px rgba(255,255,255,.13); }
+.s4-face > img { position: absolute; left: 0; top: 0; width: 100%; height: 100%; display: block; }
+.s4-face .lt { position: absolute; inset: 0; background: linear-gradient(180deg, rgba(255,255,255,.06), rgba(255,255,255,0) 30%, rgba(0,0,0,0) 62%, rgba(0,0,0,.14)); }
+.s4-face .dim { position: absolute; inset: 0; background: #070707; opacity: 0; }
+.s4-face .gl { position: absolute; top: -30%; bottom: -30%; left: -60%; width: 60%; opacity: 0;
+  background: linear-gradient(100deg, rgba(255,255,255,0) 20%, rgba(255,255,255,.30) 50%, rgba(255,255,255,0) 80%); }
+.s4-back { position: absolute; left: 0; top: 0; backface-visibility: hidden; transform: rotateY(180deg);
+  background: linear-gradient(180deg, #EFE9DE, #E2DACB); box-shadow: 0 0 0 1px rgba(0,0,0,.08); }
+.s4-back i { position: absolute; left: 9%; right: 9%; height: 1.2%; background: rgba(60,48,30,.07); border-radius: 2px; }
+
+/* floor pieces (planes laid on the floor by a matrix) */
+.s4-plane { position: absolute; left: 0; top: 0; transform-origin: 0 0; pointer-events: none; }
+.s4-pool { background: radial-gradient(ellipse 50% 50% at 50% 50%, rgba(236,238,224,.075), rgba(236,238,224,.03) 45%, rgba(236,238,224,0) 72%); }
+.s4-shadow { background: radial-gradient(ellipse 50% 50% at 50% 50%, rgba(0,0,0,.92), rgba(0,0,0,.55) 38%, rgba(0,0,0,0) 72%); }
+.s4-ripple { border-radius: 50%; border: 5px solid #C6FF00; box-shadow: 0 0 22px rgba(198,255,0,.55), inset 0 0 18px rgba(198,255,0,.35); }
+.s4-splash { border-radius: 50%; background: radial-gradient(ellipse 50% 50% at 50% 50%, rgba(198,255,0,.32), rgba(198,255,0,.10) 40%, rgba(198,255,0,0) 70%); }
+.s4-mote { border-radius: 50%; background: radial-gradient(circle, rgba(245,245,233,.95), rgba(245,245,233,0) 70%); }
+.s4-mote.l { background: radial-gradient(circle, rgba(198,255,0,.95), rgba(198,255,0,0) 70%); }
+
+/* the floor reflection of a card (mirrored by its matrix) */
+.s4-refl { position: absolute; left: 0; top: 0; transform-origin: 0 0; overflow: hidden; backface-visibility: visible; }
+.s4-refl > img { position: absolute; left: 0; top: 0; width: 100%; height: 100%; display: block; }
+
+/* inside the video card: a moving playhead and a running timecode */
+.s4-ph { position: absolute; left: 0; top: 0; width: 0; height: 0; }
+.s4-ph b { position: absolute; left: -1px; width: 2px; background: #FF3B30; box-shadow: 0 0 6px rgba(255,59,48,.6); }
+.s4-ph i { position: absolute; left: -5px; width: 10px; height: 9px; background: #FF3B30; clip-path: polygon(0 0, 100% 0, 100% 60%, 50% 100%, 0 60%); }
+.s4-tc { position: absolute; background: #171A1F; color: #E8EBF0; font: 700 11.6px "JetBrains Mono", monospace; line-height: 1;
+  direction: ltr; unicode-bidi: isolate; white-space: nowrap; padding: 2px 0 0 1px; }
+
+/* inside the dashboard card: the chart draws */
+.s4-patch { position: absolute; background: #fff; }
+.s4-crop { position: absolute; overflow: hidden; }
+.s4-crop > img { position: absolute; display: block; }
+
+/* inside the research card: the formatting highlights */
+.s4-hl { position: absolute; background: rgba(198,255,0,.42); border-radius: 3px; transform-origin: 100% 50%; mix-blend-mode: multiply; }
+
+/* 2D overlay above the stage */
+.s4-bg .vig { position: absolute; inset: 0; pointer-events: none; will-change: auto;
+  background: radial-gradient(ellipse 78% 62% at 50% 46%, rgba(0,0,0,0) 58%, rgba(0,0,0,.42) 86%, rgba(0,0,0,.66) 100%); }
+.s4-ov { position: absolute; inset: 0; pointer-events: none; }
+.s4-ov svg { position: absolute; left: 0; top: 0; width: 1080px; height: 1920px; overflow: visible; }
+.s4-ov .k-chip { box-shadow: 0 10px 28px rgba(0,0,0,.45); }
+.s4-ov .k-chip.ink { border: 2px solid rgba(198,255,0,.85); }
+.s4-ov .k-file { box-shadow: 0 12px 30px rgba(0,0,0,.5); }

@@ -65,6 +65,12 @@ def word_lands(text, phrases, first_land):
 
 
 # ------------------------------------------------------------------------------------------------ scenes
+# (fix round, 26 Nov) the s5 -> s6 cut sits on the VO «ويوم…» (c1 moved 0.12 s earlier for air before «خلّ»), so the rule
+# line holds 0.9 s after its last word; «بحث؟» lands 5 frames before its word; card 1 flies in as a new object from f232
+_c1 = next(p for p in V['phrases'] if p['id'] == 'c1')
+S5_OUT = F(_c1['film_on'] + 0.04)
+Q3 = FB(1.5) - 5
+CARD1_IN = FB(13) + 3
 SCENES = [
     {'id': 's1_hook', 'in': 0, 'out': FB(2.5),
      'what': 'Live plate h1_desk (src/footage/h1, frame k = film frame k, 1.25x): night, the student from behind, hands in '
@@ -87,20 +93,22 @@ SCENES = [
      'what': 'The sample parade: 3D cards with depth on the beat, each card\'s chip = its on-screen word (rendered '
              'once), the answer punches in beside it; cards 4-6 one hit each; card 7 Excel (chart draws) + «وأي ملف '
              'أوفيس.» + five LTR file chips; ends on the full fan held ~0.45 s. Starts from card 1 exactly where s3 left it.'},
-    {'id': 's5_details', 'in': FB(33), 'out': FB(44.5),
+    {'id': 's5_details', 'in': FB(33), 'out': S5_OUT,
      'what': 'Details: macro push-in on one sample page, alignment guides SNAP onto the margins on «نضبّطها» (f553); '
              'then THE RULE LINE on a before/after of ONE page with the same words both sides: «المعلومة منك…» on BEFORE '
              '(قبل), the swipe on the bar line f618, «والترتيب والتصميم علينا.» on AFTER (بعد). No callout while the '
              'rule line is up. Samples: a report/research page for the margins; before/after = samples/before-slide.png '
              '(the plain BEFORE) against the matching designed slide (AFTER).'},
-    {'id': 's6_payoff', 'in': FB(44.5), 'out': FB(50),
+    {'id': 's6_payoff', 'in': S5_OUT, 'out': FB(51),
      'what': 'Payoff plate h2_class (src/footage/h2): card 1\'s slide comped on the projection screen BEHIND the '
              'presenter\'s hand (plate -> slide into quad_draw -> fg.png), slow 2.5D push-in, classmates from behind. '
-             '«خلّ شغلك يسولف عنك.» lands on the wide chord (f719). Samples label still on.'},
-    {'id': 's7_end', 'in': FB(50), 'out': END_F,
-     'what': 'End card on ink: wordmark «طشّ» + «للطلاب» + «شغل يبيّض الوجه.» on the cut; CTA (f769) and the two '
-             'handles (f776) hold to the end; «بس مو آخر ليلة.» pops with the voice (f805); the TASH sonic logo plays '
-             'alone after the last word, its hit on the bar line f848 (the wordmark dots can answer it).'},
+             '«خلّ شغلك يسولف عنك.» lands on the wide chord (f719) and holds ~1 s after its last word (fix round: the '
+             'scene runs to beat 51, one beat longer). Samples label still on.'},
+    {'id': 's7_end', 'in': FB(51), 'out': END_F,
+     'what': 'End card on ink: wordmark «طشّ» + «للطلاب» + «شغل يبيّض الوجه.» on the cut; CTA (f784) and the two '
+             'handles (f791) hold to the end; «بس مو آخر ليلة.» pops with the voice (f820); the TASH sonic logo plays '
+             'alone after the last word (ticks from f854), its hit on f863 (the music\'s bar line: one beat was inserted '
+             'at the payoff chord, see music_insert); the wordmark dots answer it.'},
 ]
 SC = {s['id']: s for s in SCENES}
 
@@ -123,7 +131,8 @@ TEXT.append(ev('L1.1', on('L1', 0), 's1_hook', FB(-2), s1o, in_=2,
                vo='h1', note='«عندك» lands with the first VO frame, «برزنتيشن؟» on beat -2 (the stress); the line stays up '
                              'with the next two (they stack) until the push leaves them behind'))
 TEXT.append(ev('L1.2', on('L1', 1), 's1_hook', FB(0), s1o, vo='h2', note='bar line 1'))
-TEXT.append(ev('L1.3', on('L1', 2), 's1_hook', FB(1.5), s1o, vo='h3'))
+TEXT.append(ev('L1.3', on('L1', 2), 's1_hook', Q3, s1o, vo='h3',
+               note='(fix round) lands ~0.2 s before its VO word (PLAYBOOK: type before the voice), sharp to f73'))
 # ---- s2
 bub = FB(7)                                                          # the TASH bubble lands (s3)
 TEXT.append(ev('L2', on('L2', 0), 's2_screen', FB(3.5), bub, words=word_lands(on('L2', 0), ['d1'], FB(3.5)), vo='d1',
@@ -132,11 +141,13 @@ TEXT.append(ev('ui.file', ui('app_file_name'), 's2_screen', FB(2.5) + 2, FB(12),
 TEXT.append(ev('ui.placeholder', ui('placeholder_title'), 's2_screen', FB(2.5) + 2, FB(12), in_=FB(2.5), kind='ui', size='small',
                note='low contrast, texture only'))
 TEXT.append(ev('ui.clock', ui('clock'), 's2_screen', FB(2.5) + 2, FB(12), in_=FB(2.5), kind='ui', size='small'))
-TEXT.append(ev('ui.group_chat', ui('group_chat_bubble'), 's2_screen', FB(2.5) + 3, FB(12), in_=FB(2.5), kind='ui', size='small',
+# (fix round) s2 opens with a match cut on the slide's white and whips back to the app (settled ~f87): the group chat
+# pops once its bubble is inside the safe area (f81-83), still before the reminder drops with the ding (f83-85)
+TEXT.append(ev('ui.group_chat', ui('group_chat_bubble'), 's2_screen', FB(2.5) + 5, FB(12), in_=FB(2.5) + 3, kind='ui', size='small',
                note='lands FIRST (no group header) and stays to the splash'))
-TEXT.append(ev('ui.notif_title', ui('deadline_notification_title'), 's2_screen', FB(3), FB(12), in_=FB(3) - 4, kind='ui', size='small',
+TEXT.append(ev('ui.notif_title', ui('deadline_notification_title'), 's2_screen', FB(3), FB(12), in_=FB(3) - 2, kind='ui', size='small',
                note='with the ding (beat 3); the pin is a drawn icon, no emoji'))
-TEXT.append(ev('ui.notif', ui('deadline_notification'), 's2_screen', FB(3), FB(12), in_=FB(3) - 4, kind='ui', size='small'))
+TEXT.append(ev('ui.notif', ui('deadline_notification'), 's2_screen', FB(3), FB(12), in_=FB(3) - 2, kind='ui', size='small'))
 # ---- s3
 s3o = SC['s3_splash']['out']
 TEXT.append(ev('ui.tash_sender', ui('tash_bubble_sender'), 's3_splash', bub, FB(12), in_=bub - 3, kind='ui', size='small',
@@ -148,7 +159,7 @@ TEXT.append(ev('L3.1', on('L3', 0), 's3_splash', FB(7.5), s3o, words=word_lands(
 pre = ui('tash_bubble_before_splash')                               # «خلّ التصميم على •••»
 t2w = vo_words(['t2'])
 TEXT.append(ev('L3.2a', pre, 's3_splash', F(t2w[0][2] + 0.02), FB(12),
-               words=[[t2w[i][0], F(t2w[i][2] + 0.02)] for i in range(3)] + [[pre.split(' ')[-1], F(t2w[2][2] + 0.02) + 6]],
+               words=[[t2w[i][0], F(t2w[i][2] + 0.02)] for i in range(3)] + [[pre.split(' ')[-1], F(t2w[2][2] + 0.02) + 3]],
                vo='t2', note='the second bubble line typed word by word; its trailing typing dots stay live until the hit'))
 TEXT.append(ev('L3.2', on('L3', 1), 's3_splash', FB(12), s3o, in_=FB(12),
                note='on the hit (bar line, f215) the dots burst into the splash and land as the wordmark «طشّ»: the line now '
@@ -213,27 +224,30 @@ ba = uis('before_after_label')
 TEXT.append(ev('ui.before', ba[0], 's5_details', FB(38), FB(40), kind='label', size='small'))
 TEXT.append(ev('ui.after', ba[1], 's5_details', FB(40) + 2, FB(44.5), in_=FB(40), kind='label', size='small'))
 # ---- s6 payoff
-TEXT.append(ev('C1.1', on('C1', 0), 's6_payoff', FB(45), FB(50), words=word_lands(on('C1', 0), ['c1'], FB(45)), vo='c1'))
-TEXT.append(ev('C1.2', on('C1', 1), 's6_payoff', FB(47), FB(50), words=word_lands(on('C1', 1), ['c2'], FB(47)), vo='c2',
-               note='lands on the wide chord'))
+TEXT.append(ev('C1.1', on('C1', 0), 's6_payoff', S5_OUT + 2, FB(51), in_=S5_OUT, words=word_lands(on('C1', 0), ['c1'], S5_OUT + 2),
+               vo='c1', note='(fix round) the VO starts on the cut (22.86 s); the type lands 2 frames into the hall'))
+TEXT.append(ev('C1.2', on('C1', 1), 's6_payoff', FB(47), FB(51), words=word_lands(on('C1', 1), ['c2'], FB(47)), vo='c2',
+               note='lands on the wide chord; holds ~1 s after its last word'))
 # ---- s7 end card (strings from script.json endcard, in order)
 EC = S['endcard']
 e1 = next(p for p in V['phrases'] if p['id'] == 'e1'); e2 = next(p for p in V['phrases'] if p['id'] == 'e2')
-TEXT.append(ev('end.wordmark', EC[0], 's7_end', FB(50), END_F, in_=FB(50), kind='logo', note='the wordmark (logo, not typed text)'))
-TEXT.append(ev('end.line', EC[1], 's7_end', FB(50) + 3, END_F, in_=FB(50)))
-TEXT.append(ev('end.tagline', EC[2], 's7_end', FB(50) + 6, END_F, in_=FB(50) + 1, size='mid', note='first to go if the card is crowded'))
+TEXT.append(ev('end.wordmark', EC[0], 's7_end', FB(51), END_F, in_=FB(51), kind='logo', note='the wordmark (logo, not typed text)'))
+TEXT.append(ev('end.line', EC[1], 's7_end', FB(51) + 3, END_F, in_=FB(51)))
+TEXT.append(ev('end.tagline', EC[2], 's7_end', FB(51) + 6, END_F, in_=FB(51) + 1, size='mid', note='first to go if the card is crowded'))
 TEXT.append(ev('end.cta', EC[3], 's7_end', F(e1['film_on'] + 0.02), END_F, vo='e1', size='mid'))
-TEXT.append(ev('end.ig', EC[4], 's7_end', FB(51), END_F, size='small', note='Arabic label + the handle as its own LTR run; U+200E before @'))
-TEXT.append(ev('end.tt', EC[5], 's7_end', FB(51) + 2, END_F, size='small', note='same as end.ig'))
-TEXT.append(ev('E2', EC[6], 's7_end', FB(53), END_F, words=word_lands(EC[6], ['e2'], FB(53)), vo='e2', size='mid',
-               note='pops with the voice; on a loop it runs straight into the hook'))
+TEXT.append(ev('end.ig', EC[4], 's7_end', FB(52), END_F, size='small', note='Arabic label + the handle as its own LTR run; U+200E before @'))
+TEXT.append(ev('end.tt', EC[5], 's7_end', FB(52) + 2, END_F, size='small', note='same as end.ig'))
+TEXT.append(ev('E2', EC[6], 's7_end', FB(54), END_F, words=word_lands(EC[6], ['e2'], FB(54)), vo='e2', size='mid',
+               note='pops with the voice (its own beat); on a loop it runs straight into the hook'))
 assert on('E2', 0) == EC[6] and on('E1', 0) == EC[3]
 
 # the samples label: one global overlay (main.js owns it) from the first frame of the sample to the end of the payoff
-LABEL = {'text': ui('samples_label'), 'in': FB(12), 'out': FB(50), 't_in': B(12), 't_out': B(50),
-         'note': 'drawn by main.js (kit.samplesLabel) on every frame from the splash reveal (f215) to the end of the '
-                 'payoff (f762), so it never flickers at a cut; position per scene in cues.label_pos (scenes may '
-                 'request a move in REQUESTS.md)'}
+# (lead, integration) it starts on card 1's first visible frame (the splash hit + 4 = f219), not on the hit itself:
+# on f215-218 the splash is still washing the student's own screen, which is not a sample
+LABEL = {'text': ui('samples_label'), 'in': CARD1_IN, 'out': FB(51), 't_in': T(CARD1_IN), 't_out': T(FB(51)),
+         'note': 'drawn by main.js (kit.samplesLabel) on every frame from card 1\'s first visible frame (fix round: card 1 '
+                 'now flies in as a new object from f%d, after the lock-up has read) to the end of the payoff (f%d), so it '
+                 'never flickers at a cut; one opaque pill; a little larger for card 1\'s first 15 frames' % (CARD1_IN, FB(51))}
 LABEL_POS = {'s3_splash': 'top', 's4_parade': 'top', 's5_details': 'top', 's6_payoff': 'top'}
 
 # ---- SFX for the audio agent (frame = the hit; times in seconds too)
@@ -243,10 +257,10 @@ SFX = [
     sfx('kbd_taps', 3, 'a few hesitant keyboard taps under «عندك…» (f3-f40), then stop: the student gives up'),
     sfx('hook_hit_1', FB(-2), '«برزنتيشن؟» punch-in: dry percussive tick + sub tap'),
     sfx('hook_hit_2', FB(0), '«تقرير؟» punch-in (bar line 1)'),
-    sfx('hook_hit_3', FB(1.5), '«بحث؟» punch-in'),
+    sfx('hook_hit_3', Q3, '«بحث؟» punch-in (fix round: with the type, ~0.2 s before the word)'),
     sfx('push_whoosh', FB(1.5) + 2, 'the camera dives into the laptop screen: rising whoosh f66-f77, cut dead on the white (f78)'),
     sfx('screen_on', FB(2.5), 'white -> UI: soft digital blip'),
-    sfx('chat_pop', FB(2.5) + 3, 'group-chat message received (short bubble pop)'),
+    sfx('chat_pop', FB(2.5) + 5, 'group-chat message received (short bubble pop)'),
     sfx('notif_ding', FB(3), 'deadline notification ding (beat 3); the VO enters 0.22 s later'),
     sfx('clock_ticks', FB(4), 'clock ticks on every beat f99-f210 (2:47 am), low in the mix, stop at the hit'),
     sfx('tash_bubble_pop', FB(7), 'the TASH bubble arrives (brand pop; its typing dots tick like the sonic logo ticks)'),
@@ -272,14 +286,16 @@ SFX = [
     sfx('breath_gap', FB(36.5) + 5, 'the VO breath before the rule line (19.21-19.58 s): keep the music low here'),
     sfx('rule_line', FB(38), 'THE RULE LINE in: music drops back to the beat, nothing busy under the voice'),
     sfx('ba_swipe', FB(40), 'before/after swipe (whoosh) on the bar line'),
-    sfx('class_cut', FB(44.5), 'cut to the lecture hall: room air, a soft low swell'),
+    sfx('class_cut', S5_OUT, 'cut to the lecture hall: room air, a soft low swell (the VO «ويوم…» starts on the cut)'),
     sfx('wide_chord', FB(47), 'the WIDE CHORD under «خلّ شغلك يسولف عنك.» (pride, warm)'),
-    sfx('end_cut', FB(50), 'cut to the end card: clean hit'),
+    sfx('end_cut', FB(51), 'cut to the end card: clean hit (music: logical bar line 50 = film beat 51)'),
     sfx('cta_pop', F(e1['film_on'] + 0.02), 'CTA pop'),
-    sfx('handles_pop', FB(51), 'handles pop (two light ticks)'),
-    sfx('tag_pop', FB(53), '«بس مو آخر ليلة.» mischievous pluck with the voice'),
-    sfx('sonic_logo_ticks', FB(55), 'TASH sonic logo typing ticks start (under the tail of «ليلة.» ending 27.957)'),
-    sfx('sonic_logo_hit', FB(56), 'TASH sonic logo hit on the bar line (28.281); alone after the voice; tail to the end'),
+    sfx('handles_pop', FB(52), 'handles pop (two light ticks)'),
+    sfx('tag_pop', F(e2['film_on'] - 0.21), '«بس مو آخر ليلة.» wink pluck, its attack in the gap BEFORE «بس» (fix round)'),
+    sfx('sonic_logo_ticks', F(V['vo_last_end'] + 0.02), 'TASH sonic logo typing ticks start AFTER the last word (fix round: '
+                                                       'three ticks 0.09 s apart from vo_last_end + 0.02)'),
+    sfx('sonic_logo_hit', FB(57), 'TASH sonic logo hit on the music\'s bar line (logical 56 = film beat 57); alone after the '
+                                  'voice; tail to the end'),
 ]
 
 beats = [{'k': k, 't': B(k), 'f': FB(k), 'bar': k % 4 == 0} for k in range(-2, 59) if 0 <= B(k) <= END_F / FPS + 1e-6]
@@ -302,19 +318,23 @@ C = {
                   'what': 'card 1\'s slide (16:9) as s3 leaves it on f257: centred, 1000 px wide, flat. s4 starts from the '
                           'same rect and pulls it into the parade'},
         's4_s5': {'frame': FB(33), 'what': 'hard cut on the beat (or s5 opens with a push into one page)'},
-        's5_s6': {'frame': FB(44.5), 'what': 'hard cut to the lecture hall; the slide on its screen is card 1\'s slide'},
-        's6_s7': {'frame': FB(50), 'what': 'hard cut to the end card'},
+        's5_s6': {'frame': S5_OUT, 'what': 'match cut to the lecture hall; the slide on its screen is card 1\'s slide'},
+        's6_s7': {'frame': FB(51), 'what': 'hard cut to the end card'},
     },
     'text': sorted(TEXT, key=lambda e: (e['in'], e['id'])),
     'cards': SLOTS,
     'samples_label': LABEL, 'label_pos': LABEL_POS,
     'sfx': SFX,
     'beats': beats,
-    'key': {'hook1': FB(-2), 'hook2': FB(0), 'hook3': FB(1.5), 'whiteout': FB(2.5) - 1, 'ding': FB(3), 'bubble': FB(7),
-            'splash': FB(12), 'lockup': FB(13), 'card1': FB(15), 'card2': FB(20), 'card3': FB(22.5), 'card4': FB(26),
+    'music_insert': {'from_logical_beat': 48, 'beats': 1,
+                     'note': 'fix round: one beat was inserted after the payoff chord (beat 47) so the closing line holds '
+                             '~1 s; the music\'s logical beat k >= 48 sounds at film beat k + 1 (audio.py kt/i16)'},
+    'key': {'hook1': FB(-2), 'hook2': FB(0), 'hook3': FB(1.5), 'q3': Q3, 'whiteout': FB(2.5) - 1, 'ding': FB(3), 'bubble': FB(7),
+            'splash': FB(12), 'lockup': FB(13), 'card1_in': CARD1_IN, 'card1': FB(15), 'card2': FB(20), 'card3': FB(22.5), 'card4': FB(26),
             'card5': FB(27), 'card6': FB(28.5), 'card7': FB(30.5), 'fan': FB(32), 'details': FB(33), 'snap': FB(35.5),
-            'rule': FB(38), 'swipe': FB(40), 'rule2': FB(40.5), 'payoff_cut': FB(44.5), 'payoff': FB(45), 'chord': FB(47),
-            'end': FB(50), 'cta': F(e1['film_on'] + 0.02), 'handles': FB(51), 'tag': FB(53), 'logo_hit': FB(56), 'last': END_F - 1},
+            'rule': FB(38), 'swipe': FB(40), 'rule2': FB(40.5), 'payoff_cut': S5_OUT, 'payoff': S5_OUT + 2, 'chord': FB(47),
+            'end': FB(51), 'cta': F(e1['film_on'] + 0.02), 'handles': FB(52), 'tag': FB(54), 'logo_hit': FB(57),
+            'logo_ticks': F(V['vo_last_end'] + 0.02), 'last': END_F - 1},
 }
 # sanity: every on-screen string of script.json is used exactly as written
 used = {e['text'] for e in TEXT}

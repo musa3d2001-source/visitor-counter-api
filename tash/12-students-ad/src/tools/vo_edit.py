@@ -42,22 +42,26 @@ RULES = {
     'p1b': (0.06, 0.20, 0.10, 'half', 0.5, None),
     'p2a': (0.05, 0.22, 0.10, 'half', 3.0, None),     # card 2
     'p2b': (0.05, 0.18, 0.08, None, 0.0, None),
-    'p3a': (0.05, 0.22, 0.10, 'half', 3.0, None),     # card 3
+    'p3a': (0.12, 0.22, 0.125, None, 0.0, None),     # card 3 (fix round: off the grid, +0.07 s: «نرتّبه.» → «بحث؟» had a
+                                                      # 65 ms heard gap, the only joint between two lines under 199 ms)
     'p3b': (0.05, 0.18, 0.08, None, 0.0, None),
     'p4a': (0.05, 0.22, 0.10, 'half', 3.0, None),     # cards 4-6
-    'p4b': (0.00, 0.12, 0.02, 'half', 3.0, None),     # «بوستر.» then «فيديو.» a beat later (tails trimmed)
+    'p4b': (0.06, 0.14, 0.08, None, 0.0, None),       # «بوستر.» then «فيديو.» (fix round: keep the take's own pause:
+                                                      # a 0.00 gap ran them together as «بوسترفيديو»; card 5 stays on f431)
     'p4c': (0.00, 0.20, 0.06, 'half', 3.0, None),     # «فيديو.» is 0.57 s: «سي ڤي.» 1.5 beats after it
     'p5': (0.05, 0.24, 0.10, 'half', 3.0, None),      # card 7 + «وأي ملف أوفيس.»
     'm1': (0.40, 0.65, 0.50, 'half', 1.5, None),      # hold on the full fan, then the details
     'm2': (0.02, 0.30, 0.12, 'half', 1.5, None),      # «نضبّطها.» on the snap
     'r1': (0.40, 0.62, 0.50, 'beat', 4.0, None),      # breath, then THE RULE LINE
     'r2': (0.02, 0.30, 0.12, 'half', 2.0, None),      # the before/after swipe on the pause
-    'c1': (0.35, 0.55, 0.45, 'beat', 4.0, None),      # breath, then the payoff (cut to the classroom)
-    'c2': (0.00, 0.20, 0.08, 'beat', 3.0, None),      # «خلّ شغلك…» on the wide chord
-    'e1': (0.22, 0.48, 0.35, 'half', 2.0, None),      # end card
+    'c1': (0.25, 0.45, 0.32, None, 0.0, None),        # breath, then the payoff (fix round: 0.12 s earlier, off the grid,
+                                                      # so «خلّ» gets ~160 ms of air at the «…» instead of 35 ms)
+    'c2': (0.00, 0.25, 0.08, 'beat', 3.0, None),      # «خلّ شغلك…» on the wide chord (still beat 47)
+    'e1': (0.55, 0.85, 0.70, 'half', 2.0, None),      # end card (fix round: one beat later, so «خلّ شغلك يسولف عنك.»
+                                                      # holds ~1 s after its last word before the end card)
     'e2': (0.15, 0.35, 0.22, 'half', 2.0, None),      # the twist pay-off
 }
-DUR = (28.4, 29.25)          # preferred film length (hard max 30.0)
+DUR = (28.4, 29.75)          # preferred film length (hard max 30.0; fix round: one beat longer, 29.70 s)
 TAIL = (1.10, 1.40)          # the sonic logo alone after the last word; the film ends on a beat in this window
 BEAM = 24                    # states kept per phrase in the DP
 GAP_W = 0.6                  # weight of a gap's distance from its preference (relative to its range)

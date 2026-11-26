@@ -3,8 +3,8 @@
  "fps": 30,
  "width": 1080,
  "height": 1920,
- "duration_frames": 877,
- "duration": 29.2333,
+ "duration_frames": 891,
+ "duration": 29.7,
  "bpm": 125.0,
  "beat": 0.48,
  "phase": 1.401,
@@ -15,8 +15,8 @@
   "timeline": "src/vo/vo_timeline.json",
   "tempo": 1.08,
   "first_onset": 0.1,
-  "last_end": 27.957,
-  "length": 27.868
+  "last_end": 28.437,
+  "length": 28.348
  },
  "safe": {
   "x0": 64,
@@ -52,20 +52,20 @@
   {
    "id": "s5_details",
    "in": 517,
-   "out": 683,
+   "out": 687,
    "what": "Details: macro push-in on one sample page, alignment guides SNAP onto the margins on «نضبّطها» (f553); then THE RULE LINE on a before/after of ONE page with the same words both sides: «المعلومة منك…» on BEFORE (قبل), the swipe on the bar line f618, «والترتيب والتصميم علينا.» on AFTER (بعد). No callout while the rule line is up. Samples: a report/research page for the margins; before/after = samples/before-slide.png (the plain BEFORE) against the matching designed slide (AFTER)."
   },
   {
    "id": "s6_payoff",
-   "in": 683,
-   "out": 762,
-   "what": "Payoff plate h2_class (src/footage/h2): card 1's slide comped on the projection screen BEHIND the presenter's hand (plate -> slide into quad_draw -> fg.png), slow 2.5D push-in, classmates from behind. «خلّ شغلك يسولف عنك.» lands on the wide chord (f719). Samples label still on."
+   "in": 687,
+   "out": 776,
+   "what": "Payoff plate h2_class (src/footage/h2): card 1's slide comped on the projection screen BEHIND the presenter's hand (plate -> slide into quad_draw -> fg.png), slow 2.5D push-in, classmates from behind. «خلّ شغلك يسولف عنك.» lands on the wide chord (f719) and holds ~1 s after its last word (fix round: the scene runs to beat 51, one beat longer). Samples label still on."
   },
   {
    "id": "s7_end",
-   "in": 762,
-   "out": 877,
-   "what": "End card on ink: wordmark «طشّ» + «للطلاب» + «شغل يبيّض الوجه.» on the cut; CTA (f769) and the two handles (f776) hold to the end; «بس مو آخر ليلة.» pops with the voice (f805); the TASH sonic logo plays alone after the last word, its hit on the bar line f848 (the wordmark dots can answer it)."
+   "in": 776,
+   "out": 891,
+   "what": "End card on ink: wordmark «طشّ» + «للطلاب» + «شغل يبيّض الوجه.» on the cut; CTA (f784) and the two handles (f791) hold to the end; «بس مو آخر ليلة.» pops with the voice (f820); the TASH sonic logo plays alone after the last word (ticks from f854), its hit on f863 (the music's bar line: one beat was inserted at the payoff chord, see music_insert); the wordmark dots answer it."
   }
  ],
  "handoffs": {
@@ -89,11 +89,11 @@
    "what": "hard cut on the beat (or s5 opens with a push into one page)"
   },
   "s5_s6": {
-   "frame": 683,
-   "what": "hard cut to the lecture hall; the slide on its screen is card 1's slide"
+   "frame": 687,
+   "what": "match cut to the lecture hall; the slide on its screen is card 1's slide"
   },
   "s6_s7": {
-   "frame": 762,
+   "frame": 776,
    "what": "hard cut to the end card"
   }
  },
@@ -149,13 +149,14 @@
    "kind": "line",
    "size": "big",
    "dir": "rtl",
-   "in": 60,
-   "land": 64,
+   "in": 55,
+   "land": 59,
    "out": 78,
-   "t_in": 2.0,
-   "t_land": 2.1333,
+   "t_in": 1.8333,
+   "t_land": 1.9667,
    "t_out": 2.6,
-   "vo": "h3"
+   "vo": "h3",
+   "note": "(fix round) lands ~0.2 s before its VO word (PLAYBOOK: type before the voice), sharp to f73"
   },
   {
    "id": "ui.clock",
@@ -186,21 +187,6 @@
    "t_out": 7.1667
   },
   {
-   "id": "ui.group_chat",
-   "text": "منو مسوّي البرزنتيشن؟؟",
-   "scene": "s2_screen",
-   "kind": "ui",
-   "size": "small",
-   "dir": "rtl",
-   "in": 78,
-   "land": 81,
-   "out": 215,
-   "t_in": 2.6,
-   "t_land": 2.7,
-   "t_out": 7.1667,
-   "note": "lands FIRST (no group header) and stays to the splash"
-  },
-  {
    "id": "ui.placeholder",
    "text": "انقر لإضافة عنوان",
    "scene": "s2_screen",
@@ -216,16 +202,31 @@
    "note": "low contrast, texture only"
   },
   {
+   "id": "ui.group_chat",
+   "text": "منو مسوّي البرزنتيشن؟؟",
+   "scene": "s2_screen",
+   "kind": "ui",
+   "size": "small",
+   "dir": "rtl",
+   "in": 81,
+   "land": 83,
+   "out": 215,
+   "t_in": 2.7,
+   "t_land": 2.7667,
+   "t_out": 7.1667,
+   "note": "lands FIRST (no group header) and stays to the splash"
+  },
+  {
    "id": "ui.notif",
    "text": "التسليم: باجر ٨:٠٠ ص",
    "scene": "s2_screen",
    "kind": "ui",
    "size": "small",
    "dir": "rtl",
-   "in": 81,
+   "in": 83,
    "land": 85,
    "out": 215,
-   "t_in": 2.7,
+   "t_in": 2.7667,
    "t_land": 2.8333,
    "t_out": 7.1667
   },
@@ -236,10 +237,10 @@
    "kind": "ui",
    "size": "small",
    "dir": "rtl",
-   "in": 81,
+   "in": 83,
    "land": 85,
    "out": 215,
-   "t_in": 2.7,
+   "t_in": 2.7667,
    "t_land": 2.8333,
    "t_out": 7.1667,
    "note": "with the ding (beat 3); the pin is a drawn icon, no emoji"
@@ -361,8 +362,8 @@
     },
     {
      "text": "•••",
-     "land": 210,
-     "t": 7.0
+     "land": 207,
+     "t": 6.9
     }
    ],
    "vo": "t2",
@@ -514,22 +515,22 @@
    "kind": "line",
    "size": "big",
    "dir": "rtl",
-   "in": 379,
-   "land": 383,
+   "in": 382,
+   "land": 386,
    "out": 416,
-   "t_in": 12.6333,
-   "t_land": 12.7667,
+   "t_in": 12.7333,
+   "t_land": 12.8667,
    "t_out": 13.8667,
    "words": [
     {
      "text": "ننسّقه",
-     "land": 383,
-     "t": 12.7667
+     "land": 386,
+     "t": 12.8667
     },
     {
      "text": "عدل.",
-     "land": 404,
-     "t": 13.4667
+     "land": 406,
+     "t": 13.5333
     }
    ],
    "vo": "p3b",
@@ -905,25 +906,26 @@
    "kind": "line",
    "size": "big",
    "dir": "rtl",
-   "in": 686,
-   "land": 690,
-   "out": 762,
-   "t_in": 22.8667,
-   "t_land": 23.0,
-   "t_out": 25.4,
+   "in": 687,
+   "land": 689,
+   "out": 776,
+   "t_in": 22.9,
+   "t_land": 22.9667,
+   "t_out": 25.8667,
    "words": [
     {
      "text": "ويوم",
-     "land": 690,
-     "t": 23.0
+     "land": 689,
+     "t": 22.9667
     },
     {
      "text": "التسليم…",
-     "land": 699,
-     "t": 23.3
+     "land": 695,
+     "t": 23.1667
     }
    ],
-   "vo": "c1"
+   "vo": "c1",
+   "note": "(fix round) the VO starts on the cut (22.86 s); the type lands 2 frames into the hall"
   },
   {
    "id": "C1.2",
@@ -934,10 +936,10 @@
    "dir": "rtl",
    "in": 715,
    "land": 719,
-   "out": 762,
+   "out": 776,
    "t_in": 23.8333,
    "t_land": 23.9667,
-   "t_out": 25.4,
+   "t_out": 25.8667,
    "words": [
     {
      "text": "خلّ",
@@ -961,7 +963,7 @@
     }
    ],
    "vo": "c2",
-   "note": "lands on the wide chord"
+   "note": "lands on the wide chord; holds ~1 s after its last word"
   },
   {
    "id": "end.line",
@@ -970,12 +972,12 @@
    "kind": "line",
    "size": "big",
    "dir": "rtl",
-   "in": 762,
-   "land": 765,
-   "out": 877,
-   "t_in": 25.4,
-   "t_land": 25.5,
-   "t_out": 29.2333
+   "in": 776,
+   "land": 779,
+   "out": 891,
+   "t_in": 25.8667,
+   "t_land": 25.9667,
+   "t_out": 29.7
   },
   {
    "id": "end.wordmark",
@@ -984,12 +986,12 @@
    "kind": "logo",
    "size": "big",
    "dir": "rtl",
-   "in": 762,
-   "land": 762,
-   "out": 877,
-   "t_in": 25.4,
-   "t_land": 25.4,
-   "t_out": 29.2333,
+   "in": 776,
+   "land": 776,
+   "out": 891,
+   "t_in": 25.8667,
+   "t_land": 25.8667,
+   "t_out": 29.7,
    "note": "the wordmark (logo, not typed text)"
   },
   {
@@ -999,12 +1001,12 @@
    "kind": "line",
    "size": "mid",
    "dir": "rtl",
-   "in": 763,
-   "land": 768,
-   "out": 877,
-   "t_in": 25.4333,
-   "t_land": 25.6,
-   "t_out": 29.2333,
+   "in": 777,
+   "land": 782,
+   "out": 891,
+   "t_in": 25.9,
+   "t_land": 26.0667,
+   "t_out": 29.7,
    "note": "first to go if the card is crowded"
   },
   {
@@ -1014,12 +1016,12 @@
    "kind": "line",
    "size": "mid",
    "dir": "rtl",
-   "in": 765,
-   "land": 769,
-   "out": 877,
-   "t_in": 25.5,
-   "t_land": 25.6333,
-   "t_out": 29.2333,
+   "in": 780,
+   "land": 784,
+   "out": 891,
+   "t_in": 26.0,
+   "t_land": 26.1333,
+   "t_out": 29.7,
    "vo": "e1"
   },
   {
@@ -1029,12 +1031,12 @@
    "kind": "line",
    "size": "small",
    "dir": "rtl",
-   "in": 772,
-   "land": 776,
-   "out": 877,
-   "t_in": 25.7333,
-   "t_land": 25.8667,
-   "t_out": 29.2333,
+   "in": 787,
+   "land": 791,
+   "out": 891,
+   "t_in": 26.2333,
+   "t_land": 26.3667,
+   "t_out": 29.7,
    "note": "Arabic label + the handle as its own LTR run; U+200E before @"
   },
   {
@@ -1044,12 +1046,12 @@
    "kind": "line",
    "size": "small",
    "dir": "rtl",
-   "in": 774,
-   "land": 778,
-   "out": 877,
-   "t_in": 25.8,
-   "t_land": 25.9333,
-   "t_out": 29.2333,
+   "in": 789,
+   "land": 793,
+   "out": 891,
+   "t_in": 26.3,
+   "t_land": 26.4333,
+   "t_out": 29.7,
    "note": "same as end.ig"
   },
   {
@@ -1059,36 +1061,36 @@
    "kind": "line",
    "size": "mid",
    "dir": "rtl",
-   "in": 801,
-   "land": 805,
-   "out": 877,
-   "t_in": 26.7,
-   "t_land": 26.8333,
-   "t_out": 29.2333,
+   "in": 816,
+   "land": 820,
+   "out": 891,
+   "t_in": 27.2,
+   "t_land": 27.3333,
+   "t_out": 29.7,
    "words": [
     {
      "text": "بس",
-     "land": 805,
-     "t": 26.8333
+     "land": 820,
+     "t": 27.3333
     },
     {
      "text": "مو",
-     "land": 812,
-     "t": 27.0667
+     "land": 826,
+     "t": 27.5333
     },
     {
      "text": "آخر",
-     "land": 816,
-     "t": 27.2
+     "land": 831,
+     "t": 27.7
     },
     {
      "text": "ليلة.",
-     "land": 827,
-     "t": 27.5667
+     "land": 842,
+     "t": 28.0667
     }
    ],
    "vo": "e2",
-   "note": "pops with the voice; on a loop it runs straight into the hook"
+   "note": "pops with the voice (its own beat); on a loop it runs straight into the hook"
   }
  ],
  "cards": [
@@ -1193,11 +1195,11 @@
  ],
  "samples_label": {
   "text": "نماذج من تصميمنا",
-  "in": 215,
-  "out": 762,
-  "t_in": 7.161,
-  "t_out": 25.401,
-  "note": "drawn by main.js (kit.samplesLabel) on every frame from the splash reveal (f215) to the end of the payoff (f762), so it never flickers at a cut; position per scene in cues.label_pos (scenes may request a move in REQUESTS.md)"
+  "in": 232,
+  "out": 776,
+  "t_in": 7.7333,
+  "t_out": 25.8667,
+  "note": "drawn by main.js (kit.samplesLabel) on every frame from card 1's first visible frame (fix round: card 1 now flies in as a new object from f232, after the lock-up has read) to the end of the payoff (f776), so it never flickers at a cut; one opaque pill; a little larger for card 1's first 15 frames"
  },
  "label_pos": {
   "s3_splash": "top",
@@ -1236,10 +1238,10 @@
   },
   {
    "name": "hook_hit_3",
-   "frame": 64,
-   "t": 2.1333,
-   "beat": 1.53,
-   "note": "«بحث؟» punch-in"
+   "frame": 59,
+   "t": 1.9667,
+   "beat": 1.18,
+   "note": "«بحث؟» punch-in (fix round: with the type, ~0.2 s before the word)"
   },
   {
    "name": "push_whoosh",
@@ -1257,9 +1259,9 @@
   },
   {
    "name": "chat_pop",
-   "frame": 81,
-   "t": 2.7,
-   "beat": 2.71,
+   "frame": 83,
+   "t": 2.7667,
+   "beat": 2.85,
    "note": "group-chat message received (short bubble pop)"
   },
   {
@@ -1432,10 +1434,10 @@
   },
   {
    "name": "class_cut",
-   "frame": 683,
-   "t": 22.7667,
-   "beat": 44.51,
-   "note": "cut to the lecture hall: room air, a soft low swell"
+   "frame": 687,
+   "t": 22.9,
+   "beat": 44.79,
+   "note": "cut to the lecture hall: room air, a soft low swell (the VO «ويوم…» starts on the cut)"
   },
   {
    "name": "wide_chord",
@@ -1446,45 +1448,45 @@
   },
   {
    "name": "end_cut",
-   "frame": 762,
-   "t": 25.4,
-   "beat": 50.0,
-   "note": "cut to the end card: clean hit"
+   "frame": 776,
+   "t": 25.8667,
+   "beat": 50.97,
+   "note": "cut to the end card: clean hit (music: logical bar line 50 = film beat 51)"
   },
   {
    "name": "cta_pop",
-   "frame": 769,
-   "t": 25.6333,
-   "beat": 50.48,
+   "frame": 784,
+   "t": 26.1333,
+   "beat": 51.53,
    "note": "CTA pop"
   },
   {
    "name": "handles_pop",
-   "frame": 776,
-   "t": 25.8667,
-   "beat": 50.97,
+   "frame": 791,
+   "t": 26.3667,
+   "beat": 52.01,
    "note": "handles pop (two light ticks)"
   },
   {
    "name": "tag_pop",
-   "frame": 805,
-   "t": 26.8333,
-   "beat": 52.98,
-   "note": "«بس مو آخر ليلة.» mischievous pluck with the voice"
+   "frame": 813,
+   "t": 27.1,
+   "beat": 53.54,
+   "note": "«بس مو آخر ليلة.» wink pluck, its attack in the gap BEFORE «بس» (fix round)"
   },
   {
    "name": "sonic_logo_ticks",
-   "frame": 834,
-   "t": 27.8,
-   "beat": 55.0,
-   "note": "TASH sonic logo typing ticks start (under the tail of «ليلة.» ending 27.957)"
+   "frame": 854,
+   "t": 28.4667,
+   "beat": 56.39,
+   "note": "TASH sonic logo typing ticks start AFTER the last word (fix round: three ticks 0.09 s apart from vo_last_end + 0.02)"
   },
   {
    "name": "sonic_logo_hit",
-   "frame": 848,
-   "t": 28.2667,
-   "beat": 55.97,
-   "note": "TASH sonic logo hit on the bar line (28.281); alone after the voice; tail to the end"
+   "frame": 863,
+   "t": 28.7667,
+   "beat": 57.01,
+   "note": "TASH sonic logo hit on the music's bar line (logical 56 = film beat 57); alone after the voice; tail to the end"
   }
  ],
  "beats": [
@@ -1847,17 +1849,30 @@
    "t": 28.761,
    "f": 863,
    "bar": false
+  },
+  {
+   "k": 58,
+   "t": 29.241,
+   "f": 877,
+   "bar": false
   }
  ],
+ "music_insert": {
+  "from_logical_beat": 48,
+  "beats": 1,
+  "note": "fix round: one beat was inserted after the payoff chord (beat 47) so the closing line holds ~1 s; the music's logical beat k >= 48 sounds at film beat k + 1 (audio.py kt/i16)"
+ },
  "key": {
   "hook1": 13,
   "hook2": 42,
   "hook3": 64,
+  "q3": 59,
   "whiteout": 77,
   "ding": 85,
   "bubble": 143,
   "splash": 215,
   "lockup": 229,
+  "card1_in": 232,
   "card1": 258,
   "card2": 330,
   "card3": 366,
@@ -1871,14 +1886,15 @@
   "rule": 589,
   "swipe": 618,
   "rule2": 625,
-  "payoff_cut": 683,
-  "payoff": 690,
+  "payoff_cut": 687,
+  "payoff": 689,
   "chord": 719,
-  "end": 762,
-  "cta": 769,
-  "handles": 776,
-  "tag": 805,
-  "logo_hit": 848,
-  "last": 876
+  "end": 776,
+  "cta": 784,
+  "handles": 791,
+  "tag": 820,
+  "logo_hit": 863,
+  "logo_ticks": 854,
+  "last": 890
  }
 }

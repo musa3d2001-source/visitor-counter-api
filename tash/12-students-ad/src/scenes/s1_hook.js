@@ -49,8 +49,8 @@ export default {
 
     s.cv = K.el(root, 'canvas', 's1-cv'); s.cv.width = 1080; s.cv.height = 1920;
     s.g = s.cv.getContext('2d', { alpha: false });
-    s.g.imageSmoothingEnabled = true; s.g.imageSmoothingQuality = 'high';
-    s.sq = ctx.params.get('dbg') && ctx.params.get('dbg').includes('lowq') ? 'low' : 'high';
+    // 'medium', not 'high': identical on this plate (mean diff 0.06/255 at z≈1.05) and ~2x faster in the renderer
+    s.g.imageSmoothingEnabled = true; s.g.imageSmoothingQuality = 'medium';
 
     // grade layers, built once
     const g = s.g;
@@ -76,22 +76,40 @@ export default {
     const q3 = word(s.layer, L13.text, { size: 138 });
     // top lock-up: kicker right-aligned to the hero (RTL start), the hero centred
     place(hero, 540, 436); place(kick, hero.x + hero.w - 6, 312, 'right');
-    // bottom row: «تقرير؟» then «بحث؟» (RTL: first on the right), centred as a row, clear of the right action rail
-    const gap = 58, row = q2.w + gap + q3.w, x0 = 540 + row / 2;
-    place(q2, x0, 1498, 'right'); place(q3, x0 - q2.w - gap, 1498, 'right');
+    // bottom row: «تقرير؟» then «بحث؟» (RTL: first on the right), centred as a row. Fix round: lifted 70 px (ink ends
+    // ~y 1512, above the platform caption rows; higher would cover his hands) and its right edge <= 920 (clear of the
+    // TikTok/Reels button column)
+    const gap = 58, row = q2.w + gap + q3.w, x0 = Math.min(540 + row / 2, 920);
+    place(q2, x0, 1428, 'right'); place(q3, x0 - q2.w - gap, 1428, 'right');
     const D = s.F.dive0;
-    // exits: a staggered focus rack as the dive starts, in reading order (each word stays inside the safe area)
+    // (fix round) frame 0 already carries the hook: «عندك» + «برزنتيشن؟» are on, full size and sharp, from f0 (the type
+    // leads the voice, which starts at 0.10 s); «بحث؟» lands ~0.2 s before its word (f59) and holds sharp to f73.
+    // Exits: a staggered focus rack as the dive starts, in reading order (each word stays inside the safe area)
     s.ws = [
-      { w: kick, land: L11.words[0].land, dur: 4, from: 0.86, rise: 26, out: [D, D + 5] },
-      { w: hero, land: L11.words[1].land, dur: 4, from: 1.6, rise: 0, out: [D + 1, D + 7] },
+      { w: kick, land: -1, dur: 4, from: 0.86, rise: 26, out: [D, D + 5] },
+      { w: hero, land: -1, dur: 4, from: 1.6, rise: 0, out: [D + 1, D + 7] },
       { w: q2, land: L12.land, dur: 4, from: 1.6, rise: 0, out: [D + 3, D + 9] },
-      { w: q3, land: L13.land, dur: 4, from: 1.6, rise: 0, out: [D + 5, D + 10] },
+      { w: q3, land: L13.land, dur: 4, from: 1.6, rise: 0, out: [D + 9, D + 13] },
     ];
+    // exposure: a soft lift on the desk and hands for the first ~1.3 s (phone night brightness), then on his head and
+    // shoulders while it drops (f50–77: the hair keeps its texture, a cool rim of the laptop's light on it)
+    s.lc = document.createElement('canvas'); s.lc.width = 1080; s.lc.height = 1920; s.lg = s.lc.getContext('2d');
+    s.lift = document.createElement('canvas'); s.lift.width = 256; s.lift.height = 256;
+    const lg = s.lift.getContext('2d'), rg = lg.createRadialGradient(128, 128, 0, 128, 128, 128);
+    rg.addColorStop(0, 'rgba(255,255,255,1)'); rg.addColorStop(0.55, 'rgba(255,255,255,0.55)'); rg.addColorStop(1, 'rgba(255,255,255,0)');
+    lg.fillStyle = rg; lg.fillRect(0, 0, 256, 256);
     for (const o of s.ws) K.css(o.w.el, { left: o.w.x.toFixed(1) + 'px', top: o.w.y.toFixed(1) + 'px' });
     // a half-res buffer for the shutter accumulation (fast camera only)
     s.half = document.createElement('canvas'); s.half.width = 540; s.half.height = 960;
     s.hg = s.half.getContext('2d', { alpha: false }); s.hg.imageSmoothingEnabled = true; s.hg.imageSmoothingQuality = 'medium';
     s.lastF = ctx.scene.out - ctx.scene.in - 1;                     // 77 (local = film here)
+  },
+
+  /** the radial sprite multiplied by a colour (a soft coloured light for 'screen' compositing) */
+  tinted(src, col) {
+    const c = document.createElement('canvas'); c.width = src.width; c.height = src.height;
+    const g = c.getContext('2d'); g.drawImage(src, 0, 0); g.globalCompositeOperation = 'source-in'; g.fillStyle = col; g.fillRect(0, 0, c.width, c.height);
+    return c;
   },
 
   /** camera at film frame f (float): zoom z about the screen centre, slid toward the frame centre during the dive */
@@ -100,6 +118,7 @@ export default {
     const fit = K.fitQuad(q, 1080, 1920);
     // creep + one punch step per question (lands with the word), a breath back, then the dive
     let z = 1 + 0.018 * K.clamp(f / F.dive0);
+    z *= 1 + 0.05 * K.E.outCubic(K.clamp((f + 2) / 9));            // (fix round) the first lunge is already moving on f0
     for (const P of [F.hook1, F.hook2]) z *= 1 + 0.03 * K.E.outExpo(K.clamp((f - (P - 1)) / 5));
     z *= 1 - 0.016 * K.smoothstep(F.dive0 - 3, F.dive0, f);       // anticipation (3 f) before the dive
     const p = K.clamp((f - F.dive0) / (F.white - F.dive0));
@@ -120,12 +139,10 @@ export default {
 
     // ---- plate (+ shutter-style zoom blur while the camera moves fast: 180°, up to 20 sub-frames, half-res buffer)
     g.globalCompositeOperation = 'source-over'; g.globalAlpha = 1;
-    const DBG = ctx.params.get('dbg') || '';
-    const GRADE = DBG.includes('nofilter') ? 'none' : 'contrast(1.12) saturate(0.86) brightness(0.97)';
+    const GRADE = 'contrast(1.12) saturate(0.86) brightness(0.97)';
     const cPrev = this.cam(f - 0.5, q);
     const dz = Math.abs(Math.log(c0.z / cPrev.z)) + Math.hypot(c0.cx - cPrev.cx, c0.cy - cPrev.cy) / 400;
     const n = Math.max(1, Math.min(20, Math.ceil(dz * 90)));
-    g.imageSmoothingQuality = s.sq;
     if (n <= 2) {
       g.filter = GRADE; K.drawCam(g, im, c0); g.filter = 'none';
     } else {
@@ -142,14 +159,34 @@ export default {
 
     // ---- grade: teal-lifted blacks, graduated ND for the type bands, vignette (all fade out as we enter the screen)
     const inside = K.smoothstep(0.35, 0.9, c0.e);
-    if (!DBG.includes('nograde')) {
     g.globalCompositeOperation = 'screen'; g.fillStyle = 'rgb(7,15,21)'; g.fillRect(0, 0, 1080, 1920);
     g.globalCompositeOperation = 'multiply'; g.globalAlpha = 1 - inside;
     g.fillStyle = s.nd; g.fillRect(0, 0, 1080, 1920);
     g.fillStyle = s.vig; g.fillRect(0, 0, 1080, 1920);
     g.globalAlpha = 1;
 
-    // ---- bloom from the panel: it breathes with the beat a little, then grows as we dive
+    // ---- (fix round) exposure lift: desk + hands f0–40 (x1.32 ≈ +0.4 stop through a soft mask), then the head and
+    // shoulders f46–77 (≈ +12 IRE in the blacks) with a cool rim of the laptop's light on the hair
+    const L1 = 1 - K.smoothstep(40, 52, f), L2 = K.smoothstep(42, 54, f) * (1 - inside);
+    const P2F = (px, py) => K.plateToFrame([px, py], { ...c0, iw: 1080, ih: 1920 });
+    if (L1 > 0) {                                                  // a true exposure lift (x1.32) through a soft mask
+      const h = s.lg, [x, y] = P2F(520, 1150), rx = 760 * c0.z, ry = 640 * c0.z;
+      h.globalCompositeOperation = 'source-over'; h.clearRect(0, 0, 1080, 1920);
+      h.filter = 'brightness(1.32)'; h.drawImage(s.cv, 0, 0); h.filter = 'none';
+      h.globalCompositeOperation = 'destination-in'; h.drawImage(s.lift, x - rx, y - ry, 2 * rx, 2 * ry);
+      g.globalCompositeOperation = 'source-over'; g.globalAlpha = L1; g.drawImage(s.lc, 0, 0); g.globalAlpha = 1;
+    }
+    if (L2 > 0) {                                                  // the head: blacks up ~+12 IRE, a cool rim on the hair
+      g.save(); g.globalCompositeOperation = 'screen';
+      const [x, y] = P2F(540, 1330), r = 430 * c0.z;
+      g.globalAlpha = 0.13 * L2; g.drawImage(s.tint2 || (s.tint2 = this.tinted(s.lift, 'rgb(255,255,255)')), x - r * 1.25, y - r, 2.5 * r, 2 * r);
+      const [rx, ry] = P2F(560, 1110), rr = 300 * c0.z;
+      g.globalAlpha = 0.32 * L2; g.drawImage(s.tint3 || (s.tint3 = this.tinted(s.lift, 'rgb(70,104,170)')), rx - rr * 1.5, ry - rr * 0.6, 3 * rr, 1.2 * rr);
+      g.restore();
+    }
+    g.globalCompositeOperation = 'source-over'; g.globalAlpha = 1;
+
+    // ---- bloom from the panel: a faint halo, growing as we dive
     const qf = q.map(P => K.plateToFrame(P, { ...c0, iw: 1080, ih: 1920 }));
     const xs = qf.map(P => P[0]), ys = qf.map(P => P[1]);
     const bx0 = Math.min(...xs), bx1 = Math.max(...xs), by0 = Math.min(...ys), by1 = Math.max(...ys);
@@ -161,9 +198,7 @@ export default {
     const ex = K.E.inQuad(K.smoothstep(0.62, 1, c0.p));
     if (ex > 0) { g.globalAlpha = Math.min(1, ex); g.fillStyle = '#FFFFFF'; g.fillRect(0, 0, 1080, 1920); }
     if (f >= s.lastF) { g.globalCompositeOperation = 'source-over'; g.globalAlpha = 1; g.fillStyle = '#FFFFFF'; g.fillRect(0, 0, 1080, 1920); }
-    }
     g.globalCompositeOperation = 'source-over'; g.globalAlpha = 1;
-    if (DBG.includes('noshadow')) for (const o of s.ws) o.w.el.style.textShadow = 'none';
 
     // ---- the questions: land on their grid frames, step back as the next lands, rack out of focus as the dive starts
     const V = c0.S;                                                // the screen centre in the frame (vanishing point)

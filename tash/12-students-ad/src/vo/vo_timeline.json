@@ -7,16 +7,16 @@
  "bpm": 125.0,
  "beat": 0.48,
  "phase": 1.401,
- "film_end": 29.241,
+ "film_end": 29.721,
  "vo_first_onset": 0.1,
- "vo_last_end": 27.957,
- "vo_edit_length": 27.868,
+ "vo_last_end": 28.437,
+ "vo_edit_length": 28.348,
  "wav": {
   "file": "src/vo/vo_edit.wav",
   "sr": 48000,
   "channels": 1,
   "format": "PCM 24-bit",
-  "length_s": 29.241,
+  "length_s": 29.721,
   "gain_db": 1.54,
   "integrated_lufs": -26.0,
   "true_peak_dbtp": -3.0,
@@ -213,13 +213,13 @@
     12.69
    ],
    "src_on": 12.15,
-   "film_in": 12.167,
-   "film_on": 12.181,
-   "film_out": 12.681,
-   "gap_before": 0.055,
+   "film_in": 12.237,
+   "film_on": 12.251,
+   "film_out": 12.751,
+   "gap_before": 0.125,
    "key_word_src": 12.15,
-   "key_word_film": 12.181,
-   "grid": "half",
+   "key_word_film": 12.251,
+   "grid": null,
    "grid_miss_s": 0.0
   },
   {
@@ -230,12 +230,12 @@
     13.82
    ],
    "src_on": 12.84,
-   "film_in": 12.747,
-   "film_on": 12.761,
-   "film_out": 13.668,
+   "film_in": 12.817,
+   "film_on": 12.831,
+   "film_out": 13.738,
    "gap_before": 0.08,
    "key_word_src": 12.84,
-   "key_word_film": 12.761,
+   "key_word_film": 12.831,
    "grid": null,
    "grid_miss_s": 0.0
   },
@@ -250,7 +250,7 @@
    "film_in": 13.846,
    "film_on": 13.861,
    "film_out": 14.337,
-   "gap_before": 0.193,
+   "gap_before": 0.123,
    "key_word_src": 14.141,
    "key_word_film": 13.861,
    "grid": "half",
@@ -264,13 +264,13 @@
     15.32
    ],
    "src_on": 14.725,
-   "film_in": 14.329,
-   "film_on": 14.341,
-   "film_out": 14.892,
-   "gap_before": 0.004,
+   "film_in": 14.405,
+   "film_on": 14.417,
+   "film_out": 14.968,
+   "gap_before": 0.08,
    "key_word_src": 14.725,
-   "key_word_film": 14.341,
-   "grid": "half",
+   "key_word_film": 14.417,
+   "grid": null,
    "grid_miss_s": 0.0
   },
   {
@@ -284,7 +284,7 @@
    "film_in": 15.052,
    "film_on": 15.061,
    "film_out": 15.802,
-   "gap_before": 0.169,
+   "gap_before": 0.093,
    "key_word_src": 15.33,
    "key_word_film": 15.061,
    "grid": "half",
@@ -383,13 +383,13 @@
     23.85
    ],
    "src_on": 22.855,
-   "film_in": 22.962,
-   "film_on": 22.981,
-   "film_out": 23.902,
-   "gap_before": 0.442,
+   "film_in": 22.84,
+   "film_on": 22.859,
+   "film_out": 23.78,
+   "gap_before": 0.32,
    "key_word_src": 22.855,
-   "key_word_film": 22.981,
-   "grid": "beat",
+   "key_word_film": 22.859,
+   "grid": null,
    "grid_miss_s": 0.0
   },
   {
@@ -403,7 +403,7 @@
    "film_in": 23.89,
    "film_on": 23.941,
    "film_out": 25.409,
-   "gap_before": 0.039,
+   "gap_before": 0.161,
    "key_word_src": 23.905,
    "key_word_film": 23.941,
    "grid": "beat",
@@ -417,14 +417,14 @@
     26.79
    ],
    "src_on": 25.79,
-   "film_in": 25.615,
-   "film_on": 25.629,
-   "film_out": 26.555,
-   "gap_before": 0.22,
+   "film_in": 26.087,
+   "film_on": 26.101,
+   "film_out": 27.027,
+   "gap_before": 0.692,
    "key_word_src": 25.79,
-   "key_word_film": 25.629,
+   "key_word_film": 26.101,
    "grid": "half",
-   "grid_miss_s": 0.008
+   "grid_miss_s": 0.0
   },
   {
    "id": "e2",
@@ -434,12 +434,12 @@
     28.23
    ],
    "src_on": 27.003,
-   "film_in": 26.804,
-   "film_on": 26.821,
-   "film_out": 27.957,
-   "gap_before": 0.266,
+   "film_in": 27.284,
+   "film_on": 27.301,
+   "film_out": 28.437,
+   "gap_before": 0.274,
    "key_word_src": 27.003,
-   "key_word_film": 26.821,
+   "key_word_film": 27.301,
    "grid": "half",
    "grid_miss_s": 0.0
   }
@@ -582,22 +582,22 @@
    "text": "بحث؟",
    "line": "P3",
    "phrase": "p3a",
-   "start": 12.181,
-   "end": 12.651
+   "start": 12.251,
+   "end": 12.721
   },
   {
    "text": "ننسّقه",
    "line": "P3",
    "phrase": "p3b",
-   "start": 12.761,
-   "end": 13.455
+   "start": 12.831,
+   "end": 13.525
   },
   {
    "text": "عدل.",
    "line": "P3",
    "phrase": "p3b",
-   "start": 13.455,
-   "end": 13.638
+   "start": 13.525,
+   "end": 13.708
   },
   {
    "text": "بوستر.",
@@ -610,8 +610,8 @@
    "text": "فيديو.",
    "line": "P4",
    "phrase": "p4b",
-   "start": 14.341,
-   "end": 14.862
+   "start": 14.417,
+   "end": 14.938
   },
   {
    "text": "سي",
@@ -708,15 +708,15 @@
    "text": "ويوم",
    "line": "C1",
    "phrase": "c1",
-   "start": 22.981,
-   "end": 23.282
+   "start": 22.859,
+   "end": 23.16
   },
   {
    "text": "التسليم…",
    "line": "C1",
    "phrase": "c1",
-   "start": 23.282,
-   "end": 23.872
+   "start": 23.16,
+   "end": 23.75
   },
   {
    "text": "خلّ",
@@ -750,50 +750,50 @@
    "text": "دزّ",
    "line": "E1",
    "phrase": "e1",
-   "start": 25.629,
-   "end": 25.814
+   "start": 26.101,
+   "end": 26.286
   },
   {
    "text": "لنا",
    "line": "E1",
    "phrase": "e1",
-   "start": 25.814,
-   "end": 26.008
+   "start": 26.286,
+   "end": 26.481
   },
   {
    "text": "بالخاص…",
    "line": "E1",
    "phrase": "e1",
-   "start": 26.008,
-   "end": 26.525
+   "start": 26.481,
+   "end": 26.997
   },
   {
    "text": "بس",
    "line": "E2",
    "phrase": "e2",
-   "start": 26.821,
-   "end": 27.05
+   "start": 27.301,
+   "end": 27.53
   },
   {
    "text": "مو",
    "line": "E2",
    "phrase": "e2",
-   "start": 27.05,
-   "end": 27.189
+   "start": 27.53,
+   "end": 27.669
   },
   {
    "text": "آخر",
    "line": "E2",
    "phrase": "e2",
-   "start": 27.189,
-   "end": 27.559
+   "start": 27.669,
+   "end": 28.039
   },
   {
    "text": "ليلة.",
    "line": "E2",
    "phrase": "e2",
-   "start": 27.559,
-   "end": 27.927
+   "start": 28.039,
+   "end": 28.407
   }
  ],
  "search": "search over tempo 1.00-1.08 x BPM 121-127 x bar phase (DP placer, see module doc). Chosen 1.08x, 125 BPM, bar phase 1.401 s: every key word within 8 ms of its grid point; film end 29.241 s (beat 58). 1.06x: cost 3.12, end 29.38 · 1.07x: 2.65, 29.37 · 1.08x: 2.36, 29.24 (124 BPM: 4.51; 126.5 BPM: 2.0)."

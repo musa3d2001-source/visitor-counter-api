@@ -5,7 +5,7 @@ the scene builders (each owns one or more scenes) and the audio builder. **Read 
 `../SCRIPT-COPY.md` and `../script.json`.** The copy is final: every on-screen string is already in `cues.json → text`,
 copied byte for byte from `script.json`; use the event's `text`, never retype Arabic.
 
-**Status:** scaffold only. Nothing here is delivered, approved or published.
+**Status:** scenes, audio and the lead's integration pass are done (26 Nov); the film is built (see `../SCRIPT.md`). Nothing here is delivered, approved or published.
 
 ## 0. The film in one table (125 BPM, 30 fps, 877 frames = 29.233 s)
 
@@ -23,7 +23,7 @@ key word starts 0.02 s before it (measured, see `vo/vo_timeline.json`).
 | `s7_end` | 762–877 | 25.400–29.233 | end card: wordmark + «للطلاب» + tagline f762, CTA f769, handles f776–778, «بس مو آخر ليلة.» f805, sonic-logo hit f848 (bar) |
 
 `cues.key` has every big frame by name (`splash`, `card1`…`card7`, `snap`, `rule`, `swipe`, `chord`, `logo_hit` …).
-The samples label «نماذج من تصميمنا» is drawn by `main.js` from f215 to f762 (top-right, `cues.label_pos`); **scenes do
+The samples label «نماذج من تصميمنا» is drawn by `main.js` from f219 (card 1's first frame) to f762 (top-right, `cues.label_pos`); **scenes do
 not draw it** and must keep its corner (x 700–1016, y 255–320) free of anything important.
 
 ## 1. Scene interface

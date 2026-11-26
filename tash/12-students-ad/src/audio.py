@@ -17,7 +17,8 @@ home), skippy organ stabs on 16ths 3/6/11/14. The tonic (F) is held back for the
   8.60–17.2  the parade: one percussive hit per card on its frame (pitch rising card to card), short whooshes into
              each card, the fan (six paper flicks), page flips, a shutter, the chart's rising pluck, five rising
              mouse-click pops on the file chips, a held Am7 on the full fan; Jersey rolls in bars 16 and 28.
-  17.2–22.8  details: the groove filtered (muffled), no hats; the guides snap (click + tiny bell + two settle ticks);
+  17.2–22.8  details: the groove filtered (muffled), no hats, a soft shaker; the guides snap (click + tiny bell + two
+             settle ticks);
              the breath before the rule line has no drums; the beat comes back on the rule line; the swipe whoosh
              (bar line f618) opens the filter for «والترتيب والتصميم علينا.»; nothing busy under the voice.
   22.8–25.4  lecture hall: the groove cuts with the picture; room air + a low C9sus swell → the WIDE CHORD on f719
@@ -34,12 +35,14 @@ MIXES (48 kHz stereo PCM 24-bit, exactly 877 frames = 1 403 200 samples):
                         260 Hz, +2.5 dB at 3.2 kHz, +1.5 dB shelf at 9 kHz; split-band de-esser 5–10 kHz (relative to
                         each phrase, 4:1, ≤ 8 dB); every phrase levelled to the same loudness; 2.5:1 compression; a
                         final per-phrase trim. Music + beds ducked −7 dB under speech by a look-ahead side-chain from the
-                        VO envelope (50 ms look-ahead, 40 ms attack, 250 ms hold, 300 ms release; let go 150 ms after
-                        the last word); foley −3 dB, card hits −2 dB; the splash and the sonic logo are never ducked.
+                        VO envelope (50 ms look-ahead, 40 ms attack, gaps < 350 ms bridged, 300 ms release; let go
+                        150 ms after the last word); foley −3 dB, card hits −2 dB; the splash and the sonic logo are never ducked.
                         A VO-only true-peak limiter (−8.5 dBFS at −20 LUFS phrases) keeps consonants off the master.
-                        After the last word the bed and the sonic logo come up 3.5 dB (the VO mix's tail would otherwise
-                        sit ~9 dB under the music-only mix: its loudness is set by the voice).
+                        From the sonic logo's first tick the bed and the logo come up 3.5 dB (the VO mix's tail would
+                        otherwise sit ~8 dB under the music-only mix: its loudness is set by the voice).
   src/audio/mix_novo.wav, src/audio/mix_vo.wav   byte-identical copies, the names build.sh muxes.
+  For phone speakers: the groove's bottom shelved −3 dB at 110 Hz, the bass carries saturated harmonics above 220 Hz,
+  the drum bus is soft-clipped (kick transients stay off the master limiter); mono fold-down loses < 0.1 LU.
   Both: −14.0 LUFS integrated, true peak ≤ −1.7 dBTP (4× oversampled look-ahead limiter with zero latency, so nothing
   moves off its frame), so tools/mux.py's linear loudnorm (TP −1.5) never falls back to dynamic mode.
 
@@ -119,7 +122,7 @@ def bass_g(f, d, vel=1.0):
     ef = np.exp(-t / 0.06)
     mid = ef * lp(saw, 2200) + (1 - ef) * lp(saw, 380)
     amp = env_adsr(d, 0.003, 0.1, 0.8, min(0.05, d * 0.35))
-    return fade(sat((sub * 0.95 + mid * 0.5) * amp * vel, 1.8) * 0.55, 0.002, 0.015)
+    return fade(sat((sub * 0.6 + mid * 0.68) * amp * vel, 1.8) * 0.55, 0.002, 0.015)
 
 
 def pluck_syn(f, d=0.45, vel=1.0):
@@ -208,8 +211,8 @@ def keytap(r, vel=1.0):
 def hook_hit(f_sub, vel=1.0):
     """the hook's punch-in: a dry woody tick + a sub tap (pitched)"""
     d = 0.5; t = tt(d)
-    tk = bp(noise(d), 2500, 9000) * np.exp(-t / 0.0025) * 0.9
-    ping = phase_osc(1900 * (1 + 0.25 * np.exp(-t / 0.003)), d, 'tri') * np.exp(-t / 0.018) * 0.35
+    tk = bp(noise(d), 2500, 9000) * np.exp(-t / 0.0025) * 1.25
+    ping = phase_osc(1900 * (1 + 0.25 * np.exp(-t / 0.003)), d, 'tri') * np.exp(-t / 0.018) * 0.5
     thock = lp(noise(d, 'brown'), 400) * np.exp(-t / 0.03) * 0.4
     sb = phase_osc(f_sub * (1 + np.exp(-t / 0.012)), d) * env_exp(d, 0.11, 0.001) * 0.9
     sb2 = phase_osc(2 * f_sub * (1 + np.exp(-t / 0.012)), d) * env_exp(d, 0.06, 0.001) * 0.3
@@ -343,8 +346,8 @@ def tension(d):
     t = tt(d)
     x = sum(phase_osc(nf(n) * (1 + dd), d, 'saw') for n in ('D2', 'A2', 'Bb2', 'D3') for dd in (-0.003, 0.003)) / 8
     k = (t / d) ** 1.5
-    y = (lp(x, 260) * (1 - k) + lp(x, 1100) * k) * (0.55 + 0.45 * k) * (1 + 0.12 * np.sin(2 * np.pi * 2 / BEAT * t))
-    return stereo(fade(y, 0.05, 0.02), 0, width=0.8)
+    y = (lp(x, 400) * (1 - k) + lp(x, 2000) * k) * (0.55 + 0.45 * k) * (1 + 0.12 * np.sin(2 * np.pi * 2 / BEAT * t))
+    return stereo(fade(hp(y, 95, order=2), 0.05, 0.02), 0, width=0.8)
 
 
 def room_air(d):
@@ -387,6 +390,14 @@ def applause(d, n=32, seed_=21):
 
 
 # ============================================================================== the VO chain
+def shelf_lo(x, f0, gain_db, S=1.0):
+    A = 10 ** (gain_db / 40); w0 = 2 * np.pi * f0 / SR; cw, sw = np.cos(w0), np.sin(w0)
+    al = sw / 2 * np.sqrt((A + 1 / A) * (1 / S - 1) + 2); sA = 2 * np.sqrt(A) * al
+    b = [A * ((A + 1) - (A - 1) * cw + sA), 2 * A * ((A - 1) - (A + 1) * cw), A * ((A + 1) - (A - 1) * cw - sA)]
+    a = [(A + 1) + (A - 1) * cw + sA, -2 * ((A - 1) + (A + 1) * cw), (A + 1) + (A - 1) * cw - sA]
+    return signal.lfilter(np.array(b) / a[0], np.array(a) / a[0], x, axis=0)
+
+
 def shelf_hi(x, f0, gain_db, S=1.0):
     A = 10 ** (gain_db / 40); w0 = 2 * np.pi * f0 / SR; cw, sw = np.cos(w0), np.sin(w0)
     al = sw / 2 * np.sqrt((A + 1 / A) * (1 / S - 1) + 2); sA = 2 * np.sqrt(A) * al
@@ -452,16 +463,17 @@ def vo_chain(raw):
 VO_CEIL_DB = -8.5          # VO true-peak ceiling inside the chain (phrases at −20 LUFS): peak-to-loudness 11.5 dB
 
 
-def vo_duck(vo, depth_db, look=0.05, attack=0.04, hold=0.25, release=0.30, thr_db=-50.0):
-    """look-ahead side-chain from the VO envelope → a gain curve (dB) for the music. Speech = 20 ms RMS above thr;
-    held 250 ms (no pumping between words), moved 50 ms earlier (the music is down before the first consonant), then
-    two cascaded asymmetric one-poles (40 ms down, 300 ms up) at a 1 kHz control rate."""
+def vo_duck(vo, depth_db, look=0.05, attack=0.04, bridge=0.35, release=0.30, thr_db=-42.0):
+    """look-ahead side-chain from the VO envelope → a gain curve (dB) for the music. Speech = 20 ms RMS above −42 dBFS
+    (words sit at −24 median, the one breath before the rule line peaks at −45, so the bed is not ducked by a breath);
+    gaps shorter than 350 ms are bridged (no pumping between words) while real pauses let the bed breathe; moved 50 ms
+    earlier (the music is down before the first consonant); two cascaded asymmetric one-poles (40 ms down, 300 ms up)
+    at a 1 kHz control rate."""
     env = np.sqrt(np.maximum(uniform_filter1d(vo ** 2, n_(0.02)), 0))
-    on = (env > db(thr_db)).astype(float)
-    h = n_(hold) | 1
-    on = maximum_filter1d(on, h, origin=(h - 1) // 2)                  # hold: window [i-h+1, i]
-    L = n_(look); on = np.concatenate([on[L:], np.zeros(L)])           # look-ahead
-    ctrl = on[::48]
+    on = (env > db(thr_db)).astype(float)[::48]                       # 1 kHz control rate
+    b = int(bridge * 1000) | 1
+    on = minimum_filter1d(maximum_filter1d(on, b), b)                  # closing: bridges gaps < 350 ms
+    L = int(look * 1000); ctrl = np.concatenate([on[L:], np.zeros(L)])  # look-ahead
     for tau_a, tau_r in ((attack / 2, release / 2), (attack / 2, release / 2)):
         aa, ar = math.exp(-1 / (tau_a * 1000)), math.exp(-1 / (tau_r * 1000)); y = np.empty_like(ctrl); s = 0.0
         for i, v in enumerate(ctrl.tolist()):
@@ -469,7 +481,7 @@ def vo_duck(vo, depth_db, look=0.05, attack=0.04, hold=0.25, release=0.30, thr_d
             s = c * s + (1 - c) * v; y[i] = s
         ctrl = y
     k = np.interp(np.arange(len(vo)), np.arange(len(ctrl)) * 48, ctrl)
-    return depth_db * k
+    return depth_db * np.clip(k, 0, 1)
 
 
 # ============================================================================== mastering
@@ -515,7 +527,7 @@ def master(x, target=-14.0, tp_max=-1.7):
 
 
 # ============================================================================== the arrangement
-G = dict(kick=0.85, clap=0.55, hat=1.0, ohat=0.2, shk=1.0, rim=0.11, bass=0.55, pluck=0.30, stab=0.16, pad=0.07)
+G = dict(kick=0.66, clap=0.6, hat=1.3, ohat=0.26, shk=1.2, rim=0.13, bass=0.55, pluck=0.37, stab=0.2, pad=0.08)
 
 
 def build():
@@ -567,10 +579,12 @@ def build():
     T_LOGO = cue('sonic_logo_hit')
 
     # ---------------------------------------------------------------- HOOK (0 – 2.6): the room at 2 a.m.
-    m.add(room_bed(cue('push_whoosh') + 0.4), 0.0, gain=0.9, bus='amb'); mark('hook_bed', 0.0, 'bed')
-    m.add(fan(cue('screen_on')), 0.0, gain=0.8, bus='amb')
-    m.add(tension(T_HIT + 0.02), 0.0, gain=0.32, bus='amb')
-    taps = [0.0, 0.11, 0.19, 0.42, 0.5, 0.74, 1.03, 1.2]                     # hesitant, sparser and sparser: gives up
+    m.add(room_bed(cue('push_whoosh') + 0.4), 0.0, gain=0.7, bus='amb'); mark('hook_bed', 0.0, 'bed')
+    m.add(fan(cue('screen_on')), 0.0, gain=1.1, bus='amb')
+    m.add(tension(T_HIT + 0.02), 0.0, gain=0.36, bus='amb')
+    # (lead, integration) no key taps: the plate shows both hands in the hair from 0 to 1.6 s, so nothing on screen is
+    # typing (house rule: no foley without a visible cause). The room, the fan and the tension drone carry the hook.
+    taps = []
     for j, dt in enumerate(taps):
         t = cue('kbd_taps') + dt
         m.add(keytap(R, 0.9 - 0.06 * j), t, gain=0.45, bus='sfx', pan=R.uniform(-0.25, 0.1))
@@ -588,7 +602,7 @@ def build():
     k0 = int(round((cue('clock_ticks') - PHASE) / BEAT))                       # beat 4 … beat 11, stops at the hit
     for k in range(k0, 12):
         m.add(clock_tick(tock=(k % 2 == 1)), kt(k), gain=0.4, bus='sfx', pan=-0.2)
-        m.add(KSOFT, kt(k), gain=0.45 + 0.04 * (k - k0), bus='amb')           # a muffled heartbeat under the ticks
+        m.add(KSOFT, kt(k), gain=0.22 + 0.03 * (k - k0), bus='amb')           # a muffled heartbeat under the ticks
         if k == k0: mark('clock_ticks', kt(k), 'onset', 'beat 4; then every beat to beat 11')
 
     # ---------------------------------------------------------------- TASH bubble + typing + the build (4.77 – 7.16)
@@ -602,18 +616,19 @@ def build():
             nt = 2 if len(w['text']) <= 4 else 3
             for j in range(nt):
                 t = ft(w['land']) + j * 0.055
-                m.add(keytap(R, 0.75), t, gain=0.22, bus='sfx', pan=R.uniform(-0.2, 0.2))
+                m.add(keytap(R, 0.75), t, gain=0.3, bus='sfx', pan=R.uniform(-0.2, 0.2))
                 if first: mark('typing', t); first = False
-    cell(8, 'Bb', parts=('pluck', 'pad'), vel=0.7, plp=1000, gp=0.85)            # the hook, heard through a wall
-    cell(10, 'C', parts=('pluck', 'pad'), vel=0.85, plp=1900, gp=0.95)
+    cell(8, 'Bb', parts=('pluck', 'pad'), vel=0.7, plp=1500, gp=1.2)             # the hook, heard through a wall
+    cell(10, 'C', parts=('pluck', 'pad'), vel=0.85, plp=2800, gp=1.35)
     rd = T_HIT - cue('splash_riser')
     m.add(fade(riser(rd, 300, 9000), 0.005, 0.002), cue('splash_riser'), gain=0.32, bus='sfx')
     mark('splash_riser', cue('splash_riser'), 'ramp', 'rises to the hit, cut dead on it')
 
     # ---------------------------------------------------------------- SPLASH (f215, bar line): the groove drops
+    ta.seed(2150)                                   # the brand hits get their own fixed noise (no drift when code above changes)
     sp = np.zeros((n_(2.6), 2)); th = tash_hit(); ws = reverb(water_splash(), 1.2, 0.14, 0.01, 7000); sd = stereo(sub_drop())
     sp[:len(th)] += th[:len(sp)] * 0.55; sp[:min(len(ws), len(sp))] += ws[:len(sp)] * 0.9; sp[:len(sd)] += sd * 0.8
-    m.add(fade(sp, 0.0005, 0.3), T_HIT - 0.002, gain=0.7, bus='logo'); mark('SPLASH', T_HIT)
+    m.add(fade(sp, 0.0005, 0.3), T_HIT - 0.002, gain=0.47, bus='logo'); mark('SPLASH', T_HIT)
     m.add(snapper(), cue('lockup_snap'), gain=0.45, bus='sfx', pan=0.1); mark('lockup_snap', cue('lockup_snap'))
     drums(12, 32, fills=(16, 28), fill_vel=0.7, skip=(kt(12),) + tuple(ft(c['land']) for c in C['cards']))  # the splash / a card hit IS that kick
     for k in range(12, 32, 2):
@@ -657,12 +672,13 @@ def build():
     m.add(whoosh(0.6, 200, 2500, q=1.5, pan_from=0.3, pan_to=-0.3, peak=0.35), td - 0.21, gain=0.3, bus='sfx')
     mark('details_in', td, 'ramp', 'soft macro whoosh peaking on the cut')
     drums(33, 37, hats=False, ohats=False, shk=True, rims=False, vel=0.85)
-    drums(38, 40, hats=False, ohats=False, shk=True, rims=False, vel=0.9)       # the rule line: the beat comes back
+    drums(38, 40, hats=False, ohats=False, shk=True, rims=False, vel=0.9)       # the rule line: the beat comes back,
+    m.add(KICK, kt(38), gain=G['kick'] * 0.95, bus='drums'); KICKS.append(kt(38))  # on beat 38 itself (beat 3: no 2-step kick)
     drums(40, 44.5, ohats=False, rims=False, vel=0.8)                           # after the swipe: light hats
     gap = (kt(37), kt(38))
     cell(32, 'Am', parts=('bass',), keep=lambda t: t >= kt(33))
     for k, ch in ((34, 'Dm'), (36, 'Bb'), (38, 'C'), (40, 'Am'), (42, 'Dm'), (44, 'Bb')):
-        parts = ('bass', 'pad') + (('stab',) if k >= 40 else ())
+        parts = ('bass', 'pad')                                                   # nothing busy under the rule line
         cell(k, ch, n16=2 if k == 44 else 8, parts=parts, vel=0.85, gpad=4.0, keep=lambda t: not (gap[0] <= t < gap[1]) and t < T_CUT)
     ts = cue('margin_snap')
     m.add(click_pop(nf('E6'), 0.9), ts, gain=0.42, bus='sfx'); m.add(bell(nf('E7'), 0.9, 0.6), ts + 0.004, gain=0.12, bus='sfx', pan=0.2)
@@ -716,12 +732,13 @@ def build():
     m.add(bass_g(nf('F2'), DUR - T_LOGO + 0.1, 0.7), T_LOGO, gain=G['bass'] * 0.5, bus='bass')
 
     # ---------------------------------------------------------------- the TASH sonic logo, alone
+    ta.seed(8480)
     tk0 = kt(55)
     for j, (f, pn) in enumerate(((2200, 0.25), (2500, 0.0), (2800, -0.25))):
         m.add(tick(f), tk0 + j * S16, gain=0.85, bus='logo', pan=pn)
     mark('sonic_logo_ticks', tk0)
     m.add(whoosh(0.3, 400, 6000, pan_from=0.4, pan_to=-0.2, peak=0.8), T_LOGO - 0.255, gain=0.5, bus='logo')
-    m.add(tash_hit(), T_LOGO - 0.004, gain=0.95, bus='logo'); mark('sonic_logo_hit', T_LOGO)
+    m.add(tash_hit(), T_LOGO - 0.004, gain=0.66, bus='logo'); mark('sonic_logo_hit', T_LOGO)
     m.add(pop(500, 1300, 0.06), T_LOGO + 0.18, gain=0.4, bus='logo')
     for j, f in enumerate((2600, 2900, 3200)): m.add(tick(f), kt(57) + j * S16, gain=0.24 - 0.02 * j, bus='logo')
 
@@ -734,19 +751,19 @@ def build():
 
     kd = duck_curve(N, KICKS, depth_db=-4.5, attack=0.003, hold=0.02, release=0.15)[:, None]
     kd2 = duck_curve(N, KICKS, depth_db=-2.5, attack=0.003, hold=0.02, release=0.15)[:, None]
-    m.process_bus('bass', lambda b: hp(b, 30) * kd + hp(sat(b * 3, 2.5), 180) * 0.05 * kd)   # + phone-audible harmonics
+    m.process_bus('bass', lambda b: hp(b, 30) * kd + hp(sat(b * 3, 2.5), 220) * 0.11 * kd)   # + phone-audible harmonics
     m.process_bus('keys', lambda b: reverb(b, 1.3, 0.18, 0.015, 6000)[:N] * kd2)
     m.process_bus('pluck', lambda b: reverb(pingpong(b, 0.36, 0.3, 0.2), 1.6, 0.2, 0.02, 7000)[:N] * kd2)
-    m.process_bus('drums', lambda b: hp(reverb(sat(b * 1.2, 1.2) / 1.2, 0.45, 0.07, 0.005, 7000), 30))
+    m.process_bus('drums', lambda b: hp(reverb(sat(b * 2.2, 1.6) / 2.2, 0.45, 0.07, 0.005, 7000), 30))   # soft-clipped transients
     m.process_bus('big', lambda b: reverb(b, 2.6, 0.26, 0.02, 7000))
     m.process_bus('sfx', lambda b: reverb(b, 0.6, 0.08, 0.005, 7500))
     m.process_bus('hits', lambda b: reverb(b, 1.2, 0.1, 0.01, 6500))
 
-    groove = sum(m.buses[b] for b in ('drums', 'bass', 'keys', 'pluck'))
+    groove = shelf_lo(sum(m.buses[b] for b in ('drums', 'bass', 'keys', 'pluck')), 110, -3.0)
     # details: the whole groove filtered (muffled macro), half-open on the rule line, open after the swipe
-    w = ramp(cue('details_in') - 0.02, cue('details_in') + 0.03, 0, 0.85) * ramp(kt(38) - 0.03, kt(38) + 0.03, 1, 0.55 / 0.85) \
-        * ramp(cue('ba_swipe') - 0.05, cue('ba_swipe') + 0.1, 1, 0.15 / 0.55) * ramp(21.6, 22.4, 1, 0.0)
-    groove = groove * (1 - w) + lp(groove, 650) * w
+    w = ramp(cue('details_in') - 0.02, cue('details_in') + 0.03, 0, 0.75) * ramp(kt(38) - 0.03, kt(38) + 0.03, 1, 0.45 / 0.75) \
+        * ramp(cue('ba_swipe') - 0.05, cue('ba_swipe') + 0.1, 1, 0.12 / 0.45) * ramp(21.6, 22.4, 1, 0.0)
+    groove = groove * (1 - w) + lp(groove, 1100) * w
     # the lecture-hall cut: the groove stops with the picture and comes back on the wide chord
     gate = ramp(T_CUT - 0.003, T_CUT + 0.012, 1, 0) + ramp(T_CHORD - 0.012, T_CHORD - 0.002, 0, 1)
     groove = groove * np.clip(gate, 0, 1)
@@ -770,16 +787,16 @@ def build():
     return stems, {'vo': vinfo, 'duck_music_db': duck_m, 'duck_sfx_db': duck_s, 'duck_hits_db': duck_h}
 
 
-VO_GAIN_DB = 12.0
+VO_GAIN_DB = 10.5
 MUSIC_GAIN_DB = 0.0
-TAIL_LIFT_DB = 3.5          # VO mix only: after the last word (27.957 s) the bed and the sonic logo come up
+TAIL_LIFT_DB = 3.5          # VO mix only: from the sonic logo's first tick (beat 55, 27.80 s) the bed and the logo come up
 
 
 def mixes(stems, info):
     dm = db(info['duck_music_db'])[:, None]; ds = db(info['duck_sfx_db'])[:, None]; dh = db(info['duck_hits_db'])[:, None]
     mus = stems['music'] * db(MUSIC_GAIN_DB)
     novo = mus + stems['sfx'] + stems['hits'] + stems['logo']
-    lift = db(TAIL_LIFT_DB * np.clip((np.arange(NS) / SR - V['vo_last_end']) / 0.15, 0, 1) ** 2)[:, None]
+    lift = db(TAIL_LIFT_DB * np.clip((np.arange(NS) / SR - kt(55)) / 0.15, 0, 1) ** 2)[:, None]
     vo = (mus * dm + stems['sfx'] * ds + stems['hits'] * dh + stems['logo']) * lift + stems['vo']
     return novo, vo
 
