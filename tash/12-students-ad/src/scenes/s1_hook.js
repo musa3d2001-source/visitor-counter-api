@@ -50,6 +50,7 @@ export default {
     s.cv = K.el(root, 'canvas', 's1-cv'); s.cv.width = 1080; s.cv.height = 1920;
     s.g = s.cv.getContext('2d', { alpha: false });
     s.g.imageSmoothingEnabled = true; s.g.imageSmoothingQuality = 'high';
+    s.sq = ctx.params.get('dbg') && ctx.params.get('dbg').includes('lowq') ? 'low' : 'high';
 
     // grade layers, built once
     const g = s.g;
@@ -124,6 +125,7 @@ export default {
     const cPrev = this.cam(f - 0.5, q);
     const dz = Math.abs(Math.log(c0.z / cPrev.z)) + Math.hypot(c0.cx - cPrev.cx, c0.cy - cPrev.cy) / 400;
     const n = Math.max(1, Math.min(20, Math.ceil(dz * 90)));
+    g.imageSmoothingQuality = s.sq;
     if (n <= 2) {
       g.filter = GRADE; K.drawCam(g, im, c0); g.filter = 'none';
     } else {
