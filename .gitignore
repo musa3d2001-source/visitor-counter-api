@@ -5,3 +5,6 @@ tash/review/
 __pycache__/
 tash/**/_rejected/
 tash/**/*.ready
+
+# client work with confidential data: never commit (repo is public)
+tash/13-client-deck/
