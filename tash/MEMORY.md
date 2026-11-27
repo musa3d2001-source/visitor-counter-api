@@ -162,3 +162,7 @@ Default: **approved = no record**, **published = unknown** (Claude posted nothin
 7. Housekeeping: update HANDOFF (its line 49 wrongly says the owner caught the d2 carafe), `tash/README.md` and the PR #3 body; re-render or retire the 07-ops rate cards and order-form brackets; confirm credit totals and the 2-credit gap with `balance`; the TikTok refund.
 8. Unanswered offers: TikTok-connect; Whisper; GPU test; «تجديد الإعلان» monthly pack.
 9. Balance last known **402.5**. No open spend approval: each new spend needs a priced yes.
+
+## 9. Confidentiality (added 2026-11-27)
+- **The GitHub repo is PUBLIC** (checked 27 Nov: the API answers 200 without auth). Everything committed here is world-readable. Never commit client files, client financials, client names in detail, emails or secrets. Owner told 27 Nov.
+- **27 Nov: client pitch-deck job** (an entertainment franchisee in Kuwait; the owner sent their 30-page PDF and «يبي برزنتيشن احترافي انا معتمد عليك»). All work lives in the git-ignored `tash/13-client-deck/` (container-only: deliver files to the owner with SendUserFile, they are lost when the container goes). Phase 1 = workflow `client-deck-phase1` (assets, audit of numbers/Arabic, new outline, design system + 6 sample slides, hostile review). Price NOT agreed: Claude suggested ~4–5 KD per slide (≈ 100–150 KD for ~25 slides, editable PowerPoint + PDF, 2 revisions) as his call. Open facts for the client: audience + the ask, deadline, language, PPTX vs PDF, high-res logos/photos, whether financials may be shown.
