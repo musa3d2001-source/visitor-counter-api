@@ -8,3 +8,4 @@ tash/**/*.ready
 
 # client work with confidential data: never commit (repo is public)
 tash/13-client-deck/
+tash/14-cec-spec-ad/
