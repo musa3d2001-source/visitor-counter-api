@@ -1,0 +1,249 @@
+{
+  "_note": "DOSE spec story ad: the single source of truth for picture and sound (read by the page, tools/prep.py, tools/conform.py and audio.py). Seconds. 100 BPM: 1 beat = 0.6 s = 18 frames @30 fps; the music's bar 1 lands on the first dose (1.8 s). Cuts: 1.8 (the hook's grey, defocused pour (the start of the S2 pour, f0-f36) cuts to the grinders in full colour on the downbeat), 4.2, 6.6 (bar lines), 8.4, 10.2 (half bars: the montage tightens 4-4-3-3 beats), 12.6 the graphic match from the wall sign to the end card, 15.3 the TASH tail.",
+  "fps": 30,
+  "bpm": 100,
+  "beat": 0.6,
+  "downbeat": 1.8,
+  "duration": 18.0,
+  "shots": [
+    {
+      "id": "S0",
+      "name": "HOOK: mood battery at 15%, blinking, over the grey, out-of-focus pour (ice tumbling from the carafe: d2d f0-f36, the start of S2's pour)",
+      "at": 0.0,
+      "dur": 1.8
+    },
+    {
+      "id": "S1",
+      "name": "dose 1: grinders, the origin cards print on (d1)",
+      "at": 1.8,
+      "dur": 2.4
+    },
+    {
+      "id": "S2",
+      "name": "dose 2: iced filter, ice tumbles out of the carafe with the coffee (d2d)",
+      "at": 4.2,
+      "dur": 2.4
+    },
+    {
+      "id": "S3",
+      "name": "dose 3: espresso into iced milk (d3 part A)",
+      "at": 6.6,
+      "dur": 1.8
+    },
+    {
+      "id": "S4",
+      "name": "dose 4: the cake, milky coffee sauce (d4)",
+      "at": 8.4,
+      "dur": 1.8
+    },
+    {
+      "id": "S5",
+      "name": "100%: the terrace, crane up from the tray to the dose sign (d5b, sign replaced with the real mark)",
+      "at": 10.2,
+      "dur": 2.4
+    },
+    {
+      "id": "S6",
+      "name": "END CARD: graphic match, the wall sign becomes the mark on white plaster; Al Jahra + @sdosecafe",
+      "at": 12.6,
+      "dur": 2.7
+    },
+    {
+      "id": "S7",
+      "name": "TASH tail + spec slate",
+      "at": 15.3,
+      "dur": 2.7
+    }
+  ],
+  "meter": [
+    {
+      "at": 0.0,
+      "pct": 15
+    },
+    {
+      "at": 1.8,
+      "pct": 35
+    },
+    {
+      "at": 4.2,
+      "pct": 55
+    },
+    {
+      "at": 6.6,
+      "pct": 75
+    },
+    {
+      "at": 8.4,
+      "pct": 95
+    },
+    {
+      "at": 10.8,
+      "pct": 100
+    }
+  ],
+  "ev": {
+    "blip1": 0.08,
+    "blip2": 0.42,
+    "hook1": -0.5,
+    "hook2": 0.42,
+    "hookOut": 1.5,
+    "dose1": 1.8,
+    "origin1": 2.0,
+    "origin2": 2.7,
+    "origin3": 3.3,
+    "originOut": 4.08,
+    "dose2": 4.2,
+    "text2": 4.36,
+    "text2Out": 6.46,
+    "dose3": 6.6,
+    "text3": 6.74,
+    "text3Out": 8.28,
+    "dose4": 8.4,
+    "text4": 8.54,
+    "text4Out": 10.08,
+    "dose5": 10.2,
+    "full": 10.8,
+    "meterOut": 11.4,
+    "tagline": 11.7,
+    "match": 12.6,
+    "settle": 12.7,
+    "info": 13.15,
+    "dip": 15.08,
+    "sting": 15.3,
+    "slate": 15.3,
+    "hook2Out": 1.56
+  },
+  "footage": {
+    "_note": "keys: [[edit_t, source_s], ...]; source clips are 24 fps, 121 frames (5.04 s). 2 keys: linear; 3+: monotone cubic. modes: blend = linear blend of the two nearest source frames; adaptive = that blend where the picture is slow, the nearest frame where it moves fast (MOR/HABBA tool); flow = motion-compensated in-between (DIS optical flow both ways, nearest frame where they disagree); nearest = the nearest source frame (24p cadence in 30p; d2d: transparent ice and the stream must never be shown double). Ranges are the CD reviews' clean ranges. A seg with a 'variant' reads footage/_src/<clip>_<variant>/ and is not a cut: the page draws it explicitly (Ec under the end-card dissolve).",
+    "clips": "../footage/ai/",
+    "segs": [
+      {
+        "id": "H",
+        "clip": "d2d_carafe",
+        "t0": 0.0,
+        "t1": 1.8,
+        "keys": [
+          [
+            0.0,
+            0.0
+          ],
+          [
+            1.8,
+            1.5
+          ]
+        ],
+        "mode": "blend",
+        "why": "v2 hook plate (CD: a frozen first 1.8 s is a tap-through): the START of the iced pour, source 0.00-1.50 s (f0-f36, unused by S2, which continues from f37.6) at 0.83x, shown grey, dark and defocused under the low battery; the ice tumbles from frame 1. Blend is safe here: the hook look blurs the plate 8x"
+      },
+      {
+        "id": "A",
+        "clip": "d1_grinders",
+        "t0": 1.8,
+        "t1": 4.2,
+        "keys": [
+          [
+            1.8,
+            0.0
+          ],
+          [
+            4.2,
+            3.0
+          ]
+        ],
+        "mode": "blend",
+        "why": "from the first dose (a hard cut from the grey hook pour, on the downbeat) the slider move runs 0.00-3.00 s at exactly 1.25x, so every edit frame is one whole source frame (no blend: the printed card names never double); the clip's own near-static first 0.75 s eases the start. Grinder 2's invented rating plate (source y >= 1745) is kept out by a top-anchored >= 1.12x frame; grinder 3's plate starts at 3.5 s (unused). Card 1 leaves frame right from 2.54 s, as the camera passes it"
+      },
+      {
+        "id": "B",
+        "clip": "d2d_carafe",
+        "t0": 4.2,
+        "t1": 6.6,
+        "keys": [
+          [
+            4.2,
+            1.56667
+          ],
+          [
+            6.6,
+            3.96667
+          ]
+        ],
+        "mode": "nearest",
+        "why": "1.0x inside the best range 1.54-3.96 (f37.6-f94.4): ice slides over the spout with the coffee and tumbles into the cup; nearest-frame 24p cadence with the repeats on f4k+2 (the model's double step is f4k-1 -> f4k, so a hold never touches it); cut before the f100 pile pop; «specialty» re-comped (tools/fx_specialty.py)"
+      },
+      {
+        "id": "C",
+        "clip": "d3_iced",
+        "t0": 6.6,
+        "t1": 8.4,
+        "keys": [
+          [
+            6.6,
+            0.11667
+          ],
+          [
+            8.4,
+            1.91667
+          ]
+        ],
+        "mode": "blend",
+        "why": "part A only (the clip has a hard cut at 1.958 s): 0.117-1.917 s at 1.0x, last blend pair 45/46; the pitcher pour and the whole wordmark above the reply bar"
+      },
+      {
+        "id": "D",
+        "clip": "d4_cake",
+        "t0": 8.4,
+        "t1": 10.2,
+        "keys": [
+          [
+            8.4,
+            0.0
+          ],
+          [
+            10.2,
+            1.3
+          ]
+        ],
+        "mode": "blend",
+        "why": "f0-f31.2 at 0.72x (CD v1: from ~f36 the sauce channel on the front-right face deepens into a groove that reads as the block splitting; the cake splits from f38), blend"
+      },
+      {
+        "id": "E",
+        "clip": "d5b_terrace",
+        "t0": 10.2,
+        "t1": 12.9,
+        "keys": [
+          [
+            10.2,
+            2.3
+          ],
+          [
+            12.9,
+            5.0
+          ]
+        ],
+        "mode": "flow",
+        "why": "from 2.30 s: the espresso steam is gone by 2.2 s (owner: espresso never steams); the tray, the crane up, the rack focus onto the sign at 3.6-4.0 s, sharp sign to the end; 1.0x real speed; true 30p by motion-compensated interpolation of the comped plate (CD v1: the adaptive blend showed every 5th frame twice, a 6 Hz hitch on the crane), falling back to the nearest whole frame only where the two flows disagree; the sign is replaced with dose's real mark (tools/fx_sign.py); runs 0.3 s under the end card's dissolve"
+      },
+      {
+        "id": "Ec",
+        "clip": "d5b_terrace",
+        "variant": "clean",
+        "t0": 12.6,
+        "t1": 12.9,
+        "keys": [
+          [
+            10.2,
+            2.3
+          ],
+          [
+            12.9,
+            5.0
+          ]
+        ],
+        "mode": "flow",
+        "why": "v3 (CD: a pale ghost of the wall sign trailed the end-card mark for ~5 frames as it left the wall): the same d5b frames with the AI sign removed and NO mark (fx_sign.apply mark=False), same time map; the page cross-fades to it on f380-f381, once the flat mark is opaque and before it moves, so only the flat mark carries the logo under the dissolve"
+      }
+    ]
+  }
+}

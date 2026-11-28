@@ -1,0 +1,186 @@
+{
+ "lines": [
+  {
+   "id": "L1",
+   "beat": "hook (picture ≈ 0.0–2.3) · VO in ≈ 0.10, out ≈ 2.10, estimates · live plate h1_desk · one question per punch-in on the beat, in the parade's order (the parade answers them one by one) · push-in into the laptop, white-out",
+   "vo": "عندك برزنتيشن؟ تقرير؟ بحث؟",
+   "vo_tts": "عِندِك بريزنتيشن؟ تقرير؟ بحث؟",
+   "onscreen": [
+    "عندك برزنتيشن؟",
+    "تقرير؟",
+    "بحث؟"
+   ],
+   "est_seconds": 2.0
+  },
+  {
+   "id": "L2",
+   "beat": "inside the screen (picture ≈ 2.3–4.2) · VO in ≈ 2.70, out ≈ 3.90, estimates · blank slide, its placeholder low-contrast as texture · the group-chat bubble lands first (≈ 2.35) and stays up until the splash (≈ 6.6) · the deadline notification (ding ≈ 2.45) and the clock are small props · «والتسليم… باجر؟» is the only large line of the beat · the voice comes in just after the ding and only reads what the notification shows",
+   "vo": "والتسليم… باجر؟",
+   "vo_tts": "والتسليم… باچِر؟",
+   "onscreen": [
+    "والتسليم… باجر؟"
+   ],
+   "est_seconds": 1.2
+  },
+  {
+   "id": "L3",
+   "beat": "bubble + splash (picture ≈ 4.2–7.6) · VO in ≈ 4.25, out ≈ 6.75, estimates · the TASH bubble types this line itself, in two parts (the bubble text IS the on-screen text, one element, not a second copy) · the TASH bubble has no timestamp and no online dot · then SPLASH · the word «طشّ» is the splash hit (≈ 6.6): the bubble's typing dots burst and land as the wordmark, then «للطلاب» snaps under it (lock-up «طشّ للطلاب») · no voice for about 0.9 s after the hit · the splash wipes the WHOLE laptop screen (blank slide, clock, deadline notification, group chat); the student's blank file is never shown filled in · what the splash reveals is TASH's sample slide, which is card 1 of the parade, with «نماذج من تصميمنا» on its first frame · «المرة الجاية…» stays on screen until the cut at 7.6 · THE TWIST, set-up",
+   "vo": "المرة الجاية… خلّ التصميم على طشّ.",
+   "vo_tts": "المَرّة الياية… خَلّ التصميم على طَشّ.",
+   "onscreen": [
+    "المرة الجاية…",
+    "خلّ التصميم على طشّ.",
+    "للطلاب"
+   ],
+   "est_seconds": 2.5
+  },
+  {
+   "id": "P1",
+   "beat": "parade (picture ≈ 7.6–16.1) · VO in ≈ 7.65, out ≈ 9.65, estimates · card 1 presentation, slides fan out · answers hook question 1 · «برزنتيشن؟» IS the card's chip (one element, with the question mark, no second copy of the noun) and the answer punches in beside it",
+   "vo": "برزنتيشن؟ يشدّ من أول سلايد.",
+   "vo_tts": "بريزنتيشن؟ يشِدّ من أوّل سلايد.",
+   "onscreen": [
+    "برزنتيشن؟",
+    "يشدّ من أول سلايد."
+   ],
+   "est_seconds": 2.0
+  },
+  {
+   "id": "P2",
+   "beat": "parade (picture ≈ 7.6–16.1) · VO in ≈ 9.80, out ≈ 11.00, estimates · card 2 report, cover + pages flip · «تقرير؟» is the card's chip · the answer is what we do to it",
+   "vo": "تقرير؟ نرتّبه.",
+   "vo_tts": "تقرير؟ نرتّبَه.",
+   "onscreen": [
+    "تقرير؟",
+    "نرتّبه."
+   ],
+   "est_seconds": 1.2
+  },
+  {
+   "id": "P3",
+   "beat": "parade (picture ≈ 7.6–16.1) · VO in ≈ 11.15, out ≈ 12.55, estimates · card 3 research paper, formatting only (headings, numbering, references) · «بحث؟» is the card's chip · the verb is the honesty",
+   "vo": "بحث؟ ننسّقه عدل.",
+   "vo_tts": "بحث؟ ننسّقَه عَدِل.",
+   "onscreen": [
+    "بحث؟",
+    "ننسّقه عدل."
+   ],
+   "est_seconds": 1.4
+  },
+  {
+   "id": "P4",
+   "beat": "parade (picture ≈ 7.6–16.1) · VO in ≈ 12.70, out ≈ 14.30, estimates · cards 4-6 poster, video, CV · one word per beat (124 BPM) · each word IS its card's chip, rendered once",
+   "vo": "بوستر. فيديو. سي ڤي.",
+   "vo_tts": "بوستر. فيديو. سي ڤي.",
+   "onscreen": [
+    "بوستر",
+    "فيديو",
+    "CV"
+   ],
+   "est_seconds": 1.6
+  },
+  {
+   "id": "P5",
+   "beat": "parade (picture ≈ 7.6–16.1) · VO in ≈ 14.45, out ≈ 15.55, estimates · card 7 Excel dashboard (chart draws, chip «إكسل») + the file chips pop, each chip an LTR element so its dot stays on the left · then about 0.45 s hold on the full fan, held chord",
+   "vo": "وأي ملف أوفيس.",
+   "vo_tts": "وأيّ ملفّ أوفيس.",
+   "onscreen": [
+    "وأي ملف أوفيس."
+   ],
+   "est_seconds": 1.1
+  },
+  {
+   "id": "D1",
+   "beat": "details (picture ≈ 16.1–21.6) · VO in ≈ 16.20, out ≈ 18.00, estimates · macro push-in, alignment guides snap onto the page margins · «نضبّطها» lands on the snap · «حتى الهوامش…» is the only label of the margins (no separate callout) · the owner's «نهتم بأدق التفاصيل» shown as one concrete thing",
+   "vo": "حتى الهوامش… نضبّطها.",
+   "vo_tts": "حتّى الهوامش… نضبّطها.",
+   "onscreen": [
+    "حتى الهوامش…",
+    "نضبّطها."
+   ],
+   "est_seconds": 1.8
+  },
+  {
+   "id": "R1",
+   "beat": "details (picture ≈ 16.1–21.6) · VO in ≈ 18.30, out ≈ 21.40, estimates · before/after swipe on ONE page, the same words on both sides · «المعلومة منك» on BEFORE, the swipe on the pause, «والترتيب والتصميم علينا» on AFTER · no callout while this line is on screen · THE RULE LINE, word for word, read a little slower",
+   "vo": "المعلومة منك… والترتيب والتصميم علينا.",
+   "vo_tts": "المعلومة مِنِّك… والترتيب والتصميم علينا.",
+   "onscreen": [
+    "المعلومة منك…",
+    "والترتيب والتصميم علينا."
+   ],
+   "est_seconds": 3.1
+  },
+  {
+   "id": "C1",
+   "beat": "payoff (picture ≈ 21.6–24.7) · VO in ≈ 21.80, out ≈ 24.30, estimates · plate h2_class, TASH's sample slide (the one from card 1) on the big screen, the samples label still on · slow push-in · «خلّ شغلك…» lands on the wide chord · the hook's «التسليم» comes back as pride, not panic · CLOSING LINE",
+   "vo": "ويوم التسليم… خلّ شغلك يسولف عنك.",
+   "vo_tts": "ويوم التسليم… خَلّ شُغلِك يسولِف عَنِّك.",
+   "onscreen": [
+    "ويوم التسليم…",
+    "خلّ شغلك يسولف عنك."
+   ],
+   "est_seconds": 2.5
+  },
+  {
+   "id": "E1",
+   "beat": "end card (picture ≈ 24.7–28.4) · VO in ≈ 24.80, out ≈ 26.00, estimates · on the cut (≈ 24.7): lock-up «طشّ للطلاب» with the short tagline «شغل يبيّض الوجه.» under it · the CTA and the two handles are on by ≈ 25.3 and hold about 3 s, to the end · each handle is its own LTR run (dir=ltr, isolated) beside its Arabic label, so the «@» sits on the left of the handle (check it in the first rendered frame) · if the card is crowded at phone size, the tagline row goes first · CTA = DM only",
+   "vo": "دزّ لنا بالخاص…",
+   "vo_tts": "دِزّ لنا بالخاصّ…",
+   "onscreen": [
+    "اطلب الحين — دزّ لنا بالخاص"
+   ],
+   "est_seconds": 1.2
+  },
+  {
+   "id": "E2",
+   "beat": "end card (picture ≈ 24.7–28.4) · VO in ≈ 26.10, out ≈ 27.20, estimates · the tag pops with the voice (≈ 26.1) · THE TWIST, pay-off, the last spoken words; on a loop they run straight into the hook · after it the sonic logo plays alone",
+   "vo": "بس مو آخر ليلة.",
+   "vo_tts": "بس مو آخِر ليلة.",
+   "onscreen": [
+    "بس مو آخر ليلة."
+   ],
+   "est_seconds": 1.1
+  }
+ ],
+ "total_vo_seconds": 22.7,
+ "word_count": 50,
+ "tagline": "شغل يبيّض الوجه.",
+ "endcard": [
+  "طشّ",
+  "للطلاب",
+  "شغل يبيّض الوجه.",
+  "اطلب الحين — دزّ لنا بالخاص",
+  "إنستقرام: ‎@tash.creative.kw",
+  "تيك توك: ‎@tash.creative",
+  "بس مو آخر ليلة."
+ ],
+ "ui_strings": [
+  "app_file_name (generic app chrome, not Office UI; small, low contrast): عرض بدون عنوان",
+  "placeholder_title (low contrast, texture only): انقر لإضافة عنوان",
+  "clock (small): ٢:٤٧ ص",
+  "deadline_notification_title (small prop; pin drawn as an icon, no emoji): تذكير",
+  "deadline_notification (small prop): التسليم: باجر ٨:٠٠ ص",
+  "group_chat_bubble (no group header; lands first at ≈ 2.35 and stays until the splash at ≈ 6.6): منو مسوّي البرزنتيشن؟؟",
+  "tash_bubble_sender (no timestamp, no online dot): طشّ",
+  "tash_bubble_typing: •••",
+  "tash_bubble_before_splash (the state of L3's second on-screen string before the hit; the same element, its live typing dots burst into the splash and land as the wordmark «طشّ»): خلّ التصميم على •••",
+  "samples_label (small; on every frame that shows a sample, from the first frame of card 1 to the end of the payoff plate): نماذج من تصميمنا",
+  "sample_chip (card 7 only; the chips of cards 1-6 are the on-screen strings of P1-P4, each rendered once): إكسل",
+  "research_card_tag (small, on card 3; what we did to the paper): عناوين",
+  "research_card_tag: ترقيم",
+  "research_card_tag: مراجع",
+  "file_chip (LTR element, dir=ltr; the dot on the left): .pptx",
+  "file_chip (LTR): .docx",
+  "file_chip (LTR): .xlsx",
+  "file_chip (LTR): .pdf",
+  "file_chip (LTR): .mp4",
+  "detail_callout (optional small label; one at a time, in the push-ins between D1 and R1, only if the measured VO leaves at least 0.5 s for each; never over the rule line): فهرس تلقائي",
+  "detail_callout (optional, same condition): ترقيم الصفحات",
+  "before_after_label: قبل",
+  "before_after_label: بعد"
+ ],
+ "caption": "السلايد الفاضي الساعة ٢ الفجر… كلنا نعرفه.\n\nطشّ مو بس إعلانات. الحين عندنا «طشّ للطلاب»: من فكرة بسيطة… لين شغل يبيّض الوجه.\n\nبرزنتيشن يشدّ من أول سلايد. تقرير نرتّبه. بحث ننسّقه عدل: عناوين، ترقيم، فهرس ومراجع.\nوبعد: بوستر، فيديو، CV، وأي ملف وورد، إكسل أو بوربوينت.\n\nالمعلومة منك… والترتيب والتصميم علينا.\n\nاللي بالفيديو نماذج من تصميمنا لمواضيع خيالية. ومشهد الطالب والقاعة والصوت سويناها بالذكاء الاصطناعي.\n\nدزّ لنا بالخاص… بس مو آخر ليلة •••\n\nإنستقرام: @tash.creative.kw\nتيك توك: tash.creative\n\n#طش_للطلاب #طلاب_الكويت #برزنتيشن #بوربوينت #تنسيق_بحوث #تصميم_برزنتيشن\n#TASHcreative #kuwait",
+ "caption_tiktok": "السلايد الفاضي الساعة ٢ الفجر… كلنا نعرفه.\n\nطشّ مو بس إعلانات. الحين عندنا «طشّ للطلاب»: من فكرة بسيطة… لين شغل يبيّض الوجه.\n\nبرزنتيشن يشدّ من أول سلايد. تقرير نرتّبه. بحث ننسّقه عدل: عناوين، ترقيم، فهرس ومراجع.\nوبعد: بوستر، فيديو، CV، وأي ملف وورد، إكسل أو بوربوينت.\n\nالمعلومة منك… والترتيب والتصميم علينا.\n\nاللي بالفيديو نماذج من تصميمنا لمواضيع خيالية. ومشهد الطالب والقاعة والصوت سويناها بالذكاء الاصطناعي.\n\nدزّ لنا بالخاص… بس مو آخر ليلة •••\n\nإنستقرام: tash.creative.kw\nتيك توك: @tash.creative\n\n#طش_للطلاب #طلاب_الكويت #برزنتيشن #بوربوينت #تنسيق_بحوث #تصميم_برزنتيشن\n#TASHcreative #kuwait",
+ "rationale": "1) The spoken script: 13 lines, 50 words; the proof round changed no spoken word. The hook asks three questions in the order the parade answers them (برزنتيشن، تقرير، بحث). The turn is «المرة الجاية…», not the brief's «لا تحاتي», which answers «التسليم باجر؟» with a same-night rescue (hard rule 2). «خلّ التصميم على طشّ», not «خلّها»: right after «بحث؟» the word «خلّها» reads as 'we do it for you' (hard rule 1). The parade answers with verbs that say what we really do (نرتّبه، ننسّقه), then one-word hits and «وأي ملف أوفيس». «حتى الهوامش… نضبّطها» is the owner's «نهتم بأدق التفاصيل» as one concrete thing. The rule line is word for word, on the before/after swipe. «ويوم التسليم…» brings the hook's word back as pride, and «خلّ شغلك يسولف عنك» is the owner's «خلّ شغلك يتكلم عنك». The last words «بس مو آخر ليلة» pay off the twist and run into the hook on a loop.\n2) Proof round: 13 findings, all accepted, none rejected. (a) End card: the line on the card is now the short «شغل يبيّض الوجه.» (3 words). The 7-word «من فكرة بسيطة… لين شغل يبيّض الوجه.» stays in the caption only, where the rule line follows it; alone on the last frame it can read as 'bring an idea and we do the work'. The tagline field now holds the on-screen form, so no builder or cover puts the long one on screen. The CTA and the handles are on by about 25.3 and hold about 3 s; the tagline row is the first to go if the card is crowded. The 6-word «من مسودة…» option is dropped. (b) Punctuation side: each handle is rendered as its own LTR run beside its Arabic label, and the two end-card strings also carry U+200E before the «@» (checked with the Unicode bidi algorithm on a right-to-left base: «@tash.creative.kw» stays whole, with the label on its right). The five file chips are LTR elements. (c) Splash picture: the splash wipes the whole laptop screen; the student's blank file is never shown finished; what follows is TASH's sample (card 1), labelled from its first frame; «المرة الجاية…» stays until the cut; the TASH bubble has no timestamp and no online dot. (d) Inside the screen: «انقر لإضافة نص» and the header «قروب المشروع» are cut; the group bubble lands first and stays to the splash; the notification and the clock are small props; «والتسليم… باجر؟» is the only large line. (e) One element per string: the chips of cards 1-6 are the on-screen strings of P1-P4, so those six chips left ui_strings (the finding named cards 1-3; cards 4-6 had the same double entry); the callout «الهوامش» is cut; the TASH bubble's first half is L3's own on-screen string, so its second copy left ui_strings. The two remaining detail callouts are optional small labels. (f) Caption: two variants that can be pasted as they are, caption for Instagram and caption_tiktok (in script.json and SCRIPT-COPY.md); they differ only in which handle carries the «@». Hashtags sit on two lines, Arabic then Latin, and «#مشاريع_طلابية» became «#تصميم_برزنتيشن». (g) The pronunciation fallback for «باچِر» is «باتشِر», not «باجِر».\n3) Timing: two estimates, and nothing was generated or heard. 22.7 s by syllable count (5.8 syllables per second, 5.5 on the rule line, plus the marked pauses) and 21.1 s by the words formula (50 words ÷ 2.8 + 13 pauses × 0.25). est_seconds and the in-points use the syllable estimate; the edit follows the measured VO, not either number. The film runs about 28.4 s (0.9 s of air after the splash, 1.2 s of sonic logo alone). No word is added before the VO is measured. If the measured read is under 22 s: first, E1 becomes «اطلب الحين… دزّ لنا بالخاص…» (vo_tts «اِطلب الحين… دِزّ لنا بالخاصّ…»; 52 words, 22.07 s by the formula); it matches the end-card string word for word, changes no on-screen string, and the extra second comes out of R1's slot. Second, P5 becomes «وأي ملف وورد، إكسل أو بوربوينت.», shown as two strings in sequence («وأي ملف وورد،» then «إكسل أو بوربوينت.»), and the details beat moves later by the measured difference. If the read runs long, cut in this order: «سي ڤي» (its card stays in the picture), then E2 as on-screen text only, then «ويوم التسليم…». Every spoken line is on screen word for word («سي ڤي» as «CV»), and no on-screen string is longer than 5 words.\n4) Rules. The rule line is word for word. No grade, speed, client-count or 'best' claim. The samples label is on every frame that shows a sample. No Office UI or logo. Contact is DM only, with the two handles. No emoji on screen (the brief's pin is a drawn icon and the wink is dropped). The CTA says «دزّ لنا بالخاص» in the voice and on the card (the house phrase, and the brief's own VO draft); hard rule 5 quotes «راسلنا بالخاص», and that is a swap of one string in E1 and one on the end card if the owner prefers his word. On screen we write «الجاية», «الوجه», «باجر»; the voice says الياية and باچر.\n5) To confirm. With the owner: the design-not-writing rule (still not confirmed by him, HANDOFF §3); «دزّ لنا» against «راسلنا»; the tagline (on screen the short form, his «من فكرة بسيطة.. إلى عمل استثنائي» in our voice in the caption). At the build: vo_tts is pronunciation spelling that has not been tested on the voice (بريزنتيشن، باچِر، الياية، سي ڤي, the masculine -ik endings; fallbacks باتشِر، الجاية، سي في); the caption's AI sentence must match the final cut (drop «والصوت» if a person records the voice); the «@» of each handle is checked by eye in the first rendered frame, and in the caption preview before posting (in a right-to-left caption line the «@» of the linked handle may show on its right; it still links). Status: this script is not delivered to the owner, not approved, not published. This step called no paid tool and ran no git commit; it rewrote script.json and SCRIPT-COPY.md and updated the students bullets in tash/HANDOFF.md §7. The builder and its checks: /tmp/claude-0/-home-user-visitor-counter-api/814850f7-b154-5782-b7f5-26a4a449f487/scratchpad/students/script_final_v2.py"
+}

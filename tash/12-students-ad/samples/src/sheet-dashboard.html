@@ -1,0 +1,349 @@
+<!doctype html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="utf-8">
+<title>نتائج استبيان — بيانات تجريبية</title>
+<style>
+@font-face{font-family:"Alexandria";src:url("../../../_system/fonts/Alexandria-VF.ttf") format("truetype");font-weight:100 900;font-display:block}
+@font-face{font-family:"Plex";src:url("../../../_system/fonts/IBMPlexSansArabic-Medium.ttf") format("truetype");font-weight:500;font-display:block}
+@font-face{font-family:"Plex";src:url("../../../_system/fonts/IBMPlexSansArabic-SemiBold.ttf") format("truetype");font-weight:600;font-display:block}
+@font-face{font-family:"Plex";src:url("../../../_system/fonts/IBMPlexSansArabic-Bold.ttf") format("truetype");font-weight:700;font-display:block}
+@font-face{font-family:"Mono";src:url("../../../_system/fonts/JetBrainsMono-VF.ttf") format("truetype");font-weight:100 800;font-display:block}
+
+:root{
+  --sheet:#FBFBFD; --card:#FFFFFF; --chrome:#F1F2F7; --rule:#D9DCE7; --grid:#E6E8F0;
+  --ink:#141733; --ink-2:#474C68; --mute:#8187A2; --faint:#B7BCCF;
+  --s1:#4B3FE0; --s1-soft:#CFCCF8; --s1-wash:#EEEDFD;
+  --s2:#14A89A; --s3:#F2A516; --s4:#EC5B87;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+html,body{width:1920px;height:1080px;overflow:hidden;background:var(--sheet)}
+body{font-family:"Plex",sans-serif;font-weight:500;color:var(--ink);-webkit-font-smoothing:antialiased;position:relative}
+.abs{position:absolute}
+.mono{font-family:"Mono",monospace;direction:ltr;unicode-bidi:isolate}
+
+/* ---------- chrome ---------- */
+.topbar{left:0;right:0;top:0;height:60px;background:var(--chrome);border-bottom:1px solid var(--rule);display:flex;align-items:center;gap:20px;padding:0 24px 0 24px}
+.file{display:flex;align-items:center;gap:14px;white-space:nowrap}
+.file .ico{width:34px;height:34px;border-radius:9px;background:var(--s1);display:grid;place-items:center}
+.file b{font-weight:700;font-size:19px}
+.file .ext{direction:ltr;unicode-bidi:isolate;font-family:"Mono";font-size:13px;font-weight:600;color:var(--s1);background:var(--s1-wash);border-radius:6px;padding:4px 8px 4px}
+.vsep{width:1px;height:30px;background:var(--rule)}
+.fbar{flex:1;height:36px;display:flex;align-items:stretch;background:#fff;border:1px solid var(--rule);border-radius:8px;overflow:hidden}
+.namebox{width:84px;display:grid;place-items:center;font-family:"Mono";font-size:14px;font-weight:600;color:var(--ink-2);border-left:1px solid var(--rule)}
+.fx{width:46px;display:grid;place-items:center;font-family:"Mono";font-style:italic;font-size:15px;color:var(--mute);border-left:1px solid var(--rule)}
+.formula{flex:1;display:flex;align-items:center;padding:0 14px;font-family:"Mono";font-size:15px;color:var(--ink);direction:ltr;justify-content:flex-end}
+.formula .fn{color:var(--s1);font-weight:600}
+.formula .rg{color:#0E8C80;font-weight:600}
+.saved{display:flex;align-items:center;gap:8px;font-size:16px;color:var(--mute);white-space:nowrap}
+
+.colhead{left:0;top:60px;height:28px;width:1920px;background:var(--chrome);border-bottom:1px solid var(--rule)}
+.colhead div{position:absolute;top:0;height:28px;display:grid;place-items:center;font-family:"Mono";font-size:13px;font-weight:600;color:var(--mute);border-left:1px solid var(--rule)}
+.colhead div.on{background:#E3E1FB;color:var(--s1)}
+.corner{right:0;top:60px;width:48px;height:28px;background:var(--chrome);border-left:1px solid var(--rule);border-bottom:1px solid var(--rule)}
+.rowhead{right:0;top:88px;width:48px;height:948px;background:var(--chrome);border-left:1px solid var(--rule);overflow:hidden}
+.rowhead div{position:absolute;right:0;width:48px;display:grid;place-items:center;font-family:"Mono";font-size:12px;font-weight:600;color:var(--mute);border-bottom:1px solid var(--rule)}
+.rowhead div.on{background:#E3E1FB;color:var(--s1)}
+.gl{position:absolute;background:var(--grid)}
+
+.tabs{left:0;right:0;bottom:0;height:44px;background:var(--chrome);border-top:1px solid var(--rule);display:flex;align-items:stretch;padding-right:48px}
+.tab{display:flex;align-items:center;padding:0 26px;font-size:17px;font-weight:600;color:var(--ink-2);border-left:1px solid var(--rule);white-space:nowrap}
+.tab.on{background:#fff;color:var(--s1);box-shadow:inset 0 -3px 0 var(--s1);margin-top:-1px}
+.tab.plus{padding:0 18px;color:var(--mute)}
+.status{margin-right:auto;display:flex;align-items:center;gap:22px;padding-left:28px;font-size:16px;color:var(--ink-2);white-space:nowrap}
+.status b{font-weight:700;color:var(--ink)}
+.zoom{display:flex;align-items:center;gap:10px;color:var(--mute)}
+.zoom i{display:block;width:96px;height:3px;border-radius:2px;background:var(--rule);position:relative}
+.zoom i::after{content:"";position:absolute;left:46px;top:-5px;width:12px;height:12px;border-radius:50%;background:#fff;border:2px solid var(--ink-2)}
+
+/* ---------- merged title block ---------- */
+.titleblock{left:104px;width:1728px;top:108px;height:120px;background:var(--sheet)}
+.kick{position:absolute;right:0;top:0;display:flex;align-items:center;gap:10px;font-size:17px;font-weight:700;color:var(--s1);white-space:nowrap}
+.kick::before{content:"";width:22px;height:4px;border-radius:2px;background:var(--s1)}
+h1{position:absolute;right:0;top:20px;font-family:"Alexandria";font-weight:800;font-size:56px;line-height:1.3;white-space:nowrap;letter-spacing:0}
+h1 span{font-weight:400;color:var(--mute)}
+.sub{position:absolute;right:0;top:94px;font-size:19px;color:var(--ink-2);white-space:nowrap;display:flex;gap:12px;align-items:center}
+.sub i{width:5px;height:5px;border-radius:50%;background:var(--faint);display:block}
+.filters{position:absolute;left:0;top:30px;display:flex;gap:14px;direction:rtl}
+.dd{height:48px;min-width:196px;background:#fff;border:1px solid var(--rule);border-radius:10px;display:flex;align-items:center;justify-content:space-between;padding:0 16px 0 10px;gap:16px;white-space:nowrap;box-shadow:0 1px 0 rgba(20,23,51,.04)}
+.dd span{font-size:15px;color:var(--mute)}
+.dd b{font-size:18px;font-weight:700;color:var(--ink);margin-right:6px}
+.dd .btn{width:28px;height:28px;border-radius:7px;background:var(--chrome);display:grid;place-items:center}
+
+/* ---------- cards ---------- */
+.card{position:absolute;background:var(--card);border:1px solid #DDE0EA;border-radius:16px;box-shadow:0 1px 0 rgba(20,23,51,.03),0 14px 30px -18px rgba(20,23,51,.28)}
+.kpi{top:262px;height:140px;padding:18px 24px 0 24px}
+.kpi .lab{display:flex;align-items:center;gap:12px;font-size:18px;font-weight:600;color:var(--ink-2);white-space:nowrap}
+.kpi .lab .ic{width:30px;height:30px;border-radius:8px;display:grid;place-items:center}
+.kpi .val{margin-top:12px;display:flex;align-items:baseline;gap:10px;white-space:nowrap}
+.kpi .val strong{font-family:"Alexandria";font-weight:700;font-size:54px;line-height:1.25;letter-spacing:0}
+.kpi .val em{font-style:normal;font-size:19px;font-weight:600;color:var(--mute)}
+.kpi .hint{position:absolute;left:24px;bottom:22px;font-size:15px;color:var(--mute);white-space:nowrap;text-align:left}
+.kpi .hint b{color:var(--ink);font-weight:700}
+.kpi .side{position:absolute;left:24px;top:22px}
+.kpi.hero{background:var(--s1);border-color:var(--s1);color:#fff;box-shadow:0 18px 36px -18px rgba(75,63,224,.7)}
+.kpi.hero .lab{color:rgba(255,255,255,.86)}
+.kpi.hero .val em,.kpi.hero .hint{color:rgba(255,255,255,.72)}
+.kpi.hero .hint b{color:#fff}
+.sel{position:absolute;border:2.5px solid var(--s1);border-radius:3px;pointer-events:none}
+.sel::after{content:"";position:absolute;left:-5px;bottom:-5px;width:8px;height:8px;background:var(--s1);border:2px solid #fff}
+
+.panel{top:446px;height:556px;padding:24px 28px}
+.ph{display:flex;justify-content:space-between;align-items:flex-start}
+.ph h2{font-family:"Alexandria";font-weight:700;font-size:25px;line-height:1.35;white-space:nowrap}
+.ph p{font-size:16px;color:var(--mute);margin-top:2px;white-space:nowrap}
+.tag{font-family:"Mono";font-size:12px;font-weight:600;color:var(--mute);border:1px solid var(--rule);border-radius:6px;padding:3px 7px;white-space:nowrap}
+.panel svg{display:block}
+.svgt{font-family:"Plex";font-weight:600}
+.svgn{font-family:"Plex";font-weight:600}
+
+/* legend */
+.legend{margin-top:18px;display:flex;flex-direction:column;gap:2px}
+.lg{display:flex;align-items:center;gap:12px;height:40px;border-bottom:1px solid #EEF0F5;font-size:18px;white-space:nowrap}
+.lg:last-child{border-bottom:0}
+.lg i{width:12px;height:12px;border-radius:50%;flex:none}
+.lg b{margin-right:auto;font-family:"Alexandria";font-weight:600;font-size:19px}
+
+/* table */
+table{width:100%;border-collapse:separate;border-spacing:0;margin-top:24px;font-size:18px}
+th{font-size:15px;font-weight:700;color:var(--ink-2);text-align:right;background:#EFF0F7;height:48px;padding:0 14px;white-space:nowrap}
+th:first-child{border-radius:0 10px 10px 0}
+th:last-child{border-radius:10px 0 0 10px}
+td{height:64px;padding:0 14px;white-space:nowrap;border-bottom:1px solid #EEF0F5}
+tbody tr:nth-child(even) td{background:#F6F7FB}
+td.n{font-family:"Alexandria";font-weight:500;font-size:19px}
+td.y{font-weight:600}
+tr.tot td{border-top:2px solid var(--ink);border-bottom:0;font-weight:700;background:#fff !important;height:66px}
+tr.tot td.n{font-weight:700}
+.bar{display:flex;align-items:center;gap:14px}
+.bar span{font-family:"Alexandria";font-weight:500;font-size:19px;width:50px}
+.bar i{display:block;width:96px;height:8px;border-radius:4px;background:var(--s1-wash);position:relative;overflow:hidden}
+.bar i b{position:absolute;right:0;top:0;bottom:0;border-radius:4px;background:var(--s1)}
+tr.tot .bar span{font-weight:700}
+.note{position:absolute;right:28px;bottom:20px;font-size:14px;color:var(--mute);white-space:nowrap}
+</style>
+</head>
+<body>
+
+<!-- top chrome -->
+<div class="abs topbar">
+  <div class="file">
+    <div class="ico"><svg width="20" height="20" viewBox="0 0 20 20"><g fill="#fff"><rect x="1" y="1" width="8" height="5" rx="1.5"/><rect x="11" y="1" width="8" height="5" rx="1.5" opacity=".55"/><rect x="1" y="7.5" width="8" height="5" rx="1.5" opacity=".55"/><rect x="11" y="7.5" width="8" height="5" rx="1.5" opacity=".55"/><rect x="1" y="14" width="8" height="5" rx="1.5" opacity=".55"/><rect x="11" y="14" width="8" height="5" rx="1.5" opacity=".55"/></g></svg></div>
+    <b>استبيان عادات المذاكرة</b>
+    <span class="ext">.xlsx</span>
+  </div>
+  <div class="vsep"></div>
+  <div class="fbar">
+    <div class="namebox">E8</div>
+    <div class="fx">fx</div>
+    <div class="formula">=<span class="fn">ROUND</span>(<span class="fn">AVERAGE</span>(<span class="rg">D2:D121</span>),1)</div>
+  </div>
+  <div class="saved"><svg width="18" height="18" viewBox="0 0 18 18"><circle cx="9" cy="9" r="8" fill="none" stroke="#14A89A" stroke-width="2"/><path d="M5.2 9.3l2.4 2.4 5-5" fill="none" stroke="#14A89A" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>تم الحفظ</div>
+</div>
+
+<div class="abs colhead" id="colhead"></div>
+<div class="abs corner"><svg width="48" height="28"><path d="M10 22 L10 10 L22 22 Z" fill="#C3C7D6" transform="translate(10,0)"/></svg></div>
+<div class="abs rowhead" id="rowhead"></div>
+<div id="grid"></div>
+
+<!-- merged title cell -->
+<div class="abs titleblock">
+  <div class="kick">لوحة الملخّص · الفصل الأول</div>
+  <h1>نتائج استبيان <span>— بيانات تجريبية</span></h1>
+  <div class="sub">عادات المذاكرة عند طلاب الكلية <i></i> ١٢٠ مشارك <i></i> ٩ أسئلة</div>
+  <div class="filters">
+    <div class="dd"><div><span>السنة:</span><b>الكل</b></div><div class="btn"><svg width="12" height="8" viewBox="0 0 12 8"><path d="M1.5 1.5l4.5 4.5 4.5-4.5" fill="none" stroke="#474C68" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg></div></div>
+    <div class="dd"><div><span>الفصل:</span><b>الأول</b></div><div class="btn"><svg width="12" height="8" viewBox="0 0 12 8"><path d="M1.5 1.5l4.5 4.5 4.5-4.5" fill="none" stroke="#474C68" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg></div></div>
+  </div>
+</div>
+
+<!-- KPI row: rows 6–9, B–D, E–G, H–J, K–M (inset 10px) -->
+<div class="card kpi hero" style="right:98px;width:412px">
+  <div class="lab"><div class="ic" style="background:rgba(255,255,255,.16)"><svg width="18" height="18" viewBox="0 0 18 18"><g fill="#fff"><circle cx="6.5" cy="5.5" r="3"/><path d="M1 15.5c0-3 2.5-5 5.5-5s5.5 2 5.5 5z"/><circle cx="12.8" cy="6" r="2.4" opacity=".55"/><path d="M12.4 10.6c2.6 0 4.6 1.8 4.6 4.6h-3.6c0-1.8-.4-3.3-1-4.6z" opacity=".55"/></g></svg></div>المشاركين</div>
+  <div class="val"><strong>١٢٠</strong><em>مشارك</em></div>
+  <div class="side"><svg width="64" height="64" viewBox="0 0 64 64"><circle cx="32" cy="32" r="26" fill="none" stroke="rgba(255,255,255,.2)" stroke-width="7"/><circle cx="32" cy="32" r="26" fill="none" stroke="#fff" stroke-width="7" stroke-linecap="round" stroke-dasharray="146 163.4" transform="rotate(-90 32 32)"/></svg></div>
+  <div class="hint">إكمال <b>٩٤٪</b> من ١٢٨</div>
+</div>
+
+<div class="card kpi" style="right:530px;width:412px">
+  <div class="lab"><div class="ic" style="background:#E3F5F2"><svg width="18" height="18" viewBox="0 0 18 18"><circle cx="9" cy="9.6" r="6.6" fill="none" stroke="#14A89A" stroke-width="2"/><path d="M9 6.2v3.6l2.4 1.6" fill="none" stroke="#14A89A" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/><path d="M6.6 1.4h4.8" stroke="#14A89A" stroke-width="2" stroke-linecap="round"/></svg></div>متوسط المذاكرة يوميًا</div>
+  <div class="val" style="gap:30px"><strong id="v-avg">٢٫٤</strong><em>ساعة</em></div>
+  <div class="side"><svg width="96" height="64" viewBox="0 0 96 64"><g fill="#CFEDE9"><rect x="74" y="20" width="14" height="40" rx="3"/><rect x="52" y="16" width="14" height="44" rx="3"/><rect x="30" y="10" width="14" height="50" rx="3"/></g><rect x="8" y="8" width="14" height="52" rx="3" fill="#14A89A"/><line x1="2" y1="60.5" x2="94" y2="60.5" stroke="#D9DCE7"/></svg></div>
+  <div class="hint">الأعلى: السنة الرابعة <b>٢٫٧</b></div>
+</div>
+
+<div class="card kpi" style="right:962px;width:412px">
+  <div class="lab"><div class="ic" style="background:#FDE9EF"><svg width="18" height="18" viewBox="0 0 18 18"><circle cx="9" cy="9" r="7.4" fill="none" stroke="#EC5B87" stroke-width="2"/><circle cx="6.4" cy="7.4" r="1.2" fill="#EC5B87"/><circle cx="11.6" cy="7.4" r="1.2" fill="#EC5B87"/><path d="M5.8 10.8c1.6 2.2 4.8 2.2 6.4 0" fill="none" stroke="#EC5B87" stroke-width="2" stroke-linecap="round"/></svg></div>راضين عن جدولهم</div>
+  <div class="val"><strong>٦٨٪</strong></div>
+  <div class="side" style="top:40px"><svg width="132" height="30" viewBox="0 0 132 30"><rect x="0" y="11" width="132" height="8" rx="4" fill="#FDE9EF"/><rect x="42" y="11" width="90" height="8" rx="4" fill="#EC5B87"/><circle cx="42" cy="15" r="7" fill="#fff" stroke="#EC5B87" stroke-width="3"/></svg></div>
+  <div class="hint">«راضي» أو «راضي جدًا»</div>
+</div>
+
+<div class="card kpi" style="right:1394px;width:412px">
+  <div class="lab"><div class="ic" style="background:#FEF3DC"><svg width="18" height="18" viewBox="0 0 18 18"><path d="M12.8 12.6A6.8 6.8 0 0 1 6.2 2.3a7 7 0 1 0 9.4 9.2 6.6 6.6 0 0 1-2.8 1.1z" fill="#F2A516"/></svg></div>أكثر وقت للمذاكرة</div>
+  <div class="val"><strong>الليل</strong></div>
+  <div class="side"><svg width="64" height="64" viewBox="0 0 64 64"><circle cx="32" cy="32" r="26" fill="none" stroke="#FEF3DC" stroke-width="7"/><circle cx="32" cy="32" r="26" fill="none" stroke="#F2A516" stroke-width="7" stroke-linecap="round" stroke-dasharray="68.6 163.4" transform="rotate(-90 32 32)"/></svg></div>
+  <div class="hint"><b>٤٢٪</b> من المشاركين</div>
+</div>
+
+<!-- panels: B–F bar, G–I donut, J–M table -->
+<div class="card panel" style="right:98px;width:700px">
+  <div class="ph">
+    <div><h2>متى تذاكر؟</h2><p>نسبة المشاركين حسب أكثر وقت يذاكرون فيه</p></div>
+    <span class="tag">C2:C121</span>
+  </div>
+  <svg id="bars" width="644" height="430" viewBox="0 0 644 430" style="margin-top:14px"></svg>
+</div>
+
+<div class="card panel" style="right:818px;width:412px">
+  <div class="ph">
+    <div><h2>طريقة المذاكرة</h2><p>أغلب الوقت، حسب المشارك</p></div>
+  </div>
+  <svg id="donut" width="356" height="236" viewBox="0 0 356 236" style="margin-top:14px"></svg>
+  <div class="legend">
+    <div class="lg"><i style="background:var(--s1)"></i>وحدي<b>٤٨٪</b></div>
+    <div class="lg"><i style="background:var(--s2)"></i>مع مجموعة<b>٢٧٪</b></div>
+    <div class="lg"><i style="background:var(--s3)"></i>أونلاين مع مدرّس<b>١٥٪</b></div>
+    <div class="lg"><i style="background:var(--s4)"></i>غيرها<b>١٠٪</b></div>
+  </div>
+</div>
+
+<div class="card panel" style="right:1250px;width:556px">
+  <div class="ph">
+    <div><h2>حسب السنة الدراسية</h2><p>متوسطات العيّنة</p></div>
+    <span class="tag">A1:D6</span>
+  </div>
+  <table>
+    <thead><tr><th>السنة</th><th>العدد</th><th>ساعات / يوم</th><th>الرضا</th></tr></thead>
+    <tbody>
+      <tr><td class="y">الأولى</td><td class="n">٣٤</td><td class="n">٢٫١</td><td><div class="bar"><span>٦٢٪</span><i><b style="width:62%"></b></i></div></td></tr>
+      <tr><td class="y">الثانية</td><td class="n">٣١</td><td class="n">٢٫٣</td><td><div class="bar"><span>٦٦٪</span><i><b style="width:66%"></b></i></div></td></tr>
+      <tr><td class="y">الثالثة</td><td class="n">٢٩</td><td class="n">٢٫٦</td><td><div class="bar"><span>٧١٪</span><i><b style="width:71%"></b></i></div></td></tr>
+      <tr><td class="y">الرابعة</td><td class="n">٢٦</td><td class="n">٢٫٧</td><td><div class="bar"><span>٧٤٪</span><i><b style="width:74%"></b></i></div></td></tr>
+      <tr class="tot"><td>كل العيّنة</td><td class="n">١٢٠</td><td class="n">٢٫٤</td><td><div class="bar"><span>٦٨٪</span><i><b style="width:68%"></b></i></div></td></tr>
+    </tbody>
+  </table>
+  <div class="note">* أرقام تجريبية لأغراض العرض فقط، وليست نتائج حقيقية.</div>
+</div>
+
+<!-- sheet tabs + status -->
+<div class="abs tabs">
+  <div class="tab on">الملخّص</div>
+  <div class="tab">البيانات الخام</div>
+  <div class="tab">الأسئلة</div>
+  <div class="tab plus"><svg width="16" height="16" viewBox="0 0 16 16"><path d="M8 2v12M2 8h12" stroke="#8187A2" stroke-width="2" stroke-linecap="round"/></svg></div>
+  <div class="status">
+    <span>المتوسط: <b>٢٫٤</b></span>
+    <span>العدد: <b>١٢٠</b></span>
+    <span class="zoom"><i></i>١٠٠٪</span>
+  </div>
+</div>
+
+<script>
+const AR = (n) => String(n).replace(/\d/g, (d) => '٠١٢٣٤٥٦٧٨٩'[d]);
+// ----- columns (RTL: A at the right) -----
+const widths = [40,144,144,144,144,144,144,144,144,144,144,144,144,40,64];
+const letters = 'ABCDEFGHIJKLMNO'.split('');
+const colhead = document.getElementById('colhead');
+const grid = document.getElementById('grid');
+let x = 1872;
+const colX = [];
+widths.forEach((w, i) => {
+  const d = document.createElement('div');
+  d.textContent = letters[i];
+  d.style.left = (x - w) + 'px'; d.style.width = w + 'px';
+  if (letters[i] === 'E') d.className = 'on';
+  colhead.appendChild(d);
+  colX.push(x - w);
+  x -= w;
+});
+// ----- rows -----
+const rowH = [20,40,40,40,24, 40,40,40,40, 24, 36,36,36,36,36,36,36,36,36,36,36,36,36,36,36,36, 32];
+const rowhead = document.getElementById('rowhead');
+let y = 88; const rowY = [];
+rowH.forEach((h, i) => {
+  const d = document.createElement('div');
+  d.textContent = i + 1;
+  d.style.top = (y - 88) + 'px'; d.style.height = h + 'px';
+  if (i === 7) d.className = 'on';
+  rowhead.appendChild(d);
+  rowY.push(y + h);
+  y += h;
+});
+// gridlines
+colX.forEach((cx) => { if (cx <= 0) return; const g = document.createElement('div'); g.className = 'gl'; g.style.cssText = `left:${cx}px;top:88px;width:1px;height:948px`; grid.appendChild(g); });
+rowY.forEach((ry) => { if (ry >= 1036) return; const g = document.createElement('div'); g.className = 'gl'; g.style.cssText = `left:0;top:${ry - 1}px;width:1872px;height:1px`; grid.appendChild(g); });
+
+// ----- active cell around the KPI value: drawn from the glyph ink (not the line box), same clear space on all sides -----
+const placeSel = () => {
+  const s = document.getElementById('v-avg');
+  const v = s.getBoundingClientRect();
+  const cs = getComputedStyle(s);
+  const ctx = document.createElement('canvas').getContext('2d');
+  ctx.font = `${cs.fontWeight} ${cs.fontSize} ${cs.fontFamily}`; ctx.direction = 'rtl';
+  const m = ctx.measureText(s.textContent);
+  const lh = parseFloat(cs.lineHeight);
+  const baseline = v.top + (lh - (m.fontBoundingBoxAscent + m.fontBoundingBoxDescent)) / 2 + m.fontBoundingBoxAscent;
+  const ink = {t: baseline - m.actualBoundingBoxAscent, b: baseline + m.actualBoundingBoxDescent, l: v.right - m.actualBoundingBoxLeft, r: v.right + m.actualBoundingBoxRight};
+  const pad = 10 + 2.5; // clear space + border width
+  const sel = document.createElement('div'); sel.className = 'sel';
+  const optic = 2; // the font reports the digit tops ~2px low; measured on the render
+  sel.style.cssText = `left:${ink.l - pad}px;top:${ink.t - pad - optic}px;width:${ink.r - ink.l + 2 * pad}px;height:${ink.b - ink.t + 2 * pad + optic}px`;
+  document.body.appendChild(sel);
+};
+
+// ----- bar chart -----
+const NS = 'http://www.w3.org/2000/svg';
+const el = (tag, attrs, parent) => { const e = document.createElementNS(NS, tag); for (const k in attrs) e.setAttribute(k, attrs[k]); parent.appendChild(e); return e; };
+const bars = document.getElementById('bars');
+const cats = [['الصبح',8],['الظهر',6],['العصر',18],['المغرب',14],['الليل',42],['بعد نص الليل',12]];
+const pTop = 40, base = 360, axisW = 44, right = 644, plotW = right - axisW, max = 50;
+const yOf = (val) => base - (val / max) * (base - pTop);
+[0,10,20,30,40,50].forEach((t) => {
+  el('line', {x1:0, x2:plotW, y1:yOf(t)+.5, y2:yOf(t)+.5, stroke: t===0 ? '#9EA3BA' : '#ECEEF4', 'stroke-width':1}, bars);
+  const tx = el('text', {x:right-2, y:yOf(t)+6, 'text-anchor':'start', 'font-size':15, fill:'#8187A2', class:'svgn'}, bars);
+  tx.textContent = AR(t) + (t ? '٪' : '');
+});
+const band = plotW / cats.length, bw = 40;
+cats.forEach(([name, val], i) => {
+  const cx = plotW - band * (i + .5);
+  const hi = name === 'الليل';
+  const y0 = yOf(val), h = base - y0, r = 6;
+  el('path', {d:`M${cx-bw/2} ${base} V${y0+r} Q${cx-bw/2} ${y0} ${cx-bw/2+r} ${y0} H${cx+bw/2-r} Q${cx+bw/2} ${y0} ${cx+bw/2} ${y0+r} V${base} Z`, fill: hi ? '#4B3FE0' : '#CFCCF8'}, bars);
+  const vt = el('text', {x:cx, y:y0-12, 'text-anchor':'middle', 'font-size': hi ? 22 : 18, fill: hi ? '#141733' : '#474C68', class:'svgn', 'font-weight': hi ? 700 : 600}, bars);
+  vt.textContent = AR(val) + '٪';
+  const lt = el('text', {x:cx, y:base+34, 'text-anchor':'middle', 'font-size':17, fill: hi ? '#141733' : '#474C68', class:'svgt', 'font-weight': hi ? 700 : 600}, bars);
+  lt.textContent = name;
+  if (hi) {
+    const ax = cx + bw/2 + 8;
+    el('path', {d:`M${ax} ${y0+30} H${ax+26}`, stroke:'#141733', 'stroke-width':1.5, fill:'none'}, bars);
+    el('circle', {cx:ax, cy:y0+30, r:3.5, fill:'#141733'}, bars);
+    const g = el('g', {}, bars);
+    const pill = el('rect', {x:ax+26, y:y0+10, width:150, height:40, rx:20, fill:'#141733'}, g);
+    const at = el('text', {x:ax+26+75, y:y0+36, 'text-anchor':'middle', 'font-size':17, fill:'#fff', class:'svgt', 'font-weight':600}, g);
+    at.textContent = 'قرابة ٢ من كل ٥';
+    window.fitPill = () => { const w = Math.ceil(at.getComputedTextLength()) + 44; pill.setAttribute('width', w); at.setAttribute('x', ax + 26 + w / 2); };
+  }
+});
+
+// ----- donut -----
+const dn = document.getElementById('donut');
+const segs = [[48,'#4B3FE0'],[27,'#14A89A'],[15,'#F2A516'],[10,'#EC5B87']];
+const R = 96, cx0 = 178, cy0 = 118, C = 2 * Math.PI * R, gap = 4;
+el('circle', {cx:cx0, cy:cy0, r:R, fill:'none', stroke:'#F1F2F7', 'stroke-width':30}, dn);
+let acc = 0;
+segs.forEach(([p, c]) => {
+  const len = p / 100 * C;
+  el('circle', {cx:cx0, cy:cy0, r:R, fill:'none', stroke:c, 'stroke-width':30,
+    'stroke-dasharray': `${len - gap} ${C - len + gap}`, 'stroke-dashoffset': -acc,
+    transform:`rotate(-90 ${cx0} ${cy0})`}, dn);
+  acc += len;
+});
+const c1 = el('text', {x:cx0, y:cy0+12, 'text-anchor':'middle', 'font-size':48, fill:'#4B3FE0', 'font-family':'Alexandria', 'font-weight':700}, dn); c1.textContent = '٤٨٪';
+const c2 = el('text', {x:cx0, y:cy0+44, 'text-anchor':'middle', 'font-size':18, fill:'#4B3FE0', class:'svgt', 'font-weight':700}, dn); c2.textContent = 'وحدي';
+
+// measurements need the real fonts
+Promise.all([document.fonts.load('700 54px Alexandria'), document.fonts.load('600 17px Plex')]).then(() => { placeSel(); window.fitPill(); });
+</script>
+</body>
+</html>

@@ -1,0 +1,66 @@
+<!doctype html>
+<!-- STORY 1080×1920 · Q&A / POLL
+     kind 'poll'   { question, note }    — we ask in a big bubble (right); the poll/quiz/question sticker goes in the
+                                           reserved zone (shown with --guide); your lime typing bubble waits under it.
+     kind 'answer' { label, qlabel, question, verdict, answer } — a follower's question (left, paper bubble), our short
+                                           verdict big (the one lime word), then the answer in plain text.
+     Top 250 / bottom 300 kept free. -->
+<html lang="ar" dir="rtl"><head><meta charset="utf-8">
+<link rel="stylesheet" href="/_system/tokens.css"><link rel="stylesheet" href="/03-templates/src/base.css">
+<style>
+  .label { position: absolute; right: 96px; z-index: 10; font-size: 22px; }
+  .verdict { position: absolute; right: 96px; left: 96px; z-index: 10; color: var(--accent); }
+  .ask { position: absolute; right: 96px; max-width: 888px; z-index: 10; padding: 46px 56px 54px; line-height: 1.38; }
+  .note { position: absolute; right: 96px; left: 96px; z-index: 10; color: var(--sub); font-size: 40px; line-height: 1.45; }
+  .you { position: absolute; left: 96px; z-index: 10; }
+  .q { position: absolute; left: 96px; max-width: 760px; z-index: 10; padding: 30px 44px 34px; font-size: 44px; line-height: 1.45; text-wrap: balance; }
+  .q .n { display: block; font-size: 20px; margin-bottom: 8px; color: #55574F; direction: ltr; text-align: right; }
+  .q .ar-n { font-size: 26px; line-height: 1.2; direction: rtl; }
+  .a { position: absolute; right: 96px; left: 96px; z-index: 10; color: var(--fg); font-size: 52px; line-height: 1.5; text-wrap: pretty; }
+</style></head><body><div id="stage"></div>
+<script type="module">
+import { run, COL } from '/03-templates/src/tpl.js';
+run(async (d, { stage, T, rich, h, put, linesOf, bubble, typingBubble, fit }) => {
+  if ((d.kind || 'poll') === 'poll') {
+    const ask = bubble(h('div', { class: 'disp', 'data-fit': '72,112', 'data-lines': linesOf(d.question, 3), 'data-name': 'question', style: 'line-height:1.38', html: rich(d.question) }),
+      { fill: T.surface, color: T.fg, side: 'right', cls: 'ask key', r: 60 });
+    const note = d.note ? h('div', { class: 'txt note key', 'data-name': 'note', html: rich(d.note) }) : null;
+    const you = h('div', { class: 'you key', 'data-name': 'your turn', html: typingBubble({ scale: 0.62, fill: COL.lime, dot: COL.ink, side: 'left' }) });
+    put(stage, ask, note, you);
+    const zone = { type: 'margin', x: 140, y: 0, w: 800, h: 380, label: 'STICKER (POLL / QUIZ / QUESTION)' };
+    return { format: 'story', lightAt: '80% 8%', zones: null, after() {
+      // the whole conversation (question → note → sticker zone → your bubble) centred in y 250–1620
+      const total = ask.offsetHeight + (note ? 40 + note.offsetHeight : 0) + 60 + zone.h + 50 + you.offsetHeight;
+      let y = Math.max(290, 250 + (1370 - total) / 2);
+      ask.style.top = y + 'px'; y += ask.offsetHeight;
+      if (note) { y += 40; note.style.top = y + 'px'; y += note.offsetHeight; }
+      y += 60; zone.y = y; y += zone.h + 50;
+      you.style.top = y + 'px';
+      this.zones = [...STORY_ZONES, zone];
+    } };
+  }
+  // answer
+  const label = d.label ? h('div', { class: 'slate label', text: d.label }) : null;
+  const ql = d.qlabel || 'Q', qlAr = /[\u0600-\u06FF]/.test(ql);          // Arabic label → text style (never a letter-spaced slate)
+  const q = bubble([h('span', { class: qlAr ? 'txt n ar-n' : 'slate n', text: ql }), h('span', { html: rich(d.question) })],
+    { fill: COL.paper, color: COL.ink, side: 'left', cls: 'txt q key' });
+  q.dataset.name = 'question';
+  const v = d.verdict ? h('div', { class: 'disp verdict key', 'data-fit': '110,170', 'data-lines': '1', 'data-name': 'verdict', html: rich(d.verdict) }) : null;
+  const a = h('div', { class: 'txt a key', 'data-fit': '40,52', 'data-lines': '6', 'data-name': 'answer', html: rich(d.answer) });
+  put(stage, label, q, v, a);
+  return { format: 'story', lightAt: '80% 8%', after() {
+    // label → question → verdict → answer, centred in y 250–1620
+    const gaps = (label ? 34 : 0) + 80 + (v ? 6 : 0);
+    const total = (label ? label.offsetHeight : 0) + q.offsetHeight + (v ? v.offsetHeight : 0) + a.offsetHeight + gaps;
+    let y = Math.max(290, 250 + (1370 - total) / 2);
+    if (label) { label.style.top = y + 'px'; y += label.offsetHeight + 34; }
+    q.style.top = y + 'px'; y += q.offsetHeight + 80;
+    if (v) { v.style.top = y + 'px'; y += v.offsetHeight + 6; }
+    a.style.top = y + 'px';
+  } };
+});
+const STORY_ZONES = [
+  { type: 'avoid', x: 0, y: 0, w: 1080, h: 250, label: 'STORY UI · TOP 250' },
+  { type: 'avoid', x: 0, y: 1620, w: 1080, h: 300, label: 'REPLY BAR · BOTTOM 300' },
+];
+</script></body></html>

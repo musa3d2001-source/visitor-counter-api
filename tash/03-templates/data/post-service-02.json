@@ -1,0 +1,8 @@
+{
+  "theme": "ink",
+  "images": ["/05-concept-ads/02-burger-stakk/poster.png", "/05-concept-ads/01-perfume-layl/poster.png"],
+  "concept": { "slate": "CONCEPT ADS — 02 / 01" },
+  "service": "تصاميم إعلانية",
+  "line": "بوسترات وتصاميم لمنتجك وعروضك… تنفهم بنظرة.",
+  "includes": ["بوستر", "غلاف ريل", "ستوري", "بوست"]
+}

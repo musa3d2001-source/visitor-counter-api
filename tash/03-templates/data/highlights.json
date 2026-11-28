@@ -1,0 +1,10 @@
+{
+  "theme": "ink",
+  "slides": [
+    { "id": "1-work",     "icon": "work",     "name": "أعمالنا" },
+    { "id": "2-services", "icon": "services", "name": "خدماتنا" },
+    { "id": "3-order",    "icon": "order",    "name": "شلون تطلب؟" },
+    { "id": "4-prices",   "icon": "prices",   "name": "الأسعار" },
+    { "id": "5-faq",      "icon": "faq",      "name": "أسئلة" }
+  ]
+}

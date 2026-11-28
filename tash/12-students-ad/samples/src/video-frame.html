@@ -1,0 +1,356 @@
+<!doctype html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="utf-8">
+<title>آخر محاضرة — إطار العنوان</title>
+<style>
+@font-face{font-family:"Alexandria";src:url("../../../_system/fonts/Alexandria-VF.ttf") format("truetype");font-weight:100 900;font-display:block}
+@font-face{font-family:"Plex";src:url("../../../_system/fonts/IBMPlexSansArabic-Medium.ttf") format("truetype");font-weight:500;font-display:block}
+@font-face{font-family:"Plex";src:url("../../../_system/fonts/IBMPlexSansArabic-SemiBold.ttf") format("truetype");font-weight:600;font-display:block}
+@font-face{font-family:"Plex";src:url("../../../_system/fonts/IBMPlexSansArabic-Bold.ttf") format("truetype");font-weight:700;font-display:block}
+@font-face{font-family:"Mono";src:url("../../../_system/fonts/JetBrainsMono-VF.ttf") format("truetype");font-weight:100 800;font-display:block}
+
+:root{
+  --black:#050607; --ui:#111317; --ui-2:#171A1F; --ui-3:#1E2228; --ui-line:#2A2F37; --ui-text:#A7AEBB; --ui-dim:#6B7280;
+  --warm:#FFD9A8; --amber:#FFAA5C; --cream:#F7EBDD; --play:#FF4D3D;
+  --v2:#8B7CF6; --v1:#2E8C9A; --a1:#3FA672; --a2:#C98A2E;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+html,body{width:1920px;height:1080px;overflow:hidden;background:var(--black)}
+body{font-family:"Plex",sans-serif;color:var(--cream);-webkit-font-smoothing:antialiased;position:relative}
+.mono{font-family:"Mono",monospace;direction:ltr;unicode-bidi:isolate}
+
+/* ---------- picture ---------- */
+.pic{position:absolute;left:0;top:0;width:1920px;height:756px;overflow:hidden;background:#0B1418}
+.pic svg.scene{position:absolute;inset:0}
+.bar-t,.bar-b{position:absolute;left:0;right:0;height:34px;background:var(--black);z-index:5}
+.bar-t{top:0}.bar-b{bottom:0}
+.burn{position:absolute;top:8px;font-family:"Mono";font-size:14px;font-weight:500;color:rgba(247,235,221,.55);letter-spacing:.5px;white-space:nowrap;z-index:6}
+.burn.l{left:28px;direction:ltr}
+.burn.r{right:28px;font-family:"Plex";font-size:15px;font-weight:600;top:6px}
+.burn .rec{display:inline-block;width:8px;height:8px;border-radius:50%;background:var(--play);margin-right:8px;vertical-align:1px}
+
+/* title block sits inside the board (inner 540–1380 × 130–410); the tagline sits under the ledge, off the board */
+.titles{position:absolute;left:0;right:0;top:0;text-align:center;z-index:4}
+.kick{position:absolute;left:0;right:0;top:160px;display:flex;justify-content:center;align-items:center;gap:22px;font-family:"Plex";font-weight:600;font-size:24px;line-height:40px;color:rgba(255,217,168,.92);white-space:nowrap}
+.kick::before,.kick::after{content:"";width:70px;height:1.5px;background:rgba(255,217,168,.6)}
+h1{position:absolute;left:0;right:0;top:194px;font-family:"Alexandria";font-weight:800;font-size:128px;line-height:200px;color:#FFF4E6;letter-spacing:0;white-space:nowrap;
+  text-shadow:0 0 28px rgba(255,170,92,.36),0 0 2px rgba(255,244,230,.7),0 8px 32px rgba(0,0,0,.55)}
+.tagline{position:absolute;left:0;right:0;top:442px;font-family:"Plex";font-weight:500;font-size:30px;line-height:48px;color:rgba(247,235,221,.88);white-space:nowrap;text-shadow:0 2px 16px rgba(0,0,0,.8),0 0 2px rgba(0,0,0,.6)}
+.credits{position:absolute;left:0;right:0;bottom:62px;display:flex;justify-content:center;gap:56px;z-index:4;white-space:nowrap}
+.credits div{text-align:center;font-size:17px;font-weight:500;color:rgba(247,235,221,.62);line-height:1.5}
+.credits b{display:block;font-family:"Alexandria";font-weight:600;font-size:22px;color:rgba(255,244,230,.92)}
+.course{position:absolute;right:56px;top:66px;z-index:4;display:flex;align-items:center;gap:12px;font-size:19px;font-weight:600;color:rgba(247,235,221,.78);white-space:nowrap}
+.course i{width:8px;height:8px;border-radius:50%;background:var(--amber);box-shadow:0 0 12px var(--amber)}
+
+/* ---------- editor strip ---------- */
+.ed{position:absolute;left:0;top:756px;width:1920px;height:324px;background:var(--ui);border-top:1px solid var(--ui-line)}
+.tb{position:absolute;left:0;right:0;top:0;height:44px;background:var(--ui-2);border-bottom:1px solid var(--ui-line);display:flex;align-items:center;justify-content:space-between;padding:0 22px;direction:ltr}
+.tc{font-family:"Mono";font-weight:600;font-size:19px;color:#E8EBF0;letter-spacing:.5px}
+.tc small{font-size:13px;color:var(--ui-dim);margin-left:10px;font-weight:500}
+.transport{display:flex;align-items:center;gap:22px}
+.transport .p{width:30px;height:30px;border-radius:50%;background:#E8EBF0;display:grid;place-items:center}
+.seq{direction:rtl;display:flex;align-items:center;gap:12px;font-size:16px;font-weight:600;color:var(--ui-text);white-space:nowrap}
+.seq b{color:#E8EBF0;font-weight:700}
+.seq .chip{font-family:"Mono";font-size:12px;font-weight:600;color:var(--ui-dim);border:1px solid var(--ui-line);border-radius:5px;padding:2px 6px;direction:ltr;unicode-bidi:isolate}
+#tl{position:absolute;left:0;top:44px}
+</style>
+</head>
+<body>
+
+<div class="pic">
+  <svg class="scene" id="scene" width="1920" height="756" viewBox="0 0 1920 756">
+    <defs>
+      <linearGradient id="wallFar" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#13262D"/><stop offset="1" stop-color="#0F1E24"/></linearGradient>
+      <linearGradient id="wallL" x1="0" y1="0" x2="1" y2="0"><stop offset="0" stop-color="#060B0E"/><stop offset="1" stop-color="#0E1C22"/></linearGradient>
+      <linearGradient id="wallR" x1="1" y1="0" x2="0" y2="0"><stop offset="0" stop-color="#1A1E1F"/><stop offset="1" stop-color="#14252B"/></linearGradient>
+      <linearGradient id="ceil" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#05090B"/><stop offset="1" stop-color="#0D191E"/></linearGradient>
+      <linearGradient id="floor" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#101C20"/><stop offset="1" stop-color="#070C0E"/></linearGradient>
+      <linearGradient id="board" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#18302C"/><stop offset="1" stop-color="#11231F"/></linearGradient>
+      <linearGradient id="glass" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#FFE3B8"/><stop offset=".45" stop-color="#FFB46A"/><stop offset="1" stop-color="#F07C3E"/></linearGradient>
+      <linearGradient id="shaft" x1="1" y1="0" x2="0" y2=".6"><stop offset="0" stop-color="#FFB878" stop-opacity=".55"/><stop offset=".6" stop-color="#FFA45E" stop-opacity=".18"/><stop offset="1" stop-color="#FFA45E" stop-opacity="0"/></linearGradient>
+      <radialGradient id="scrim" cx=".5" cy=".5" r=".5"><stop offset="0" stop-color="#04080A" stop-opacity=".62"/><stop offset=".55" stop-color="#04080A" stop-opacity=".35"/><stop offset="1" stop-color="#04080A" stop-opacity="0"/></radialGradient>
+      <radialGradient id="vig" cx=".5" cy=".46" r=".75"><stop offset=".5" stop-color="#000" stop-opacity="0"/><stop offset="1" stop-color="#000" stop-opacity=".78"/></radialGradient>
+      <radialGradient id="glow" cx=".5" cy=".5" r=".5"><stop offset="0" stop-color="#FFB06A" stop-opacity=".55"/><stop offset="1" stop-color="#FFB06A" stop-opacity="0"/></radialGradient>
+      <radialGradient id="exitGlow" cx=".5" cy=".5" r=".5"><stop offset="0" stop-color="#3DFFA0" stop-opacity=".55"/><stop offset="1" stop-color="#3DFFA0" stop-opacity="0"/></radialGradient>
+      <linearGradient id="flare" x1="0" y1="0" x2="1" y2="0"><stop offset="0" stop-color="#FFB06A" stop-opacity="0"/><stop offset=".5" stop-color="#FFC890" stop-opacity=".5"/><stop offset="1" stop-color="#FFB06A" stop-opacity="0"/></linearGradient>
+      <linearGradient id="bottomFade" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#000" stop-opacity="0"/><stop offset="1" stop-color="#000" stop-opacity=".82"/></linearGradient>
+      <filter id="grain" x="0" y="0" width="100%" height="100%">
+        <feTurbulence type="fractalNoise" baseFrequency=".9" numOctaves="2" seed="7" result="n"/>
+        <feColorMatrix type="saturate" values="0"/>
+        <feComponentTransfer><feFuncA type="table" tableValues="0 .5"/></feComponentTransfer>
+      </filter>
+      <filter id="blur6"><feGaussianBlur stdDeviation="6"/></filter>
+      <filter id="blur2"><feGaussianBlur stdDeviation="1.6"/></filter>
+      <filter id="blur18"><feGaussianBlur stdDeviation="18"/></filter>
+    </defs>
+    <!-- room shell, vanishing point (960, 300) -->
+    <polygon points="0,0 1920,0 1450,110 470,110" fill="url(#ceil)"/>
+    <polygon points="0,0 470,110 470,470 0,756" fill="url(#wallL)"/>
+    <polygon points="1920,0 1450,110 1450,470 1920,756" fill="url(#wallR)"/>
+    <rect x="470" y="110" width="980" height="360" fill="url(#wallFar)"/>
+    <polygon points="0,756 470,470 1450,470 1920,756" fill="url(#floor)"/>
+    <g id="ceilLights"></g>
+    <!-- board on the far wall: inner 540–1380 × 130–410, the title is set inside it -->
+    <rect x="530" y="120" width="860" height="300" rx="4" fill="#0A1513"/>
+    <rect x="540" y="130" width="840" height="280" rx="2" fill="url(#board)"/>
+    <g opacity=".12" stroke="#E8F2EC" stroke-linecap="round" fill="none" filter="url(#blur2)">
+      <path d="M600 160 C720 150 840 170 950 156" stroke-width="10"/>
+      <path d="M1060 392 C1150 382 1240 396 1330 386" stroke-width="7"/>
+      <path d="M580 392 C680 378 800 398 900 384" stroke-width="12"/>
+      <path d="M1250 168 l70 -16 M590 250 l40 18" stroke-width="5"/>
+    </g>
+    <!-- ledge with a duster and chalk on the left, balancing the lectern on the right -->
+    <rect x="522" y="420" width="876" height="10" fill="#1E2A2C"/>
+    <rect x="522" y="420" width="876" height="1.5" fill="#FFB46A" opacity=".22"/>
+    <rect x="676" y="413" width="40" height="7" rx="2" fill="#3A3A36"/>
+    <rect x="678" y="410" width="36" height="4" rx="1.5" fill="#6B5A44"/>
+    <rect x="732" y="415" width="26" height="5" rx="2" fill="#D9D3C4" opacity=".6"/>
+    <rect x="766" y="416" width="14" height="4" rx="2" fill="#D9D3C4" opacity=".45"/>
+    <!-- lectern -->
+    <g>
+      <polygon points="1210,470 1300,470 1292,420 1218,420" fill="#081013"/>
+      <rect x="1206" y="412" width="98" height="12" rx="2" fill="#0C171B"/>
+      <rect x="1214" y="413" width="82" height="2" fill="#FFB46A" opacity=".35"/>
+    </g>
+    <!-- exit sign + door on the left wall; horizontals run to the vanishing point (960, 300) -->
+    <polygon points="146,244 302,253 302,486 146,526" fill="#070D10"/>
+    <polygon points="158,256 290,264 290,478 158,512" fill="#0A1418" stroke="#0F2026" stroke-width="2"/>
+    <line x1="274" y1="372" x2="274" y2="392" stroke="#1C3036" stroke-width="4" stroke-linecap="round"/>
+    <ellipse cx="226" cy="214" rx="104" ry="50" fill="url(#exitGlow)"/>
+    <g transform="translate(170 192) skewY(7.4)">
+      <rect x="0" y="0" width="112" height="34" rx="3" fill="#18C474"/>
+      <rect x="0" y="0" width="112" height="34" rx="3" fill="#9CFFD0" opacity=".3" filter="url(#blur2)"/>
+      <!-- running figure, mirrored so it runs toward the arrow -->
+      <g fill="none" stroke="#F4FFF9" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round" transform="translate(182 0) scale(-1 1)">
+        <circle cx="96" cy="8.6" r="2.6" fill="#F4FFF9" stroke="none"/>
+        <path d="M94 12.5 L90 21 M93 14.5 L99 17.5 M93 14.5 L87.5 15.5 M90 21 L95 26 L94 30 M90 21 L85.5 25 L82 24"/>
+      </g>
+      <!-- arrow to the door -->
+      <path d="M8 17 H22 M8 17 L13 12 M8 17 L13 22" fill="none" stroke="#F4FFF9" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"/>
+      <text x="77" y="23.5" text-anchor="start" direction="rtl" font-family="Plex" font-weight="700" font-size="16" fill="#F4FFF9">مخرج</text>
+    </g>
+    <!-- windows on the right wall -->
+    <g id="windows"></g>
+    <g id="shafts" style="mix-blend-mode:screen"></g>
+    <!-- seats -->
+    <g id="seats"></g>
+    <g style="mix-blend-mode:screen" filter="url(#blur18)" opacity=".5">
+      <polygon points="1180,488 1520,470 1460,560 1040,590" fill="#FF9F55" opacity=".55"/>
+      <polygon points="1560,500 1900,480 1900,600 1420,640" fill="#FF9F55" opacity=".45"/>
+      <polygon points="880,500 1080,494 1000,548 760,560" fill="#FF9F55" opacity=".3"/>
+    </g>
+    <g id="dust"></g>
+    <ellipse cx="960" cy="300" rx="820" ry="300" fill="url(#scrim)"/>
+    <rect x="0" y="560" width="1920" height="196" fill="url(#bottomFade)"/>
+    <rect x="1100" y="96" width="820" height="10" fill="url(#flare)" opacity=".6" filter="url(#blur2)"/>
+    <rect x="0" y="0" width="1920" height="756" fill="url(#vig)"/>
+    <rect x="0" y="0" width="1920" height="756" filter="url(#grain)" opacity=".22" style="mix-blend-mode:overlay"/>
+  </svg>
+
+  <div class="bar-t"></div><div class="bar-b"></div>
+  <div class="burn l"><span class="rec"></span>TC 00:00:46:12</div>
+  <div class="burn r">مسودة المونتاج الثالثة</div>
+
+  <div class="course"><i></i>مشروع مادة الإعلام</div>
+  <div class="titles">
+    <div class="kick">فيلم قصير</div>
+    <h1>آخر محاضرة</h1>
+    <div class="tagline">بعض الدروس ما تنكتب على السبورة.</div>
+  </div>
+  <div class="credits">
+    <div>إخراج<b>اسم الطالب</b></div>
+    <div>تصوير<b>اسم الطالبة</b></div>
+    <div>مونتاج وصوت<b>اسم الطالب</b></div>
+  </div>
+</div>
+
+<div class="ed">
+  <div class="tb">
+    <div class="tc">00:00:46:12<small>/ 00:04:20:00</small></div>
+    <div class="transport">
+      <svg width="20" height="18" viewBox="0 0 20 18"><path d="M3 2v14M17 2L7 9l10 7z" fill="#A7AEBB" stroke="#A7AEBB" stroke-width="2" stroke-linejoin="round"/></svg>
+      <div class="p"><svg width="12" height="14" viewBox="0 0 12 14"><path d="M1.5 1.5l9 5.5-9 5.5z" fill="#111317"/></svg></div>
+      <svg width="20" height="18" viewBox="0 0 20 18"><path d="M17 2v14M3 2l10 7-10 7z" fill="#A7AEBB" stroke="#A7AEBB" stroke-width="2" stroke-linejoin="round"/></svg>
+    </div>
+    <div class="seq"><span class="chip" dir="ltr">24 fps</span><span>التسلسل:</span><b>آخر محاضرة</b></div>
+  </div>
+  <svg id="tl" width="1920" height="280" viewBox="0 0 1920 280"></svg>
+</div>
+
+<script>
+const NS = 'http://www.w3.org/2000/svg';
+const el = (tag, attrs, parent) => { const e = document.createElementNS(NS, tag); for (const k in attrs) e.setAttribute(k, attrs[k]); if (parent) parent.appendChild(e); return e; };
+const txt = (parent, x, y, s, attrs) => { const t = el('text', Object.assign({x, y}, attrs), parent); t.textContent = s; return t; };
+// seeded random
+let seed = 11; const rnd = () => { seed = (seed * 16807) % 2147483647; return (seed - 1) / 2147483646; };
+
+/* ---------- scene ---------- */
+const VX = 960, VY = 300;
+// ceiling beams converging to the vanishing point
+const cl = document.getElementById('ceilLights');
+[-0.62, -0.2, 0.2, 0.62].forEach((k) => {
+  const xf = VX + k * 980 / 2 * 0.98;
+  el('line', {x1: xf, y1: 110, x2: VX + (xf - VX) * (300 / 190), y2: 0, stroke: '#1A2A30', 'stroke-width': 3, opacity: .8}, cl);
+});
+// windows on the right wall: wall goes from x=1450 (far) to 1920 (near)
+const win = document.getElementById('windows');
+const sh = document.getElementById('shafts');
+const wallPt = (u, v) => { // u: 0 far .. 1 near ; v: 0 top .. 1 bottom
+  const x = 1450 + (1920 - 1450) * u;
+  const top = 110 + (0 - 110) * u;   // top edge from 110 to 0
+  const bot = 470 + (756 - 470) * u; // bottom edge from 470 to 756
+  return [x, top + (bot - top) * v];
+};
+el('ellipse', {cx:1700, cy:250, rx:360, ry:260, fill:'url(#glow)', opacity:.55}, win);
+[[0.06,0.2],[0.3,0.5],[0.62,0.9]].forEach(([u0,u1], i) => {
+  const v0 = 0.16, v1 = 0.66;
+  const P = [wallPt(u0,v0), wallPt(u1,v0), wallPt(u1,v1), wallPt(u0,v1)];
+  el('polygon', {points: P.map(p => p.join(',')).join(' '), fill:'url(#glass)'}, win);
+  // mullions
+  const m0 = wallPt((u0+u1)/2, v0), m1 = wallPt((u0+u1)/2, v1);
+  el('line', {x1:m0[0], y1:m0[1], x2:m1[0], y2:m1[1], stroke:'#2A2420', 'stroke-width': 3 + i * 3}, win);
+  [0.38, 0.62].forEach((vv) => { const a = wallPt(u0, v0 + (v1 - v0) * vv), b = wallPt(u1, v0 + (v1 - v0) * vv); el('line', {x1:a[0], y1:a[1], x2:b[0], y2:b[1], stroke:'#2A2420', 'stroke-width': 2 + i * 2}, win); });
+  el('polygon', {points: P.map(p => p.join(',')).join(' '), fill:'none', stroke:'#221C18', 'stroke-width': 6 + i * 4}, win);
+  // light shaft falling to the left across the floor and seats
+  const A = P[0], B = P[3];
+  const drop = 520 + i * 120;
+  const shaft = [A, P[1], [P[2][0] - drop * 1.15, P[2][1] + 120], [B[0] - drop * 1.3, B[1] + 150]];
+  el('polygon', {points: shaft.map(p => p.join(',')).join(' '), fill:'url(#shaft)', opacity: .8, filter:'url(#blur6)'}, sh);
+});
+// seats: curved rows from far (small, hazy) to near (big, dark, out of focus)
+const seats = document.getElementById('seats');
+const rows = 8;
+const lerp = (a, b, t) => a + (b - a) * t;
+for (let r = 0; r < rows; r++) {
+  const t = r / (rows - 1);
+  const s = lerp(0.34, 1.95, Math.pow(t, 1.5));
+  const base = lerp(482, 770, Math.pow(t, 1.3));
+  const w = 58 * s, h = 46 * s, gap = 9 * s, aisle = 150 * s;
+  const halfSpan = 1150;
+  const c = (r === rows - 1 ? [5, 8, 10] : [lerp(30, 9, t), lerp(48, 16, t), lerp(55, 19, t)]).map(Math.round);
+  const rgb = (k, add = 0) => `rgb(${Math.round(c[0] * k + add)},${Math.round(c[1] * k + add)},${Math.round(c[2] * k + add)})`;
+  const fill = rgb(1);
+  const g = el('g', r === rows - 1 ? {filter: 'url(#blur6)'} : {}, seats);
+  // the tier this row stands on: a darker step face with a lit nosing on its top edge, so the rows read as steps
+  const stepTop = base - h - 7 * s;
+  const curveAt = (cx) => Math.pow((cx - VX) / 1000, 2) * 26 * s;
+  let step = `M-40 ${stepTop - curveAt(-40)}`;
+  for (let xx = 0; xx <= 1960; xx += 40) step += ` L${xx} ${stepTop - curveAt(xx)}`;
+  el('path', {d: `${step} L1960 ${base + 60 * s} L-40 ${base + 60 * s} Z`, fill: rgb(.62), opacity: .82}, g);
+  if (r < rows - 1) el('path', {d: step, fill: 'none', stroke: rgb(1.35, 10), 'stroke-width': Math.max(1, 1.1 * s), opacity: .9 - .45 * t}, g);
+  for (const side of [-1, 1]) {
+    let n = 0;
+    for (let x = aisle / 2; x < halfSpan; n++) {
+      const cx = VX + side * (x + w / 2);
+      x += w + gap + (n % 2 === 1 ? 5 * s : 0);           // seats come in pairs: a wider gap after every second seat
+      if (cx < -100 || cx > 2020) continue;
+      const y = base - curveAt(cx);
+      const top = y - h + (rnd() < .12 ? 2.5 * s : 0);      // a few backs sit a touch lower (folded seats)
+      el('path', {d: `M${cx - w / 2} ${y + 40 * s} V${top + 12 * s} Q${cx - w / 2} ${top} ${cx - w / 2 + 12 * s} ${top} H${cx + w / 2 - 12 * s} Q${cx + w / 2} ${top} ${cx + w / 2} ${top + 12 * s} V${y + 40 * s} Z`, fill}, g);
+      // cushion seam at ~60 % of the back, and the shadowed lower half of the back
+      const seam = top + (y - top) * .6;
+      el('rect', {x: cx - w / 2 + 3 * s, y: seam, width: w - 6 * s, height: Math.max(1.2, 2.6 * s), fill: rgb(.55), opacity: .95}, g);
+      el('rect', {x: cx - w / 2, y: seam + 2.6 * s, width: w, height: y + 40 * s - seam - 2.6 * s, fill: rgb(.8), opacity: .7}, g);
+      // armrest stub in the gap on the aisle side of the seat
+      el('rect', {x: cx + side * (w / 2 + gap / 2) - 1.6 * s, y: seam - 4 * s, width: 3.2 * s, height: 16 * s, rx: 1.4 * s, fill: rgb(.7)}, g);
+      // warm rim light on the window side
+      const rim = Math.max(0, (cx - 860) / 1100) * (0.55 - 0.35 * t) * (0.35 + rnd() * 0.65);
+      if (rim > 0.06 && r < rows - 1) el('path', {d: `M${cx - w / 2 + 6 * s} ${top + 1.5 * s} H${cx + w / 2 - 6 * s}`, stroke: '#FFB878', 'stroke-width': Math.max(1.2, 2.4 * s), 'stroke-linecap': 'round', opacity: rim.toFixed(2)}, g);
+    }
+  }
+}
+// dust motes in the shafts
+const dust = document.getElementById('dust');
+for (let i = 0; i < 90; i++) {
+  const x = 980 + rnd() * 880, y = 140 + rnd() * 420;
+  if (x + y * 0.4 < 1200) continue;
+  el('circle', {cx: x, cy: y, r: (0.6 + rnd() * 1.8).toFixed(2), fill: '#FFE2BC', opacity: (0.15 + rnd() * 0.5).toFixed(2)}, dust);
+}
+
+/* ---------- timeline ---------- */
+const tl = document.getElementById('tl');
+const HEAD = 196;              // track header width (left)
+const X0 = HEAD, X1 = 1920 - 16;
+const secPx = (X1 - X0) / 100;  // 100 s visible
+const tx = (sec) => X0 + sec * secPx;
+// ruler
+el('rect', {x:0, y:0, width:1920, height:34, fill:'#15181D'}, tl);
+el('rect', {x:tx(36), y:0, width:tx(58) - tx(36), height:34, fill:'#2A2F37', opacity:.6}, tl);
+for (let s = 0; s <= 100; s += 2) {
+  const x = tx(s) + .5, major = s % 10 === 0;
+  el('line', {x1:x, x2:x, y1: major ? 14 : 24, y2:34, stroke: major ? '#5B6270' : '#363B44', 'stroke-width':1}, tl);
+  if (major && s < 100) txt(tl, x + 6, 20, `00:${String(Math.floor(s / 60)).padStart(2,'0')}:${String(s % 60).padStart(2,'0')}`, {'font-family':'Mono', 'font-size':12, fill:'#7D8492', direction:'ltr'});
+}
+el('line', {x1:0, x2:1920, y1:34.5, y2:34.5, stroke:'#2A2F37'}, tl);
+// tracks
+const tracks = [
+  {id:'V2', name:'نصوص', color:'#8B7CF6', h:44},
+  {id:'V1', name:'فيديو', color:'#2E8C9A', h:62},
+  {id:'A1', name:'صوت', color:'#3FA672', h:50},
+  {id:'A2', name:'موسيقى', color:'#C98A2E', h:50},
+];
+let ty = 44;
+const trackY = {};
+tracks.forEach((t) => {
+  trackY[t.id] = ty;
+  el('rect', {x:0, y:ty, width:HEAD - 8, height:t.h, fill:'#171A1F'}, tl);
+  el('rect', {x:HEAD, y:ty, width:1920 - HEAD, height:t.h, fill:'#13161A'}, tl);
+  txt(tl, 18, ty + t.h / 2 + 5, t.id, {'font-family':'Mono', 'font-size':14, 'font-weight':700, fill:'#E8EBF0', direction:'ltr'});
+  txt(tl, HEAD - 58, ty + t.h / 2 + 6, t.name, {'font-family':'Plex', 'font-size':15, 'font-weight':600, fill:'#A7AEBB', 'text-anchor':'middle'});
+  // tiny toggles
+  el('rect', {x:52, y:ty + t.h / 2 - 9, width:18, height:18, rx:4, fill:'none', stroke:'#3A404A'}, tl);
+  el('circle', {cx:61, cy:ty + t.h / 2, r:3.5, fill: t.id.startsWith('V') ? '#6B7280' : '#3A404A'}, tl);
+  ty += t.h + 6;
+});
+const clip = (track, s0, s1, label, opts = {}) => {
+  const t = tracks.find((k) => k.id === track); const y = trackY[track];
+  const x = tx(s0) + 1, w = tx(s1) - tx(s0) - 2;
+  const g = el('g', {}, tl);
+  el('rect', {x, y: y + 3, width: w, height: t.h - 6, rx: 6, fill: opts.fill || t.color, opacity: opts.dim ? .55 : 1}, g);
+  if (opts.thumbs) {
+    const th = t.h - 26; const n = Math.max(1, Math.round((w - 8) / (th * 1.78 + 2))); const tw = (w - 8 - (n - 1) * 2) / n;
+    for (let k = 0; k < n; k++) {
+      const xx = x + 4 + k * (tw + 2);
+      const hue = opts.thumbs[k % opts.thumbs.length];
+      el('rect', {x: xx, y: y + 20, width: tw, height: th, rx: 2, fill: hue}, g);
+      el('rect', {x: xx, y: y + 20 + th * .62, width: tw, height: th * .38, rx: 1, fill: '#000', opacity: .35}, g);
+      el('rect', {x: xx + tw * .62, y: y + 20 + th * .14, width: tw * .2, height: th * .44, fill: '#FFC890', opacity: opts.win ? .8 : .0}, g);
+    }
+  }
+  if (opts.wave) {
+    let d = ''; const mid = y + t.h / 2 + 6, amp = (t.h - 24) / 2;
+    for (let xx = x + 6; xx < x + w - 6; xx += 3) {
+      const a = amp * (0.25 + 0.75 * Math.abs(Math.sin(xx * 0.043) * Math.cos(xx * 0.011 + opts.wave)) * (0.6 + rnd() * 0.4));
+      d += `M${xx} ${mid - a}V${mid + a}`;
+    }
+    el('path', {d, stroke: '#0B0D10', 'stroke-opacity': .45, 'stroke-width': 1.6}, g);
+  }
+  if (opts.fade) { el('path', {d: `M${x} ${y + t.h - 3} L${x + opts.fade} ${y + 3}`, stroke: '#0B0D10', 'stroke-opacity': .5, 'stroke-width': 1.5}, g); el('path', {d: `M${x} ${y + 3} H${x + opts.fade} L${x} ${y + t.h - 3} Z`, fill: '#0B0D10', opacity: .28}, g); }
+  const lab = txt(g, x + 10 + (opts.fade ? opts.fade : 0), y + 17, label, {'font-family':'Plex', 'font-size':13, 'font-weight':700, fill:'#0B0D10', 'text-anchor':'end'});
+  return g;
+};
+clip('V2', 36, 58, 'العنوان والأسماء', {fade: 46});   // spans the playhead: the frame shows the title and the names
+clip('V2', 58, 66, 'مكان وزمان', {dim: true});
+clip('V2', 92, 100, 'عنوان فرعي', {dim: true});
+clip('V1', 0, 14, 'الممر', {thumbs: ['#2D4A52', '#35555C']});
+clip('V1', 14, 36, 'القاعة الفاضية', {thumbs: ['#3A5A62', '#7A5B3F', '#4A646A'], win: true});
+clip('V1', 36, 58, 'السبورة', {thumbs: ['#22403B', '#2A4A44']});
+clip('V1', 58, 79, 'النافذة', {thumbs: ['#B2743F', '#C98A50', '#8E5E36'], win: true});
+clip('V1', 79, 100, 'الباب', {thumbs: ['#1E3338', '#294349']});
+clip('A1', 0, 30, 'جو القاعة', {wave: 1});
+clip('A1', 30, 61, 'حوار', {wave: 2.4});
+clip('A1', 64, 100, 'خطوات', {wave: .7});
+clip('A2', 8, 100, 'موسيقى', {wave: 3.1, fade: 70});
+// playhead at 46.5 s = 00:00:46:12 at 24 fps
+const ph = tx(46.5);
+el('rect', {x: ph - 1, y: 0, width: 2, height: 280, fill: '#FF4D3D'}, tl);
+el('path', {d: `M${ph - 9} 0 H${ph + 9} V14 L${ph} 23 L${ph - 9} 14 Z`, fill: '#FF4D3D'}, tl);
+// in/out markers
+['36','58'].forEach((s, i) => { const x = tx(+s); el('path', {d: i ? `M${x} 0 V12 L${x - 8} 0 Z` : `M${x} 0 V12 L${x + 8} 0 Z`, fill:'#C7CCD6'}, tl); });
+// bottom scrollbar
+el('rect', {x: HEAD, y: 268, width: 1920 - HEAD - 16, height: 6, rx: 3, fill: '#1C2026'}, tl);
+el('rect', {x: HEAD + 220, y: 268, width: 880, height: 6, rx: 3, fill: '#3A404A'}, tl);
+</script>
+</body>
+</html>

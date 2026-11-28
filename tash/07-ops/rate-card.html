@@ -1,0 +1,170 @@
+<!doctype html>
+<html lang="ar" dir="rtl" class="post">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=1080">
+<title>طشّ — الباقات والأسعار</title>
+<!-- ?format=post → 1080×1350 · ?format=story → 1080×1920 (safe zones respected).
+     Prices mirror 04-pricing.md — change both together. Render: node 07-ops/src/render.mjs (from tash/) -->
+<link rel="stylesheet" href="../_system/tokens.css">
+<script>
+  if (/format=story/.test(location.search) || location.hash === '#story') document.documentElement.className = 'story';
+</script>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  ul { list-style: none; }
+  html, body { background: var(--ink); }
+  body { color: var(--paper); font-family: var(--f-text-ar); -webkit-font-smoothing: antialiased; }
+  .num { direction: ltr; unicode-bidi: isolate; display: inline-block; }
+
+  /* format-dependent sizes */
+  .post  { --W: 1080px; --H: 1350px; --pt: 60px;  --pb: 52px;  --logo: 50px; --h1: 70px; --flag: 21px; --gap: 12px;
+           --pkg-pad: 22px 32px 24px; --name: 48px; --price: 74px; --incl: 25px; --chip: 21px; --row: 23px; --head-gap: 30px; --sec-gap: 26px; --rowpad: 8px; }
+  .story { --W: 1080px; --H: 1920px; --pt: 230px; --pb: 270px; --logo: 56px; --h1: 86px; --flag: 22px; --gap: 12px;
+           --pkg-pad: 22px 32px 24px; --name: 52px; --price: 80px; --incl: 26px; --chip: 22px; --row: 24px; --head-gap: 30px; --sec-gap: 30px; --rowpad: 9px; }
+  .story .excl { margin-bottom: 30px; }
+  /* story: disclaimer pill moves up into the header row (replaces the slate), title gets its own line */
+  .story .top .slate { display: none; }
+  .story .head .flag { display: none; }
+  .top .flag { display: none; }
+  .story .top .flag { display: inline-flex; }
+
+  .sheet { position: relative; width: var(--W); height: var(--H); overflow: hidden; background: var(--ink);
+           padding: var(--pt) 72px var(--pb); display: flex; flex-direction: column; }
+
+  .top { display: flex; justify-content: space-between; align-items: center; }
+  .mark { height: var(--logo); width: auto; display: block; }
+  .slate { font-family: var(--f-mono); font-weight: 600; font-size: 20px; letter-spacing: .24em; text-transform: uppercase;
+           color: var(--smoke); direction: ltr; }
+
+  .head { margin-top: var(--head-gap); display: flex; justify-content: space-between; align-items: center; gap: 20px; }
+  h1 { font-family: var(--f-display-ar); font-weight: 700; font-size: var(--h1); line-height: 1.1; white-space: nowrap; }
+  .flag { flex: none; display: inline-flex; align-items: center; gap: 12px; background: var(--lime); color: var(--ink);
+          font-family: var(--f-display-ar); font-weight: 700; font-size: var(--flag); line-height: 1; padding: 12px 18px 13px; border-radius: 999px; }
+  .flag::before { content: ""; width: 9px; height: 9px; border-radius: 50%; background: var(--ink); }
+
+  .pkgs { margin-top: var(--head-gap); display: flex; flex-direction: column; gap: var(--gap); }
+  .pkg { background: var(--char); border-radius: var(--radius); padding: var(--pkg-pad); }
+  .pkg-top { display: flex; justify-content: space-between; align-items: center; }
+  .pkg-name { display: flex; align-items: baseline; gap: 18px; }
+  .tier { display: inline-flex; gap: 7px; direction: rtl; align-self: center; margin-left: 4px; }
+  .tier i { width: 13px; height: 13px; border-radius: 50%; background: #3A3B36; display: block; }
+  .tier i.on { background: var(--lime); }
+  .pkg h2 { font-family: var(--f-display-ar); font-weight: 700; font-size: var(--name); line-height: 1.15; }
+  .kind { font-size: var(--incl); color: var(--smoke); }
+  .price { display: flex; align-items: baseline; gap: 12px; }
+  .price b { font-family: var(--f-display-en); font-stretch: 125%; font-weight: 900; font-size: var(--price); line-height: .9;
+             direction: ltr; letter-spacing: -.01em; }
+  .price span { font-size: var(--incl); color: var(--smoke); }
+  .incl { margin-top: 6px; font-size: var(--incl); line-height: 1.5; color: var(--paper); }
+  .specs { margin-top: 12px; display: flex; flex-wrap: wrap; gap: 8px; }
+  .specs li { font-size: var(--chip); line-height: 1; color: #C9CABF; border: 1.5px solid #34352F; border-radius: 999px; padding: 9px 16px 10px; }
+
+  .sec-title { display: flex; align-items: baseline; gap: 16px; margin-bottom: 4px; }
+  .sec-title h3 { font-family: var(--f-display-ar); font-weight: 700; font-size: 30px; }
+  .sec-title .slate { font-size: 18px; }
+
+  .addons { margin-top: var(--sec-gap); }
+  .addons ul { display: grid; grid-template-columns: 1fr 1fr; column-gap: 48px; }
+  .addons li { display: flex; align-items: baseline; gap: 12px; font-size: var(--row); line-height: 1.35; padding: var(--rowpad) 0;
+               border-bottom: 1px solid var(--line); }
+  .addons li .lbl { flex: none; }
+  .addons li i { flex: 1; }
+  .addons li b { flex: none; font-weight: 400; color: var(--paper); }
+  .addons li small { font-size: .82em; color: var(--smoke); }
+
+  .excl { margin-top: var(--sec-gap); }
+  .excl p { display: flex; flex-wrap: wrap; align-items: baseline; gap: 4px 22px; font-size: var(--row); line-height: 1.5; color: var(--smoke); }
+  .excl p strong { font-family: var(--f-display-ar); font-weight: 700; color: var(--paper); margin-left: -6px; }
+  .excl p span, .excl p strong { white-space: nowrap; }
+  .excl p span { display: inline-flex; align-items: center; gap: 9px; }
+  .excl p span::before { content: ""; width: 5px; height: 5px; border-radius: 50%; background: #5A5B55; flex: none; }
+
+  .foot { margin-top: auto; display: flex; justify-content: space-between; align-items: center; padding-top: 22px;
+          border-top: 1px solid var(--line); }
+  .foot p { font-size: 22px; color: var(--smoke); }
+  .foot p b { font-weight: 400; color: var(--paper); }
+  .handle { font-family: var(--f-mono); font-weight: 600; font-size: 20px; letter-spacing: .08em; color: var(--paper); direction: ltr; }
+
+  /* story: CTA bubble instead of a plain footer line */
+  .cta { display: none; }
+  .story .cta { display: flex; align-items: center; justify-content: space-between; margin-top: auto;
+                background: var(--paper); color: var(--ink); border-radius: var(--radius); padding: 26px 32px; }
+  .story .cta p { font-family: var(--f-display-ar); font-weight: 700; font-size: 36px; display: flex; align-items: center; gap: 18px; }
+  .story .cta .dots { display: inline-flex; gap: 9px; direction: ltr; }
+  .story .cta .dots i { width: 14px; height: 14px; border-radius: 50%; background: var(--ink); display: block; }
+  .story .cta .handle { color: var(--ink); font-size: 22px; }
+  .story .foot { margin-top: 26px; border-top: 0; padding-top: 0; }
+  .story .foot .handle { display: none; }
+</style>
+</head>
+<body>
+<main class="sheet">
+  <header class="top">
+    <img class="mark" src="../02-logo/svg/tash-wordmark--paper-lime.svg" alt="طشّ">
+    <div class="slate">Rate card · 2026</div>
+    <p class="flag">أسعار مبدئية قابلة للتعديل</p>
+  </header>
+
+  <section class="head">
+    <h1>الباقات والأسعار</h1>
+    <p class="flag">أسعار مبدئية قابلة للتعديل</p>
+  </section>
+
+  <section class="pkgs">
+    <article class="pkg">
+      <div class="pkg-top">
+        <div class="pkg-name"><span class="tier"><i class="on"></i><i></i><i></i></span><h2>لقطة</h2><span class="kind">تصميم إعلاني</span></div>
+        <div class="price"><b>90</b><span>د.ك</span></div>
+      </div>
+      <p class="incl">فكرة وعنوان إعلاني + تصميم رئيسي بثلاث مقاسات</p>
+      <ul class="specs"><li>بوستر ثابت</li><li><span class="num">4:5 · 9:16 · 1:1</span></li><li>جولتين تعديل</li><li><span class="num">3–4</span> أيام عمل</li></ul>
+    </article>
+
+    <article class="pkg">
+      <div class="pkg-top">
+        <div class="pkg-name"><span class="tier"><i class="on"></i><i class="on"></i><i></i></span><h2>ريل</h2><span class="kind">إعلان سوشال قصير</span></div>
+        <div class="price"><b>190</b><span>د.ك</span></div>
+      </div>
+      <p class="incl">فكرة وسكربت + موشن أو <span class="num">3D</span> أو مونتاج لقطاتكم + موسيقى أصلية + غلاف</p>
+      <ul class="specs"><li><span class="num">15–20</span> ثانية</li><li><span class="num">9:16</span> ريلز · تيك توك · ستوري</li><li>جولتين تعديل</li><li><span class="num">7–9</span> أيام عمل</li></ul>
+    </article>
+
+    <article class="pkg">
+      <div class="pkg-top">
+        <div class="pkg-name"><span class="tier"><i class="on"></i><i class="on"></i><i class="on"></i></span><h2>إطلاق</h2><span class="kind">فيديو إعلاني متكامل</span></div>
+        <div class="price"><b>390</b><span>د.ك</span></div>
+      </div>
+      <p class="incl">فيديو <span class="num">30</span> ثانية + نسخة <span class="num">15</span> ثانية + مقاس إضافي + بوستر + غلاف + موسيقى أصلية</p>
+      <ul class="specs"><li>فكرة وسكربت وستوري بورد</li><li><span class="num">9:16</span> + مقاس من اختياركم</li><li>جولتين تعديل</li><li><span class="num">12–15</span> يوم عمل</li></ul>
+    </article>
+  </section>
+
+  <section class="addons">
+    <div class="sec-title"><h3>إضافات</h3><span class="slate">Add-ons</span></div>
+    <ul>
+      <li><span class="lbl">مقاس إضافي</span><i></i><b><span class="num">20</span> د.ك</b></li>
+      <li><span class="lbl">فكرة وسكربت فقط</span><i></i><b><span class="num">50</span> د.ك</b></li>
+      <li><span class="lbl">نسخة مختصرة <small><span class="num">6–10</span> ث</small></span><i></i><b><span class="num">35</span> د.ك</b></li>
+      <li><span class="lbl">باقة بوسترات <small>(<span class="num">3</span>)</small></span><i></i><b><span class="num">60</span> د.ك</b></li>
+      <li><span class="lbl">مستعجل <small>أول نسخة خلال <span class="num">48</span> ساعة · لقطة وريل</small></span><i></i><b><span class="num">+30%</span></b></li>
+      <li><span class="lbl">تعديل إضافي <small>تصميم / فيديو</small></span><i></i><b>15 / 30 د.ك</b></li>
+    </ul>
+  </section>
+
+  <section class="excl">
+    <p><strong>مو ضمن الأسعار:</strong><span>ميزانية الإعلان الممول</span><span>إدارة الحسابات والنشر</span><span>التصوير الميداني (إلا بترتيب مسبق)</span><span>الطباعة</span><span>معلّق صوتي أو موديل</span></p>
+  </section>
+
+  <div class="cta">
+    <p><span class="dots"><i></i><i></i><i></i></span>شلون أطلب؟ راسلونا</p>
+    <span class="handle">@tash.creative.kw</span>
+  </div>
+
+  <footer class="foot">
+    <p>الأسعار بالدينار الكويتي · <b><span class="num">50%</span> عربون</b> والباقي قبل التسليم</p>
+    <span class="handle">@tash.creative.kw</span>
+  </footer>
+</main>
+</body>
+</html>

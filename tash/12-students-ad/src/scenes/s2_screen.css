@@ -1,0 +1,60 @@
+/* s2_screen — inside the laptop screen at 2:47 a.m.: a GENERIC slide app in dark mode (no Office UI, no logos); the blank
+   white slide is the only bright thing. Builder A. Every visual is set from seek(t); no animation/transition here.
+   Coordinates are UI-plane px (= frame px at rest). */
+.s2-root { position: absolute; inset: 0; overflow: hidden; background: #121418; }
+.s2-world { position: absolute; left: 0; top: 0; width: 1080px; height: 1920px; transform-origin: 540px 700px;
+  transform-style: preserve-3d; will-change: transform; }
+.s2-abs { position: absolute; }
+.s2-push { position: absolute; left: 0; top: 0; width: 1080px; height: 1920px; transform-origin: 540px 720px; will-change: transform; }
+/* (fix round 2) the hook's clock prop, carried into the app (screen space) */
+.s2-clockS { font-family: "IBM Plex Sans Arabic", sans-serif; font-weight: 600; color: #F5F5E9; line-height: 1; z-index: 4;
+  text-shadow: 0 2px 8px rgba(0,0,0,.55); will-change: transform, opacity; }
+.s2-ar { direction: rtl; white-space: nowrap; letter-spacing: 0; font-feature-settings: "kern" 1, "liga" 1, "calt" 1; }
+
+/* the app (flat on the plane) */
+.s2-canvas { width: 1700px; height: 2700px; background: #17191D; }   /* flat: a gradient bands under the exposure settle */
+.s2-status { width: 1700px; height: 652px; background: #0E0F12; }
+.s2-title { width: 1700px; height: 80px; background: #1C1E23; border-top: 1px solid #26292F; }
+.s2-tools { width: 1700px; height: 72px; background: #1C1E23; border-bottom: 1px solid #2A2D33; }
+.s2-thumbs { width: 420px; height: 1600px; background: #16181C; border-left: 1px solid #2A2D33; }
+.s2-thumb { width: 176px; height: 99px; background: #fff; border-radius: 6px; box-shadow: 0 0 0 4px #6E9BFF, 0 8px 20px rgba(0,0,0,.45); }
+.s2-thumb2 { width: 176px; height: 99px; border-radius: 6px; border: 2.5px dashed #3A3E46; }
+.s2-clock { font: 600 32px "IBM Plex Sans Arabic", sans-serif; color: #ECEEF1; line-height: 1; }
+.s2-file { font: 500 30px "IBM Plex Sans Arabic", sans-serif; color: #8D939C; line-height: 1; }
+.s2-ico { position: absolute; overflow: visible; }
+.s2-appico { width: 44px; height: 44px; border-radius: 11px; background: #E9EBEF; }
+.s2-avatar { width: 40px; height: 40px; border-radius: 50%; background: #7C6BC4; overflow: hidden; }
+.s2-share { width: 92px; height: 40px; border-radius: 20px; background: #E9EBEF; }
+
+/* the slide: the only bright thing at 2:47 */
+.s2-slide { background: #FFFFFF; border-radius: 3px;
+  box-shadow: 0 0 0 1px rgba(255,255,255,.35), 0 0 70px rgba(190,210,255,.10), 0 30px 80px rgba(0,0,0,.55); }
+.s2-ph { border: 2.5px solid #6E9BFF; border-radius: 4px; }
+.s2-ph i { position: absolute; width: 12px; height: 12px; background: #fff; border: 2.5px solid #6E9BFF; border-radius: 2px; }
+.s2-phtext { font: 500 56px "IBM Plex Sans Arabic", sans-serif; color: #B4B9C1; line-height: 1.2; }
+.s2-caret { width: 4px; height: 70px; background: #111317; border-radius: 1px; }
+
+/* floating, closer to the lens */
+.s2-notif { border-radius: 26px; background: rgba(44,47,54,.97); border: 1px solid rgba(255,255,255,.09);
+  box-shadow: 0 2px 6px rgba(0,0,0,.3), 0 26px 60px rgba(0,0,0,.55); }
+.s2-ntile { position: absolute; right: 26px; top: 31px; width: 66px; height: 66px; border-radius: 17px; background: #F0483C; }
+.s2-ntitle { font: 700 30px "IBM Plex Sans Arabic", sans-serif; color: #FFFFFF; line-height: 1.15; }
+.s2-nbody { font: 500 34px "IBM Plex Sans Arabic", sans-serif; color: #D9DCE1; line-height: 1.15; }
+
+.s2-bub { display: flex; flex-direction: row-reverse; align-items: flex-start; gap: 16px; direction: ltr; }
+.s2-bub .av { flex: none; width: 70px; height: 70px; border-radius: 50%; background: #F3A95C; position: relative; overflow: hidden;
+  box-shadow: 0 8px 20px rgba(0,0,0,.4); }
+.s2-bub .msg { background: #F4F5F7; border-radius: 34px 8px 34px 34px; padding: 22px 34px 27px; color: #111317;
+  font: 500 44px "IBM Plex Sans Arabic", sans-serif; line-height: 1.25; direction: rtl; white-space: nowrap;
+  box-shadow: 0 2px 6px rgba(0,0,0,.25), 0 20px 50px rgba(0,0,0,.5); }
+
+.s2-cursor { left: 0; top: 0; width: 36px; height: 53px; }
+
+/* screen-space layers (outside the camera group) */
+.s2-vig { position: absolute; inset: 0; pointer-events: none;
+  background: radial-gradient(115% 78% at 50% 44%, rgba(4,6,9,0) 50%, rgba(4,6,9,.55) 100%); }
+.s2-big { position: absolute; left: 0; top: 0; z-index: 5; white-space: nowrap; direction: rtl; letter-spacing: 0; line-height: 1.3;
+  font-family: "Alexandria", "IBM Plex Sans Arabic", sans-serif; color: #F5F5E9; transform-origin: 50% 58%;
+  text-shadow: 0 6px 30px rgba(0,0,0,.55);
+  font-feature-settings: "kern" 1, "liga" 1, "calt" 1; will-change: transform, opacity; }
+.s2-big > span { display: inline-block; padding: 0.3em 0.08em; margin: -0.3em -0.08em; }

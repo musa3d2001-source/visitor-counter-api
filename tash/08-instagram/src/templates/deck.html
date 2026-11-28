@@ -1,0 +1,130 @@
+<!doctype html>
+<!-- CAROUSEL 1080×1350 for the launch grid — an extension of 03-templates/templates/carousel.html (same frame: series
+     slate top-left, wordmark bottom-left, counter + the three dots filling with lime right→left) with the slide kinds
+     the launch decks need. Any slide may set its own `theme` (ink · paper · lime): the deck can change ground.
+     kinds:
+       cover     { headline, line, typing? }      the question / hook (typing bubble: the answer is coming)
+       mark      { kicker, line }                  «إحنا» + the wordmark AS the next word (no small wordmark on this slide)
+       statement { headline, line }                one idea
+       list      { title, items[], mode do|dont }   do = filled dots · dont = empty rings (the boundary)
+       content   { icon, title, body }             as in the template (icons from 03-templates/src/icons.js)
+       work      { pic {src, fx, fy, zoom, bg, fit} | wall [src…], num, title, line, concept {slate, ar} }   a service + real work
+       closing   { headline, line, handle? }
+     deck: theme · series · slides [ … ]
+     The 03 template's cover bubble draws ink dots on an ink bubble on lime/paper slides; here the bubble keeps lime dots. -->
+<html lang="ar" dir="rtl"><head><meta charset="utf-8">
+<link rel="stylesheet" href="/_system/tokens.css"><link rel="stylesheet" href="/03-templates/src/base.css">
+<style>
+  .series { position: absolute; left: 96px; top: 104px; z-index: 10; font-size: 20px; }
+  .wmk { position: absolute; left: 96px; bottom: 100px; z-index: 12; }
+  .progress { position: absolute; right: 96px; bottom: 104px; z-index: 12; display: flex; align-items: center; gap: 26px; direction: rtl; }
+  .progress .count { font-size: 22px; color: var(--sub); letter-spacing: .18em; }
+  .block { position: absolute; right: 96px; left: 96px; top: 170px; bottom: 300px; z-index: 10; display: flex; flex-direction: column; justify-content: center; gap: 40px; }
+  .headline { color: var(--fg); }
+  .line { color: var(--sub); font-size: 46px; line-height: 1.45; max-width: 860px; }
+  .typing { align-self: flex-start; margin-top: 16px; }
+  .ic { position: absolute; right: 96px; top: 176px; width: 250px; height: 250px; z-index: 10; }
+  .ic svg { width: 250px; height: 250px; }
+  .title { position: absolute; right: 96px; left: 96px; z-index: 10; color: var(--fg); }
+  .body { position: absolute; right: 96px; left: 150px; z-index: 10; color: var(--fg); font-size: 46px; line-height: 1.6; text-wrap: balance; }
+  /* mark */
+  .markrow { display: flex; align-items: flex-end; gap: 44px; direction: rtl; }
+  .markrow .kick { font-size: 176px; line-height: 1; color: var(--fg); padding-bottom: 6px; }
+  .markrow .wm { flex: none; }
+  /* list */
+  .ltitle { color: var(--fg); }
+  .items { display: grid; gap: 26px; margin-top: 8px; }
+  .item { display: flex; align-items: center; gap: 30px; font-size: 50px; line-height: 1.3; color: var(--fg); }
+  .item .b { flex: none; width: 30px; height: 30px; border-radius: 50%; }
+  .item .b.do { background: var(--dot); }
+  .item .b.dont { box-shadow: inset 0 0 0 4px var(--fg); }
+  /* work */
+  .band { left: 0; top: 0; width: 1080px; height: 700px; z-index: 5; }
+  .wall { position: absolute; left: 0; top: 0; width: 1080px; height: 700px; z-index: 5; display: flex; justify-content: center; align-items: center; gap: 36px; }
+  .wall img { height: 580px; width: auto; display: block; }
+  .wconcept { position: absolute; left: 96px; top: 730px; z-index: 12; display: grid; gap: 8px; justify-items: start; }
+  .wconcept .slate { font-size: 18px; }
+  .wconcept .concept-ar { font-size: 22px; }
+  .num { position: absolute; right: 96px; top: 742px; z-index: 10; font-size: 30px; color: var(--sub); }
+  .wtitle { position: absolute; right: 96px; left: 96px; top: 790px; z-index: 10; color: var(--fg); line-height: 1.3; }
+  .wline { position: absolute; right: 96px; left: 150px; z-index: 10; color: var(--sub); font-size: 40px; line-height: 1.5; text-wrap: balance; }
+  .handle { font-family: var(--f-mono); font-weight: 600; font-size: 30px; letter-spacing: .14em; color: var(--sub); direction: ltr; text-align: right; }
+</style></head><body><div id="stage"></div>
+<script type="module">
+import { run, COL } from '/03-templates/src/tpl.js';
+import { icon } from '/03-templates/src/icons.js';
+
+function progressDots(p, { d = 26, on = COL.lime, off = '#3A3B36' } = {}) {
+  const g = d * 0.178, w = 3 * d + 2 * g, fill = p * 3; let s = '';
+  for (let k = 0; k < 3; k++) {                    // k = 0 is the rightmost dot (first in reading order)
+    const cx = w - d / 2 - k * (d + g), f = Math.max(0, Math.min(1, fill - k));
+    s += `<clipPath id="pd${k}"><circle cx="${cx}" cy="${d / 2}" r="${d / 2}"/></clipPath>`;
+    s += `<circle cx="${cx}" cy="${d / 2}" r="${d / 2}" fill="${off}"/>`;
+    if (f > 0) s += `<rect clip-path="url(#pd${k})" x="${(cx + d / 2 - f * d).toFixed(2)}" y="0" width="${(f * d).toFixed(2)}" height="${d}" fill="${on}"/>`;
+  }
+  return `<svg width="${w}" height="${d}" viewBox="0 0 ${w} ${d}" style="display:block">${s}</svg>`;
+}
+
+run(async (d, { stage, T, rich, h, put, linesOf, typingBubble, wordmark, photo }) => {
+  const i = d.__index || 0, n = d.__total || 1, kind = d.kind || (i === 0 ? 'cover' : i === n - 1 ? 'closing' : 'content');
+  const theme = d.theme || 'ink';
+  const pad = x => String(x).padStart(2, '0');
+  const off = theme === 'paper' ? '#D3D3C4' : theme === 'lime' ? '#A8D800' : '#3A3B36';
+  const on = theme === 'ink' ? COL.lime : COL.ink;
+  put(stage,
+    d.series && kind !== 'work' ? h('div', { class: 'slate series', text: d.series }) : null,   // work slides: the picture owns the top
+    kind === 'mark' ? null : h('div', { class: 'wmk' }, wordmark(T, 112)),
+    h('div', { class: 'progress', 'data-name': 'progress' },
+      h('div', { html: progressDots((i + 1) / n, { on, off }) }),
+      h('div', { class: 'slate count', text: `${pad(i + 1)} / ${pad(n)}` })));
+
+  if (kind === 'cover' || kind === 'closing' || kind === 'statement') {
+    put(stage, put(h('div', { class: 'block' }),
+      h('div', { class: 'disp headline key', 'data-fit': d.fit || '110,168', 'data-lines': linesOf(d.headline, 3), 'data-name': 'headline', html: rich(d.headline) }),
+      d.line ? h('div', { class: 'txt line key', 'data-name': 'line', html: rich(d.line) }) : null,
+      d.handle ? h('div', { class: 'handle key', 'data-name': 'handle', text: d.handle }) : null,
+      kind === 'cover' && d.typing !== false ? h('div', { class: 'typing', html: typingBubble({ scale: 0.7, fill: theme === 'ink' ? COL.char : COL.ink, dot: COL.lime }) }) : null));
+    return { format: 'post', lightAt: '84% 4%' };
+  }
+
+  if (kind === 'mark') {
+    const row = h('div', { class: 'markrow key', 'data-name': 'mark' }, h('span', { class: 'disp kick', html: rich(d.kicker) }), wordmark(T, d.markW || 560));
+    put(stage, put(h('div', { class: 'block', style: 'gap:56px' }), row, d.line ? h('div', { class: 'txt line key', 'data-name': 'line', html: rich(d.line) }) : null));
+    return { format: 'post', lightAt: '84% 4%' };
+  }
+
+  if (kind === 'list') {
+    const items = h('div', { class: 'items' }, (d.items || []).map(t => h('div', { class: 'item txt key', 'data-name': 'item' }, h('span', { class: `b ${d.mode === 'dont' ? 'dont' : 'do'}` }), h('span', { html: rich(t) }))));
+    put(stage, put(h('div', { class: 'block', style: 'gap:52px' }),
+      h('div', { class: 'disp ltitle key', 'data-fit': '96,132', 'data-lines': '1', 'data-name': 'title', html: rich(d.title) }), items));
+    return { format: 'post', lightAt: '84% 4%' };
+  }
+
+  if (kind === 'work') {
+    const pic = d.wall ? h('div', { class: 'wall', style: `background:${d.wallBg || 'var(--surface)'};gap:${d.wallGap ?? 36}px` }, d.wall.map(src => h('img', { src, alt: '', style: d.wallH ? `height:${d.wallH}px` : '' }))) : photo(d.pic, 'layer band');
+    const c = d.concept;
+    const title = h('div', { class: 'disp wtitle key', 'data-fit': '84,124', 'data-lines': '1', 'data-name': 'title', html: rich(d.title) });
+    const line = d.line ? h('div', { class: 'txt wline key', 'data-fit': '34,40', 'data-lines': '2', 'data-name': 'line', html: rich(d.line) }) : null;
+    put(stage, pic,
+      c ? h('div', { class: 'wconcept key', 'data-name': 'concept label' }, h('div', { class: 'slate', text: c.slate }), h('div', { class: 'concept-ar', text: c.ar || 'إعلان تجريبي — علامة خيالية' })) : null,
+      d.num ? h('div', { class: 'slate num', text: d.num }) : null,
+      title, line);
+    return { format: 'post', light: false, after: () => { if (line) line.style.top = (title.offsetTop + title.offsetHeight + 6) + 'px'; } };
+  }
+
+  // content (icon + title + body), as in the template
+  const ic = h('div', { class: 'ic', html: icon(d.icon || 'message', { fg: T.fg, bg: T.bg, accent: T.accent, size: 250 }) });
+  const title = h('div', { class: 'disp title key', 'data-fit': '96,150', 'data-lines': '1', 'data-name': 'title', html: rich(d.title) });
+  const body = h('div', { class: 'txt body key', 'data-fit': '38,46', 'data-lines': '4', 'data-name': 'body', html: rich(d.body) });
+  put(stage, ic, title, body);
+  return { format: 'post', lightAt: '84% 4%', after: () => {
+    const total = ic.offsetHeight + 64 + title.offsetHeight + 12 + body.offsetHeight;
+    const y0 = Math.max(150, 170 + (1010 - total) * 0.42);
+    ic.style.top = y0 + 'px';
+    title.style.top = (y0 + ic.offsetHeight + 64) + 'px';
+    body.style.top = (title.offsetTop + title.offsetHeight + 12) + 'px';
+    const svg = ic.querySelector('svg'), bb = svg && svg.getBBox();
+    if (bb && bb.width) ic.style.transform = `translateX(${((600 - bb.x - bb.width) * ic.offsetWidth / 600).toFixed(1)}px)`;
+  } };
+});
+</script></body></html>

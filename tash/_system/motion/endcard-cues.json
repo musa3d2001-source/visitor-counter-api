@@ -1,0 +1,20 @@
+{
+  "typingStart": 0.0,
+  "typingPeriod": 0.72,
+  "typingPhase": 0.16,
+  "typingAmp": 34,
+  "converge": 0.74,
+  "convergeDur": 0.38,
+  "snap": 1.12,
+  "shadda": 1.3,
+  "tagline": 1.55,
+  "handle": 2.1,
+  "pulse": 2.9,
+  "duration": 4.2,
+  "ticks": [
+    0.18,
+    0.34,
+    0.5
+  ],
+  "_note": "Single source of truth for the TASH sting timing. Read by motion/endcard.js and audio/tashaudio.py. Times in seconds from sting start."
+}

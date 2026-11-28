@@ -1,0 +1,216 @@
+<!doctype html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="utf-8">
+<title>دراسة جدوى — الإيرادات المتوقعة</title>
+<style>
+@font-face{font-family:"Alexandria";src:url("../../../_system/fonts/Alexandria-VF.ttf") format("truetype");font-weight:100 900;font-display:block}
+@font-face{font-family:"Plex Arabic";src:url("../../../_system/fonts/IBMPlexSansArabic-Regular.ttf") format("truetype");font-weight:400;font-display:block}
+@font-face{font-family:"Plex Arabic";src:url("../../../_system/fonts/IBMPlexSansArabic-Medium.ttf") format("truetype");font-weight:500;font-display:block}
+@font-face{font-family:"Plex Arabic";src:url("../../../_system/fonts/IBMPlexSansArabic-SemiBold.ttf") format("truetype");font-weight:600;font-display:block}
+
+:root{
+  --paper:#F4ECDF; --paper-2:#EADFCD; --cream:#FBF6EE;
+  --ink:#2A1D16; --ink-2:#5A493D; --mute:#8E7C6E; --line:rgba(42,29,22,.16);
+  --terra:#B8532E; --terra-d:#9A4223; --teal:#00879E;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+html,body{width:1240px;height:1754px;overflow:hidden;background:var(--paper)}
+body{font-family:"Plex Arabic",sans-serif;color:var(--ink);-webkit-font-smoothing:antialiased;text-rendering:geometricPrecision}
+.page{position:relative;width:1240px;height:1754px;overflow:hidden;
+  background:radial-gradient(ellipse 900px 700px at 85% 8%,rgba(255,255,255,.42),transparent 70%),var(--paper)}
+
+/* running header */
+.rh{position:absolute;top:78px;right:100px;left:100px;display:flex;justify-content:space-between;align-items:center;
+  font-family:"Alexandria";font-weight:500;font-size:19px;line-height:1.3;color:var(--ink-2)}
+.rh .r{display:flex;align-items:center;gap:12px}
+.rh .r i{width:10px;height:10px;border-radius:50%;background:var(--terra)}
+.rh .l{color:var(--mute)}
+.rh-rule{position:absolute;top:122px;right:100px;left:100px;height:1px;background:var(--line)}
+
+.main{position:absolute;top:168px;right:100px;left:100px}
+.kicker{font-family:"Plex Arabic";font-weight:600;font-size:21px;line-height:1.4;color:var(--terra);display:flex;align-items:center;gap:14px}
+.kicker::before{content:"";width:34px;height:2px;background:var(--terra)}
+h2{font-family:"Alexandria";font-weight:700;font-size:62px;line-height:1.35;color:var(--ink);margin-top:8px;display:flex;align-items:baseline;gap:22px}
+h2 b{font-weight:600;font-size:44px;color:var(--terra);font-feature-settings:"tnum" 1}
+.lede{font-weight:500;font-size:26px;line-height:1.75;color:var(--ink);margin-top:14px;max-width:960px}
+.cols{display:grid;grid-template-columns:1fr 1fr;column-gap:56px;margin-top:18px;padding-top:22px;border-top:1.5px solid var(--line)}
+.cols p{font-size:21px;line-height:1.9;color:var(--ink-2);text-align:justify;text-align-last:right}
+
+/* figure */
+.fig{position:absolute;top:596px;right:100px;left:100px;background:var(--cream);border-radius:24px;border:1.5px solid rgba(42,29,22,.08);
+  padding:32px 40px 26px;box-shadow:0 18px 40px rgba(90,50,25,.07)}
+.fig-head{display:flex;justify-content:space-between;align-items:flex-start}
+.fig-title{display:flex;gap:16px;align-items:flex-start}
+.chip{flex:none;font-family:"Alexandria";font-weight:600;font-size:18px;line-height:1;color:var(--terra);border:1.5px solid var(--terra);border-radius:999px;padding:8px 14px 9px;margin-top:4px}
+.fig-title h3{font-family:"Alexandria";font-weight:600;font-size:25px;line-height:1.4;color:var(--ink)}
+.fig-title small{display:block;font-size:18px;line-height:1.5;color:var(--mute);margin-top:2px}
+.legend{display:flex;gap:26px;align-items:center;margin-top:8px;font-size:18px;line-height:1.3;color:var(--ink-2);font-weight:500}
+.legend span{display:flex;align-items:center;gap:10px}
+.legend .sw-bar{width:16px;height:16px;border-radius:4px;background:var(--terra)}
+.legend .sw-line{position:relative;width:28px;height:3px;border-radius:3px;background:var(--teal)}
+.legend .sw-line::after{content:"";position:absolute;left:8px;top:-5px;width:12px;height:12px;border-radius:50%;background:var(--teal);box-shadow:0 0 0 2px var(--cream)}
+.fig svg{display:block;margin-top:18px;direction:ltr}
+.fig-foot{display:flex;justify-content:space-between;align-items:center;margin-top:8px;padding-top:16px;border-top:1px solid var(--line);font-size:17px;line-height:1.3;color:var(--mute)}
+.tag{font-family:"Alexandria";font-weight:600;font-size:16px;color:var(--ink-2);background:var(--paper-2);border-radius:999px;padding:7px 14px 8px}
+
+/* bottom: table + quote */
+.bottom{position:absolute;top:1236px;right:100px;left:100px;display:grid;grid-template-columns:640px 1fr;column-gap:56px}
+.tcap{font-family:"Alexandria";font-weight:600;font-size:21px;line-height:1.4;color:var(--ink);margin-bottom:12px}
+.tcap span{color:var(--terra)}
+table{width:100%;border-collapse:collapse;font-feature-settings:"tnum" 1}
+th{font-family:"Plex Arabic";font-weight:600;font-size:16px;line-height:1.3;color:var(--mute);text-align:right;padding:0 0 10px;border-bottom:2px solid var(--ink)}
+td{font-size:20px;line-height:1.3;color:var(--ink);padding:12px 0 12px;border-bottom:1px solid var(--line);font-weight:500}
+td.num,th.num{text-align:center;font-family:"Alexandria";font-weight:500}
+th.num{font-family:"Plex Arabic";font-weight:600}
+td.num{font-size:19px}
+td .share{display:flex;align-items:center;gap:12px;justify-content:flex-end}
+td .track{width:120px;height:7px;border-radius:1.5px;background:var(--paper-2);overflow:hidden;display:flex;justify-content:flex-start}
+td .track i{display:block;height:100%;border-radius:1.5px;background:var(--terra)}
+td .pct{font-family:"Alexandria";font-weight:500;font-size:17px;color:var(--ink-2);width:38px;text-align:left}
+tr.total td{border-bottom:none;border-top:2px solid var(--ink);font-family:"Alexandria";font-weight:700;font-size:20px;padding-top:13px}
+tr.total td.num{font-weight:700}
+.tnote{font-size:16px;line-height:1.4;color:var(--mute);margin-top:10px}
+
+.quote{position:relative;padding:6px 30px 4px 0;border-right:4px solid var(--terra);align-self:start;margin-top:80px}
+.quote p{font-family:"Alexandria";font-weight:600;font-size:33px;line-height:1.5;color:var(--ink)}
+.quote p em{font-style:normal;color:var(--terra);white-space:nowrap}
+.quote small{display:block;font-size:18px;line-height:1.5;color:var(--mute);margin-top:18px}
+
+/* footer */
+.foot{position:absolute;right:100px;left:100px;bottom:92px;display:flex;justify-content:space-between;align-items:center}
+.foot .r{font-family:"Alexandria";font-weight:500;font-size:18px;line-height:1.3;color:var(--mute)}
+.folio{display:flex;align-items:center;gap:14px;font-family:"Alexandria";font-weight:600;font-size:26px;line-height:1;color:var(--ink)}
+.folio i{width:28px;height:3px;border-radius:3px;background:var(--terra)}
+.sep{display:inline-block;width:1.5px;height:.85em;background:currentColor;opacity:.45;margin:0 12px;vertical-align:-.08em}
+</style>
+</head>
+<body>
+<div class="page">
+
+  <div class="rh">
+    <div class="r"><i></i>دراسة جدوى: كافيه داخل الحرم الجامعي</div>
+    <div class="l">القسم ٥<i class="sep"></i>الدراسة المالية</div>
+  </div>
+  <div class="rh-rule"></div>
+
+  <div class="main">
+    <div class="kicker">القسم الخامس: الدراسة المالية</div>
+    <h2><b>٥.٢</b>الإيرادات المتوقعة</h2>
+    <p class="lede">تعتمد إيرادات الكافيه على حركة الطلاب داخل الحرم،<br>لذلك بُنيت التوقعات على التقويم الدراسي، لا على أشهر السنة كاملة.</p>
+    <div class="cols">
+      <p>افترضت الدراسة أن الكافيه يعمل خمسة أيام في الأسبوع خلال الفصلين الدراسيين، وأن الطلب يرتفع في الفترات بين المحاضرات، ثم ينخفض بوضوح في فترة الاختبارات وعطلة منتصف السنة.</p>
+      <p>يقارن الشكل (٤) بين الإيرادات الشهرية والتكاليف التشغيلية، ويفصّل الجدول (٦) مصادر الإيراد في يوم دراسي معتاد. وتُراجع هذه التقديرات بعد أول شهرين من التشغيل.</p>
+    </div>
+  </div>
+
+  <!-- figure -->
+  <div class="fig">
+    <div class="fig-head">
+      <div class="fig-title">
+        <span class="chip">شكل ٤</span>
+        <div><h3>الإيرادات والتكاليف التشغيلية الشهرية</h3><small>بالألف دينار كويتي، حسب أشهر السنة الدراسية</small></div>
+      </div>
+      <div class="legend">
+        <span><i class="sw-bar"></i>الإيرادات</span>
+        <span><i class="sw-line"></i>التكاليف التشغيلية</span>
+      </div>
+    </div>
+
+    <svg width="960" height="404" viewBox="0 0 960 404" xmlns="http://www.w3.org/2000/svg" font-family="Alexandria, sans-serif">
+      <!-- grid -->
+      <g stroke="#2A1D16" stroke-opacity=".12" stroke-width="1" stroke-dasharray="3 6">
+        <line x1="120" x2="900" y1="36" y2="36"/><line x1="120" x2="900" y1="106" y2="106"/>
+        <line x1="120" x2="900" y1="176" y2="176"/><line x1="120" x2="900" y1="246" y2="246"/>
+      </g>
+      <g font-size="17" fill="#8E7C6E" font-weight="500" text-anchor="end">
+        <text x="956" y="42">٨</text><text x="956" y="112">٦</text><text x="956" y="182">٤</text><text x="956" y="252">٢</text>
+      </g>
+      <!-- bars: revenue -->
+      <g fill="#B8532E">
+        <path d="M836.7,316 V138.0 Q836.7,134.0 840.7,134.0 H872.7 Q876.7,134.0 876.7,138.0 V316 Z"/>
+        <path d="M750.0,316 V82.0 Q750.0,78.0 754.0,78.0 H786.0 Q790.0,78.0 790.0,82.0 V316 Z"/>
+        <path d="M663.3,316 V61.0 Q663.3,57.0 667.3,57.0 H699.3 Q703.3,57.0 703.3,61.0 V316 Z"/>
+        <path d="M576.7,316 V124.0 Q576.7,120.0 580.7,120.0 H612.7 Q616.7,120.0 616.7,124.0 V316 Z"/>
+        <path d="M490.0,316 V257.0 Q490.0,253.0 494.0,253.0 H526.0 Q530.0,253.0 530.0,257.0 V316 Z"/>
+        <path d="M403.3,316 V78.5 Q403.3,74.5 407.3,74.5 H439.3 Q443.3,74.5 443.3,78.5 V316 Z"/>
+        <path d="M316.7,316 V54.0 Q316.7,50.0 320.7,50.0 H352.7 Q356.7,50.0 356.7,54.0 V316 Z"/>
+        <path d="M230.0,316 V43.5 Q230.0,39.5 234.0,39.5 H266.0 Q270.0,39.5 270.0,43.5 V316 Z"/>
+        <path d="M143.3,316 V131.0 Q143.3,127.0 147.3,127.0 H179.3 Q183.3,127.0 183.3,131.0 V316 Z"/>
+      </g>
+      <!-- baseline -->
+      <line x1="120" x2="900" y1="316" y2="316" stroke="#2A1D16" stroke-width="1.5"/>
+      <!-- line: operating costs -->
+      <polyline points="856.7,141.0 770.0,134.0 683.3,130.5 596.7,137.5 510.0,204.0 423.3,134.0 336.7,130.5 250.0,127.0 163.3,141.0"
+        fill="none" stroke="#FBF6EE" stroke-width="7" stroke-linejoin="round" stroke-linecap="round"/>
+      <polyline points="856.7,141.0 770.0,134.0 683.3,130.5 596.7,137.5 510.0,204.0 423.3,134.0 336.7,130.5 250.0,127.0 163.3,141.0"
+        fill="none" stroke="#00879E" stroke-width="3" stroke-linejoin="round" stroke-linecap="round"/>
+      <g fill="#00879E" stroke="#FBF6EE" stroke-width="2.5">
+        <circle cx="856.7" cy="141.0" r="6"/><circle cx="770.0" cy="134.0" r="6"/><circle cx="683.3" cy="130.5" r="6"/>
+        <circle cx="596.7" cy="137.5" r="6"/><circle cx="510.0" cy="204.0" r="6"/><circle cx="423.3" cy="134.0" r="6"/>
+        <circle cx="336.7" cy="130.5" r="6"/><circle cx="250.0" cy="127.0" r="6"/><circle cx="163.3" cy="141.0" r="6"/>
+      </g>
+      <!-- direct labels -->
+      <g font-weight="600" font-size="17" fill="#2A1D16" text-anchor="middle">
+        <text x="250" y="28">٧٫٩</text>
+      </g>
+      <g font-size="16" fill="#5A493D" font-weight="500" text-anchor="middle">
+        <text x="510" y="244" font-weight="600" fill="#2A1D16">١٫٨</text>
+      </g>
+      <g font-size="16" fill="#5A493D" font-weight="500" text-anchor="end">
+        <text x="134" y="146">التكاليف</text>
+      </g>
+      <!-- months -->
+      <g font-size="17" fill="#5A493D" font-weight="500" text-anchor="middle">
+        <text x="856.7" y="346">سبتمبر</text><text x="770.0" y="346">أكتوبر</text><text x="683.3" y="346">نوفمبر</text>
+        <text x="596.7" y="346">ديسمبر</text><text x="510.0" y="346">يناير</text><text x="423.3" y="346">فبراير</text>
+        <text x="336.7" y="346">مارس</text><text x="250.0" y="346">أبريل</text><text x="163.3" y="346">مايو</text>
+      </g>
+      <!-- semesters -->
+      <g stroke="#B8532E" stroke-opacity=".55" stroke-width="1.5" fill="none">
+        <path d="M557,362 V368 H896 V362"/>
+        <path d="M124,362 V368 H463 V362"/>
+      </g>
+      <g font-size="16" fill="#9A4223" font-weight="600" text-anchor="middle">
+        <text x="726.5" y="394">الفصل الأول</text>
+        <text x="293.5" y="394">الفصل الثاني</text>
+        <text x="510" y="394" fill="#8E7C6E" font-weight="500">عطلة</text>
+      </g>
+    </svg>
+
+    <div class="fig-foot">
+      <span>المصدر: تقديرات فريق العمل بناءً على الاستبيان (القسم ٣.٣)</span>
+      <span class="tag">أرقام افتراضية للعرض</span>
+    </div>
+  </div>
+
+  <!-- table + pull quote -->
+  <div class="bottom">
+    <div>
+      <div class="tcap"><span>جدول ٦:</span> إيراد يوم دراسي معتاد حسب الفئة</div>
+      <table>
+        <thead><tr><th style="width:186px">الفئة</th><th class="num">الكمية</th><th class="num">السعر (فلس)</th><th class="num">الإيراد (د.ك)</th><th class="num" style="width:184px;text-align:left">الحصة</th></tr></thead>
+        <tbody>
+          <tr><td>مشروبات ساخنة</td><td class="num">١٢٠</td><td class="num">١٢٥٠</td><td class="num">١٥٠</td><td class="num" style="text-align:left"><div class="share"><span class="track"><i style="width:43%"></i></span><span class="pct">٤٣٪</span></div></td></tr>
+          <tr><td>مشروبات باردة</td><td class="num">٨٠</td><td class="num">١٥٠٠</td><td class="num">١٢٠</td><td class="num" style="text-align:left"><div class="share"><span class="track"><i style="width:35%"></i></span><span class="pct">٣٥٪</span></div></td></tr>
+          <tr><td>مخبوزات</td><td class="num">٦٠</td><td class="num">٧٥٠</td><td class="num">٤٥</td><td class="num" style="text-align:left"><div class="share"><span class="track"><i style="width:13%"></i></span><span class="pct">١٣٪</span></div></td></tr>
+          <tr><td>وجبات خفيفة</td><td class="num">٣٠</td><td class="num">١٠٠٠</td><td class="num">٣٠</td><td class="num" style="text-align:left"><div class="share"><span class="track"><i style="width:9%"></i></span><span class="pct">٩٪</span></div></td></tr>
+          <tr class="total"><td>الإجمالي</td><td class="num">٢٩٠</td><td class="num">—</td><td class="num">٣٤٥</td><td class="num" style="text-align:left"><div class="share"><span class="track" style="visibility:hidden"></span><span class="pct">١٠٠٪</span></div></td></tr>
+        </tbody>
+      </table>
+      <div class="tnote">أرقام افتراضية للعرض. الأسعار تقديرية وقابلة للتعديل.</div>
+    </div>
+
+    <div class="quote">
+      <p>الطلب يتبع<br>جدول المحاضرات…<br><em>لا أشهر السنة.</em></p>
+      <small>من خلاصة الدراسة المالية</small>
+    </div>
+  </div>
+
+  <div class="foot">
+    <div class="r">مبادئ ريادة الأعمال · المجموعة الثالثة</div>
+    <div class="folio">١٢<i></i></div>
+  </div>
+</div>
+</body>
+</html>

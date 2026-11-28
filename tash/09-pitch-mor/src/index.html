@@ -1,0 +1,19 @@
+<!doctype html>
+<html lang="ar" dir="rtl"><head><meta charset="utf-8">
+<title>MOR — spec pitch (not commissioned)</title>
+<link rel="stylesheet" href="/_system/tokens.css">
+<link rel="stylesheet" href="./style.css">
+</head><body>
+<!-- URL: ?fmt=45 (1080×1350) · ?clean=1 (no type) · ?poster=1 (cover) · ?t=… / ?play (preview) · ?info=1 (review HUD) -->
+<div id="stage">
+  <canvas id="pic" width="1080" height="1920"></canvas>
+  <canvas id="grain" width="1080" height="1920"></canvas>
+  <div id="ui"></div>
+</div>
+<script type="module">
+  await new Promise(r => (document.readyState === 'complete' ? r() : addEventListener('load', r)));
+  await document.fonts.load('500 100px "Alexandria"'); await document.fonts.load('600 100px "Alexandria"');
+  await document.fonts.load('500 40px "IBM Plex Sans Arabic"'); await document.fonts.load('400 30px "IBM Plex Sans Arabic"');
+  await import('./main.js');
+</script>
+</body></html>

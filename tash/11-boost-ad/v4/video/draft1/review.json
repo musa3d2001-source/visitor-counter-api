@@ -1,0 +1,493 @@
+{
+ "audit": {
+  "gates": [
+   {
+    "gate": "1. Frame 0 matches the approved still (same layout; SSIM 0.90 or more at draft size)",
+    "result": "pass",
+    "evidence": "Overall SSIM clears 0.90, but the framing has moved. Whole-frame luma SSIM is 0.9157 (my Gaussian 11x11, sigma 1.5; still Lanczos-scaled to 480x854). ffmpeg ssim gives Y 0.908 and All 0.916. By region: rows above layout y 880 = 0.995, layout rows 880-1610 = 0.790, product box only 0.586. The best fit of the still to frame 0 is a 0.98 scale plus a shift of -8 x and -6 y draft px (about -18/-13 layout px), NCC 0.948; after that alignment the product box scores 0.884, so the content is the same and only the framing moved. Draft px, still -> n0: horizon y 637.3 -> 627.1 (layout 1433 -> 1410); glass x 177-302 -> 172-293 (layout 398-679 -> 387-659); rim y 556 -> 546 (layout 1250 -> 1227); base y 710 -> 701 (layout 1596 -> 1576); top of ice y 407 -> 400 (layout 915 -> 899, still below 880). The cubes keep the same arrangement, moved by the same offset."
+   },
+   {
+    "gate": "2. Native frame rate and frame count read with ffprobe and recorded",
+    "result": "pass",
+    "evidence": "ffprobe reports h264 High, 480x854, yuv420p. r_frame_rate and avg_frame_rate are both 24/1. nb_frames is 97 and -count_frames also reads 97. Stream and container duration are both 4.041667 s. Every frame advances by the same PTS step (3750/90000 s = 1/24 s); the GOP is an I frame, then a P frame every 4 frames with B frames between. There is no audio stream. All 97 decoded frames are distinct (md5). Native rate 24 means column B: one native frame per 30 fps timeline frame, n0-n96 available."
+   },
+   {
+    "gate": "3. Ice hits the surface inside the first 0.30 s",
+    "result": "pass",
+    "evidence": "Passes by one frame. Checked at 4x zoom: the lowest cube reaches the coffee surface at n5-n6 (0.208-0.250 s) and is half under at n7 (0.292 s). Frame-to-frame change in the glass mouth (draft y 520-580) climbs from 3.4 levels (n3) to 6.7 (n5), 13.9 (n7) and peaks at 20.3 (n9). The first visible splash spray is at n10 (0.417 s). The left and right cubes go in at n9-n10, the top cube at n12-n13 (0.50-0.54 s), so the prompt's 'all four within a quarter second' is not met. On the timeline (column B), n7 plays at f7 = 0.233 s, or at f5 = 0.167 s with the preview's hook start at n2."
+   },
+   {
+    "gate": "4a. Splash crown clearly above the rim by 0.45 s",
+    "result": "pass with remap",
+    "evidence": "Misses by about one frame in source time. Spray rises beyond the glass walls from n10 (0.417 s). The liquid lifts above the rim at n11 (0.458 s). A crown wall is clearly above the rim at n12 (0.500 s), 58-70 draft px (130-157 layout px) above the rim at n12-n13. Liquid outside the wall lines, above the rim: 20 px at n10, 152 px at n11, 241 px at n12. The crown is tallest at n16-n20 (0.67-0.83 s), 77-80 draft px (173-180 layout px) above the rim, later than the prompt's 'before half a second'. Source time misses 0.45 s (= n10.8). On the timeline it passes: n12 plays at f12 = 0.400 s with the spec mapping, or f10 = 0.333 s with f0 = n2."
+   },
+   {
+    "gate": "4b. Nothing rises above y 880 (scaled) at any time",
+    "result": "fail",
+    "evidence": "Droplets of milky coffee are above layout y 880 (draft y 391.4) in every frame from n21 to n67 (0.875-2.792 s); n19 has a faint 4 px candidate at layout y 841. My own detector (G/B residual against a 15 px median, threshold 10) finds nothing above that line in n0-n18 or n68-n96. Up to 6 droplets per frame. Each is 4-8 draft px tall (9-18 layout px), with up to 145 draft px of droplet area per frame (n47, about 730 layout px²). Colour is pale milky coffee, mean RGB about (250,160,95). They span draft x 6-283 (layout 13-636). The highest point is draft y 288 = layout y 647, at n50-n53 (2.08-2.21 s), inside the tag band (560-840). Separate tracks: one droplet on the left peaks at layout y 746 at n32-n35; three rise from the central jet, n36-n67, peaking at 647. In the 1.25x punch-in they land at about layout y 690-860. In the director's hook preview (f19-29 = n21-31) they show as pale specks beside and under the «…» of «حلو…», at about layout x 240-345, y 720-835. Remapping cannot remove them from the punch-in beat."
+   },
+   {
+    "gate": "5. Surface calm by 2.0 s and calm to the end (the CTA band uses the tail)",
+    "result": "pass with remap",
+    "evidence": "Fails in source time; the CTA band passes after remapping it to n61-96. At n48 (2.0 s) the central jet is still 42 draft px (94 layout px) above the rim. Liquid stays bulged above or over the rim by 8-16 draft px through n58, and a hump crosses the surface at n60-n61. Frame change in the surface band (draft y 520-580): 3.3-6.7 levels per frame in n48-n60, 1.2-2.5 in n61-n78, 0.1-1.5 in n79-n96. Droplets keep falling back through layout y 890-1190 above the glass until n77 (3.21 s) and land at n78. The surface is calm from n61 (2.54 s) and fully settled from n78 (3.25 s). Remap the CTA band to n61-96 plus held n96 (see remap). The falling droplets in n61-n77 sit at source layout y 737-1189, so they stay hidden only if the Lime panel covers source y up to about 1190, i.e. the band draws the rim no more than about 130 px below the panel edge."
+   },
+   {
+    "gate": "6. Camera does not move; no zoom, drift or cut",
+    "result": "pass",
+    "evidence": "Draft px, across all 97 frames: glass left edge x 172 in every frame, right edge 291-293, rim y 546 when calm, base y 701-703 (the 2 px change comes with liquid reaching the base at n43). Horizon y 627.1-627.3. Glass-base phase correlation against n0 moves 0.07 px or less, and the wall shifts 0.09 px or less between consecutive frames. There is no cut: the largest whole-frame change between consecutive frames is 1.11 levels (n9). Wall mean luma drifts 152.5 -> 153.5 (n28) -> 153.2. The wall's fine texture slowly decorrelates (texture boil, not movement)."
+   },
+   {
+    "gate": "7. No new object, hand, straw, text or morphing glass; ice stays ice",
+    "result": "pass",
+    "evidence": "Pass, with two judgement calls for the owner's eye (findings F5, F6). A residual scan of the whole frame outside the glass finds only coffee droplets: no hand, straw, text or extra object. The glass outline does not change (gate 6 numbers). The cubes stay rigid cubes while falling (n0-n12). After they enter, no ice shows above the rim from n13 to n37. One cube top comes back up at n38-n50, and two cube tops float at the surface from n64 to n96 (four dropped; physically plausible). The coffee level starts about 17 draft px (38 layout px) below the rim and ends at the brim. For the owner's eye: a near-black blob in the milk at n12-n22; a second surge at n29-n47 that runs down the outside of the glass and leaves faint puddles to the end; and the whole clip plays at roughly 5x slow motion (findings)."
+   },
+   {
+    "gate": "8. No duplicate or frozen frames except at the very end (mpdecimate count 2 or fewer)",
+    "result": "pass with remap",
+    "evidence": "Fails as written: mpdecimate with defaults (hi 768, lo 320, frac 0.33) drops 18 of 97 frames: n1, n64, n71, n73, n74, n76, n77, n79, n80, n82, n85, n87, n89, n91, n92, n94, n95, n96. None is a true duplicate: all 97 decoded frames have different md5 and every consecutive pair differs (the smallest change is n96 vs n95, 8 px changed by more than 8 levels). The drops are low motion: n1 is the still start (n0-n2, the top of the ice moves 0 px), and the other 17 are in the settled tail n64-n96. If the hook starts at n2 (as the preview does), the only drops left in used frames are inside the settled CTA-band tail, which is the 'very end' the gate exempts."
+   }
+  ],
+  "findings": [
+   {
+    "id": "F1",
+    "severity": "major",
+    "claim": "Coffee droplets rise above layout y 880 into the tag zone for about 2 seconds, and remapping cannot remove them from the 1.25x punch-in beat (f15-29).",
+    "evidence": "Detected above layout 880 in n21-n67 (n19 faint), highest at layout y 647 at n50-n53, up to 6 droplets and 145 draft px per frame, draft x 6-283. The hook preview (f19-29 = n21-31) shows pale specks beside and under «…» at about layout x 240-345, y 720-835. Lens L (scale 0.86, r 340), the porthole (0.31 scale) and the CTA band all crop them out; only full-frame and punch-in uses show them.",
+    "fix": "0 credits: in the build, replace source rows above layout y about 900 with the same rows of n96 (no camera motion, flat backdrop, no droplets above 880 from n68), with a soft ramp from y 900 to 880, in every S1 frame used full-frame or in the punch-in (the same idea as R3-12 for S2). This also covers the 4:5 crop (source rows 285-1635). Otherwise, a second draft."
+   },
+   {
+    "id": "F2",
+    "severity": "major",
+    "claim": "The whole clip plays at about 5x slow motion, against 'no slow motion, natural real-time physics' in the prompt. This is why the crown, the settle and the droplet hang time all run late.",
+    "evidence": "Parabola fits on two tracks: the top cube falling (n3-n12) accelerates at 497 draft px/s²; the central droplet (n37-n66, rms residual 1.5 px) at 455 draft px/s². Real gravity, taking the tumbler as 7-10 cm across its 120 draft px, is about 11,800-16,800 draft px/s², so time is stretched about 4.9-6.1x. Even at column B's 1.25x playback it stays about 4x slow. Droplets take 0.63 s to rise to their apex at layout y 647.",
+    "fix": "Accept it as a high-speed 'commercial' look and use the remap plus the F1 patch, or try a second draft (prompt text in the recommendation). Note that the existing prompt already said 'no slow motion' and the model ignored it."
+   },
+   {
+    "id": "F3",
+    "severity": "major",
+    "claim": "The surface is not calm by 2.0 s. The CTA band's planned frames (A-20 n48-95, A-14 n57-95) include the overflow settling and droplets falling back.",
+    "evidence": "At n48 the jet is still 42 draft px above the rim, the rim bulges 8-16 draft px through n58, and a hump crosses at n60-61. Surface-band frame change is 3.3-6.7 levels in n48-60, 1.2-2.5 in n61-78 and 0.1-1.5 from n79. The last droplets land in the glass at n78 (3.25 s).",
+    "fix": "0 credits: A-20 band f540-575 = n61-96, then f576-587 = n96 held. A-14 band f375-410 = n61-96, then f411-413 = n96 held. A hold is not visible: n86-n96 already change by under 0.4 levels per frame. Draw the band so that source layout y up to about 1190 is under the Lime panel (rim no more than about 130 px below the panel edge)."
+   },
+   {
+    "id": "F4",
+    "severity": "major",
+    "claim": "Frame 0 is the still reframed, not a copy of it. Splicing the still in at f0 would cause a visible jump of about 20 px. The 1080p rule ('SSIM 0.95 or more, else draw the still at f0') will probably trigger.",
+    "evidence": "The best match is the still scaled 0.98 and shifted (-8, -6) draft px (about -18/-13 layout px), NCC 0.948. Unaligned product-box SSIM is 0.586; aligned it is 0.884. Whole-frame SSIM is 0.9157 (ffmpeg Y 0.908). Horizon moves from layout 1433 to 1410, rim from 1250 to 1227, glass from x 399-681 to x 387-659.",
+    "fix": "0 credits: change the frame-0 rule and the loop so they always use the clip's own first frame (n2 if the hook starts at n2, otherwise n0), never the still. Re-take the layout constants (rim 1227, base 1576, glass x 387-659, ice top 899) from this clip when the punch-in, lens scale and band offset are set."
+   },
+   {
+    "id": "F5",
+    "severity": "minor",
+    "claim": "Liquid overflows: a second surge spreads into a sheet wider than the glass, runs down the outside of the glass and leaves faint puddle trails on the table until the end. The prompt asked only for 'a few drops on the orange surface'.",
+    "evidence": "At n26-n35 the sheet spans draft x 135-335 (layout 303-753) while the glass walls are at x 172-292. Streams run down the outside of the glass at n31-n43. Puddle trails at draft x about 80-170 and 290-340, y 690-730 (layout x 180-382 and 652-764, y 1551-1641) are visible from n44 to n96, so they will show beside the glass base in the CTA band.",
+    "fix": "Owner's eye. Accept, or address it in a second-draft prompt. It cannot be removed by remap."
+   },
+   {
+    "id": "F6",
+    "severity": "minor",
+    "claim": "A compact near-black blob appears in the milk layer during the hook and fades. It may be a coffee plume dragged down by a cube, but it reads as a dark object.",
+    "evidence": "Seen from n12 to n22. RGB about (60,9,0), luma 23-32, up to about 190 draft px² (about 20x14 draft px = 45x31 layout px). It sinks from draft y 624 to 668 (layout 1403-1502) at x about 229-254 (layout 515-571) and is gone by n24. It shows as a dark dot at 270x480 in preview frames f10-f15, and it is magnified by the punch-in.",
+    "fix": "Owner's eye at 1080p. If unacceptable, only a new generation fixes it."
+   },
+   {
+    "id": "F7",
+    "severity": "minor",
+    "claim": "The impact gate passes by one frame only. The visible splash comes later (0.417 s), and the cubes land over about 0.3 s instead of together.",
+    "evidence": "Contact at n5-n6, entry at n7 (0.292 s), splash spray at n10, last cube at n12-n13.",
+    "fix": "0 credits: start the hook at n2 (as the director's preview already does, verified: preview f0/f5/f10/f14 = n2/n7/n12/n16). Entry then plays at f5 and the crown is up at the cover frame f10. Move the ice-crack sound from f0 to f5."
+   },
+   {
+    "id": "F8",
+    "severity": "minor",
+    "claim": "mpdecimate counts 18 drops against a limit of 2, but no frame is a true duplicate.",
+    "evidence": "All 97 decoded frames are distinct. The drops are n1 (the still start n0-n2) and 17 frames in the settled tail n64-n96.",
+    "fix": "Record that gate 8 means generator duplicates or freezes, judged on the used ranges, and exempt the settled tail."
+   },
+   {
+    "id": "F9",
+    "severity": "minor",
+    "claim": "The encoder pulses every 4 frames and the wall texture slowly boils.",
+    "evidence": "At frames n4k+1 the backdrop changes by 0.14-0.48 levels per frame, against 0.03-0.09 otherwise. Wall phase-correlation peak against n0 falls from 1.0 to 0.03 by n28, with no translation.",
+    "fix": "Check again on the 1080p file. Not a reason to reject."
+   },
+   {
+    "id": "F10",
+    "severity": "minor",
+    "claim": "The draft's backdrop is slightly further from the tangerine target than the still.",
+    "evidence": "Top-region mean RGB is (244.4,126.6,42.6), a delta of about 20 from #FF7A1A; the still is (249.8,128.8,40.5), delta 16.8.",
+    "fix": "Grade in the build if needed (0 credits)."
+   },
+   {
+    "id": "F11",
+    "severity": "minor",
+    "claim": "The director's first-pass numbers differ slightly from mine.",
+    "evidence": "gates.json puts the first droplet above 880 at n23; my more sensitive detector finds n21, plus a faint candidate at n19. gates.json gives SSIM 0.9049; I get 0.9157 (Gaussian luma), ffmpeg 0.908 Y / 0.916 All. mpdecimate matches at 18 dropped. The highest droplet matches (layout y 647.5 at n50-53).",
+    "fix": "Use the ranges in this audit. The verdict does not change."
+   }
+  ],
+  "usable_ranges": "Native frames, 24 fps. Draft y 391.4 = layout y 880.\n- n0-n2: still start, ice not yet moving (mpdecimate drops n1). Usable for f0 and the loop freeze; n2 is the better f0 because it brings the impact and crown earlier.\n- n3-n18: ice falls (contact n5-n6, entry n7), splash spray from n10, crown clearly up at n12, crown at its tallest n16-n20. Clean above layout 880. The dark blob is in the milk at n12-n22 (F6). Usable for every framing, including full frame and the punch-in.\n- n19 or n21 to n67: coffee droplets above layout 880 (highest layout y 647 at n50-n53). Not usable full-frame or in the 1.25x punch-in unless the F1 top patch is applied. Usable in lens L, the porthole and the CTA band, which all crop above source y 880.\n- n29-n47: second surge. The sheet spreads past the glass walls (layout x 303-753) and runs down the outside of the glass (n31-n43). Acceptable in the porthole and lens; messy full-frame.\n- n48-n60: not calm (jet or bulge 8-42 draft px above the rim, hump at n60-61), and droplets still above the glass. Not usable as 'settled'.\n- n61-n77: surface calm; droplets still falling back through source layout y 737-1189 above the glass. Usable in the CTA band if the panel covers source y up to about 1190.\n- n78-n96: fully settled, nothing in the air, change under 0.5 level per frame. Usable everywhere. Faint puddle trails on the table from n44 to the end (F5).",
+  "remap": "Column B: one native frame per 30 fps timeline frame. The spec's own source frames are in brackets.\n- A-20 and A-14 f0-14, full: n2-16 [n0-14]. Entry at f5 (0.167 s), crown clearly up at the cover frame f10 (0.333 s), tallest at f14. If f0 must stay n0, n0-14 also passes (entry f7 = 0.233 s, crown f12 = 0.400 s), but then f10 shows only spray.\n- f15-29, 1.25x punch-in about (540,900): n17-31 [n15-29]. Needs the F1 top patch, because n21-31 carry droplets that land at layout y about 690-860 beside «…». Without the patch no remap is clean.\n- f78-89, full, inside the repaint circles: n7-18 [n5-16]. Entry, splash and crown, clean above 880.\n- f105-134, porthole Ø220 at 0.31: n14-43, unchanged. Droplets are outside the porthole; the overflow shows, but tiny.\n- f135-149, Coffee A full with tag «قهوة؟»: n3-17, unchanged. Clean above 880; entry at f139, crown at f144.\n- f150-164, lens L at 0.86 on Lime: n24-38, unchanged. The lens clips the droplets.\n- f390-404: no S1 footage (R3-8).\n- A-20 CTA band f540-587: f540-575 = n61-96, f576-587 = n96 held [n48-95]. Keep source y up to about 1190 under the panel.\n- A-14 CTA band f375-413: f375-410 = n61-96, f411-413 = n96 held [n57-95].\n- Loop A-20 f588-599 and A-14 f414-419: freeze the same frame used at f0 (n2; n0 if the hook starts at n0). Never the still.\n- B-20 f105-599: as A-20.\n- Unusable for full-frame or punch-in without the patch: n19/n21-n67. Never use as 'settled': n48-n60.",
+  "recommendation": "My recommendation is to finalise this draft at 1080p (64 credits) rather than order a second draft, but only once the owner says yes to the look and the conditions below are in place.\n\nAs written in STORYBOARD §4, the draft fails: gate 4b (droplets above y 880) fails outright, and gates 4a, 5 and 8 fail in source time. Every one of these can be fixed at zero credits. Remapping native frames fixes 4a, 5 and 8, and a top clean-plate patch fixes 4b; the patch is a code step like R3-12, not a remap. The hook itself works: in the preview the impact lands at f5 and the crown is up at the cover frame f10, and the camera is locked. A second draft is a new random roll. The model already ignored 'no slow motion' and 'nothing in the upper half' once, so 12 credits may not buy a better clip.\n\nConditions before spending the 64:\n- (a) The owner watches the draft and the hook preview and accepts the roughly 5x slow-motion look, the overflow down the outside of the glass with faint puddles to the end, and the dark blob in the milk at f10-20.\n- (b) The build adopts the top patch, the remap above, and the frame-0 rule change (F4).\n- (c) The 64 finalise quote is confirmed at spend time.\n- (d) Because it is unconfirmed whether the finalise keeps the draft's motion, all eight gates are re-run on the 1080p file before it is built in. If the motion changes, treat the result as a new clip.\n\nIf the owner rejects the look, order the second draft (12, earmarked in the reserve) with the same start image. In the S1-alt motion prompt, replace 'A real splash crown of milky coffee rises above the rim and is at its highest before half a second, droplets fly up and fall back' with: 'Filmed at normal real-time speed, not high-speed or slow-motion footage. A low splash crown of milky coffee rises about two centimetres above the rim and falls straight back into the glass; no droplet rises higher than the height of the glass above the rim; no liquid runs down the outside of the glass and no puddle forms on the orange surface; all four cubes are in the coffee by 0.3 seconds and the surface is still by 1.5 seconds.' Keep the rest of the prompt.\n\nStopping is not justified: nothing measured here is a blocker.",
+  "summary": "I re-measured all eight draft gates myself on draft.mp4 (480x854, 24 fps, 97 frames, 4.04 s) and spent no credits. The draft does not pass STORYBOARD §4 as written, but every failure can be fixed at zero credits.\n\nResults:\n- **Passes:** gate 1 (SSIM 0.916 whole frame, but frame 0 is the still scaled 0.98 and shifted (-8,-6) draft px; product-box SSIM 0.586); gate 2 (24/1 fps, 97 frames, 4.041667 s, so column B); gate 3 (first cube enters at n7, 0.292 s, one frame inside 0.30 s); gate 6 (camera locked, horizon and glass edges fixed); gate 7 (no new object, hand, text or glass change).\n- **Pass with remap:** gate 4a (crown clearly above the rim at n12, 0.500 s; plays at f10-f12); gate 5 (calm only from n61, 2.54 s, settled at n78, 3.25 s; the CTA band goes to n61-96 plus a held n96); gate 8 (mpdecimate drops 18, but no true duplicates; the drops are the still start and the settled tail).\n- **Fails:** gate 4b. Coffee droplets sit above layout y 880 in n21-n67, highest at layout y 647 at n50-53. In the punch-in they land beside the «…» of «حلو…». Remapping cannot remove them; a zero-credit top clean plate from n96 can.\n\nOther things I found: the whole clip plays at about 5x slow motion, which the prompt forbade. A second surge runs down the outside of the glass and leaves faint puddles to the end. A near-black blob sinks through the milk at n12-n22. Frame 0 is reframed, so the 1080p rule that draws the still at f0 would cause a visible jump of about 20 px; that rule should be changed to use the clip's own first frame.\n\nRecommendation: finalise at 1080p (64) once the owner accepts the look, with the remap and patch in the build and all gates re-run on the 1080p file. The alternative is a second draft (12) with the prompt text given.\n\nI did not edit the repository, so `tash/HANDOFF.md` was not updated. My scripts and evidence images are in /tmp/claude-0/-home-user-visitor-counter-api/1e0f8dbb-d731-5965-a898-07519c7bdbc3/scratchpad/r4/review/audit (scripts/ and viz/, e.g. viz/top_b.png, viz/blob.png, viz/settle.png, viz/hook_tagzone.png)."
+ },
+ "director": {
+  "gates": [
+   {
+    "gate": "1. Frame 0 matches the approved still (same layout, SSIM >= 0.90 at draft size)",
+    "result": "pass",
+    "evidence": "Narrow pass. Full-frame luma SSIM is 0.9049 (7x7 box) and 0.9125 (Gaussian 1.5). That matches gates.json. The flat backdrop carries the score: the hero box alone (draft x133-347, y414-716) scores 0.498. The whole scene is shifted 9 draft px up and 8 draft px left (20 and 18 layout px). With the still shifted to match, SSIM rises to 0.954. Measured positions: horizon at draft row 627.4 (layout 1410) against 637 (1432) in the still. Ice top at layout 899 against 917 (R3-1). Rim at about layout 1220 against 1250. Glass at layout x 387-654, centre about 520, against 399-681. The cube poses also differ. The 1080p check (SSIM >= 0.95) will probably fail for the same reason, and the spec would then draw the still at f0, which makes a 20 px jump on f1."
+   },
+   {
+    "gate": "2. Native frame rate and frame count read with ffprobe",
+    "result": "pass",
+    "evidence": "h264, 480x854, yuv420p, r_frame_rate 24/1, nb_frames 97, 4.041667 s. That means column B (one native frame per 30 fps timeline frame, 1.25x). Note: the clip has 97 frames (n0-n96), not the 96 (n0-n95) the spec assumes."
+   },
+   {
+    "gate": "3. Ice hits the surface inside the first 0.30 s",
+    "result": "pass",
+    "evidence": "Marginal. In the 300% crops the lowest cube is at the rim at n0 and touches the coffee at n6-n7 (0.25-0.29 s). It fades into the surface at n7-n8 without a splash. The first visible splash is at n10 (0.417 s), when the two middle cubes land. The top cube goes in at n12-n13. All four cubes go in and none is duplicated. In the film (1.25x), contact falls on f7 = 0.233 s."
+   },
+   {
+    "gate": "4. Crown clearly above the rim by 0.45 s, and nothing above layout y 880 at any time",
+    "result": "fail",
+    "evidence": "Crown: n10 (0.417 s) shows only small side spikes. n11 (0.458 s) shows crown arms clearly above the rim across layout x 342-717. The crown body peaks at n12-n20, top about layout 1059-1081, spread x 337-737 (the glass is 387-654). It is still up at n26 (1.08 s), so the clip is visibly slow motion. Above y 880: droplets appear in every frame n21-n67 (47 frames, 1.96 s), up to 5 at once, each 9-14 layout px. The highest is at layout y 647 (n50-n53), at layout x 216-630. None reaches the word (y 331-533). At n0 the ice top is at layout 899."
+   },
+   {
+    "gate": "5. Surface calm by 2.0 s and calm to the end (band uses the last 1.6 s = n58-n96)",
+    "result": "fail",
+    "evidence": "At n48 (2.0 s) a central jet is still up. The liquid bulges over the rim as a lip at n50-n62 (body 5-9 draft rows above the rim). Droplets fall back above y 880 until n67 and into the glass until about n75. The surface is still from n70 (2.92 s), and nothing moves above the rim from n76 (3.17 s). Only n70-n96 (27 frames) are fully calm."
+   },
+   {
+    "gate": "6. Camera does not move: no zoom, drift or cut",
+    "result": "pass",
+    "evidence": "The horizon sits between draft rows 627.26 and 627.40 in all 97 frames. Glass edges at draft row 660 stay at x 172-174 / 289-291 except where spill passes. Median wall colour (247,127,43) and floor colour (249,147,45) stay within 1 level across all frames. There is no cut."
+   },
+   {
+    "gate": "7. No new object, hand, straw or text; no morphing glass; ice stays ice",
+    "result": "pass with remap",
+    "evidence": "There is no hand, straw or text. The glass outline and ribs stay stable, and the four cubes stay ice (one shows as a dark coffee-coated lump at n37-n46). The liquid, however, does impossible things at n27-n42. At n27-n29 the crown flattens into a saucer floating above the rim, wider than the glass. At n30-n35 it sags over the rim like a drape with bulb tips. At n36-n41 two leg-like streams stand off the glass and walk to the floor. They vanish within about 2 frames (n41-n42) and leave puddles. Dark blobs about 8 draft px (about 18 layout px) sit in the milk layer at n12-n30 and read as pearls or beans. Smaller flecks are in every frame and also in the still. The clip passes only if n30-n42 is never shown."
+   },
+   {
+    "gate": "8. No duplicate or frozen frames except at the very end (mpdecimate 2 or fewer)",
+    "result": "fail",
+    "evidence": "Fails as written: mpdecimate drops 18 frames, namely n1, n64, n71, n73, n74, n76, n77, n79, n80, n82, n85, n87, n89, n91, n92, n94, n95 and n96. No two consecutive frames are byte-identical (the smallest per-frame max difference is 11 levels). The drops are the near-static settle tail that gate 5 asks for, plus n1 at the start (n0-n2 are nearly the same frame). This gate conflicts with gate 5. It is not a frozen-frame defect."
+   },
+   {
+    "gate": "Extra: flicker, colour pumping, texture crawl",
+    "result": "pass",
+    "evidence": "Backdrop luma varies by 0.18-0.25 levels (std) per region across the clip. High-pass texture change is 0.01-0.25 levels per frame. There is a periodic step every 4 frames (n1, 5, 9, 13 and so on) of 0.2-0.7 levels mean absolute difference, in all four backdrop regions. It cannot be seen at 480p. Check it again on the 1080p final."
+   }
+  ],
+  "findings": [
+   {
+    "id": "F1",
+    "severity": "major",
+    "claim": "The second eruption is an AI artefact. The brim drapes over the rim and two leg-like streams walk to the floor, then vanish. n30-n42 cannot be used.",
+    "evidence": "Seen in 200% crops Z_second_a/b.png and Z_jet.png. At n30-n35 a sagging drape with bulb tips. At n36-n41 two legs reach the floor, the left one with a foot-like blob. By n42-n43 they are gone, leaving puddles. The spec rows fall straight into this window: porthole f105-134 = n14-43, Coffee B lens f150-164 = n24-38 (the legs lie inside the lens circle at scale 0.86), and the hook preview's f28-29 = n30-n31.",
+    "fix": "Remap so no timeline frame uses n30-n42 (see remap). This costs no credits."
+   },
+   {
+    "id": "F2",
+    "severity": "major",
+    "claim": "The surface is not calm by 2.0 s. The planned CTA band n48-95 would show the jet tail and the liquid bulging over the rim, right at the panel edge.",
+    "evidence": "Jet still up at n48. Lip above the rim at n50-n62. Droplets above y 880 until n67 and falling into the glass until about n75. Only n70-n96 are fully still.",
+    "fix": "A-20 band f540-587: n63-n96 played 1:1, then hold n96 for f574-587 (14 frames). A-14 band f375-413: n63-n96, then hold n96 for f409-413. The tail moves less than 0.1 level per frame from n79, so the hold cannot be seen. Alternative: interpolate n63-n96 offline to 0.71x."
+   },
+   {
+    "id": "F3",
+    "severity": "major",
+    "claim": "The draft's frame 0 is not the still. The scene sits 20 layout px higher and 18 px further left, and the cubes are posed differently. The spec rule 'if f0 SSIM < 0.95, draw the still at f0' would create a visible jump between f0 and f1, and again at the loop.",
+    "evidence": "Hero-box SSIM 0.498. The best alignment shift is dy -9, dx -8 draft px, after which SSIM is 0.954. Horizon at layout 1410 against 1432, ice top 899 against 917, rim about 1220 against 1250, glass centre x about 520 against 540.",
+    "fix": "Use clip n0 at f0 and as the frozen loop frame (A-20 f588-599, A-14 f414-419). Never use the still in the film. Update the S1-alt geometry (R3-1, section 6) to the measured values. Re-measure the 4:5 tag clearance: at n3 the ice top is at layout 904, which is about 619 in 4:5 coordinates. The product is about 20 px left of 540, so lens L and the punch-ins are off-centre by that amount."
+   },
+   {
+    "id": "F4",
+    "severity": "minor",
+    "claim": "Droplets rise into the type zone (gate 4). In the recommended remap they show full-frame only during the hook.",
+    "evidence": "Droplets appear at n21-n67, highest at layout y 647. In the remap only n21-n29 are shown full frame, with 1-2 droplets of 9-14 px at layout y 762-879, x 263-405; after the 1.25x punch-in that is y 727-874, x 152-365. In the 1x crop of the hook preview (H_tagzone.png) they are faint specks under the tag and never touch the «…». Inside the lens, the porthole and under the CTA panel, the rows above about layout 875 are hidden. The 4:5 frame keeps source rows from 285, so the hook droplets show there too.",
+    "fix": "Accept, or paint out the droplets in f21-29 (no credits). Check again at 1080p, where they will be sharper."
+   },
+   {
+    "id": "F5",
+    "severity": "minor",
+    "claim": "Dark blobs in the milk layer read as boba pearls or foreign specks. They are visible on the hook punch-in.",
+    "evidence": "From n12 to n30 there are blobs of about 8x6 draft px (about 18 layout px; about 23 px after the 1.25x punch). One is clearly visible in the hook preview at f15 (n17). Smaller flecks are present in the still and in n60-n96.",
+    "fix": "Spot-retouch the frames used from n12 to n29 (no credits), or accept. Check again at 1080p."
+   },
+   {
+    "id": "F6",
+    "severity": "minor",
+    "claim": "The hook builds slowly. The ice hovers and fades into the coffee instead of crashing in. Real energy starts at about f10.",
+    "evidence": "n0-n2 are nearly identical (mpdecimate drops n1). The cubes drift down slowly at n3-n6. The first contact at n7 has no splash. The first splash is at n10, and the crown is clear at n11-n12. With f0 = n0, the crown arrives at f11-f12 (0.37-0.40 s).",
+    "fix": "Nothing can fix this in this draft. Use f12 (n12, crown up with the last cube going in) as the cover frame instead of f10 (n10 shows only spikes)."
+   },
+   {
+    "id": "F7",
+    "severity": "minor",
+    "claim": "The hook preview maps f28-29 to n30-n31, which is the start of the drape.",
+    "evidence": "hook.frames.json shows f0-29 = n2-n31. Z_collapse.png shows the sag beginning at n30-n31.",
+    "fix": "Hook n0-n29 played 1:1 (as in the spec's column B). If the director keeps the n2 start: f0-14 = n2-n16, f15-27 = n17-n29, hold n29 on f28-29, and use n2 as the loop frame."
+   },
+   {
+    "id": "F8",
+    "severity": "minor",
+    "claim": "From n41 to the end, splatter on the floor and a dark blob in the glass shadow make the settled shot look messy.",
+    "evidence": "Puddles left of the glass base, and a dark blob at about draft (330-345, 680), i.e. layout (742-776, 1529). Visible in the band and inside the lens. The floor is clean at n0.",
+    "fix": "Accept (the prompt asked for 'a few drops'), or retouch the blob in the shadow (no credits)."
+   },
+   {
+    "id": "F9",
+    "severity": "minor",
+    "claim": "After the splash, the layering is muddier than at frame 0, and the glass ends brim-full.",
+    "evidence": "At n0 a dark espresso band sits on top of white milk, with the coffee about 13 draft px (about 29 layout px) below the rim. By n9-n10 the coffee reaches the rim, at n50-n62 it bulges over, and from n63 the top half is a uniform tan.",
+    "fix": "Accept. The settled frames still read as an iced latte."
+   },
+   {
+    "id": "F10",
+    "severity": "minor",
+    "claim": "The clip is visibly slow motion, against the prompt's 'no slow motion'. This works in the ad's favour.",
+    "evidence": "The crown is up for n11-n26 (16 frames, 0.67 s), and droplets stay in the air for n21-n67. The long crown is what lets the film reuse it in the hook, the return, the porthole and Coffee A.",
+    "fix": "Keep it. Do not ask a second draft for strict real-time physics, or the crown would shrink to a few frames."
+   },
+   {
+    "id": "F11",
+    "severity": "minor",
+    "claim": "Gate 8 as written conflicts with gate 5.",
+    "evidence": "17 of the 18 mpdecimate drops are in the settle tail n64-n96, which gate 5 requires to be calm.",
+    "fix": "Change gate 8 to count only byte-identical or 'max diff < N' duplicate runs, and use it on the 1080p final."
+   }
+  ],
+  "usable_ranges": "Native frames n0-n96, 24 fps. Coordinates are layout px (1080x1920) unless marked as draft px.\nUSABLE:\n- n0-n6: approach. The ice hovers and drifts down. n0-n2 are nearly identical.\n- n7-n11: impact. The first cube touches the coffee at n6-n7 without a splash. The middle two cubes land at n10 with the first spray. Crown arms rise at n11.\n- n11-n26: crown, the best frames. Milky crown wider than the glass, body top about 1059-1081, best at n14-n24. Flaw: a dark blob of about 18 px in the milk at n12-n30.\n- n63-n96: settle. At n63-n69 there is a small bump at the rim and the last droplets fall in (above y 880 until n67). n70-n96 are fully calm. Floor splatter is present throughout.\nMARGINAL (only short, or only where cropped):\n- n27-n29: the crown flattens into a saucer floating above the rim. Acceptable for at most 3 frames at speed (end of the hook punch-in).\n- n43-n62: jet tail with a dark coffee-coated cube (n43-n49), then the lip bulging over the rim (n50-n62). Puddles on the floor. Droplets above y 880 (top at y 647). Usable only inside lens, porthole or band crops, which hide rows above about 875.\nUNUSABLE:\n- n30-n42: the drape with bulb tips (n30-n35), leg-like streams standing off the glass to the floor (n36-n41), and their sudden disappearance (n41-n42).\nACROSS THE CLIP:\n- Droplets above layout y 880 in n21-n67.\n- In the hook only n21-n29 show them full frame: 1-2 droplets of 9-14 px at y 762-879.\n- None reaches the word (y 331-533).",
+  "remap": "Column B rules apply: one native frame per 30 fps timeline frame, no reverse. Ranges are 1:1 unless a hold is stated. A-14 f0-164 uses the same rows as A-20.\n- f0-14 hook (full): n0-n14. Impact contact on f7 (0.233 s), crown clear on f11. Cover frame: f12 (n12).\n- f15-29 punch-in 1.25x about (540,900): n15-n29. n27-n29 show the saucer collapse; acceptable for 3 frames. Never use n30-n31.\n  - If the director keeps the preview's n2 start: f0-14 = n2-n16, f15-27 = n17-n29, hold n29 on f28-29, and the loop frame becomes n2.\n- f78-89 return inside the repaint circles: n8-n19. The circles reach the glass at about f82-84, which shows n12-n14 with the crown rising; the crown is full at f87 (n17). The spec's n5-n16 is also usable, but the crown would arrive later.\n- f105-134 centre porthole (0.31 scale):\n  - f105-119: n12-n26 (crown).\n  - f120: cut (the spec already cuts all portholes here). f120-130: n70-n80 (calm).\n  - f131-134 iris: if the iris reveals Coffee A's full-frame footage, play n3-n6, so Coffee A runs n3-n21 without a break. If it enlarges the porthole picture, play n81-n84.\n  - The spec's n14-43 is replaced because n30-n42 would appear.\n- f135-149 Coffee A (full): n7-n21. Impact lands on f135 with the ice clink, crown on f139-149. The spec's n3-n17 is also usable, but the impact would then land on f139.\n- f150-164 Coffee B (lens L, 0.86): n63-n77. Calm glass, with the last drops falling in inside the lens.\n  - Livelier, marginal alternative: n43-n57 (jet tail and lip bulge).\n  - The spec's n24-n38 is replaced: the legs n36-n38 and the drape n30-n35 fall inside the lens.\n- f390-404 snap: no S1 footage (R3-8: solid Ink dots).\n- A-20 CTA band f540-587 (48 frames): n63-n96 on f540-573, then hold n96 on f574-587 (14 frames, 0.47 s). The hold cannot be seen because the tail moves less than 0.1 level per frame. Alternative: offline 0.71x interpolation of n63-n96. Do not use n48-n62.\n- A-14 CTA band f375-413 (39 frames): n63-n96 on f375-408, then hold n96 on f409-413 (5 frames).\n- A-20 loop f588-599: frozen n0 (behind the iris f588-593, full frame f594-599).\n- A-14 loop f414-419: frozen n0.\n- Never draw the start still at f0 or in the loop.\n- TikTok, 4:5 and B-20 coffee beats use the same native ranges.",
+  "recommendation": "Finalise this draft at 1080p (64 credits), with the remap above. Do not order a second draft.\n\nWhy:\n- Every S1 use can be served from n0-n29 and n63-n96. The artefact window n30-n42 is never on screen.\n- The gate failures fall on frames the film does not use full frame, or are fixed with a 14-frame invisible hold:\n  - gate 4: droplets, full frame only in f21-29;\n  - gate 5: calm only from n70;\n  - gate 8: as written.\n- The most valuable thing in this draft is the long slow-motion milky crown (n11-n26). A corrected 're-time to real physics' draft would very likely shorten it, and the film reuses the crown four times. A second draft costs 12 and still needs the 64 final, and it can add new artefacts.\n\nConditions, all requiring no credits:\n1. By STORYBOARD section 4, a failed draft gets one more draft. Finalising therefore needs the owner's explicit written waiver of gates 4, 5 and 8 as written, with this evidence attached.\n2. f0 and both loop frames use clip n0, never the still. The R3-1 and section 6 geometry is updated to the measured values: ice top 899, rim about 1220, horizon about 1410, product centre x about 520.\n3. After the final: re-run the eight checks on the remapped frames only. Confirm the 1080p motion matches the draft frame for frame. Not verified: that a finalise reproduces the draft exactly. If the drape starts before n30, or anything new appears in n0-n29 or n63-n96, stop and redo the remap before building.\n4. Retouch list: dark blobs in the milk in the frames used from n12 to n29. Optionally, droplets in f21-29 and the dark blob in the shadow.\n\nIf the owner refuses the waiver, the second 12-credit draft should replace the motion prompt with:\n\"Static locked-off tripod shot, keep the exact framing of the start image, the camera does not move at all. In the first frame the lowest ice cube already touches the coffee. The four ice cubes fall fast under gravity, not floating, and plunge into the iced latte one after another; all four are under the surface by 0.3 seconds. One splash crown of milky coffee rises above the rim like a high-speed beverage commercial, peaks at about half a second and falls straight back into the glass; a few droplets fly up no higher than the height of the glass above the rim and fall back. Only one splash: no second splash, no central jet, no liquid sheet folding over the rim, no liquid running down the outside of the glass, no spill on the orange surface. The coffee rises to the rim but never overflows. By 1.5 seconds the surface is completely still and nothing moves until the end. Nothing rises into the upper half of the frame. No new objects, no extra ice cubes, no dark specks or pearls in the drink, no hands, no straw, no text, no cuts.\"\n\nAlso check whether Seedance offers a strict first-frame mode instead of the 'omni_reference' mode that was used. That would fix the frame-0 offset; not verified.",
+  "summary": "I checked all 97 native frames: my own contact sheets of every frame, 200-300% crops of each phase, and per-frame measurements. I also watched the hook preview at phone size.\n\nPhases (native frames):\n- Approach n0-n6.\n- Impact n6/n7 to n11: first contact at 0.25-0.29 s with no splash; real splash at n10.\n- Crown n11-n26: slow motion, a good premium milky crown.\n- Collapse n27-n29: a saucer floating over the rim.\n- Second eruption n28-n49: a central jet, plus an impossible drape and leg-like streams to the floor at n30-n42.\n- Lip bulging over the rim n50-n62.\n- Settle n63-n96: calm from n70.\n\nGates:\n- Passing: 1 (SSIM 0.9049, but the scene is shifted 20 px up and 18 px left against the still), 2 (24 fps, 97 frames, so column B), 3 (marginal), 6 (camera static to 0.14 px).\n- 7 passes only if n30-n42 is excluded.\n- Failing: 4 (droplets above y 880 in n21-n67, top at y 647; crown clear at 0.458 s), 5 (calm only from 2.92 s), 8 as written (18 near-static tail frames, no true duplicates).\n- No visible flicker, colour pumping or texture crawl. A 4-frame periodic step of under 0.7 levels is measurable but invisible.\n\nHook preview:\n- Frame 0 reads at 270 px: word, three lime dots, iced coffee.\n- Nothing fights the type: ice top is at 899 or lower, crown body at about 1060 or lower, droplets are faint specks under the tag.\n- The first 0.2 s is nearly static, and the 1.25x punch-in on the crown is the strongest frame.\n- f28-29 of the preview use n30-n31, the start of the drape; this must change.\n- A dark blob in the milk is visible at f15.\n\nRecommendation: the remap fills every S1 use from usable frames, so finalise at 1080p (64), provided the owner waives gates 4, 5 and 8 in writing and f0 and the loop use clip n0 instead of the still. I made no repository edits, spent no credits and did not update HANDOFF.md, because this role is read-only.\n\nFiles are in /tmp/claude-0/-home-user-visitor-counter-api/1e0f8dbb-d731-5965-a898-07519c7bdbc3/scratchpad/r4/review/director:\n- Sheets: sheets/A_overview_0.png, sheets/A_overview_1.png, sheets/B_hero_00.png to sheets/B_hero_09.png.\n- Crops: sheets/Z_impact_a.png, Z_impact_b.png, Z_impact_c.png, Z_collapse.png, Z_second_a.png, Z_second_b.png, Z_jet.png, Z_dome.png, Z_settle.png, Z_specks.png, Z_floor.png.\n- Hook: sheets/H_hook_270.png, sheets/H_hook_big.png, sheets/H_tagzone.png.\n- Data: work/perframe.json, work/still_vs_f0.png.\n- Scripts: scripts/*.py."
+ },
+ "skeptic": {
+  "verdicts": [
+   {
+    "id": "audit-gate-1",
+    "verdict": "confirmed",
+    "reason": "I measured whole-frame luma SSIM of 0.913 (Gaussian 11x11, sigma 1.5; still Lanczos-scaled to 480x854). The rows above layout 880 score 0.995, draft y 391-716 scores 0.786, and the product box (draft x133-347, y414-716) scores 0.551. It clears 0.90 only because of the flat backdrop. The best fit of the still is a scale of 0.98-0.99 and a shift of (-8,-9) draft px (NCC 0.941; unaligned 0.585). Horizon draft 637.3 -> 627.0 (layout 1433 -> 1410). Glass at draft y660: x 178-301 -> 172-291."
+   },
+   {
+    "id": "audit-gate-2",
+    "verdict": "confirmed",
+    "reason": "ffprobe gives h264 High, 480x854, yuv420p, r/avg 24/1, nb_frames 97, -count_frames 97, duration 4.041667 s and no audio. All 96 PTS steps are 3750. The GOP is I B B B P repeating. The draft sha256 matches the repo copy, and the g1 PNGs are identical to my own decode."
+   },
+   {
+    "id": "audit-gate-3",
+    "verdict": "confirmed",
+    "reason": "At 2.5x zoom the lowest cube sits inside the glass mouth from n0. It meets the coffee at n5-n6 and is half under at n7 (0.292 s), so this passes by one frame. There is no splash at contact. The first visible spray is at n10 (0.417 s), so a viewer perceives the impact later than the gate measures."
+   },
+   {
+    "id": "audit-gate-4a",
+    "verdict": "refuted",
+    "reason": "STORYBOARD section 4 sets times in source seconds ('so they hold at any native frame rate'). Crown arms are first above the rim at n11 (0.458 s) and the crown is clear at n12 (0.500 s), so the gate fails as written. 'Pass with remap' re-reads the gate as timeline time. That is a judgement for the owner to waive, not a pass."
+   },
+   {
+    "id": "audit-gate-4b",
+    "verdict": "confirmed",
+    "reason": "My detector (residual against the temporal median, B>12 and G>7, at least 3 px) finds droplets above draft y 391.4 in every frame n21-n67 and none in n0-n20 or n68-n96. The highest is draft y 288 = layout 647 at n50-n53. There are up to 5 blobs, at draft x 7-282."
+   },
+   {
+    "id": "audit-gate-5",
+    "verdict": "refuted",
+    "reason": "As written the gate fails: the jet is still up at n48 (2.0 s). Surface-band (draft y520-580) change is 2.0-2.8 levels/frame over n48-n59, 4.3 at n60, 1.0-1.7 over n61-n78 and under 1 from n79. Droplets above the glass (draft y392-540) fall until n77, and there are none from n78. Remapping the band is a valid fix, but it does not make the gate pass."
+   },
+   {
+    "id": "audit-gate-6",
+    "verdict": "confirmed",
+    "reason": "The horizon stays at draft 627.00-627.15 (left side) and 627.24-627.30 (right side) in all 97 frames. Phase correlation of the base/floor block against n0 gives a 0 px integer shift in every frame. The largest whole-frame consecutive change is 1.11 levels, at n9. There is no cut."
+   },
+   {
+    "id": "audit-gate-7",
+    "verdict": "uncertain",
+    "reason": "Read literally (no new object, hand, straw, text or morphing glass) it passes. However, I saw leg-like liquid streams standing off the glass to the floor at n36-n41, a drape with bulb tips at n30-n35, and a flat saucer wider than the glass hovering over the rim from about n24-n26. Calling this 'a second surge' undersells an AI artefact that the audit's own remap puts on screen in the lens and the porthole."
+   },
+   {
+    "id": "audit-gate-8",
+    "verdict": "refuted",
+    "reason": "I re-ran mpdecimate with defaults: it drops exactly 18 frames (n1, n64, n71, n73, n74, n76, n77, n79, n80, n82, n85, n87, n89, n91, n92, n94, n95, n96), so the gate fails as written (limit 2). framemd5 shows no duplicate frames. The drops are the low-motion tail, so the reinterpretation is reasonable, but it is a change to the gate, not a pass."
+   },
+   {
+    "id": "director-gate-1",
+    "verdict": "confirmed",
+    "reason": "Whole-frame SSIM 0.913 is a narrow pass carried by the backdrop. My aligned shift is (-8,-9) draft px with a scale of 0.98-0.99. The product box scores 0.551 with my Gaussian SSIM; the director got 0.498 with a box filter, so the method differs but the conclusion is the same."
+   },
+   {
+    "id": "director-gate-2",
+    "verdict": "confirmed",
+    "reason": "Confirmed: 24 fps and 97 frames (n0-n96), one more than the 96 the spec assumes."
+   },
+   {
+    "id": "director-gate-3",
+    "verdict": "confirmed",
+    "reason": "Contact is at n6-n7 with no splash, and the first spray is at n10. Matches my zoomed sheet."
+   },
+   {
+    "id": "director-gate-4",
+    "verdict": "confirmed",
+    "reason": "The crown is clear only from n11-n12, and droplets above layout 880 appear in n21-n67, highest at layout 647. Both halves are confirmed, and the gate fails."
+   },
+   {
+    "id": "director-gate-5",
+    "verdict": "confirmed",
+    "reason": "The gate fails. The jet is up at n48, and the rim bulge and surface change persist to about n60-n62. My data puts the last droplets above the glass at n77, slightly later than the director's 'about n75'."
+   },
+   {
+    "id": "director-gate-6",
+    "verdict": "confirmed",
+    "reason": "Same horizon and glass-edge measurements as for audit gate 6."
+   },
+   {
+    "id": "director-gate-7",
+    "verdict": "confirmed",
+    "reason": "I saw the saucer, the drape and the legs myself, and the legs vanish by n42-n43 leaving puddles. 'Pass only if n30-n42 is never shown' is the accurate statement, though the saucer already starts at about n24-n26."
+   },
+   {
+    "id": "director-gate-8",
+    "verdict": "confirmed",
+    "reason": "18 dropped frames; the list is identical to mine."
+   },
+   {
+    "id": "director-gate-extra",
+    "verdict": "confirmed",
+    "reason": "Backdrop change on frames n4k+1 is 0.13-0.49 levels (mean 0.21); all other frames are 0.03-0.11 (mean 0.06). It cannot be seen at 480p. Re-check it on the 1080p file."
+   },
+   {
+    "id": "A-F1",
+    "verdict": "confirmed",
+    "reason": "The droplets in n21-n67 are confirmed. In the hook (n21-n29/31) my sheet shows 1-2 faint specks at about layout x 260-360, y 780-895 in the preview, below and left of the «…», not touching it. No continuous remap avoids them. The severity is arguable: in the frames actually used full-frame they are 1-2 specks of about 9-14 px. A patch or paint-out fixes it at 0 credits."
+   },
+   {
+    "id": "A-F2",
+    "verdict": "confirmed",
+    "reason": "From my own droplet-apex track (draft y 326 at n41, 288 at n50-n53, 336 at n62) I fit about 400-500 draft px/s². Real gravity on this scale is about 12,000-17,000 px/s², so time is stretched about sqrt(ratio) = 5-6x."
+   },
+   {
+    "id": "A-F3",
+    "verdict": "confirmed",
+    "reason": "Confirmed by my surface-band and above-glass numbers: the band's planned n48-95 / n57-95 contain the jet, the bulge and falling droplets. Only n63+ (rim) or n78+ (nothing in the air) is truly settled."
+   },
+   {
+    "id": "A-F4",
+    "verdict": "confirmed",
+    "reason": "The framing has moved: scale 0.98-0.99 and (-8,-9) draft px, horizon layout 1433 -> 1410, ice top layout 916 (still) -> 899 (n0-n2). Splicing the still in at f0 would jump about 18-20 layout px."
+   },
+   {
+    "id": "A-F5",
+    "verdict": "confirmed",
+    "reason": "The overflow, the streams down the outside and the puddles to the end are all seen. But 'minor' is wrong: n30-n42 is an AI artefact (drape, then legs to the floor that vanish), and the audit's remap shows it in lens L (n24-38, scale 0.86) and in the porthole (n14-43)."
+   },
+   {
+    "id": "A-F6",
+    "verdict": "confirmed",
+    "reason": "The large near-black blob sinks over n11-n20 (draft x 227-255, y 596-668, up to about 190 px²). But 'gone by n24' is too narrow. Smaller dark pearl-like specks persist at n14-n43 and n53-n57 (draft x 183-245, y 617-669, about 5x9 px, luma 25-90 against milk about 200), so they appear in every crown reuse."
+   },
+   {
+    "id": "A-F7",
+    "verdict": "confirmed",
+    "reason": "Contact n5-n7, spray n10, top cube in at n12-n13. I matched the preview frames to native frames: f0, f5, f10, f14, f20 and f29 show n2, n7, n12, n16, n22 and n31. With the n2 start the visible spray lands at f8 (0.267 s), so the ice-crack sound belongs on f8, not f5."
+   },
+   {
+    "id": "A-F8",
+    "verdict": "confirmed",
+    "reason": "18 drops, all distinct frames (framemd5 shows no duplicates); n1 plus 17 in n64-n96."
+   },
+   {
+    "id": "A-F9",
+    "verdict": "confirmed",
+    "reason": "I measured the 4k+1 pulse myself (numbers under director-gate-extra). The wall decorrelation was not re-measured."
+   },
+   {
+    "id": "A-F10",
+    "verdict": "confirmed",
+    "reason": "Top-region mean is (250.1,128.9,40.7), delta 17.0 from #FF7A1A, in the still and (244.5,126.8,42.8), delta 20.4, at n0."
+   },
+   {
+    "id": "A-F11",
+    "verdict": "confirmed",
+    "reason": "My detector also starts at n21, and the highest droplet is layout 647 at n50-n53. My SSIM is 0.913."
+   },
+   {
+    "id": "D-F1",
+    "verdict": "confirmed",
+    "reason": "I saw it: drape with bulb tips n30-n35, leg-like streams to the floor n36-n41, gone by n42-n43 leaving puddles. The spec's porthole (n14-43), lens (n24-38) and the preview's f28-29 (n30-31) all fall into this window. The saucer stage before it starts at about n24-n26."
+   },
+   {
+    "id": "D-F2",
+    "verdict": "confirmed",
+    "reason": "Confirmed, with one correction: droplets above the glass last until n77 in my data, not about n75. The fix n63-n96 plus a hold of n96 is sound. Tail whole-frame change from n79 is 0.04-0.19 levels."
+   },
+   {
+    "id": "D-F3",
+    "verdict": "confirmed",
+    "reason": "The shift is confirmed. I reproduce ice top layout 899 at n0-n2 and 904 at n3, and the horizon at 1410."
+   },
+   {
+    "id": "D-F4",
+    "verdict": "confirmed",
+    "reason": "Full frame, n21-n29 show 1-2 specks (up to 4 faint ones at threshold 12) with tops at layout 762-872. They do not touch «…» in the preview, and none reaches the word (highest 647, against word ink y 331-533)."
+   },
+   {
+    "id": "D-F5",
+    "verdict": "confirmed",
+    "reason": "Dark pearl-like blobs from n12 into the 30s and beyond (see A-F6), clearly visible at 2.6x zoom. They read as boba or specks."
+   },
+   {
+    "id": "D-F6",
+    "verdict": "confirmed",
+    "reason": "n0-n2 are nearly static (n1 dropped by mpdecimate). The cubes drift slowly n3-n9, contact makes no splash, and the first spray is at n10."
+   },
+   {
+    "id": "D-F7",
+    "verdict": "confirmed",
+    "reason": "mk_hook.mjs uses n = f + 2, and the preview's f29 matches n31 numerically. n30-n31 show the central jet and the brim starting to sag."
+   },
+   {
+    "id": "D-F8",
+    "verdict": "confirmed",
+    "reason": "The floor crop shows puddle trails left and right of the base and a dark blob in the shadow at n70 and n96. The floor is clean at n0."
+   },
+   {
+    "id": "D-F9",
+    "verdict": "confirmed",
+    "reason": "At n0 there is an espresso band over milk with the coffee below the rim. At n70-n96 the glass is brim-full with a uniform tan top and two cube tops at the surface."
+   },
+   {
+    "id": "D-F10",
+    "verdict": "confirmed",
+    "reason": "The slow motion is measured (about 5-6x). The long crown (n11-n23) is real and is the material the four crown reuses depend on. 'Works in favour' is a judgement, but a defensible one."
+   },
+   {
+    "id": "D-F11",
+    "verdict": "confirmed",
+    "reason": "17 of the 18 drops are in n64-n96."
+   },
+   {
+    "id": "audit-remap",
+    "verdict": "refuted",
+    "reason": "Three rows put artefact frames on screen. The lens f150-164 = n24-38 shows the drape and the first leg frames at 0.86 scale. The porthole f105-134 = n14-43 shows the saucer, drape and legs at 0.31. The punch-in f15-29 = n17-31 ends on the drape start (n30-n31). Also wrong: 'B-20 f105-599 as A-20'. In BUILD-SPEC section 11 the B-20 band is S6 n24-71 and the B-20 loop is S6 n0, so S1 is not used there. The hook n2-16, the return n7-18, Coffee A n3-17 and the bands n61-96 plus hold are fine."
+   },
+   {
+    "id": "director-remap",
+    "verdict": "confirmed",
+    "reason": "No row uses n30-n42. Every use fits in n0-n29 plus n63-n96, and the band and lens rows are clean. Small caveats: with f0 = n0 the visible spray lands at f10 (0.333 s), so the n2-start variant is better for the first-0.30 s impact. Coffee A n7-21 includes one speck above 880 at n21; n6-20 avoids it. The punch-in still shows the saucer stage (n24-n29) at 1.25x."
+   },
+   {
+    "id": "audit-recommendation",
+    "verdict": "uncertain",
+    "reason": "Finalising if the owner accepts the look is reasonable, but three things are wrong. It labels failed gates 'pass with remap'. Its remap shows the n30-n42 artefact in the lens and the porthole. Its second-draft prompt ('normal real-time speed') would likely shrink the crown to a few frames, when four beats each reuse about 15 frames of crown."
+   },
+   {
+    "id": "director-recommendation",
+    "verdict": "confirmed",
+    "reason": "Its points hold up against my measurements: the usable windows, the never-show n30-n42 rule, the band hold, and the frame-0 rule change. It also correctly requires the owner's written waiver, because STORYBOARD section 4 prescribes one more draft after a failed draft. Its 'do not order a second draft' overstates the choice: a second draft does not forfeit this one while it can still be finalised."
+   }
+  ],
+  "recommendation_verdict": "agree",
+  "recommendation_reason": "I agree with finalising this draft rather than replacing it, with corrections. What I saw myself: the crown at n11-n23 is strong. The camera is locked. Every beat in sections 7, 9 and 15 can be cut from n0-n29 plus n63-n96, and the A-20 band then needs a 12-14 frame hold of n96 (the tail changes by 0.04-0.19 levels per frame). Nothing I measured is a blocker. Conditions: (1) Show the owner gates 4, 5 and 8 as failed as written (gate 3 passes by one frame) and get his explicit waiver, because STORYBOARD section 4 says a failed draft gets one more draft. (2) Use the director's remap, not the audit's, for the porthole, the lens and the end of the hook: never show n30-n42, and preferably start the hook at n2 so the visible spray lands at f8 (0.267 s). (3) The owner looks at the dark pearl-like specks, which run n12-n43 and appear in every crown reuse, and at the saucer stage (n24-n29) in the 1.25x punch-in, and either accepts them or budgets the retouch. (4) Re-run all gates on the 1080p file before building. The choice is also not either/or: if the owner rejects the look, a 12-credit second draft can be ordered while this draft stays finalisable, then the better take is finalised. If a second draft is ordered, use the director's prompt wording, not the audit's 'real-time speed' wording, which would shorten the crown the film reuses four times.",
+  "risks_not_covered": "1) Expiry: HANDOFF line 180 says a draft can be finalised only within seven days, so about 17 Nov 2026 03:28 UTC for this one. Neither reviewer gave the owner this deadline. Third-party pages say the same; I could not check ByteDance's docs (docs.comfy.org is blocked in this session).\n2) Whether the 1080p final keeps the motion: web search summaries (ComfyUI, OpenArt and Flick pages, secondhand) say the final reuses the draft's prompt and settings, or 'the same take'. One also warns that a random seed makes a new draft. Not verified. Also unknown: whether frame count and frame rate stay 97 at 24 fps.\n3) Credits if the final changes: v4 has spent 30. Kling 15.75 plus final 64 brings it to about 109.75. A failed final followed by draft 12 and a new final 64 brings it to about 185.75 of 200, below the owner's 34-credit reserve floor. Price that path for the owner before spending.\n4) 4:5 tag clearance: ice top moved from layout 916 (still) to 899 (n0-n2), 904 at n3, which is about 614-619 in 4:5. R3-10 lowered the 4:5 tag baseline to 530 only because the tag overlapped the ice by 5 rows when the ice top was at 916. By my estimate the overlap of «حلو…» (worst at its f3 slam, scale 1.2) probably comes back. Not measured; re-measure.\n5) The saucer starts about n24-n26, not n27. With the n2 start it is on screen f22-f29 inside the 1.25x punch-in.\n6) The dark specks outlast what either reviewer said: about 5x9 draft px at n14-n43 and n53-n57. Retouching about 20 unique frames at 1080p over a ribbed glass risks flicker, and nobody costed the work.\n7) Sound sync: the visible impact is the spray at n10 (f8 with the n2 start). The audit's 'move the crack to f5' lands on contact that cannot be seen.\n8) R3-9's band option to 'replay action (the ice and crown)' cannot work with this clip: the crown rises about 150-200 layout px above the rim, into the panel.\n9) 34% of the paid clip (n30-n62) is never used. The film reuses the same 0.5 s crown four times.\n10) A second draft in the same omni_reference mode would probably shift frame 0 again; a first-frame mode is not verified.\n11) The audit's top patch freezes the backdrop texture above y 900 while the frame below keeps changing. Low risk, but check the seam at 1080p.\n\nMy sheets and scripts are in /tmp/claude-0/-home-user-visitor-counter-api/1e0f8dbb-d731-5965-a898-07519c7bdbc3/scratchpad/r4/review/skeptic/: impact.jpg, mid.jpg, saucer.jpg, settle.jpg, blobs.jpg, floor.jpg, hook_tag.jpg, and drops.py, motion.py, ssim.py, align.py, dark.py, dark2.py, hookmap.py.\n\nSources: [ComfyUI Seedance 2.5 draft](https://docs.comfy.org/tutorials/partner-nodes/bytedance/seedance-2-5-draft), [OpenArt](https://openart.ai/ai-model/seedance-2-5-draft/), [Flick](https://flick.art/blog/seedance-2-5-draft-mode), [Scenario help](https://help.scenario.com/articles/1651934064-seedance-2-5-the-essentials). I only saw search summaries of these; I did not open them."
+ }
+}

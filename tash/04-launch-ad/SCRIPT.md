@@ -1,0 +1,209 @@
+# TASH / طشّ — Launch ad «هذا منتجك. / وهذا إعلانه.»
+
+**Deliverables:** `TASH-launch-9x16.mp4` (1080×1920, 30 fps, 27.0 s) · `TASH-launch-4x5.mp4` (1080×1350 feed cut, re-laid out)
+· `poster.png` (reel cover, 1080×1920; everything that matters sits inside the centre 3:4) · `contact-sheet.png` (2 fps)
+· `src/` (the edit page, score, tools) · `footage/` (every clip the edit draws from).
+
+## 1. The idea (one line)
+**Show the gap, then close it.** An ordinary phone photo of an ordinary product («هذا منتجك.») hard-cuts on the drop to the
+same kind of product in full cinematic light («وهذا إعلانه.»). The rest of the film proves it: five categories, how we
+make it (idea → board → production → edit → every size), and the payoff of the tagline: people talking about the ad,
+their chat collapsing into one *typing…* bubble, which **is** the TASH sting. TASH then *answers the chat* with the CTA.
+
+Story in Kuwaiti: هذا منتجك. وهذا إعلانه. — نسوّي عطور، مطاعم، قهوة، مجوهرات — من الفكرة للتسليم وبكل المقاسات —
+والناس تسولف: «منو مسوي هالإعلان؟!» — طشّ… خلّهم يسولفون عنك! — عندك مشروع؟ خلّ إعلانك علينا.
+
+## 2. Storyboard / shot list (locked; single source of truth = `src/cues.json`, read by `src/main.js` and `src/audio.py`)
+120 BPM, 1 beat = 0.5 s = 15 f. The drop (1.50) is bar 1; bars start at 1.5 + 2k. Every cut is on a beat or an 8th.
+
+| # | in–out (s) | shot / source | on screen | sound | buys |
+|---|---|---|---|---|---|
+| 1 HOOK | 0.00–1.50 | AI clip `s1_hook` src 0.22–1.72 (1.0×), flat grade + phone sensor noise | «هذا منتجك.» (ink, 128 px, set from the RTL start side on the clean wall — clear of the office chair; rises in 0.17) | room tone + fluorescent hum, a dry tick on the line, a held-breath swell; **shutter click 1.40** with a white blink on the phone screen (1.40–1.47); 2 f of silence | this is an ordinary photo of an ordinary product — yours |
+| 2 GLORY | 1.50–3.50 | LAYL clean orbit (`layl-final_3.00-6.00`, src 3.30–5.30), scale-cut tail 1.06→1 | «وهذا إعلانه.» in the same place as the hook line — «إعلانه.» lime, arrives from 1.45× ON the drop frame; exits 3.22 | **DROP**: impact + group clap + Hijaz stab + shimmer; groove starts | this is what its ad looks like |
+| 3 BURGER | 3.50–5.00 | **STAKK photoreal** clean plate (`stakk-crown_7.90-9.40` = STAKK `?clean=1` 7.90–9.40, 45 f; Higgsfield `b7_crown`, source 0.165–1.600 s): the finished stack on the red seamless; the sesame crown falls in (3.73–3.97) and **lands on the 4.00 beat**, with a +4 % punch and a short shake already in STAKK's plate; then a slow hero push with steam | slate «مطاعم · FOOD» + «نماذج تجريبية · CONCEPT WORK» | **whip pan** in (smear 6 f, swish peaking on the cut; the smear's 1.28× overscan settles to 1× as it resolves); crown hit 4.00 | we do food |
+| 4 COFFEE | 5.00–6.00 | **HABBA photoreal** clean plate (`habba-pour_5.9667-6.9667` = HABBA `?clean=1` 5.9667–6.9667, f179–f208, 30 f; Higgsfield `k3_pour`, source 3.316–4.476 s at 1.2×): top-down in striped morning sun, the last pour into a latte heart; the stream thins over f162–f164 and breaks between f164 (5.467, the last frame with a stream) and f165 (5.500, the first without; measured on both masters), and the pitcher lifts out of the top of frame; the exit frame (5.967) is a clean cup with the whole rim visible | «قهوة · COFFEE» | **light-sweep burn** 4.70–5.40 (swell); **pour foley follows the stream**: in at 5.02, full until 5.40, then a 0.10 s raised-cosine fade to silence at **5.500** (f165, the first stream-less frame, which is also a bar downbeat); nothing under the lift-out | and coffee |
+| 5 RING | 6.00–7.25 | **new build** (`src/built/ring/`): 21K-style gold band, engraved khatam frieze, emerald, lacquer floor; its first frame is framed on the photoreal cup | «مجوهرات · JEWELLERY» | **match cut**: cup rim → ring (the band's outer edge sits on the cup's outer lip: centre ≈ (524, 654), r ≈ 310 px; in 4:5 ≈ (524, 506)), then an expo settle to the hero framing; one glass 'ting' | and jewellery — and this is editing, not a slideshow |
+| 6 SPRAY | 7.25–9.50 | LAYL clean spray (`layl-spray_6.00-8.00`, src 6.08–7.99 at 0.85×) | «عطور · PERFUME» | the breath: drums out, pad + oud-like Hijaz pluck phrase, spray foley, riser 7.75→9.50 | back to your perfume; breathe before the how |
+| — | 9.02–9.78 | **dots-wipe** (the brand transition, once): three lime dots appear at the end of the mist, *type*, grow right→left to cover, exit left | — | three typing ticks + swish | |
+| 7 IDEA | 9.50–10.50 | script card (paper) on ink | step bar «فكرة ← سيناريو ← إنتاج ← تسليم» (active word paper + lime dot); «تمشي… ويبقى ليل.» per word, lime marker on «ليل.»; `LAYL · NO.07 — SCRIPT V3` | process groove (4-on-floor, rim, shaker, bass); a rim tick per word | it starts as a line on paper |
+| 8 BOARD | 10.50–11.75 | three pencil boards (`src/assets/sketch-sc0*.jpg`, XDoG of our own frames) draw on right→left; push into SC 02 (log-scale) | `SC 01–03` | pencil strokes; swish on the push | then every shot is planned |
+| 9 PROD | 11.75–13.50 | LAYL BTS **wire → clay → final**, same camera (src 3.00–4.75); sketch → wire is a match | `WIRE · CLAY · FINAL` | RTL wipes 12.25 / 12.75 with swishes | then it's built — the same shot, three passes |
+| 10 EDIT | 13.50–14.50 | the frame shrinks into a viewer; editor with our clips on V1, type on V2, **our own waveform** on A1, moving playhead, running timecode | `TASH_LAUNCH_v12 · 9:16 · 30P` | downlifter on the shrink | then a real edit, picture and sound |
+| 11 SIZES | 14.50–15.50 | viewer reframes 9:16 → 1:1 → 16:9 → 9:16, then becomes a phone screen | `9:16 · 1:1 · 16:9`, «كل المقاسات» | three snaps, swish into the phone | delivered in every size |
+| 12 PHONE | 15.50–16.25 | generic phone (no brand cues) playing LAYL's end card (snapshot of its final, incl. its own CONCEPT AD slate) | bubble 1 «منو مسوي هالإعلان؟!» at 15.75 | **breakdown**: pad + sub; each bubble pops ON a group clap | the ad is out |
+| 13 DIWAN | 16.25–17.00 | AI `s2_diwaniya` src 1.70–2.38 (0.9×), shared warm grade | bubble 2 «شفتوا إعلانهم؟» at 16.50 | clap + pop | people talk about it |
+| 14 CAFE | 17.00–17.75 | AI `s3_cafe` src 0.80–1.48 (0.9×) | bubble 3 «وين مكانهم؟» at 17.25 | clap + pop | — everywhere |
+| 15 CAR | 17.75–19.10 | AI `s4_car` src 0.55–1.77 (0.9×) → ink 18.50–19.02 | the chat collapses (18.22–18.52: the bubbles fly in and shrink *first*) into ONE typing bubble born **over his phone** (sting starts 18.38), which rises to the logo position | sting ticks (sonic logo starts 18.38) | someone is typing about you right now |
+| 16 STING | 18.38–21.50 | official `createSting` (endcard.js), started at 18.38 so the **snap = bar downbeat 19.50** | طشّ · «خلّهم يسولفون عنك!» · @tash.creative.kw; slow creep | `sonic_logo()` exactly aligned (ticks, whoosh, tash_hit 19.496, shadda pop); music ducked −14 dB 0.3 s before the snap | that typing is TASH |
+| 17 ASK | 21.50–23.50 (one bar) | AI `s5_owner` src 0.40–2.20 (0.9×), blurred, graded dark (top-down, darker under the header logo) | logo glides to the header; «عندك مشروع؟» (120 px, x ≈ 101–951: inside the margins and clear of the right rail); exits 23.29–23.49, *before* the reply | tail: Hijaz pluck cadence, soft claps + mirwas | you, the owner: got a project? |
+| 18 CTA | 23.50–27.00 | ink | TASH **replies** ON the bar-11 downbeat: one lime 'sent' bubble «خلّ إعلانك علينا.» (23.50) · «اطلب إعلانك بالخاص» (23.86) · @tash.creative.kw (24.06); the whole card is assembled by ≈24.5 and held ≈2.5 s; the logo's dots type once more at 25.75 | warm pop + ting + the resolving D stab all on 23.50; bar 11 groove dipped for reading; bar 12: one dum, a low D pluck answered by A, the pad; three soft ticks under the last typing; fade in the last 0.6 s | leave your ad to us — DM to order |
+
+Reading times (addendum §4.4, ≥ max(0.9, 0.4 + 0.35·words)): «هذا منتجك.» 1.33 s · «وهذا إعلانه.» 1.72 s · bubble 1 2.65 s,
+bubble 2 1.90 s, bubble 3 1.15 s · «خلّهم يسولفون عنك!» ≥1.57 s · «عندك مشروع؟» ≈1.1 s fully assembled (on screen 21.62–23.48; formula for 2 words 1.1 s) · CTA: reply 3.5 s, sub 3.1 s, the full card ≈2.5 s assembled (formula for 6 words: 2.5 s).
+
+## 3. Transitions (each has a motive; emphasis spent once)
+hard cut on the shutter → drop · **whip** (glory → burger) · **light-sweep burn** (burger → coffee) · **match cut** cup rim → ring ·
+hard cut on the spray press · **dots-wipe** (once; the dots are born from the mist) · sketch → wire match · RTL wipes (the pen
+direction) · continuous frame → viewer → formats → phone · cut on the beat with bubbles carried across cuts · the chat
+collapses into the sting's own bubble · the sting logo glides into the end card. One visible spring: the reply bubble.
+
+## 4. Sound (all original, `src/audio.py` on `_system/audio/tashaudio.py`)
+Khaleeji-modern hybrid at 120 BPM in D Hijaz: group claps (`claps_ensemble`) on 2 & 4 with off-beat answers, mirwas dum/tak,
+808 with saturated harmonics for phone speakers, bold detuned-saw stabs (D / E♭ colour), oud-like pluck phrases.
+Arc: held breath + silence → **drop on «وهذا إعلانه.»** → montage groove → breath under the slow-mo spray + riser → typing
+ticks on the dots-wipe → lighter process groove with UI foley → breakdown under the bubbles (pops on claps) → silence →
+**`sonic_logo()` exactly on the sting** (snap = downbeat) → tail under the CTA resolving on D. Hero hits: the drop, the crown,
+the snap. Pre-mastered to −14 LUFS / −1.5 dBTP (`Mix.master`), then the renderer's linear loudnorm.
+
+## 5. Credits & honesty
+- **Concept work, labelled.** LAYL, STAKK BURGER and HABBA are our teammates' fictional concept ads (05-concept-ads). The
+  montage shows them as clean plates (`?clean=1`) with «نماذج تجريبية · CONCEPT WORK» on screen for the whole montage
+  (3.50–9.22); the phone shows LAYL's own end card with its CONCEPT AD slate. No real clients, names, numbers or claims.
+- **Burger and coffee shots (3.50–6.00): AI footage, via the rebuilt concept ads.** The owner rejected the CGI burger and coffee
+  as «كرتوني», so STAKK and HABBA were rebuilt on photoreal footage, and the montage now cuts from those films' clean plates.
+  Their footage is *AI-generated with Higgsfield (GPT Image 2.6 start frames → Kling 3.0 Turbo), art-directed and approved by
+  TASH*. The CD generated it; the full credit and every job id are in
+  [STAKK SCRIPT.md](../05-concept-ads/02-burger-stakk/SCRIPT.md) and [HABBA SCRIPT.md](../05-concept-ads/03-coffee-habba/SCRIPT.md).
+  The two clips on screen here: STAKK `b7_crown` (image job 621fc520-a580-4775-a8d7-b2d49b49e00f → video job
+  f7ee3a67-011f-44e4-baf4-61825934d7d2) and HABBA `k3_pour` (image job d9f7c227-cbce-4e0e-ab6e-e0e00d8dafaf → video job
+  e5c4869f-0cfc-4461-9e39-f71a10b89183). Grade, retime and punch/shake are the concept teams' (they come from their `?clean=1`
+  renders). This edit generated nothing and uses only the ranges recommended in their `footage/HANDOFF-launch.md`. The brands
+  are fictional and still carry the «نماذج تجريبية · CONCEPT WORK» label.
+- **People shots** (`footage/ai/`): generated with Higgsfield (Kling 3.0) from CD-art-directed frames, supplied by the CD
+  (the CD's rules and approved windows are in §5b); used only inside the CD-approved ranges, generated audio discarded, never composited onto phone screens
+  (the hook's camera viewfinder is the clip's own image and is covered by the shutter blink at the cut). Dramatised chat
+  bubbles only — no names, no numbers, no "real reactions" claim.
+- **Built for this film:** the jewellery shot (Three.js), the storyboard sketches (filtered from our own frames), every
+  piece of type, UI, phone, bubble and transition, and the whole score/sound design.
+
+### 5b. AI footage: the CD's rules and approved windows (carried over from the retired `_CD-NOTES.md`)
+- **Source:** `footage/ai/s1_hook … s5_owner.mp4`, 1076×1924 at 24 fps, about 5 s each, made with Kling 3.0 from CD-art-directed
+  start frames (kept in `footage/ai/frames/`). All five passed CD review on the first take. They are cover-cropped to 1080×1920
+  and conformed to 30 fps by frame index, and their generated audio is discarded.
+- **The clips:** s1_hook: an ordinary office, a hand in a white dishdasha sleeve photographs a plain, unlabeled perfume bottle under flat
+  fluorescent light, and the thumb taps the shutter · s2_diwaniya: night, three young men; one shows his phone (back to camera), one
+  points and laughs, one leans in · s3_cafe: sunlit café, two young women in abayas; one shows her phone, the other laughs behind her
+  hand · s4_car: night, parked car; a young man reads his phone, smiles and starts typing (the bridge into the typing bubble) ·
+  s5_owner: evening, a small oud and perfume shop; the owner glances at his phone on the counter as it lights up, with incense smoke.
+- **CD-approved windows (source s) → used here:** s1_hook 0.00–1.80 → 0.22–1.72 · s2_diwaniya 0.25–3.25 (best 1.75–2.75) →
+  1.70–2.38 · s3_cafe 0.00–4.00 (best 0.75–2.25) → 0.80–1.48 · s4_car 0.50–3.75 → 0.55–1.77 · s5_owner 0.00–4.50 → 0.40–2.20.
+- **Rules:** never show or fake what is on a phone screen (the phone backs face the camera by design; no UI is composited
+  onto them). Speed 0.8–1.0×, with no speed ramps. Inspect every frame used at full size (hands, fingers, teeth, faces) and
+  shorten any range with an artifact; prefer the first 2–3 s of each clip, where image-to-video is most stable. Payoff rhythm:
+  0.6–0.9 s per reaction shot, cut on the beat, bubble pops on the claps. Use one light shared grade (warm, slightly lifted blacks), the ad's grain, and a
+  1.02–1.05 scale to hide edge drift. The hook's tap is subtle, so sell it with a white blink on the phone screen and a dry
+  click on the cut. Chat bubbles are set in code (RTL) and never baked into footage. No names, no numbers, no "real reactions"
+  claims. Cut a 4:5 version that keeps the faces in frame. Only the CD generates; the edit team never calls Higgsfield.
+- **Concept-ad footage (STAKK, HABBA):** taken only from their `?clean=1` renders, inside the ranges recommended in their
+  `footage/HANDOFF-launch.md`. None of the AI glitches those hand-offs list falls inside 7.90–9.40 (STAKK). For HABBA, the only
+  caveat inside 5.9667–6.9667 is a speck of the pitcher on the top edge of HABBA f207 (launch 5.933, one frame before the cut).
+  Measured here at x ≈ 718–790, y < 22 (the hand-off says x ≈ 1000); it is far from the rim and inside the reel's top UI band.
+
+## 6. Formats
+- **9:16:** key text inside x 72–1008, y 220–1500; bubbles keep 120 px off the right rail in the lower half (`?guides=1` overlays them).
+- **4:5 (`?fmt=45`, 1080×1350):** not a crop of the 9:16 — each shot has its own vertical focus (faces stay in frame; COFFEE and
+  RING share one focus, 0.26, so the rim → ring match lands on the same pixels, ≈ (524, 506)); the hook /
+  glory lines are set from the RTL start side so the office chair never sits under the type; the
+  type, step bar, card, editor, phone, bubbles, sting (logo 560 px, cy 0.42) and CTA are re-laid out for the shorter frame.
+- **poster.png (`?poster=1`):** before / after split with the three dots on the seam; «هذا منتجك.» on the clean office wall of the phone photo (not on the phone bezel or the chair),
+  «وهذا إعلانه.» over LAYL; wordmark, handle and «نماذج تجريبية · CONCEPT WORK» lower right — all inside y 240–1680.
+
+## 7. Reproduce
+```
+python3 04-launch-ad/src/tools/sketch.py            # storyboard boards → src/assets/
+# montage plates from the photoreal concept ads (clean renders, only the ranges used) + the ring build
+node _system/tools/render.mjs --page "05-concept-ads/02-burger-stakk/src/index.html?clean=1" --from 7.9 --to 9.4 --out 04-launch-ad/footage/clean/stakk-crown_7.90-9.40.mp4 --workers 2
+node _system/tools/render.mjs --page "05-concept-ads/03-coffee-habba/src/index.html?clean=1" --from 5.9667 --to 6.9667 --out 04-launch-ad/footage/clean/habba-pour_5.9667-6.9667.mp4 --workers 2
+node _system/tools/render.mjs --page 04-launch-ad/src/built/ring/index.html --out 04-launch-ad/footage/built/ring.mp4 --workers 2
+bash 04-launch-ad/src/tools/extract.sh              # footage/ mp4s → review/launch-footage/ JPEG sequences + manifest
+python3 04-launch-ad/src/audio.py                   # score → src/audio.wav (+ src/assets/wave.json for the editor UI)
+node _system/tools/render.mjs --page 04-launch-ad/src/index.html --out 04-launch-ad/TASH-launch-9x16.mp4 --audio 04-launch-ad/src/audio.wav --workers 2
+node _system/tools/render.mjs --page "04-launch-ad/src/index.html?fmt=45" --out 04-launch-ad/TASH-launch-4x5.mp4 --audio 04-launch-ad/src/audio.wav --workers 2
+node _system/tools/render.mjs --page "04-launch-ad/src/index.html?poster=1" --stills 0 --stills-dir review/launch/poster
+```
+Footage kept in `footage/`: `ai/` (CD) · `clean/` (`?clean=1` renders: `stakk-crown_7.90-9.40` and `habba-pour_5.9667-6.9667`
+from the photoreal STAKK / HABBA, `layl-spray_6.00-8.00`) · `bts/` (LAYL wire/clay/final 3.00–6.00) · `final/layl-final_10.50-12.60.mp4` (snapshot of LAYL's finished end card, for the phone) ·
+`built/ring.mp4` (from `src/built/ring/index.html`, 1.8 s; its start is framed on the photoreal cup rim).
+`extract.sh` rebuilds only the clips in `footage/`; delete stale folders in `review/launch-footage/` when a clip is renamed.
+
+## 8. Self-review ledger
+Builder-reviewed in the rounds below, then independently reviewed and fixed by the ECD (the three ECD rows); the last row is the photoreal-montage re-cut. Every round = stills or full render → look
+at 25 %, 100 % and cut strips (cut−2f / cut / cut+1f) → fix → re-check.
+
+| round | what I looked at | top findings | change | measured after |
+|---|---|---|---|---|
+| look-dev | ring stills v1–v5 | bronze gold; the transmission stone read as a dark hole; floating ring + reflection read as two rings; hard horizon line | neutral strips over a dim warm dome; mirror-faceted emerald; ring stands on the floor; floor fades by depth behind the ring | v5 gold reads gold, single grounded reflection |
+| look-dev | storyboard filter | XDoG threshold > 0 turned flat paper grey | threshold below zero, lighter wash, sparse hatch | paper white, pencil edges |
+| stills 1 | 48 stills (hook → CTA) | hero lines overflowed at 150 px; «إعلانه.» crash-in overlapped «وهذا» (text over text); slate sat on LAYL's label; script card mis-placed (no left/top) | 136 px hero; crash grows from the gap side; slate starts at the first montage cut; card anchored | all text inside x 72–1008 |
+| stills 2 | payoff + end | typing bubble landed on the man's mouth; CTA was a generic "logo + line + button" card | bubble is born over his phone (where the typing is) and rises; TASH **replies** with one lime bubble | — |
+| cut strips | 13 cuts × 3 frames | «إعلانه.» 2 f late on the drop; script card drawn over the dots-wipe; the three dots merged into one blob + ~8 f of full lime | word on the drop frame; wipe on its own top canvas, UI revealed where the dots have passed; dots appear and *type* at the end of the mist, ~6 f cover | — |
+| draft 1 (full) | 2 fps sheet, freezedetect, spectrogram, section loudness | frozen 20.33–21.37 and 23.87–end; the "breath" was louder than the groove (−12.5 vs −13.0 LUFS); hook room tone too loud | creep on the sting hold; logo glides into a centred CTA; dots type once more at 24.25; breath −16.1 LUFS, hook −24.1 LUFS | draft 2: no freeze > 0.6 s; −14.0 LUFS, LRA 3.2 |
+| draft 2 (full) | determinism (fwd vs reverse seek order), 100 % crops | 24.6 s differed on 7,723 px (kit `words()` will-change keeps a stale raster scale); note mono 17 px < 22 px floor; WIRE/CLAY/FINAL low contrast on clay | will-change off on word spans; seeks serialised; note 22–24 px; pass labels on a pill | 5 test frames (incl. text scaling) 0 px different |
+| final v1 | 20 frames from the MP4 at 25 % and 100 % | chat tails rendered as square slivers (CSS `clip-path` tail) | SVG tails curling out of the bubble corner (paper; lime ×1.3 on the reply) | re-rendered both formats |
+| **ECD review** (independent, on the delivered v1 files) | 4 fps sheet + 43 full-size stills (9:16), 2 fps sheet + 9 stills (4:5), poster at 100 %, 1/30 s strips at the drop, dots-wipe, collapse and ASK→CTA, band energy per 0.5 s | (1) «عندك مشروع؟» at 136 px ran x 55–1020: outside the 72 px margins and into the right action rail; (2) text over text 23.07–23.13 (the lime reply popped over the exiting ask line); (3) the typing bubble sat on full-size chat bubbles for ~7 f (18.40–18.63); (4) poster: «هذا» black on the black phone bezel, «منتجك.» on the dark chair; in the hook (both formats) «ك.» sat on the chair arm; (5) the whole CTA card was assembled for only ≈1.5 s (brief: ≥2 s); (6) the sub (<60 Hz) sat 10–12 dB over the 150 Hz–2 kHz band in every groove: the energy phones can't play was eating the −14 LUFS headroom; (7) the vignette over the full-lime wipe made olive corners | (1) 120 px, centre nudged left; (2) the ask exits 23.29–23.48 and the reply pops ON the bar-11 downbeat (23.50); (3) the bubbles fly in and shrink first (inOutCubic 18.22–18.52), then the typing bubble grows; (4) poster photo at 1:1 with both lines set from the RTL start on the clean wall; hook/glory 128 px from the RTL start; 4:5 hook focus 0.46→0.20; (5) ASK = one full bar (21.5–23.5), CTA 23.5–27.0, so the film is now 27.0 s; score re-timed (reply pop + resolving stab on 23.50, reading dip in bar 11, bar-12 outro, 0.6 s fade); (6) kicks −3 dB, pure 808 sub ×0.6, saturated 808 harmonics ×0.3; (7) the vignette fades out while the dots cover the frame | ASK line x ≈ 101–951; collapse and ASK→CTA strips clean; sub−mid gap now 4–8 dB in the grooves, mids +3 dB at the same −14 LUFS |
+| ECD render 1 | full 9:16 (blackdetect, freezedetect, cuts, sync) | one near-empty ink frame at 23.50: the cut frame before the reply became visible | the reply is visible from the cut frame (pops from 0.4×) | see final QC |
+| ECD determinism | 6 frames in forward / reverse / single seek order | 22.4 s (ASK) differed on 49,069 px between orders (59–64k vs a single render): the canvas `filter: blur()` on the main canvas depended on seek history | filtered draws (hook grade, ASK blur) run on a software canvas (`willReadFrequently`) and are composited; both formats re-rendered (ECD render 2) | see final QC |
+| **photoreal montage** (burger + coffee re-cut) | both hand-offs; every frame of the two new clean pulls (45 + 30) on per-frame sheets; the pulls against the delivered STAKK / HABBA films; circle fits of the cup rim and the ring band on the cut frames; stills at 3.50 / 4.00 / 5.00 / 6.00 / 7.25 ±2 f in both formats, plus 3.37–3.73 and the editor; a poster re-render | (1) the CGI burger and coffee were in the montage; (2) the photoreal cup rim is smaller and lower than the CGI one (the ring was framed on (560, 570), r 390), so the match cut no longer matched; (3) the whip landing drew BURGER at the smear's 1.28× overscan and snapped to 1× at 3.70, a visible shrink on a sharp frame (latent in v1 too); (4) the editor thumbnails pointed at the old clips | (1) clean pulls per the hand-offs: STAKK 7.90–9.40 (crown lands on 4.00), HABBA 5.9667–6.9667 (ends on the clean rim); (2) the ring's match-cut start re-framed in its own camera onto the measured rim (×0.80, centre (560, 570) → (524, 654)), and `ring.mp4` re-rendered; the 4:5 RING focus now equals COFFEE's (0.26); (3) the overscan settles with the smear (0.14 → 0); (4) thumbnails re-pointed | on the encoded MP4s, cup f179 (529, 648) r 307 vs ring f180 (526, 650), band silhouette r ≈ 310: centres within 4 px and radii within ≈3 px, in 9:16 and in 4:5 (y −148); the landing is continuous; pulls match the concept films (mean |Δ| 1.1–1.5 of 255); the poster re-renders pixel-identical (0 px) |
+| **pour to picture** (sound only, lead-approved) | f161–f168 of both delivered masters at 100 % (plus an overview of f150–f166), a stream-contrast measure per frame over f156–f171 (brightest pixel over the row median, rows 440–520 / 292–412 in 4:5, x 500–620); the WAV before/after sample by sample; the decoded MP4 audio as a 4.9–6.2 s spectrogram (before, after and the removed signal) | the pour ran 5.02–6.02 at full level, so ≈0.5 s of pour played after the stream had broken. Stream contrast is 106 / 92 on f163 / f164 and 28.7 on f165, which is the background level, in both formats | `audio.py`: the pour is still generated at 1.0 s (the shared noise RNG, so every later sound, is unchanged), cut at 5.500 with a 0.10 s raised-cosine fade from 5.40. `audio.wav` re-rendered; both MP4s re-muxed onto the existing picture with `render.mjs`'s own `mux()` (same as `node 08-instagram/src/mux.mjs <mp4> src/audio.wav <out>`), with no frames re-rendered | video bitstreams identical (stream-copy MD5) and all 810 decoded frames identical (framemd5) in both formats. As a control, re-muxing the *old* WAV this way rebuilds the previous 9:16 byte for byte. WAV: nothing changes before 5.40 except the master's loudness re-level, a global change of < 0.001 dB (difference ≤ −81 dBFS); the removal starts at 5.40 and falls below −80 dBFS by ≈6.15; after that only glue-compressor/limiter residue ≤ −77 dBFS remains. No click at the cut: HF > 8 kHz falls smoothly from −79 to −91 dBFS over 5.45–5.505 (before the fix it held at −76…−79), and the next transient is the downbeat's, the same in both files. Both MP4s: −14.0 LUFS, −1.5 dBTP, LRA 3.2; the section loudness readout is unchanged to 0.1 LU |
+
+**Final QC.** Re-measured on the re-rendered files from the photoreal-montage pass. Lines marked (ECD) were measured by the ECD on the previous
+render and still hold: every frame outside the montage matches it. **Pour-to-picture pass (later, sound only):** both files were re-muxed onto
+the same video streams (bitstream and all 810 decoded frames identical), so every picture line below still holds; the audio lines were
+re-measured on the re-muxed files, and both formats carry the same decoded audio.
+- `TASH-launch-9x16.mp4`: H.264 High yuv420p BT.709, 1080×1920, 30/1, **810 frames = 27.000 s**; AAC LC 48 kHz stereo, 27.000 s.
+  **−14.0 LUFS** integrated, **true peak −1.5 dBTP**, LRA 3.2 LU (`audio-check.sh`). freezedetect (−60 dB, 0.6 s): none.
+  blackdetect: only 18.93–19.13 and 19.27–19.47 (the sting's own typing dots on ink before the snap; the one-frame empty-ink
+  cut at 23.50 found in ECD render 1 is gone). Scene cuts detected at 1.50 · 3.50 · 6.00 · 9.40/9.70 (dots-wipe) · 11.77 ·
+  16.27 · 17.00 · 17.77 = the cue sheet (the burn, the cut into the dark spray, the sting and the ink cuts are below the detector's threshold).
+- A/V sync (ECD, previous render; picture and sound unchanged at these events): drop +9 ms, snap +9 ms, reply pop +12 ms (< ⅓ frame).
+  The photoreal crown lands on frame 120 = 4.000 s; the crown hit sits at 3.997 s (`audio.py`, unchanged).
+- `TASH-launch-4x5.mp4`: 1080×1350, 810 frames = 27.000 s, same audio: −14.0 LUFS, −1.5 dBTP, LRA 3.2; no freezes;
+  blackdetect only 19.30–19.47 (sting dots).
+- What changed vs the previous render (per-frame mean luma difference): 9:16 differs only on 3.50–6.53 (burger, coffee, and the ring until it
+  settles onto the same hero framing). Elsewhere it is ≤ 0.24 of 255, apart from three editor frames at ≤ 0.4, which are the new thumbnails. 4:5 differs on
+  3.50–7.27 (its RING focus moved 0.36 → 0.26). Elsewhere it is ≤ 0.5, and that is encoder noise: on sampled frames p99 is 4–5 levels and no 32 px block differs
+  by more than 1.4.
+- Determinism (ECD): frames 1.6 / 9.45 / 18.45 / 22.4 / 23.5 / 25.9 rendered in forward order, in reverse order and alone →
+  0 px different; 0.6 and 21.8 → ≤ 2 px at 1 level (right-edge column, words mid-blur). This pass: 3.70 (BURGER) rendered after
+  two different seek histories → 0 px different.
+- Score sections (ECD, LUFS, ECD boundaries; after the pour pass every section reads the same to 0.1 LU, and the coffee second 5.00–6.00 reads −13.14 before and after): hook −21.1 · glory −12.8 · montage −12.4 · breath −14.6 · process −13.5 ·
+  bubbles −15.2 · pre-snap −16.3 · sting −17.1 · ask −15.1 · cta −17.4. Band balance: sub (<60 Hz) 4–8 dB over the 150 Hz–2 kHz
+  band in the grooves (was 10–12 dB); the last 50 ms sit at −70 dB (0.6 s fade, no hanging sub).
+- Footage: all five AI ranges are inside the CD-approved windows (s1 0.22–1.72, s2 1.70–2.38, s3 0.80–1.48, s4 0.55–1.77,
+  s5 0.40–2.20); hands and faces checked at 100 % on the frames used.
+- poster.png (unchanged; re-rendered in this pass → 0 px different): 1080×1920; «هذا منتجك.» on the clean wall, «وهذا إعلانه.» on ink; wordmark, handle and CONCEPT WORK line inside y 240–1680.
+
+## 9. Known weaknesses (honest)
+- **Footage policy.** The note at the top of BRIEF.md now records the owner-approved Higgsfield exception to §3.5 for both
+  uses in this film: (a) the launch ad's people/hands shots and (b) the STAKK and HABBA concept footage. §3.5 itself still reads
+  "no paid AI generators", with that exception. If the AI footage is ever withdrawn, shots 1, 3, 4, 13–15 and 17 need
+  replacing. The generic phone and bubbles at 15.50 already carry the payoff idea without people.
+- The hook clip's phone shows its own camera viewfinder (generic shutter/thumbnail layout, no logo; I did not composite UI on
+  it) and the phone backs in the diwaniya/café shots have a triple-lens bump reminiscent of a known phone (no logos). Flagged
+  for legal taste; the hook's screen is covered by the shutter blink on the cut.
+- Cuts and pops on 8th notes (7.25, 11.75, 15.75, 16.25, 17.25, 17.75) fall on half frames at 30 fps; the picture event lands
+  on the next frame (≤ 17 ms, within ±1 f of the sound).
+- The montage uses snapshots. The burger and coffee pulls were rendered on 2026-11-06 (≈19:35) from the photoreal STAKK and
+  HABBA pages and match their delivered films (mean absolute difference ≈1.1–1.5 of 255, which is grain and encoding). A teammate
+  was editing STAKK's S01 (0–0.9 s) at the time, outside the range used. The LAYL clips are earlier snapshots. Later changes to
+  the concept ads only reach this cut if they are re-pulled (§7). Re-checked after STAKK's one-stage re-edit (6 Nov 23:20): the
+  STAKK pull re-rendered from the current page is byte-identical to `footage/clean/stakk-crown_7.90-9.40.mp4` (sha1 a77bad2f…), and its
+  45 JPEGs in `review/launch-footage/` match. The range is `b7_crown` only, so none of STAKK's removed footage is in this cut and nothing was re-rendered.
+- **Pour foley: fixed** (pour-to-picture pass). The pour now ends at the stream break (5.500, f165), so nothing plays under the lift-out.
+  The fix leaves one source-to-picture mismatch. `audio.py` also rewrites `src/assets/wave.json`, the A1 waveform drawn in the EDIT shot, and the new
+  file differs from the old one in a few bins around 5.4–6.1 s, plus a 0.001 rounding step on some others. The delivered picture was not
+  re-rendered, so it still shows the previous waveform. A full picture re-render from today's sources would redraw 60–115 px per EDIT frame (13.50–14.50)
+  in both formats. About 11 bars change only in their anti-aliased end pixels, and the ≈5.4 s bar comes out ≈2 px shorter. Through frame 414 that would also change post 7's
+  `launch-timeline.jpg`. The old file is kept locally (git-ignored) at `review/pour-fix/orig/wave.json` if exact picture reproducibility is preferred.
+- The GLORY → BURGER whip still jumps GLORY's frame from 1× to the smear's 1.28× overscan at 3.43, under about 70 px of smear.
+  GLORY was left unchanged in this pass; the BURGER landing no longer pops.
+- The montage slate sits on the burger's bottom bun in both formats, as it did on the CGI burger. The clean plates carry their
+  own grain (and STAKK's corner vignette) under the launch ad's grain, as the v1 plates did.
+- `cues.json` `ev.heart` (5.40) no longer names a picture event (the stream now breaks at 5.500, f164 → f165; `audio.py` holds that time as `POUR_BREAK`). Neither picture nor sound reads
+  it, and it was kept so the cue grid stays untouched.
+- Audio judged by meters, band energy and spectrogram, not by ear. The low end was rebalanced in the ECD pass; LRA stays modest (≈3–4 LU).
+- The jewellery shot is on screen 1.25 s; the engraved frieze is subtle at phone size. In ASK the header logo still sits over
+  the owner's ghutra, now under a near-ink gradient.
+- The CTA end card (≈24.5–27.0) is alive only through a 2 % creep and one more typing pulse of the logo dots (25.75): a
+  deliberate, quiet end hold.
+- blackdetect flags the designed typing-dots-on-ink frames right before the snap (≈18.93–19.13, 19.27–19.47).

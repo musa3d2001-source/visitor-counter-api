@@ -1,0 +1,48 @@
+<!doctype html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="utf-8">
+<title>قبل — شريحة افتراضية</title>
+<style>
+/* the "before": an untouched default title slide with EXACTLY the words of deck-uni-01-title (the "after"): the student
+   typed every word, the design adds none. Fix round (26 Nov): set large enough to read at phone size in the film
+   (title ≈ 70 px and body ≈ 34 px on screen at the s5 card's 0.44 scale), left heavy, nudged by hand, default font. */
+@font-face{font-family:"Plex Arabic";src:url("../../../_system/fonts/IBMPlexSansArabic-Regular.ttf") format("truetype");font-weight:400;font-display:block}
+*{box-sizing:border-box;margin:0;padding:0}
+html,body{width:1920px;height:1080px;overflow:hidden;background:#FFFFFF}
+body{font-family:"Plex Arabic",sans-serif;color:#000;-webkit-font-smoothing:antialiased}
+.slide{position:relative;width:1920px;height:1080px;background:#FFFFFF}
+
+.kicker{position:absolute;right:120px;top:44px;font-size:62px;line-height:1.2;color:#000}
+.year{position:absolute;left:90px;top:52px;font-size:50px;line-height:1.2;color:#595959}
+.title{position:absolute;left:240px;right:240px;top:150px;text-align:center;font-size:176px;line-height:1.1;color:#000}
+.subtitle{position:absolute;left:100px;right:100px;top:362px;text-align:center;font-size:84px;line-height:1.25;color:#595959}
+
+/* the bullet box was nudged by hand: off-centre, uneven indents, one line centred by mistake */
+.list{position:absolute;left:300px;width:1340px;top:492px;font-size:86px;line-height:1.22;color:#000}
+.list p{position:relative;padding-right:62px;white-space:nowrap}
+.list p::before{content:"•";position:absolute;right:0;top:0}
+.list .in2{padding-right:150px}
+.list .in2::before{right:86px}
+.list .tight{padding-right:24px}
+.list .mid{text-align:center;padding-right:0}
+.list .mid::before{position:static;margin-left:16px}
+.num{position:absolute;left:90px;bottom:34px;font-size:46px;line-height:1.2;color:#7F7F7F}
+</style>
+</head>
+<body>
+<div class="slide">
+  <div class="kicker">مشروع تخرّج</div>
+  <div class="year">العام الجامعي ٢٠٢٦–٢٠٢٧</div>
+  <div class="title">مسار</div>
+  <div class="subtitle">تطبيق يدلّك على موقف فاضي بالحرم الجامعي.</div>
+  <div class="list">
+    <p>إعداد: نورة، فهد، دانة، يوسف</p>
+    <p class="in2">إشراف: د. مريم</p>
+    <p class="tight">القسم: علوم الحاسوب</p>
+    <p class="mid">فاضي الحين · موقف ب-١٤</p>
+  </div>
+  <div class="num">٠١ / ١٢</div>
+</div>
+</body>
+</html>

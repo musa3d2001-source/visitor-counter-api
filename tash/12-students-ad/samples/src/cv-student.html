@@ -1,0 +1,191 @@
+<!doctype html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="utf-8">
+<title>دانة العلي — سيرة ذاتية</title>
+<style>
+@font-face{font-family:"Alexandria";src:url("../../../_system/fonts/Alexandria-VF.ttf") format("truetype");font-weight:100 900;font-display:block}
+@font-face{font-family:"Plex";src:url("../../../_system/fonts/IBMPlexSansArabic-Regular.ttf") format("truetype");font-weight:400;font-display:block}
+@font-face{font-family:"Plex";src:url("../../../_system/fonts/IBMPlexSansArabic-Medium.ttf") format("truetype");font-weight:500;font-display:block}
+@font-face{font-family:"Plex";src:url("../../../_system/fonts/IBMPlexSansArabic-SemiBold.ttf") format("truetype");font-weight:600;font-display:block}
+@font-face{font-family:"Plex";src:url("../../../_system/fonts/IBMPlexSansArabic-Bold.ttf") format("truetype");font-weight:700;font-display:block}
+@font-face{font-family:"Archivo";src:url("../../../_system/fonts/Archivo-VF.ttf") format("truetype");font-weight:100 900;font-display:block}
+
+:root{
+  --paper:#F6F2EA; --ink:#16181D; --ink-2:#4A4C55; --mute:#8A877F; --line:#DCD4C5;
+  --cobalt:#2340E6; --cobalt-d:#1A31B8; --blush:#FFB8C9; --cream:#FFF9EF;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+html,body{width:1240px;height:1754px;overflow:hidden;background:var(--paper)}
+body{font-family:"Plex",sans-serif;color:var(--ink);-webkit-font-smoothing:antialiased;position:relative}
+
+/* ---------- sidebar (left) ---------- */
+.side{position:absolute;left:0;top:0;width:420px;height:1754px;background:var(--cobalt);color:#fff;padding:88px 52px 0 52px;overflow:hidden}
+.mono{position:relative;width:236px;height:236px;margin:0 auto}
+.mono .disc{position:absolute;inset:0;border-radius:50%;background:var(--cream)}
+.mono .d{position:absolute;inset:0;display:grid;place-items:center;font-family:"Alexandria";font-weight:800;font-size:170px;line-height:1;color:var(--cobalt);padding-bottom:4px;padding-left:26px}
+.mono .a{position:absolute;left:-14px;bottom:-4px;width:100px;height:100px;border-radius:50%;background:var(--blush);border:8px solid var(--cobalt);display:grid;place-items:center;font-family:"Alexandria";font-weight:800;font-size:56px;line-height:1;color:var(--cobalt);padding-bottom:12px}
+.mono .ring{position:absolute;inset:-14px;border-radius:50%;border:2px solid rgba(255,255,255,.28)}
+
+.sh{display:flex;align-items:center;gap:12px;margin-top:66px;font-family:"Alexandria";font-weight:700;font-size:25px;line-height:1.3;white-space:nowrap}
+.sh::after{content:"";flex:1;height:2px;background:rgba(255,255,255,.22)}
+.contact{margin-top:22px;display:flex;flex-direction:column;gap:16px}
+.ci{display:flex;align-items:center;gap:14px;font-size:20px;font-weight:500;white-space:nowrap}
+.ci .ic{width:40px;height:40px;border-radius:12px;background:rgba(255,255,255,.13);display:grid;place-items:center;flex:none}
+.ci .lt{font-family:"Archivo";font-weight:500;font-size:19px;direction:ltr;unicode-bidi:isolate;letter-spacing:.2px}
+
+.skills{margin-top:24px;display:flex;flex-direction:column;gap:20px}
+.sk{font-size:19px;font-weight:600;white-space:nowrap}
+.sk .tr{margin-top:9px;height:8px;border-radius:4px;background:rgba(255,255,255,.18);position:relative}
+.sk .tr i{position:absolute;right:0;top:0;bottom:0;border-radius:4px;background:var(--cream)}
+.sk .tr i::before{content:"";position:absolute;left:-5px;top:-5px;width:18px;height:18px;border-radius:50%;background:var(--blush);border:4px solid var(--cobalt)}
+
+.chips{margin-top:24px;display:flex;flex-wrap:wrap;gap:10px}
+.chip{font-size:17px;font-weight:600;border:2px solid rgba(255,255,255,.4);border-radius:999px;padding:5px 16px 8px;white-space:nowrap}
+.chip.on{background:var(--blush);border-color:var(--blush);color:var(--cobalt-d)}
+
+.likes{margin-top:24px;display:flex;justify-content:space-between}
+.lk{display:flex;flex-direction:column;align-items:center;gap:10px;font-size:17px;font-weight:600;white-space:nowrap}
+.lk .ic{width:62px;height:62px;border-radius:18px;background:rgba(255,255,255,.13);display:grid;place-items:center}
+.lk .ic svg{transform:scale(1.3)}
+.langs{margin-top:22px;display:flex;flex-direction:column;gap:16px}
+.lang{display:flex;align-items:center;justify-content:space-between;white-space:nowrap}
+.lang b{font-weight:700;font-size:20px}
+.lang small{font-weight:500;font-size:16px;color:rgba(255,255,255,.7);margin-right:8px}
+.dots{display:flex;gap:6px}
+.dots i{width:12px;height:12px;border-radius:50%;background:var(--cream)}
+.dots i.off{background:rgba(255,255,255,.22)}
+
+/* ---------- main (right) ---------- */
+.main{position:absolute;right:0;top:0;width:820px;height:1754px;padding:96px 76px 0 64px}
+.crop{position:absolute;width:26px;height:26px;border-color:#BEB5A4;border-style:solid;border-width:0}
+.crop.tr{top:34px;right:34px;border-top-width:1.5px;border-right-width:1.5px}
+.crop.br{bottom:34px;right:34px;border-bottom-width:1.5px;border-right-width:1.5px}
+.kick{display:flex;align-items:center;gap:12px;font-size:19px;font-weight:600;color:var(--mute);white-space:nowrap}
+.kick b{font-family:"Archivo";font-weight:600;font-size:16px;letter-spacing:2.5px;color:var(--cobalt);direction:ltr;unicode-bidi:isolate}
+.kick::before{content:"";width:34px;height:3px;border-radius:2px;background:var(--cobalt)}
+h1{font-family:"Alexandria";font-weight:800;font-size:112px;line-height:1.2;letter-spacing:0;margin-top:18px;white-space:nowrap}
+.role{display:flex;align-items:center;gap:16px;margin-top:56px;white-space:nowrap}
+.role b{font-family:"Alexandria";font-weight:600;font-size:34px;color:var(--cobalt)}
+.role span{font-size:22px;font-weight:600;color:var(--ink-2);border:2px solid var(--line);border-radius:999px;padding:4px 18px 7px}
+.bio{margin-top:34px;font-size:23px;font-weight:400;line-height:1.75;color:var(--ink-2);max-width:650px}
+.bio em{font-style:normal;font-weight:600;color:var(--ink);background:linear-gradient(transparent 62%,rgba(255,184,201,.75) 62%)}
+
+.mh{display:flex;align-items:center;gap:16px;margin-top:76px;white-space:nowrap}
+.mh .n{font-family:"Alexandria";font-weight:800;font-size:22px;color:var(--paper);background:var(--ink);width:42px;height:42px;border-radius:12px;display:grid;place-items:center;padding-bottom:4px}
+.mh h2{font-family:"Alexandria";font-weight:700;font-size:34px;line-height:1.3}
+.mh::after{content:"";flex:1;height:2px;background:var(--ink);margin-right:8px}
+
+.tl{position:relative;margin-top:36px;padding-right:44px}
+.tl::before{content:"";position:absolute;right:9px;top:14px;bottom:24px;width:2px;background:var(--line)}
+.it{position:relative;padding-bottom:40px}
+.it:last-child{padding-bottom:0}
+.it::before{content:"";position:absolute;right:-44px;top:9px;width:20px;height:20px;border-radius:50%;background:var(--paper);border:5px solid var(--cobalt);box-sizing:border-box}
+.it.now::before{background:var(--cobalt);box-shadow:0 0 0 6px rgba(35,64,230,.14)}
+.it .top{display:flex;align-items:baseline;justify-content:space-between;gap:20px;white-space:nowrap}
+.it h3{font-family:"Alexandria";font-weight:600;font-size:27px;line-height:1.35}
+.it .date{font-family:"Alexandria";font-weight:500;font-size:18px;color:var(--cobalt);background:rgba(35,64,230,.08);border-radius:8px;padding:3px 12px 6px;flex:none}
+.it .org{font-size:20px;font-weight:500;color:var(--mute);margin-top:2px;white-space:nowrap}
+.it ul{list-style:none;margin-top:10px;display:flex;flex-direction:column;gap:6px}
+.it li{position:relative;padding-right:22px;font-size:20px;line-height:1.6;color:var(--ink-2);white-space:nowrap}
+.it li::before{content:"";position:absolute;right:2px;top:15px;width:8px;height:2px;background:var(--ink-2)}
+
+.foot{position:absolute;right:76px;left:64px;bottom:64px;display:flex;justify-content:space-between;align-items:center;border-top:2px solid var(--ink);padding-top:18px;white-space:nowrap}
+.foot b{font-family:"Alexandria";font-weight:600;font-size:20px}
+.foot small{font-size:15px;color:var(--mute)}
+</style>
+</head>
+<body>
+
+<aside class="side">
+  <div class="mono"><div class="ring"></div><div class="disc"></div><div class="d">د</div><div class="a">ع</div></div>
+
+  <div class="sh">التواصل</div>
+  <div class="contact">
+    <div class="ci"><div class="ic"><svg width="20" height="20" viewBox="0 0 20 20"><path d="M10 18.5s6-5.6 6-10.3A6 6 0 0 0 4 8.2c0 4.7 6 10.3 6 10.3z" fill="none" stroke="#fff" stroke-width="2"/><circle cx="10" cy="8.2" r="2.2" fill="#fff"/></svg></div>الكويت</div>
+    <div class="ci"><div class="ic"><svg width="20" height="20" viewBox="0 0 20 20"><rect x="2" y="4" width="16" height="12" rx="3" fill="none" stroke="#fff" stroke-width="2"/><path d="M3 6l7 5 7-5" fill="none" stroke="#fff" stroke-width="2" stroke-linejoin="round"/></svg></div><span class="lt">name@example.com</span></div>
+    <div class="ci"><div class="ic"><svg width="20" height="20" viewBox="0 0 20 20"><rect x="2.5" y="5" width="15" height="11" rx="2.5" fill="none" stroke="#fff" stroke-width="2"/><path d="M7 5V3.8A1.3 1.3 0 0 1 8.3 2.5h3.4A1.3 1.3 0 0 1 13 3.8V5" fill="none" stroke="#fff" stroke-width="2"/></svg></div>ملف الأعمال عند الطلب</div>
+  </div>
+
+  <div class="sh">المهارات</div>
+  <div class="skills">
+    <div class="sk">الهوية البصرية<div class="tr"><i style="width:92%"></i></div></div>
+    <div class="sk">الخط والتايبوغرافي<div class="tr"><i style="width:86%"></i></div></div>
+    <div class="sk">تصميم المطبوعات<div class="tr"><i style="width:80%"></i></div></div>
+    <div class="sk">الرسم الرقمي<div class="tr"><i style="width:72%"></i></div></div>
+    <div class="sk">الموشن جرافيك<div class="tr"><i style="width:58%"></i></div></div>
+  </div>
+
+  <div class="sh">أدوات العمل</div>
+  <div class="chips">
+    <span class="chip on">الرسم المتجهي</span>
+    <span class="chip">تحرير الصور</span>
+    <span class="chip">النشر المكتبي</span>
+    <span class="chip">المونتاج</span>
+    <span class="chip">النماذج ثلاثية الأبعاد</span>
+  </div>
+
+  <div class="sh">اللغات</div>
+  <div class="langs">
+    <div class="lang"><div><b>العربية</b><small>اللغة الأم</small></div><div class="dots"><i></i><i></i><i></i><i></i><i></i></div></div>
+    <div class="lang"><div><b>الإنجليزية</b><small>مستوى متقدّم</small></div><div class="dots"><i></i><i></i><i></i><i></i><i class="off"></i></div></div>
+  </div>
+
+  <div class="sh">الاهتمامات</div>
+  <div class="likes">
+    <div class="lk"><div class="ic"><svg width="22" height="22" viewBox="0 0 22 22"><rect x="2" y="6" width="18" height="13" rx="3" fill="none" stroke="#fff" stroke-width="2"/><circle cx="11" cy="12.5" r="3.6" fill="none" stroke="#fff" stroke-width="2"/><path d="M7.5 6l1.4-2.5h4.2L14.5 6" fill="none" stroke="#fff" stroke-width="2" stroke-linejoin="round"/></svg></div>التصوير</div>
+    <div class="lk"><div class="ic"><svg width="22" height="22" viewBox="0 0 22 22"><path d="M4 18L15.5 6.5l2 2L6 20H4z" fill="none" stroke="#fff" stroke-width="2" stroke-linejoin="round"/><path d="M14 4l4 4" stroke="#FFB8C9" stroke-width="2.4" stroke-linecap="round"/></svg></div>الخط العربي</div>
+    <div class="lk"><div class="ic"><svg width="22" height="22" viewBox="0 0 22 22"><path d="M3 8.5L11 3.5l8 5" fill="none" stroke="#fff" stroke-width="2" stroke-linejoin="round"/><path d="M5 10v7M9 10v7M13 10v7M17 10v7M3 19.5h16" stroke="#fff" stroke-width="2" stroke-linecap="round"/></svg></div>المتاحف</div>
+  </div>
+</aside>
+
+<main class="main">
+  <i class="crop tr"></i><i class="crop br"></i>
+  <div class="kick">سيرة ذاتية <b>CV</b></div>
+  <h1>دانة العلي</h1>
+  <div class="role"><b>طالبة تصميم جرافيك</b><span>السنة الرابعة</span></div>
+  <p class="bio">مهتمة <em>بالهوية البصرية والخط العربي</em>، وأعمل على المشروع من الفكرة حتى الملف الجاهز للطباعة. أبحث عن أول وظيفة في استوديو تصميم.</p>
+
+  <div class="mh"><span class="n">١</span><h2>التعليم</h2></div>
+  <div class="tl">
+    <div class="it now">
+      <div class="top"><h3>بكالوريوس التصميم الجرافيكي</h3><span class="date">٢٠٢٣ — الآن</span></div>
+      <div class="org">اسم الجامعة · الكويت</div>
+      <ul><li>مشروع التخرّج: هوية بصرية لمعرض كتاب افتراضي (قيد التنفيذ).</li></ul>
+    </div>
+    <div class="it">
+      <div class="top"><h3>الثانوية العامة</h3><span class="date">٢٠٢٠ — ٢٠٢٣</span></div>
+      <div class="org">اسم المدرسة · الكويت</div>
+    </div>
+  </div>
+
+  <div class="mh"><span class="n">٢</span><h2>الخبرات والمشاريع</h2></div>
+  <div class="tl">
+    <div class="it">
+      <div class="top"><h3>متدرّبة تصميم</h3><span class="date">صيف ٢٠٢٥</span></div>
+      <div class="org">استوديو تصميم محلي (اسم تجريبي)</div>
+      <ul>
+        <li>تجهيز منشورات السوشال ميديا وملفات الطباعة.</li>
+        <li>المشاركة في جلسات الأفكار مع فريق التصميم.</li>
+      </ul>
+    </div>
+    <div class="it">
+      <div class="top"><h3>هوية بصرية لمقهى افتراضي</h3><span class="date">٢٠٢٥</span></div>
+      <div class="org">مشروع مادة الهوية البصرية</div>
+      <ul><li>شعار، وألوان، وقائمة طعام، وتغليف أكواب.</li></ul>
+    </div>
+    <div class="it">
+      <div class="top"><h3>سلسلة ملصقات توعوية</h3><span class="date">٢٠٢٤</span></div>
+      <div class="org">مشروع مادة التصميم الطباعي</div>
+      <ul><li>ثلاثة ملصقات عن القراءة، بخط عربي مرسوم باليد.</li></ul>
+    </div>
+    <div class="it">
+      <div class="top"><h3>معرض القسم السنوي</h3><span class="date">٢٠٢٤</span></div>
+      <div class="org">مشاركة بعملين من مادة الرسم</div>
+    </div>
+  </div>
+
+  <div class="foot"><b>المراجع متوفّرة عند الطلب.</b><small>نموذج تصميم — الاسم والبيانات خيالية</small></div>
+</main>
+</body>
+</html>

@@ -1,0 +1,134 @@
+<!doctype html>
+<!-- CLIENT AD POSTER — 4:5 (1080×1350) or 9:16 (1080×1920) from the same data. This one is in the CLIENT's palette and
+     type; TASH appears only in the concept strip (CONCEPT AD slate + «إعلان تجريبي — علامة خيالية» + a small wordmark).
+     slots: product (image src, or a generated placeholder shape) · headline · offer {label, value, unit} · cta · logo
+     data: size '4x5'|'9x16' · palette {ground, light, accent, deep, cream, metal, husk, rind, flesh} · motif 'slice'|'none'
+           · product { src } | { placeholder: 'can', label: {en, ar} } · headline · offer · cta
+           · logo { en, ar } | { src } · concept { slate, ar } -->
+<html lang="ar" dir="rtl"><head><meta charset="utf-8">
+<link rel="stylesheet" href="/_system/tokens.css"><link rel="stylesheet" href="/03-templates/src/base.css">
+<style>
+  #stage { background: var(--c-ground); color: var(--c-cream); }
+  .motif { position: absolute; z-index: 3; }
+  .product { position: absolute; z-index: 6; }
+  .product img { display: block; width: 100%; height: 100%; object-fit: contain; }
+  .ph-tag { position: absolute; z-index: 7; font-size: 17px; letter-spacing: .2em; color: var(--c-cream); opacity: .6; }
+  .headline { position: absolute; z-index: 10; color: var(--c-cream); line-height: 1.36; }
+  .offer { position: absolute; z-index: 10; background: var(--c-accent); color: var(--c-deep); padding: 22px 34px 26px; display: grid; gap: 2px; justify-items: start;
+           -webkit-mask: radial-gradient(circle 16px at 0 50%, transparent 15.5px, #000 16px) left / 51% 100% no-repeat, radial-gradient(circle 16px at 100% 50%, transparent 15.5px, #000 16px) right / 51% 100% no-repeat;
+           mask: radial-gradient(circle 16px at 0 50%, transparent 15.5px, #000 16px) left / 51% 100% no-repeat, radial-gradient(circle 16px at 100% 50%, transparent 15.5px, #000 16px) right / 51% 100% no-repeat; }
+  .offer .l { font-family: var(--f-text-ar); font-weight: 500; font-size: 30px; line-height: 1.3; }
+  .offer .v { display: flex; align-items: baseline; gap: 14px; }
+  .offer .num { font-family: var(--f-display-en); font-weight: 900; font-stretch: 75%; font-size: 92px; line-height: 1; direction: ltr; }
+  .offer .unit { font-family: var(--f-display-ar); font-weight: 800; font-size: 40px; }
+  .cta { position: absolute; z-index: 10; background: var(--c-cream); color: var(--c-deep); border-radius: 999px; padding: 18px 46px 22px;
+         font-family: var(--f-display-ar); font-weight: 800; font-size: 40px; line-height: 1.3; white-space: nowrap; }
+  .logo { position: absolute; z-index: 10; display: grid; gap: 0; justify-items: start; direction: ltr; color: var(--c-cream); }
+  .logo .en { font-family: var(--f-display-en); font-weight: 900; font-stretch: 75%; font-size: 64px; line-height: .9; letter-spacing: .02em; }
+  .logo .ar { font-family: var(--f-display-ar); font-weight: 800; font-size: 40px; line-height: 1.3; direction: rtl; }
+  .logo img { display: block; height: 96px; width: auto; }
+  .strip { position: absolute; left: 0; right: 0; z-index: 20; background: var(--ink); height: 72px; display: flex; align-items: center; gap: 26px; padding: 0 40px; direction: ltr; }
+  .strip .slate { color: var(--smoke); font-size: 18px; }
+  .strip .concept-ar { color: var(--paper); font-size: 24px; }
+  .strip .wm { margin-left: auto; }
+</style></head><body><div id="stage"></div>
+<script type="module">
+import { run, COL, CONCEPT_AR, LOGO } from '/03-templates/src/tpl.js';
+
+// ---- generated shapes (obviously placeholders / client motifs, all code-made) ------------------------------------
+function slice({ r = 330, husk = '#1C1009', rind = '#7A4C24', flesh = '#94592A', deep = '#3B2414' }) {
+  // a DRIED black lime (لومي) cut in half — not a fresh citrus: a wrinkled near-black husk, a thin tan rind, shrivelled
+  // amber-brown segments of uneven size around a hollow centre. Deterministic wobble (sums of sines), no randomness.
+  const C = r, f = v => v.toFixed(1);
+  const wob = (R, a, k, amt = 1) => R * (1 + amt * (0.017 * Math.sin(7 * a + k) + 0.011 * Math.sin(12 * a + 2.1 * k) + 0.006 * Math.sin(23 * a + 0.7 * k)));
+  const P = (R, a) => `${f(C + R * Math.cos(a))} ${f(C + R * Math.sin(a))}`;
+  const blob = (R, k, amt = 1, n = 160) => 'M' + Array.from({ length: n }, (_, i) => { const a = i / n * Math.PI * 2; return P(wob(R, a, k, amt), a); }).join(' L') + ' Z';
+  const n = 10, segs = [], fibres = [];
+  for (let i = 0; i < n; i++) {
+    const shr = 0.9 + 0.1 * Math.sin(i * 2.37 + 0.6);           // dried segments shrink unevenly
+    const ro = r * 0.73 * shr, ri = r * 0.16, g = 0.045, a0 = (i / n) * Math.PI * 2 + g, a1 = ((i + 1) / n) * Math.PI * 2 - g;
+    const outer = Array.from({ length: 9 }, (_, j) => { const a = a0 + (a1 - a0) * j / 8; return P(wob(ro, a, i, 1.6), a); });
+    segs.push(`<path d="M${P(ri, a0 + 0.12)} L${outer.join(' L')} L${P(ri, a1 - 0.12)} Z" fill="url(#lf)" stroke="url(#lf)" stroke-width="10" stroke-linejoin="round"/>`);
+    for (const t of [0.34, 0.66]) { const a = a0 + (a1 - a0) * t; fibres.push(`<path d="M${P(ri * 1.35, a)} L${P(ro * 0.9, a + 0.02)}" stroke="#2A160A" stroke-opacity=".38" stroke-width="2.5" stroke-linecap="round"/>`); }
+  }
+  const creases = Array.from({ length: 46 }, (_, i) => { const a = i / 46 * Math.PI * 2 + 0.05 * Math.sin(i * 3.1); const R0 = r * (0.885 + 0.02 * Math.sin(i * 1.7)); return `<path d="M${P(R0, a)} L${P(r * 0.985, a + 0.03 * Math.sin(i))}" stroke="#000" stroke-opacity=".45" stroke-width="2" stroke-linecap="round"/>`; }).join('');
+  return `<svg width="${2 * r}" height="${2 * r}" viewBox="0 0 ${2 * r} ${2 * r}" style="display:block;overflow:visible">
+    <defs>
+      <radialGradient id="lh" cx="0.72" cy="0.24" r="0.9"><stop offset="0" stop-color="#5A3A20"/><stop offset=".45" stop-color="${husk}"/><stop offset="1" stop-color="#0E0703"/></radialGradient>
+      <radialGradient id="lf" gradientUnits="userSpaceOnUse" cx="${C}" cy="${C}" r="${r * 0.74}"><stop offset=".2" stop-color="#3A1F0C"/><stop offset=".75" stop-color="${flesh}"/><stop offset="1" stop-color="#A9712F"/></radialGradient>
+      <radialGradient id="ll" cx="0.7" cy="0.3" r="0.8"><stop offset="0" stop-color="#fff" stop-opacity=".16"/><stop offset=".6" stop-color="#fff" stop-opacity="0"/></radialGradient>
+    </defs>
+    <ellipse cx="${C + r * 0.06}" cy="${C + r * 0.96}" rx="${r * 0.86}" ry="${r * 0.1}" fill="#000" opacity=".22"/>
+    <clipPath id="lc"><path d="${blob(r, 0.4)}"/></clipPath>
+    <path d="${blob(r, 0.4)}" fill="url(#lh)"/><g clip-path="url(#lc)">${creases}</g>
+    <path d="${blob(r * 0.86, 1.3, 0.8)}" fill="${rind}"/>
+    <path d="${blob(r * 0.79, 2.2, 1.1)}" fill="#2B170B"/>
+    ${segs.join('')}${fibres.join('')}
+    <path d="${blob(r * 0.15, 3.1, 2.2)}" fill="#140A04"/>
+    <path d="${blob(r * 0.79, 2.2, 1.1)}" fill="url(#ll)"/></svg>`;
+}
+function can({ w = 270, h = 520, body, deep, metal, accent, en = 'BRAND', ar = 'علامة' }) {  // a plain can, flat-lit
+  const e = w * 0.13;                                          // ellipse half-height (perspective)
+  return `<svg width="${w}" height="${h + e * 2}" viewBox="0 ${-e} ${w} ${h + e * 2}" style="display:block;overflow:visible">
+    <defs>
+      <linearGradient id="cb" x1="0" x2="1"><stop offset="0" stop-color="#000" stop-opacity=".38"/><stop offset=".18" stop-color="#000" stop-opacity=".05"/>
+        <stop offset=".34" stop-color="#fff" stop-opacity=".28"/><stop offset=".42" stop-color="#fff" stop-opacity=".02"/><stop offset=".8" stop-color="#000" stop-opacity=".12"/><stop offset="1" stop-color="#000" stop-opacity=".45"/></linearGradient>
+      <linearGradient id="cm" x1="0" x2="1"><stop offset="0" stop-color="#6E7372"/><stop offset=".35" stop-color="#E6E9E8"/><stop offset=".6" stop-color="#A9AEAD"/><stop offset="1" stop-color="#5E6362"/></linearGradient>
+      <clipPath id="cc"><path d="M0 ${e} V${h - e} A${w / 2} ${e} 0 0 0 ${w} ${h - e} V${e} Z"/></clipPath>
+    </defs>
+    <ellipse cx="${w / 2}" cy="${h - e + 16}" rx="${w * 0.56}" ry="${e * 0.9}" fill="#000" opacity=".28"/>
+    <path d="M0 ${e} V${h - e} A${w / 2} ${e} 0 0 0 ${w} ${h - e} V${e} Z" fill="${body}"/>
+    <g clip-path="url(#cc)">
+      <rect x="0" y="${h * 0.30}" width="${w}" height="${h * 0.40}" fill="${deep}"/>
+      <rect x="0" y="${h * 0.30}" width="${w}" height="8" fill="${accent}"/><rect x="0" y="${h * 0.70 - 8}" width="${w}" height="8" fill="${accent}"/>
+      <text x="${w / 2}" y="${h * 0.47}" text-anchor="middle" font-family="Archivo" font-weight="900" font-stretch="75%" font-size="${w * 0.25}" fill="${body}" letter-spacing="2">${en}</text>
+      <text x="${w / 2}" y="${h * 0.61}" text-anchor="middle" font-family="Alexandria" font-weight="800" font-size="${w * 0.17}" fill="${accent}" direction="rtl">${ar}</text>
+      <rect width="${w}" height="${h + e}" y="${-e}" fill="url(#cb)"/>
+    </g>
+    <path d="M0 ${e} A${w / 2} ${e} 0 0 1 ${w} ${e} A${w / 2} ${e} 0 0 1 0 ${e}Z" fill="url(#cm)"/>
+    <ellipse cx="${w / 2}" cy="${e}" rx="${w / 2 - 12}" ry="${e - 5}" fill="none" stroke="#000" stroke-opacity=".25" stroke-width="3"/>
+    <rect x="${w * 0.38}" y="${e * 0.45}" width="${w * 0.24}" height="${e * 0.5}" rx="${e * 0.25}" fill="#8E9392"/>
+  </svg>`;
+}
+
+const LAYOUT = {   // [x, y] are px; RTL anchors use right
+  '4x5':  { W: 1080, H: 1350, format: 'post', head: 'right:84px;left:380px;top:72px', headFit: '84,120',
+            motif: { r: 268, right: 76, top: 420 }, product: { w: 250, h: 470, left: 286, top: 452 }, tag: 'left:286px;top:1012px',
+            offer: 'right:84px;top:862px', cta: 'right:84px;top:1080px', logo: 'left:84px;top:1080px', strip: 1278 },
+  '9x16': { W: 1080, H: 1920, format: 'story', head: 'right:84px;left:84px;top:270px', headFit: '110,156',
+            motif: { r: 330, right: 40, top: 712 }, product: { w: 300, h: 548, left: 196, top: 742 }, tag: 'left:196px;top:1376px',
+            offer: 'right:84px;top:1214px', cta: 'right:84px;top:1428px', logo: 'left:84px;top:1426px', strip: 1548, stripPad: 84 },
+};
+
+run(async (d, { stage, rich, h, put, linesOf, fit }) => {
+  const L = LAYOUT[d.size || '4x5'];
+  const P = { ground: '#0F3D3A', light: 'rgba(255,240,200,0.10)', accent: '#E8A23A', deep: '#3B2414', cream: '#F3E9D2', metal: '#B9BEBD', husk: '#1C1009', rind: '#7A4C24', flesh: '#94592A', ...(d.palette || {}) };
+  for (const [k, v] of Object.entries(P)) stage.style.setProperty('--c-' + k, v);
+  const pr = d.product || { placeholder: 'can' };
+  const productEl = h('div', { class: 'product', style: `left:${L.product.left}px;top:${L.product.top}px;width:${L.product.w}px` });
+  if (pr.src) { productEl.style.height = L.product.h + 'px'; productEl.append(h('img', { src: pr.src, alt: '' })); }
+  else productEl.innerHTML = can({ w: L.product.w, h: L.product.h, body: P.cream, deep: P.deep, metal: P.metal, accent: P.accent, en: pr.label?.en || d.logo?.en || 'BRAND', ar: pr.label?.ar || d.logo?.ar || '' });
+  const head = h('div', { class: 'disp headline key', style: L.head, 'data-fit': L.headFit, 'data-lines': linesOf(d.headline, 3), 'data-name': 'headline', html: rich(d.headline) });
+  const o = d.offer;
+  const offer = o ? h('div', { class: 'offer key', style: L.offer, 'data-name': 'offer' },
+    o.label ? h('div', { class: 'l', html: rich(o.label) }) : null,
+    h('div', { class: 'v' }, h('span', { class: 'num', text: o.value }), o.unit ? h('span', { class: 'unit', text: o.unit }) : null)) : null;
+  const cta = d.cta ? h('div', { class: 'cta key', style: L.cta, 'data-name': 'cta', html: rich(d.cta) }) : null;
+  const lg = d.logo || {};
+  const logo = h('div', { class: 'logo key', style: L.logo, 'data-name': 'client logo' },
+    lg.src ? h('img', { src: lg.src, alt: '' }) : [h('div', { class: 'en', text: lg.en || '' }), lg.ar ? h('div', { class: 'ar', text: lg.ar }) : null]);
+  const c = d.concept || {};
+  const strip = h('div', { class: 'strip', style: `top:${L.strip}px;padding:0 ${L.stripPad || 40}px` },
+    h('div', { class: 'slate key', 'data-name': 'concept slate', text: c.slate || 'CONCEPT AD' }), h('div', { class: 'concept-ar key', 'data-name': 'concept label', text: c.ar || CONCEPT_AR }),
+    h('div', { class: 'wm', style: 'width:64px', html: LOGO.wordmarkSVG({ body: COL.paper, dot: COL.lime }) }));
+  put(stage,
+    d.motif !== 'none' ? h('div', { class: 'motif', style: `right:${L.motif.right}px;top:${L.motif.top}px`, html: slice({ r: L.motif.r, ...P }) }) : null,
+    productEl,
+    !pr.src ? h('div', { class: 'slate ph-tag', style: L.tag, text: 'PRODUCT PLACEHOLDER' }) : null,
+    head, offer, cta, logo, strip);
+  // the client's own light: a soft key from the upper right, no glow
+  stage.style.backgroundImage = `radial-gradient(ellipse 80% 60% at 78% 18%, ${P.light}, rgba(0,0,0,0) 70%)`;
+  return { format: L.format, width: L.W, height: L.H, ground: false, grain: 0.04,
+    safe: L.format === 'story' ? { x0: 72, y0: 250, x1: 1008, y1: 1620 } : { x0: 34, y0: 0, x1: 1046, y1: 1350 } };
+});
+</script></body></html>

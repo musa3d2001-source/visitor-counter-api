@@ -1,0 +1,46 @@
+{
+  "_note": "Single source of truth for the animated «شغل جديد» story. Read by index.html (picture) and audio.py (sound). Seconds.",
+  "duration": 7.0,
+  "fps": 30,
+  "typing": {
+    "period": 0.72,
+    "phase": 0.16,
+    "amp": 30
+  },
+  "ticks": [
+    0.18,
+    0.34,
+    0.5,
+    0.9,
+    1.06
+  ],
+  "headlineIn": 0.12,
+  "bubbleOut": 1.22,
+  "grow": {
+    "start": 1.38,
+    "dur": 0.38,
+    "stagger": 0.0667
+  },
+  "cut": 1.78,
+  "fly": {
+    "start": 1.8,
+    "dur": 0.52,
+    "stagger": 0.0333
+  },
+  "lands": [
+    2.32,
+    2.3533,
+    2.3866
+  ],
+  "line": 2.62,
+  "concept": 2.75,
+  "label": 3.05,
+  "sweep": {
+    "start": 3.5,
+    "dur": 1.2
+  },
+  "signature": 5.3,
+  "pulse": 6.0,
+  "bpm": 120,
+  "groove": 1.78
+}

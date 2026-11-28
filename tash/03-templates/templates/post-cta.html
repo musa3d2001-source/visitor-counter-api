@@ -1,0 +1,42 @@
+<!doctype html>
+<!-- FEED POST 4:5 · CTA «اطلب إعلانك» — the ask, staged as the chat it asks for: your message on the left,
+     our typing bubble already answering on the right, then the ask itself, big.
+     data: theme (lime default) · message (your bubble) · headline · line · contact -->
+<html lang="ar" dir="rtl"><head><meta charset="utf-8">
+<link rel="stylesheet" href="/_system/tokens.css"><link rel="stylesheet" href="/03-templates/src/base.css">
+<style>
+  .msg { position: absolute; left: 96px; top: 150px; max-width: 640px; z-index: 10; padding: 34px 46px 38px; font-size: 40px; line-height: 1.45; text-wrap: balance; }
+  .typing { position: absolute; right: 96px; z-index: 10; }
+  .headline { position: absolute; right: 96px; left: 96px; z-index: 10; color: var(--fg); }
+  .line { position: absolute; right: 96px; left: 160px; z-index: 10; color: var(--fg); font-size: 46px; line-height: 1.45; }
+  .contact { position: absolute; right: 96px; left: 300px; bottom: 96px; z-index: 10; color: var(--sub); font-size: 32px; line-height: 1.4; }
+  .wmk { position: absolute; left: 96px; bottom: 100px; z-index: 12; }
+</style></head><body><div id="stage"></div>
+<script type="module">
+import { run, COL } from '/03-templates/src/tpl.js';
+run(async (d, { stage, T, rich, h, put, linesOf, bubble, typingBubble, wordmark, fit }) => {
+  // your bubble: paper on ink/lime grounds, ink on paper; our bubble: ink with lime dots (the sting's lime theme)
+  const youFill = d.theme === 'paper' ? COL.ink : COL.paper, youText = d.theme === 'paper' ? COL.paper : COL.ink;
+  const usFill = d.theme === 'ink' ? COL.char : COL.ink;
+  const msg = bubble(rich(d.message), { fill: youFill, color: youText, side: 'left', cls: 'txt msg key' });
+  const typing = h('div', { class: 'typing', html: typingBubble({ scale: 0.92, fill: usFill, dot: COL.lime }) });
+  const head = h('div', { class: 'disp headline key', 'data-fit': '110,178', 'data-lines': linesOf(d.headline, 2), 'data-name': 'headline', html: rich(d.headline) });
+  const contact = d.contact ? h('div', { class: 'txt contact key', 'data-name': 'contact', html: rich(d.contact) }) : null;
+  const line = d.line ? h('div', { class: 'txt line key', 'data-fit': '38,46', 'data-lines': '2', 'data-name': 'line', html: rich(d.line) }) : null;
+  put(stage, msg, typing, head, line,
+    contact,
+    h('div', { class: 'wmk' }, wordmark(T, 112)));
+  return { format: 'post', lightAt: '18% 0%', after: () => {
+    // stack from both ends: chat at the top, contact at the bottom, the ask fills what is left (and shrinks if it must)
+    const y = msg.offsetTop + msg.offsetHeight + 36;            // our reply sits just under your message
+    typing.style.top = y + 'px';
+    const floor = contact ? contact.offsetTop - 44 : 1254;
+    if (line) { line.style.top = 'auto'; line.style.bottom = (1350 - floor) + 'px'; }
+    const lineTop = line ? line.offsetTop : floor;
+    const top = y + 175 + 70, bottom = lineTop - 22;
+    head.style.top = top + 'px'; head.style.height = (bottom - top) + 'px';
+    fit(head);
+    const hh = head.scrollHeight; head.style.height = 'auto'; head.style.top = (bottom - hh) + 'px';
+  } };
+});
+</script></body></html>

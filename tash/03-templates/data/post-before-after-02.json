@@ -1,0 +1,9 @@
+{
+  "theme": "ink",
+  "headline": "نفس القارورة…\nالفرق ضوء وخامة.",
+  "before": { "src": "/03-templates/assets/layl-bts-clay.png", "label": "المجسّم الخام" },
+  "after":  { "src": "/03-templates/assets/layl-bts-final.png", "label": "اللقطة النهائية" },
+  "focus": [543, 1052],
+  "scale": 0.68,
+  "concept": { "slate": "CONCEPT AD — 01 / PERFUME" }
+}

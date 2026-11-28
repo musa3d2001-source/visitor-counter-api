@@ -1,0 +1,139 @@
+<!doctype html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="utf-8">
+<title>دراسة جدوى — المحتويات</title>
+<style>
+@font-face{font-family:"Alexandria";src:url("../../../_system/fonts/Alexandria-VF.ttf") format("truetype");font-weight:100 900;font-display:block}
+@font-face{font-family:"Plex Arabic";src:url("../../../_system/fonts/IBMPlexSansArabic-Regular.ttf") format("truetype");font-weight:400;font-display:block}
+@font-face{font-family:"Plex Arabic";src:url("../../../_system/fonts/IBMPlexSansArabic-Medium.ttf") format("truetype");font-weight:500;font-display:block}
+@font-face{font-family:"Plex Arabic";src:url("../../../_system/fonts/IBMPlexSansArabic-SemiBold.ttf") format("truetype");font-weight:600;font-display:block}
+
+:root{
+  --paper:#F4ECDF; --paper-2:#EADFCD; --cream:#FBF6EE;
+  --ink:#2A1D16; --ink-2:#5A493D; --mute:#8E7C6E; --line:rgba(42,29,22,.16);
+  --terra:#B8532E; --terra-d:#9A4223;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+html,body{width:1240px;height:1754px;overflow:hidden;background:var(--paper)}
+body{font-family:"Plex Arabic",sans-serif;color:var(--ink);-webkit-font-smoothing:antialiased;text-rendering:geometricPrecision}
+.page{position:relative;width:1240px;height:1754px;overflow:hidden;
+  background:radial-gradient(ellipse 900px 700px at 85% 8%,rgba(255,255,255,.42),transparent 70%),var(--paper)}
+
+/* running header */
+.rh{position:absolute;top:78px;right:100px;left:100px;display:flex;justify-content:space-between;align-items:center;
+  font-family:"Alexandria";font-weight:500;font-size:19px;line-height:1.3;color:var(--ink-2)}
+.rh .r{display:flex;align-items:center;gap:12px}
+.rh .r i{width:10px;height:10px;border-radius:50%;background:var(--terra)}
+.rh .l{color:var(--mute)}
+.rh-rule{position:absolute;top:122px;right:100px;left:100px;height:1px;background:var(--line)}
+
+/* title */
+.head{position:absolute;top:186px;right:100px;left:100px;height:236px;display:flex;justify-content:space-between;align-items:flex-end;
+  border-bottom:2px solid var(--ink);padding-bottom:34px}
+.kicker{font-family:"Plex Arabic";font-weight:600;font-size:22px;line-height:1.4;color:var(--terra);display:flex;align-items:center;gap:14px}
+.kicker::before{content:"";width:34px;height:2px;background:var(--terra)}
+h1{font-family:"Alexandria";font-weight:800;font-size:124px;line-height:1.2;color:var(--ink);margin-top:6px}
+.intro{width:330px;font-size:22px;line-height:1.8;color:var(--ink-2);padding-bottom:12px}
+
+/* list */
+.list{position:absolute;top:452px;right:100px;left:100px}
+.item{display:flex;align-items:baseline;padding-top:22px}
+.item .n{flex:none;width:84px;font-family:"Alexandria";font-weight:600;font-size:26px;line-height:1.5;color:var(--terra);font-feature-settings:"tnum" 1}
+.item .t{flex:none;font-family:"Alexandria";font-weight:600;font-size:33px;line-height:1.5;color:var(--ink)}
+.item .dots{flex:1;min-width:40px;height:6px;align-self:baseline;margin:0 20px;font-size:0;
+  background:radial-gradient(circle,rgba(42,29,22,.36) 1.7px,transparent 2.2px) 0 0/18px 6px;background-repeat:space no-repeat}
+.item .p{flex:none;min-width:44px;text-align:left;font-family:"Alexandria";font-weight:600;font-size:31px;line-height:1.5;color:var(--ink);font-feature-settings:"tnum" 1}
+.item.sub{padding-top:8px}
+.item.sub .n{width:84px}
+.item.sub .t{font-family:"Plex Arabic";font-weight:500;font-size:25px;line-height:1.6;color:var(--ink-2);display:flex;align-items:baseline;gap:16px}
+.item.sub .t b{font-family:"Alexandria";font-weight:500;font-size:21px;color:var(--terra);opacity:.85}
+.item.sub .dots{background-image:radial-gradient(circle,rgba(42,29,22,.24) 1.5px,transparent 2px)}
+.item.sub .p{font-family:"Alexandria";font-weight:500;font-size:25px;color:var(--mute)}
+.item.app .n{color:var(--mute)}
+
+/* highlight cards */
+.hl{position:absolute;right:100px;left:100px;top:1318px}
+.hl .lbl{font-family:"Alexandria";font-weight:600;font-size:19px;line-height:1.3;color:var(--mute);margin-bottom:18px;display:flex;align-items:center;gap:16px}
+.hl .lbl::after{content:"";flex:1;height:1px;background:var(--line)}
+.cards{display:grid;grid-template-columns:repeat(3,1fr);gap:24px}
+.card{position:relative;height:198px;border-radius:22px;background:var(--cream);border:1.5px solid rgba(42,29,22,.1);padding:28px 28px 24px;
+  box-shadow:0 16px 34px rgba(90,50,25,.07)}
+.card .pg{display:flex;align-items:baseline;gap:10px;font-family:"Alexandria";color:var(--terra);height:52px}
+.card .pp{font-weight:500;font-size:26px;line-height:1}
+.card .pn{font-weight:600;font-size:50px;line-height:1;font-feature-settings:"tnum" 1}
+.card .ar{margin-right:auto;align-self:center;opacity:.9}
+.card h3{font-family:"Alexandria";font-weight:600;font-size:27px;line-height:1.35;color:var(--ink);margin-top:20px}
+.card p{font-size:19px;line-height:1.6;color:var(--mute);margin-top:4px}
+.card.dark{background:var(--ink);border-color:var(--ink)}
+.card.dark h3{color:var(--cream)} .card.dark p{color:rgba(251,246,238,.62)}
+.card.dark .pg{color:#E88A60}
+
+/* footer */
+.foot{position:absolute;right:100px;left:100px;bottom:92px;display:flex;justify-content:space-between;align-items:center}
+.foot .r{font-family:"Alexandria";font-weight:500;font-size:18px;line-height:1.3;color:var(--mute)}
+.folio{display:flex;align-items:center;gap:14px;font-family:"Alexandria";font-weight:600;font-size:26px;line-height:1;color:var(--ink)}
+.folio i{width:28px;height:3px;border-radius:3px;background:var(--terra)}
+</style>
+</head>
+<body>
+<div class="page">
+
+  <div class="rh">
+    <div class="r"><i></i>دراسة جدوى: كافيه داخل الحرم الجامعي</div>
+    <div class="l">نوفمبر ٢٠٢٦</div>
+  </div>
+  <div class="rh-rule"></div>
+
+  <div class="head">
+    <div>
+      <div class="kicker">فهرس التقرير</div>
+      <h1>المحتويات</h1>
+    </div>
+    <p class="intro">سبعة أقسام مرتبة حسب خطوات بناء المشروع: من الفكرة، إلى الأرقام، إلى القرار.</p>
+  </div>
+
+  <div class="list">
+    <div class="item"><span class="n">١</span><span class="t">الملخص التنفيذي</span><span class="dots"></span><span class="p">٣</span></div>
+    <div class="item"><span class="n">٢</span><span class="t">فكرة المشروع</span><span class="dots"></span><span class="p">٤</span></div>
+    <div class="item"><span class="n">٣</span><span class="t">دراسة السوق</span><span class="dots"></span><span class="p">٦</span></div>
+    <div class="item sub"><span class="n"></span><span class="t"><b>٣.١</b>الفئة المستهدفة</span><span class="dots"></span><span class="p">٦</span></div>
+    <div class="item sub"><span class="n"></span><span class="t"><b>٣.٢</b>المنافسون حول الحرم</span><span class="dots"></span><span class="p">٧</span></div>
+    <div class="item sub"><span class="n"></span><span class="t"><b>٣.٣</b>نتائج الاستبيان</span><span class="dots"></span><span class="p">٨</span></div>
+    <div class="item"><span class="n">٤</span><span class="t">الموقع والتشغيل</span><span class="dots"></span><span class="p">٩</span></div>
+    <div class="item"><span class="n">٥</span><span class="t">الدراسة المالية</span><span class="dots"></span><span class="p">١١</span></div>
+    <div class="item sub"><span class="n"></span><span class="t"><b>٥.١</b>التكاليف الأولية</span><span class="dots"></span><span class="p">١١</span></div>
+    <div class="item sub"><span class="n"></span><span class="t"><b>٥.٢</b>الإيرادات المتوقعة</span><span class="dots"></span><span class="p">١٢</span></div>
+    <div class="item"><span class="n">٦</span><span class="t">المخاطر والحلول</span><span class="dots"></span><span class="p">١٤</span></div>
+    <div class="item"><span class="n">٧</span><span class="t">التوصيات</span><span class="dots"></span><span class="p">١٦</span></div>
+    <div class="item app"><span class="n">—</span><span class="t">الملاحق</span><span class="dots"></span><span class="p">١٨</span></div>
+  </div>
+
+  <div class="hl">
+    <div class="lbl">أبرز الصفحات</div>
+    <div class="cards">
+      <div class="card">
+        <div class="pg"><span class="pp">ص</span><span class="pn">٦</span><svg class="ar" width="30" height="18" viewBox="0 0 30 18" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M28,9 H2"/><path d="M9,1.5 L1.5,9 L9,16.5"/></svg></div>
+        <h3>الفئة المستهدفة</h3>
+        <p>من هم زبائن الكافيه داخل الحرم؟</p>
+      </div>
+      <div class="card">
+        <div class="pg"><span class="pp">ص</span><span class="pn">١١</span><svg class="ar" width="30" height="18" viewBox="0 0 30 18" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M28,9 H2"/><path d="M9,1.5 L1.5,9 L9,16.5"/></svg></div>
+        <h3>التكاليف الأولية</h3>
+        <p>كم يحتاج المشروع ليبدأ؟</p>
+      </div>
+      <div class="card dark">
+        <div class="pg"><span class="pp">ص</span><span class="pn">١٢</span><svg class="ar" width="30" height="18" viewBox="0 0 30 18" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M28,9 H2"/><path d="M9,1.5 L1.5,9 L9,16.5"/></svg></div>
+        <h3>الإيرادات المتوقعة</h3>
+        <p>كيف تتغير المبيعات خلال السنة؟</p>
+      </div>
+    </div>
+  </div>
+
+  <div class="foot">
+    <div class="r">مبادئ ريادة الأعمال · المجموعة الثالثة</div>
+    <div class="folio">٢<i></i></div>
+  </div>
+</div>
+</body>
+</html>

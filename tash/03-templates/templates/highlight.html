@@ -1,0 +1,18 @@
+<!doctype html>
+<!-- HIGHLIGHT COVER 1080×1920 — one geometric icon, centred inside the circle the profile crops (Ø1080 → shown ~Ø64–77 px).
+     Ink ground, paper icon; lime only on «شلون تطلب؟» (the action), as 06-copy/instagram-profile.md asks.
+     data: slides [{ id, icon: services|work|order|prices|faq, name }] · theme -->
+<html lang="ar" dir="rtl"><head><meta charset="utf-8">
+<link rel="stylesheet" href="/_system/tokens.css"><link rel="stylesheet" href="/03-templates/src/base.css">
+<style>
+  .ic { position: absolute; left: 220px; top: 640px; width: 640px; height: 640px; z-index: 10; }
+  .ic svg { width: 640px; height: 640px; }
+</style></head><body><div id="stage"></div>
+<script type="module">
+import { run } from '/03-templates/src/tpl.js';
+import { icon } from '/03-templates/src/icons.js';
+run(async (d, { stage, T, h, put }) => {
+  put(stage, h('div', { class: 'ic key', 'data-name': d.name || d.icon, html: icon(d.icon, { fg: T.fg, bg: T.bg, accent: T.accent, size: 640 }) }));
+  return { format: 'highlight', lightAt: '50% 50%' };
+});
+</script></body></html>

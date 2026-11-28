@@ -1,0 +1,70 @@
+{
+ "_note": "«طشّ للطلاب»: the payoff still h2_class → src/footage/h2/\n  plate.jpg   1512x2688 (exact 9:16; the 1520x2688 still minus 4 px a side). That is 1.4x the 1080x1920 frame: the\n              renderer draws a window of the plate (zoom z >= 1 shows 1512/z source px across the frame), so a slow\n              2.5D push-in up to ~1.4x never upsamples, and at z = 1.1 there is 5 % of overscan on every side for drift.\n  screen.json the projection screen quad (TL, TR, BR, BL, plate px) = the inner edge of its dark frame, edges fitted on\n              the unoccluded contour (the presenter's hand covers part of the right edge); plus the presenter's crop\n              box for fg.png and the plate size.\n  matte.png   8-bit alpha, plate size: 1 = in front of the screen (her forearm, hand and clicker), 0 = the screen.\n              Keyed INSIDE the screen only (quad + 3 px), against the screen's own white measured locally: outside the\n              screen the plate is already right, so nothing needs a matte there.\n  fg.png      RGBA crop of the plate x matte around the presenter (its box in screen.json -> fg.box): draw it on top\n              of the slide so the slide sits BEHIND her hand.\n  No parallax layer: a front-rows layer over an inpainted wall was tried and dropped (ghosted heads, doubled stage\n  edge at 3 % parallax). The push-in is one plane.",
+ "still": "footage/ai/frames/h2_class.png",
+ "crop_x": 4,
+ "plate": {
+  "file": "src/footage/h2/plate.jpg",
+  "size": [
+   1512,
+   2688
+  ],
+  "frame_scale_at_z1": 0.714286
+ },
+ "screen": {
+  "quad": [
+   [
+    182.13,
+    775.0
+   ],
+   [
+    1325.39,
+    775.0
+   ],
+   [
+    1327.5,
+    1424.42
+   ],
+   [
+    183.48,
+    1426.56
+   ]
+  ],
+  "order": "TL, TR, BR, BL (plate px)",
+  "quad_draw": [
+   [
+    180.12,
+    773.0
+   ],
+   [
+    1327.38,
+    773.0
+   ],
+   [
+    1329.5,
+    1426.42
+   ],
+   [
+    181.48,
+    1428.56
+   ]
+  ],
+  "note": "quad = the white/frame transition (50 %); draw the slide into quad_draw (2 px out) so no white rim of the original screen shows",
+  "w": 1143.3,
+  "h": 651.6,
+  "aspect": 1.7547
+ },
+ "fg": {
+  "file": "src/footage/h2/fg.png",
+  "box": [
+   1253,
+   1320,
+   1331,
+   1428
+  ],
+  "note": "draw at (box[0], box[1]) in plate px, over the slide"
+ },
+ "matte": {
+  "file": "src/footage/h2/matte.png"
+ },
+ "parallax": "none: a separate front-rows layer was built and tested (26 Nov) and dropped: with the wall inpainted behind the heads, a 3 % parallax showed doubled stage edges and head ghosts. The push-in is one plane (plate + slide + fg.png), which is clean at any zoom up to ~1.4x."
+}

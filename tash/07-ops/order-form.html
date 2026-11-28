@@ -1,0 +1,143 @@
+<!doctype html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=1080">
+<title>طشّ — نموذج الطلب</title>
+<!-- Screen: 1080×1350 post (ink). Print: A4 sheet (paper) with checkboxes + write-in lines.
+     Render: node 07-ops/src/render.mjs (from tash/). Fonts come from ../_system/tokens.css -->
+<link rel="stylesheet" href="../_system/tokens.css">
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  html, body { background: var(--ink); }
+  body { color: var(--paper); font-family: var(--f-text-ar); -webkit-font-smoothing: antialiased; }
+  ol, ul { list-style: none; }
+  .num { direction: ltr; unicode-bidi: isolate; display: inline-block; }
+
+  /* ---------- SCREEN: 1080 × 1350 ---------- */
+  .sheet { position: relative; width: 1080px; height: 1350px; overflow: hidden;
+           padding: 72px 72px 64px; display: flex; flex-direction: column; background: var(--ink); }
+  .top { display: flex; justify-content: space-between; align-items: center; }
+  .mark { height: 58px; width: auto; display: block; }
+  .mark--paper-bg { display: none; }
+  .slate { font-family: var(--f-mono); font-weight: 600; font-size: 20px; letter-spacing: .24em;
+           text-transform: uppercase; color: var(--smoke); direction: ltr; }
+
+  .intro { margin-top: 64px; }
+  h1 { font-family: var(--f-display-ar); font-weight: 700; font-size: 112px; line-height: 1.12; color: var(--paper); letter-spacing: 0; }
+  .lede { margin-top: 20px; font-size: 30px; line-height: 1.55; color: var(--smoke); max-width: 860px; }
+  .lede b { font-weight: 400; color: var(--paper); }
+  .print-only { display: none; }
+
+  .qs { margin-top: 52px; display: grid; grid-template-columns: 1fr 1fr; grid-template-rows: repeat(6, auto);
+        grid-auto-flow: column; column-gap: 56px; }
+  .q { display: grid; grid-template-columns: 58px 1fr; align-items: baseline;
+       padding: 20px 0 20px; border-top: 1px solid var(--line); }
+  .q .n { font-family: var(--f-mono); font-weight: 600; font-size: 20px; letter-spacing: .12em; color: var(--smoke); direction: ltr; text-align: right; padding-left: 18px; }
+  .q h2 { font-family: var(--f-display-ar); font-weight: 700; font-size: 31px; line-height: 1.3; color: var(--paper); }
+  .q .hint { grid-column: 2; margin-top: 6px; font-size: 22px; line-height: 1.5; color: var(--smoke); }
+  .q .opts, .q .ans { display: none; }
+
+  .foot { margin-top: auto; display: flex; justify-content: space-between; align-items: center;
+          padding-top: 26px; border-top: 1px solid var(--line); }
+  .foot p { font-size: 24px; color: var(--paper); display: flex; align-items: center; gap: 18px; }
+  .dots { display: inline-flex; gap: 9px; direction: ltr; }
+  .dots i { width: 14px; height: 14px; border-radius: 50%; background: var(--lime); display: block; }
+  .handle { font-family: var(--f-mono); font-weight: 600; font-size: 20px; letter-spacing: .08em; color: var(--smoke); direction: ltr; }
+
+  /* ---------- PRINT: A4 (paper) ---------- */
+  @page { size: A4; margin: 0; }
+  @media print {
+    html, body { background: var(--paper); }
+    body { color: var(--ink); -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+    .sheet { width: 210mm; height: 297mm; padding: 15mm 15mm 12mm; background: var(--paper); }
+    .mark { height: 34px; }
+    .mark--ink-bg { display: none; }
+    .mark--paper-bg { display: block; }
+    .slate { font-size: 9.5px; color: #5E605A; }
+    .intro { margin-top: 26px; }
+    h1 { font-size: 50px; color: var(--ink); }
+    .lede { margin-top: 6px; font-size: 14px; color: #3D3E3A; max-width: none; }
+    .screen-only { display: none; }
+    .print-only { display: block; }
+
+    .qs { margin-top: 20px; column-gap: 28px; }
+    .q { grid-template-columns: 34px 1fr; padding: 18px 0 0; border-top: 1px solid #CFCFC2; }
+    .q .n { font-size: 9.5px; letter-spacing: .08em; color: var(--ink); background: var(--lime);
+            border-radius: 4px; padding: 2px 0 1px; text-align: center; width: 24px; align-self: start; margin-top: 2px; }
+    .q h2 { font-size: 16.5px; color: var(--ink); }
+    .q .hint { font-size: 11px; margin-top: 3px; color: #5E605A; }
+    .q .opts { display: grid; grid-template-columns: repeat(3, max-content); gap: 6px 16px; grid-column: 2; margin-top: 8px; font-size: 11px; color: var(--ink); }
+    .q .opts label { display: flex; align-items: center; gap: 6px; white-space: nowrap; }
+    .q .opts i { width: 10px; height: 10px; border: 1.2px solid var(--ink); border-radius: 2.5px; display: block; flex: none; }
+    /* write-in lines: one rule inside .ans, the next row's top border is the second line */
+    .q .ans { display: block; position: relative; grid-column: 2; height: 68px; }
+    .q .ans::before { content: ""; position: absolute; left: 0; right: 0; top: 34px; border-top: 1px solid #B9BAAE; }
+    .q.choice .ans { height: 36px; }
+    .q.choice .ans::before { display: none; }
+    .q:nth-child(6), .q:nth-child(12) { border-bottom: 1px solid #CFCFC2; }
+    .q.choice .hint { display: none; }
+
+    .foot { padding-top: 12px; border-top: 1px solid #CFCFC2; }
+    .foot p { font-size: 11.5px; color: var(--ink); gap: 10px; }
+    .dots { gap: 4px; }
+    .dots i { width: 7px; height: 7px; background: var(--ink); }
+    .handle { font-size: 10px; color: #3D3E3A; }
+  }
+</style>
+</head>
+<body>
+<main class="sheet">
+  <header class="top">
+    <img class="mark mark--ink-bg" src="../02-logo/svg/tash-wordmark--paper-lime.svg" alt="طشّ">
+    <img class="mark mark--paper-bg" src="../02-logo/svg/tash-wordmark--ink.svg" alt="طشّ">
+    <div class="slate">Order form · 12 Q</div>
+  </header>
+
+  <section class="intro">
+    <h1>شلون أطلب؟</h1>
+    <p class="lede screen-only">جاوبوا على هالأسئلة بالدايركت، ولو باختصار.<br><b>ونرجع لكم باقتراح وسعر مبدئي.</b></p>
+    <p class="lede print-only">عبّوا النموذج وصوّروه لنا بالدايركت. اللي ما تعرفونه اتركوه — نكمّله سوا.</p>
+  </section>
+
+  <ol class="qs">
+    <li class="q"><span class="n">01</span><h2>اسم المشروع</h2>
+      <p class="hint">والحساب على إنستقرام إذا موجود</p><div class="ans"></div></li>
+    <li class="q choice"><span class="n">02</span><h2>نشاطكم</h2>
+      <p class="hint">مطعم، عطور، أزياء، متجر أونلاين…</p>
+      <p class="opts"><label><i></i><span>مطعم أو كافيه</span></label><label><i></i><span>عطور وتجميل</span></label><label><i></i><span>أزياء</span></label><label><i></i><span>متجر أونلاين</span></label><label><i></i><span>خدمات</span></label><label><i></i><span>غيره</span></label></p><div class="ans"></div></li>
+    <li class="q"><span class="n">03</span><h2>شنو تبون تعلنون عنه؟</h2>
+      <p class="hint">منتج، خدمة، عرض، أو فرع جديد</p><div class="ans"></div></li>
+    <li class="q choice"><span class="n">04</span><h2>هدف الإعلان</h2>
+      <p class="hint">إطلاق، عرض لفترة محدودة، تعريف، مناسبة</p>
+      <p class="opts"><label><i></i><span>إطلاق جديد</span></label><label><i></i><span>عرض لفترة محدودة</span></label><label><i></i><span>تعريف بالمشروع</span></label><label><i></i><span>مناسبة</span></label></p><div class="ans"></div></li>
+    <li class="q"><span class="n">05</span><h2>منو جمهوركم؟</h2>
+      <p class="hint">العمر، المنطقة، وشنو يهمهم</p><div class="ans"></div></li>
+    <li class="q choice"><span class="n">06</span><h2>المنصة والمقاس</h2>
+      <p class="hint">ريلز وتيك توك، ستوري، بوست، أو بوستر</p>
+      <p class="opts"><label><i></i><span>ريلز / تيك توك</span></label><label><i></i><span>ستوري</span></label><label><i></i><span>بوست</span></label><label><i></i><span>بوستر</span></label><label><i></i><span>اقترحوا علينا</span></label></p><div class="ans"></div></li>
+
+    <li class="q choice"><span class="n">07</span><h2>مدة الفيديو</h2>
+      <p class="hint"><span class="num">6–10</span> ث، <span class="num">15–20</span> ث، <span class="num">30</span> ث، أو اقترحوا علينا</p>
+      <p class="opts"><label><i></i><span><span class="num">6–10</span> ث</span></label><label><i></i><span><span class="num">15–20</span> ث</span></label><label><i></i><span><span class="num">30</span> ث</span></label><label><i></i><span>تصميم ثابت</span></label><label><i></i><span>اقترحوا علينا</span></label></p><div class="ans"></div></li>
+    <li class="q"><span class="n">08</span><h2>متى تحتاجونه؟</h2>
+      <p class="hint">التاريخ، وهل مرتبط بمناسبة أو إطلاق</p><div class="ans"></div></li>
+    <li class="q"><span class="n">09</span><h2>إعلانات عاجبتكم</h2>
+      <p class="hint"><span class="num">2–3</span> روابط كمرجع للأسلوب</p><div class="ans"></div></li>
+    <li class="q choice"><span class="n">10</span><h2>الميزانية التقريبية</h2>
+      <p class="hint">بالدينار الكويتي، ولو تقريبية</p>
+      <p class="opts"><label><i></i><span>أقل من <span class="num">100</span></span></label><label><i></i><span><span class="num">100–200</span></span></label><label><i></i><span><span class="num">200–400</span></span></label><label><i></i><span>أكثر من <span class="num">400</span> د.ك</span></label><label><i></i><span>مو متأكدين</span></label></p><div class="ans"></div></li>
+    <li class="q choice"><span class="n">11</span><h2>شنو متوفر عندكم؟</h2>
+      <p class="hint">لوقو، صور المنتج، لقطات، ألوان البراند</p>
+      <p class="opts"><label><i></i><span>لوقو</span></label><label><i></i><span>صور المنتج</span></label><label><i></i><span>لقطات فيديو</span></label><label><i></i><span>ألوان البراند</span></label><label><i></i><span>ولا شي</span></label></p><div class="ans"></div></li>
+    <li class="q"><span class="n">12</span><h2>للتواصل</h2>
+      <p class="hint">الاسم وحساب الإنستقرام أو الإيميل</p><div class="ans"></div></li>
+  </ol>
+
+  <footer class="foot">
+    <p><span class="dots"><i></i><i></i><i></i></span>ما عندكم كل الأجوبة؟ عادي — نكمّلها سوا.</p>
+    <span class="handle">@tash.creative.kw</span>
+  </footer>
+</main>
+</body>
+</html>

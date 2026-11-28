@@ -1,0 +1,99 @@
+{
+  "theme": "ink",
+  "series": "SERVICES",
+  "slides": [
+    {
+      "id": "01",
+      "kind": "cover",
+      "theme": "paper",
+      "headline": "خمسة أشياء\nنسويها… وبس.",
+      "line": "اسحب، وشوف كل وحدة.",
+      "typing": false
+    },
+    {
+      "id": "02",
+      "kind": "work",
+      "title": "فيديوهات إعلانية",
+      "line": "إعلان كامل لمنتجك أو محلك: فكرة، سكربت، إنتاج، وملف جاهز.",
+      "wall": [
+        "/08-instagram/src/assets/layl-film-1.9.jpg",
+        "/08-instagram/src/assets/layl-film-4.7.jpg",
+        "/08-instagram/src/assets/layl-film-7.2.jpg"
+      ],
+      "wallH": 580,
+      "wallGap": 30,
+      "wallBg": "#0B0B0B",
+      "concept": {
+        "slate": "CONCEPT AD — 01 / PERFUME"
+      }
+    },
+    {
+      "id": "03",
+      "kind": "work",
+      "title": "إعلانات سوشال",
+      "line": "ريلز، تيك توك، ستوري. عمودية، سريعة، ومبنية على أول ثانية.",
+      "pic": {
+        "src": "/08-instagram/src/assets/launch-phone.jpg",
+        "fit": "contain",
+        "bg": "#0B0B0B"
+      },
+      "concept": {
+        "slate": "CONCEPT AD — 01 / PERFUME"
+      }
+    },
+    {
+      "id": "04",
+      "kind": "work",
+      "title": "تصاميم إعلانية",
+      "line": "بوسترات وتصاميم لمنتجك وعروضك… تنفهم بنظرة.",
+      "wall": [
+        "/05-concept-ads/01-perfume-layl/poster.png",
+        "/08-instagram/06-before-after-post/post.png",
+        "/08-instagram/src/assets/post-statement-01.png"
+      ],
+      "wallH": 470,
+      "wallGap": 28,
+      "wallBg": "#1A1A18",
+      "concept": {
+        "slate": "CONCEPT WORK",
+        "ar": "أعمال تجريبية — علامات خيالية"
+      }
+    },
+    {
+      "id": "05",
+      "kind": "work",
+      "title": "أفكار وسكربتات",
+      "line": "ما عندك فكرة؟ نكتبها لك بسكربت واضح — ننفّذه إحنا، أو تنفّذه إنت.",
+      "pic": {
+        "src": "/08-instagram/src/assets/launch-storyboard.jpg",
+        "fit": "contain",
+        "bg": "#0B0B0B"
+      },
+      "concept": {
+        "slate": "CONCEPT AD — 01 / PERFUME"
+      }
+    },
+    {
+      "id": "06",
+      "kind": "work",
+      "title": "موشن ومونتاج",
+      "line": "عندك لقطات خام؟ نرتبها، ونحرّكها، ونطلّعها إعلان.",
+      "pic": {
+        "src": "/08-instagram/src/assets/launch-timeline.jpg",
+        "fit": "contain",
+        "bg": "#0B0B0B"
+      },
+      "concept": {
+        "slate": "CONCEPT WORK",
+        "ar": "أعمال تجريبية — علامات خيالية"
+      }
+    },
+    {
+      "id": "07",
+      "kind": "closing",
+      "theme": "paper",
+      "headline": "تبي واحد؟\nولا الخمسة؟",
+      "line": "دزّ لنا بالخاص•••"
+    }
+  ]
+}

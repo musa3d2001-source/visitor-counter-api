@@ -1,0 +1,118 @@
+<!doctype html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="utf-8">
+<title>ورقة بحثية — الصفحة الأولى</title>
+<style>
+@font-face{font-family:"Alexandria";src:url("../../../_system/fonts/Alexandria-VF.ttf") format("truetype");font-weight:100 900;font-display:block}
+@font-face{font-family:"Plex Arabic";src:url("../../../_system/fonts/IBMPlexSansArabic-Regular.ttf") format("truetype");font-weight:400;font-display:block}
+@font-face{font-family:"Plex Arabic";src:url("../../../_system/fonts/IBMPlexSansArabic-Medium.ttf") format("truetype");font-weight:500;font-display:block}
+@font-face{font-family:"Plex Arabic";src:url("../../../_system/fonts/IBMPlexSansArabic-SemiBold.ttf") format("truetype");font-weight:600;font-display:block}
+@font-face{font-family:"Plex Arabic";src:url("../../../_system/fonts/IBMPlexSansArabic-Bold.ttf") format("truetype");font-weight:700;font-display:block}
+
+:root{
+  --page:#FFFFFF; --text:#1F2633; --text-2:#3A4356; --mute:#6E7689;
+  --navy:#1B2B4B; --accent:#2F6AA3; --box:#F2F5FA; --rule:#D3DAE5;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+html,body{width:1240px;height:1754px;overflow:hidden;background:var(--page)}
+body{font-family:"Plex Arabic",sans-serif;color:var(--text);-webkit-font-smoothing:antialiased;text-rendering:geometricPrecision}
+.page{position:relative;width:1240px;height:1754px;overflow:hidden;background:var(--page)}
+
+/* running header */
+.rh{position:absolute;top:70px;right:150px;left:150px;display:flex;justify-content:space-between;align-items:baseline;
+  font-size:16.5px;line-height:1.4;color:var(--mute);font-weight:500}
+.rh .r{color:var(--text-2)}
+.rh-rule{position:absolute;top:106px;right:150px;left:150px;border-top:1px solid var(--rule)}
+
+/* text block */
+.block{position:absolute;top:150px;right:150px;left:150px}
+
+/* title block */
+.tb{text-align:center}
+.label{display:inline-flex;align-items:center;gap:16px;font-weight:600;font-size:18px;line-height:1.4;color:var(--accent)}
+.label::before,.label::after{content:"";width:46px;height:1px;background:var(--accent);opacity:.6}
+h1{font-family:"Alexandria";font-weight:700;font-size:48px;line-height:1.45;color:var(--navy);margin-top:16px}
+.subt{font-weight:500;font-size:23px;line-height:1.6;color:var(--text-2);margin-top:8px}
+.orn{width:40px;height:1px;background:var(--accent);margin:24px auto 20px}
+.author{font-weight:600;font-size:21px;line-height:1.5;color:var(--text)}
+.course{font-size:17.5px;line-height:1.7;color:var(--mute);margin-top:2px}
+
+/* abstract */
+.abs{margin-top:36px;background:var(--box);border-right:4px solid var(--accent);border-radius:4px;padding:26px 36px 24px}
+.abs h2{font-family:"Alexandria";font-weight:600;font-size:21px;line-height:1.4;color:var(--navy);margin-bottom:8px}
+.abs p{font-size:19px;line-height:1.85;color:var(--text-2);text-align:justify;text-align-last:right}
+.kw{margin-top:12px;padding-top:12px;border-top:1px solid var(--rule);font-size:17.5px;line-height:1.7;color:var(--mute)}
+.kw b{font-weight:600;color:var(--navy)}
+
+/* body */
+.h{font-family:"Alexandria";font-weight:600;font-size:27px;line-height:1.5;color:var(--navy);margin-top:40px;margin-bottom:10px;display:flex;gap:14px;align-items:baseline}
+.h b{font-weight:600;color:var(--accent);font-feature-settings:"tnum" 1}
+.hh{font-weight:700;font-size:21px;line-height:1.5;color:var(--navy);margin-top:22px;margin-bottom:6px;display:flex;gap:12px;align-items:baseline}
+.hh b{font-family:"Alexandria";font-weight:600;font-size:20px;color:var(--accent)}
+p.t{font-size:20.5px;line-height:1.95;color:var(--text);text-align:justify;text-align-last:right}
+p.t + p.t{text-indent:30px;margin-top:4px}
+sup{font-size:.66em;line-height:0;vertical-align:.6em;color:var(--accent);font-weight:600;padding:0 2px}
+.rq{margin:14px 0 0;padding:14px 26px 14px 0;border-right:2px solid var(--accent);font-weight:500;font-size:20.5px;line-height:1.85;color:var(--navy)}
+.rq span{display:block;font-weight:600;font-size:16px;line-height:1.4;color:var(--accent);margin-bottom:2px}
+
+.ol{list-style:none;margin-top:2px}
+.ol li{position:relative;padding-right:34px;font-size:20.5px;line-height:1.95;color:var(--text)}
+.ol li b{position:absolute;right:0;top:0;font-family:"Alexandria";font-weight:600;font-size:19px;color:var(--accent)}
+/* footnote + folio */
+.fn{position:absolute;right:150px;left:150px;bottom:122px}
+.fn::before{content:"";display:block;width:170px;height:1px;background:var(--text-2);opacity:.55;margin-bottom:12px}
+.fn p{font-size:15.5px;line-height:1.75;color:var(--mute)}
+.fn sup{color:var(--accent)}
+.folio{position:absolute;left:0;right:0;bottom:62px;text-align:center;font-family:"Alexandria";font-weight:500;font-size:18px;line-height:1;color:var(--text-2)}
+.sep{display:inline-block;width:1.5px;height:.85em;background:currentColor;opacity:.45;margin:0 12px;vertical-align:-.08em}
+</style>
+</head>
+<body>
+<div class="page">
+
+  <div class="rh">
+    <span class="r">أثر استخدام السوشال ميديا على وقت المذاكرة</span>
+    <span>مهارات البحث العلمي<i class="sep"></i>٢٠٢٦/٢٠٢٧</span>
+  </div>
+  <div class="rh-rule"></div>
+
+  <div class="block">
+    <div class="tb">
+      <div class="label">ورقة بحثية</div>
+      <h1>أثر استخدام السوشال ميديا<br>على وقت المذاكرة</h1>
+      <div class="subt">دراسة استطلاعية على عينة من طلاب المرحلة الجامعية</div>
+      <div class="orn"></div>
+      <div class="author">إعداد: ريم خالد</div>
+      <div class="course">مقرر مهارات البحث العلمي (٢٠١)، الفصل الدراسي الأول ٢٠٢٦/٢٠٢٧</div>
+    </div>
+
+    <div class="abs">
+      <h2>الملخص</h2>
+      <p>تبحث هذه الورقة في العلاقة بين الوقت الذي يقضيه الطالب على تطبيقات التواصل الاجتماعي والوقت الفعلي الذي يخصصه للمذاكرة خلال الأسبوع. اعتمدت الدراسة على استبانة قصيرة ويوميات استخدام لمدة أسبوعين لدى عينة افتراضية من الطلاب، وقارنت بين الاستخدام المتقطع أثناء المذاكرة والاستخدام في فترات محددة. وتشير النتائج إلى أن تحديد وقت للتصفح وإيقاف التنبيهات يرتبطان بجلسات مذاكرة أطول وأقل انقطاعاً. وتختم الورقة بتوصيات عملية لتنظيم الاستخدام دون الانقطاع عنه.</p>
+      <div class="kw"><b>الكلمات المفتاحية:</b> السوشال ميديا، وقت المذاكرة، إدارة الوقت، التنبيهات، طلاب الجامعة.</div>
+    </div>
+
+    <div class="h"><b>١.</b>المقدمة</div>
+    <p class="t">أصبحت تطبيقات التواصل الاجتماعي<sup>(١)</sup> جزءاً ثابتاً من يوم الطالب؛ فهي وسيلته للتواصل مع زملائه ومتابعة إعلانات المقررات، وقد تكون أحياناً مصدراً لمحتوى تعليمي مفيد. لكنها في الوقت نفسه تقطع جلسة المذاكرة بتنبيه أو مقطع قصير، فيتحول ما بدأ كدقيقة واحدة إلى وقت أطول بكثير مما خطط له الطالب.</p>
+    <p class="t">ولا تنطلق هذه الورقة من فكرة أن السوشال ميديا ضارة في ذاتها، بل تسأل عن طريقة استخدامها: متى يفتح الطالب التطبيقات؟ وكم مرة يقطع مذاكرته؟ وهل يغيّر تنظيم الوقت شيئاً في النتيجة؟</p>
+
+    <div class="hh"><b>١.١</b>مشكلة البحث</div>
+    <p class="t">يلاحظ كثير من الطلاب أن ساعات المذاكرة التي يخططون لها لا تتحقق كاملة، دون أن يعرفوا بدقة أين يذهب الوقت. ومن هنا تتحدد مشكلة البحث في السؤال الآتي:</p>
+    <div class="rq"><span>سؤال البحث</span>ما أثر نمط استخدام السوشال ميديا على مدة جلسة المذاكرة وعدد مرات انقطاعها؟</div>
+
+    <div class="hh"><b>١.٢</b>أهداف البحث</div>
+    <ol class="ol">
+      <li><b>١.</b>قياس متوسط الوقت اليومي على التطبيقات مقارنةً بوقت المذاكرة.</li>
+      <li><b>٢.</b>معرفة أثر التنبيهات على عدد مرات انقطاع جلسة المذاكرة.</li>
+      <li><b>٣.</b>اقتراح طرق عملية لتنظيم الاستخدام في فترات المذاكرة.</li>
+    </ol>
+  </div>
+
+  <div class="fn">
+    <p><sup>(١)</sup> يُقصد بـ«السوشال ميديا» في هذه الورقة: تطبيقات التواصل الاجتماعي، ومنصات المقاطع القصيرة، ومجموعات المحادثة.</p>
+  </div>
+  <div class="folio">١</div>
+</div>
+</body>
+</html>

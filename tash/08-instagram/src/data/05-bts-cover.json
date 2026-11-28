@@ -1,0 +1,16 @@
+{
+  "variant": "bts",
+  "theme": "ink",
+  "before": "/08-instagram/src/bts/cover/wire-0110.jpg",
+  "after": "/08-instagram/src/bts/cover/final-0110.jpg",
+  "dy": 150,
+  "band": [
+    1010,
+    1330
+  ],
+  "headline": "ورا الكواليس",
+  "line": "من الفكرة… للإعلان.",
+  "concept": {
+    "slate": "BTS — CONCEPT AD 01 / PERFUME"
+  }
+}
